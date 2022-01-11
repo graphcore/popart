@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Usage:
 #     python3 check_test_has_cmake_entry.py path/to/test_file.py
@@ -9,8 +10,10 @@
 # If no cmake entry is found, the script prints a message to stderr
 # and returns with return code 1.
 from pathlib import Path
+import argparse
 import re
 import sys
+from typing import Optional, Sequence
 
 
 # Check if the file is a pytest test file.
@@ -41,8 +44,8 @@ def check_for_test_entry(lint_path, cmakelists_path):
     with cmakelists_path.open() as f:
         for line in f.readlines():
             # Match 0 or more instances of '# ' to also match commented out entries.
-            # We catch commented out entires as these are not tests where the 
-            # cmake entry has been forgotten, but usually tests that are broken 
+            # We catch commented out entires as these are not tests where the
+            # cmake entry has been forgotten, but usually tests that are broken
             # and have a task to fix attached.
             pattern = '(#\s*)?'
             # Match instances of 'add_popart_py_unit_test(some_test_name '
@@ -50,7 +53,7 @@ def check_for_test_entry(lint_path, cmakelists_path):
             # Match only entries with the same lint_path
             pattern += f'{lint_path.name}'
             if re.match(pattern, line):
-                return
+                return 0
 
     test_relative_path = lint_path.relative_to(popart_root_dir())
     cmakelists_relative_path = cmakelists_path.relative_to(popart_root_dir())
@@ -60,24 +63,31 @@ def check_for_test_entry(lint_path, cmakelists_path):
         f"path \"({test_relative_path})\" in the popart .arclint file, under the"
         f" section 'popart-test-linter'.",
         file=sys.stderr)
-    exit(1)
+    return 1
 
 
-def main():
-    lint_path = Path(sys.argv[1])
-    assert lint_path.exists()
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filenames', nargs='*')
+    args = parser.parse_args(argv)
 
-    # Only want to lint pytest files.
-    if not is_probably_pytest_file(lint_path):
-        return
+    ret_val = 0
+    for filename in args.filenames:
+        lint_path = Path(filename).absolute()
+        assert lint_path.exists()
 
-    cmakelists_path = lint_path.parent / 'CMakeLists.txt'
-    # If there is no CMakeLists.txt in this directory, just return.
-    if not cmakelists_path.exists():
-        return
+        # Only want to lint pytest files.
+        if not is_probably_pytest_file(lint_path):
+            continue
 
-    check_for_test_entry(lint_path, cmakelists_path)
+        cmakelists_path = lint_path.parent / 'CMakeLists.txt'
+        # If there is no CMakeLists.txt in this directory, just return.
+        if not cmakelists_path.exists():
+            continue
+
+        ret_val = check_for_test_entry(lint_path, cmakelists_path)
+    return ret_val
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

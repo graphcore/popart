@@ -1,6 +1,26 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 ---
 repos:
+    # The following linters are currently disabled
+    # - repo: https://github.com/pre-commit/mirrors-yapf
+    #   rev: v0.27.0
+    #   hooks:
+    #       - id: yapf
+    # - repo: https://github.com/pocc/pre-commit-hooks
+    #   rev: v1.3.5
+    #   hooks:
+    #       # Install with pip3 install clang-format==9.0.0
+    #       - id: clang-format
+    #         args: [
+    #             -i,  # Fix inplace
+    #             --style=file  # Use .clang-tidy
+    #         ]
+    #      - id: clang-tidy
+    #      - id: oclint
+    #      - id: uncrustify
+    #      - id: cppcheck
+    #      - id: cpplint
+    #      - id: include-what-you-use
     - repo: local
       hooks:
           - id: copyright-linter
@@ -21,6 +41,20 @@ repos:
                     .*.md
                 )$
             additional_dependencies:
-                # This was introduced in py3.7 and needs to be added as a dependency
-                # in py3.6
+                # dataclasses was introduced in Python 3.7
+                # For python 3.6 it therefore needs to be added as a dependency
                 - dataclasses
+          - id: popart-test-linter
+            name: PopART test-linter
+            description: |
+              checks that pytest test files have a corresponding
+              `add_popart_py_unit_test` entry in a neighbouring CMakeLists.txt
+              file
+            entry: tests/popart_test_linter/check_test_has_cmake_entry.py
+            language: python
+            files: .*.py
+            exclude: |
+                (?x)^(
+                    docs/user_guide/files/tests/test_examples.py|
+                    tests/linters/.*
+                )$
