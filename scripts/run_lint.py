@@ -6,8 +6,11 @@ from importlib import import_module
 from pathlib import Path
 from typing import List, Tuple
 
-from lint import LinterConfig, load_linter_configs
-from util import get_project_source_dir
+# importing scripts requires adding to sys.path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from scripts.lint.config import LinterConfig, load_linter_configs
+from scripts.util import get_project_source_dir
 
 LinterMessage = namedtuple(typename='LinterMessage',
                            field_names=['linter', 'message'])

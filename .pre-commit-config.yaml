@@ -1,0 +1,26 @@
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+---
+repos:
+    - repo: local
+      hooks:
+          - id: copyright-linter
+            name: Copyright linter
+            description: Ensures that files have the proper copyright line.
+            entry: python3 -m scripts.lint.linters.copyright_linter
+            language: python
+            exclude: |
+                (?x)^(
+                    .*CMakeLists.txt|
+                    build_scripts/.*|
+                    .*Doxyfile.in|
+                    willow/include/popart/vendored/.*|
+                    .arclint|
+                    .arcconfig|
+                    .*.json|
+                    .*.rst|
+                    .*.md
+                )$
+            additional_dependencies:
+                # This was introduced in py3.7 and needs to be added as a dependency
+                # in py3.6
+                - dataclasses

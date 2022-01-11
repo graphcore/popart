@@ -1,18 +1,18 @@
 {
     "linters": {
         "yapf": {
-            "class": "lint.linters.YapfLinter",
+            "class": "scripts.lint.linters.yapf_linter.YapfLinter",
             "version": "0.27.0",
             "include": "(\\.py$)",
             "config_file": ".style.yapf"
         },
         "clang-format": {
-            "class": "lint.linters.ClangFormatLinter",
+            "class": "scripts.lint.linters.clang_format_linter.ClangFormatLinter",
             "version": "9.0.0.d3a647c305759f37f30257352e621579f53d0073",
             "include": "(\\.(c|cpp|C|cc|c\\+\\+|cxx|h|hpp)$)"
         },
         "gc-copyright": {
-            "class": "lint.linters.CopyrightLinter",
+            "class": "scripts.lint.linters.copyright_linter.ArclintCopyrightLinter",
             "version": "0.0.0",
             "exclude": [
                 "(CMakeLists.txt$)",

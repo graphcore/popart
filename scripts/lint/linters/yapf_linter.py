@@ -1,6 +1,8 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+
 from typing import Tuple
-from lint.linters.base_linter import ILinter
-from lint.config import LinterConfig
+from scripts.lint.linters.base_linter import ILinter
+from scripts.lint.config import LinterConfig
 
 
 class YapfLinter(ILinter):

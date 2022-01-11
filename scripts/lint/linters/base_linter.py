@@ -3,7 +3,7 @@ import re
 from abc import ABC, abstractmethod
 from typing import List, Tuple, Union
 
-from lint.config import LinterConfig
+from scripts.lint.config import LinterConfig
 
 __all__ = ["ILinter"]
 

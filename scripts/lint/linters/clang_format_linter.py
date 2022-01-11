@@ -3,9 +3,9 @@ import re
 import shutil
 import subprocess
 
-from lint.config import LinterConfig
-from lint.linters import ILinter
-from util import bash, get_project_source_dir
+from scripts.lint.config import LinterConfig
+from scripts.lint.linters.base_linter import ILinter
+from scripts.util import bash, get_project_source_dir
 
 __all__ = ["ClangFormatLinter"]
 

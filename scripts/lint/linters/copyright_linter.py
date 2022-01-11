@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import re
+import argparse
 from datetime import datetime
 from difflib import SequenceMatcher
 from typing import List
+from typing import Optional
+from typing import Sequence
+from pathlib import Path
 
-from lint.config import LinterConfig
-from lint.linters import ILinter
+from scripts.lint.config import LinterConfig
+from scripts.lint.linters.base_linter import ILinter
 
 __all__ = ["CopyrightLinter"]
 
@@ -15,40 +20,71 @@ GC_COPYRIGHT_NOTICE = f"Copyright (c) {datetime.now().year} Graphcore Ltd. All r
 LINES_CHECKED = 5
 
 COMMENT_DELIMITERS = {
-    r"\.(py|sh|cmake)$": "#",
+    r"\.(py|sh|cmake|yaml|yml)$": "#",
     r"\.(c|cpp|C|cc|c\+\+|cxx|h|hpp|php)$": "//"
 }
 
 
-class CopyrightLinter(ILinter):
-    """"This linter inserts a Graphcore copyright notice into any source file 
-    which does not already contain one, determining the format of the notice
-    from the source file name.
+class CopyrightLinter:
+    """"Linter which inserts a Graphcore copyright if non-existent.
+    
+    The format of the notice is determined from the source file extension.
+
+    The file contents are processed in one of three ways:
+    - The file contains a valid notice already, so it is not modified.
+    - The file contains no string matching a notice exactly or partially,
+      so a new notice is inserted at the top of the file (unless the first 
+      line is a shebang, in which case we insert one immediately after the
+      first line)
+    - The file contains a string which matches a copyright notice partially, 
+      but not exactly. This might happen is the notice contains a typo, or
+      some syntactical differences for example. In order to avoid two notices
+      which are technically different, but appear almost idenitcal to the eye
+      we replace the partially-matching notice with a correct one.
+    In a more rare case, a notice might match exactly, but have in incorrect or
+    outdated year in the notice. Here, we also replace the notice with an
+    updated year.
     """
 
-    def __init__(self, config: LinterConfig):
-        super().__init__(config)
+    def __init__(self):
+        self._linter_message = None
 
-    def apply_lint_function(self, file_path: str, file_contents: str):
-        """Insert a copyright notice into file_contents if not already present.
+    def apply_lint_function(self, file_path: str) -> int:
+        """Lint function to be called by pre-commit.
 
-        The file contents are processed in one of three ways:
-        - The file contains a valid notice already, so it is not modified.
-        - The file contains no string matching a notice exactly or partially,
-          so a new notice is inserted at the top of the file (unless the first 
-          line is a shebang, in which case we insert one immediately after the
-          first line)
-        - The file contains a string which matches a copyright notice partially, 
-          but not exactly. This might happen is the notice contains a typo, or
-          some syntactical differences for example. In order to avoid two notices
-          which are technically different, but appear almost idenitcal to the eye
-          we replace the partially-matching notice with a correct one.
-        In a more rare case, a notice might match exactly, but have in incorrect or
-        outdated year in the notice. Here, we also replace the notice with an
-        updated year.
+        Args:
+            file_path (str): The path to the file to be linted.
+
+        Returns:
+            int: If there is no modification to the source file the function returns 0,
+              else it will rewrite the file and return 1
         """
-        assert file_path is not None, "Copyright linter requires the path to the file."
+        path = Path(file_path)
+        file_contents = Path(file_path).read_text()
+        new_contents = self._determine_linter_message(file_path, file_contents)
 
+        if self._linter_message == None:
+            return 0
+        else:
+            print(f"Fixing ERROR in {file_path}: {self._linter_message}")
+            path.write_text(new_contents)
+            return 1
+
+    def set_linter_message(self, message: str) -> None:
+        """"Set the message describing and/or explaining the changes applied by this linter"""
+        self._linter_message = message
+
+    def _determine_linter_message(self, file_path: str,
+                                  file_contents: str) -> str:
+        """Determine the linter message (if any) and return the (possibly modified) file content.
+
+        Args:
+            file_path (str): The path to the file to be linted.
+            file_contents (str): The content of the file.
+
+        Returns:
+            str: The file contents which has been modified in the case of a missing copyright notice
+        """
         lines = file_contents.splitlines(keepends=True)
         # We only search for the copyright notice in the first
         # n lines in a file
@@ -154,6 +190,22 @@ class CopyrightLinter(ILinter):
                 return i
         return -1
 
+
+class ArclintCopyrightLinter(ILinter, CopyrightLinter):
+    """"The CopyrightLinter made to work with arc lint."""
+
+    def __init__(self, config: LinterConfig):
+        super().__init__(config)
+
+    def apply_lint_function(self, file_path: str, file_contents: str):
+        """Lint function to be called by arc lint.
+        
+        Returns the modified content of the linter.
+        """
+        assert file_path is not None, "Copyright linter requires the path to the file."
+
+        return self._determine_linter_message(file_path, file_contents)
+
     def get_version(self):
         # This linter doesn't really have a version.
         # Increment below if your heart so desires.
@@ -164,3 +216,20 @@ class CopyrightLinter(ILinter):
 
     def install_instructions(self) -> str:
         return "No install required."
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filenames', nargs='*')
+    args = parser.parse_args(argv)
+
+    ret_val = 0
+    for filename in args.filenames:
+        copyright_linter = CopyrightLinter()
+        ret_val = copyright_linter.apply_lint_function(filename)
+
+    return ret_val
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
