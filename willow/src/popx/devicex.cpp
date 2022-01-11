@@ -46,6 +46,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
+#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -1198,9 +1199,14 @@ void Devicex::prepare() {
 
     try {
 
-      auto executable = executable_.getPoplarExecutable();
+      auto executable = lowering().getExecutable();
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
+
+      if (!executable_.isDeserialized() && executable_.shouldSerialize()) {
+        const std::string cachePath = ir().getSessionOptions().cachePath;
+        serializeExecutable(executable_.getCachePath(cachePath));
+      }
 
       logging::devicex::info(
           std::string("\npoplar Engine construction complete. Breakdown of "
@@ -1282,6 +1288,43 @@ std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {
 }
 std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return lowering().getEfficientlyCreatedInputTensors();
+}
+
+void Devicex::serializeExecutable(const std::string &path) {
+  POPART_TRACEPOINT();
+  // If target directory does not exist, create it
+  auto target = boost::filesystem::path(path);
+  if (target.has_parent_path()) {
+    auto targetDir = target.parent_path();
+    if (!boost::filesystem::exists(targetDir)) {
+      logging::devicex::warn("Specified directory not found. "
+                             "Creating {} directory ",
+                             targetDir);
+      if (!boost::filesystem::create_directories(targetDir))
+        throw error("Cannot create cache directory. Aborting.");
+    }
+  }
+  std::string filename = path;
+  if (boost::filesystem::is_directory(target)) {
+    filename = logging::format("{}/executable.popef", filename);
+    logging::devicex::warn(
+        "{} is a directory, saving serialized Executablex to {}",
+        target.string(),
+        filename);
+  } else {
+    logging::devicex::info("Saving serialized Executablex to {}", filename);
+  }
+  std::ofstream out(filename, std::ofstream::binary);
+  if (!out.is_open()) {
+    throw error("Unable to open file '{}'", filename);
+  }
+  serializeExecutable(out);
+}
+
+void Devicex::serializeExecutable(std::ostream &out) {
+  POPART_TRACEPOINT();
+  popx::serialization::serializeEngineExecutable(
+      out, pEngine.get(), &executable_, executable_.ir().getHash());
 }
 
 void Devicex::connectStream(const std::string &streamHandle,

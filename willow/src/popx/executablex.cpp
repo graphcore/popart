@@ -5,7 +5,6 @@
 #include <boost/filesystem.hpp>
 
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 
 #include <popart/error.hpp>
@@ -128,11 +127,9 @@ bool Executablex::containsTensor(const TensorId &id) const {
 }
 
 bool Executablex::shouldSerialize() {
-  auto cachePath    = ir().getSessionOptions().cachePath;
-  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
-  auto type         = lowering().getDeviceInfo()->getType();
-  bool isHwCompatibleDevice =
-      type == DeviceType::Ipu || type == DeviceType::OfflineIpu;
+  auto cachePath            = ir().getSessionOptions().cachePath;
+  auto cacheEnabled         = ir().getSessionOptions().enableEngineCaching;
+  auto isHwCompatibleDevice = lowering().getDeviceInfo()->canCompileOffline();
 
   const bool shouldSerialize = cacheEnabled && !cachePath.empty() &&
                                isHwCompatibleDevice && !deserialized;
@@ -286,60 +283,9 @@ Executablex::getCollectiveBalancedHostRearrangementIds() const {
   return cbrHostRearrangementIds.value();
 }
 
-std::string
-Executablex::getExecutablexCachePath(const std::string &cacheDir) const {
+std::string Executablex::getCachePath(const std::string &cacheDir) const {
   size_t hash = ir().getHash();
-  return logging::format("{}/{}.popart", cacheDir, hash);
-}
-
-void Executablex::serialize(const poplar::Executable &poplarExecutable,
-                            const std::string &path) {
-  // If target directory does not exist, create it
-  auto target = boost::filesystem::path(path);
-  if (target.has_parent_path()) {
-    auto targetDir = target.parent_path();
-    if (!boost::filesystem::exists(targetDir)) {
-      logging::devicex::warn("Specified directory not found. "
-                             "Creating {} directory ",
-                             targetDir);
-      if (!boost::filesystem::create_directories(targetDir))
-        throw error("Cannot create cache directory. Aborting.");
-    }
-  }
-  std::string filename = path;
-  if (boost::filesystem::is_directory(target)) {
-    filename = logging::format("{}/executable.popart", filename);
-    logging::devicex::warn(
-        "{} is a directory, saving serialized Executablex to {}",
-        target.string(),
-        filename);
-  } else {
-    logging::devicex::info("Saving serialized Executablex to {}", filename);
-  }
-  std::ofstream out(filename, std::ofstream::binary);
-  if (!out.is_open()) {
-    throw error("Unable to open file '{}'", filename);
-  }
-  serialize(poplarExecutable, out);
-}
-
-void Executablex::serialize(const poplar::Executable &poplarExecutable,
-                            std::ostream &out) {
-  popx::serialization::serializeExecutable(
-      out, &poplarExecutable, this, ir().getHash());
-}
-
-poplar::Executable Executablex::getPoplarExecutable() {
-  auto exe = lowering().getExecutable();
-
-  if (!deserialized) {
-    if (shouldSerialize()) {
-      const std::string cachePath = ir().getSessionOptions().cachePath;
-      serialize(exe, getExecutablexCachePath(cachePath));
-    }
-  }
-
-  return exe;
+  return logging::format("{}/{}.popef", cacheDir, hash);
 }
 
 } // namespace popx

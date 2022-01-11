@@ -11,6 +11,7 @@
 namespace poplar {
 // Forward declaration.
 class Executable;
+class Engine;
 } // namespace poplar
 
 namespace popart {
@@ -29,13 +30,13 @@ namespace serialization {
 // Forward declaration.
 class ReaderImpl;
 
-// Serialize both the poplar executable, popart executable and the
+// Serialize both the poplar engine's executable, popart executable and the
 // hash to the given ostream.
-// poplarExecutable / executable are optional and can be nullptr
-void serializeExecutable(std::ostream &out,
-                         const poplar::Executable *poplarExecutable,
-                         const popart::popx::Executablex *executable,
-                         size_t hash);
+// poplarEngine / executable are optional and can be nullptr
+void serializeEngineExecutable(std::ostream &out,
+                               const poplar::Engine *poplarEngine,
+                               const popart::popx::Executablex *executable,
+                               size_t hash);
 
 class Reader {
 public:

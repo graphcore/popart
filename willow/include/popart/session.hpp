@@ -73,18 +73,41 @@ public:
    * \param filename Name of the file where the compiled executable and
    *                 associated metadata will be saved.
    */
-  void compileAndExport(std::string filename);
+  void compileAndExport(const std::string &filename);
 
   /**
    * Compiles the graph and exports it to the specified stream.
    *
    * This will create a \c snap::Graph and compile the \c poplar::Executable
    * before exporting the executable and metadata.
-
+   *
    * \param out Stream where the compiled executable and
    *            associated metadata will be written to.
    */
   void compileAndExport(std::ostream &out);
+
+  /**
+   * Save a compiled graph to the specified path.
+   *
+   * \pre prepareDevice() must have been called.
+   *
+   * \param filename Name of the file where the compiled executable and
+   *                 associated metadata will be saved.
+   *
+   * This method automatically creates folders as needed
+   * if filename is located in a folder which doesn't exist.
+   */
+  void saveExecutableToFile(const std::string &filename);
+
+  /**
+   * Save a compiled graph to the specified stream.
+   *
+   * \pre prepareDevice() must have been called.
+   *
+   * \param out Stream where the compiled executable and
+   *            associated metadata will be written to.
+   */
+  void saveExecutableToStream(std::ostream &out);
 
   /**
    * Load the \c poplar::Executable and the PopART metadata from the given
@@ -92,7 +115,7 @@ public:
    *
    * \param filename Name of the file to load the executable from.
    */
-  void loadExecutableFromFile(std::string filename);
+  void loadExecutableFromFile(const std::string &filename);
 
   /**
    * Load the \c poplar::Executable and the PopART metadata from the given
@@ -305,6 +328,11 @@ protected:
    * Throws an error if there is no executable.
    */
   void assertExecutableLoaded() const;
+
+  /**
+   * Throws an error if the device cannot be used for offline compilation.
+   */
+  void assertDeviceCanCompileOffline() const;
 
   /**
    * Initializes the progress logger to zero

@@ -151,7 +151,7 @@ bool Session::tryLoadExecutable() {
   return false;
 }
 
-void Session::loadExecutableFromFile(std::string filename) {
+void Session::loadExecutableFromFile(const std::string &filename) {
   std::ifstream executableFs(filename, std::ifstream::binary);
   if (!executableFs.is_open()) {
     throw error("Could not open file {}", filename);
@@ -269,48 +269,53 @@ void Session::compileAndExport(std::ostream &out) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
-  // TODO(T34668): Ideally we'd just call prepareDevice() here
-  // but we can't keep a copy of the poplar Executable or retrieve
-  // it later so while we're waiting for this to be implemented
-  // in Poplar we need to build the executable here.
-  if (!tryLoadExecutable()) {
-    lowering_->prepareGraph();
-  }
-
-  if (!device_->getDeviceInfo()->canCompileOffline()) {
-    std::ostringstream oss;
-    oss << device_->getDeviceInfo()->getType();
-
-    throw error("Offline compilation is not supported for device type {}",
-                oss.str());
-  }
-
-  auto poplarExecutable = executable_->getPoplarExecutable();
-  executable_->serialize(poplarExecutable, out);
+  assertDeviceCanCompileOffline();
+  prepareDevice(/*loadEngine=*/false);
+  saveExecutableToStream(out);
 }
 
-void Session::compileAndExport(std::string filename) {
+void Session::compileAndExport(const std::string &filename) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::compileAndExport()");
 
-  // TODO(T34668): Ideally we'd just call prepareDevice() here
-  // but we can't keep a copy of the poplar Executable or retrieve
-  // it later so while we're waiting for this to be implemented
-  // in Poplar we need to build the executable here.
-  if (!tryLoadExecutable()) {
-    lowering_->prepareGraph();
-  }
+  // Note: this method doesn't call into compileAndExport(ostream)
+  // because saveExecutableToFile() takes care of creating
+  // filename's parent folders if they don't exist.
 
+  assertDeviceCanCompileOffline();
+  prepareDevice(/*loadEngine=*/false);
+  saveExecutableToFile(filename);
+}
+
+void Session::assertDeviceCanCompileOffline() const {
+  if (!device_) {
+    throw runtime_error("Must call setDevice before {}", __func__);
+  }
   if (!device_->getDeviceInfo()->canCompileOffline()) {
     std::ostringstream oss;
     oss << device_->getDeviceInfo()->getType();
 
-    throw error("Offline compilation is not supported for device type {}",
-                oss.str());
+    throw error("Executables for device type {} cannot be saved", oss.str());
   }
+}
 
-  auto poplarExecutable = executable_->getPoplarExecutable();
-  executable_->serialize(poplarExecutable, filename);
+void Session::saveExecutableToFile(const std::string &filename) {
+  POPART_TRACEPOINT();
+
+  // Note: this method doesn't call into saveExecutableToStream()
+  // because serializeExecutable(filename) takes care of creating
+  // filename's parent folders if they don't exist.
+
+  assertDeviceCanCompileOffline();
+  assertExecutableLoaded();
+  device_->serializeExecutable(filename);
+}
+
+void Session::saveExecutableToStream(std::ostream &out) {
+  POPART_TRACEPOINT();
+  assertDeviceCanCompileOffline();
+  assertExecutableLoaded();
+  device_->serializeExecutable(out);
 }
 
 void Session::prepareDevice(bool loadEngine) {

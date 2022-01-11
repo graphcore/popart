@@ -125,26 +125,9 @@ public:
   const std::map<TensorId, CollectiveBalancedReorderId>
   getCollectiveBalancedHostRearrangementIds() const;
 
-  std::string getExecutablexCachePath(const std::string &cacheDir) const;
+  std::string getCachePath(const std::string &cacheDir) const;
 
   void updateOptimizerTensors();
-
-  // Get the poplar::Executable from the IrLowering. If the executable
-  // was cached on disk then the cached executable will be returned.
-  // If not the graph is compiled and the resulting executable is returned.
-  // If engine caching is enabled then the graph compilation result is
-  // serialized and stored to disk. In this case the `popx::Executablex' is
-  // also serialized and stored to `ir().getSessionOptions().cachePath'.
-  // The logic has been kept this way to
-  poplar::Executable getPoplarExecutable();
-
-  // Serialize the popart executable, poplar executable and IR hash
-  // to the given file
-  void serialize(const poplar::Executable &poplarExecutable,
-                 const std::string &path);
-  // Serialize the popart executable, poplar executable and IR hash
-  // to the given stream
-  void serialize(const poplar::Executable &poplarExecutable, std::ostream &out);
 };
 
 } // namespace popx

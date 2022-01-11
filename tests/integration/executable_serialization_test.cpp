@@ -191,7 +191,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -263,7 +264,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -332,7 +334,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -407,7 +410,8 @@ BOOST_AUTO_TEST_CASE(
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -562,7 +566,8 @@ BOOST_AUTO_TEST_CASE(
   const auto &executable                   = session->getExecutable();
   {
     std::ofstream out(serializedExecutableFilePath);
-    popx::serialization::serializeExecutable(out, nullptr, &executable, 0);
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -705,7 +710,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
 
     session->weightsToHost();
     session->readWeights(weightsRead2);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -959,7 +964,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getExecutable().isDeserialized() == false);
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   // reset output values
@@ -1204,7 +1209,7 @@ BOOST_AUTO_TEST_CASE(
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   std::vector<float> A_readback2(A_info.nelms(), -1.0f);
@@ -1383,7 +1388,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1565,7 +1570,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1746,7 +1751,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1932,7 +1937,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -2119,7 +2124,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     BOOST_CHECK(session->getExecutable().isDeserialized() == false);
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
-    cacheFile = session->getExecutable().getExecutablexCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   // reset output values

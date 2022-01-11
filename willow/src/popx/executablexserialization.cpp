@@ -610,10 +610,10 @@ deserializePopartMetadata(std::istream &in,
 }
 } // namespace
 
-void serializeExecutable(std::ostream &out,
-                         const poplar::Executable *poplarExecutable,
-                         const popart::popx::Executablex *executable,
-                         size_t hash) {
+void serializeEngineExecutable(std::ostream &out,
+                               const poplar::Engine *poplarEngine,
+                               const popart::popx::Executablex *executable,
+                               size_t hash) {
   const std::string programHash = std::to_string(hash);
   popef::Writer popefWriter(out);
 
@@ -624,12 +624,12 @@ void serializeExecutable(std::ostream &out,
     serializePopartExecutable(popefOpaque->stream, *executable);
   }
 
-  // Export Poplar executable
-  if (poplarExecutable) {
+  // Export Poplar engine's executable
+  if (poplarEngine) {
     static constexpr bool compress = false;
     std::shared_ptr<popef::BlobWriter> popefExe =
         popefWriter.createExecutable(programHash, compress);
-    poplarExecutable->serialize(popefExe->stream);
+    poplarEngine->serializeExecutable(popefExe->stream);
   }
 }
 

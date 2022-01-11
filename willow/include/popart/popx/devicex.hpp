@@ -168,6 +168,10 @@ public:
   // call to this Devicex's engine.
   void loadEngineAndConnectStreams();
 
+  // Serialize the Poplar executable stored inside the device's engine.
+  void serializeExecutable(std::ostream &out);
+  void serializeExecutable(const std::string &path);
+
 private:
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
 

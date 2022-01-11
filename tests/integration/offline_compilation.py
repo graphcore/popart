@@ -46,7 +46,8 @@ class TestOfflineCompilation:
         with tempfile.TemporaryDirectory() as tmpdirname:
             with pytest.raises(popart.popart_exception) as e:
                 session.compileAndExport(tmpdirname)
-            assert "Offline compilation is not supported" in str(e.value)
+            assert "Executables for device type ipu-model cannot be saved" in str(
+                e.value)
 
     def test_compileAndExport_offline_ipu_dir(self):
         self._init_session()
