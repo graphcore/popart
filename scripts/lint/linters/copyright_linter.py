@@ -20,8 +20,8 @@ GC_COPYRIGHT_NOTICE = f"Copyright (c) {datetime.now().year} Graphcore Ltd. All r
 LINES_CHECKED = 5
 
 COMMENT_DELIMITERS = {
-    r"\.(py|sh|cmake|yaml|yml)$": "#",
-    r"\.(c|cpp|C|cc|c\+\+|cxx|h|hpp|php)$": "//"
+    r"\.(capnp|cmake|py|sh|txt|yaml|yml)$": "#",
+    r"\.(c|C|cc|cpp|cxx|c\+\+|h|hpp|php)$": "//"
 }
 
 

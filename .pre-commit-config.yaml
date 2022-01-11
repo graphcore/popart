@@ -19,15 +19,21 @@ repos:
             language: python
             exclude: |
                 (?x)^(
-                    .*CMakeLists.txt|
+                    LICENSE|
                     build_scripts/.*|
-                    .*Doxyfile.in|
                     willow/include/popart/vendored/.*|
                     .arclint|
                     .arcconfig|
+                    .buildignore|
+                    .clang-format|
+                    .style.yapf|
+                    .*Doxyfile.in|
+                    .*.drawio|
                     .*.json|
-                    .*.rst|
-                    .*.md
+                    .*.md|
+                    .*.png|
+                    .*.pdf|
+                    .*.rst
                 )$
             additional_dependencies:
                 # dataclasses was introduced in Python 3.7
@@ -48,6 +54,16 @@ repos:
                     tests/linters/.*
                 )$
     # The following linters are currently disabled
+    # -   repo: https://github.com/pre-commit/pre-commit-hooks
+    #     rev: v2.3.0
+    #     hooks:
+    #     -   id: check-yaml
+    #     -   id: check-json
+    #     -   id: check-merge-conflict
+    #     -   id: debug-statements
+    #     -   id: end-of-file-fixer
+    #     -   id: mixed-line-ending
+    #     -   id: trailing-whitespace
     # - repo: https://github.com/pre-commit/mirrors-yapf
     #   rev: v0.27.0
     #   hooks:
@@ -57,6 +73,7 @@ repos:
     #   hooks:
     #       # Install with pip3 install clang-format==9.0.0
     #       - id: clang-format
+    #         exclude: willow/include/popart/vendored/
     #         args: [
     #             -i,  # Fix inplace
     #             --style=file  # Use .clang-tidy
@@ -66,8 +83,8 @@ repos:
     #      - id: uncrustify
     #      - id: cppcheck
     #        exclude: willow/include/popart/vendored/
-    #      - id: cpplint
-    #      - id: include-what-you-use
-    #      - id: uncrustify
+    #        args: [
+    #            --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
+    #        ]
     #      - id: cpplint
     #      - id: include-what-you-use

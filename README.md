@@ -358,20 +358,7 @@ There are a number of advanced PopART applications available in Graphcore's [exa
 
 ### Coding Style
 
-Please run the `./format.sh` script in the base `popart` directory before making a pull request. This uses `clang-format`
-on C++ code and `yapf` on python code. Please use `clang-format` version 9.0.0  and `yapf` version 0.27.0.
 
-**NOTE**: `yapf` can be installed with `pip3`.
-
-### Unit Tests
-
-Please run the unit test suite in the base `popart` directory to ensure that any changes you have made to the source code have not broken existing functionality:
-
-```sh
-source $POPART_INSTALL_DIR/enable.sh 
-cd build
-ctest -j 8
-```
 
 ## Licensing
 
