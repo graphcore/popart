@@ -82,31 +82,7 @@ void runTest(AccumulateOuterFragmentSettings settings,
     std::vector<Op *> ops = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
     checker(ops);
   });
-};
-
-// Group ops that match predicate pred into those that are adjacent.
-OpGroups getAdjacentOps(const std::vector<Op *> &ops,
-                        std::function<bool(Op *)> pred) {
-  OpGroups result;
-  std::vector<Op *> chunk;
-  for (auto op : ops) {
-    if (op->settings.executionContext ==
-        ExecutionContext::AccumulateOuterFragment) {
-      if (pred(op)) {
-        chunk.push_back(op);
-      } else {
-        if (chunk.size() > 0) {
-          result.push_back(chunk);
-          chunk.clear();
-        }
-      }
-    }
-  }
-  if (chunk.size() > 0) {
-    result.push_back(chunk);
-  }
-  return result;
-};
+}
 
 // Group ops that match predicate pred into those that are adjacent.
 std::vector<Op *> filterOps(const std::vector<Op *> &ops,
@@ -121,7 +97,7 @@ std::vector<Op *> filterOps(const std::vector<Op *> &ops,
     }
   }
   return result;
-};
+}
 
 void addMatMul(Builder &builder,
                TensorId &x,
@@ -139,7 +115,7 @@ void addMatMul(Builder &builder,
   // builder.virtualGraph(w, vid);
   x = aiOnnx.matmul({x, w});
   builder.virtualGraph(x, vid);
-};
+}
 
 void checkTensor(Op *op,
                  size_t index,
@@ -156,7 +132,7 @@ void checkTensor(Op *op,
       weightName,
       op->debugName());
   BOOST_CHECK_MESSAGE(tid.find(weightName) != std::string::npos, msg);
-};
+}
 
 void checkMultiExchangeOp(Op *op,
                           std::vector<std::string> loads,
@@ -185,7 +161,7 @@ void checkMultiExchangeOp(Op *op,
   for (auto load : loads) {
     checkTensor(op, outputIndex++, load, false);
   }
-};
+}
 
 } // anonymous namespace
 

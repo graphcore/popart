@@ -44,7 +44,6 @@ std::tuple<LoopOp *, Graph &> createLoopOp(Ir &ir,
   ==> accum = 10
  */
 BOOST_AUTO_TEST_CASE(TestLoopAccumulation) {
-  constexpr int loopTripCount = 10;
   TensorInfo info{DataType::FLOAT, Shape{2, 2}};
   const std::vector<float> accumHost(info.nelms(), 0.0f);
   const std::vector<float> oneHost(info.nelms(), 1.0f);

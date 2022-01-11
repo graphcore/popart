@@ -96,17 +96,15 @@ BOOST_AUTO_TEST_CASE(setfinalstagerecompute_1) {
   auto b0 = addStartTensor(g, settings);
 
   // PreLoss
-  auto a_op1 = g.createConnectedOp<TestOp>(
-      {{0, a0}}, {{0, "a1"}}, true, false, settings);
+  g.createConnectedOp<TestOp>({{0, a0}}, {{0, "a1"}}, true, false, settings);
   auto a_op2 = g.createConnectedOp<TestOp>(
       {{0, "a1"}}, {{0, "a3"}}, true, true, settings);
 
-  auto b_op1 = g.createConnectedOp<TestOp>(
-      {{0, b0}}, {{0, "b1"}}, true, false, settings);
+  g.createConnectedOp<TestOp>({{0, b0}}, {{0, "b1"}}, true, false, settings);
   auto b_op2 = g.createConnectedOp<TestOp>(
       {{0, "b1"}}, {{0, "b3"}}, true, true, settings);
 
-  auto c_op = g.createConnectedOp<TestOp>(
+  g.createConnectedOp<TestOp>(
       {{0, "a3"}, {1, "b3"}}, {{0, "c"}}, true, false, settings);
   // PostLoss
   g.createConnectedOp<TestOp>({{0, "c"}}, {{0, "c1"}}, false, false, settings);
@@ -152,10 +150,8 @@ BOOST_AUTO_TEST_CASE(setfinalstagerecompute_nofrontier) {
   auto t0 = addStartTensor(g, settings);
 
   // PreLoss
-  auto op1 =
-      g.createConnectedOp<TestOp>({{0, t0}}, {{0, "t1"}}, true, true, settings);
-  auto op2 = g.createConnectedOp<TestOp>(
-      {{0, "t1"}}, {{0, "t2"}}, true, true, settings);
+  g.createConnectedOp<TestOp>({{0, t0}}, {{0, "t1"}}, true, true, settings);
+  g.createConnectedOp<TestOp>({{0, "t1"}}, {{0, "t2"}}, true, true, settings);
   // PostLoss
   g.createConnectedOp<TestOp>({{0, "t2"}}, {{0, "t3"}}, false, false, settings);
 

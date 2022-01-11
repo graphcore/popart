@@ -48,9 +48,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     int64_t batchSize = 11;
     // the number of weight update steps is batchesPerStep,
     int64_t batchesPerStep = (tt != TestType::SingleBatchSimulator ? 13 : 1);
-    // samples in a step (samples processed with each SingleBatchSimulator to
-    // run(...))
-    int64_t samplesPerStep = batchesPerStep * batchSize;
     // an input data sample will be a rank-1 tensor of size,
     int64_t seqLen = 7;
     std::vector<int64_t> sampleShape{seqLen};
@@ -210,7 +207,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     session->weightsFromHost();
 
     int nSteps    = 5;
-    auto nUpdates = samplesPerStep * nSteps;
     for (int i = 0; i < nSteps; ++i) {
       std::cout << "Iteration (call to run(...)) # " << i << std::endl;
 

@@ -70,4 +70,4 @@ BOOST_AUTO_TEST_CASE(TestDropoutCanBeReplacedByIdentity) {
   test(0.4f, false, false);
   // With output mask we can't replace with identity (rate 0.4f).
   test(0.4f, true, false);
-};
+}

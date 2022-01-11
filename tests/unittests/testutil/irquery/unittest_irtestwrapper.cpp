@@ -45,7 +45,7 @@ public:
 BOOST_AUTO_TEST_CASE(irtestwrapper_hasGraph) {
 
   Ir ir;
-  Graph &graph = ir.createGraph(GraphId{"B"});
+  ir.createGraph(GraphId{"B"});
   TestIrTestWrapper tw{ir};
 
   // First, test all Require::Nothing cases. These should never result in

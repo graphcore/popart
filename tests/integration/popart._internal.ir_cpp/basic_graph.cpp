@@ -60,14 +60,13 @@ BOOST_AUTO_TEST_CASE(TestBasicGraph) {
   TensorId xInit = ir->createIntermediateTensorId(x);
   TensorId xLoad = ir->createIntermediateTensorId(xInit);
 
-  auto initXOp =
-      graph.createConnectedOp<InitOp>({},
-                                      {{InitOp::getOutIndex(), xInit}},
-                                      Onnx::CustomOperators::Init_1,
-                                      tInfo,
-                                      TensorType::ActGrad,
-                                      InitType::Zero,
-                                      Op::Settings{graph, "xInit"});
+  graph.createConnectedOp<InitOp>({},
+                                  {{InitOp::getOutIndex(), xInit}},
+                                  Onnx::CustomOperators::Init_1,
+                                  tInfo,
+                                  TensorType::ActGrad,
+                                  InitType::Zero,
+                                  Op::Settings{graph, "xInit"});
 
   auto hostLoadXOp = graph.createConnectedOp<HostLoadOp>(
       {{HostLoadOp::getLocalTensorInIndex(), xInit}},

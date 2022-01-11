@@ -77,7 +77,7 @@ void test(const std::vector<blip::Type> &types,
   }
   popart::logging::debug(ss2.str());
   BOOST_CHECK(matches == expected_matches_after);
-};
+}
 } // namespace
 
 BOOST_AUTO_TEST_CASE(PruneMatches) {

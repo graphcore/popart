@@ -29,7 +29,6 @@ using namespace std;
 BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   int N         = 4;
   int size      = 4;
-  bool training = false;
 
   auto builder     = Builder::create();
   auto aiOnnx      = builder->aiOnnxOpset9();

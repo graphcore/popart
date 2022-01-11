@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
       // Ensure it actually is a power of 2
       int exp;
-      assert(frexp(vInData[i], &exp) == 0.5F);
+      BOOST_CHECK(frexp(vInData[i], &exp) == 0.5F);
 
       vInData[i] += perturbFactor * fdisInit(eng);
     }

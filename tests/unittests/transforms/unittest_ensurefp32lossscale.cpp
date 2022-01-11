@@ -196,11 +196,10 @@ auto matmul = [](Graph &g,
 
   // Connect the matmul's output only so that it has a consumer, so that we
   // can test that it is downcast as expected.
-  auto identityOp = g.createConnectedOp<IdentityOp>(
-      {{IdentityOp::getInIndex(), "gradOut"}},
-      {{IdentityOp::getOutIndex(), "gradOut_copy"}},
-      Onnx::Operators::Identity_1,
-      Op::Settings{g, ""});
+  g.createConnectedOp<IdentityOp>({{IdentityOp::getInIndex(), "gradOut"}},
+                                  {{IdentityOp::getOutIndex(), "gradOut_copy"}},
+                                  Onnx::Operators::Identity_1,
+                                  Op::Settings{g, ""});
 
   FromLossScaleTraversalOps ops{{reshapeOp, resizeOp}, {matmulOp}};
   return ops;

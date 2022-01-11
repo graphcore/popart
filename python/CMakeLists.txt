@@ -1,6 +1,3 @@
-# for more useful warnings
-include(EnableCompilerWarnings)
-
 # This is needed to stop warnings about adding dependencies to popart-py in
 # other directories when add_popart_python_module is called.
 cmake_policy(SET CMP0079 NEW)

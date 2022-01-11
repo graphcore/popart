@@ -328,19 +328,17 @@ BOOST_AUTO_TEST_CASE(TestSerialise) {
     const auto subT = subGraph.addInput(tInfo);
     const auto subU = addScope(subGraph, "u");
 
-    auto idOp = subGraph.createConnectedOp<IdentityOp>(
-        {{IdentityOp::getInIndex(), subT}},
-        {{IdentityOp::getOutIndex(), subU}},
-        Onnx::Operators::Identity_1,
-        Op::Settings{subGraph, "id"});
+    subGraph.createConnectedOp<IdentityOp>({{IdentityOp::getInIndex(), subT}},
+                                           {{IdentityOp::getOutIndex(), subU}},
+                                           Onnx::Operators::Identity_1,
+                                           Op::Settings{subGraph, "id"});
     subGraph.markAsOutput(subU);
 
-    auto callOp =
-        mainGraph.createConnectedOp<CallOp>({{0, t}},
-                                            {{0, u}},
-                                            Onnx::CustomOperators::Call_1,
-                                            subGraph,
-                                            Op::Settings{mainGraph, "call"});
+    mainGraph.createConnectedOp<CallOp>({{0, t}},
+                                        {{0, u}},
+                                        Onnx::CustomOperators::Call_1,
+                                        subGraph,
+                                        Op::Settings{mainGraph, "call"});
     mainGraph.markAsOutput(u);
   };
   test(initIrDirect, irDirectSubgraphId);

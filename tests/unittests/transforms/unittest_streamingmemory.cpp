@@ -313,6 +313,10 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
       BOOST_REQUIRE_EQUAL(matches.size(), 2);
       break;
     };
+    default: {
+      throw error("Optimizer not supported by test");
+      break;
+    };
     }
   }
 }
@@ -636,6 +640,10 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
       // Expect two instances of the remote exchange / collectives / optimizer
       // pattern (one per weight tensor)
       BOOST_REQUIRE_EQUAL(matches.size(), 2);
+      break;
+    };
+    default: {
+      throw error("Optimizer not supported by test");
       break;
     };
     }

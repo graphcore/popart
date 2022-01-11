@@ -18,8 +18,6 @@ BOOST_AUTO_TEST_CASE(remove_all) {
 
   BOOST_REQUIRE(ir.getAllGraphs().size() == 1);
 
-  auto &g = ir.getMainGraph();
-
   ir.createGraph(GraphId("foo"));
   ir.createGraph(GraphId("bar"));
 

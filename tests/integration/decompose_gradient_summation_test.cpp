@@ -23,17 +23,29 @@
 using namespace popart;
 
 namespace {
-// Call with `ShouldLog` = true to get `logging::debug` messages that log
+
+// Call with `verbose` = true to get `logging::debug` messages that log
 // the schedule.
-template <bool ShouldLog>
-void debugLogSchedule(const std::vector<Op *> &schedule,
-                      const std::string &testName);
-template <>
-void debugLogSchedule<false>(const std::vector<Op *> &schedule,
-                             const std::string &testName);
-template <>
-void debugLogSchedule<true>(const std::vector<Op *> &schedule,
-                            const std::string &testName);
+void debugLogSchedule(bool verbose,
+                      const std::vector<Op *> &schedule,
+                      const std::string &testName) {
+  if (verbose) {
+    const auto oldLevel = logging::getLogLevel(logging::Module::popart);
+    logging::setLogLevel(logging::Module::popart, logging::Level::Debug);
+
+    std::ostringstream log;
+
+    log << "Op schedule for: " << testName << std::endl;
+
+    for (Op *p : schedule) {
+      log << "-> " << p->getName() << ": (" << p->id << ")" << std::endl
+          << "      " << p->debugName() << std::endl;
+    }
+    logging::debug(log.str());
+
+    logging::setLogLevel(logging::Module::popart, oldLevel);
+  }
+}
 
 using OpPredicate = bool (*)(const Op *);
 
@@ -100,8 +112,9 @@ BOOST_AUTO_TEST_CASE(TestWeightSharingWhereWeightsMuchLargerThanActivations) {
     std::vector<Op *> schedule =
         ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-    debugLogSchedule<false>(
-        schedule, "TestWeightSharingWhereWeightsMuchLargerThanActivations");
+    debugLogSchedule(false,
+                     schedule,
+                     "TestWeightSharingWhereWeightsMuchLargerThanActivations");
 
     const auto isGradAdd = [](const Op *op) {
       return op->isConvertibleTo<AddLhsInplaceOp>() ||
@@ -162,9 +175,10 @@ BOOST_AUTO_TEST_CASE(
     std::vector<Op *> schedule =
         ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-    debugLogSchedule<false>(schedule,
-                            "TestWeightSharingWithSkipConnectionsWhereWeightsMu"
-                            "chSmallerThanActivations");
+    debugLogSchedule(false,
+                     schedule,
+                     "TestWeightSharingWithSkipConnectionsWhereWeightsMu"
+                     "chSmallerThanActivations");
 
     // This will match only the adds from the grad sum decomposition of the
     // weight gradient, not from the skip connections.
@@ -235,7 +249,6 @@ BOOST_AUTO_TEST_CASE(
 BOOST_AUTO_TEST_CASE(TestNestedSums) {
   TestRunner runner;
   runner.isTraining = true;
-  int size          = 32;
 
   TensorInfo tInfo{"FLOAT", std::vector<int64_t>{10, 10}};
   std::vector<float> wData(tInfo.nelms(), 0);
@@ -279,37 +292,11 @@ BOOST_AUTO_TEST_CASE(TestNestedSums) {
     std::vector<Op *> schedule =
         ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
-    debugLogSchedule<false>(schedule, "TestNestedSums");
+    debugLogSchedule(false, schedule, "TestNestedSums");
   });
 }
 
 namespace {
-
-template <>
-void debugLogSchedule<false>(const std::vector<Op *> &schedule,
-                             const std::string &testName) {
-  (void)schedule;
-  (void)testName;
-}
-
-template <>
-void debugLogSchedule<true>(const std::vector<Op *> &schedule,
-                            const std::string &testName) {
-  const auto oldLevel = logging::getLogLevel(logging::Module::popart);
-  logging::setLogLevel(logging::Module::popart, logging::Level::Debug);
-
-  std::ostringstream log;
-
-  log << "Op schedule for: " << testName << std::endl;
-
-  for (Op *p : schedule) {
-    log << "-> " << p->getName() << ": (" << p->id << ")" << std::endl
-        << "      " << p->debugName() << std::endl;
-  }
-  logging::debug(log.str());
-
-  logging::setLogLevel(logging::Module::popart, oldLevel);
-}
 
 // Performs certain assertions on the schedule using BOOST_CHECK. These are
 // as follows:

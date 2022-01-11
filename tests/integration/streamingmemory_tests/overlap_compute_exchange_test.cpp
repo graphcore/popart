@@ -137,9 +137,7 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
       {B_id, B_wrapper},
   };
 
-  double ipu_0_serial_cycles;
   double ipu_1_serial_cycles;
-  double ipu_0_parallel_cycles;
   double ipu_1_parallel_cycles;
 
   for (auto syncPattern : {SyncPattern::Full, SyncPattern::ReplicaAndLadder}) {
@@ -174,10 +172,8 @@ BOOST_AUTO_TEST_CASE(OverlapComputeExchangeTest_0) {
                      session->getCycleCount("inner_ipu_1"));
 
       if (syncPattern == SyncPattern::Full) {
-        ipu_0_serial_cycles = session->getCycleCount("inner_ipu_0");
         ipu_1_serial_cycles = session->getCycleCount("inner_ipu_1");
       } else {
-        ipu_0_parallel_cycles = session->getCycleCount("inner_ipu_0");
         ipu_1_parallel_cycles = session->getCycleCount("inner_ipu_1");
       }
     }

@@ -784,25 +784,25 @@ BOOST_AUTO_TEST_CASE(ReplicatedScatterAndReduceCommGroupTest) {
       // Check operations have correct attributes set
       const popart::ReplicatedReduceScatterOp *reduceScatter =
           findFirstOp<popart::ReplicatedReduceScatterOp>(session);
-      BOOST_ASSERT(reduceScatter->getGCLCommGroup().type ==
-                   popart::CommGroupType::Consecutive);
-      BOOST_ASSERT(reduceScatter->getGCLCommGroup().replicaGroupSize ==
-                   groupSize);
+      BOOST_CHECK(reduceScatter->getGCLCommGroup().type ==
+                  popart::CommGroupType::Consecutive);
+      BOOST_CHECK(reduceScatter->getGCLCommGroup().replicaGroupSize ==
+                  groupSize);
 
       if (useInplace) {
         const popart::ReplicatedAllReduceInplaceOp *allReduce =
             findFirstOp<popart::ReplicatedAllReduceInplaceOp>(session);
-        BOOST_ASSERT(allReduce->getGCLCommGroup().type ==
-                     popart::CommGroupType::Orthogonal);
-        BOOST_ASSERT(allReduce->getGCLCommGroup().replicaGroupSize ==
-                     replicationFactor / groupSize);
+        BOOST_CHECK(allReduce->getGCLCommGroup().type ==
+                    popart::CommGroupType::Orthogonal);
+        BOOST_CHECK(allReduce->getGCLCommGroup().replicaGroupSize ==
+                    replicationFactor / groupSize);
       } else {
         const popart::ReplicatedAllReduceOp *allReduce =
             findFirstOp<popart::ReplicatedAllReduceOp>(session);
-        BOOST_ASSERT(allReduce->getGCLCommGroup().type ==
-                     popart::CommGroupType::Orthogonal);
-        BOOST_ASSERT(allReduce->getGCLCommGroup().replicaGroupSize ==
-                     replicationFactor / groupSize);
+        BOOST_CHECK(allReduce->getGCLCommGroup().type ==
+                    popart::CommGroupType::Orthogonal);
+        BOOST_CHECK(allReduce->getGCLCommGroup().replicaGroupSize ==
+                    replicationFactor / groupSize);
       }
 
       // Prefix sum of all replicas indices * replica index offsets

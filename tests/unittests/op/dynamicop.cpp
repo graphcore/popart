@@ -34,38 +34,35 @@ BOOST_AUTO_TEST_CASE(DynamicUpdateInplace_test) {
   TensorInfo tInfoB(DataType::FLOAT, Shape{1, 2, 2});
   TensorInfo tInfoC(DataType::INT32, Shape{});
 
-  const auto initOpA =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "A"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoA,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_A"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "A"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoA,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_A"));
 
-  const auto initOpB =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "B"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoB,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_B"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "B"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoB,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_B"));
 
-  const auto initOpC =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "C_init"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoC,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_C"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "C_init"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoC,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_C"));
 
   TensorId streamC = "C";
   g.getTensors().addActGrad(streamC);
   g.getTensors().get(streamC)->info = tInfoC;
 
-  auto hostLoadOp = g.createConnectedOp<HostLoadOp>(
+  g.createConnectedOp<HostLoadOp>(
       {{HostLoadOp::getLocalTensorInIndex(), "C_init"}},
       {{HostLoadOp::getLocalTensorOutIndex(), "C"}},
       Onnx::CustomOperators::HostLoad,
@@ -73,7 +70,7 @@ BOOST_AUTO_TEST_CASE(DynamicUpdateInplace_test) {
       streamC);
 
   // Use any VarUpdateOp
-  const auto op = g.createConnectedOp<DynamicUpdateOp>(
+  g.createConnectedOp<DynamicUpdateOp>(
       {{DynamicUpdateOp::getInIndex(), "B"},
        {DynamicUpdateOp::getIndexInIndex(), "C"},
        {DynamicUpdateOp::getUpdateInIndex(), "A"}},
@@ -105,38 +102,35 @@ BOOST_AUTO_TEST_CASE(DynamicSliceInplace_test) {
   TensorInfo tInfoB(DataType::FLOAT, Shape{1, 2, 2});
   TensorInfo tInfoC(DataType::INT32, Shape{});
 
-  const auto initOpA =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "A"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoA,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_A"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "A"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoA,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_A"));
 
-  const auto initOpB =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "B"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoB,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_B"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "B"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoB,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_B"));
 
-  const auto initOpC =
-      g.createConnectedOp<InitOp>({},
-                                  {{InitOp::getOutIndex(), "C_init"}},
-                                  Onnx::CustomOperators::Init_1,
-                                  tInfoC,
-                                  TensorType::ActGrad,
-                                  InitType::Zero,
-                                  opSettings.copy("Init_C"));
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), "C_init"}},
+                              Onnx::CustomOperators::Init_1,
+                              tInfoC,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              opSettings.copy("Init_C"));
 
   TensorId streamC = "C";
   g.getTensors().addActGrad(streamC);
   g.getTensors().get(streamC)->info = tInfoC;
 
-  auto hostLoadOp = g.createConnectedOp<HostLoadOp>(
+  g.createConnectedOp<HostLoadOp>(
       {{HostLoadOp::getLocalTensorInIndex(), "C_init"}},
       {{HostLoadOp::getLocalTensorOutIndex(), "C"}},
       Onnx::CustomOperators::HostLoad,
@@ -144,7 +138,7 @@ BOOST_AUTO_TEST_CASE(DynamicSliceInplace_test) {
       streamC);
 
   // Use any VarUpdateOp
-  const auto op = g.createConnectedOp<DynamicSliceOp>(
+  g.createConnectedOp<DynamicSliceOp>(
       {{DynamicSliceOp::getInIndex(), "A"},
        {DynamicSliceOp::getIndexInIndex(), "C"},
        {DynamicSliceOp::getSliceInIndex(), "B"}},

@@ -132,8 +132,6 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD1) {
                                           : 24; // 24 bytes = 7 floats
     opts.looseThresholdAtPeak = 10000;
 
-    float learningRate = 0.1;
-
     // Use a relatively complex SGD optimizer.
     auto optimizer = SGD({{"defaultDampening", {0.05f, true}},
                           {"defaultLearningRate", {1.0f, false}},

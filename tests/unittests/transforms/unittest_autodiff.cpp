@@ -230,15 +230,6 @@ public:
 };
 
 /**
- * Helper function to print the IR.
- */
-void printIr(Ir &ir) {
-  std::stringstream ss;
-  ir.append(ss);
-  std::cout << ss.str() << std::endl;
-}
-
-/**
  * Receive a mapping from indices to expected connections and output a list
  * of expected connections.
  **/
@@ -274,15 +265,6 @@ sortExpectedConnections(const std::map<int, ExpectedConnection> &map) {
 }
 
 /**
- * Helper function that gets the unique index of an input.
- */
-InIndex getUniqInIndex(Op *op, const TensorId &id) {
-  const auto &indices = op->input->indices(op->getGraph().getTensors().get(id));
-  BOOST_REQUIRE(indices.size() == 1);
-  return indices.at(0);
-};
-
-/**
  * Add the following to an IR:
  *
  * .--[main graph]-----.
@@ -309,8 +291,7 @@ void addTestIr1(Ir &ir) {
 
   // Add SimpleTestOp. Connect "t0" to SimpleTestOp's input, create the "t1"
   // output and call setup().
-  auto simpleTestOp = mainGraph.createConnectedOp<SimpleTestOp>(
-      {{0, "t0"}}, {{0, "t1"}}, settings);
+  mainGraph.createConnectedOp<SimpleTestOp>({{0, "t0"}}, {{0, "t1"}}, settings);
 }
 
 /**
@@ -361,11 +342,11 @@ void addTestIr2(Ir &ir) {
 
   // Add SimpleTestOp0.
   Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "SimpleTestOp"};
-  auto simpleTestOp0             = subgraphA.createConnectedOp<SimpleTestOp>(
+  subgraphA.createConnectedOp<SimpleTestOp>(
       {{0, a_in}}, {{0, a_tmp}}, settingsSubgraphA);
 
   // Add SimpleTestOp1.
-  auto simpleTestOp1 = subgraphA.createConnectedOp<SimpleTestOp>(
+  subgraphA.createConnectedOp<SimpleTestOp>(
       {{0, a_tmp}}, {{0, a_out}}, settingsSubgraphA);
 
   // Mark "a_out" as a graph output.
@@ -377,7 +358,7 @@ void addTestIr2(Ir &ir) {
   mainGraph.getTensors().addVarInit(
       "main_in", tInfo, static_cast<void *>(&tData));
 
-  auto callOp = mainGraph.createConnectedOp<CallOp>(
+  mainGraph.createConnectedOp<CallOp>(
       {{0, "main_in"}},
       {{0, "main_out"}},
       Onnx::AiGraphcore::OpSet1::Call,
@@ -408,10 +389,8 @@ void addTestIr2(Ir &ir) {
 void addTestIr3(Ir &ir) {
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  int32_t tData[] = {5};
 
   // Create the subgraph.
-  auto &mainGraph = ir.getMainGraph();
   auto &subgraphA = ir.createGraph(GraphId("A"));
 
   // Create subgraph A.
@@ -423,7 +402,7 @@ void addTestIr3(Ir &ir) {
 
   // Add AdvTest1Op.
   Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "AdvTest1Op"};
-  auto advTest1Op0               = subgraphA.createConnectedOp<AdvTest1Op>(
+  subgraphA.createConnectedOp<AdvTest1Op>(
       {{0, a_in0}, {1, a_in1}}, {{0, a_out0}}, settingsSubgraphA);
 
   // Mark "a_out" as a graph output.
@@ -478,11 +457,11 @@ void addTestIr4(Ir &ir) {
 
   // Add SimpleTestOp0.
   Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "AdvTest2Op"};
-  auto simpleTestOp0             = subgraphA.createConnectedOp<AdvTest2Op>(
+  subgraphA.createConnectedOp<AdvTest2Op>(
       {{0, in}}, {{0, tmp}}, settingsSubgraphA);
 
   // Add SimpleTestOp1.
-  auto simpleTestOp1 = subgraphA.createConnectedOp<AdvTest2Op>(
+  subgraphA.createConnectedOp<AdvTest2Op>(
       {{0, tmp}}, {{0, out}}, settingsSubgraphA);
 
   // Mark "a_out" as a graph output.
@@ -494,7 +473,7 @@ void addTestIr4(Ir &ir) {
   mainGraph.getTensors().addVarInit(
       "main_in", tInfo, static_cast<void *>(&tData));
 
-  auto callOp = mainGraph.createConnectedOp<CallOp>(
+  mainGraph.createConnectedOp<CallOp>(
       {{0, "main_in"}},
       {{0, "main_out"}},
       Onnx::AiGraphcore::OpSet1::Call,
@@ -557,11 +536,10 @@ void addTestIr5(Ir &ir) {
 
     // Add SimpleTestOp0.
     Op::Settings branchSettings = Op::Settings{branch, ""};
-    auto simpleTestOp0          = branch.createConnectedOp<AdvTest2Op>(
-        {{0, in}}, {{0, tmp}}, branchSettings);
+    branch.createConnectedOp<AdvTest2Op>({{0, in}}, {{0, tmp}}, branchSettings);
 
     // Add SimpleTestOp1.
-    auto simpleTestOp1 = branch.createConnectedOp<AdvTest2Op>(
+    branch.createConnectedOp<AdvTest2Op>(
         {{0, tmp}}, {{0, out}}, branchSettings);
 
     // Mark "a_out" as a graph output.
@@ -581,13 +559,12 @@ void addTestIr5(Ir &ir) {
   mainGraph.getTensors().addConstInit(
       "main_const", tInfo, static_cast<void *>(&tDataEight));
 
-  auto condOp = mainGraph.createConnectedOp<GreaterOp>(
-      {{0, "main_in"}, {1, "main_const"}},
-      {{0, "main_cond"}},
-      Onnx::Operators::Greater_1,
-      mainGraphSettings);
+  mainGraph.createConnectedOp<GreaterOp>({{0, "main_in"}, {1, "main_const"}},
+                                         {{0, "main_cond"}},
+                                         Onnx::Operators::Greater_1,
+                                         mainGraphSettings);
 
-  auto ifOp = mainGraph.createConnectedOp<IfOp>(
+  mainGraph.createConnectedOp<IfOp>(
       {{0, "main_cond"}, {1, "main_in"}},
       {{0, "main_out"}},
       Onnx::Operators::If_1,
@@ -1008,7 +985,7 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
   // _k/getGradId("a_tmp").
   auto tw_gradSumOp1 = tw_bwdGraph->ops().hasOp<SumOp>(
       [&](auto &tw_op) -> bool {
-        Op *op = tw_op.unwrap();
+        tw_op.unwrap();
         return (tw_op.inputs().hasExactIds({_g0})) &&
                (tw_op.outputs().hasIdAtIndex(0, _k_a_tmp_grad));
       },

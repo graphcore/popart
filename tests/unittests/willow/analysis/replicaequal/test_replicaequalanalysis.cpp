@@ -102,12 +102,6 @@ BOOST_AUTO_TEST_CASE(ReplicaEqualsAnalysis_hostLoad) {
     ReplicaEqualAnalysis analysis{ir};
     analysis.apply();
 
-    auto getResult = [&](const TensorId &t) -> IsReplicaEqual {
-      auto tensor = ir.getTensor(t);
-      return analysis.isOpOutputEqual(tensor->getProducer(),
-                                      tensor->getProducer()->outIndex(tensor));
-    };
-
     simpleRequireValue(ir, analysis, "x", true);
     simpleRequireValue(ir, analysis, "x__t0", true);
     simpleRequireValue(ir, analysis, "x__t0__t1", true);

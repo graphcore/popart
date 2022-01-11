@@ -51,7 +51,6 @@ BOOST_AUTO_TEST_CASE(unittest_add_and_remove_scopes) {
   popart::TensorId tId = "g1/g2/g3/name";
 
   popart::Ir ir;
-  auto &mainG = ir.getMainGraph();
   auto &g1    = ir.createGraph({"g1"});
   auto &g2    = ir.createGraph({"g2"});
   auto &g3    = ir.createGraph({"g3"});

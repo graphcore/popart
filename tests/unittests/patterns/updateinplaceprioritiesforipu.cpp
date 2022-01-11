@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(TestDoesNothingToNonAddOp) {
   g.getTensors().addConstInit(b, ti, someData.data(), "b");
   g.getTensors().addVarInit(d, ti, someData.data(), "d");
 
-  auto matmul = g.createConnectedOp<MatMulOp>(
+  g.createConnectedOp<MatMulOp>(
       {{MatMulOp::getLhsInIndex(), a}, {MatMulOp::getRhsInIndex(), b}},
       {{MatMulOp::getOutIndex(), c}},
       Onnx::Operators::MatMul_9,
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(TestIncreasesPriorityOfEveryBranchWithConvOrMatMul) {
   g.getTensors().addConstInit(d, convDataInInfo, convData.data(), "d");
   g.getTensors().addVarInit(e, convWeightsInInfo, convData.data(), "e");
 
-  auto conv = g.createConnectedOp<ConvOp>(
+  g.createConnectedOp<ConvOp>(
       {{ConvOp::getDataInIndex(), d}, {ConvOp::getWeightsInIndex(), e}},
       {{ConvOp::getOutIndex(), f}},
       Onnx::Operators::Conv_11,
@@ -167,11 +167,10 @@ BOOST_AUTO_TEST_CASE(TestIncreasesPriorityOfEveryBranchWithConvOrMatMul) {
       AutoPad::VALID,
       MultiConvOptions{{}, {}});
 
-  auto identity =
-      g.createConnectedOp<IdentityOp>({{IdentityOp::getInIndex(), f}},
-                                      {{IdentityOp::getOutIndex(), i}},
-                                      Onnx::Operators::Identity_1,
-                                      Op::Settings{g, "Identity"});
+  g.createConnectedOp<IdentityOp>({{IdentityOp::getInIndex(), f}},
+                                  {{IdentityOp::getOutIndex(), i}},
+                                  Onnx::Operators::Identity_1,
+                                  Op::Settings{g, "Identity"});
 
   // Say conv out shape is S. We create tensors a and b with shapes (S, 1) and
   // (1,), then matmul to get back a tensor of shape S.
@@ -187,7 +186,7 @@ BOOST_AUTO_TEST_CASE(TestIncreasesPriorityOfEveryBranchWithConvOrMatMul) {
   g.getTensors().addConstInit(a, matMulLhsInfo, someData.data(), "a");
   g.getTensors().addConstInit(b, matMulRhsInfo, someData.data(), "b");
 
-  auto matmul = g.createConnectedOp<MatMulOp>(
+  g.createConnectedOp<MatMulOp>(
       {{MatMulOp::getLhsInIndex(), a}, {MatMulOp::getRhsInIndex(), b}},
       {{MatMulOp::getOutIndex(), c}},
       Onnx::Operators::MatMul_9,
@@ -215,7 +214,7 @@ BOOST_AUTO_TEST_CASE(TestIncreasesPriorityOfEveryBranchWithConvOrMatMul) {
   const TensorId groupNormMean      = "gnMean";
   const TensorId groupNormInvStdDev = "gnInvStdDev";
 
-  auto groupnorm = g.createConnectedOp<GroupNormOp>(
+  g.createConnectedOp<GroupNormOp>(
       {{GroupNormOp::getXInIndex(), c},
        {GroupNormOp::getScaleInIndex(), groupNormScale},
        {GroupNormOp::getBInIndex(), groupNormBias}},
@@ -231,18 +230,18 @@ BOOST_AUTO_TEST_CASE(TestIncreasesPriorityOfEveryBranchWithConvOrMatMul) {
   auto newShape = g.getTensors().get(k)->info.shape();
   newShape.insert(newShape.begin(), 1);
 
-  auto reshape = g.createConnectedOp<ReshapeOp>({{ReshapeOp::getInIndex(), k}},
-                                                {{ReshapeOp::getOutIndex(), l}},
-                                                Onnx::Operators::Reshape_5,
-                                                newShape,
-                                                Op::Settings{g, "Reshape"});
+  g.createConnectedOp<ReshapeOp>({{ReshapeOp::getInIndex(), k}},
+                                 {{ReshapeOp::getOutIndex(), l}},
+                                 Onnx::Operators::Reshape_5,
+                                 newShape,
+                                 Op::Settings{g, "Reshape"});
 
   constexpr float dropRatio = 0.2f;
-  auto dropout = g.createConnectedOp<DropoutOp>({{DropoutOp::getInIndex(), l}},
-                                                {{DropoutOp::getOutIndex(), m}},
-                                                Onnx::Operators::Dropout_10,
-                                                dropRatio,
-                                                Op::Settings{g, "Dropout"});
+  g.createConnectedOp<DropoutOp>({{DropoutOp::getInIndex(), l}},
+                                 {{DropoutOp::getOutIndex(), m}},
+                                 Onnx::Operators::Dropout_10,
+                                 dropRatio,
+                                 Op::Settings{g, "Dropout"});
 
   // Add output of MatMul branch with output of Conv branch.
   auto add = g.createConnectedOp<AddOp>(

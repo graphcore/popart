@@ -176,7 +176,6 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness2Test) {
   auto scaleOps = ir.opsOfType(Onnx::CustomOperators::Scale_1);
   for (auto op : scaleOps) {
     auto scOp                       = dynamic_cast<ScaleOp *>(op);
-    int scaleAsInt                  = static_cast<int>(scOp->getScaleFactor());
     scOp->settings.schedulePriority = 3.0 - scOp->getScaleFactor();
   }
 

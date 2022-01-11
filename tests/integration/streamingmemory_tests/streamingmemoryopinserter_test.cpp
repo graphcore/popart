@@ -105,11 +105,11 @@ BOOST_AUTO_TEST_CASE(StreamingMemoryOpInserter_determineTensorLocation) {
 
     auto opt0Loc =
         inserter.determineTensorLocation(graph.getTensors().get(opt0));
-    BOOST_CHECK(TensorStorage::OnChip == act0Loc.storage);
-    BOOST_CHECK(TileSet::Compute == act0Loc.loadTileSet);
-    BOOST_CHECK(TileSet::Compute == act0Loc.storageTileSet);
+    BOOST_CHECK(TensorStorage::OnChip == opt0Loc.storage);
+    BOOST_CHECK(TileSet::Compute == opt0Loc.loadTileSet);
+    BOOST_CHECK(TileSet::Compute == opt0Loc.storageTileSet);
     BOOST_CHECK(ReplicatedTensorSharding::Off ==
-                act0Loc.replicatedTensorSharding);
+                opt0Loc.replicatedTensorSharding);
   }
 
   // Check that settings to activationTensorLocationSettings are acted upon.

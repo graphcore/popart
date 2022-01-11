@@ -56,4 +56,4 @@ BOOST_AUTO_TEST_CASE(TestReduceGradOutputDataTypeIsChangeable) {
 
   // 3.
   BOOST_TEST(g.getTensors().get(gradIn)->info.dataType() == newDataType);
-};
+}

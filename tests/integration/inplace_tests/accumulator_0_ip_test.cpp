@@ -109,9 +109,6 @@ BOOST_AUTO_TEST_CASE(TestAccumulatorInplace) {
     std::vector<Op *> schedule =
         ir.getMainGraph().getOpSchedule({}, RequireOptimalSchedule::No);
 
-    size_t numIpuCopies               = 0;
-    BatchSerializedPhase currentPhase = -1;
-    size_t recordedOffset             = 0;
     std::vector<Op *> recordedOps;
 
     auto numAllReduce        = 0;

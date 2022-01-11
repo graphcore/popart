@@ -121,9 +121,12 @@ find_package(poprithms REQUIRED)
 find_package(libpvti REQUIRED)
 find_package(pva REQUIRED)
 find_package(gcl REQUIRED)
-find_package(gccs REQUIRED)
 
 find_package(poprithms REQUIRED)
+
+find_package(gccs REQUIRED)
+include(${GCCS_CMAKE_DIR}/EnableCompilerWarnings.cmake)
+enable_compiler_warnings()
 
 # Onnx's config file fails to find protobuf, so we have to do it ourselves.
 # We use the find module provided by CMake.

@@ -92,4 +92,4 @@ BOOST_AUTO_TEST_CASE(TestRestoreParams) {
   auto paramsOut = op->getParameters();
 
   BOOST_TEST(testParams == paramsOut);
-};
+}

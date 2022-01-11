@@ -317,8 +317,6 @@ BOOST_AUTO_TEST_CASE(calledgraphgradophelper_getCalledGraphGradInInfo_error_0) {
       },
       {}};
 
-  auto bwdGraphInToGradOpInIndex = [](InIndex i) -> InIndex { return i; };
-
   // Check getCalledGraphGradInInfo works as expected.
   TestOpWithCalledGraphs op{Op::Settings{graph, "OpWithCalledGraphs0"}};
   auto &calledGraphGradOpHelper = op.calledGraphGradOpHelper;

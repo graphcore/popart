@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // All but the 1st, 3rd and last tensors should have been removed
   for (int i = 0; i < tensorIds.size(); i++) {
     bool tensorExists = ir.getMainGraphTensors().contains(tensorIds[i]);
-    bool shouldExist  = i == 0 | i == 2 | i == 6;
+    bool shouldExist  = (i == 0) | (i == 2) | (i == 6);
     BOOST_CHECK(tensorExists == shouldExist);
   }
 }

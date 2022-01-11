@@ -34,7 +34,6 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
     runner.isTraining = true;
     int N             = 8;
     int B             = 8;
-    int K             = 4;
     int size          = 100;
 
     runner.buildModel([&](auto &builder) {
@@ -150,7 +149,6 @@ BOOST_AUTO_TEST_CASE(TestOutliningAcrossBoundaries) {
 
   int N    = 8;
   int B    = 8;
-  int K    = 4;
   int size = 100;
   // Test that, for certain op attributes, changes in these attributes prevents
   // outlining from outlining a group of ops.
@@ -264,7 +262,6 @@ BOOST_AUTO_TEST_CASE(TestOutliningAcrossBoundaries) {
   auto split         = [&](int n) -> int { return n >= N / 2; };
   auto alternate     = [](int n) -> int { return n % 2 == 0; };
   auto alternate_two = [](int n) -> int { return (n >> 1) % 2 == 0; };
-  auto increment     = [](int n) -> int { return n; };
   auto increment_two = [](int n) -> int { return (n >> 1); };
 
   // In text below we describe the two ops within one iteration of the test

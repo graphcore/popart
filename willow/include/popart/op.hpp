@@ -735,9 +735,9 @@ public:
   virtual float getSubgraphValue() const = 0;
 
   // for example, conv has this value in getSubgraphValue(),
-  constexpr float getHighSubgraphValue() const { return 1000.0f; }
+  float getHighSubgraphValue() const { return 1000.0f; }
   // and relu has this value.
-  constexpr float getLowSubgraphValue() const { return 0.1f; }
+  float getLowSubgraphValue() const { return 0.1f; }
   // Get approximation of cost of activations between fwd/bwd graph.
   virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen);
 

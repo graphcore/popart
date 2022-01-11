@@ -46,9 +46,9 @@ BOOST_AUTO_TEST_CASE(testPOpCmpPositive) {
                                        Op::Settings{graph, ""});
 
   POpCmp cmp;
-  BOOST_ASSERT(cmp(op1Ptr, op2Ptr));  // Less than
-  BOOST_ASSERT(!cmp(op1Ptr, op1Ptr)); // Equal
-  BOOST_ASSERT(!cmp(op2Ptr, op1Ptr)); // Greater
+  BOOST_CHECK(cmp(op1Ptr, op2Ptr));  // Less than
+  BOOST_CHECK(!cmp(op1Ptr, op1Ptr)); // Equal
+  BOOST_CHECK(!cmp(op2Ptr, op1Ptr)); // Greater
 }
 
 #ifdef POPART_STRICT_COMPARATOR_CHECKS
@@ -88,9 +88,9 @@ BOOST_AUTO_TEST_CASE(testPTensorCmpPositive) {
   auto t2Ptr = graph.getTensor(tId2);
 
   PTensorCmp cmp;
-  BOOST_ASSERT(cmp(t1Ptr, t2Ptr));  // Less than
-  BOOST_ASSERT(!cmp(t1Ptr, t1Ptr)); // Equal
-  BOOST_ASSERT(!cmp(t2Ptr, t1Ptr)); // Greater
+  BOOST_CHECK(cmp(t1Ptr, t2Ptr));  // Less than
+  BOOST_CHECK(!cmp(t1Ptr, t1Ptr)); // Equal
+  BOOST_CHECK(!cmp(t2Ptr, t1Ptr)); // Greater
 }
 
 #ifdef POPART_STRICT_COMPARATOR_CHECKS
@@ -146,16 +146,16 @@ BOOST_AUTO_TEST_CASE(testPOpBoolCmpPositive) {
   // When comparing pairs, the first element if compared first, if not equal the
   // second element is compared
   // true is converted to 1 and false to 0 during comparison
-  BOOST_ASSERT(cmp(op1False, op2True));  // First is less than
-  BOOST_ASSERT(cmp(op1False, op2False)); // First is less than
+  BOOST_CHECK(cmp(op1False, op2True));  // First is less than
+  BOOST_CHECK(cmp(op1False, op2False)); // First is less than
 
-  BOOST_ASSERT(cmp(op1False, op1True));   // First is equal, second is less than
-  BOOST_ASSERT(!cmp(op1False, op1False)); // First is equal, second is equal
-  BOOST_ASSERT(
+  BOOST_CHECK(cmp(op1False, op1True));   // First is equal, second is less than
+  BOOST_CHECK(!cmp(op1False, op1False)); // First is equal, second is equal
+  BOOST_CHECK(
       !cmp(op1True, op1False)); // First is equal, second is greater than
 
-  BOOST_ASSERT(!cmp(op2False, op1True));  // First is greater than
-  BOOST_ASSERT(!cmp(op2False, op1False)); // First is greater than
+  BOOST_CHECK(!cmp(op2False, op1True));  // First is greater than
+  BOOST_CHECK(!cmp(op2False, op1False)); // First is greater than
 }
 
 #ifdef POPART_STRICT_COMPARATOR_CHECKS
@@ -222,16 +222,15 @@ BOOST_AUTO_TEST_CASE(testPOpIntCmpPositive) {
   // When comparing pairs, the first element if compared first, if not equal the
   // second element is compared
   // true is converted to 1 and false to 0 during comparison
-  BOOST_ASSERT(cmp(op1Int0, op2Int1)); // First is less than
-  BOOST_ASSERT(cmp(op1Int0, op2Int0)); // First is less than
+  BOOST_CHECK(cmp(op1Int0, op2Int1)); // First is less than
+  BOOST_CHECK(cmp(op1Int0, op2Int0)); // First is less than
 
-  BOOST_ASSERT(cmp(op1Int0, op1Int1));  // First is equal, second is less than
-  BOOST_ASSERT(!cmp(op1Int0, op1Int0)); // First is equal, second is equal
-  BOOST_ASSERT(
-      !cmp(op1Int1, op1Int0)); // First is equal, second is greater than
+  BOOST_CHECK(cmp(op1Int0, op1Int1));  // First is equal, second is less than
+  BOOST_CHECK(!cmp(op1Int0, op1Int0)); // First is equal, second is equal
+  BOOST_CHECK(!cmp(op1Int1, op1Int0)); // First is equal, second is greater than
 
-  BOOST_ASSERT(!cmp(op2Int0, op1Int1)); // First is greater than
-  BOOST_ASSERT(!cmp(op2Int0, op1Int0)); // First is greater than
+  BOOST_CHECK(!cmp(op2Int0, op1Int1)); // First is greater than
+  BOOST_CHECK(!cmp(op2Int0, op1Int0)); // First is greater than
 }
 
 #ifdef POPART_STRICT_COMPARATOR_CHECKS

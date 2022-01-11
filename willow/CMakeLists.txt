@@ -1,6 +1,3 @@
-# for more useful warnings
-include(EnableCompilerWarnings)
-
 #[[ [comment-willow-targets]
 
   Popart Targets Created Here

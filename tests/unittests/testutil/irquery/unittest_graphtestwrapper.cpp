@@ -67,7 +67,6 @@ addTestGraph(Ir &ir) {
 
   // Tensor info for tensors in the IR.
   TensorInfo tInfo{DataType::INT32, {}};
-  int32_t tData[] = {5};
 
   // Create the subgraph.
   auto &subgraphA       = ir.createGraph(GraphId("A"));

@@ -101,13 +101,13 @@ void createAndRun(bool hostIO = false) {
   auto carriedWrapper = A_wrapper;
 
   // prepare the anchors
-  int32_t rawLabel[bps * 2];
+  std::vector<int32_t> rawLabel(bps * 2);
   int32_t j = 1;
   for (auto &val : rawLabel) {
     val = j;
     j += 1;
   }
-  popart::NDArrayWrapper<int32_t> lWrapper(rawLabel, {bps, 2});
+  popart::NDArrayWrapper<int32_t> lWrapper(rawLabel.data(), {bps, 2});
 
   std::map<popart::TensorId, popart::IArray &> inputs = {{i, A_wrapper},
                                                          {l, lWrapper}};

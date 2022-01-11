@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(test_vectorAndSetTest) {
   vAS = vAS2;
 
   for (const auto &el : v) {
-    BOOST_ASSERT(vAS.contains(el));
+    BOOST_CHECK(vAS.contains(el));
   }
 
   BOOST_CHECK_EQUAL_COLLECTIONS(
@@ -32,9 +32,9 @@ BOOST_AUTO_TEST_CASE(test_vectorAndSetTest) {
 
   vAS.reset(v2);
   for (const auto &el : v2) {
-    BOOST_ASSERT(vAS.contains(el));
+    BOOST_CHECK(vAS.contains(el));
   }
   for (const auto &el : v) {
-    BOOST_ASSERT(!vAS.contains(el));
+    BOOST_CHECK(!vAS.contains(el));
   }
 }

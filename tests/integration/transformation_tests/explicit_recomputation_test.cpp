@@ -41,7 +41,9 @@ TensorId gemm(Builder *builder, TensorId ip, TensorId w0, TensorId b0) {
                            "CustomGEMM")[0];
 }
 
-BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
+// TODO T53563 re-enable
+BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case,
+                     *boost::unit_test::disabled()) {
 
   // Build the following three layered NN:
   // (in0) -> [GEMM0] -> [GEMM1] -> [GEMM2] -> (out)
@@ -135,8 +137,8 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
     }
   };
 
-  // test(true);
-  // test(false);
+  test(true);
+  test(false);
 }
 
 BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case1) {

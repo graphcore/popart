@@ -348,7 +348,6 @@ PartitionOpReps getPartitionOpReps(const TestObjects &testObjs,
 
   PartitionOpReps result;
 
-  const auto &ir          = *testObjs.ir;
   const auto &liveness    = *testObjs.livenessAnalyzer;
   const auto &partitioner = *testObjs.subgraphPartitioner;
 
@@ -424,8 +423,6 @@ void CHECK_SUBGRAPH_PARTITION(std::function<void(Builder *)> modelBuilder,
                               const PartitionOpRepsMap &expected) {
   // Call the test objects.
   auto testObjs     = setup(modelBuilder, copyStrat);
-  auto &ir          = *testObjs.ir;
-  auto &partitioner = *testObjs.subgraphPartitioner;
 
   auto actual = getPartitionOpRepsMap(testObjs);
 

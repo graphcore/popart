@@ -102,7 +102,6 @@ BOOST_AUTO_TEST_CASE(TestDecomposeAcrossExecutionPhases) {
           op->isConvertibleTo<AddRhsInplaceOp>()) {
 
         gradPartialAddsOrder.push_back(op);
-        auto addLhs = AddOp::getArg0InIndex();
         auto addRhs = AddOp::getArg1InIndex();
 
         size_t mmLayer         = numLayers - 1 - addOpNumber;
