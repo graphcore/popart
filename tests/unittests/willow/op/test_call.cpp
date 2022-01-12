@@ -24,13 +24,13 @@ BOOST_AUTO_TEST_CASE(TestCanNotConnectAllSubgraphOutputsToCallOp) {
   sg.markAsOutput(sg_x);
 
   const TensorId x = "x";
-  auto init        = g.createConnectedOp<InitOp>({},
-                                          {{InitOp::getOutIndex(), x}},
-                                          Onnx::CustomOperators::Init_1,
-                                          ti,
-                                          TensorType::ActGrad,
-                                          InitType::Zero,
-                                          Op::Settings{g, "Init"});
+  g.createConnectedOp<InitOp>({},
+                              {{InitOp::getOutIndex(), x}},
+                              Onnx::CustomOperators::Init_1,
+                              ti,
+                              TensorType::ActGrad,
+                              InitType::Zero,
+                              Op::Settings{g, "Init"});
 
   // Connect no outputs and setup. There should be no error.
   BOOST_REQUIRE_NO_THROW(
