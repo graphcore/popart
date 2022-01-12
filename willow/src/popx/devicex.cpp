@@ -913,8 +913,6 @@ void Devicex::loadEngineAndConnectStreams() {
       if (!di.isAttached()) {
         throw runtime_error("Failed to attach to device");
       }
-    } else {
-      di.writeToDeviceAccessLog("attach");
     }
   }
 

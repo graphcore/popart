@@ -262,7 +262,11 @@ DevicexInfo::~DevicexInfo() {
 }
 
 bool DevicexInfo::attach() {
-  isAttached_ = device.attach();
+  bool wasAttached = isAttached_;
+  isAttached_      = device.attach();
+  if (!wasAttached && isAttached_) {
+    writeToDeviceAccessLog("attach");
+  }
   return isAttached_;
 }
 

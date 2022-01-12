@@ -186,7 +186,6 @@ std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
       // Attach to the device. Will succeed if available
       if (connectionType == DeviceConnectionType::Always) {
         if (device->attach()) {
-          device->writeToDeviceAccessLog("attach");
           return device;
         }
       } else {
@@ -234,7 +233,6 @@ DeviceManager::tryAcquireDeviceById(int id,
   // Attach to the device. Will succeed if available
   if (connectionType == DeviceConnectionType::Always) {
     if (device->attach()) {
-      device->writeToDeviceAccessLog("attach");
       return device;
     } else {
       // Return nullptr if no device is acquired.
