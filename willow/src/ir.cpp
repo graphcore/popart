@@ -4093,22 +4093,23 @@ size_t Ir::getIrBundleHash() const { return irBundleHash; }
 
 void Ir::setIrBundleHash(size_t v) { irBundleHash = v; }
 
+namespace {
+
 /**
  * Clone ops from the original graph and create tensors in the cloned graph.
  *
  * \param originalGraph The original graph to clone from
  * \param clonedGraph   The graph which is under cloning
- * \return A map between the OpIds in the original and new graphs
+ * \param maps          The map of original and cloned IDs to modify
  * */
-std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
-                                           Graph &clonedGraph) {
+void cloneOpsAndAddTensors(Graph &originalGraph,
+                           Graph &clonedGraph,
+                           ClonedGraphMaps &maps) {
   // Don't need the optimal schedule as any valid order would suffice to get the
   // tensors in the correct order
   auto scheduledOps =
       originalGraph.getOpSchedule({}, RequireOptimalSchedule::No);
 
-  std::map<OpId, OpId> originalOpIdAndClonedOpId;
-  std::map<TensorId, TensorId> originalTensorIdAndClonedTensorId;
   for (const auto op : scheduledOps) {
     // Clone the operator
     auto clonedOpUp = op->clone();
@@ -4121,7 +4122,8 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
     // graph
     clonedOp->settings.scope = clonedGraph.getScope();
 
-    originalOpIdAndClonedOpId[op->id] = clonedOp->id;
+    maps.opIdMap[op->id]       = clonedOp->id;
+    maps.opIdMap[clonedOp->id] = op->id;
 
     clonedOp->disconnectAllInputs();
     clonedOp->disconnectAllOutputs();
@@ -4132,13 +4134,7 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
       auto index  = indexAndTensor.first;
       auto tensor = indexAndTensor.second;
 
-      // Remove the scope from the old graph, and add the new scope
-      auto clonedInputTensorId =
-          addScope(clonedGraph, removeScope(originalGraph, tensor->id));
-
-      if (tensor->hasProducer()) {
-        clonedInputTensorId = originalTensorIdAndClonedTensorId.at(tensor->id);
-      }
+      TensorId clonedInputTensorId = maps.tensorIdMap.at(tensor->id);
 
       // Attach to the new tensor to the cloned op
       clonedOp->connectInTensorLike(op, index, clonedInputTensorId);
@@ -4155,16 +4151,19 @@ std::map<OpId, OpId> cloneOpsAndAddTensors(Graph &originalGraph,
 
       clonedOp->createAndConnectOutTensor(index, clonedOutputTensorId);
 
-      originalTensorIdAndClonedTensorId[tensor->id] = clonedOutputTensorId;
+      maps.tensorIdMap[tensor->id]           = clonedOutputTensorId;
+      maps.tensorIdMap[clonedOutputTensorId] = tensor->id;
     }
     // Propagate tensor info
     clonedOp->setup();
   }
-  return originalOpIdAndClonedOpId;
 }
 
-std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
-                                    GraphId newGraphId) {
+} // namespace
+
+ClonedGraphMaps Ir::cloneGraph(GraphId originalGraphId, GraphId newGraphId) {
+  ClonedGraphMaps maps;
+
   auto &originalGraph = getGraph(originalGraphId);
   auto &clonedGraph   = createGraph(newGraphId);
 
@@ -4175,20 +4174,22 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
     auto clonedTensorId =
         addScope(clonedGraph, removeScope(originalGraph, tensorId));
     clonedGraph.addInput(clonedTensorId, tensorInfo);
+    maps.tensorIdMap[tensorId]       = clonedTensorId;
+    maps.tensorIdMap[clonedTensorId] = tensorId;
   }
 
   // Constants
   for (const auto tensor :
        originalGraph.getTensors().getOfType(TensorType::Const)) {
+    auto clonedTensorId =
+        addScope(clonedGraph, removeScope(originalGraph, tensor->id));
     clonedGraph.getTensors().addConstInit(
-        addScope(clonedGraph, removeScope(originalGraph, tensor->id)),
-        tensor->info,
-        tensor->tensorData()->data(),
-        {});
+        clonedTensorId, tensor->info, tensor->tensorData()->data(), {});
+    maps.tensorIdMap[tensor->id]     = clonedTensorId;
+    maps.tensorIdMap[clonedTensorId] = tensor->id;
   }
 
-  auto originalOpIdAndClonedOpId =
-      cloneOpsAndAddTensors(originalGraph, clonedGraph);
+  cloneOpsAndAddTensors(originalGraph, clonedGraph, maps);
 
   // Add output to the graph
   auto graphOutputTensorId = originalGraph.getOutputIds();
@@ -4206,16 +4207,15 @@ std::map<OpId, OpId> Ir::cloneGraph(GraphId originalGraphId,
     auto &originalTopoOpSet = originalOpAndTopoOpSet.second;
 
     auto clonedBeforeOp =
-        clonedGraph.getOp(originalOpIdAndClonedOpId.at(originalBeforeOp->id));
+        clonedGraph.getOp(maps.opIdMap.at(originalBeforeOp->id));
 
     for (const auto &topoOp : originalTopoOpSet) {
-      auto clonedAfterOp =
-          clonedGraph.getOp(originalOpIdAndClonedOpId.at(topoOp.op->id));
+      auto clonedAfterOp = clonedGraph.getOp(maps.opIdMap.at(topoOp.op->id));
 
       clonedGraph.topoCons->insert(clonedBeforeOp, clonedAfterOp, topoOp.tied);
     }
   }
-  return originalOpIdAndClonedOpId;
+  return maps;
 }
 
 } // namespace popart

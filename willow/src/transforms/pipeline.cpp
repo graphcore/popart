@@ -1699,7 +1699,7 @@ void ExplicitPipelineHelper::createExplicitPipeline() {
   // In addition, we need to clone the innerLoopSubgraph as we will loop over
   // the scheduled ops and modify it in the unrolling
   cloneSrct.originalGraphOpIdAndClonedGraphOpId =
-      ir.cloneGraph(innerLoopSubgraph.id, {cloneSrct.clonedGraphId});
+      ir.cloneGraph(innerLoopSubgraph.id, {cloneSrct.clonedGraphId}).opIdMap;
   for (const auto originalAndClonedOp :
        cloneSrct.originalGraphOpIdAndClonedGraphOpId) {
     cloneSrct.clonedGraphOpIdAndOriginalGraphOpId[originalAndClonedOp.second] =

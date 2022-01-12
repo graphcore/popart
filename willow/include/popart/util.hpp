@@ -18,6 +18,15 @@ namespace popart {
 
 class Graph;
 
+/**
+ * Struct of maps that map cloned Op and Tensor Ids back to the original,
+ * and vice-versa
+ */
+struct ClonedGraphMaps {
+  std::map<OpId, OpId> opIdMap;
+  std::map<TensorId, TensorId> tensorIdMap;
+};
+
 // For comparing equality of floating point types.
 template <typename T> bool isAlmostEqual(T lhs, T rhs) {
   return std::fabs(lhs - rhs) <= std::numeric_limits<T>::epsilon();

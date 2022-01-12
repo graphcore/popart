@@ -764,9 +764,10 @@ public:
    *
    * \param originalGraphId The id of the graph to clone
    * \param newGraphId      The id of the cloned graph
-   * \return A map between the OpIds in the original and new graphs
+   * \return                A struct of maps between the OpIds and TensorIds in
+   *                        the original and new graphs
    * */
-  std::map<OpId, OpId> cloneGraph(GraphId originalGraphId, GraphId newGraphId);
+  ClonedGraphMaps cloneGraph(GraphId originalGraphId, GraphId newGraphId);
 
   // modify the Ir using with pattern matching
   // Returns true if a change to the Ir was made.

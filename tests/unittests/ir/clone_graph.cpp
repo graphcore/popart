@@ -71,20 +71,28 @@ void checkClonedTensors(Ir &ir,
   std::vector<TensorId> clonedSubGraphInput;
   std::vector<TensorId> clonedSubGraphOutput;
 
+  auto opIds = clonedSubGraph.getOpIds();
+
+  BOOST_CHECK_EQUAL(opIds.size() * 2, originalOpIdAndClonedOpIds.size());
+
   for (const auto originalOpIdAndClonedOpId : originalOpIdAndClonedOpIds) {
+    if (std::find(opIds.begin(),
+                  opIds.end(),
+                  originalOpIdAndClonedOpId.second) != opIds.end()) {
 
-    // auto subGraphOp = subGraph.getOp(originalOpIdAndClonedOpId.first);
-    auto clonedSubGraphOp =
-        clonedSubGraph.getOp(originalOpIdAndClonedOpId.second);
+      // auto subGraphOp = subGraph.getOp(originalOpIdAndClonedOpId.first);
+      auto clonedSubGraphOp =
+          clonedSubGraph.getOp(originalOpIdAndClonedOpId.second);
 
-    auto tensorInputMap = clonedSubGraphOp->input->tensorMap();
-    for (auto indexAndTensor : tensorInputMap) {
-      clonedSubGraphInput.push_back(indexAndTensor.second->id);
-    }
+      auto tensorInputMap = clonedSubGraphOp->input->tensorMap();
+      for (auto indexAndTensor : tensorInputMap) {
+        clonedSubGraphInput.push_back(indexAndTensor.second->id);
+      }
 
-    auto tensorOutputMap = clonedSubGraphOp->output->tensorMap();
-    for (auto indexAndTensor : tensorOutputMap) {
-      clonedSubGraphOutput.push_back(indexAndTensor.second->id);
+      auto tensorOutputMap = clonedSubGraphOp->output->tensorMap();
+      for (auto indexAndTensor : tensorOutputMap) {
+        clonedSubGraphOutput.push_back(indexAndTensor.second->id);
+      }
     }
   }
 
@@ -103,9 +111,9 @@ BOOST_AUTO_TEST_CASE(TestCloneGraphTestModel1Sub0) {
   auto cloneName0        = "clone" + graphName0;
   cloneName0[5]          = toupper(cloneName0[5]);
 
-  auto originalOpIdAndClonedOpIds0 = ir.cloneGraph({graphName0}, {cloneName0});
-  auto &originalSubGraph0          = ir.getGraph({graphName0});
-  auto &clonedSubGraph0            = ir.getGraph({cloneName0});
+  auto originalOpIdAndClonedMap0 = ir.cloneGraph({graphName0}, {cloneName0});
+  auto &originalSubGraph0        = ir.getGraph({graphName0});
+  auto &clonedSubGraph0          = ir.getGraph({cloneName0});
 
   // Check constants
   compareConstants(originalSubGraph0, clonedSubGraph0);
@@ -118,7 +126,7 @@ BOOST_AUTO_TEST_CASE(TestCloneGraphTestModel1Sub0) {
   std::vector<TensorId> expectedOutputSubGraph0{"cloneSub0/t7"};
   checkClonedTensors(ir,
                      cloneName0,
-                     originalOpIdAndClonedOpIds0,
+                     originalOpIdAndClonedMap0.opIdMap,
                      expectedInputSubGraph0,
                      expectedOutputSubGraph0);
 }
@@ -132,7 +140,7 @@ BOOST_AUTO_TEST_CASE(TestCloneGraphTestModel1Sub1) {
   auto cloneName1        = "clone" + graphName1;
   cloneName1[5]          = toupper(cloneName1[5]);
 
-  auto originalOpIdAndClonedOpIds1 = ir.cloneGraph({graphName1}, {cloneName1});
+  auto originalOpIdAndClonedOpMap1 = ir.cloneGraph({graphName1}, {cloneName1});
   auto &originalSubGraph1          = ir.getGraph({graphName1});
   auto &clonedSubGraph1            = ir.getGraph({cloneName1});
 
@@ -147,7 +155,7 @@ BOOST_AUTO_TEST_CASE(TestCloneGraphTestModel1Sub1) {
   std::vector<TensorId> expectedOutputSubGraph1{"cloneSub1/t8"};
   checkClonedTensors(ir,
                      cloneName1,
-                     originalOpIdAndClonedOpIds1,
+                     originalOpIdAndClonedOpMap1.opIdMap,
                      expectedInputSubGraph1,
                      expectedOutputSubGraph1);
 }
