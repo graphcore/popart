@@ -185,6 +185,9 @@ def op_tester(tmpdir):
 
             self.options.logDir = self.logging_dir
 
+            if self.device is not None:
+                self.device.detach()
+
             if self.tilesPerIPU is not None:
                 self.device = tu.create_test_device(
                     numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU)
