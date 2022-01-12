@@ -1,5 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Test dot visualizer functionality in popart.ir"""
+from typing import Optional
 import pytest
 import popart
 import os
@@ -22,9 +23,10 @@ _TENSOR_SHAPE = (3, 11, 5)
 @pytest.mark.parametrize("check_name, expected_dot_file_count",
                          (("", 0), ("FINAL", 1), ("FOO:BAR", 2), ("ALL", 3)))
 @pytest.mark.parametrize("use_environ", (True, False))
-def test_dot_visualizer_ir(check_name: str, expected_dot_file_count: int,
-                           use_environ: bool) -> None:
-    """Test the DotVisualizer binding in popart.ir.
+def test_dot_check_with_environ_and_opts(check_name: str,
+                                         expected_dot_file_count: int,
+                                         use_environ: bool) -> None:
+    """Test that the popart.ir DotVisualizer works with both POPART_DOT_CHECKS and dotChecks.
 
     Args:
         check_name (str): The name of the check
@@ -42,29 +44,78 @@ def test_dot_visualizer_ir(check_name: str, expected_dot_file_count: int,
     ir_pb = ir._pb_ir
 
     opts = ir_pb.getSessionOptions()
-    opts.useHostCopyOps = True
     if not use_environ:
         opts.dotChecks = {*check_name.split(':')}
 
+    run_test(ir=ir,
+             save_dir=None,
+             expected_dot_file_count=expected_dot_file_count)
+
+
+def test_automatic_dot_check() -> None:
+    """Test the automatic setup of dot_checkpoint.
+
+    Specifically:
+    - Test that dot_checkpoint will set dotChecks to ALL
+      if neither POPART_DOT_CHECKS nor dotChecks is specified
+    - Test that if save_dir if set, then logDir will be set and
+      the dot files will be stored in save_dir
+    """
+    ir = pir.Ir()
+
+    # Make sure that there are no remnants from other test
+    if "POPART_DOT_CHECKS" in os.environ:
+        os.environ.pop("POPART_DOT_CHECKS")
+    ir._pb_ir.getSessionOptions().dotChecks = set()
+
+    # Test that dot_checkpoint sets dotChecks to ALL
+    run_test(ir, save_dir=None, expected_dot_file_count=3)
+
+    # Check that the files will be stored in save_dir
+    run_test(ir, save_dir="FooBar", expected_dot_file_count=3)
+
+
+def run_test(ir: pir.Ir, save_dir: Optional[str],
+             expected_dot_file_count: int) -> None:
+    """Run inference and check expected dot file count.
+
+    Args:
+        ir (pir.Ir): The ir to write to
+        save_dir (Optional[Path]): Directory to store the dot files in.
+        expected_dot_file_count (int): The expected number of dot files
+    """
+    ir_pb = ir._pb_ir
+    opts = ir_pb.getSessionOptions()
+    opts.useHostCopyOps = True
     with tempfile.TemporaryDirectory() as tmp_dir:
-        opts.logDir = tmp_dir
+        check_dir = Path(tmp_dir)
+
+        if save_dir is None:
+            # If no save_dir is specified, we just use the tmp_dir
+            opts.logDir = str(check_dir)
+        else:
+            # If a save_dir is specified, dot_checkpoint will specify opts.logDir for us
+            check_dir = check_dir.joinpath(save_dir)
 
         # Obtain the model
-        build_model_with_dot_checkpoints(ir)
+        build_model_with_dot_checkpoints(ir, str(check_dir))
 
-        # NOTE: This will set the FINAL check
+        # NOTE: This InferenceSession sets the FINAL check
         _ = popart.InferenceSession.fromIr(ir=ir_pb,
                                            deviceInfo=tu.create_test_device())
 
-        dotFiles = list(Path(tmp_dir).glob('*.dot'))
-        assert len(dotFiles) == expected_dot_file_count
+        dot_files = list(check_dir.glob('*.dot'))
+        assert len(dot_files) == expected_dot_file_count
 
 
-def build_model_with_dot_checkpoints(ir: pir.Ir) -> None:
+def build_model_with_dot_checkpoints(ir: pir.Ir,
+                                     save_dir: Optional[str] = None) -> None:
     """Make a model with 2 dot_checkpoints.
 
     Args:
         ir (pir.Ir): The ir to write to
+        save_dir (Optional[str], optional): Directory to store the dot files in.
+          Defaults to None.
 
     Returns:
     (tuple): tuple containing:
@@ -82,12 +133,12 @@ def build_model_with_dot_checkpoints(ir: pir.Ir) -> None:
         b = pir.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32),
                          name="b")
         c = ops.add(a, b)
-        ir.dot_checkpoint("Foo")
+        ir.dot_checkpoint("Foo", save_dir)
 
         d = pir.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32),
                          name="d")
         e = ops.mul(c, d)
-        ir.dot_checkpoint("Bar")
+        ir.dot_checkpoint("Bar", save_dir)
 
         f = ops.gelu(e)
 

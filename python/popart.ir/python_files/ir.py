@@ -4,9 +4,12 @@ import inspect
 from weakref import WeakValueDictionary
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Iterable, Union
 from collections import OrderedDict
+from pathlib import Path
+import os
 
 import popart
 import popart._internal.ir as _ir
+from popart.ir.context import get_main_graph
 from popart.ir.graph import Graph
 from popart.ir.module import Module
 from popart.ir.tensor import Tensor, TensorByRef, subgraph_input, subgraph_output
@@ -253,11 +256,14 @@ class Ir:
             name)  # type: ignore GraphId != str
         return Graph._from_pb(_pb_subgraph)
 
-    def dot_checkpoint(self, check: str) -> None:
+    def dot_checkpoint(self,
+                       check: str,
+                       save_dir: Optional[Union[Path, str]] = None) -> None:
         """Output a graphical representation of the graph in DOT format.
 
-        The checkpoints are not active by default.
-        They can be activated by either setting the `dotChecks` options in the session options
+        If the checkpoints are not activated, this function will set them to `ALL`.
+
+        Checkpoints can be activated by either setting the `dotChecks` options in the session options
         equal to the checks to be activated, or by setting the environmental variable
         `POPART_DOT_CHECKS` equal to the checks to be activated.
         Note that if either `dotChecks` or `POPART_DOT_CHECKS` is set to `ALL`, all checkpoints
@@ -266,7 +272,21 @@ class Ir:
 
         Args:
             check (str): Name of the check
+            save_dir (Optional[Union[Path, str]]): Directory to store the dot files to
+              NOTE: This will set the save directory for all dot checkpoints in the graph
         """
+        opts = self._pb_ir.getSessionOptions()
+        if save_dir is not None:
+            save_dir = Path(save_dir)
+            save_dir.mkdir(parents=True, exist_ok=True)
+            opts.logDir = str(save_dir)
+
+        if "POPART_DOT_CHECKS" not in os.environ:
+            if len(opts.dotChecks) == 0:
+                opts.dotChecks = {
+                    "ALL",
+                }
+
         self._pb_ir.dotCheckpoint(self._pb_ir, check)
 
     def _create_name(self, name: str) -> str:

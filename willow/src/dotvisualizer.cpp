@@ -129,11 +129,11 @@ void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
     ofs << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
         << tensor->info << "  nc:" << tensor->consumers.getTotal()
         << (tensor->isGraphInput()
-                ? "\ngraph input: " +
+                ? " graph input: " +
                       std::to_string(tensor->getGraphInputIndex())
                 : "")
         << (tensor->isGraphOutput()
-                ? "\ngraph output: " +
+                ? " graph output: " +
                       std::to_string(tensor->getGraphOutputIndex())
                 : "")
         << "\", color = " << getTensorNodeColor(tensor->tensorType()) << "];\n";
