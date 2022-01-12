@@ -136,10 +136,15 @@ def test_on_demand_connection_type():
 @tu.requires_ipu
 def test_attached_state():
     deviceManager = popart.DeviceManager()
+    deviceManager.setOnDemandAttachTimeout(1)
     device = deviceManager.acquireAvailableDevice(
         1, connectionType=popart.DeviceConnectionType.OnDemand)
     assert not device.isAttached
     device.attach()
+    assert device.isAttached
+    device.detach()
+    assert not device.isAttached
+    device.tryAttachUntilTimeout()
     assert device.isAttached
     device.detach()
     assert not device.isAttached

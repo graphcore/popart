@@ -3059,7 +3059,7 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>> cls(m, "DeviceInfo");
     cls.def("attach", &DeviceInfo::attach);
-    cls.def("tryAttachUntilTimeout", &DeviceInfo::attach);
+    cls.def("tryAttachUntilTimeout", &DeviceInfo::tryAttachUntilTimeout);
     cls.def("detach", &DeviceInfo::detach);
     cls.def_property_readonly("type", &DeviceInfo::getType);
     cls.def_property_readonly("connectionType", &DeviceInfo::getConnectionType);
