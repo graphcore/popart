@@ -43,3 +43,15 @@ class TestMul:
         assert len(g.get_variables()) == 1
         assert len(g.get_constants()) == 1
         assert contains_op_of_type("Mul", _ir.op.MulOp, g)
+
+    def test_ensure_tensor_lhs(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(1)
+            c = 2 * a
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 1
+        assert len(g.get_constants()) == 1
+        assert contains_op_of_type("Mul", _ir.op.MulOp, g)

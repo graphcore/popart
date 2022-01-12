@@ -76,9 +76,14 @@ class Tensor:
         self._pb_tensor = pb_tensor
         return self
 
+    ## Properties
     @property
     def id(self) -> str:
         return str(self._pb_tensor.id)
+
+    @property
+    def name(self) -> str:
+        return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
     def dtype(self) -> dtypes.dtype:
@@ -86,23 +91,44 @@ class Tensor:
 
     @property
     def shape(self) -> Tuple[int, ...]:
+        """A tuple of the shape of the tensor."""
         return tuple(self._pb_tensor.info.shape())
 
     @property
     def meta_shape(self) -> Tuple[int, ...]:
+        """
+        The meta shape of the tensor, which can for example
+        be used to store the original tensor shape before
+        replicated tensor sharding was applied.
+        """
         return self._pb_tensor.info.metaShape()
 
     @property
     def rank(self) -> int:
+        """Total number of dimensions."""
         return self._pb_tensor.info.rank()
 
     @property
     def nelms(self) -> int:
+        """Total number of elements."""
         return self._pb_tensor.info.nelms()
 
     @property
-    def name(self) -> str:
-        return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
+    def location_info(self):
+        # TODO T53608: needs clean up. Exposing private object without documentation
+        return self._pb_tensor.tensorLocationInfo
+
+    @property
+    @debug_context_frame_offset(2)
+    def T(self) -> 'Tensor':
+        """Returns the Tensor transposed with reversed axes."""
+        return self.transpose()
+
+    @property
+    @debug_context_frame_offset(2)
+    def T_(self) -> 'Tensor':
+        """Returns the Tensor transposed with reversed axes inplace."""
+        return self.transpose_()
 
     @property
     def ipu(self) -> int:
@@ -110,7 +136,7 @@ class Tensor:
         Return the IPU the Tensor is assigned to.
         A `UndefinedValue` is raised if the IPU is undefined.
         """
-        ipu, _ = self._ipu_and_tile_set(raise_on_undefined_tile_set=False,
+        ipu, _ = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
                                         raise_on_undefined_ipu=True)
         return ipu
 
@@ -120,22 +146,13 @@ class Tensor:
         Return the tile set (`compute` or `io`) the Tensor is assigned to.
         A `UndefinedValue` is raised if the tile set is undefined.
         """
-        _, tile_set = self._ipu_and_tile_set(raise_on_undefined_tile_set=True,
+        _, tile_set = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=True,
                                              raise_on_undefined_ipu=False)
         return tile_set
 
-    def _ipu_and_tile_set(self,
-                          raise_on_undefined_tile_set=True,
-                          raise_on_undefined_ipu=True):
-        ipu, tile_set = self._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
-        tile_set = TILE_SET_MAP[tile_set]
-        if raise_on_undefined_tile_set and tile_set == 'undefined':
-            raise UndefinedValue("Tensor's tile set is undefined.")
-        if raise_on_undefined_ipu and ipu == -1:
-            raise UndefinedValue("Tensor's IPU is undefined.")
-        return ipu, tile_set
-
+    ## Methods
     def ir(self) -> 'Ir':
+        """Return the `Ir` that the Tensor is a member of."""
         from popart.ir import Ir
         return Ir._from_pb(self._pb_tensor.getIr())
 
@@ -147,16 +164,47 @@ class Tensor:
         return ops.transpose(self, permutation)
 
     @debug_context_frame_offset(1)
+    def transpose_(self,
+                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
+        """Returns ops.transpose(self, permutation) inplace."""
+        import popart.ir.ops as ops
+        return ops.transpose_(self, permutation)
+
+    @debug_context_frame_offset(1)
     def reshape(self, shape: Iterable[int]) -> 'Tensor':
         """Returns `ops.reshape(self, shape)`."""
         import popart.ir.ops as ops
         return ops.reshape(self, shape)
 
     @debug_context_frame_offset(1)
+    def reshape_(self, shape: Iterable[int]) -> 'Tensor':
+        """Returns ops.reshape_(self, shape) inplace."""
+        import popart.ir.ops as ops
+        return ops.reshape_(self, shape)
+
+    @debug_context_frame_offset(1)
+    def flatten(self) -> 'Tensor':
+        """Returns ops.flatten(self)."""
+        import popart.ir.ops as ops
+        return ops.flatten(self)
+
+    @debug_context_frame_offset(1)
+    def flatten_(self) -> 'Tensor':
+        """Returns ops.flatten_(self) inplace."""
+        import popart.ir.ops as ops
+        return ops.flatten_(self)
+
+    @debug_context_frame_offset(1)
     def detach(self) -> 'Tensor':
-        """Return detached tensor"""
+        """Return detached tensor."""
         import popart.ir.ops as ops
         return ops.detach(self)
+
+    @debug_context_frame_offset(1)
+    def detach_(self) -> 'Tensor':
+        """Return detached tensor inplace."""
+        import popart.ir.ops as ops
+        return ops.detach_(self)
 
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, destination: int,
@@ -175,34 +223,30 @@ class Tensor:
         import popart.ir.ops as ops
         return ops.ipu_copy(self, destination, source)
 
-    @property
-    @debug_context_frame_offset(2)
-    def T(self) -> 'Tensor':
-        """Returns the Tensor transposed with reversed axes."""
-        return self.transpose()
+    ## Private functions
+    def _get_ipu_and_tile_set(
+        self,
+        raise_on_undefined_tile_set: bool=True,
+        raise_on_undefined_ipu: bool=True,
+    ) -> Tuple[int, Literal["compute", "io", "undefined"]]:
+        """
+        Determine the IPU and tile set of the Tensor.
+        Raise UndefinedValue if either underfined and flag set to True.
+        """
+        ipu, tile_set = self._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
+        tile_set = TILE_SET_MAP[tile_set]
+        if raise_on_undefined_tile_set and tile_set == 'undefined':
+            raise UndefinedValue("Tensor's tile set is undefined.")
+        if raise_on_undefined_ipu and ipu == -1:
+            raise UndefinedValue("Tensor's IPU is undefined.")
+        return ipu, tile_set
 
-    def __repr__(self) -> str:
-        return f"Tensor[name={self.name} type={self.dtype} shape={self.shape}]"
-
-    def __hash__(self):
-        """Hashes the Tensor, based on Tensor and Ir `id`"""
-        return hash((self.id, self.ir()))
-
-    def __eq__(self, other: Any) -> bool:
-        """Tensor equality, based on Tensor and Ir `id`"""
-        return isinstance(
-            other, Tensor) and self.id == other.id and self.ir() == other.ir()
-
-    def __len__(self) -> int:
-        """Size of 0th axis"""
-        if len(self.shape) > 0:
-            return self.shape[0]
-        else:
-            raise ValueError("Tensor is a scalar and doesn't have a length.")
-
-    def _ensure_tensor(self,
-                       value: TensorLike,
-                       dtype: Optional[dtypes.dtype] = None) -> 'Tensor':
+    def _ensure_tensor(
+            self,
+            value: TensorLike,
+            dtype: Optional[dtypes.dtype] = None,
+            raise_on_empty=True,
+    ) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
 
@@ -217,35 +261,81 @@ class Tensor:
             return value
         else:
             dtype = self.dtype if dtype is None else dtype
-            return constant(value, dtype)
+            t = constant(value, dtype)
+            if raise_on_empty and t.nelms == 0:
+                raise ValueError(
+                    "The data has 0 elements - this is most likely a mistake. "
+                    "If not initialise the Tensor explicitly before using in an opperation e.g. `pir.variable([])`. "
+                    f"Type: {type(value)}. Value: {value}")
+            return t
 
-    @property
-    def location_info(self):
-        return self._pb_tensor.tensorLocationInfo
+    ## Dunders
+    def __repr__(self) -> str:
+        return f"Tensor[name={self.name} type={self.dtype} shape={self.shape}]"
+
+    def __hash__(self):
+        """Hashes the Tensor, based on Tensor and Ir `id`"""
+        return hash((self.id, self.ir()))
+
+    def __eq__(self, other: Any) -> bool:
+        """Tensor equality, based on Tensor and Ir `id`"""
+        return isinstance(
+            other, Tensor) and self.id == other.id and self.ir() == other.ir()
+
+    def __len__(self) -> int:
+        """Size of 0th axis or raises a UndefinedValue."""
+        if len(self.shape) > 0:
+            return self.shape[0]
+        else:
+            raise ValueError("Tensor is a scalar and doesn't have a length.")
 
     @debug_context_frame_offset(1)
-    def __add__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.add(self, value)`."""
+    def __add__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.add(self, other)`."""
         import popart.ir.ops as ops
-        return ops.add(self, self._ensure_tensor(value))
+        return ops.add(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __sub__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.sub(self, value)`."""
+    def __radd__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.add(other, self)`."""
         import popart.ir.ops as ops
-        return ops.sub(self, self._ensure_tensor(value))
+        return ops.add(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __mul__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.mul(self, value)`."""
+    def __sub__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.sub(self, other)`."""
         import popart.ir.ops as ops
-        return ops.mul(self, self._ensure_tensor(value))
+        return ops.sub(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __truediv__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.div(self, value)`."""
+    def __rsub__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.sub(other, self)`."""
         import popart.ir.ops as ops
-        return ops.div(self, self._ensure_tensor(value))
+        return ops.sub(self._ensure_tensor(other), self)
+
+    @debug_context_frame_offset(1)
+    def __mul__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.mul(self, other)`."""
+        import popart.ir.ops as ops
+        return ops.mul(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __rmul__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.mul(other, self)`."""
+        import popart.ir.ops as ops
+        return ops.mul(self._ensure_tensor(other), self)
+
+    @debug_context_frame_offset(1)
+    def __truediv__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.div(self, other)`."""
+        import popart.ir.ops as ops
+        return ops.div(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __rtruediv__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.div(other, self)`."""
+        import popart.ir.ops as ops
+        return ops.div(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __neg__(self) -> 'Tensor':
@@ -254,57 +344,44 @@ class Tensor:
         return ops.negate(self)
 
     @debug_context_frame_offset(1)
-    def transpose_(self,
-                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
-        """Returns ops.transpose(self, permutation). Inplace"""
-        import popart.ir.ops as ops
-        return ops.transpose_(self, permutation)
-
-    @debug_context_frame_offset(1)
-    def reshape_(self, shape: Iterable[int]) -> 'Tensor':
-        """Returns ops.reshape_(self, shape) inplace."""
-        import popart.ir.ops as ops
-        return ops.reshape_(self, shape)
-
-    @debug_context_frame_offset(1)
-    def flatten_(self, shape: Iterable[int]) -> 'Tensor':
-        """Returns ops.flatten_(self). Inplace."""
-        import popart.ir.ops as ops
-        return ops.flatten_(self, shape)
-
-    @debug_context_frame_offset(1)
-    def detach_(self) -> 'Tensor':
-        """Detach tensor inplace."""
-        import popart.ir.ops as ops
-        return ops.detach_(self)
-
-    @property
-    @debug_context_frame_offset(2)
-    def T_(self) -> 'Tensor':
-        """Returns the Tensor transposed with reversed axes. Inplace."""
-        return self.transpose_()
-
-    @debug_context_frame_offset(1)
     def __matmul__(self, other: TensorLike) -> 'Tensor':
         """Returns `ops.matmul(self, other)`."""
         import popart.ir.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __and__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_and(self, value)`."""
+    def __rmatmul__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.matmul(other, self)`."""
         import popart.ir.ops as ops
-        return ops.logical_and(self, self._ensure_tensor(value))
+        return ops.matmul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __or__(self, value: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_or(self, value)`."""
+    def __and__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_and(self, other)`."""
         import popart.ir.ops as ops
-        return ops.logical_or(self, self._ensure_tensor(value))
+        return ops.logical_and(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __rand__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_and(other, self)`."""
+        import popart.ir.ops as ops
+        return ops.logical_and(self._ensure_tensor(other), self)
+
+    @debug_context_frame_offset(1)
+    def __or__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_or(self, other)`."""
+        import popart.ir.ops as ops
+        return ops.logical_or(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __ror__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.logical_or(other, self)`."""
+        import popart.ir.ops as ops
+        return ops.logical_or(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __invert__(self) -> 'Tensor':
-        """Returns `ops.logical_not(self, value)`."""
+        """Returns `ops.logical_not(self)`."""
         import popart.ir.ops as ops
         return ops.logical_not(self)
 
@@ -408,6 +485,10 @@ class Tensor:
     # which can produce unhelpful errors
     __iter__ = None
     __contains__ = None
+
+    # Prevents numpy from calling its dunder methods when we want to
+    # use our reflected dunder methods. e.g. np.ndarray(...) @ pir.Tensor(...)
+    __array_ufunc__ = None
 
 
 class Variable(Tensor, tensor_type="Variable"):

@@ -19,7 +19,7 @@ class TestReshape:
         assert len(g.get_tensors()) == 2
         assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
 
-    def test_tensor_method(self):
+    def test_dunder(self):
         ir = pir.Ir()
         g = ir.main_graph()
 
@@ -65,16 +65,6 @@ class TestReshape:
             assert "Reshape shape can contain at most one '-1' value" in message
             assert "(-1, -1, 1)" in message
 
-    def test_flatten(self):
-        ir = pir.Ir()
-        g = ir.main_graph()
-
-        with g:
-            a = pir.variable(np.ones((1, 2, 3)))
-            c = ops.flatten(a)
-        assert c.shape == (6, )
-        assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
-
     def test_inplace(self):
         ir = pir.Ir()
         g = ir.main_graph()
@@ -89,13 +79,62 @@ class TestReshape:
         assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
                                    g)
 
-    def test_flatten_inplace(self):
+    def test_dunder_inplace(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = a.reshape_((3, 2, 1))
+
+        assert a._pb_tensor.isAliased()
+        assert c.shape == (3, 2, 1)
+        assert len(g.get_tensors()) == 2
+        assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
+                                   g)
+
+
+class TestFlatten:
+    def test_fn(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = ops.flatten(a)
+        assert c.shape == (6, )
+        assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
+
+    def test_fn_inplace(self):
         ir = pir.Ir()
         g = ir.main_graph()
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = ops.flatten_(a)
+
+        assert a._pb_tensor.isAliased()
+        assert c.shape == (6, )
+        assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
+                                   g)
+
+    def test_dunder_flatten(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = a.flatten()
+        assert c.shape == (6, )
+        assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
+
+    def test_dunder_flatten_inplace(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(np.ones((1, 2, 3)))
+            c = a.flatten_()
 
         assert a._pb_tensor.isAliased()
         assert c.shape == (6, )

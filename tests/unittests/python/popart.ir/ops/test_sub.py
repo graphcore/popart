@@ -9,7 +9,7 @@ class TestSub:
     def test_fn(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             b = pir.variable(2)
@@ -21,7 +21,7 @@ class TestSub:
     def test_dunder(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             b = pir.variable(2)
@@ -33,10 +33,22 @@ class TestSub:
     def test_ensure_tensor(self):
         ir = pir.Ir()
         g = ir.main_graph()
-        
+
         with g:
             a = pir.variable(1)
             c = a - 2
+        assert len(ir.main_graph().get_tensors()) == 3
+        assert len(ir.main_graph().get_variables()) == 1
+        assert len(ir.main_graph().get_constants()) == 1
+        assert contains_op_of_type("Sub", _ir.op.SubtractOp, g)
+
+    def test_ensure_tensor_lhs(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(1)
+            c = 2 - a
         assert len(ir.main_graph().get_tensors()) == 3
         assert len(ir.main_graph().get_variables()) == 1
         assert len(ir.main_graph().get_constants()) == 1

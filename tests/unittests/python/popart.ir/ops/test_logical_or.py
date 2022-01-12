@@ -41,3 +41,29 @@ class TestOr:
         assert len(g.get_tensors()) == 3
         assert len(g.get_variables()) == 2
         assert contains_op_of_type("Or", _ir.op.OrOp, g)
+
+    def test_ensure_tensor(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(True, pir.bool)
+            b = False
+            c = a | b
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 1
+        assert len(g.get_constants()) == 1
+        assert contains_op_of_type("Or", _ir.op.OrOp, g)
+
+    def test_ensure_tensor_lhs(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = True
+            b = pir.variable(False, pir.bool)
+            c = a | b
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 1
+        assert len(g.get_constants()) == 1
+        assert contains_op_of_type("Or", _ir.op.OrOp, g)

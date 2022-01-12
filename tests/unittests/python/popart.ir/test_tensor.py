@@ -130,7 +130,7 @@ class TestTensor:
         with pir.Ir().main_graph():
             x = pir.variable(0)
             l = []
-            with pytest.raises(TypeError):
+            with pytest.raises(ValueError):
                 l += x
 
     def test_contains_dunder(self):
@@ -138,6 +138,19 @@ class TestTensor:
             x = pir.variable(0)
             with pytest.raises(TypeError):
                 1 in x
+
+    def test_len(self):
+        with pir.Ir().main_graph():
+            x = pir.variable([[
+                1,
+            ], [2.]])
+            assert len(x) == 2
+
+    def test_len_scalar(self):
+        with pir.Ir().main_graph():
+            x = pir.variable(1)
+            with pytest.raises(ValueError):
+                len(x)
 
 
 class TestTensorIpuAndTileSet:
