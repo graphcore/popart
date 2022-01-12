@@ -64,20 +64,20 @@ repos:
     #     -   id: end-of-file-fixer
     #     -   id: mixed-line-ending
     #     -   id: trailing-whitespace
-    # - repo: https://github.com/pre-commit/mirrors-yapf
-    #   rev: v0.27.0
-    #   hooks:
-    #       - id: yapf
-    # - repo: https://github.com/pocc/pre-commit-hooks
-    #   rev: v1.3.5
-    #   hooks:
-    #       # Install with pip3 install clang-format==9.0.0
-    #       - id: clang-format
-    #         exclude: willow/include/popart/vendored/
-    #         args: [
-    #             -i,  # Fix inplace
-    #             --style=file  # Use .clang-tidy
-    #         ]
+    - repo: https://github.com/pre-commit/mirrors-yapf
+      rev: v0.27.0
+      hooks:
+          - id: yapf
+    - repo: https://github.com/pocc/pre-commit-hooks
+      rev: v1.3.5
+      hooks:
+          # Install with pip3 install clang-format==9.0.0
+          - id: clang-format
+            exclude: willow/include/popart/vendored/
+            args: [
+                -i,  # Fix inplace
+                --style=file  # Use .clang-tidy
+            ]
     #      - id: clang-tidy
     #      - id: oclint
     #      - id: uncrustify

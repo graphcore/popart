@@ -7,7 +7,6 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-
 NEG_INF = -float("inf")
 
 

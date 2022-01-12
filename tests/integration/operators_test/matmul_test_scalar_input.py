@@ -3,6 +3,7 @@ import numpy as np
 import popart
 import pytest
 
+
 def test_matmul_scalar_input(op_tester):
     """
     Test the exception raised when an intput to a matmul is a scalar

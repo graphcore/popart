@@ -2,7 +2,6 @@
 # see model0.py for a more detailed
 # description of what's going on.
 
-
 import c10driver
 import popart
 import cmdline

@@ -170,6 +170,7 @@ def test_lstm_popart(op_tester):
     lstms = [op for op in graph if op['type'] == 'LSTM']
     assert len(lstms) == 1
 
+
 def test_lstm_outlining(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)

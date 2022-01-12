@@ -4,7 +4,6 @@ import popart.ir as pir
 import popart.ir.ops as ops
 
 
-
 class TestIpuCopy:
     def test_copy_to(self):
         ir = pir.Ir()

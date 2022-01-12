@@ -5,7 +5,6 @@ import popart
 import random
 import torch
 
-
 # The poplar groups are strided, but the pytorch are not so the output and
 # and gradient tensors are different.
 

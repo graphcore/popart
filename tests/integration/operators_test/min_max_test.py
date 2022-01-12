@@ -4,7 +4,6 @@ import popart
 import torch
 
 
-
 def test_max_training(op_tester):
     d1 = np.random.rand(5, 7, 5).astype(np.float32)
     d2 = np.random.rand(7, 5).astype(np.float32)

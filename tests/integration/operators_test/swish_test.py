@@ -5,7 +5,6 @@ import pytest
 import torch
 
 
-
 @pytest.mark.skipif(not hasattr(torch.nn, 'SiLU'),
                     reason='Remove after T38031 is resolved')
 def test_swish(op_tester):

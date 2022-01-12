@@ -5,8 +5,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <popart/op/collectives/collectives.hpp>
 #include <popart/adam.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/init.hpp>
 namespace py = pybind11;
 

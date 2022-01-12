@@ -138,7 +138,7 @@ def process_comment(comment):
     s = re.sub(r'[\\@]ingroup\s+%s' % cpp_group, r'', s)
 
     # Turns
-    # 
+    #
     # '''
     # Not parameter section here
     # \param A: description description description
@@ -153,9 +153,9 @@ def process_comment(comment):
     #
     # '''
     # Not parameter section here
-    # 
+    #
     # Args:
-    #  A: description description description 
+    #  A: description description description
     #  B: description description description
     #      description description description
     #  C:
@@ -179,21 +179,23 @@ def process_comment(comment):
                 else:
                     pre_param_lines.append(line)
             # this line contains a param
-            elif re.match(r'(\s)*[\\@]param%s?\s+%s' % (param_group, cpp_group), line):
+            elif re.match(
+                    r'(\s)*[\\@]param%s?\s+%s' % (param_group, cpp_group),
+                    line):
                 param_lines.append(
                     re.sub(
                         r'(\s*)[\\@]param%s?\s+%s' % (param_group, cpp_group),
-                        r'\1\3:',
-                        line))
+                        r'\1\3:', line))
                 indent = space_len
             # line does not contain a param and we have finished with all the param lines
-            elif post_param_lines != [] or (param_lines != [] and space_len <= indent):  
+            elif post_param_lines != [] or (param_lines != []
+                                            and space_len <= indent):
                 post_param_lines.append(line)
             # we have not yet encountered a param line
-            elif param_lines == []:  
+            elif param_lines == []:
                 pre_param_lines.append(line)
             # we're inside a param description
-            else:  
+            else:
                 param_lines.append(line)
         param_lines = [' ' + i for i in param_lines]  # indent param lines
         if indent == -1:
@@ -203,7 +205,7 @@ def process_comment(comment):
                              param_lines + post_param_lines)
 
     # Turns
-    # 
+    #
     # '''
     # <pattern>: description description
     #     description description
@@ -214,15 +216,15 @@ def process_comment(comment):
     # into
     #
     # '''
-    # 
-    # <replacement>: 
+    #
+    # <replacement>:
     #  description description
     #  description description
-    # 
+    #
     # <replacement>:
     #  description description description
     # '''
-    # 
+    #
     # anywhere in the comment (the occurances of `pattern` need not be sequential)
     def convert_keyword(comment, pattern, replacement):
         comment = comment.split('\n')
@@ -235,7 +237,7 @@ def process_comment(comment):
             if re.fullmatch(r'\s+', line):
                 lines.append(line)
             # this line contains a pattern
-            elif re.match(pattern, line):  
+            elif re.match(pattern, line):
                 lines.append('')
                 indent = space_len
                 inside_pattern = True
@@ -248,14 +250,14 @@ def process_comment(comment):
                 else:
                     lines.append(line)
             # line does not contain a param and we have finished with all the param lines
-            elif indent >= space_len or not inside_pattern:  
+            elif indent >= space_len or not inside_pattern:
                 lines.append(line)
             # we have not yet encountered a param line
-            elif indent >= space_len and inside_pattern:  
+            elif indent >= space_len and inside_pattern:
                 inside_pattern = False
                 lines.append(line)
             # we're inside a pattern description
-            else:  
+            else:
                 # adjust indentation
                 line = re.sub(r'^\s*(\S.*$)', ' ' * (indent + 1) + r'\1', line)
                 lines.append(line)
@@ -329,7 +331,7 @@ def process_comment(comment):
     # replace multiline math formulas
     s = re.sub(r'[\\@]f\[(.*?)[\\@]f\]', r'.. math::\1', s, flags=re.DOTALL)
 
-    # This might be useful in the future. Not using at the moment as 
+    # This might be useful in the future. Not using at the moment as
     # even some Python comments use :: notation to refer to stuff
     # # replace :: with . as long as it is not preceded by std
     # s = re.sub(r'(?<!std)\b::\b', r'.', s)
@@ -460,8 +462,9 @@ def read_args(args):
             libclang_dir = os.environ['LIBCLANG_PATH']
         else:
             libclang_dir = max(
-                (os.path.join(llvm_dir, libdir, 'libclang.so') for libdir in ['lib64', 'lib', 'lib32']
-                if os.path.exists(os.path.join(llvm_dir, libdir, 'libclang.so'))),
+                (os.path.join(llvm_dir, libdir, 'libclang.so')
+                 for libdir in ['lib64', 'lib', 'lib32'] if os.path.exists(
+                     os.path.join(llvm_dir, libdir, 'libclang.so'))),
                 default=None,
                 key=folder_version)
 

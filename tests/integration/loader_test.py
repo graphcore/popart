@@ -2,7 +2,6 @@
 # Test for basic importing
 
 
-
 def test_import():
     # the core library
     import popart

@@ -5,7 +5,6 @@ import popart
 import pytest
 import torch
 
-
 import test_util as tu
 
 USE_DEFAULT_AXES = None
