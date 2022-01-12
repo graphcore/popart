@@ -380,6 +380,18 @@ TensorId removeScope(const Graph &g, const TensorId &t) {
   return pTId.getId();
 }
 
+TensorId addPrefix(const Ir &ir, const TensorId &t, const TensorId &prefix) {
+  ParsedTensorId pTId(t, ir);
+  pTId.addPrefix(prefix);
+  return pTId.getId();
+}
+
+TensorId removePrefix(const Ir &ir, const TensorId &t, const TensorId &prefix) {
+  ParsedTensorId pTId(t, ir);
+  pTId.removePrefixIfExist(prefix);
+  return pTId.getId();
+}
+
 std::ostream &operator<<(std::ostream &ss,
                          const StochasticRoundingMethod &srm) {
   switch (srm) {

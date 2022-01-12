@@ -384,6 +384,28 @@ TensorId addScope(const Graph &g, const TensorId &t);
 TensorId removeScope(const Graph &g, const TensorId &t);
 
 /**
+ * Adds a prefix to the TensorId
+ * The resulting TensorId will be on the form <scopes><prefixes><names>
+ *
+ * \param ir The IR
+ * \param t The TensorId to add the prefix to
+ * \param prefix The prefix to add
+ * \return The resulting TensorId
+ */
+TensorId addPrefix(const Ir &ir, const TensorId &t, const TensorId &prefix);
+
+/**
+ * Removes a prefix from the TensorId
+ * The resulting TensorId will be on the form <scopes><prefixes><names>
+ *
+ * \param ir The IR
+ * \param t The TensorId to add the prefix to
+ * \param prefix The prefix to add
+ * \return The resulting TensorId
+ */
+TensorId removePrefix(const Ir &ir, const TensorId &t, const TensorId &prefix);
+
+/**
  * Stream operator for StochasticRoundingMethod.
  */
 std::ostream &operator<<(std::ostream &ss, const StochasticRoundingMethod &srm);
