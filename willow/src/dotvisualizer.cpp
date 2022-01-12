@@ -123,10 +123,10 @@ int DotVisualizer::getNextGraphIndex(const FullGraphName &gString) {
 // Create a tensor node in the .dot file
 void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
                                        std::ofstream &ofs) {
-  if (tensorsVisited.count(tensor->id) == 0 || tensor->isGraphInput() ||
-      tensor->isGraphOutput()) {
+  if (tensorsVisited.count(tensor->id) == 0) {
     tensorsVisited.insert(tensor->id);
-    ofs << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
+    ofs << tensorDotId(tensor->id) << " [shape= \"egg\", label=\"" << tensor->id
+        << "\n"
         << tensor->info << "  nc:" << tensor->consumers.getTotal()
         << (tensor->isGraphInput()
                 ? " graph input: " +
@@ -260,6 +260,19 @@ void DotVisualizer::write(const Ir &ir) {
       strm(gString, ir) << generateNodeName(n) << " -> "
                         << generateNodeName(after)
                         << " [color=grey, style=dotted];\n";
+    }
+  }
+
+  // Add missing graph inputs/outputs that are otherwise disconnected
+  // (Useful to see loop carried dependencies)
+  for (auto &cgraph : ir.getAllGraphs()) {
+    auto &graph  = ir.getGraph(cgraph->id);
+    auto gString = graph.id.str();
+    for (auto inputId : graph.getInputIds()) {
+      makeNodeIfRequired(graph.getTensor(inputId), strm(gString, ir));
+    }
+    for (auto outputId : graph.getOutputIds()) {
+      makeNodeIfRequired(graph.getTensor(outputId), strm(gString, ir));
     }
   }
   for (auto &x : ofstreams) {
