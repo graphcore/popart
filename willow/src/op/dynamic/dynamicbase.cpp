@@ -3,6 +3,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicbase.hpp>
+#include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -37,6 +38,13 @@ DynamicSliceBaseOp::DynamicSliceBaseOp(const OperatorIdentifier &_opid,
 void DynamicSliceBaseOp::setup() { outInfo(getOutIndex()) = createOutInfo(); }
 
 TensorInfo DynamicSliceBaseOp::createOutInfo() const {
+  // If there is an inplace input slice, the output slice will be of the same
+  // shape
+  if (isConvertibleTo<DynamicSliceOp>() &&
+      hasInput(DynamicSliceOp::getSliceInIndex())) {
+    return inInfo(DynamicSliceOp::getSliceInIndex());
+  }
+
   auto in_info      = inInfo(getInIndex());
   auto output_shape = in_info.shape();
 

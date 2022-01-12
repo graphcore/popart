@@ -54,6 +54,53 @@ def test_dynamicupdate(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+# Test a chain of non-overlapping dynamic updates
+# init -> U0 -> out0 -> U1 -> out1 -> U2 -> out2
+#         ^             ^             ^
+#         |             |             |
+#         tensor0       tensor1       tensor2
+# where tensor0, tensor1 and tensor2 are non-overlapping subregions
+# of the out tensor
+# This test drops the leading dimension of the input slices.
+def test_dynamicupdate_no_leading_slice_dim(op_tester):
+    data0 = np.random.rand(4, 7).astype(np.float32)
+    data1 = np.random.rand(4, 7).astype(np.float32)
+    data2 = np.random.rand(4, 7).astype(np.float32)
+    axes = [0]
+    sizes = [1]
+
+    def init_builder(builder):
+        tensor0 = builder.addInputTensor(data0)
+        tensor1 = builder.addInputTensor(data1)
+        tensor2 = builder.addInputTensor(data2)
+        tensors = [tensor0, tensor1, tensor2]
+        result = []
+        out = builder.aiGraphcore.init([3, 4, 7], popart.DataType.FLOAT,
+                                       popart.InitType.NoInit, "test_init")
+
+        for sliceid in range(3):
+            index = builder.addInputTensor(np.asarray([sliceid], np.uint32))
+            out = builder.aiGraphcore.dynamicupdate(
+                [out, index, tensors[sliceid]],
+                axes=axes,
+                sizes=sizes,
+                noOverlap=True)
+
+            assert builder.getTensorShape(out) == [3, 4, 7]
+
+            builder.addOutputTensor(out)
+        result.append(out)
+        return result
+
+    def reference(ref_data):
+        result = []
+        result.append(np.stack((data0, data1, data2), axis=0))
+        return result
+
+    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # Test dynamic update for multiple dimensions that don't divide the input evenly
 def test_dynamicupdate_multi_dim(op_tester):
     data = np.random.rand(5, 12, 7).astype(np.float32)

@@ -282,12 +282,20 @@ const Shape &PopOpx::inShape(InIndex index) const {
   return inInfo(index).shape();
 }
 
+const std::vector<size_t> PopOpx::inShapeSzt(InIndex index) const {
+  return inInfo(index).shape_szt();
+}
+
 const TensorInfo &PopOpx::outInfo(OutIndex index) const {
   return outTensor(index)->info;
 }
 
 const Shape &PopOpx::outShape(OutIndex index) const {
   return outInfo(index).shape();
+}
+
+const std::vector<size_t> PopOpx::outShapeSzt(OutIndex index) const {
+  return outInfo(index).shape_szt();
 }
 
 // If the operator has been named return the name, (i.e. "my_add/23")

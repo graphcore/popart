@@ -78,6 +78,11 @@ DynamicSliceOpx::createInputTensor(InIndex index,
   auto outShape = outInfo.shape_szt();
   auto inShape  = op.inShape(DynamicSliceBaseOp::getInIndex());
 
+  // Pad shape if required (when the outShape does not include the slice axis)
+  if (outShape.size() < inShape.size()) {
+    outShape.insert(outShape.begin(), 1);
+  }
+
   if (index == DynamicSliceBaseOp::getInIndex()) {
     // Get the axes to slice
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
@@ -137,6 +142,11 @@ snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
   auto outShape = tensor.shape();
   auto inShape  = op.inShape(DynamicSliceBaseOp::getInIndex());
 
+  // Pad shape if required (when the outShape does not include the slice axis)
+  if (outShape.size() < inShape.size()) {
+    outShape.insert(outShape.begin(), 1);
+  }
+
   if (index == DynamicSliceOp::getInIndex()) {
     std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
 
@@ -156,12 +166,13 @@ snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
     }
 
     // Create the layout for the input tensor
-    return snap::Tensor{popops::createSliceableTensorFromSlice(
-                            graph().getPoplarGraph(),
-                            tensor.slice(begin, end).getPoplarTensor(),
-                            paxes,
-                            numSlices),
-                        graph()};
+    return snap::Tensor{
+        popops::createSliceableTensorFromSlice(
+            graph().getPoplarGraph(),
+            tensor.reshape(outShape).slice(begin, end).getPoplarTensor(),
+            paxes,
+            numSlices),
+        graph()};
   }
   if (index == DynamicSliceInplaceOp::getSliceInIndex()) {
     return tensor;
@@ -219,7 +230,8 @@ void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
         op.inId(DynamicSliceInplaceOp::getSliceInIndex()) + "_writeable");
   }
 
-  prog.add(snap::program::Copy(s, writeableSlice));
+  prog.add(
+      snap::program::Copy(s.reshape(writeableSlice.shape()), writeableSlice));
 
   setOutTensor(DynamicSliceBaseOp::getOutIndex(), writeableSlice);
 }

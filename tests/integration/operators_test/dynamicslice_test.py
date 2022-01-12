@@ -51,6 +51,44 @@ def test_dynamicslice(op_tester, slice_input):
     op_tester.run(init_builder, reference, 'infer')
 
 
+# Test a set of non-overlapping dynamic slices, the three
+# input version of dynamic slice. The three input version is inplacable on the
+# third input (slice input).
+# Tests the special case where we slice the first axis with a size of 1, and
+# can therefore drop the axis on the slice tensor
+def test_dynamicslice_no_leading_slice_dim(op_tester):
+    data = np.random.rand(5, 12, 7).astype(np.float32)
+    axes = [0]
+    sizes = [1]
+
+    def init_builder(builder):
+        tensor = builder.addInputTensor(data)
+        result = []
+        for sliceid in range(5):
+            index = builder.addInputTensor(np.asarray([sliceid], np.uint32))
+            # Note that the leading dimension `1` is dropped
+            slice_in = builder.aiGraphcore.init([12, 7], popart.DataType.FLOAT,
+                                                popart.InitType.Zero,
+                                                "slice_input")
+            out = builder.aiGraphcore.dynamicslice([tensor, index, slice_in],
+                                                   axes=axes,
+                                                   sizes=sizes,
+                                                   noOverlap=True)
+            builder.addOutputTensor(out)
+
+            result.append(out)
+        return result
+
+    def reference(ref_data):
+        result = []
+        for sliceid in range(5):
+            result.append(data[sliceid, :, :])
+        return result
+
+    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # Test a multi dimensional slice (createInputTensor)
 # As dynamicslice is the only operator in the graph this will call the
 # DynamicSliceOpx::createInputTensor

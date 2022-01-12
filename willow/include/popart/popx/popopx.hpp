@@ -168,10 +168,14 @@ public:
   const TensorInfo &inInfo(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()
   const Shape &inShape(InIndex) const;
+  // shortcut for op_p->input.tensor(int)->info.shape_szt()
+  const std::vector<size_t> inShapeSzt(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info
   const TensorInfo &outInfo(OutIndex) const;
-  // shortcut for op_p->input.tensor(int)->info.shape()
+  // shortcut for op_p->output.tensor(int)->info.shape()
   const Shape &outShape(OutIndex) const;
+  // shortcut for op_p->output.tensor(int)->info.shape_zt()
+  const std::vector<size_t> outShapeSzt(OutIndex) const;
 
   // The Op corresponding to this PopOpx
   Op *op_p;
