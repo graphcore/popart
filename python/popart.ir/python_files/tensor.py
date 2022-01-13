@@ -406,6 +406,7 @@ class Tensor:
         Examples:
 
         .. code-block:: python
+
             # Slicing
             x[0]        # Select all elements where i==0 for axis 0. The output will not include the 0th axis (squeezed)
             x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
@@ -540,7 +541,7 @@ def variable(
     parameter that can change while running a model.
 
     Must be created in the main graph scope. Example:
-
+    
     .. code-block:: python
 
         import popart.ir as pir
@@ -786,7 +787,7 @@ def subgraph_output(t: Tensor) -> None:
     Example:
 
     .. code-block:: python
-
+    
         import popart.ir as pir
 
         def add_w(x):

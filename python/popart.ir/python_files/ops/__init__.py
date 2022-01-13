@@ -50,3 +50,5 @@ if TYPE_CHECKING:
     # however this causes a circular import at runtime
     import popart.ir.ops.collectives as collectives
     import popart.ir.ops.var_updates as var_updates
+
+__all__ = [name for name in dir()]

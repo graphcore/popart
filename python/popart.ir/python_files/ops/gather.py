@@ -20,6 +20,7 @@ def gather(t: Tensor,
     Examples:
     
     .. code-block:: python
+
         x = pir.variable(np.arange(16).reshape(4,4))
         # [[ 0,  1,  2,  3],
         #  [ 4,  5,  6,  7],
@@ -96,6 +97,7 @@ def tied_gather(t: Tensor,
     Examples:
 
     .. code-block:: python
+
         x = pir.variable(np.arange(16).reshape(4,4))
         # [[ 0,  1,  2,  3],
         #  [ 4,  5,  6,  7],

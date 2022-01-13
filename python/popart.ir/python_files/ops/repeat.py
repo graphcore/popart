@@ -26,35 +26,33 @@ def repeat(repeat_subgraph: Graph,
         call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
         subgraph inside:
 
-    # yapf: disable
+    .. code-block:: none
 
-              LoopOp         Keep
-                 |          Going     User
-                 |  Iterator  |      Inputs
-                 |     |      |      | | |
-                 V     V      V      V V V
-                 .-Wrapper_subgraph--+-+-+----------.
-Parent graph     |                   | | |          |
-                 |                   | | |          |
-                 |                   | | |          |
-                 |                   V V V          |
-                 | CallOp .-Loop_subgraph---.       |
-                 |    |   | (user provided) |       |
-                 |    '-->|                 |       |
-                 |        |     (Ops)       |       |
-                 |        |                 |       |
-                 |        |                 |       |
-                 |        '----------+-+-+--'       |
-                 |                   | | |          |
-                 |                   V V V          |
-                 '---+---------------+-+-+----------'
-                     |               | | |
-                     |               | | |
-                     V               V V V
-                    Keep            User outputs
-                   Going
-
-    # yapf: enable
+                    LoopOp         Keep
+                        |          Going     User
+                        |  Iterator  |      Inputs
+                        |     |      |      | | |
+                        V     V      V      V V V
+                        .-Wrapper_subgraph--+-+-+----------.
+        Parent graph    |                   | | |          |
+                        |                   | | |          |
+                        |                   | | |          |
+                        |                   V V V          |
+                        | CallOp .-Loop_subgraph---.       |
+                        |    |   | (user provided) |       |
+                        |    '-->|                 |       |
+                        |        |     (Ops)       |       |
+                        |        |                 |       |
+                        |        |                 |       |
+                        |        '----------+-+-+--'       |
+                        |                   | | |          |
+                        |                   V V V          |
+                        '---+---------------+-+-+----------'
+                            |               | | |
+                            |               | | |
+                            V               V V V
+                            Keep            User outputs
+                        Going
 
     Args:
         repeat_subgraph (Graph): User defined graph to repeat `repeat_trip_count` times.

@@ -92,7 +92,7 @@ class Ir:
             **kwargs: Any,
     ) -> 'Graph':
         """
-        Create a subgraph from a python callable `fn` or a `Module`'s build method.
+        Create a subgraph from a Python callable `fn` or a `Module`'s build method.
         The graph inputs are determined using the signature of the function `fn`
         and the supplied arguments `args` and `kwargs`. Tensors passed via the
         arguments are used to determine the tensor info of the graph inputs (the
@@ -241,12 +241,11 @@ class Ir:
 
         return subgraph
 
-    def create_empty_graph(self, name: Optional[str] = None):
+    def create_empty_graph(self, name: Optional[str] = None) -> 'Graph':
         """Create a new graph.
 
         Args:
-            name (Optional[str], optional): Name of the graph. Defaults to
-            "graph".
+            name (Optional[str], optional): Name of the graph. Defaults to "graph".
 
         Returns:
             Graph

@@ -155,7 +155,7 @@ Adam
     :undoc-members:
     :private-members:
 
-``popart.ir`` (experimental)
+popart.ir (experimental)
 ------------------------------
 
 .. warning::
@@ -167,5 +167,23 @@ The ``popart.ir`` module is an experimental PopART python module through
 which it is possible to create (and to a limited degree manipulate) PopART IRs
 directly.
 
+..
+  ``popart.ir``
+  ^^^^^^^^^^^^^
+
 .. automodule:: popart.ir
+    :members:
+
+..
+  ``popart.ir.ops``
+  ^^^^^^^^^^^^^^^^^
+
+.. automodule:: popart.ir.ops
+    :members:
+
+..
+  ``popart.ir.transforms``
+  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: popart.ir.transforms
     :members:

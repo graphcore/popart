@@ -10,7 +10,7 @@ class Module:
     """
   Callable class from which user-defined layers can inherit.
 
-  The #build method should be overriden and should build the subgraph.
+  The `build` method should be overriden and should build the subgraph.
 
   The benefit of inheriting from this class rather than passing a function is
   that you can save input tensors as fields on `self`, then later when you call
