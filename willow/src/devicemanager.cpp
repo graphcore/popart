@@ -364,6 +364,10 @@ bool DeviceInfo::tryAttachUntilTimeout() {
     wait =
         std::chrono::duration_cast<std::chrono::seconds>(delayTime - startTime)
             .count();
+    writeToDeviceAccessLog(
+        "try-attach-wait",
+        {{"wait", std::to_string(wait)},
+         {"timeout", std::to_string(getOnDemandAttachTimeout())}});
   }
 
   auto end = std::chrono::steady_clock::now();
