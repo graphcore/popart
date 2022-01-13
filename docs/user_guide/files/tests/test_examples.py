@@ -58,6 +58,11 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "importing_session.py"
         self.run_python(filename, self.base_path)
 
+    def test_documentation_execute_graph(self):
+        """Test the executing imported model example"""
+        filename = "executing_imported_model.py"
+        self.run_python(filename, self.base_path)
+
     def test_documentation_simple_addition(self):
         """Test the simple addition example"""
         filename = "simple_addition.py"

@@ -23,7 +23,7 @@ contains an entry to fetch that anchor.
 
     :download:`files/importing_graphs.py`
 
-The DataFlow object is described in more detail in :any:`popart_executing`.
+The ``DataFlow`` object is described in more detail in :numref:`popart_executing`.
 
 Creating a session
 ~~~~~~~~~~~~~~~~~~
@@ -88,3 +88,32 @@ See :any:`popart_profiling` for examples of using some of these options.
 Full details of the Poplar options can be found in the
 `Poplar and PopLibs API Reference
 <https://www.graphcore.ai/docs/poplar-api-reference>`_.
+
+Executing an imported graph
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The device has been selected in the previous step. Now, the graph can be compiled for it and
+loaded into the hardware. The ``prepareDevice`` method allows you to do this.
+
+In order to execute the graph, input data has to be provided. The input created here to feed data
+to PopART, must be a NumPy array, rather than an initialised torch tensor.
+
+Finally, the ``PyStepIO`` class provides a session with input and output buffers. For both input
+and output, this class takes a dictionary with tensor names as keys and Python (or Numpy) arrays as
+values. Note that, for the imported graph, the key should match the tensor names in the graph. In
+this case, ``input.1`` is the input tensor name in the imported graph ``alexnet.onnx``, and ``input_1``
+is the value fed into it.
+
+In order to find the input names, you can import ``onnx`` package and use ``onnx.load`` to load the
+model. ``loaded_model.graph.input`` and ``loaded_model.graph.output`` give you all the node information
+for input and outputs. You can use the following command to extract the names of inputs and outputs.
+
+.. code-block:: python
+
+  inputs_name = [node.name for node in loaded_model.graph.input]
+  outputs_name = [node.name for node in loaded_model.graph.output]
+
+An example of executing an imported graph is shown below.
+
+.. literalinclude:: files/executing_imported_model.py
+  :language: python
