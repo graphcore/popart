@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Tests of streaming memory ops and execution phase logic
 # to run only these tests with ctest, consider using something like,
 # `ctest -R streamingmemory -j5 -VV'.

@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
 This is a package for building pybind11 docstrings from C++ header comments.
 

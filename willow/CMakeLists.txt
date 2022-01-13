@@ -1,3 +1,5 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+
 #[[ [comment-willow-targets]
 
   Popart Targets Created Here

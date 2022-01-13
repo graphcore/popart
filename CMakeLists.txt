@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 cmake_minimum_required(VERSION 3.12.0)
 
 #------ set version

@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Tests of ONNX matmul
 
 add_popart_cpp_unit_test(basic0_matmul_test 

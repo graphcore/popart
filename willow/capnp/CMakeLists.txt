@@ -1,3 +1,4 @@
+# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 find_package(CapnProto REQUIRED)
 
 add_custom_target(create_capnp_output_dir ALL

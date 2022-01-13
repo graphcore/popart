@@ -1,3 +1,4 @@
+# Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 cmake_minimum_required(VERSION 3.4.2)
 
 set(BUILD_DOCS OFF CACHE BOOL "Build documentation")

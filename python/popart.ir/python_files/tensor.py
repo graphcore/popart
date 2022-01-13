@@ -137,7 +137,7 @@ class Tensor:
         A `UndefinedValue` is raised if the IPU is undefined.
         """
         ipu, _ = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
-                                        raise_on_undefined_ipu=True)
+                                            raise_on_undefined_ipu=True)
         return ipu
 
     @property
@@ -146,8 +146,8 @@ class Tensor:
         Return the tile set (`compute` or `io`) the Tensor is assigned to.
         A `UndefinedValue` is raised if the tile set is undefined.
         """
-        _, tile_set = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=True,
-                                             raise_on_undefined_ipu=False)
+        _, tile_set = self._get_ipu_and_tile_set(
+            raise_on_undefined_tile_set=True, raise_on_undefined_ipu=False)
         return tile_set
 
     ## Methods
@@ -225,9 +225,9 @@ class Tensor:
 
     ## Private functions
     def _get_ipu_and_tile_set(
-        self,
-        raise_on_undefined_tile_set: bool=True,
-        raise_on_undefined_ipu: bool=True,
+            self,
+            raise_on_undefined_tile_set: bool = True,
+            raise_on_undefined_ipu: bool = True,
     ) -> Tuple[int, Literal["compute", "io", "undefined"]]:
         """
         Determine the IPU and tile set of the Tensor.

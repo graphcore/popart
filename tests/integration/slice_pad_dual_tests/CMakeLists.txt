@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 add_popart_cpp_unit_test(slice_grad_ir_test_0 
                           slice_grad_ir_test_0.cpp)
 

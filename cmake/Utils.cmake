@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 function(add_coverage_flags_if_enabled target)
   if (${POPART_ENABLE_COVERAGE} AND (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang|AppleClang"))
     # The same set of flags is applicable for both g++ and clang, however 

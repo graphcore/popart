@@ -1,5 +1,4 @@
-
-
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 add_popart_cpp_unit_test(accumulateouterfragmentparallelizertest accumulateouterfragmentparallelizer_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(aliaszerocopytest aliaszerocopy_test.cpp)
 add_popart_cpp_unit_test(aliaszerocopytest1 aliaszerocopy_test1.cpp)
@@ -125,6 +124,8 @@ add_popart_py_unit_test(saved_executable_cpu saved_executable_cpu.py)
 add_popart_py_unit_test(stream_test stream_test.py)
 add_popart_py_unit_test(stubs_test stubs_test.py)
 add_popart_py_unit_test(synthetic_data_test synthetic_data_test.py VARIANTS Hw)
+#Temporarily disabled, see T53653
+#add_popart_py_unit_test(test_test_targets test_test_targets.py)
 add_popart_py_unit_test(test_groupHostSync test_groupHostSync.py VARIANTS IpuModel)
 add_popart_py_unit_test(train_then_infer_test train_then_infer_test.py VARIANTS IpuModel)
 add_popart_py_unit_test(variable_inference_test variable_inference_test.py)

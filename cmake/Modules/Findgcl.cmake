@@ -1,3 +1,4 @@
+# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 if(gcl_FOUND)
   return()
 endif()

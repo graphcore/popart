@@ -49,9 +49,8 @@ def check_tensor_ipu_and_tile_set(*args, **tensors: Tensor):
 
     def get_ipu_and_tile_set(t):
         try:
-            return t._get_ipu_and_tile_set(
-                raise_on_undefined_tile_set=False,
-                raise_on_undefined_ipu=False)
+            return t._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
+                                           raise_on_undefined_ipu=False)
         except UndefinedValue:
             return None, None
 

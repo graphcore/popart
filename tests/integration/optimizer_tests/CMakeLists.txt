@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_0 sgd_mixed_mode_test_cpp_0.cpp VARIANTS IpuModel)
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_10 sgd_mixed_mode_test_cpp_1_10.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_9 sgd_mixed_mode_test_cpp_1_9.cpp)

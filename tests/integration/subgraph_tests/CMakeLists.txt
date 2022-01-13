@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Tests of sub-graphs using our sub-string algorithm
 # to run only these tests with ctest, consider using something like,
 # `ctest -R subgraph_test -j5 -VV'.

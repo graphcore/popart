@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Tests of const expression folding, testing both
 # (1) that the constant expressions (ce's) are correctly found, and
 # (2) that the outputs are correctly computed statically on host.

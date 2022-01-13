@@ -1,4 +1,5 @@
 <?php
+// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 final class PopartTestLinter extends ArcanistExternalLinter {
 

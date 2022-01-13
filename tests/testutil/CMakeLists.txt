@@ -1,3 +1,5 @@
+# Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+
 set(test_util_root_src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(test_util_root_public_headers_dir ${CMAKE_CURRENT_SOURCE_DIR}/include/testutil)
 

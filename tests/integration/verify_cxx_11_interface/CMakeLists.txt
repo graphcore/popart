@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Add a test is compiled with the c++11 standard to check that the popart
 # interface is c++11 compatible. If not, the build will fail when compiling the
 # test.

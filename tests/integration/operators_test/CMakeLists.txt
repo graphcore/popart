@@ -1,3 +1,4 @@
+# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 add_popart_py_unit_test(abs_sign_test abs_sign_test.py)
 add_popart_py_unit_test(asinh_test asinh_test.py)
 add_popart_py_unit_test(atan2_test atan2_test.py)

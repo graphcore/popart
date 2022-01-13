@@ -19,7 +19,6 @@ repos:
             language: python
             exclude: |
                 (?x)^(
-                    LICENSE|
                     build_scripts/.*|
                     willow/include/popart/vendored/.*|
                     .arclint|
@@ -28,6 +27,7 @@ repos:
                     .clang-format|
                     .style.yapf|
                     .*Doxyfile.in|
+                    .*LICENSE|
                     .*.drawio|
                     .*.json|
                     .*.md|
@@ -81,10 +81,10 @@ repos:
     #      - id: clang-tidy
     #      - id: oclint
     #      - id: uncrustify
-    #      - id: cppcheck
-    #        exclude: willow/include/popart/vendored/
-    #        args: [
-    #            --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
-    #        ]
+          - id: cppcheck
+            exclude: willow/include/popart/vendored/
+            args: [
+                --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
+            ]
     #      - id: cpplint
     #      - id: include-what-you-use
