@@ -26,21 +26,17 @@ RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
   std::vector<size_t> rngStateTensorShape{
       getNumTiles(), getNumWorkersPerTile(), rngStateSizePerWorker};
   differingSeedsRngStateTensor =
-      snap::Tensor{graph.get().getPoplarGraph().addVariable(
-                       poplar::UNSIGNED_INT,
-                       rngStateTensorShape,
-                       {"differingSeedsRngStateTensor"}),
-                   graph.get()};
+      graph.get().addVariable(poplar::UNSIGNED_INT,
+                              rngStateTensorShape,
+                              {"differingSeedsRngStateTensor"});
   // Layout tensor carefully to avoid exchanges.
   setTensorLayout(differingSeedsRngStateTensor);
 
   // Create tensor to hold the inacive RNG state.
   identicalSeedsRngStateTensor =
-      snap::Tensor{graph.get().getPoplarGraph().addVariable(
-                       poplar::UNSIGNED_INT,
-                       rngStateTensorShape,
-                       {"identicalSeedsRngStateTensor"}),
-                   graph.get()};
+      graph.get().addVariable(poplar::UNSIGNED_INT,
+                              rngStateTensorShape,
+                              {"identicalSeedsRngStateTensor"});
   // Layout tensor carefully to avoid exchanges.
   setTensorLayout(identicalSeedsRngStateTensor);
 }
@@ -141,7 +137,7 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
 
 void RngStateLowering::setTensorLayout(snap::Tensor &tensor) {
 
-  auto numTiles = graph.get().getPoplarGraph().getTarget().getNumTiles();
+  auto numTiles = graph.get().getTarget().getNumTiles();
   if (tensor.rank() >= 1 && tensor.shape()[0] == numTiles) {
 
     for (auto tile = 0U; tile != numTiles; ++tile) {
@@ -187,11 +183,10 @@ PriTask RngStateLowering::initRngStateTensor() {
                                                     getNumTiles(),
                                                     getNumWorkersPerTile(),
                                                     rngStateSizePerWorker};
-    combinedRngStateTensor = snap::Tensor{
-        graph.get().getPoplarGraph().addVariable(poplar::UNSIGNED_INT,
-                                                 combinedRngStateTensorShape,
-                                                 {"combinedRngStateTensor"}),
-        graph.get()};
+    combinedRngStateTensor =
+        graph.get().addVariable(poplar::UNSIGNED_INT,
+                                combinedRngStateTensorShape,
+                                {"combinedRngStateTensor"});
     irLowering.get().getLinearMapper().mapTensor(graph.get(),
                                                  combinedRngStateTensor);
     return SequenceMap(graph.get());
@@ -300,11 +295,11 @@ PriTask RngStateLowering::rngStateToHost() {
 }
 
 unsigned RngStateLowering::getNumWorkersPerTile() {
-  return graph.get().getPoplarGraph().getTarget().getNumWorkerContexts();
+  return graph.get().getTarget().getNumWorkerContexts();
 }
 
 unsigned RngStateLowering::getNumTiles() {
-  return graph.get().getPoplarGraph().getTarget().getNumTiles();
+  return graph.get().getTarget().getNumTiles();
 }
 
 unsigned RngStateLowering::getCombinedRngStateSize() {

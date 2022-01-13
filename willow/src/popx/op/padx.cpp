@@ -210,9 +210,7 @@ snap::Tensor BasePadOpx::constantModePadGrow(snap::Tensor inTensor,
   // need to cloneNcopy it.
   const auto propitious = getPropitiousPadLayout();
   if (propitious.first) {
-    auto outTensor = snap::Tensor{
-        graph().getPoplarGraph().clone(propitious.second.getPoplarTensor()),
-        graph()};
+    auto outTensor    = graph().clone(propitious.second);
     auto chisseledDst = getChisseled(outTensor);
     s.add(snap::program::Copy(
         inTensor, chisseledDst.core, false, debugContext()));

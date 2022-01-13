@@ -247,9 +247,7 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
 
     auto &graph = opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex);
     auto fullTensor =
-        snap::Tensor{graph.getPoplarGraph().addVariable(
-                         popType(outInfo), outInfo.shape_szt(), ""),
-                     graph};
+        graph.addVariable(popType(outInfo), outInfo.shape_szt(), "");
 
     // Map it linearly
     snap::poputil::mapTensorLinearly(
@@ -308,9 +306,8 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
 
     auto &graph =
         pathToInput.back().opx->srcVirtualGraph(pathToInput.back().inIndex);
-    auto fullTensor = snap::Tensor{graph.getPoplarGraph().addVariable(
-                                       popType(inInfo), inInfo.shape_szt(), ""),
-                                   graph};
+    auto fullTensor =
+        graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
 
     // Map it linearly
     snap::poputil::mapTensorLinearly(

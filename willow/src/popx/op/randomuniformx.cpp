@@ -17,17 +17,16 @@ void RandomUniformOpx::grow(snap::program::Sequence &prog) const {
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
 
-  auto refTensor = graph().getPoplarGraph().addVariable(
-      poplarType,
-      shape,
-      poplar::VariableMappingMethod::LINEAR,
-      debugContext("refTensor"));
+  auto refTensor = graph().addVariable(poplarType,
+                                       shape,
+                                       poplar::VariableMappingMethod::LINEAR,
+                                       debugContext("refTensor"));
 
   auto output =
       poprand::uniform(graph().getPoplarGraph(),
                        &getInTensor(op.getSeedInIndex()).getPoplarTensor(),
                        0u,
-                       refTensor,
+                       refTensor.getPoplarTensor(),
                        poplarType,
                        op.getLow(),
                        op.getHigh(),

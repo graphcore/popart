@@ -62,11 +62,7 @@ CopyVarUpdateOpx::createInputTensor(int inIndex,
         "only create the updater input Tensor",
         inIndex);
   }
-  return snap::Tensor{
-      graph().getPoplarGraph().clone(
-          getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor(),
-          dnai),
-      graph()};
+  return graph().clone(getInTensor(VarUpdateOp::getVarToUpdateInIndex()), dnai);
 }
 
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {

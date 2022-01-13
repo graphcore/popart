@@ -98,13 +98,13 @@ void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
       vector_cast<std::size_t>(grad_op.backwardShape());
   const auto &output_shape = outShape(ReduceMedianGradOp::getOutIndex());
 
-  auto grad = graph().getPoplarGraph().addVariable(
+  auto grad = graph().addVariable(
       popType(grad_op.outInfo(ReduceMedianGradOp::getOutIndex())),
       vector_cast<std::size_t>(output_shape),
       poplar::VariableMappingMethod::LINEAR,
       debugContext("initGrad"));
   popops::zero(graph().getPoplarGraph(),
-               grad,
+               grad.getPoplarTensor(),
                prog.getPoplarSequence(),
                debugContext("zeroGrad"));
 
@@ -144,13 +144,13 @@ void ReduceMedianGradOpx::grow(snap::program::Sequence &prog) const {
                             graph(),
                             snap::Tensor{indices, graph()},
                             snap::Tensor{grad_top, graph()},
-                            snap::Tensor{grad, graph()},
+                            grad,
                             pp.axes_complement.size(),
                             getDebugNameAndId("scatter"));
 
   grad = grad.reshape(grad_shape);
   grad = grad.dimShuffle(pp.dim_permute_reverse);
-  setOutTensor(ReduceMedianGradOp::getOutIndex(), snap::Tensor{grad, graph()});
+  setOutTensor(ReduceMedianGradOp::getOutIndex(), grad);
 }
 
 namespace reducemedianinternal {

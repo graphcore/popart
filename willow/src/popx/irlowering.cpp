@@ -570,7 +570,7 @@ snap::Tensor IrLowering::getConst(snap::Graph &graph,
                                   const poplar::DebugContext &debugContext) {
   const auto tensor =
       graph.getPoplarGraph().addConstant(type, shape, val, debugContext);
-  const auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
+  const auto tilesTotal = graph.getTarget().getTilesPerIPU();
   const auto tile       = tileCounterGraphConstVar % tilesTotal;
   tileCounterGraphConstVar++;
 
@@ -582,15 +582,14 @@ snap::Tensor
 IrLowering::getScalarVariable(snap::Graph &graph,
                               const poplar::Type &type,
                               const poplar::DebugContext &debugContext) {
-  const auto tensor =
-      graph.getPoplarGraph().addVariable(type, {}, debugContext);
-  const auto tilesTotal = graph.getPoplarGraph().getTarget().getTilesPerIPU();
+  const auto tensor     = graph.addVariable(type, {}, debugContext);
+  const auto tilesTotal = graph.getTarget().getTilesPerIPU();
   const auto tile =
       (tilesTotal + (tileCounterGraphScalarVar % tilesTotal)) % tilesTotal;
   tileCounterGraphScalarVar--;
 
-  graph.getPoplarGraph().setTileMapping(tensor, tile);
-  return snap::Tensor{tensor, graph};
+  graph.getPoplarGraph().setTileMapping(tensor.getPoplarTensor(), tile);
+  return tensor;
 }
 
 snap::Graph &IrLowering::getVirtualGraph(VGraphId virtualGraphIndex,
@@ -2155,10 +2154,8 @@ void IrLowering::growOpx(PopOpx *opx,
           // Clone the input tensor with its current values
           // to check if the original input tensor has been modified
           // during opx->grow(seq)
-          auto inTensorClone = snap::Tensor{
-              graph().getPoplarGraph().clone(inTensor.getPoplarTensor(),
-                                             opx->debugContext("orig")),
-              graph()};
+          auto inTensorClone =
+              graph().clone(inTensor, opx->debugContext("orig"));
           seqIt->add(snap::program::Copy(
               inTensor, inTensorClone, false, opx->debugContext("check")));
           nonModifiedTensors[inputMap.first] =
@@ -2649,7 +2646,7 @@ void IrLowering::prePlanConvolutions() {
         }
       }
     }
-    const poplar::Target target = graph->getPoplarGraph().getTarget();
+    const poplar::Target target = graph->getTarget();
     std::set<ConvPlanParams> allConvPlanParams;
 
     for (int i = 0; i < allConvParams.size(); i++) {
@@ -2706,16 +2703,12 @@ void IrLowering::prePlanMatMuls() {
       // which to generate the MatMulParams.
       // TODO: T31134 we could avoid this by moving the reshaping of inputs into
       // the IR.
-      snap::Graph dummyGraph(graph->getPoplarGraph().getTarget());
+      snap::Graph dummyGraph(graph->getTarget());
       auto inputType = popType(matMulOp->lhsIn()->info.dataType());
-      auto dummyLhs =
-          snap::Tensor{dummyGraph.getPoplarGraph().addVariable(
-                           inputType, matMulOp->lhsIn()->info.shape_szt()),
-                       dummyGraph};
-      auto dummyRhs =
-          snap::Tensor{dummyGraph.getPoplarGraph().addVariable(
-                           inputType, matMulOp->rhsIn()->info.shape_szt()),
-                       dummyGraph};
+      auto dummyLhs  = dummyGraph.addVariable(
+          inputType, matMulOp->lhsIn()->info.shape_szt());
+      auto dummyRhs = dummyGraph.addVariable(
+          inputType, matMulOp->rhsIn()->info.shape_szt());
 
       auto inputs = MatMulOpx::groupedMatMulInputsFromOpxInputs(
           *matMulOp, dummyLhs, dummyRhs);
@@ -2731,7 +2724,7 @@ void IrLowering::prePlanMatMuls() {
       allOptionFlags.push_back(opts);
     }
 
-    const poplar::Target *target = &(graph->getPoplarGraph().getTarget());
+    const poplar::Target *target = &(graph->getTarget());
     std::set<MatMulPlanParams> allMatMulPlanParams;
 
     for (int i = 0; i < allMatMulParams.size(); i++) {
@@ -2870,8 +2863,8 @@ void IrLowering::prepareGraph() {
   subgraphPartitioner->apply();
 
   if (ir().virtualGraphsEnabled()) {
-    auto numIPUs     = graph().getPoplarGraph().getTarget().getNumIPUs();
-    auto tilesPerIPU = graph().getPoplarGraph().getTarget().getTilesPerIPU();
+    auto numIPUs     = graph().getTarget().getNumIPUs();
+    auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 
     int numIOTiles = ir().getSessionOptions().numIOTiles;
 
@@ -2940,7 +2933,7 @@ void IrLowering::prepareGraph() {
       }
     }
   } else {
-    auto numIPUs = graph().getPoplarGraph().getTarget().getNumIPUs();
+    auto numIPUs = graph().getTarget().getNumIPUs();
     if (numIPUs > 1 &&
         numIPUs != ir().getSessionOptions().replicatedGraphCount) {
       throw error("If virtual graphs are disabled, the replicated graph count "
@@ -3689,10 +3682,7 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
 
     const auto &poplarTensor     = tensors_.get(tensor->id);
     const TensorId accumulatorId = anchorSumPrefix() + tensor->id;
-    auto accumulatorTensor =
-        snap::Tensor{graph().getPoplarGraph().clone(
-                         poplarTensor.getPoplarTensor(), accumulatorId),
-                     graph()};
+    auto accumulatorTensor       = graph().clone(poplarTensor, accumulatorId);
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);

@@ -106,9 +106,8 @@ std::vector<snap::Tensor> IfOpx::prepareOutputs() const {
 
   auto cloneOutput = [&](const Graph &branch, OutIndex branchIndex) {
     auto branchId     = branch.getOutputId(branchIndex);
-    auto branchOutput = get(branchId).getPoplarTensor();
-    outputs.push_back(
-        snap::Tensor{graph().getPoplarGraph().clone(branchOutput), graph()});
+    auto branchOutput = get(branchId);
+    outputs.push_back(graph().clone(branchOutput));
   };
 
   auto tryCloneOutputFromBranch = [&](const Graph &graph, int outIndex) {

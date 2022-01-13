@@ -36,16 +36,11 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
   if (groupings.empty()) {
     // Make the grain size the vector width multiplied by the number of workers
     // per tile.
-    auto grain_size =
-        g.getPoplarGraph().getTarget().getVectorWidth(t.elementType()) *
-        g.getPoplarGraph().getTarget().getNumWorkerContexts();
+    auto grain_size = g.getTarget().getVectorWidth(t.elementType()) *
+                      g.getTarget().getNumWorkerContexts();
 
     // Create the tensor.
-    outTensor = {
-        g.getPoplarGraph().clone(t.getPoplarTensor(),
-                                 d,
-                                 poplar::TensorCloneMethod::CREATE_NEW_ORDER),
-        g};
+    outTensor = g.clone(t, d, poplar::TensorCloneMethod::CREATE_NEW_ORDER);
     snap::poputil::mapTensorLinearly(g, outTensor, 0, grain_size);
 
     // Copy the values to it.

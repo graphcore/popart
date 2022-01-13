@@ -61,10 +61,8 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
       getConst(poplar::UNSIGNED_INT, {}, hStashSize, "stash_size");
 
   // Create the stash index tensor.
-  const snap::Tensor stashIndex =
-      snap::Tensor{graph().getPoplarGraph().addVariable(
-                       poplar::UNSIGNED_INT, {1}, debugContext("stash_index")),
-                   graph()};
+  const snap::Tensor stashIndex = graph().addVariable(
+      poplar::UNSIGNED_INT, {1}, debugContext("stash_index"));
   graph().getPoplarGraph().setTileMapping(stashIndex.getPoplarTensor(), 0);
   graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
                                            poplar::ArrayRef<uint32_t>({0}));

@@ -28,7 +28,7 @@ void LinearMapper::MapperImpl::mapTensor(snap::Graph &graph,
   auto mapping_tile_count = mapping.size();
 
   // shift the mapping to prevent always starting at tile 0
-  auto tile_count = graph.getPoplarGraph().getTarget().getNumTiles();
+  auto tile_count = graph.getTarget().getNumTiles();
   mapping.resize(tile_count);
   rotate_right(mapping, next_mapping_start_index);
 

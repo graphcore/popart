@@ -51,12 +51,10 @@ snap::Tensor ShapedDropoutOpx::getReferenceTensor() const {
   auto poplarType   = popType(inInfo(dbo.getInIndex()));
   auto dropoutShape = vXtoY<int64_t, std::size_t>(dbo.getShape());
 
-  return snap::Tensor{graph().getPoplarGraph().addVariable(
-                          poplarType,
-                          dropoutShape,
-                          poplar::VariableMappingMethod::LINEAR,
-                          debugContext("dropoutShape")),
-                      graph()};
+  return graph().addVariable(poplarType,
+                             dropoutShape,
+                             poplar::VariableMappingMethod::LINEAR,
+                             debugContext("dropoutShape"));
 }
 
 namespace {

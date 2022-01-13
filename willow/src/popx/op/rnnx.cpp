@@ -44,15 +44,14 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
   unsigned batchSize  = rnn_op.getBatchSize();
   const poplar::Type elem_type =
       popType(rnn_op.inInfo(RNNOp::getInputInIndex()));
-  auto output =
-      graph().getPoplarGraph().addVariable(elem_type,
-                                           {seqLen, 1, batchSize, hiddenSize},
-                                           debugContext("rnn/output"));
+  auto output = graph().addVariable(elem_type,
+                                    {seqLen, 1, batchSize, hiddenSize},
+                                    debugContext("rnn/output"));
   for (int i = 0; i < seqLen; i++) {
 
-    poplar::Tensor Hprev;
+    snap::Tensor Hprev;
     if (i == 0) {
-      Hprev = initialH.getPoplarTensor()[0];
+      Hprev = initialH[0];
     } else {
       Hprev = output[i - 1][0];
     }
@@ -67,39 +66,41 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
                     .reshape({hiddenSize});
 
       // Rh = R * h
-      auto Rh = poplin::matMul(graph().getPoplarGraph(),
-                               R[0],
-                               Hprev[j].reshape({hiddenSize, 1}),
-                               prog.getPoplarSequence(),
-                               debugContext("rnn/Rh"))
-                    .reshape({hiddenSize});
+      auto Rh =
+          poplin::matMul(graph().getPoplarGraph(),
+                         R[0],
+                         Hprev[j].reshape({hiddenSize, 1}).getPoplarTensor(),
+                         prog.getPoplarSequence(),
+                         debugContext("rnn/Rh"))
+              .reshape({hiddenSize});
 
       // output[i][0][j] = Rh + Wx + b
-      prog.getPoplarSequence().add(poplar::program::Copy(
-          popops::add(graph().getPoplarGraph(),
-                      popops::add(graph().getPoplarGraph(),
-                                  Wx,
-                                  Rh,
-                                  prog.getPoplarSequence(),
-                                  debugContext("rnn/Wx+Rh")),
-                      bias.getPoplarTensor()[0],
-                      prog.getPoplarSequence(),
-                      debugContext("rnn/Wx+Rh+b")),
+      prog.add(snap::program::Copy(
+          snap::Tensor{popops::add(graph().getPoplarGraph(),
+                                   popops::add(graph().getPoplarGraph(),
+                                               Wx,
+                                               Rh,
+                                               prog.getPoplarSequence(),
+                                               debugContext("rnn/Wx+Rh")),
+                                   bias.getPoplarTensor()[0],
+                                   prog.getPoplarSequence(),
+                                   debugContext("rnn/Wx+Rh+b")),
+                       graph()},
           output[i][0][j],
           false,
           debugContext("rnn/output[i][0][j]")));
     }
     popnn::nonLinearityInPlace(graph().getPoplarGraph(),
                                activation,
-                               output[i],
+                               output[i].getPoplarTensor(),
                                prog.getPoplarSequence(),
                                debugContext("rnn/activation"));
   }
 
   // set outputs
-  snap::Tensor output_last = snap::Tensor{output[seqLen - 1], graph()};
+  snap::Tensor output_last = output[seqLen - 1];
   if (getOp<RNNOp>().hasOutput(RNNOp::getFullOutputOutIndex())) {
-    setOutTensor(RNNOp::getFullOutputOutIndex(), snap::Tensor{output, graph()});
+    setOutTensor(RNNOp::getFullOutputOutIndex(), output);
   }
   if (getOp<RNNOp>().hasOutput(RNNOp::getLastOutputOutIndex())) {
     setOutTensor(RNNOp::getLastOutputOutIndex(), cloneNcopy(prog, output_last));

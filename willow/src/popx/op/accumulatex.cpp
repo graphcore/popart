@@ -46,13 +46,9 @@ AccumulateBaseOpx::createInputTensor(int inIndex,
   }
   poplar::Tensor inTensor;
   auto accumulatorInfo = inInfo(inIndex);
-  return snap::Tensor{
-      graph().getPoplarGraph().clone(
-          popType(accumulatorInfo),
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-              .getPoplarTensor(),
-          dnai),
-      graph()};
+  return graph().clone(popType(accumulatorInfo),
+                       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+                       dnai);
 }
 
 std::set<TensorId>
@@ -457,9 +453,8 @@ snap::Tensor SparseAccumulateOpx::createInputTensor(
    */
 
   if (hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
-    auto w = getInTensor(SparseAccumulateOp::getOriginalVarToUpdateInIndex())
-                 .getPoplarTensor();
-    return snap::Tensor{graph().getPoplarGraph().clone(w, dnai), graph()};
+    auto w = getInTensor(SparseAccumulateOp::getOriginalVarToUpdateInIndex());
+    return graph().clone(w, dnai);
   }
 
   auto info        = inInfo(SparseAccumulateOp::getVarToUpdateInIndex());

@@ -180,9 +180,7 @@ snap::Tensor resizeNearest(snap::Tensor input,
                            snap::program::Sequence &prog,
                            snap::Graph &graph,
                            poplar::DebugContext debugContext) {
-  auto result = snap::Tensor{
-      graph.getPoplarGraph().clone(input.getPoplarTensor(), debugContext),
-      graph};
+  auto result = graph.clone(input, debugContext);
   prog.add(snap::program::Copy(input, result, false, debugContext));
 
   for (int i = 0; i < input.rank(); i++) {
@@ -208,9 +206,7 @@ snap::Tensor resizeLinear(snap::Tensor input,
                           snap::program::Sequence &prog,
                           snap::Graph &graph,
                           poplar::DebugContext debugContext) {
-  auto result = snap::Tensor{
-      graph.getPoplarGraph().clone(input.getPoplarTensor(), debugContext),
-      graph};
+  auto result = graph.clone(input, debugContext);
   prog.add(snap::program::Copy(input, result, false, debugContext));
 
   // Generate new params for calculating nearest floor.
@@ -519,13 +515,12 @@ snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
                                          int dimension,
                                          int64_t newSize,
                                          float scale) const {
-  auto slices        = split(input, dimension);
-  auto paddingTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
-                                        input.elementType(),
-                                        slices.at(0).shape(),
-                                        poplar::VariableMappingMethod::LINEAR,
-                                        debugContext()),
-                                    graph()};
+  auto slices = split(input, dimension);
+  auto paddingTensor =
+      graph().addVariable(input.elementType(),
+                          slices.at(0).shape(),
+                          poplar::VariableMappingMethod::LINEAR,
+                          debugContext());
   popops::zero(graph().getPoplarGraph(),
                paddingTensor.getPoplarTensor(),
                prog.getPoplarSequence(),

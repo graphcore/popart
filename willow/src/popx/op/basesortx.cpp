@@ -65,16 +65,16 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().getPoplarGraph().addVariable(popType(info), shape, dnai);
+    auto t = graph().addVariable(popType(info), shape, dnai);
 
     // Map it linearly
-    snap::poputil::mapTensorLinearly(graph(), snap::Tensor{t, graph()});
+    snap::poputil::mapTensorLinearly(graph(), t);
 
     // DimShuffle back to the desired shape
     std::vector<unsigned> permutation(t.rank());
     std::iota(permutation.begin(), permutation.end(), 0);
     std::swap(permutation[axis], permutation.back());
-    return snap::Tensor{t.dimShuffle(permutation), graph()};
+    return t.dimShuffle(permutation);
   } else {
     return PopOpx::createInputTensor(inIndex, dnai);
   }

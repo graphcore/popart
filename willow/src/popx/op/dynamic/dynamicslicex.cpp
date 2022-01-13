@@ -101,12 +101,10 @@ DynamicSliceOpx::createInputTensor(InIndex index,
     }
 
     // Create the input tensor
-    auto sliceTensor = snap::Tensor{
-        graph().getPoplarGraph().addVariable(
-            popType(outInfo),
-            outShape,
-            debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice")),
-        graph()};
+    auto sliceTensor = graph().addVariable(
+        popType(outInfo),
+        outShape,
+        debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
 
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
 
@@ -122,12 +120,10 @@ DynamicSliceOpx::createInputTensor(InIndex index,
 
   if (index == DynamicSliceInplaceOp::getSliceInIndex()) {
     // Create the input tensor
-    auto sliceTensor = snap::Tensor{
-        graph().getPoplarGraph().addVariable(
-            popType(outInfo),
-            outShape,
-            debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice")),
-        graph()};
+    auto sliceTensor = graph().addVariable(
+        popType(outInfo),
+        outShape,
+        debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
     return sliceTensor;
   }
 

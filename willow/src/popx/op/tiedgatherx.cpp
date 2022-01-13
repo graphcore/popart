@@ -86,10 +86,10 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
-    auto result = graph().getPoplarGraph().addVariable(
+    auto result = graph().addVariable(
         data.elementType(), outputShape, debugContext("result"));
 
-    setOutTensor(TiedGatherOp::outIndex(), snap::Tensor{result, graph()});
+    setOutTensor(TiedGatherOp::outIndex(), result);
   } else {
     // Flatten the scalar indices.
     auto offsets = indices.flatten();

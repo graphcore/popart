@@ -31,11 +31,9 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
   snap::poputil::mapTensorLinearly(graph, singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
-  auto indices =
-      snap::Tensor{graph.getPoplarGraph().clone(
-                       poplar::INT, input.getPoplarTensor(), {dnai, "clone"}),
-                   graph};
-  prog.add(snap::program::WriteUndef(indices, {dnai, "writeUndef"}));
+  auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});
+  prog.getPoplarSequence().add(poplar::program::WriteUndef(
+      indices.getPoplarTensor(), {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
   // to the back, and making 2-D

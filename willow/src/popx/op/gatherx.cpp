@@ -54,10 +54,10 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
-    auto result = graph().getPoplarGraph().addVariable(
+    auto result = graph().addVariable(
         data.elementType(), outputShape, debugContext("result"));
 
-    setOutTensor(GatherOp::outIndex(), snap::Tensor{result, graph()});
+    setOutTensor(GatherOp::outIndex(), result);
     return;
   }
 

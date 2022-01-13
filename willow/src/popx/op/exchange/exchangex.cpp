@@ -21,12 +21,10 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
   snap::Tensor rbTensor;
   // Clone the input tensor if the remote buffer tensor does not exist
   if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
-    rbTensor = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            t.getPoplarTensor(),
-            {"RB_" + std::to_string(rbid)},
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    rbTensor =
+        graph.clone(t,
+                    {"RB_" + std::to_string(rbid)},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
   }
   auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
@@ -34,11 +32,9 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
   // The outplacing of the tensor will be done explicitly
   if (!inplace) {
     snap::Tensor tw =
-        snap::Tensor{graph.getPoplarGraph().clone(
-                         rbTensor.getPoplarTensor(),
-                         {id + "_writable"},
-                         poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES),
-                     graph};
+        graph.clone(rbTensor,
+                    {id + "_writable"},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
   }
   // Outplace fallback
@@ -49,11 +45,9 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
                        "The aliasing properties have changed implicitly.",
                        id);
     snap::Tensor tw =
-        snap::Tensor{graph.getPoplarGraph().clone(
-                         rbTensor.getPoplarTensor(),
-                         {id + "_writable"},
-                         poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES),
-                     graph};
+        graph.clone(rbTensor,
+                    {id + "_writable"},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
   }
   return t;
@@ -69,12 +63,10 @@ snap::Tensor getOrCreateStreamTensor(Devicex *dv_p,
   if (dv_p->lowering().hasStreamTensor("ST_" + streamTensorId)) {
     streamTensor = dv_p->lowering().getStreamTensor("ST_" + streamTensorId);
   } else {
-    streamTensor = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            t.getPoplarTensor(),
-            poplar::DebugContext(context, streamTensorId),
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    streamTensor =
+        graph.clone(t,
+                    poplar::DebugContext(context, streamTensorId),
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().setStreamTensor("ST_" + streamTensorId, streamTensor);
   }
   return streamTensor;
@@ -92,12 +84,10 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
   if (dv_p->lowering().tensors().contains(streamTensorId)) {
     streamTensor = dv_p->lowering().tensors().get(streamTensorId);
   } else {
-    streamTensor = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            t.getPoplarTensor(),
-            {streamTensorId},
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    streamTensor =
+        graph.clone(t,
+                    {streamTensorId},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().setStreamTensor(id, streamTensor);
   }
   if (!t.getPoplarTensor().isParallelWriteable()) {
@@ -105,12 +95,10 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                         " target, cloning. "
                         "The aliasing properties have changed implicitly.",
                         id);
-    snap::Tensor tw = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            streamTensor.getPoplarTensor(),
-            {id + "_writable"},
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    snap::Tensor tw =
+        graph.clone(streamTensor,
+                    {id + "_writable"},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     return tw;
   }
   return t;
@@ -330,14 +318,12 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
   }
 
   if (!dv_p->lowering().hasRemoteBuffer(descriptor.getRemoteBufferId())) {
-    rbTensor = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            inTensors.at(0).second.getPoplarTensor(),
-            poplar::DebugContext(context,
-                                 dv_p->lowering().getRemoteBufferName(
-                                     descriptor.getRemoteBufferId())),
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    rbTensor =
+        graph.clone(inTensors.at(0).second,
+                    poplar::DebugContext(context,
+                                         dv_p->lowering().getRemoteBufferName(
+                                             descriptor.getRemoteBufferId())),
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(descriptor.getRemoteBufferId(),
                                         rbTensor);
   }
@@ -391,14 +377,12 @@ void RemoteStoreDescriptorx::pre(snap::Graph &graph,
                                  poplar::DebugContext context) {
   snap::Tensor rbTensor;
   if (!dv_p->lowering().hasRemoteBuffer(descriptor.getRemoteBufferId())) {
-    rbTensor = snap::Tensor{
-        graph.getPoplarGraph().clone(
-            inTensors.at(0).second.getPoplarTensor(),
-            poplar::DebugContext(context,
-                                 dv_p->lowering().getRemoteBufferName(
-                                     descriptor.getRemoteBufferId())),
-            poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES),
-        graph};
+    rbTensor =
+        graph.clone(inTensors.at(0).second,
+                    poplar::DebugContext(context,
+                                         dv_p->lowering().getRemoteBufferName(
+                                             descriptor.getRemoteBufferId())),
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().createRemoteBuffer(descriptor.getRemoteBufferId(),
                                         rbTensor);
   }

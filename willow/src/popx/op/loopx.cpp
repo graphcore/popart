@@ -61,11 +61,9 @@ std::vector<snap::Tensor> LoopOpx::cloneBodyOutputs() const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
   for (auto outId : subgraph.getOutputIds()) {
-    auto bodyOutputTensor       = get(outId);
-    auto clonedBodyOutputTensor = snap::Tensor{
-        graph().getPoplarGraph().clone(bodyOutputTensor.getPoplarTensor(),
-                                       debugContext(outId)),
-        const_cast<snap::Tensor &>(bodyOutputTensor)};
+    auto bodyOutputTensor = get(outId);
+    auto clonedBodyOutputTensor =
+        graph().clone(bodyOutputTensor, debugContext(outId));
     tensors.push_back(clonedBodyOutputTensor);
   }
   return tensors;
@@ -371,9 +369,8 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   // 3: Create a poplar only iterator variable i, set it to 0
   snap::Tensor iteratorTensor;
-  iteratorTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
-                                    poplar::INT, {}, debugContext("iterator")),
-                                graph()};
+  iteratorTensor =
+      graph().addVariable(poplar::INT, {}, debugContext("iterator"));
   snap::poputil::mapTensorLinearly(graph(), iteratorTensor);
   popops::zero(graph().getPoplarGraph(),
                iteratorTensor.getPoplarTensor(),
@@ -381,9 +378,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
                debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
-  auto exitTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
-                                     poplar::BOOL, {}, debugContext("exit")),
-                                 graph()};
+  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
   snap::poputil::mapTensorLinearly(graph(), exitTensor);
   prog.add(
       snap::program::Copy(fconst, exitTensor, {}, debugContext("exit_false")));

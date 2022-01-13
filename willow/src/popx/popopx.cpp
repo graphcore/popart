@@ -341,10 +341,7 @@ snap::Tensor PopOpx::cloneNcopy(snap::program::Sequence &prog,
           "Clone (and copy)");
 
   // TODO Would be good to get the name of the tensor
-  auto outTensor =
-      snap::Tensor{graph().getPoplarGraph().clone(tensor.getPoplarTensor(),
-                                                  debugContext(name)),
-                   const_cast<snap::Tensor &>(tensor)};
+  auto outTensor = graph().clone(tensor, debugContext(name));
   prog.add(snap::program::Copy(tensor, outTensor, false, debugContext(name)));
   return outTensor;
 }

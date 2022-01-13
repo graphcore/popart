@@ -132,25 +132,24 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
 
   auto src = irLowering.tensors().get(getSrcId());
 
-  poplar::Tensor dst;
+  snap::Tensor dst;
 
   if (t->hasProducer()) {
     Op *producer = t->getProducer();
-    dst          = dstGraph.getPoplarGraph().clone(
-        src.getPoplarTensor(),
+    dst          = dstGraph.clone(
+        src,
         {poplar::DebugNameAndId(dstId,
                                 producer->getDebugInfo().getId(),
                                 producer->getDebugInfo().getPathName())});
   } else {
-    dst = dstGraph.getPoplarGraph().clone(src.getPoplarTensor(),
-                                          {poplar::DebugNameAndId(dstId)});
+    dst = dstGraph.clone(src, {poplar::DebugNameAndId(dstId)});
   }
 
   if (irLowering.tensors().hasViewChangers(getSrcId())) {
     irLowering.tensors().setViewChangers(
         getDstId(), irLowering.tensors().getViewChangers(getSrcId()));
   }
-  irLowering.tensors().insert(getDstId(), snap::Tensor{dst, dstGraph});
+  irLowering.tensors().insert(getDstId(), dst);
   return true;
 }
 
@@ -203,18 +202,14 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
 
   logging::devicex::trace("Cloning poplar::Tensor {}.", getDstId());
 
-  auto &dstGraph = getDstGraph(tensor, irLowering);
-
   // The clone makes sure to only keep the necessary parts of the unwound
   // tensor alive, and contiguate it,
   // reducing IPU memory liveness and fragmentation (see T18661)
-  auto input = snap::Tensor{
-      irLowering.graph().getPoplarGraph().clone(
-          inputAndView.first.getPoplarTensor(),
-          {poplar::DebugNameAndId(getDstId(),
-                                  tensor->getDebugInfo().getId(),
-                                  tensor->getDebugInfo().getPathName())}),
-      dstGraph};
+  auto input = irLowering.graph().clone(
+      inputAndView.first,
+      {poplar::DebugNameAndId(getDstId(),
+                              tensor->getDebugInfo().getId(),
+                              tensor->getDebugInfo().getPathName())});
 
   irLowering.tensors().insert(getDstId(), input);
   irLowering.addEfficientlyCreatedInputTensors(getDstId());
@@ -261,14 +256,12 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
     dataType = getCompatibleDataType(dataType);
   }
 
-  auto newTensor = snap::Tensor{
-      dstGraph.getPoplarGraph().addVariable(
-          popType(dataType),
-          tensor->info.shape_szt(),
-          {poplar::DebugNameAndId(tensor->str(),
-                                  tensor->getDebugInfo().getId(),
-                                  tensor->getDebugInfo().getPathName())}),
-      dstGraph};
+  auto newTensor = dstGraph.addVariable(
+      popType(dataType),
+      tensor->info.shape_szt(),
+      {poplar::DebugNameAndId(tensor->str(),
+                              tensor->getDebugInfo().getId(),
+                              tensor->getDebugInfo().getPathName())});
   irLowering.getLinearMapper().mapTensor(dstGraph, newTensor);
 
   irLowering.tensors().insert(getDstId(), newTensor);

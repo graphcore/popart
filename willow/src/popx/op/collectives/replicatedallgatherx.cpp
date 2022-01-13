@@ -87,9 +87,7 @@ snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
   if (index == ReplicatedAllGatherOp::getInIndex()) {
     auto outInfo = op.outInfo(ReplicatedAllGatherOp::getOutIndex());
     auto outTensor =
-        snap::Tensor{graph().getPoplarGraph().addVariable(
-                         popType(outInfo), outInfo.shape_szt(), dnai),
-                     graph()};
+        graph().addVariable(popType(outInfo), outInfo.shape_szt(), dnai);
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
     auto cbr = createCollectiveBalancedReorder(outTensor);
     return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)), graph()};

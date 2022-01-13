@@ -77,13 +77,9 @@ snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(
                 inIndex);
   }
   auto accumulatorInfo = inInfo(inIndex);
-  return snap::Tensor{
-      graph().getPoplarGraph().clone(
-          popType(accumulatorInfo),
-          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex())
-              .getPoplarTensor(),
-          dnai),
-      graph()};
+  return graph().clone(popType(accumulatorInfo),
+                       getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+                       dnai);
 }
 
 InputCreatorType AdaDeltaUpdaterOpx::getInputCreatorType(int inIndex) const {

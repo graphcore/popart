@@ -37,8 +37,7 @@ poplar::Tensor getScale(snap::Graph &graph,
       popops::square(
           graph.getPoplarGraph(), input, prog.getPoplarSequence(), {di}),
       graph};
-  auto square_sum = snap::Tensor{
-      graph.getPoplarGraph().clone(square.getPoplarTensor(), {di}), graph};
+  auto square_sum = graph.clone(square, {di});
   prog.add(snap::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
 

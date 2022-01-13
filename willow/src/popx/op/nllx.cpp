@@ -109,11 +109,8 @@ void NllOpx::flattenAndEncodeOneHot(const PopOpx &opx,
                          opx.graph()};
   label1D = snap::Tensor{label.flatten().getPoplarTensor(), opx.graph()};
   // Tensor taking one-hot encoded output must be 2 dimensional
-  oneHot = snap::Tensor{
-      opx.graph().getPoplarGraph().clone(probs2D.elementType(),
-                                         probs2D.getPoplarTensor(),
-                                         opx.debugContext("oneHot")),
-      opx.graph()};
+  oneHot = opx.graph().clone(
+      probs2D.elementType(), probs2D, opx.debugContext("oneHot"));
   popops::encodeOneHot(opx.graph().getPoplarGraph(),
                        label1D.getPoplarTensor(),
                        oneHot.getPoplarTensor(),
@@ -381,10 +378,7 @@ void NllGradOpx::grow(snap::program::Sequence &prog) const {
 
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
   auto oneHot =
-      snap::Tensor{graph().getPoplarGraph().clone(probs2D.elementType(),
-                                                  probs2D.getPoplarTensor(),
-                                                  debugContext("oneHot")),
-                   graph()};
+      graph().clone(probs2D.elementType(), probs2D, debugContext("oneHot"));
 
   popops::encodeOneHot(graph().getPoplarGraph(),
                        label1D.getPoplarTensor(),
@@ -427,7 +421,7 @@ void NllGradOpx::grow(snap::program::Sequence &prog) const {
       prog);
 
   setOutTensor(0, oneHot);
-}
+} // namespace popx
 
 namespace {
 static OpxCreator<NllOpx> nllOpxCreator(Onnx::CustomOperators::Nll);

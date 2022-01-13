@@ -33,10 +33,10 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
   const auto stashSize = op.getStashSize();
 
   // Create the stash index tensor.
-  const auto stashIndex = graph().getPoplarGraph().addVariable(
-      poplar::UNSIGNED_INT, {1}, debugContext());
-  graph().getPoplarGraph().setTileMapping(stashIndex, 0);
-  graph().getPoplarGraph().setInitialValue(stashIndex,
+  const auto stashIndex =
+      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugContext());
+  graph().getPoplarGraph().setTileMapping(stashIndex.getPoplarTensor(), 0);
+  graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
                                            poplar::ArrayRef<uint32_t>({0}));
 
   // Create the stash size tensor.
@@ -48,22 +48,20 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
   snap::Tensor actFromStash;
 
   if (canDynamicSliceRestore) {
-    actFromStash =
-        growDynamicSliceRestore(prog, snap::Tensor{stashIndex, graph()}, stash);
+    actFromStash = growDynamicSliceRestore(prog, stashIndex, stash);
   } else {
-    actFromStash = growStaticSliceRestore(
-        prog, stashSize, snap::Tensor{stashIndex, graph()}, stash);
+    actFromStash = growStaticSliceRestore(prog, stashSize, stashIndex, stash);
   }
 
   // Create a "1" tensor and grow program to increment stash index by 1.
   auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
   popops::addInPlace(graph().getPoplarGraph(),
-                     stashIndex,
+                     stashIndex.getPoplarTensor(),
                      one,
                      prog.getPoplarSequence(),
                      debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
-                     stashIndex,
+                     stashIndex.getPoplarTensor(),
                      stashSizeTensor,
                      prog.getPoplarSequence(),
                      debugContext());

@@ -109,17 +109,13 @@ snap::Tensor ElementWiseBinaryOpx::createInputTensor(
 
   if (index == arg0Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg1Idx))) {
-      return snap::Tensor{graph().getPoplarGraph().clone(
-                              getInTensor(arg1Idx).getPoplarTensor(), dnai),
-                          graph()};
+      return graph().clone(getInTensor(arg1Idx), dnai);
     }
   }
 
   if (index == arg1Idx) {
     if (dv_p->lowering().tensors().contains(op_p->input->id(arg0Idx))) {
-      return snap::Tensor{graph().getPoplarGraph().clone(
-                              getInTensor(arg0Idx).getPoplarTensor(), dnai),
-                          graph()};
+      return graph().clone(getInTensor(arg0Idx), dnai);
     }
   }
 
@@ -181,8 +177,7 @@ snap::Tensor EwuComputex::cloneNcopy(snap::program::Sequence &prog,
                                      snap::Graph &graph,
                                      const snap::Tensor &tensor,
                                      const poplar::DebugNameAndId &dnai) const {
-  auto outTensor = snap::Tensor{
-      graph.getPoplarGraph().clone(tensor.getPoplarTensor(), {dnai}), graph};
+  auto outTensor = graph.clone(tensor, {dnai});
   snap::program::Copy copyProg(tensor, outTensor, false, {dnai});
   prog.add(copyProg);
   return outTensor;
