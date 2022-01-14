@@ -65,6 +65,7 @@ void bindIr(py::module &m) {
       .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
       .def("removeIsolatedTensors", &Ir::removeIsolatedTensors)
       .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)
+      .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo)
       .def("dataStreamTensors",
            &Ir::dataStreamTensors,
            py::return_value_policy::reference)

@@ -62,15 +62,8 @@ def remote_load(remote_buffer: RemoteBuffer,
     check_in_graph(g, remote_load_tensor=remote_load_tensor, offset=offset)
 
     # Set the meta_shape of the input tensor. Required for RTS.
-    remote_load_tensor._pb_tensor.info.set(
-        remote_load_tensor._pb_tensor.info.dataType(),
-        remote_load_tensor._pb_tensor.info.shape(), remote_buffer.meta_shape)
-    opts = g.ir()._pb_ir.getSessionOptions()
-    if opts.enableReplicatedGraphs and opts.replicatedGraphCount > 1:
-        assert multiply_tuple(
-            remote_buffer.meta_shape
-        ) == opts.replicatedGraphCount * remote_load_tensor._pb_tensor.info.nelms(
-        )
+    info = remote_load_tensor._pb_tensor.info
+    info.set(info.dataType(), info.shape(), remote_buffer.meta_shape)
 
     remote_buffer.validate_tensor_matches_buffer(remote_load_tensor)
 
@@ -125,13 +118,8 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
     check_in_graph(g, t=t, offset=offset)
 
     # Set the meta_shape of the input tensor. Required for RTS.
-    t._pb_tensor.info.set(t._pb_tensor.info.dataType(),
-                          t._pb_tensor.info.shape(), remote_buffer.meta_shape)
-    opts = g.ir()._pb_ir.getSessionOptions()
-    if opts.enableReplicatedGraphs and opts.replicatedGraphCount > 1:
-        assert multiply_tuple(
-            remote_buffer.meta_shape
-        ) == opts.replicatedGraphCount * t._pb_tensor.info.nelms()
+    info = t._pb_tensor.info
+    info.set(info.dataType(), info.shape(), remote_buffer.meta_shape)
 
     remote_buffer.validate_tensor_matches_buffer(t)
 

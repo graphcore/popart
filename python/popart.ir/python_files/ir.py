@@ -170,7 +170,8 @@ class Ir:
                     arguments[name] = subgraph_input(arg.shape,
                                                      arg.dtype,
                                                      name,
-                                                     by_ref=by_ref)
+                                                     by_ref=by_ref,
+                                                     meta_shape=arg.meta_shape)
 
                 # Supported args:
                 # 1. Argument that is a list `def func(x: List[Tensor])`
@@ -214,7 +215,8 @@ class Ir:
                                 subarg.shape,
                                 subarg.dtype,
                                 subarg_name,
-                                by_ref=by_ref)
+                                by_ref=by_ref,
+                                meta_shape=subarg.meta_shape)
                     if contains_tensor and isinstance(arg, dict):
                         arguments[name] = in_args_sub
                     elif contains_tensor and isinstance(arg, (tuple, list)):

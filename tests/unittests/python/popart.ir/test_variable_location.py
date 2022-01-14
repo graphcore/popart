@@ -40,6 +40,35 @@ def test_remote_variable():
 
 
 @tu.requires_ipu_model
+def test_remote_variable_replica_not_sharded():
+    ir = pir.Ir()
+    opts = ir._pb_ir.getSessionOptions()
+    opts.enableReplicatedGraphs = True
+    opts.replicatedGraphCount = 2
+    main = ir.main_graph()
+
+    with main:
+        x = pir.variable(1, name="x")
+        buffer = pir.RemoteBuffer(ir, x.shape, x.dtype, 1)
+        remote_x = pir.remote_variable(x, buffer, 0)
+
+        y = pir.variable(2)
+
+        loaded_x = ops.remote_load(buffer, remote_x)
+
+        updated_x = loaded_x + y
+
+        ops.remote_store(buffer, remote_x, updated_x)
+
+        y_d2h = pir.d2h_stream(x.shape, x.dtype)
+        ops.host_store(y_d2h, updated_x)
+
+    result, stored = run(ir, y_d2h, x)
+    np.testing.assert_equal(result, [3, 3])
+    np.testing.assert_equal(stored, [3, 3])
+
+
+@tu.requires_ipu_model
 def test_remote_replia_sharded_variable_gather():
     ir = pir.Ir()
     opts = ir._pb_ir.getSessionOptions()
@@ -166,6 +195,27 @@ def test_remote_replia_sharded_variable_no_gather():
     result, stored = run(ir, y_d2h, x)
     np.testing.assert_equal(result.flatten(), [4, 6])
     np.testing.assert_equal(stored, [4, 6])
+
+
+@tu.requires_ipu_model
+def test_remote_replia_sharded_reuse_buffer():
+    ir = pir.Ir()
+    opts = ir._pb_ir.getSessionOptions()
+    opts.enableReplicatedGraphs = True
+    opts.replicatedGraphCount = 2
+    main = ir.main_graph()
+
+    with main:
+        x1 = pir.variable([1, 2], name="x1")
+        x2 = pir.variable([3, 4], name="x2")
+        buffer = pir.RemoteBuffer(ir, (x1.nelms // 2, ), x1.dtype, 2)
+        pir.remote_replica_sharded_variable(x1, buffer, 0)
+        pir.remote_replica_sharded_variable(x2, buffer, 1)
+
+        ops.remote_load(buffer, 0)
+        ops.remote_load(buffer, 1)
+
+    assert buffer.meta_shape == (2, )
 
 
 def run(ir, out, weight):

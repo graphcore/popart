@@ -86,3 +86,22 @@ def test_none_not_allowed():
         with pir.in_sequence(None):
             pass
     assert "None cannot be passed to" in str(excinfo.value)
+
+
+def test_in_sequence_false_first():
+    ir = pir.Ir()
+    g = ir.main_graph()
+
+    with g:
+        small = pir.variable(1, name='small')
+        big = pir.variable(np.ones((2, 2), np.float32), name='big')
+
+        # From a liveness perspective,
+        #   these two Ops are in the wrong order.
+        with pir.in_sequence(False):
+            b = big + 1
+            a = small * 1
+
+    ops = g._pb_graph.getOpSchedule()
+    assert isinstance(ops[0], _ir.op.MulOp)
+    assert isinstance(ops[1], _ir.op.AddOp)

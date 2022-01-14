@@ -101,7 +101,7 @@ class Tensor:
         be used to store the original tensor shape before
         replicated tensor sharding was applied.
         """
-        return self._pb_tensor.info.metaShape()
+        return tuple(self._pb_tensor.info.metaShape())
 
     @property
     def rank(self) -> int:
@@ -624,10 +624,11 @@ def remote_replica_sharded_variable(
     # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
     if remote_buffer.meta_shape == ():
         remote_buffer.meta_shape = var.shape
-    else:
+    elif remote_buffer.meta_shape != var.shape:
         raise ValueError(
-            f"The meta_shape of the remote_buffer (id: {remote_buffer.remote_buffer_id})"
-            f"has already been set to: {remote_buffer.meta_shape}")
+            f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {var.shape}. "
+            f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
+        )
 
     opts = gcg().ir()._pb_ir.getSessionOptions()
     if not opts.enableReplicatedGraphs:
@@ -636,7 +637,8 @@ def remote_replica_sharded_variable(
     replicas: int = opts.replicatedGraphCount
     if (var.nelms % replicas) != 0:
         raise ValueError(
-            "Variable is not divisible by the number of replicas.")
+            f"Variable {var} is not divisible by the number of replicas {replicas}."
+        )
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
@@ -729,7 +731,8 @@ def constant(
 def subgraph_input(shape: Iterable[int],
                    dtype: dtypes.dtype,
                    name: Optional[str] = None,
-                   by_ref: bool = False) -> Tensor:
+                   by_ref: bool = False,
+                   meta_shape: Optional[Iterable[int]] = None) -> Tensor:
     """Create a new input tensor to the current graph.
 
     You can use this function when defining a subgraph to create a new input
@@ -765,7 +768,11 @@ def subgraph_input(shape: Iterable[int],
     pb_g = g._pb_graph
 
     pb_id = g._create_tensor_id(name)
-    pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
+    if meta_shape:
+        pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape),
+                                 list(meta_shape))
+    else:
+        pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
 
     pb_g.addInput(pb_id, pb_info)
 

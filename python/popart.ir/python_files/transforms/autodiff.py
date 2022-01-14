@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Auto diff transformation."""
 from enum import Enum
-from typing import Iterable, List, Mapping, Optional, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Tuple
 
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
@@ -120,7 +120,7 @@ class GradGraphInfo:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
     def get_inputs_from_forward_call_info(
-            self, call_info: CallInfo) -> Mapping[Tensor, Tensor]:
+            self, call_info: CallInfo) -> Dict[Tensor, Tensor]:
         """Utility function for constructing inputs to calling a grad graph.
 
         Args:

@@ -126,10 +126,6 @@ class Context:
             # Must clear all previous Ops when returning
             # to an empty scope.
             self._previous_ops.clear()
-        if self._in_sequence is None and not enabled:
-            # False scope inside an empty scope should have no
-            # effect.
-            return
         self._in_sequence = enabled
 
     @in_sequence.deleter
@@ -211,6 +207,8 @@ class Context:
                 prev_ops = self._previous_ops[g.id]
                 if len(prev_ops) > 0:
                     insert_topocon(prev_ops[0])
+                else:
+                    prev_ops.append(-1)
             self._previous_ops[g.id].append(op.id)
 
 

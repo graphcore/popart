@@ -165,6 +165,9 @@ class RemoteBuffer:
     def meta_shape(self, shape: Tuple[int, ...]) -> None:
         self._meta_shape = shape
 
+    def __hash__(self):
+        return hash((self._current_ir, self.remote_buffer_id))
+
 
 def remote_buffer(tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
                   entries: int) -> RemoteBuffer:
