@@ -83,20 +83,26 @@ void traverse(std::vector<TensorAndCallStack> tensors,
 
     std::vector<TensorAndCallStack> toEnqueue;
 
-    auto addOpBwd = [&toEnqueue, &tq, &filter](Op *op, CallStack stack) {
-      for (auto &input : op->input->tensorMap()) {
-        Tensor *tn = input.second;
-        if (filter(op, tq.first, tn)) {
-          toEnqueue.push_back({tn, stack});
+    auto addOpBwd = [&toEnqueue, &tq, &filter](Op *op,
+                                               TensorAndCallStack stack) {
+      for (auto outIndex : op->output->indices(stack.first)) {
+        for (auto inIndex : op->opOutToOpInIndex(outIndex)) {
+          auto tn = op->inTensor(inIndex);
+          if (filter(op, tq.first, tn)) {
+            toEnqueue.push_back({tn, stack.second});
+          }
         }
       }
     };
 
-    auto addOpFwd = [&toEnqueue, &tq, &filter](Op *op, CallStack stack) {
-      for (auto &output : op->output->tensorMap()) {
-        Tensor *tn = output.second;
-        if (filter(op, tq.first, tn)) {
-          toEnqueue.push_back({tn, stack});
+    auto addOpFwd = [&toEnqueue, &tq, &filter](Op *op,
+                                               TensorAndCallStack stack) {
+      for (auto inIndex : op->input->indices(stack.first)) {
+        for (auto outIndex : op->opInToOpOutIndex(inIndex)) {
+          auto tn = op->outTensor(outIndex);
+          if (filter(op, tq.first, tn)) {
+            toEnqueue.push_back({tn, stack.second});
+          }
         }
       }
     };
@@ -124,10 +130,8 @@ void traverse(std::vector<TensorAndCallStack> tensors,
               }
             }
           }
-        } else {
-          // Regular Op
-          addOpBwd(p, tq.second);
         }
+        addOpBwd(p, tq);
       }
 
       // Graph inputs
@@ -178,10 +182,8 @@ void traverse(std::vector<TensorAndCallStack> tensors,
               }
             }
           }
-        } else {
-          // Regular Op
-          addOpFwd(c, tq.second);
         }
+        addOpFwd(c, tq);
       }
 
       // Graph outputs

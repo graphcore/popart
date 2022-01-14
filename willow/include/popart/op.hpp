@@ -719,6 +719,12 @@ public:
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
                                            OutIndex outIndex) const;
 
+  // For graph traversal, the set of outputs to visit based on the input
+  virtual std::set<OutIndex> opInToOpOutIndex(InIndex in) const;
+
+  // For graph traversal, the set of inputs to visit based on the output
+  virtual std::set<InIndex> opOutToOpInIndex(OutIndex out) const;
+
 public:
   // The functionality required for sub-graph matching
   using SubgraphInSig =

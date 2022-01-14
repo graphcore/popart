@@ -60,9 +60,9 @@ using namespace popart;
  * \endcode
  *
  */
-struct TestModel {
+struct TestModel0 {
 
-  TestModel() : graph(ir.getMainGraph()), subgraph(ir.createGraph({"sg0"})) {
+  TestModel0() : graph(ir.getMainGraph()), subgraph(ir.createGraph({"sg0"})) {
     // Set up the graphs
     // Manipulate settings
     SessionOptions options;
@@ -181,10 +181,114 @@ struct TestModel {
   AliasModel aliasModel;
 };
 
+/**
+ * Model describing a graph with a tricky situation for inheriting placement
+ * attributes: The two tensors are only connected by loop-carry.
+ * Only initOp1 is initialized with the virtual graph attribute, and initOp0
+ * should inherit it.
+ *
+ * \code
+ *  [initOp0]
+ *    |
+ *   (A)
+ *    |
+ * .-----LoopOp---.
+ * | (B)          |
+ * |              |
+ * | [initOp1]    |
+ * |  |           |
+ * | (C)          |
+ * '--------------'
+ *    |
+ *   (D)
+ *    |
+ * {anchor}
+ *
+ * \endcode
+ *
+ */
+struct TestModel1 {
+
+  TestModel1() : graph(ir.getMainGraph()), subgraph(ir.createGraph({"sg0"})) {
+    // Set up the graphs
+    // Manipulate settings
+    SessionOptions options;
+
+    // Ensures we can use virtual graph attributes
+    options.virtualGraphMode = VirtualGraphMode::Manual;
+
+    ir.setUserOptions(options);
+
+    Op::Settings gSettings(graph, "op", graph.getScope());
+    Op::Settings sgSettings(subgraph, "op", subgraph.getScope());
+
+    auto art = AnchorReturnType("All");
+    TensorInfo tInfo{DataType::FLOAT, {4}};
+
+    subgraph.addInput(addScope(subgraph, "B"), tInfo);
+
+    // Add mandatory loop iterator tensor to subgraph (is not an output)
+    TensorId loopItScopedId = addScope(subgraph, reservedLoopIteratorPrefix());
+    subgraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
+
+    // Add mandatory loop condition tensor to subgraph (is also an output)
+    TensorId loopCondScopedId = addScope(subgraph, reservedLoopCondPrefix());
+    subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
+    subgraph.markAsOutput(loopCondScopedId);
+
+    initOp0 = graph.createConnectedOp<InitOp>({},
+                                              {{InitOp::getOutIndex(), "A"}},
+                                              Onnx::CustomOperators::Init_1,
+                                              tInfo,
+                                              TensorType::ActGrad,
+                                              InitType::Zero,
+                                              gSettings);
+
+    initOp1 = subgraph.createConnectedOp<InitOp>(
+        {},
+        {{InitOp::getOutIndex(), addScope(subgraph, "C")}},
+        Onnx::CustomOperators::Init_1,
+        tInfo,
+        TensorType::ActGrad,
+        InitType::Zero,
+        sgSettings);
+
+    subgraph.markAsOutput(addScope(subgraph, "C"));
+
+    loopOp = graph.createConnectedOp<LoopOp>(
+        {{LoopOp::getFirstInputInIndex(), "A"}},
+        {{LoopOp::getFirstOutputOutIndex(), "D"}},
+        Onnx::Operators::Loop_11,
+        gSettings,
+        subgraph);
+    loopOp->setTripCountValue(5);
+    loopOp->setup();
+
+    auto df = DataFlow(1, {{"N", art}});
+    ir.setDataFlow(df);
+
+    AliasModelGrower aliasModelGrower{aliasModel};
+    aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
+    aliasModelGrower.growFullGraph(subgraph, DataDependenciesOnly::Yes);
+  }
+
+  popart::Ir ir;
+  Graph &graph;
+  Graph &subgraph;
+
+  // Ops
+  InitOp *initOp0 = nullptr;
+  InitOp *initOp1 = nullptr;
+
+  LoopOp *loopOp = nullptr;
+
+  AliasModel aliasModel;
+};
+
 // Test inheriting attributes to addOp2
 BOOST_AUTO_TEST_CASE(testOpAttributeHelperAddOp2) {
 
-  TestModel model;
+  TestModel0 model;
 
   model.callOp->settings.executionContext =
       ExecutionContext::AccumulateOuterFragment;
@@ -214,7 +318,7 @@ BOOST_AUTO_TEST_CASE(testOpAttributeHelperAddOp2) {
 // Test inheriting pipeline stage attribute from both consumer and producer side
 BOOST_AUTO_TEST_CASE(testOpAttributeHelperPipeline) {
 
-  TestModel model;
+  TestModel0 model;
 
   model.ipuCopyOp0->settings.pipelineStage = 2;
   model.ipuCopyOp1->settings.pipelineStage = 3;
@@ -258,7 +362,7 @@ BOOST_AUTO_TEST_CASE(testOpAttributeHelperPipeline) {
 
 // Test inheriting VGID without actually setting it on any Op (via IpuCopyOp)
 BOOST_AUTO_TEST_CASE(testOpAttributeHelperVGIDIpuCopyOp) {
-  TestModel model;
+  TestModel0 model;
   InheritOpAttributeHelper::apply(model.initOp0, true, model.aliasModel);
   InheritOpAttributeHelper::apply(model.initOp1, true, model.aliasModel);
   InheritOpAttributeHelper::apply(model.addOp0, true, model.aliasModel);
@@ -280,7 +384,7 @@ BOOST_AUTO_TEST_CASE(testOpAttributeHelperVGIDIpuCopyOp) {
 
 // Test inheriting executionPhase, including adjustments due to IpuCopyOp
 BOOST_AUTO_TEST_CASE(testOpAttributeHelperExecutionPhase) {
-  TestModel model;
+  TestModel0 model;
 
   model.ipuCopyOp0->settings.executionPhase = 1;
   model.ipuCopyOp1->settings.executionPhase = 3;
@@ -303,7 +407,7 @@ BOOST_AUTO_TEST_CASE(testOpAttributeHelperExecutionPhase) {
 
 // Test inheriting from downstream consumers only
 BOOST_AUTO_TEST_CASE(testOpAttributeHelperInheritConsumerSubgraph) {
-  TestModel model;
+  TestModel0 model;
 
   // Inside the subgraph
   model.addOp1->settings.vgraphId          = 2;
@@ -322,4 +426,18 @@ BOOST_AUTO_TEST_CASE(testOpAttributeHelperInheritConsumerSubgraph) {
   BOOST_CHECK_EQUAL(model.addOp0->settings.vgraphId, OptionalVGraphId{2});
   BOOST_CHECK_EQUAL(model.addOp0->settings.executionContext,
                     ExecutionContext::WeightsFromHostFragment);
+}
+
+// Test inheriting virtual graph through loop carried dependencies
+BOOST_AUTO_TEST_CASE(testOpAttributeHelperVirtualGraphLoopCarried) {
+  TestModel1 model;
+
+  model.initOp0->settings.vgraphId = 0;
+  model.initOp1->settings.vgraphId = 1;
+  model.loopOp->settings.vgraphId  = 2;
+
+  InheritOpAttributeHelper::apply(model.initOp0, true, model.aliasModel);
+
+  // Check that initOp0 inherited from initOp1
+  BOOST_CHECK_EQUAL(model.initOp0->settings.vgraphId, OptionalVGraphId{1});
 }

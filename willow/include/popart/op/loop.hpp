@@ -181,6 +181,9 @@ public:
     growAliasModelMulti(m);
   }
 
+  virtual std::set<OutIndex> opInToOpOutIndex(InIndex in) const override;
+  virtual std::set<InIndex> opOutToOpInIndex(OutIndex out) const override;
+
 private:
   std::reference_wrapper<Graph> callee;
   int tripCountValue;

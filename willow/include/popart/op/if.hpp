@@ -59,6 +59,9 @@ public:
   virtual OutIndex subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
                                            OutIndex outIndex) const override;
 
+  virtual std::set<OutIndex> opInToOpOutIndex(InIndex in) const override;
+  virtual std::set<InIndex> opOutToOpInIndex(OutIndex out) const override;
+
   // Override to avoid getGradOps being called before we're ready.
   virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;
 

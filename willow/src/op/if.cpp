@@ -515,6 +515,10 @@ OutIndex IfOp::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
   }
 }
 
+std::set<OutIndex> IfOp::opInToOpOutIndex(InIndex in) const { return {}; }
+
+std::set<InIndex> IfOp::opOutToOpInIndex(OutIndex out) const { return {}; }
+
 float IfOp::calcAutoVirtualGraphCost(std::set<int> &inputs_seen) {
   return 0.0f;
 }

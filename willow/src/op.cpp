@@ -520,6 +520,24 @@ OutIndex Op::subgraphOutToOpOutIndex(SubgraphIndex subgraphIndex,
   throw error("Op {} has no subgraphs", debugName());
 }
 
+std::set<OutIndex> Op::opInToOpOutIndex(InIndex in) const {
+  std::set<OutIndex> indices;
+  // By default, traverse every output
+  for (auto out : output->tensorMap()) {
+    indices.insert(out.first);
+  }
+  return indices;
+}
+
+std::set<InIndex> Op::opOutToOpInIndex(OutIndex out) const {
+  std::set<OutIndex> indices;
+  // By default, traverse every input
+  for (auto in : input->tensorMap()) {
+    indices.insert(in.first);
+  }
+  return indices;
+}
+
 const std::string &Op::name() const { return getName(); }
 
 std::string idStr(Op &op) {

@@ -238,6 +238,24 @@ void LoopOp::removeLoopOutput(OutIndex index) {
   getCalledGraph().removeOutput(opOutToSubgraphOutIndex(index));
 }
 
+std::set<OutIndex> LoopOp::opInToOpOutIndex(InIndex in) const {
+  std::set<OutIndex> indices;
+  auto outIndex = in - getFirstInputInIndex() + getFirstOutputOutIndex();
+  if (hasOutput(outIndex)) {
+    indices.insert(outIndex);
+  }
+  return indices;
+}
+
+std::set<InIndex> LoopOp::opOutToOpInIndex(OutIndex out) const {
+  std::set<OutIndex> indices;
+  auto inIndex = out + getFirstInputInIndex() - getFirstOutputOutIndex();
+  if (hasInput(inIndex)) {
+    indices.insert(inIndex);
+  }
+  return indices;
+}
+
 namespace {
 
 static OpDefinition::DataTypes I = {DataType::INT64};
