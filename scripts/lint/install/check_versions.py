@@ -44,7 +44,7 @@ class VersionChecker:
                 std_out = result.stdout.decode("utf-8")
                 if not version in std_out:
                     self.version_errors[
-                        linter] = f"{linter} does not have the correct version."
+                        linter] = f"{linter} does not have the correct version\n{linter} --version returned\n{std_out}\n"
                     self.linter_with_errors.add(linter)
             except FileNotFoundError:
                 self.missing_errors[linter] = f"{linter} was not found."

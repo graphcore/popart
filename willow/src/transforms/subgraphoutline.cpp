@@ -967,7 +967,8 @@ Graph &SubgraphOutline::createEmptySubgraph(
   // duplicate all the output tensors
   std::map<Tensor *, Tensor *> tensor_map;
   for (auto output : instance.all_outputs) {
-    auto new_id = (subgraph_scope / output->id).str();
+    auto new_id =
+        addScope(subgraph, removeScope(output->getGraph(), output->id));
 
     auto clone = output->clone(subgraph);
     clone->id  = new_id;
@@ -978,7 +979,8 @@ Graph &SubgraphOutline::createEmptySubgraph(
 
   // create graph inputs
   for (auto tensor : instance.external_inputs) {
-    auto input_id = addScope(subgraph, tensor->id);
+    auto input_id =
+        addScope(subgraph, removeScope(tensor->getGraph(), tensor->id));
     subgraph.addInput(input_id, tensor->info);
     auto t = subgraph.getTensors().get(input_id);
     if (tensor_map.find(tensor) != tensor_map.end()) {

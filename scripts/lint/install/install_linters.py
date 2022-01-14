@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
+import os
 import sys
 import subprocess
 import argparse
+import site
 from pathlib import Path
 from scripts.lint.install.check_versions import VersionChecker
 
@@ -23,12 +25,16 @@ def call_command(cmd: str) -> None:
                                cwd=Path(__file__).parent)
     for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.buffer.write(c)
-    return_code = process.poll()
+    return_code = None
+    while return_code is None:
+        return_code = process.poll()
     if return_code != 0:
         err_lines = process.stderr.readlines()
         for err_line in err_lines:
             print(err_line.decode("utf-8"))
-        raise SystemExit(return_code)
+        raise RuntimeError(
+            f"{cmd} failed with return code {return_code}. See error message above for details"
+        )
 
 
 class Installer:
@@ -41,7 +47,25 @@ class Installer:
         Args:
             install_dir (str): The directory where `bin`, `lib` and `include` will be installed to
         """
-        self.install_dir = install_dir
+        # Resolve the path
+        self.install_dir = str(Path(install_dir).resolve())
+
+        # As we currently install llvm with a different version than clang-format, we need to take
+        # care that our PATH and LD_LIBRARY_PATH is resolving the paths correctly
+
+        # Get the location of the bin and lib of the packages (this differs if one uses anaconda or pip)
+        package_root = Path(site.getusersitepackages()).parents[2]
+        package_bin = package_root.joinpath("bin")
+        package_lib = package_root.joinpath("lib")
+
+        # Note: The python paths must come before the rest due to clang-format being installed by pip
+        self.path = f"{package_bin}:{self.install_dir}/bin"
+        self.ld_library_path = f"{package_lib}:{self.install_dir}/lib"
+
+        # Set the install_dir as a environmental variable
+        os.environ["PATH"] = f"{self.path}:{os.environ['PATH']}"
+        os.environ[
+            "LD_LIBRARY_PATH"] = f"{self.ld_library_path}:{os.environ['PATH']}"
 
         self.version_checker = VersionChecker()
         self.linters_to_install = self.version_checker.linter_with_errors
@@ -58,7 +82,7 @@ class Installer:
         self._install_uninstalled_llvm()
         self._install_uninstalled_iwyu()
         self._install_uninstalled_oclint()
-        self._install_uninstalled_yapf()
+        self._install_uninstalled_pip_packages()
         self._install_uninstalled_others()
 
         self._print_success()
@@ -66,7 +90,7 @@ class Installer:
     def _install_uninstalled_llvm(self) -> None:
         """Install the llvm suite.
         """
-        llvm_linters = ("clang", "clang-format", "clang-tidy")
+        llvm_linters = ("clang", "clang-tidy")
         llvm_dependent_linters = (*llvm_linters, "include-what-you-use",
                                   "oclint")
         if any(clang_linter in self.linters_to_install
@@ -97,14 +121,15 @@ class Installer:
             )
             self.linters_to_install.remove("oclint")
 
-    def _install_uninstalled_yapf(self):
-        """Install yapf.
+    def _install_uninstalled_pip_packages(self):
+        """Install pip packages.
         """
-        if "yapf" in self.linters_to_install:
-            call_command(
-                f"pip3 install yapf=={self.version_checker.version_list['yapf']}"
-            )
-            self.linters_to_install.remove("yapf")
+        pip_packages = ("yapf", "clang-format")
+        for pip_package in pip_packages:
+            if pip_package in self.linters_to_install:
+                command = f"pip3 install {pip_package}=={self.version_checker.version_list[pip_package]}"
+                call_command(command)
+                self.linters_to_install.remove(pip_package)
 
     def _install_uninstalled_others(self):
         """Install linters with a generic install script signature.
@@ -119,10 +144,11 @@ class Installer:
         """Print the success message.
         """
         print("\n\x1b[6;30;42mSuccess!\x1b[0m")
-        print("Ensure that the linters are available by adding")
-        print(f"export PATH={self.install_dir}/bin:$PATH")
+        print("Ensure that the linters are available by adding for example")
+        print(f"export PATH=\"{self.path}/bin:$PATH\"")
         print(
-            f"export LD_LIBRARY_PATH={self.install_dir}/lib:$LD_LIBRARY_PATH")
+            f"export LD_LIBRARY_PATH=\"{self.ld_library_path}/lib:$LD_LIBRARY_PATH\""
+        )
         print("To $HOME/.bashrc or the like")
 
 
