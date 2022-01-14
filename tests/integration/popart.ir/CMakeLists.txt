@@ -8,3 +8,4 @@ add_popart_py_unit_test(popart.ir--random-seed test_random_seed.py VARIANTS IpuM
 add_popart_py_unit_test(popart.ir--remote_buffer_store_load test_remote_buffer_store_load.py VARIANTS Hw)
 add_popart_py_unit_test(popart.ir--model_caching test_model_caching.py VARIANTS Hw)
 add_popart_py_unit_test(popart.ir--rts_autodiff test_rts_autodiff.py VARIANTS IpuModel)
+add_popart_py_unit_test(popart.ir--gather_oor test_gather_oor.py VARIANTS IpuModel)

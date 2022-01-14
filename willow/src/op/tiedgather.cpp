@@ -12,11 +12,13 @@ namespace popart {
 TiedGatherOp::TiedGatherOp(
     const int64_t axis_,
     const Op::Settings &settings_,
-    const nonstd::optional<float> available_memory_proportion_)
+    const nonstd::optional<float> available_memory_proportion_,
+    bool zeroOutOfRangeIndices_)
     : GatherOp(Onnx::CustomOperators::TiedGather,
                axis_,
                settings_,
-               available_memory_proportion_) {}
+               available_memory_proportion_,
+               zeroOutOfRangeIndices_) {}
 
 std::unique_ptr<Op> TiedGatherOp::clone() const {
   return std::make_unique<TiedGatherOp>(*this);

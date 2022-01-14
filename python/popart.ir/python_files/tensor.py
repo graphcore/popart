@@ -398,7 +398,7 @@ class Tensor:
         Integer indexing is triggered when the input is a tensor or host tensor of integers.
         Elements are selected using the indices in the input - see `ops.gather` for details.
 
-        Boolean indexing is triggered when the input is a ensor or host tensor of booleans.
+        Boolean indexing is triggered when the input is a tensor or host tensor of booleans.
         The input is interpreted as a mask: True propagates the value to the output while False zeros
         the element. This differs to numpy-style boolean indexing, as numpy removed elements indicated
         by False and the output shape is dynamic dependent on the mask's data.

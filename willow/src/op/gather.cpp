@@ -30,9 +30,11 @@ namespace popart {
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
                    const Op::Settings &settings_,
-                   const nonstd::optional<float> &available_memory_proportion_)
+                   const nonstd::optional<float> &available_memory_proportion_,
+                   bool zeroOutOfRangeIndices_)
     : Op(_opid, settings_), axis(axis_),
-      available_memory_proportion(available_memory_proportion_) {}
+      available_memory_proportion(available_memory_proportion_),
+      zeroOutOfRangeIndices__(zeroOutOfRangeIndices_) {}
 
 std::unique_ptr<Op> GatherOp::clone() const {
   return std::make_unique<GatherOp>(*this);

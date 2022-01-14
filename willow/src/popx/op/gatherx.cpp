@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <tuple>
 #include <popart/error.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/popx/devicex.hpp>
@@ -8,6 +9,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Zero.hpp>
@@ -47,6 +49,8 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
   auto indices = getInTensor(GatherOp::indicesInIndex()).getPoplarTensor();
   auto data    = getInTensor(GatherOp::dataInIndex()).getPoplarTensor();
 
+  const auto &op = getOp<GatherOp>();
+
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
@@ -61,8 +65,6 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
   auto offsets = indices.flatten();
   // Add a degenerate dimension at the end.
   offsets = offsets.expand({1});
-  // reinterpret the indices as unsigned int. This assumes non-negative indices.
-  offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
 
   // Place the gather axis at the front.
   data = data.dimRoll(static_cast<unsigned>(axis));
@@ -70,6 +72,14 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
   auto tmp_shape = data.shape();
   // Flatten the other dimensions.
   data = data.flatten(1, data.rank());
+
+  poplar::Tensor mask;
+  if (op.zeroOutOfRangeIndices()) {
+    std::tie(offsets, mask) =
+        zeroIndiciesThatAreOutOfRange(prog, data, offsets);
+  }
+
+  offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
 
   auto result = popops::multiSlice(graph().getPoplarGraph(),
                                    data,
@@ -81,6 +91,10 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
                                    poplar::OptionFlags(),
                                    debugContext());
 
+  if (op.zeroOutOfRangeIndices()) {
+    zeroOutputOfOutOfRangeIndices(prog, result, mask, data);
+  }
+
   // Reshape the result to "unflatten" the other dimensions.
   tmp_shape.front() = result.dim(0);
   result            = result.reshape(tmp_shape);
@@ -91,6 +105,63 @@ void GatherOpx::grow(snap::program::Sequence &prog) const {
   result = result.reshape(outputShape);
 
   setOutTensor(GatherOp::outIndex(), snap::Tensor{result, graph()});
+}
+
+std::tuple<poplar::Tensor, poplar::Tensor>
+GatherBaseOpx::zeroIndiciesThatAreOutOfRange(
+    snap::program::Sequence &prog,
+    const poplar::Tensor &data,
+    const poplar::Tensor &offsets) const {
+  auto gather_size = data.shape()[0];
+  auto dtype       = offsets.elementType();
+  auto max_value   = getConst(dtype, {}, gather_size, "max_value");
+  auto mask        = popops::lt(graph().getPoplarGraph(),
+                         offsets,
+                         max_value.getPoplarTensor(),
+                         prog.getPoplarSequence(),
+                         debugContext("mask<size"));
+
+  if (dtype == poplar::INT || dtype == poplar::SHORT || dtype == poplar::LONG ||
+      dtype == poplar::LONGLONG) {
+    auto mask2 = popops::gteq(graph().getPoplarGraph(),
+                              offsets,
+                              0,
+                              prog.getPoplarSequence(),
+                              debugContext("0<mask"));
+    popops::logicalAndInPlace(graph().getPoplarGraph(),
+                              mask,
+                              mask2,
+                              prog.getPoplarSequence(),
+                              debugContext("0<=mask<size"));
+  }
+  auto indices_mask   = popops::cast(graph().getPoplarGraph(),
+                                   mask,
+                                   offsets.elementType(),
+                                   prog.getPoplarSequence(),
+                                   debugContext("mask_castInt"));
+  auto masked_offsets = popops::mul(graph().getPoplarGraph(),
+                                    offsets,
+                                    indices_mask,
+                                    prog.getPoplarSequence(),
+                                    debugContext("masked_indices"));
+  return std::make_tuple(masked_offsets, mask);
+}
+
+void GatherBaseOpx::zeroOutputOfOutOfRangeIndices(
+    snap::program::Sequence &prog,
+    poplar::Tensor &result,
+    const poplar::Tensor &mask,
+    const poplar::Tensor &data) const {
+  auto out_mask = popops::cast(graph().getPoplarGraph(),
+                               mask,
+                               data.elementType(),
+                               prog.getPoplarSequence(),
+                               debugContext("mask_cast"));
+  popops::mulInPlace(graph().getPoplarGraph(),
+                     result,
+                     out_mask.expand({1}),
+                     prog.getPoplarSequence(),
+                     debugContext("masked_result"));
 }
 
 snap::Tensor

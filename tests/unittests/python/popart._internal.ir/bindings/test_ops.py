@@ -673,6 +673,7 @@ def test_gather_op(connected: bool) -> None:
             opid=opid,
             axis_=0,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
+            zeroOutOfRangeIndices_=False,
             settings=settings)
 
         op.setup()
@@ -681,6 +682,7 @@ def test_gather_op(connected: bool) -> None:
         opid=opid,
         axis_=0,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
+        zeroOutOfRangeIndices_=False,
         settings=settings)
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)
@@ -713,12 +715,14 @@ def test_tiedgather_op(connected: bool) -> None:
             outs,
             axis_=0,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
+            zeroOutOfRangeIndices_=True,
             settings=settings)
         op.setup()
         return
     op = main.createOp_TiedGatherOp(
         axis_=0,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
+        zeroOutOfRangeIndices_=True,
         settings=settings)
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)

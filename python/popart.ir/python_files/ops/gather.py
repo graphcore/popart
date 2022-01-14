@@ -9,10 +9,13 @@ __all__ = ["gather", "tied_gather"]
 
 
 @op_debug_context
-def gather(t: Tensor,
-           indices: Tensor,
-           axis: int = 0,
-           available_memory_proportion: Optional[float] = None) -> Tensor:
+def gather(
+        t: Tensor,
+        indices: Tensor,
+        axis: int = 0,
+        available_memory_proportion: Optional[float] = None,
+        zero_OOR=False,
+) -> Tensor:
     """
     Select multiple elements from an array, given by `indices`, along a specified axis.
     Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
@@ -49,6 +52,9 @@ def gather(t: Tensor,
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
+        zero_OOR: bool
+            If False, out of range (OOR) indices will produce garbage data.
+            If True, OOR indices will produce zeros.
 
     Returns:
         gather: Tensor
@@ -75,16 +81,20 @@ def gather(t: Tensor,
         opid=opid,
         axis_=axis,
         available_memory_proportion_=available_memory_proportion,
+        zeroOutOfRangeIndices_=zero_OOR,
         settings=settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def tied_gather(t: Tensor,
-                indices: Tensor,
-                axis: int = 0,
-                available_memory_proportion: Optional[float] = None) -> Tensor:
+def tied_gather(
+        t: Tensor,
+        indices: Tensor,
+        axis: int = 0,
+        available_memory_proportion: Optional[float] = None,
+        zero_OOR=False,
+) -> Tensor:
     """
     Select multiple elements from an array, given by `indices`, along a specified axis.
     Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
@@ -126,6 +136,9 @@ def tied_gather(t: Tensor,
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
+        zero_OOR: bool
+            If False, out of range (OOR) indices will produce garbage data.
+            If True, OOR indices will produce zeros.
                 
     Returns:
         gather: Tensor
@@ -150,6 +163,7 @@ def tied_gather(t: Tensor,
         }, {0: g._create_tensor_id("tiedgather_out")},
         axis_=axis,
         available_memory_proportion_=available_memory_proportion,
+        zeroOutOfRangeIndices_=zero_OOR,
         settings=settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

@@ -73,9 +73,6 @@ TiedGatherOpx::createInputTensor(const InIndex index,
                       graph()};
 }
 
-// Identical to GatherOpx::grow however:
-//    1) uses popops::gather instead of popops::multislice
-//    2) range checks the indices and masks those out of range
 void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
   const auto indicesShape = inShape(TiedGatherOp::indicesInIndex());
   const auto outputShape =
@@ -96,9 +93,6 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
   } else {
     // Flatten the scalar indices.
     auto offsets = indices.flatten();
-    // reinterpret the indices as unsigned int. This assumes negative indices.
-    // are impossible.
-    offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
 
     // Place the gather axis at the front.
     data = data.dimShufflePartial({0}, {axis});
@@ -107,28 +101,14 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
     // Flatten the other dimensions.
     data = data.flatten(1, data.rank());
 
-    // Change (2)
     poplar::Tensor mask;
-    if (op.checkIndices()) {
-      auto gather_size  = data.shape()[0];
-      mask              = popops::lt(graph().getPoplarGraph(),
-                        offsets,
-                        static_cast<unsigned>(gather_size),
-                        prog.getPoplarSequence(),
-                        debugContext("mask<size"));
-      auto indices_mask = popops::cast(graph().getPoplarGraph(),
-                                       mask,
-                                       offsets.elementType(),
-                                       prog.getPoplarSequence(),
-                                       debugContext("mask_castInt"));
-      offsets           = popops::mul(graph().getPoplarGraph(),
-                            offsets,
-                            indices_mask,
-                            prog.getPoplarSequence(),
-                            debugContext("masked_indices"));
+    if (op.zeroOutOfRangeIndices()) {
+      std::tie(offsets, mask) =
+          zeroIndiciesThatAreOutOfRange(prog, data, offsets);
     }
 
-    // Change (1)
+    offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
+
     auto result = popops::gather(graph().getPoplarGraph(),
                                  data,
                                  offsets,
@@ -137,18 +117,8 @@ void TiedGatherOpx::grow(snap::program::Sequence &prog) const {
                                  popops::GatherParams(),
                                  debugContext());
 
-    // Change (2)
-    if (op.checkIndices()) {
-      auto out_mask = popops::cast(graph().getPoplarGraph(),
-                                   mask,
-                                   data.elementType(),
-                                   prog.getPoplarSequence(),
-                                   debugContext("mask_cast"));
-      popops::mulInPlace(graph().getPoplarGraph(),
-                         result,
-                         out_mask.expand({1}),
-                         prog.getPoplarSequence(),
-                         debugContext("masked_result"));
+    if (op.zeroOutOfRangeIndices()) {
+      zeroOutputOfOutOfRangeIndices(prog, result, mask, data);
     }
 
     // Reshape the result to "unflatten" the other dimensions.

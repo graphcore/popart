@@ -12,16 +12,12 @@ public:
   TiedGatherOp(int64_t axis_,
                const Op::Settings &settings_,
                const nonstd::optional<float> available_memory_proportion_ =
-                   nonstd::nullopt);
+                   nonstd::nullopt,
+               bool zeroOutOfRangeIndices_ = false);
 
   std::unique_ptr<Op> clone() const final;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-
-  bool checkIndices() const { return checkIndices_; }
-
-private:
-  bool checkIndices_ = true;
 };
 
 class TiedGatherGradOp final : public GatherGradOp {

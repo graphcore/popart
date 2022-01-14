@@ -123,8 +123,12 @@ bool TiedGatherPattern::apply(Op *op) const {
                                    const TensorId &ind,
                                    int64_t i,
                                    const std::string &debugPrefix) {
-    auto tiedGather = graph.createOp<TiedGatherOp>(
-        axis, Op::Settings(graph, debugPrefix), availMemProp);
+    bool zeroOutOfRangeIndices = true;
+    auto tiedGather =
+        graph.createOp<TiedGatherOp>(axis,
+                                     Op::Settings(graph, debugPrefix),
+                                     availMemProp,
+                                     zeroOutOfRangeIndices);
     transferBaseProperties(gather, tiedGather);
 
     tiedGather->connectInTensor(TiedGatherOp::dataInIndex(), dict);

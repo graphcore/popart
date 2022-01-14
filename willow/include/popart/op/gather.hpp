@@ -13,7 +13,8 @@ public:
            int64_t axis_,
            const Op::Settings &settings_,
            const nonstd::optional<float> &available_memory_proportion_ =
-               nonstd::nullopt);
+               nonstd::nullopt,
+           bool zeroOutOfRangeIndices_ = false);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() override;
@@ -42,9 +43,12 @@ public:
     available_memory_proportion = v;
   }
 
+  bool zeroOutOfRangeIndices() const { return zeroOutOfRangeIndices__; }
+
 private:
   int64_t axis = 0;
   nonstd::optional<float> available_memory_proportion;
+  bool zeroOutOfRangeIndices__;
 };
 
 class GatherGradOp : public Op {

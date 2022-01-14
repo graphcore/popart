@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_GATHERX_HPP
 #define GUARD_NEURALNET_GATHERX_HPP
 
+#include <tuple>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
@@ -32,8 +33,20 @@ public:
 
 protected:
   int64_t axis;
-
   void setCommonMembersPostVerify(const Op *op);
+
+  // Zero indices that are out of range so they produce output from the weight
+  // tensor
+  std::tuple<poplar::Tensor, poplar::Tensor>
+  zeroIndiciesThatAreOutOfRange(snap::program::Sequence &prog,
+                                const poplar::Tensor &data,
+                                const poplar::Tensor &offsets) const;
+
+  // Zero output corresponding to out of range indices
+  void zeroOutputOfOutOfRangeIndices(snap::program::Sequence &prog,
+                                     poplar::Tensor &result,
+                                     const poplar::Tensor &mask,
+                                     const poplar::Tensor &data) const;
 };
 
 class GatherOpx final : public GatherBaseOpx {
