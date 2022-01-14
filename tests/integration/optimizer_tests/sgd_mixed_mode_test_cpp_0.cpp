@@ -8,6 +8,9 @@
 #include <tuple>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <filereader.hpp>
 #include <popart/builder.hpp>

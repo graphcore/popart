@@ -7,6 +7,10 @@
 #include <vector>
 
 // This trick is required to access the Devicex's poplar::Tensors.
+
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #define private public
 

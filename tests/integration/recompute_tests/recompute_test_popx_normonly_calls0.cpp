@@ -14,6 +14,9 @@
 #include <popart/pointercomparators.hpp>
 #include <popart/sgd.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #define protected public
 #include <popart/popx/devicex.hpp>

@@ -40,7 +40,7 @@ public:
   virtual OperatorIdentifier lhsOp() const {
     throw internal_error(
         "Operator under test does not have an LHS inplace variant");
-  };
+  }
 
   // Does the op being tested have an RHS inplace variant?
   virtual bool hasRhsOp() const { return false; }
@@ -49,7 +49,7 @@ public:
   virtual OperatorIdentifier rhsOp() const {
     throw internal_error(
         "Operator under test does not have an RHS inplace variant");
-  };
+  }
 
   // Inserts the op under test given two input tensors.
   virtual TensorId

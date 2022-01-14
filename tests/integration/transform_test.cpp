@@ -4,6 +4,9 @@
 #include <boost/test/unit_test.hpp>
 #include <popart/transforms/transform.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <popart/ir.hpp>
 #undef private

@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(PrePlanMatMuls_0) {
     lowering.reset(new popx::IrLowering(ir, device));
 
     std::unique_ptr<popx::Executablex> executable =
-        std::move(popx::Executablex::createFromLoweredIr(*lowering));
+        popx::Executablex::createFromLoweredIr(*lowering);
 
     const auto devicex = std::make_unique<popx::Devicex>(*executable, device);
 

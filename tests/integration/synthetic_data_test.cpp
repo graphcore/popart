@@ -5,6 +5,9 @@
 #include <vector>
 
 // Hack to allow the test to view the private data of classes
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #define protected public
 

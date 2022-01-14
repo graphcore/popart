@@ -11,6 +11,9 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <testutil/irquery/irquery.hpp>
 #undef private
@@ -20,10 +23,6 @@
 
 using namespace popart;
 using namespace popart::irquery;
-
-namespace {
-auto _ = trompeloeil::_;
-} // namespace
 
 BOOST_AUTO_TEST_CASE(tensorindextestwrapper_index) {
 

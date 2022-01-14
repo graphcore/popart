@@ -22,6 +22,7 @@
 class Dependency {
 public:
   virtual int foo() = 0;
+  virtual ~Dependency() {}
 };
 
 /**

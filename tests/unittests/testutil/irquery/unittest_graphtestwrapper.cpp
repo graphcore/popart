@@ -12,6 +12,9 @@
 #include <popart/op.hpp>
 #include <popart/util.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <testutil/irquery/irquery.hpp>
 #undef private
@@ -23,8 +26,6 @@ using namespace popart;
 using namespace popart::irquery;
 
 namespace {
-
-auto _ = trompeloeil::_;
 
 /**
  * Add this subgraph to an IR:

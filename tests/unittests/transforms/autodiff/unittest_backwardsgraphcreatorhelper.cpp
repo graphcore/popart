@@ -10,6 +10,9 @@
 #include <popart/op/identity.hpp>
 #include <popart/util.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 #undef private

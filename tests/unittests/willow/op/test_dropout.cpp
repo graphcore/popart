@@ -7,8 +7,6 @@
 
 using namespace popart;
 
-#define protected public
-
 /**
  * Check that canBeReplacedByIdentity() returns true iff rate is 0 and mask
  * output is not used.

@@ -8,6 +8,9 @@
 #include <tuple>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <filereader.hpp>
 #include <popart/builder.hpp>
@@ -154,7 +157,7 @@ struct SGD2TestConfig : public _detail::SGDTestConfig<SGD2TestConfig> {
 
   using _detail::SGDTestConfig<SGD2TestConfig>::getInitialV;
 
-  static float getInitialV(float, float, float vs, float) { return vs * 0.0f; };
+  static float getInitialV(float, float, float vs, float) { return vs * 0.0f; }
 
   static void laggedPytorchUpdate(float &w,
                                   float &g,
@@ -189,7 +192,7 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
 
   static float getInitialV(float dp, float wd, float vs, float W) {
     return (1.0f - dp) * wd * vs * W;
-  };
+  }
 
   static void laggedPytorchUpdate(float &w,
                                   float &g,

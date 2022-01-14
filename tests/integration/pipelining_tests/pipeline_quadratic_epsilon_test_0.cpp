@@ -9,6 +9,9 @@
 #include <tuple>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <filereader.hpp>
 #include <popart/builder.hpp>
@@ -157,8 +160,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
                            &builder,
                            &aiOnnx,
                            &nLayersAdded,
-                           &w_readbacks,
-                           exportFinalDotFiles](TensorId actInId) {
+                           &w_readbacks](TensorId actInId) {
       w_readbacks.push_back(std::vector<float>(sampleElms, -99.0f));
       allWeights.push_back(std::vector<float>(sampleElms, 0));
       for (auto &x : allWeights.back()) {

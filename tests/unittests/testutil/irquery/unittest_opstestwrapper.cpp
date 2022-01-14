@@ -11,6 +11,9 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <testutil/irquery/irquery.hpp>
 #undef private

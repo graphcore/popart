@@ -49,8 +49,8 @@ BOOST_AUTO_TEST_CASE(Pattern_transferBaseProperties) {
     // These functions make Op abstract, but we don't need them for this test.
     virtual std::unique_ptr<Op> clone() const {
       return std::make_unique<TestOp>(this->opid, this->settings);
-    };
-    virtual float getSubgraphValue() const { return 0.0f; };
+    }
+    virtual float getSubgraphValue() const { return 0.0f; }
   };
 
   Ir ir{};

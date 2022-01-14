@@ -3,6 +3,9 @@
 #include <boost/test/unit_test.hpp>
 
 // To access gradUnscale
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <popart/patterns/adamdecompose.hpp>
 #undef protected

@@ -9,6 +9,9 @@
 #include <tuple>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <filereader.hpp>
 #include <popart/builder.hpp>
@@ -222,7 +225,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
       userOptions.enableGradientAccumulation = false;
     }
 
-    auto l1      = builder->aiGraphcoreOpset1().l1loss(
+    auto l1 = builder->aiGraphcoreOpset1().l1loss(
         {actFinal}, 0.1, ReductionType::Sum);
     builder->virtualGraph(l1, nIPUs - 1);
     auto proto    = builder->getModelProto();

@@ -105,9 +105,6 @@ gather(Graph &g, TensorId data, TensorId indices, int64_t axis) {
 }
 std::pair<TensorId, Op *> matmul(Graph &g, TensorId lhs, TensorId rhs) {
   auto out = g.getIr().createIntermediateTensorId("o");
-  nonstd::optional<float> prop;
-  MatMulBaseOp::SerialiseSettings serialisation;
-  OptionalDataType outputType;
   return {out,
           g.createConnectedOp<MatMulOp>({{MatMulOp::getLhsInIndex(), lhs},
                                          {MatMulOp::getRhsInIndex(), rhs}},

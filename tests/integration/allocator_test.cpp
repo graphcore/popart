@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
   lowering.reset(new popx::IrLowering(ir, cpuDevice));
 
   std::unique_ptr<popx::Executablex> executable =
-      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+      popx::Executablex::createFromLoweredIr(*lowering);
 
   std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(*executable, cpuDevice));
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
   lowering.reset(new popx::IrLowering(ir, cpuDevice));
 
   std::unique_ptr<popx::Executablex> executable =
-      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+      popx::Executablex::createFromLoweredIr(*lowering);
 
   std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(*executable, cpuDevice));

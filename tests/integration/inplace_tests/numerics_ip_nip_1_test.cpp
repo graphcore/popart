@@ -106,6 +106,13 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
         0, std::numeric_limits<unsigned int>::max());
     UniformRealDistribution<float> fdisPref(0.f, +10.0f);
 
+// Clang appears to consider a constexpr variable to not require a lambda
+// capture, so errors on it being unnecessary; whereas GCC says it is required
+// and will error if you do not have it. Thus we do have it and turn off the
+// warning on clang.
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunused-lambda-capture"
+#endif
     // Function for adding a new op
     auto addNewOp = [H,
                      W,

@@ -13,6 +13,9 @@
 #include <popart/sgd.hpp>
 
 // Hack to see the internals of Session
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #define protected public
 #include <popart/session.hpp>

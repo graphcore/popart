@@ -19,6 +19,9 @@
 #include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include <popart/transforms/autodiff.hpp>
 #undef private

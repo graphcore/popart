@@ -27,8 +27,8 @@ using namespace std;
 // for the addOp. In this case that requires a layout according to the addOp's
 // RHS layout. This is the result of the matmul, so should be non-linear.
 BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
-  int N         = 4;
-  int size      = 4;
+  int N    = 4;
+  int size = 4;
 
   auto builder     = Builder::create();
   auto aiOnnx      = builder->aiOnnxOpset9();
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   lowering.reset(new popx::IrLowering(ir, testDev));
 
   std::unique_ptr<popx::Executablex> executable =
-      std::move(popx::Executablex::createFromLoweredIr(*lowering));
+      popx::Executablex::createFromLoweredIr(*lowering);
 
   std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(*executable, testDev));
