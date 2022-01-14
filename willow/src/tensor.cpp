@@ -1108,6 +1108,11 @@ void Consumers::increment(Op *op) {
 std::vector<int64_t> Tensor::returnedShape(unsigned replicationFactor) {
   int64_t returned =
       variableSettings.numReplicasReturningVariable(replicationFactor);
+
+  if (returned == 1) {
+    return Shape(info.shape());
+  }
+
   std::vector<int64_t> tensor_shape = info.shape();
   std::vector<int64_t> return_shape(tensor_shape.size() + 1);
 
@@ -1118,6 +1123,27 @@ std::vector<int64_t> Tensor::returnedShape(unsigned replicationFactor) {
   }
 
   return return_shape;
+}
+
+void Tensor::verifyMutableVoidInfo(const TensorInfo mutableVoidInfo,
+                                   unsigned replicationFactor) {
+
+  auto returShape = returnedShape(replicationFactor);
+
+  bool correct = returShape.size() == mutableVoidInfo.shape().size();
+  for (size_t i = 0; i < returShape.size(); i++) {
+    correct = correct && (returShape[i] == mutableVoidInfo.shape()[i]);
+  }
+  if (!correct) {
+    throw internal_error(
+        "The shape of the MutableVoidData for IO does not not match the "
+        "expected write region of this tensor. "
+        "Tensor Write ({}): {} != MutableVoidData ({}): {}",
+        info.shape().size(),
+        returShape,
+        mutableVoidInfo.shape().size(),
+        mutableVoidInfo.shape());
+  }
 }
 
 std::vector<Op *> Consumers::getOps() const {

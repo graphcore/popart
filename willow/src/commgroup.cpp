@@ -25,6 +25,9 @@ std::ostream &operator<<(std::ostream &os, CommGroupType commType) {
   case CommGroupType::Orthogonal:
     os << "Orthogonal";
     break;
+  case CommGroupType::None:
+    os << "None";
+    break;
   default:
     os << "Invalid CommGroup " << static_cast<int64_t>(commType);
     logging::err("Unsupported CommGroupType {}",

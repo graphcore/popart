@@ -398,6 +398,7 @@ void Devicex::writeWeights(const IWeightsIO &weights) {
     const auto &id = tensor->id;
     if (weights.contains(id)) {
       MutableVoidData stepout = weights.weight(id);
+      tensor->verifyMutableVoidInfo(stepout.info, getReplicationFactor());
       tensor->tensorData()->resetData(stepout.info, stepout.data);
     }
   }

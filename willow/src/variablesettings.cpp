@@ -7,7 +7,7 @@
 
 namespace popart {
 
-std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode &vrm) {
+std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode vrm) {
   switch (vrm) {
   case VariableRetrievalMode::OnePerGroup:
     os << "OnePerGroup";
@@ -102,8 +102,9 @@ VariableSettings::numReplicasReturningVariable(unsigned replicaCount) const {
 
 unsigned VariableSettings::groupCount(unsigned replicaCount) const {
   if (sharedVariableDomain.type == CommGroupType::None ||
-      sharedVariableDomain.replicaGroupSize == 1)
+      sharedVariableDomain.replicaGroupSize == 1) {
     return replicaCount;
+  }
 
   switch (sharedVariableDomain.type) {
   case CommGroupType::All:
@@ -240,7 +241,7 @@ VariableSettings::groups(unsigned replicaCount) const {
   return groups;
 }
 
-std::ostream &operator<<(std::ostream &os, VariableSettings &vs) {
+std::ostream &operator<<(std::ostream &os, VariableSettings vs) {
   return os << "VariableSettings: [" << vs.getSharedVariableDomain() << ", "
             << vs.getRetrievalMode() << "]";
 }

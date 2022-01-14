@@ -6,6 +6,7 @@
 #include <string>
 
 #include <popart/commgroup.hpp>
+#include <popart/names.hpp>
 
 namespace popart {
 
@@ -38,13 +39,6 @@ enum class VariableRetrievalMode {
    */
   AllReplicas
 };
-
-/**
- * \param os Stream to append VariableRetrievalMode vrm to.
- * \param vrm VariableRetrievalMode to add to the stream.
- * \return Input stream with vrm appended to the end of it
- */
-std::ostream &operator<<(std::ostream &os, VariableRetrievalMode &vrm);
 
 class VariableSettings {
 private:
@@ -134,6 +128,21 @@ public:
    */
   std::vector<std::vector<std::int64_t>> groups(unsigned replicaCount) const;
 };
+
+/**
+ * \param os Stream to append VariableRetrievalMode vrm to.
+ * \param vrm VariableRetrievalMode to add to the stream.
+ * \return Input stream with vrm appended to the end of it
+ */
+std::ostream &operator<<(std::ostream &os, VariableRetrievalMode vrm);
+
+/**
+ * \param os Stream to append VariableSettings vrm to.
+ * \param vs VariableSettings to add to the stream.
+ * \return Input stream with vs appended to the end of it
+ */
+std::ostream &operator<<(std::ostream &os, VariableSettings vs);
+
 } // namespace popart
 
 #endif

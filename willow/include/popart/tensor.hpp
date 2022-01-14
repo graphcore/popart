@@ -304,8 +304,24 @@ public:
   /// \return The VariableSettings of this Variable
   VariableSettings getVariableSettings() const { return variableSettings; }
 
-  /// \return the shape of the tensor, considering replica groups
+  /**
+   * Returns the shape necessitated by IO.
+   * \param replicationFactor The replication factor
+   * \return the shape of the tensor, considering replica groups
+   */
   std::vector<int64_t> returnedShape(unsigned replicationFactor);
+
+  /**
+   * Check that the info of a mutableVoidData object matches the expectations
+   * set by the TensorInfo and VariableSettings. Throws an error if there is a
+   * mismatch.
+   * \param mutableVoidInfo The data of the MutableVoidInfo with the
+   *                        same id as this tensor
+   * \param replicationFactor The replicationFactor of
+   *                          this instance
+   */
+  void verifyMutableVoidInfo(const TensorInfo mutableVoidInfo,
+                             unsigned replicationFactor);
 
 private:
   VariableUpdateType variableUpdateType;
