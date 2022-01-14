@@ -284,6 +284,7 @@ constexpr const char *reservedAdaptiveUpdaterPrefix() {
   return "AdaptiveUpdater___";
 }
 constexpr const char *anchorSumPrefix() { return "anchorSum___"; }
+constexpr const char *anchorFinalPrefix() { return "anchorFinal___"; }
 constexpr const char *reservedConcatInitPrefix() { return "ConcatInit___"; }
 constexpr const char *reservedConstValuePrefix() { return "ConstValue___"; }
 constexpr const char *cycleCountPrefix() { return "cycleCount___"; }

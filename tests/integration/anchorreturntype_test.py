@@ -127,7 +127,8 @@ def generate_simple_training_session_data():
     data.append([[2], inputArray, 2, FINAL, 2, False, [7, 8]])
     data.append([[2], inputArray, 2, SUM, 2, False, [16, 20]])
 
-    # Test that art sum works with all permutations of bps = {1, 2}, ga = {1, 2}
+    # Test that art sum and final works with all permutations of
+    # bps = {1, 2}, ga = {1, 2}
     # and explicit main loops.
     inputArray = [[1, 2]]
     data.append([[2], inputArray, 1, SUM, 1, True, [1, 2]])
@@ -137,6 +138,15 @@ def generate_simple_training_session_data():
     data.append([[2], inputArray, 2, SUM, 1, True, [4, 6]])
     inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
     data.append([[2], inputArray, 2, SUM, 2, True, [16, 20]])
+
+    inputArray = [[1, 2]]
+    data.append([[2], inputArray, 1, FINAL, 1, True, [1, 2]])
+    inputArray = [[[1, 2], [3, 4]]]
+    data.append([[2], inputArray, 1, FINAL, 2, True, [3, 4]])
+    inputArray = [[1, 2], [3, 4]]
+    data.append([[2], inputArray, 2, FINAL, 1, True, [3, 4]])
+    inputArray = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    data.append([[2], inputArray, 2, FINAL, 2, True, [7, 8]])
 
     return data
 

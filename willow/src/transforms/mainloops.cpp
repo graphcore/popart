@@ -416,7 +416,7 @@ LoopOp *MainLoops::getInnerLoopOp(Ir &ir) {
     std::vector<LoopOp *> callSites;
     for (auto op : ir.getAllOps()) {
       auto loopOp = dynamic_cast<LoopOp *>(op);
-      if (loopOp) {
+      if (loopOp && loopOp->getCalledGraph().id == graph.id) {
         callSites.push_back(loopOp);
       }
     }
@@ -458,7 +458,8 @@ void MainLoops::validateAnchorReturnType(Graph &graph) const {
 
     // Check whether the anchor return types are supported.
     if (!(art.id() == AnchorReturnTypeId::All ||
-          art.id() == AnchorReturnTypeId::Sum)) {
+          art.id() == AnchorReturnTypeId::Sum ||
+          art.id() == AnchorReturnTypeId::Final)) {
       throw error(
           "[MainLoops] AnchorReturnType::{} for Tensor \"{}\" is unsupported "
           "when explicit main loops are enabled. Supported anchor return types "
@@ -467,10 +468,11 @@ void MainLoops::validateAnchorReturnType(Graph &graph) const {
           rightId);
     }
 
-    // When the anchor return type is sum, check if the latest remap of the
-    // anchor is in the main graph.
+    // When the anchor return type is sum or final, check if the latest remap of
+    // the anchor is in the main graph.
     if (!graph.getTensors().contains(leftId) &&
-        art.id() == AnchorReturnTypeId::Sum) {
+        (art.id() == AnchorReturnTypeId::Sum ||
+         art.id() == AnchorReturnTypeId::Final)) {
       throw internal_error("[MainLoops] The latest remap \"{}\" for anchor "
                            "\"{}\" is not in the main graph.",
                            leftId,
@@ -496,21 +498,18 @@ void MainLoops::setupAnchors(Graph &graph,
   Graph &outerGraph = getOuterLoopSubgraph(ir);
   Graph &innerGraph = getInnerLoopSubgraph(ir);
 
-  std::vector<Op *> newMainGraphOps{};
-  std::vector<Op *> newOuterGraphOps{};
-  std::vector<Op *> newInnerGraphOps{};
-
   for (auto &anchorIdArt : ir.getDataFlow().getAnchorReturnTypeMap()) {
+    std::vector<Op *> newMainGraphOps;
+    std::vector<Op *> newOuterGraphOps;
+    std::vector<Op *> newInnerGraphOps;
+
     auto rightId     = anchorIdArt.first;
     auto leftId      = ir.getAnchorRemap().getLeft(rightId);
     auto art         = anchorIdArt.second;
     TensorInfo tInfo = innerGraph.getTensors().get(leftId)->info;
 
-    switch (art.id()) {
-    case AnchorReturnTypeId::All: {
-      break;
-    }
-    case AnchorReturnTypeId::Sum: {
+    if (art.id() == AnchorReturnTypeId::Sum ||
+        art.id() == AnchorReturnTypeId::Final) {
       // Progressively build the following graph, starting from the `InitOp`
       // and following the path down to the output tensor `O`.
       //
@@ -519,6 +518,7 @@ void MainLoops::setupAnchors(Graph &graph,
       //     that call the outer and inner subgraphs respectively. They're
       //     loop-carried.
       //
+      // Mode of operation for `Sum`:
       //             .-outer------------------------------.
       //             |      .-inner----------------.      |
       // InitOp - I -+- I' -+- I" -.               |      |
@@ -526,12 +526,26 @@ void MainLoops::setupAnchors(Graph &graph,
       //             |      |   V ---+ AddOp - O" -+- O' -+- O
       //             |      .______________________.      |
       //             .____________________________________.
+      //
+      // Mode of operation for `Final`:
+      //             .-outer------------------------------.
+      //             |      .-inner----------------.      |
+      // InitOp - I -+- I' -+- I"               V -+- O' -+- O
+      //             |      .______________________.      |
+      //             .____________________________________.
 
       logging::transform::trace(
-          "[MainLoops] Setting up AnchorReturnType::Sum for anchor {}.",
+          "[MainLoops] Setting up AnchorReturnTypeId::{} for anchor {}.",
+          art.id(),
           rightId);
 
-      TensorId accumIn  = anchorSumPrefix() + rightId;
+      TensorId accumIn;
+      if (art.id() == AnchorReturnTypeId::Sum) {
+        accumIn = anchorSumPrefix() + rightId;
+      } else if (art.id() == AnchorReturnTypeId::Final) {
+        accumIn = anchorFinalPrefix() + rightId;
+      }
+
       TensorId accumOut = accumIn + "_out";
 
       TensorId currId = addScope(mainGraph, accumIn);
@@ -561,20 +575,27 @@ void MainLoops::setupAnchors(Graph &graph,
             LoopOp::getFirstInputInIndex(), oldId, currId, false);
       }
 
-      oldId  = currId;
-      currId = addScope(innerGraph, accumOut);
       // NOTE: When (bps > 1 && ga == 1), innerGraph == outerGraph.
-      Op *addOp = innerGraph.createOp<AddOp>(Onnx::Operators::Add_7,
-                                             Op::Settings({innerGraph, "Add"}));
-      addOp->connectInTensor(AddOp::getArg0InIndex(), oldId);
-      addOp->connectInTensor(AddOp::getArg1InIndex(), leftId);
-      addOp->createAndConnectOutTensor(AddOp::getOutIndex(), currId);
-      addOp->setup();
 
-      if (innerLoop)
-        newInnerGraphOps.push_back(addOp);
-      else if (outerLoop)
-        newOuterGraphOps.push_back(addOp);
+      if (art.id() == AnchorReturnTypeId::Sum) {
+        oldId  = currId;
+        currId = addScope(innerGraph, accumOut);
+
+        Op *addOp = innerGraph.createOp<AddOp>(
+            Onnx::Operators::Add_7, Op::Settings({innerGraph, "Add"}));
+        addOp->connectInTensor(AddOp::getArg0InIndex(), oldId);
+        addOp->connectInTensor(AddOp::getArg1InIndex(), leftId);
+        addOp->createAndConnectOutTensor(AddOp::getOutIndex(), currId);
+        addOp->setup();
+
+        if (innerLoop) {
+          newInnerGraphOps.push_back(addOp);
+        } else if (outerLoop) {
+          newOuterGraphOps.push_back(addOp);
+        }
+      } else if (art.id() == AnchorReturnTypeId::Final) {
+        currId = leftId;
+      }
 
       if (innerLoop && outerLoop) {
         oldId  = currId;
@@ -596,43 +617,42 @@ void MainLoops::setupAnchors(Graph &graph,
             rightId);
       }
 
-      if (innerLoop)
+      if (innerLoop) {
         innerLoop->setup();
-      if (outerLoop)
+      }
+      if (outerLoop) {
         outerLoop->setup();
+      }
 
       ir.remapAnchor(leftId, currId);
+    }
 
-      break;
-    }
-    default: {
-      throw internal_error(
-          "Attempting to setup an unsupported AnchorReturnType::{}. The anchor"
-          " return type validation step should have caught this.",
-          art.id());
-      break;
-    }
+    AliasModel aliasModel;
+    AliasModelGrower aliasModelGrower{aliasModel};
+    for (auto graph : ir.getAllGraphs()) {
+      aliasModelGrower.growFullGraph(*graph, DataDependenciesOnly::Yes);
     }
 
     // Inherit placement attributes.
-    auto inheritPlacementAttributes = [](Graph &g, std::vector<Op *> &ops) {
-      AliasModel aliasModel;
-      AliasModelGrower aliasModelGrower{aliasModel};
-      aliasModelGrower.growFullGraph(g, DataDependenciesOnly::Yes);
+    auto configureOps = [&aliasModel](std::vector<Op *> &ops) {
       for (auto op : ops) {
+        logging::transform::trace(
+            "[MainLoops::setupAnchors] Attempting to inherit "
+            "placement attributes on {}",
+            op->debugName());
         op->inheritPlacementAttributes(true, aliasModel);
         op->setup();
       }
     };
 
-    if (newMainGraphOps.size()) {
-      inheritPlacementAttributes(mainGraph, newMainGraphOps);
+    if (!newInnerGraphOps.empty()) {
+      configureOps(newInnerGraphOps);
     }
-    if (newOuterGraphOps.size()) {
-      inheritPlacementAttributes(outerGraph, newOuterGraphOps);
+    if (!newOuterGraphOps.empty()) {
+      configureOps(newOuterGraphOps);
     }
-    if (newInnerGraphOps.size()) {
-      inheritPlacementAttributes(innerGraph, newInnerGraphOps);
+    if (!newMainGraphOps.empty()) {
+      configureOps(newMainGraphOps);
     }
   }
 }

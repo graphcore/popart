@@ -149,6 +149,7 @@ const std::vector<std::string> &uncategorizedReservedPrefixes() {
       reservedAdamUpdaterPrefix(),
       reservedAdaptiveUpdaterPrefix(),
       anchorSumPrefix(),
+      anchorFinalPrefix(),
       reservedConcatInitPrefix(),
       reservedConstValuePrefix(),
       cycleCountPrefix(),
