@@ -156,7 +156,7 @@ Adam
     :private-members:
 
 popart.ir (experimental)
-------------------------------
+------------------------
 
 .. warning::
      This Python module is currently experimental and may be subject to change
@@ -177,6 +177,8 @@ directly.
 ..
   ``popart.ir.ops``
   ^^^^^^^^^^^^^^^^^
+
+.. _available_ops:
 
 .. automodule:: popart.ir.ops
     :members:

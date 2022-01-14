@@ -2,19 +2,22 @@ You define a tensor with shape, data type and optional initialisation data.
 A tensor has zero or more consumer operations and up to one producer operation.
 
 There are three types of tensors in ``popart.ir``:
+
   - Constant
   - Variable
   - Intermediate
 
 An intermediate tensor is the output of an operation.
 Variables and constants are initialised with data.
-For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable tensor,
+For instance, in the example :ref:`Tensor addition example <tensor_addition_code>`, ``a`` is a variable tensor,
 ``b`` is a constant tensor, and ``o`` is an intermediate tensor.
+
 
 .. literalinclude:: files/tensor_addition_popart_ir.py
   :language: python
-  :lines: 10-15
   :name: tensor_addition_code
+  :start-after: Op begin
+  :end-before: Op end
 
 .. only:: html
 

@@ -83,6 +83,26 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "tensor_addition_popart_ir.py"
         self.run_python(filename, self.base_path)
 
+    def test_documentation_popart_ir_basic_subgraph(self):
+        """Test the popart.ir basic subgraph example"""
+        filename = "basic_subgraph_popart_ir.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popart_ir_create_multi_subgraph(self):
+        """Test the popart.ir create multiple subgraph example"""
+        filename = "create_multi_subgraphs_from_same_func_popart_ir.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popart_ir_multi_callsites_subgraph_input(self):
+        """Test the popart.ir create multiple callsites for a subgraph input example"""
+        filename = "multi_call_subgraph_input_popart_ir.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popart_ir_call_with_info(self):
+        """Test the popart.ir call_with_info example"""
+        filename = "call_with_info_popart_ir.py"
+        self.run_python(filename, self.base_path)
+
 
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""

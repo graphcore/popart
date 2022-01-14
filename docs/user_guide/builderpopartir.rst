@@ -15,7 +15,8 @@ See below for a basic example of how to construct such an object.
 
 .. literalinclude:: files/simple_addition_popart_ir.py
   :language: python
-  :lines: 3-4,6-22
+  :lines: 8-9,11-27
+  :name: simple_example
 
 .. only:: html
 
@@ -42,7 +43,7 @@ Finally, the ``host_store`` streams the result data back from the device to the 
 Data types
 ^^^^^^^^^^
 
-Currently, ``popart.ir`` supports the data types listed in :numref:`ir_datatypes_table`.
+Currently, ``popart.ir`` supports the data types listed in :ref:`ir_datatypes_table`.
 These data types are defined in ``popart.ir`` directly and
 will be converted to their IPU-compatible data type. Note that the ``int64``
 and ``uint64`` will be downcast to ``int32`` and ``uint32`` respectively
@@ -56,41 +57,10 @@ Tensors
 .. include:: popartir_tensor.rst
 
 
-..
-  Adding operations to a graph
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Operations
+^^^^^^^^^^
 
-  - Explain how you can add ops to a graph (we haven't explained subgraphs at this point, so add to the main graph).
-  - Explain what in_sequence does and show how to use it.
-
-..
-  Data input and output
-  ^^^^^^^^^^^^^^^^^^^^^
-
-  - Explain what host_load and host_store do and how to add them.
-
-..
-  Available operations
-  ^^^^^^^^^^^^^^^^^^^^
-
-  - Detail supported operations (with links to the Python API).
-
-..
-  Creating subgraphs
-  ^^^^^^^^^^^^^^^^^^
-
-  - Explain how you create a subgraph.
-
-..
-  Calling subgraphs
-  ^^^^^^^^^^^^^^^^^
-
-  - Explain how you add a CallOp in `popart.ir`.
-
-..
-  Adding loops operations
-  ^^^^^^^^^^^^^^^^^^^^^^^
-  - Explain how you add a LoopOp in `popart.ir`.
+.. include:: popartir_op.rst
 
 ..
   Adding if operations
@@ -103,6 +73,12 @@ Tensors
   ^^^^^^^^^^^^^^^^^^^^^^^^^
 
   - Explain how to use our context manager, and why/when you want to use it.
+
+Subgraphs
+^^^^^^^^^
+
+.. include:: popartir_subgraph.rst
+
 
 ..
   Applying transforms

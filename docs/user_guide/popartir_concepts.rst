@@ -40,6 +40,7 @@ tensors and ops. There are two types of graphs: the main graph and subgraphs.
 
 * The **main graph** is a special graph and only one exists per IR. It is the entry point of a IR (like the main function in many programming languages). The main graph can contain intermediate, constant and variable tensors.
 
+.. _subgraph_concept:
 * **Subgraphs** have input and output tensors. Subgraphs can be called by other graphs using the ``call`` or ``repeat`` op. If a subgraph has multiple call sites, the subgraph is outlined during lowering, leading to code reuse and reduced memory usage. A subgraph can only contain intermediate or constant tensors and not variables. Subgraphs have intermediate tensors which are marked as inputs or outputs. When a subgraph is called the inputs must be provided by the calling graph. The input data can be either be passed by reference or value, and this is determined by the user at the call site.
 
 Tensors

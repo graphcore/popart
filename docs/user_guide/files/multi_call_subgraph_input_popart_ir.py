@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show a simple example of addition using
-popart.ir.
+The intention of this example is to show how to use subgraph_input
+in a function and how to call the subgraph multiple times.
 '''
 
 import numpy as np
@@ -12,15 +12,31 @@ import popart
 # Creating a model with popart.ir
 ir = pir.Ir()
 main = ir.main_graph()
+
+
+# Op begin
+def increment_fn(x: pir.Tensor):
+    value = pir.subgraph_input(x.shape, x.dtype, "value")
+    return x + value
+
+
 with main:
     # host load
-    input0 = pir.h2d_stream([1], pir.float32, name="input0_stream")
-    a = ops.host_load(input0, "a")
-    input1 = pir.h2d_stream([1], pir.float32, name="input1_stream")
-    b = ops.host_load(input1, "b")
+    input = pir.h2d_stream([2, 2], pir.float32, name="input_stream")
+    x = ops.host_load(input, "x")
 
-    # addition
-    o = ops.add(a, b)
+    # create graph
+    increment_graph = ir.create_graph(increment_fn, x)
+
+    # two variable values
+    value1 = pir.variable(np.ones(x.shape, x.dtype.as_numpy()), name="value1")
+    value2 = pir.variable(2 * np.ones(x.shape, x.dtype.as_numpy()),
+                          name="value2")
+
+    # call graph
+    o = ops.call(increment_graph, x, value1)
+    o = ops.call(increment_graph, o, value2)
+    # Op end
 
     # host store
     o_d2h = pir.d2h_stream(o.shape, o.dtype, name="output_stream")
@@ -43,14 +59,12 @@ session.prepareDevice()
 anchors = session.initAnchorArrays()
 
 # Generate some random input data
-data_a = np.random.rand(1).astype(np.float32)
-data_b = np.random.rand(1).astype(np.float32)
-inputs = {input0.tensor_id(): data_a, input1.tensor_id(): data_b}
+inputs = {input.tensor_id(): np.random.rand(2, 2).astype(np.float32)}
 
 # run the model
 stepio = popart.PyStepIO(inputs, anchors)
+session.weightsFromHost()
 session.run(stepio)
 
-print(f"Input a is {data_a}")
-print(f"Input b is {data_b}")
+print(f"Input is {inputs[input.tensor_id()]}")
 print(f"Result is {anchors[o_d2h.tensor_id()]}")
