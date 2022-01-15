@@ -155,7 +155,7 @@ def autodiff(graph: Graph,
 
         The graph will be differentiated using the chain rule starting from `grads_provided`.
         The outputs of the returned graph will be the gradient of the Tensors in `grads_required`.
-        By default `gradProvided` will be all of the outputs of the forward graph and `grads_required` will
+        By default `grad_provided` will be all of the outputs of the forward graph and `grads_required` will
         be all of the inputs to the forward graph.
 
         Any Tensors in the forward graph that are needed to compute the gradients will be added as outputs
@@ -171,11 +171,11 @@ def autodiff(graph: Graph,
         info on all graphs that `autodiff` as executed on as a result of this transformation.
 
     Args:
-        graph (pir.Graph
-        grads_provided (Optional[Iterable[pir.Tensor]], optional) Defaults to all outputs of the provided graph.
-        grads_required (Optional[Iterable[pir.Tensor]], optional). Defaults to all inputs of the provided graph.
-        called_graphs_grad_info (Optional[Mapping[pir.Graph, GradGraphInfo]], optional). Defaults to None.
-        return_all_grad_graphs (bool, optional). Defaults to False.
+        graph (pir.Graph): Graph to autodiff
+        grads_provided (Optional[Iterable[pir.Tensor]], optional): Defaults to all outputs of the provided graph.
+        grads_required (Optional[Iterable[pir.Tensor]], optional); Defaults to all inputs of the provided graph.
+        called_graphs_grad_info (Optional[Mapping[pir.Graph, GradGraphInfo]], optional): Defaults to None.
+        return_all_grad_graphs (bool, optional): Defaults to False.
 
     Returns:
         grad_info: GradGraphInfo

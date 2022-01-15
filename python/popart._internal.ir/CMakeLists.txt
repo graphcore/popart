@@ -42,6 +42,7 @@ list(
   ${popart_op_headers_dir}/collectives/replicatedallgather.hpp
   ${popart_op_headers_dir}/collectives/replicatedallreduce.hpp
   ${popart_op_headers_dir}/collectives/replicatedreducescatter.hpp
+  ${popart_op_headers_dir}/collectives/allreduce.hpp
   ${popart_op_headers_dir}/copyvarupdate.hpp
   ${popart_op_headers_dir}/tiedgather.hpp
   ${popart_op_headers_dir}/groupnorm.hpp

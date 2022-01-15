@@ -6,6 +6,7 @@ from popart.ir.tensor import Tensor
 from popart.ir.graph import Graph
 from popart.ir.dtypes import dtype
 from popart.ir.errors import UndefinedValue
+from typing import List
 
 
 def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
@@ -28,11 +29,11 @@ def check_in_graph(graph: Graph, *args, **tensors: Tensor):
     for name, tensor in tensors.items():
         if not isinstance(tensor, Tensor):
             raise TypeError(
-                f"The input {name} is not a Tensor. Type: {type(tensor)}. Value: {tensor}."
+                f"The input `{name}` is not a Tensor. Type: {type(tensor)}. Value: {tensor}."
             )
         if tensor not in graph:
             raise ValueError(
-                f"The input tensor {name} is not in the current Graph {graph.name}."
+                f"The input tensor `{name}` is not in the current Graph {graph.name}."
             )
 
 

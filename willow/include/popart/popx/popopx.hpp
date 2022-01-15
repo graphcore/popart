@@ -133,6 +133,8 @@ public:
   int64_t getVirtualGraphId() const;
   // Returns the virtual graph if enabled, else returns the dv_p->graph
   snap::Graph &graph() const;
+  // Returns the top level graph (dv_p->graph)
+  snap::Graph &topLevelGraph() const;
   // The default assumes all PopOpx input and output tensors are laid out on the
   // same virtual graph. These methods should be overridden when this is not
   // the case, such as for IpuCopyOpx.

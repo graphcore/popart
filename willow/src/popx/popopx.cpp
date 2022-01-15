@@ -137,6 +137,8 @@ snap::Graph &PopOpx::graph() const {
   }
 }
 
+snap::Graph &PopOpx::topLevelGraph() const { return dv_p->lowering().graph(); }
+
 snap::Graph &PopOpx::srcVirtualGraph(InIndex index) const {
   auto &op  = getOp<Op>();
   auto vgid = op.getIntrospectionInVirtualGraphId(index);

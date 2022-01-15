@@ -393,6 +393,7 @@ const static AiGraphcoreOpIdV1 BitwiseNot("BitwiseNot", 1, 1);
 const static AiGraphcoreOpIdV1 BitwiseOr("BitwiseOr", 2, 1);
 const static AiGraphcoreOpIdV1 BitwiseXor("BitwiseXor", 2, 1);
 const static AiGraphcoreOpIdV1 BitwiseXnor("BitwiseXnor", 2, 1);
+const static AiGraphcoreOpIdV1 AllReduce("AllReduce");
 } // namespace CustomOperators
 
 namespace AiGraphcore {
@@ -457,6 +458,7 @@ const static OperatorIdentifier Subsample     = CustomOperators::Subsample_1;
 const static OperatorIdentifier Abort         = CustomOperators::Abort;
 const static OperatorIdentifier ScatterReduce = CustomOperators::ScatterReduce;
 const static OperatorIdentifier Swish         = CustomOperators::Swish;
+const static OperatorIdentifier AllReduce     = CustomOperators::AllReduce;
 } // namespace OpSet1
 } // namespace AiGraphcore
 
@@ -484,6 +486,7 @@ const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
 const static AiGraphcoreOpIdV1 SwishGrad("SwishGrad");
 const static AiGraphcoreOpIdV1 UnaryZeroGradOp("UnaryZeroGrad");
+const static AiGraphcoreOpIdV1 AllReduceGrad("AllReduceGrad");
 } // namespace CustomGradOperators
 } // namespace Onnx
 

@@ -1095,3 +1095,44 @@ def test_lambsquare_op(connected: bool) -> None:
     op.connectInTensor(0, in_.id)
     op.connectOutTensor(0, out.id)
     op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+@pytest.mark.parametrize(("identicalInputs", "identicalGradInputs"),
+                         [[False, False], [True, False], [False, True]])
+def test_allreduce_op(connected, identicalInputs, identicalGradInputs) -> None:
+    """Test AllReduceOp.
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    num_inputs = _ir.NumInputs(2, 2)
+    input_0 = add_actgrad_tensor("input_0", [4], main)
+    input_1 = add_actgrad_tensor("input_1", [4], main)
+    output_0 = add_actgrad_tensor("output_0", [4], main)
+    output_1 = add_actgrad_tensor("output_1", [4], main)
+    ins: Dict[int, str] = {0: input_0.id, 1: input_1.id}
+    outs: Dict[int, str] = {0: output_0.id, 1: output_1.id}
+
+    col_op = _ir.CollectiveOperator.Add
+    ipus = [0, 1]
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AllReduceOp", 1, num_inputs,
+                                  1)
+    settings = _ir.Settings(main, "AllReduce")
+
+    if connected:
+        op = main.createConnectedOp_AllReduceOp(ins,
+                                                outs,
+                                                opid,
+                                                col_op,
+                                                ipus,
+                                                identicalInputs,
+                                                identicalGradInputs,
+                                                settings=settings)
+    else:
+        op = main.createOp_AllReduceOp(opid, col_op, ipus, identicalInputs,
+                                       identicalGradInputs, settings)
+        for i, (in_, out_) in enumerate(zip(ins.values(), outs.values())):
+            op.connectInTensor(i, in_)
+            op.connectOutTensor(i, out_)
+        op.setup()

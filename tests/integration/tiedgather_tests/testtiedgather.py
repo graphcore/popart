@@ -22,7 +22,6 @@ def model(splits=1, transpose_on_gather=True):
         weight_data = weight_data.T
 
     builder = popart.Builder()
-
     d0 = builder.addInputTensor(popart.TensorInfo('UINT32', input_data.shape),
                                 'data0')
 

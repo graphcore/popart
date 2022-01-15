@@ -327,7 +327,7 @@ std::string BackwardsGraphCreatorHelper::opNotReadyExplanation(Op *op) {
             ss << "and ";
           }
           ss << "it needs the gradient tensor for '" << fwdId
-             << "', which has not been produced by any gradient op so far";
+             << "', which has not been produced by any gradient op so far ";
           isFirst = false;
         }
         continue;
