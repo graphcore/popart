@@ -1,5 +1,23 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 ---
+exclude: |
+    (?x)^(
+        build_scripts/.*|
+        willow/include/popart/vendored/.*|
+        .arclint|
+        .arcconfig|
+        .buildignore|
+        .clang-format|
+        .style.yapf|
+        .*Doxyfile.in|
+        .*LICENSE|
+        .*.drawio|
+        .*.json|
+        .*.md|
+        .*.png|
+        .*.pdf|
+        .*.rst
+    )$
 repos:
     - repo: local
       hooks:
@@ -17,24 +35,6 @@ repos:
             description: Ensures that files have the proper copyright line.
             entry: python3 -m scripts.lint.linters.copyright_linter
             language: python
-            exclude: |
-                (?x)^(
-                    build_scripts/.*|
-                    willow/include/popart/vendored/.*|
-                    .arclint|
-                    .arcconfig|
-                    .buildignore|
-                    .clang-format|
-                    .style.yapf|
-                    .*Doxyfile.in|
-                    .*LICENSE|
-                    .*.drawio|
-                    .*.json|
-                    .*.md|
-                    .*.png|
-                    .*.pdf|
-                    .*.rst
-                )$
             additional_dependencies:
                 # dataclasses was introduced in Python 3.7
                 # For python 3.6 it therefore needs to be added as a dependency
@@ -53,17 +53,16 @@ repos:
                     docs/user_guide/files/tests/test_examples.py|
                     tests/linters/.*
                 )$
-    # The following linters are currently disabled
-    # -   repo: https://github.com/pre-commit/pre-commit-hooks
-    #     rev: v2.3.0
-    #     hooks:
-    #     -   id: check-yaml
-    #     -   id: check-json
-    #     -   id: check-merge-conflict
-    #     -   id: debug-statements
-    #     -   id: end-of-file-fixer
-    #     -   id: mixed-line-ending
-    #     -   id: trailing-whitespace
+    -   repo: https://github.com/pre-commit/pre-commit-hooks
+        rev: v2.3.0
+        hooks:
+        -   id: check-yaml
+        -   id: check-json
+        -   id: check-merge-conflict
+        -   id: debug-statements
+        -   id: end-of-file-fixer
+        -   id: mixed-line-ending
+        -   id: trailing-whitespace
     - repo: https://github.com/pre-commit/mirrors-yapf
       rev: v0.27.0
       hooks:
@@ -82,7 +81,6 @@ repos:
     #      - id: oclint
     #      - id: uncrustify
           - id: cppcheck
-            exclude: willow/include/popart/vendored/
             args: [
                 --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
             ]

@@ -515,8 +515,7 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   AliasesMap aliasesMap{&ir};
 
   Tensor *flag = lessOp->outTensor(LessOp::getOutIndex());
-  std::map<Op *, int> index_map_empty_subgraph;
-  op = SubgraphOutline::replaceWithEmptyElseBranchIfOp(
+  op           = SubgraphOutline::replaceWithEmptyElseBranchIfOp(
       instance, subgraph, emptySubgraph, index_map_subgraph, aliasesMap, flag);
 
   return op;

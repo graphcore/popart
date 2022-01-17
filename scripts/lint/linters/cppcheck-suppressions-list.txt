@@ -26,7 +26,6 @@ unreadVariable  // Not addressed
 uninitMemberVar  // Not addressed
 unusedStructMember  // Not addressed
 unusedPrivateFunction  // Not addressed
-unusedVariable  // Not addressed
 unknownMacro  // Not addressed
 useInitializationList  // Not addressed
 useStlAlgorithm  // Not addressed

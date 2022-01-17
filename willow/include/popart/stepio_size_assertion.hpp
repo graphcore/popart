@@ -37,7 +37,6 @@ public:
       if (exe.containsTensor(id)) {
         const auto expected = getInExpected(id);
         const auto nElms    = g(x->second);
-        std::ostringstream oss;
         if (nElms != expected) {
           throwBadInputSize(id, expected, nElms);
         } else if (hasOnnxModel &&
