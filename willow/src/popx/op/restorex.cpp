@@ -90,8 +90,8 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
                                 debugContext("static-restore/out-slice")),
       graph()};
 
-  poplar::program::Switch switchCase(
-      stashIndex.reshape({}).getPoplarTensor(),
+  snap::program::Switch switchCase(
+      stashIndex.reshape({}),
       debugContext("static-restore/switch-on-stash-index"));
 
   for (int64_t i = 0; i < stashSize; i++) {
@@ -102,11 +102,10 @@ snap::Tensor RestoreBaseOpx<Derived>::growStaticSliceRestore(
             inSliceAtIdx,
             actFromStash,
             false,
-            debugContext("static-restore/switch-copy-" + std::to_string(i)))
-            .getPoplarProgram());
+            debugContext("static-restore/switch-copy-" + std::to_string(i))));
   }
 
-  prog.getPoplarSequence().add(switchCase);
+  prog.add(switchCase);
 
   return actFromStash.squeeze({0});
 }

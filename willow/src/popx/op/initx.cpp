@@ -17,18 +17,18 @@ InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void InitOpx::grow(snap::program::Sequence &prog) const {
   auto &initOp          = getOp<InitOp>();
-  const auto &outTensor = getOutTensor(InitOp::getOutIndex()).getPoplarTensor();
+  const auto &outTensor = getOutTensor(InitOp::getOutIndex());
 
   switch (initOp.getInitType()) {
   case InitType::Zero: {
     popops::zero(graph().getPoplarGraph(),
-                 outTensor,
+                 outTensor.getPoplarTensor(),
                  prog.getPoplarSequence(),
                  debugContext("init_zero"));
     break;
   }
   case InitType::NoInit: {
-    prog.getPoplarSequence().add(poplar::program::WriteUndef(outTensor));
+    prog.add(snap::program::WriteUndef(outTensor));
     break;
   }
   default:

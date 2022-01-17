@@ -405,8 +405,8 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   for (size_t part = 0; part < graph_progs.size(); ++part) {
     auto dbgStr = logging::format("{}/{}", called_graph.id.str(), part);
-    loopContinueProg.getPoplarSequence().add(
-        poplar::program::Call(graph_progs.at(part), debugContext(dbgStr)));
+    loopContinueProg.add(snap::program::Call(
+        graph(), graph_progs.at(part), debugContext(dbgStr)));
   }
 
   // 11: Increment the loop iterator
@@ -426,18 +426,15 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
     loopProg.add(loopContinueProg);
   } else {
     // 12: Add conditional around the loop body program
-    loopProg.getPoplarSequence().add(
-        poplar::program::If(exitTensor.getPoplarTensor(),
-                            loopExitProg.getPoplarSequence(),
-                            loopContinueProg.getPoplarSequence(),
-                            debugContext("condition")));
+    loopProg.add(snap::program::If(
+        exitTensor, loopExitProg, loopContinueProg, debugContext("condition")));
   }
 
   // 13: Repeat the loop conditional program
   logging::opx::debug(
       "[LoopOpx] Max trip count: {} ({})", maxTripCountValue, op.debugName());
-  prog.getPoplarSequence().add(poplar::program::Repeat(
-      maxTripCountValue, loopProg.getPoplarSequence(), debugContext("loop")));
+  prog.add(
+      snap::program::Repeat(maxTripCountValue, loopProg, debugContext("loop")));
 
   // 14: Copy body outputs to op outputs
   copyBodyOutputsToOpOutputs(prog);

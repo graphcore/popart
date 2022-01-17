@@ -314,7 +314,7 @@ void PopPrograms::addPipelineCycle(
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
       ss << "\n  ps" << stage << " : Main";
-      sq.getPoplarSequence().add(poplar::program::Call(stage_seq.second));
+      sq.add(snap::program::Call(ir_lowering_p->graph(), stage_seq.second));
     }
   }
 
@@ -363,9 +363,8 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
     const snap::program::Sequence &sequence = stage_seq.second;
-    mainFunctions.insert({stage_seq.first,
-                          ir_lowering_p->graph().getPoplarGraph().addFunction(
-                              sequence.getPoplarSequence())});
+    mainFunctions.insert(
+        {stage_seq.first, ir_lowering_p->graph().addFunction(sequence)});
   }
 
   snap::program::Sequence fill(poplar::DebugContext{"fill"},
@@ -404,10 +403,8 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // This is the inner main cycles loop, if doing pipelining without gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.getPoplarSequence().add(
-      poplar::program::Repeat(static_cast<uint32_t>(mainCycles),
-                              main.getPoplarSequence(),
-                              {"inerLoop"}));
+  inner.add(snap::program::Repeat(
+      static_cast<uint32_t>(mainCycles), main, {"inerLoop"}));
   inner.add(flush);
 
   snap::program::Sequence outer(poplar::DebugContext{"outer"},
@@ -421,8 +418,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
-    outer.getPoplarSequence().add(
-        poplar::program::Repeat(bps, inner.getPoplarSequence(), {"outerloop"}));
+    outer.add(snap::program::Repeat(bps, inner, {"outerloop"}));
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.add(inner);
@@ -463,10 +459,10 @@ snap::program::Sequence PopPrograms::program() const {
         logging::devicex::trace(
             "Adding gradient accumulation repeat loop with {} iterations",
             accumulationFactor);
-        poplar::program::Repeat repeat(
-            accumulationFactor, prog.getPoplarSequence(), {"accumulationLoop"});
+        snap::program::Repeat repeat(
+            accumulationFactor, prog, {"accumulationLoop"});
         prog = snap::program::Sequence(ir_lowering_p->graph());
-        prog.getPoplarSequence().add(repeat);
+        prog.add(repeat);
         prog.add(accumulateOuterFragment());
       }
 
@@ -492,8 +488,8 @@ snap::program::Sequence PopPrograms::program() const {
       // BatchesPerStep loop
       logging::devicex::trace("Adding batches per step loop with {} iterations",
                               batchesPerStep);
-      outer.getPoplarSequence().add(poplar::program::Repeat(
-          batchesPerStep, prog.getPoplarSequence(), {"batchesPerStep"}));
+      outer.add(
+          snap::program::Repeat(batchesPerStep, prog, {"batchesPerStep"}));
       outer.add(toHostFinalCopyFragment());
     }
   }
@@ -611,7 +607,7 @@ std::vector<poplar::Function> &
 PopPrograms::getFragmentFunctions(const Graph &graph, snap::Graph &snapGraph) {
 
   auto seq2func = [&](snap::program::Sequence &seq) {
-    return snapGraph.getPoplarGraph().addFunction(seq.getPoplarSequence());
+    return snapGraph.addFunction(seq);
   };
 
   auto funcsIt = funcs.find(graph.id.str());

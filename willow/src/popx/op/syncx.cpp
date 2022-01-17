@@ -13,7 +13,7 @@ SyncOpx::SyncOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void SyncOpx::grow(snap::program::Sequence &prog) const {
   auto &syncOp = getOp<SyncOp>();
-  prog.getPoplarSequence().add(poplar::program::Sync(syncOp.getSyncType()));
+  prog.add(snap::program::Sync(graph(), syncOp.getSyncType(), debugContext()));
 }
 
 namespace {

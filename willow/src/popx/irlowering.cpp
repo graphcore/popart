@@ -2077,18 +2077,16 @@ void IrLowering::growOpx(PopOpx *opx,
                                                snap::Tensor tensor) {
     if (printTensorIds.find(id) != printTensorIds.end() &&
         printedTensorIds.find(id) == printedTensorIds.end()) {
-      auto printProg = poplar::program::PrintTensor(
-          id, tensor.getPoplarTensor(), opx->debugContext());
-      seqIt->getPoplarSequence().add(printProg);
+      auto printProg =
+          snap::program::PrintTensor(id, tensor, opx->debugContext());
+      seqIt->add(printProg);
       printedTensorIds.insert(id);
     }
   };
 
   if (opxTrace) {
-    seqIt->getPoplarSequence().add(
-        poplar::program::PrintTensor(opx->op_p->str() + "/enter",
-                                     opxTraceTensor.getPoplarTensor(),
-                                     opx->debugContext()));
+    seqIt->add(snap::program::PrintTensor(
+        opx->op_p->str() + "/enter", opxTraceTensor, opx->debugContext()));
   }
 
   // Add print tensor for tensors in POPART_PRINT_TENSORS on inputs.
@@ -2201,8 +2199,7 @@ void IrLowering::growOpx(PopOpx *opx,
   } else {
     for (auto out : opx->op_p->output->tensorMap()) {
       snap::Tensor outTensor = opx->getOutTensor(out.first);
-      seqIt->getPoplarSequence().add(poplar::program::WriteUndef(
-          outTensor.getPoplarTensor(), opx->debugContext()));
+      seqIt->add(snap::program::WriteUndef(outTensor, opx->debugContext()));
     }
     logging::devicex::trace(
         "Skipping code sequence for Op {} with debugName {}",
@@ -2260,28 +2257,25 @@ void IrLowering::growOpx(PopOpx *opx,
       } else {
         checkReduced = checkReduced.squeeze({0});
       }
-      auto ifProg = poplar::program::ErrorProgram(
+      auto ifProg = snap::program::ErrorProgram(
           logging::format("Op {} claims input {} is not modified, "
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
                           nonModified.first),
-          check,
+          snap::Tensor{check, opx->graph()},
           opx->debugContext("if"));
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
-      seqIt->getPoplarSequence().add(
-          poplar::program::If(checkReduced,
-                              ifProg,
-                              elseProg.getPoplarSequence(),
-                              opx->debugContext("opxModifyCheck")));
+      seqIt->add(snap::program::If(snap::Tensor{checkReduced, opx->graph()},
+                                   ifProg,
+                                   elseProg,
+                                   opx->debugContext("opxModifyCheck")));
     }
   }
 
   if (opxTrace) {
-    seqIt->getPoplarSequence().add(
-        poplar::program::PrintTensor(opx->op_p->str() + "/exit",
-                                     opxTraceTensor.getPoplarTensor(),
-                                     opx->debugContext()));
+    seqIt->add(snap::program::PrintTensor(
+        opx->op_p->str() + "/exit", opxTraceTensor, opx->debugContext()));
   }
 }
 
@@ -3778,11 +3772,10 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
       auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
       snap::program::Copy trueBody(
           zero, batchCountingTensors[N], false, {"copyZero"});
-      seqs.getSequence(&sq).getPoplarSequence().add(
-          poplar::program::If(batchCountCheckingTensors[N].getPoplarTensor(),
-                              trueBody.getPoplarProgram(),
-                              emptyseq.getPoplarSequence(),
-                              {"batchCountResetCheck"}));
+      seqs.getSequence(&sq).add(snap::program::If(batchCountCheckingTensors[N],
+                                                  trueBody,
+                                                  emptyseq,
+                                                  {"batchCountResetCheck"}));
     }
     return seqs;
   };
@@ -3847,11 +3840,8 @@ PriTask IrLowering::toHostEveryNBatchesTask(Tensor *tensor,
     // Placeholder 'do nothing' branch if not running copy program
     snap::program::Sequence emptyseq(poplar::DebugContext{"empty"}, graph());
 
-    seqs.getSequence(&sq).getPoplarSequence().add(
-        poplar::program::If(isNthBatch.getPoplarTensor(),
-                            copyseq.getPoplarSequence(),
-                            emptyseq.getPoplarSequence(),
-                            {"nthBatchCheck"}));
+    seqs.getSequence(&sq).add(
+        snap::program::If(isNthBatch, copyseq, emptyseq, {"nthBatchCheck"}));
     return seqs;
   };
 

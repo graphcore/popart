@@ -34,8 +34,7 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
       snap::Tensor{graph.getPoplarGraph().clone(
                        poplar::INT, input.getPoplarTensor(), {dnai, "clone"}),
                    graph};
-  prog.getPoplarSequence().add(poplar::program::WriteUndef(
-      indices.getPoplarTensor(), {dnai, "writeUndef"}));
+  prog.add(snap::program::WriteUndef(indices, {dnai, "writeUndef"}));
 
   // new view of indices, dim-shuffling the given axis
   // to the back, and making 2-D

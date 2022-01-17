@@ -108,8 +108,7 @@ void CallOpx::copyInput(snap::program::Sequence &prog,
   }
   if (accessType == view::AccessType::Write) {
     logging::opx::trace("[CallOpx] Write undef tensor {}", graph_input_id);
-    prog.getPoplarSequence().add(poplar::program::WriteUndef(
-        graph_input.getPoplarTensor(), debugContext()));
+    prog.add(snap::program::WriteUndef(graph_input, debugContext()));
   }
 }
 
@@ -173,8 +172,7 @@ void CallOpx::doCall(snap::program::Sequence &prog,
                       called_graph.getGraphString(),
                       subgraphPart);
   auto dbgStr = logging::format("{}/{}", called_graph.id.str(), subgraphPart);
-  prog.getPoplarSequence().add(
-      poplar::program::Call(graph_prog, debugContext(dbgStr)));
+  prog.add(snap::program::Call(graph(), graph_prog, debugContext(dbgStr)));
 }
 
 void CallOpx::grow(std::vector<snap::program::Sequence> &sequences) const {

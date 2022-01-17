@@ -154,16 +154,12 @@ void IfOpx::grow(snap::program::Sequence &prog) const {
 
   copyOutputs(then_prog, else_prog, outputs);
 
-  poplar::Tensor condition =
-      getInTensor(IfGradOp::getConditionInIndex()).getPoplarTensor();
+  auto condition = getInTensor(IfGradOp::getConditionInIndex());
 
   // Reshape to scalar in case the user passed in tensor of shape [1]
   condition = condition.reshape({});
-  prog.getPoplarSequence().add(
-      poplar::program::If(condition,
-                          then_prog.getPoplarSequence(),
-                          else_prog.getPoplarSequence(),
-                          debugContext("condition")));
+  prog.add(snap::program::If(
+      condition, then_prog, else_prog, debugContext("condition")));
 
   for (int i = 0; i < outputs.size(); i++) {
     setOutTensor(i, outputs.at(i));

@@ -18,11 +18,10 @@ AbortOpx::AbortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 
 void AbortOpx::grow(snap::program::Sequence &prog) const {
   if (hasInput(AbortOp::getInIndex())) {
-    poplar::Tensor condition =
-        getInTensor(AbortOp::getInIndex()).getPoplarTensor();
-    prog.getPoplarSequence().add(poplar::program::AbortOnCondition(condition));
+    auto condition = getInTensor(AbortOp::getInIndex());
+    prog.add(snap::program::AbortOnCondition(condition));
   } else {
-    prog.getPoplarSequence().add(poplar::program::Abort());
+    prog.add(snap::program::Abort(graph()));
   }
 }
 

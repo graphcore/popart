@@ -206,7 +206,7 @@ PriTask RngStateLowering::randomSeedToHost() {
     // Copy the value of the 'streamed seed' back to the host.
     auto &streamedSeed = irLowering.get().tensors().get(streamedSeedId);
 
-    auto streamSeedToHost = graph.get().getPoplarGraph().addDeviceToHostFIFO(
+    auto streamSeedToHost = graph.get().addDeviceToHostFIFO(
         "d2h_randomSeed", poplar::UNSIGNED_INT, 2);
 
     logging::devicex::debug("Initializing random seed d2h.");
@@ -215,11 +215,8 @@ PriTask RngStateLowering::randomSeedToHost() {
     auto &seq =
         seqs.getSequence(&irLowering.get().progs.randomSeedToHostFragment());
 
-    seq.getPoplarSequence().add(
-        poplar::program::Copy(streamedSeed.getPoplarTensor(),
-                              streamSeedToHost,
-                              false,
-                              {"randomSeedToHost"}));
+    seq.add(snap::program::Copy(
+        streamedSeed, streamSeedToHost, false, {"randomSeedToHost"}));
     return seqs;
   };
 

@@ -76,12 +76,14 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                      prog.getPoplarSequence(),
                      debugContext("scaleSumLowerBinCounts"));
 
-  auto shouldScaleDown = popops::map(graph().getPoplarGraph(),
-                                     popops::expr::BinaryOpType::GREATER_THAN,
-                                     upperBinCount,
-                                     lowerBinCount,
-                                     prog.getPoplarSequence(),
-                                     debugContext());
+  auto shouldScaleDown =
+      snap::Tensor{popops::map(graph().getPoplarGraph(),
+                               popops::expr::BinaryOpType::GREATER_THAN,
+                               upperBinCount,
+                               lowerBinCount,
+                               prog.getPoplarSequence(),
+                               debugContext()),
+                   graph()};
 
   auto lossScaleUpdateFactor =
       getInTensor(op.getLossScaleUpdateFactorInIndex()).getPoplarTensor();
@@ -98,11 +100,8 @@ void LossScaleUpdateOpx::grow(snap::program::Sequence &prog) const {
                      scaleDown.getPoplarSequence(),
                      debugContext("scaleDown"));
 
-  prog.getPoplarSequence().add(
-      poplar::program::If(shouldScaleDown,
-                          scaleDown.getPoplarSequence(),
-                          scaleUp.getPoplarSequence(),
-                          debugContext("lossScaleUpdate")));
+  prog.add(snap::program::If(
+      shouldScaleDown, scaleDown, scaleUp, debugContext("lossScaleUpdate")));
 
   setOutTensor(op.getUpdatedLossScaleUpdateFactorOutIndex(),
                snap::Tensor{lossScaleUpdateFactor, graph()});
