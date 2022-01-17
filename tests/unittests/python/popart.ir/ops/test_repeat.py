@@ -11,7 +11,7 @@ import popart
 import popart._internal.ir as _ir
 import popart.ir as pir
 import popart.ir.ops as ops
-from popart.ir.tensor import subgraph_input
+from popart.ir.tensor import subgraph_input, Tensor, TensorByRef
 
 # `import test_util` requires adding to sys.path
 sys.path.append(
@@ -25,17 +25,17 @@ class AddOne(pir.Module):
     def __init__(self):
         pass
 
-    def build(self, x: pir.Tensor) -> pir.Tensor:
+    def build(self, x: Tensor) -> Tensor:
         return x + 1
 
 
 class Linear(pir.Module):
     def __init__(self):
-        self.W: pir.Tensor = None
-        self.b: pir.Tensor = None
+        self.W: Tensor = None
+        self.b: Tensor = None
 
-    def build(self, x: pir.Tensor, out_features: int,
-              bias: bool = True) -> Tuple[pir.Tensor, ...]:
+    def build(self, x: Tensor, out_features: int,
+              bias: bool = True) -> Tuple[Tensor, ...]:
         self.W = subgraph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
@@ -47,14 +47,14 @@ class Linear(pir.Module):
 
 class LinearHostLoad(pir.Module):
     def __init__(self):
-        self.W: pir.Tensor = None
-        self.b: pir.Tensor = None
+        self.W: Tensor = None
+        self.b: Tensor = None
 
         self.h2d = pir.h2d_stream((16, 16), pir.float32, name="x_stream")
         self.d2h = pir.d2h_stream((16, 16), pir.float32, name="y_stream")
 
-    def build(self, x: pir.Tensor, out_features: int,
-              bias: bool = True) -> Tuple[pir.Tensor, ...]:
+    def build(self, x: Tensor, out_features: int,
+              bias: bool = True) -> Tuple[Tensor, ...]:
         x = ops.host_load(self.h2d, "x")
         self.W = subgraph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
@@ -121,7 +121,7 @@ class TestRepeat:
         ir = pir.Ir()
         g = ir.main_graph()
 
-        def id_fn(x: pir.Tensor):
+        def id_fn(x: Tensor):
             return x
 
         with g:
@@ -152,7 +152,7 @@ class TestRepeat:
 
         class AddWeight(pir.Module):
             def __init__(self):
-                self.w: pir.Tensor = None
+                self.w: Tensor = None
 
             def build(self, x):
                 self.w = pir.subgraph_input(x.shape, x.dtype, "w")
@@ -167,19 +167,19 @@ class TestRepeat:
             add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
             # First call site
-            y0, w0 = ops.repeat(add_weight_graph0,
-                                repeat_count,
-                                x0,
-                                subgraph_in_to_parent_in={add_weight0.w: w0})
+            _, w0 = ops.repeat(add_weight_graph0,
+                               repeat_count,
+                               x0,
+                               subgraph_in_to_parent_in={add_weight0.w: w0})
 
             # Second call site of same graph
             w1 = pir.variable(1, name="w1")
             x1 = pir.variable(1, name="x1")
 
-            y1, w1 = ops.repeat(add_weight_graph0,
-                                repeat_count,
-                                x1,
-                                subgraph_in_to_parent_in={add_weight0.w: w1})
+            _, w1 = ops.repeat(add_weight_graph0,
+                               repeat_count,
+                               x1,
+                               subgraph_in_to_parent_in={add_weight0.w: w1})
 
             # Second graph from new instance of module.
             # ir.create_graph should be able to create a new unique Graph name.
@@ -187,10 +187,10 @@ class TestRepeat:
             add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
-            y2, w1 = ops.repeat(add_weight_graph1,
-                                repeat_count,
-                                x0,
-                                subgraph_in_to_parent_in={add_weight1.w: w1})
+            _, w1 = ops.repeat(add_weight_graph1,
+                               repeat_count,
+                               x0,
+                               subgraph_in_to_parent_in={add_weight1.w: w1})
 
             # Third graph that reuses module add_weight1.
             # This calls `build` again, and thus simply overwrites add_weight1.w
@@ -201,10 +201,10 @@ class TestRepeat:
             assert old_w1_id != add_weight1.w.id
 
             # Call third graph. Reuse x1 and w0 as inputs.
-            y3, w0 = ops.repeat(add_weight_graph2,
-                                repeat_count,
-                                x1,
-                                subgraph_in_to_parent_in={add_weight1.w: w0})
+            _, w0 = ops.repeat(add_weight_graph2,
+                               repeat_count,
+                               x1,
+                               subgraph_in_to_parent_in={add_weight1.w: w0})
 
         # Test main graph
         # 4 vars + y0 + y1 + y2 + y3 + 4 * subgraph output weights.
@@ -387,3 +387,41 @@ class TestRepeat:
                                })
             assert e_info.value.args[0].startswith(
                 "Repeat trip count for repeat of")
+
+    def test_not_by_ref(self):
+        ir = pir.Ir()
+
+        def foo(x: Tensor, y: Tensor):
+            return ops.var_updates.accumulate_(x, y), y  # <- modifying op
+
+        with ir.main_graph():
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1, v2)
+            loop_info = ops.repeat_with_info(g, 10, v1, v2)
+
+        assert len(g._by_ref_inputs) == 0
+        print(type(loop_info._op))
+        assert not loop_info._op.modifiesIndex(
+            2)  # Offset by 1 due to count and keep_going
+        assert not loop_info._op.modifiesIndex(3)
+
+    def test_by_ref(self):
+        ir = pir.Ir()
+
+        def foo(x: TensorByRef, y: Tensor):
+            return ops.var_updates.accumulate_(x, y), y  # <- modifying op
+
+        with ir.main_graph():
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1, v2)
+            loop_info = ops.repeat_with_info(g, 10, v1, v2)
+
+        assert len(g._by_ref_inputs) == 1
+        print(type(loop_info._op))
+        assert loop_info._op.modifiesIndex(
+            2)  # Offset by 1 due to count and keep_going
+        assert not loop_info._op.modifiesIndex(3)

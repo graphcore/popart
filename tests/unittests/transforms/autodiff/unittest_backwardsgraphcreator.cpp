@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreator_genNewBwdGraphId) {
   // Check genNewBwdGraphId helper function generates unique IDs.
 
   Ir ir;
-  auto &fwdGraph  = ir.createGraph(GraphId("A"));
+  auto &fwdGraph = ir.createGraph(GraphId("A"));
 
   AutodiffIrAdapter adapter{ir};
   BackwardsGraphCreator creator{adapter};

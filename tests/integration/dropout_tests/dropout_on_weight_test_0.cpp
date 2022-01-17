@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     // write initial weights to host
     session->weightsFromHost();
 
-    int nSteps    = 5;
+    int nSteps = 5;
     for (int i = 0; i < nSteps; ++i) {
       std::cout << "Iteration (call to run(...)) # " << i << std::endl;
 

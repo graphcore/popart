@@ -422,7 +422,7 @@ void CHECK_SUBGRAPH_PARTITION(std::function<void(Builder *)> modelBuilder,
                               SubgraphCopyingStrategy copyStrat,
                               const PartitionOpRepsMap &expected) {
   // Call the test objects.
-  auto testObjs     = setup(modelBuilder, copyStrat);
+  auto testObjs = setup(modelBuilder, copyStrat);
 
   auto actual = getPartitionOpRepsMap(testObjs);
 

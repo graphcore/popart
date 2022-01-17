@@ -4,14 +4,14 @@ from typing import Iterable, List, Mapping, Optional, Tuple, Union
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.graph import Graph
-from popart.ir.tensor import Tensor
+from popart.ir.ops.call import SubgraphOpInfo
+from popart.ir.tensor import Tensor, subgraph_input
 
 from .utils import check_in_graph
 
-__all__ = ['repeat']
+__all__ = ['repeat', 'repeat_with_info']
 
 
-# TODO: T49287 add a repeat_with_info
 @op_debug_context
 def repeat(repeat_subgraph: Graph,
            repeat_trip_count: int,
@@ -20,7 +20,7 @@ def repeat(repeat_subgraph: Graph,
            ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
     """
     Repeat Op: An op that repeats a subgraph with the provided input tensors
-        `repeat_trip_count` number of times..
+        `repeat_trip_count` number of times.
 
     Implementation detail: In order to maintain the input / output indices of the subgraph, we must
         call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
@@ -102,11 +102,62 @@ def repeat(repeat_subgraph: Graph,
                                 x0,
                                 subgraph_in_to_parent_in={add_weight0.w: w0})
     """
+    loop_info = repeat_with_info(
+        repeat_subgraph,
+        repeat_trip_count,
+        *subgraph_fn_param_inputs,
+        subgraph_in_to_parent_in=subgraph_in_to_parent_in)
 
-    if repeat_trip_count <= 1:
-        raise ValueError(
-            f"Repeat trip count for repeat of {repeat_subgraph.name} "
-            f"of {repeat_trip_count} must be > 1.")
+    out_tensors = loop_info.get_output_tensors()
+
+    # Return nothing if no outputs.
+    if len(out_tensors) == 0:
+        return None
+    # Return single tensor if only one output.
+    if len(out_tensors) == 1:
+        return out_tensors[0]
+    # Return tuple of output tensors if multiple outputs.
+    return out_tensors
+
+
+def repeat_with_info(
+        subgraph: Graph,
+        repeat_count: int,
+        *subgraph_fn_param_inputs: Tensor,
+        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
+        check_inputs: bool = True) -> SubgraphOpInfo:
+    """Repeat Op: An op that repeats a subgraph with the provided input tensors
+        `repeat_trip_count` number of times.
+        Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
+
+    Args:
+        repeat_subgraph (Graph): User defined graph to repeat `repeat_trip_count` times.
+        repeat_trip_count (int): Number of times to repeat the subgraph.
+        *subgraph_fn_param_inputs (Tensor, List[Tensor]):
+            parent tensors that correspond to the inputs of the callable passed
+            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
+            The inputs passed MUST be provided here in the EXACT SAME ORDER as
+            to ir.create_graph(callable, ...).
+        subgraph_in_to_parent_in (Optional[Mapping[Tensor, Tensor]]):
+            Mapping of `subgraph tensor -> parent tensor` that corresponds to
+            the inputs that the callable defined internally, e.g. by using
+            popart.ir.subgraph_input. Defaults to an empty dictionary.
+            Works effectively the same as the call op's `subgraph_in_to_parent_in` argument.
+        check_inputs (bool = True):
+            Check when called if all inputs have been provided.
+    Raises:
+        ValueError: If repeat_trip_count <= 1.
+        ValueError: If the number of explicitly passed inputs + the number of loop created inputs
+            != the number of outputs.
+
+    Returns:
+        repeat_info (SubgraphOpInfo): Information on the created callsite for
+        the repeat op.
+    """
+
+    if repeat_count <= 1:
+        raise ValueError(f"Repeat trip count for repeat of {subgraph.name} "
+                         f"of {repeat_count} must be > 1.")
 
     subgraph_in_to_parent_in = subgraph_in_to_parent_in if (
         subgraph_in_to_parent_in is not None) else {}
@@ -125,12 +176,13 @@ def repeat(repeat_subgraph: Graph,
     pb_ir = ir._pb_ir
     pb_top_graph = top_graph._pb_graph
     # This is the graph we will call.
-    bottom_graph = repeat_subgraph
+    bottom_graph = subgraph
     pb_bottom_graph = bottom_graph._pb_graph
 
     # The loop op requires the same number of inputs as outputs.
-    if len(subgraph_fn_param_inputs) + len(subgraph_in_to_parent_in) != len(
-            pb_bottom_graph.getOutputIds()):
+    if check_inputs and (
+            len(subgraph_fn_param_inputs) + len(subgraph_in_to_parent_in) !=
+            len(pb_bottom_graph.getOutputIds())):
         raise ValueError(
             f"The number of explicitly passed inputs ({len(subgraph_fn_param_inputs)}):"
             f" {[t.id for t in subgraph_fn_param_inputs]}\n"
@@ -144,7 +196,7 @@ def repeat(repeat_subgraph: Graph,
         pb_ir, pb_top_graph, pb_bottom_graph)
 
     # set the number of times to loop
-    pb_loop_op.setTripCountValue(repeat_trip_count)
+    pb_loop_op.setTripCountValue(repeat_count)
     # Check all the parent tensors are in the right graph.
     for _, parent_tensor in subgraph_in_to_parent_in.items():
         try:
@@ -159,25 +211,25 @@ def repeat(repeat_subgraph: Graph,
                   pb_loop_op)
 
     # 3. Connect outputs.
-    outnames = _setup_outputs(pb_top_graph, pb_bottom_graph, pb_middle_graph,
-                              pb_callop, pb_loop_op)
+    _ = _setup_outputs(pb_top_graph, pb_bottom_graph, pb_middle_graph,
+                       pb_callop, pb_loop_op)
 
     pb_callop.setup()
     pb_loop_op.setup()
 
-    out_tensors = [
-        Tensor._from_pb_tensor(pb_top_graph.getTensor(out)) for out in outnames
-    ]
+    r_info = SubgraphOpInfo(pb_loop_op)  # repeat info
+    c_info = SubgraphOpInfo(pb_callop)  # call info
 
-    # Return nothing if no outputs.
-    if len(out_tensors) == 0:
-        return None
-    # Return single tensor if only one output.
-    if len(out_tensors) == 1:
-        return out_tensors[0]
-    # Return tuple of output tensors if multiple outputs.
-    else:
-        return tuple(out_tensors)
+    # Modified tensors for the called graph (bottom)
+    for bottom_t in bottom_graph._by_ref_inputs:
+        middle_t = c_info.subgraph_to_op_tensor(bottom_t)
+        # If a tensor was set as a by_ref_input, we should also do the same for the looped subgraph.
+        c_info.set_op_input_modified(middle_t)
+        top_t = r_info.subgraph_to_op_tensor(middle_t)
+        r_info.set_op_input_modified(top_t)
+        r_info.called_graph._by_ref_inputs.add(middle_t)
+
+    return r_info
 
 
 # Design point: For simplicity all of the below functions only take _ir level objects as arguments.
@@ -287,12 +339,10 @@ def _setup_inputs(subgraph_fn_param_inputs: Iterable[Tensor],
             _ir.addScope(pb_middle_graph,
                          _ir.removeScope(pb_bottom_graph, sg_tensor.id)),
             False)
-        set_input_modified(pb_loop_op, pb_loop_op.inTensor(sgInIdx + 2))
         pb_callop.connectInTensor(
             callInIdx,
             _ir.addScope(pb_middle_graph,
                          _ir.removeScope(pb_bottom_graph, sg_tensor.id)))
-        set_input_modified(pb_callop, pb_callop.inTensor(callInIdx))
 
 
 def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
@@ -346,20 +396,3 @@ def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
 
         outnames.append(top_tensor_id)
     return outnames
-
-
-# TODO: T49287 add a repeat_with_info: move/modify this function to match call op.
-def set_input_modified(_op: _ir.Op, in_tensor: _ir.Tensor):
-    """Specify that the input tensor `in_tensor` is modified by the repeat op.
-        this will guarantee that any modification to the graph input during the execution
-        of the called graph will also change `in_tensor`.
-        The regions modified by the call op will be specified by the Ops in the called graph.
-
-    Args:
-        in_tensor (_ir.Tensor): Tensor to be modified.
-    """
-    index = _op.inIndex(in_tensor)
-    _graph = _op.getCalledGraph()
-    _sg_tensor = _graph.getInputTensor(_op.opInToSubgraphInIndex(index))
-    _regions = _sg_tensor.modifiedRegionsByOps(_graph.getOps())
-    _op.addModified(index, _regions)

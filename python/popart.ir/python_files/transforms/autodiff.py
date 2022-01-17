@@ -6,7 +6,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Tuple
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
-from popart.ir.ops.call import CallInfo
+from popart.ir.ops.call import SubgraphOpInfo
 
 __all__ = ['autodiff']
 
@@ -120,11 +120,11 @@ class GradGraphInfo:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
     def get_inputs_from_forward_call_info(
-            self, call_info: CallInfo) -> Dict[Tensor, Tensor]:
+            self, call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
         """Utility function for constructing inputs to calling a grad graph.
 
         Args:
-            call_info: `popart.ir.ops.call.CallInfo`
+            call_info: `popart.ir.ops.call.SubgraphOpInfo`
                 Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
                 using `ops.call_with_info()`
 

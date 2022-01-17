@@ -11,9 +11,14 @@ from .utils import check_in_graph
 from typing import Mapping, Union, Tuple, Optional, List
 
 
-class CallInfo:
-    def __init__(self, call_op: _ir.op.CallOp):
-        self._op = call_op
+# TODO: Bind subgraph op T53714
+class SubgraphOpInfo:
+    """Info relating to an op that calls into a subgraph, e.g. a call op or repeat op. This is a 
+    convenience class for extracting information about the op and it's subgraph.
+    """
+
+    def __init__(self, subgraph_op: Union[_ir.op.CallOp, _ir.op.LoopOp]):
+        self._op = subgraph_op
 
     @property
     def called_graph(self):
@@ -172,11 +177,10 @@ def call_with_info(
         subgraph: Graph,
         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
-        check_inputs: bool = True,
-) -> CallInfo:
+        check_inputs: bool = True) -> SubgraphOpInfo:
     """
     Call Op: An op that invokes a subgraph with the provided input tensors.
-        Returns CallInfo that can be used to inspect callsite inputs/outputs.
+        Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
 
     Args:
         subgraph (Graph): The called graph.
@@ -192,7 +196,7 @@ def call_with_info(
         check_inputs (bool = True):
             Check when called if all inputs have been provided.
     Returns:
-        info: CallInfo
+        info: SubgraphOpInfo
             Information on the created callsite.
     """
     subgraph_in_to_parent_in = subgraph_in_to_parent_in if subgraph_in_to_parent_in is not None else {}
@@ -273,7 +277,7 @@ def call_with_info(
 
     pb_callop.setup()
 
-    info = CallInfo(pb_callop)
+    info = SubgraphOpInfo(pb_callop)
 
     for t in subgraph._by_ref_inputs:
         info.set_op_input_modified(info.subgraph_to_op_tensor(t))
