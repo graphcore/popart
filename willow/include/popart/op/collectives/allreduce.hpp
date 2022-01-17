@@ -38,11 +38,11 @@ public:
 
   VGraphIdAndTileSet
   getIntrospectionInVirtualGraphId(InIndex index,
-                                   std::set<OpId> &visited) const;
+                                   std::set<OpId> &visited) const override;
 
   VGraphIdAndTileSet
   getIntrospectionOutVirtualGraphId(OutIndex index,
-                                    std::set<OpId> &visited) const;
+                                    std::set<OpId> &visited) const override;
 
   CollectiveOperator getReduceOp() const { return reduceOp; }
 
