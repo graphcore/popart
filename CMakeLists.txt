@@ -219,7 +219,7 @@ endif()
 set(PACKAGE_FILE_NAME popart-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
 set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
 
-set(SUPPORTED_OPS_GEN_FILE_NAME supported_ops_gen-${VERSION}-${SNAPSHOT}.rst)
+set(SUPPORTED_POPART_OPS_GEN_FILE_NAME popart-supported_ops_gen-${VERSION}-${SNAPSHOT}.rst)
 set(USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
 set(USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
 set(PYTHON_API_PDF_NAME popart-python-api-${VERSION}-${SNAPSHOT}.pdf)
@@ -239,7 +239,7 @@ add_custom_target(package_and_move
   COMMAND bash -c "mkdir -p ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${POPART_PKG_DIR}"
-  COMMAND bash -c "mv ${SUPPORTED_OPS_GEN_FILE_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${SUPPORTED_POPART_OPS_GEN_FILE_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${POPART_PKG_DIR}"
@@ -264,7 +264,7 @@ endif()
 if(BUILD_DOCS)
   # Upload supported_ops to Artifactory so it can be used to builed the published docs
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime supported ops (RST)\n"
-                             "    file: ${SUPPORTED_OPS_GEN_FILE_NAME}\n"
+                             "    file: ${SUPPORTED_POPART_OPS_GEN_FILE_NAME}\n"
                              "    type: rst\n")
 
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"

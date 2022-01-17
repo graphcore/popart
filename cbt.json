@@ -3,7 +3,6 @@
     "poprithms",
     "onnx",
     "pybind11",
-    "gcdoc",
     "spdlog",
     "boost",
     "protobuf",
@@ -16,7 +15,8 @@
       "poplibs",
       "popir",
       "gcl",
-      "gccs"
+      "gccs",
+      "sphinx_resources"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }

@@ -2,30 +2,33 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 set -e
 
-VENV=@PROJECT_BINARY_DIR@/venv
+# Parameters
+DOC_SOURCE_DIR="$1"
+DOC_TARGET_HTML="$2"
+DOC_TARGET_PDF="$3"
+DOC_TARGET_LATEX_SRC="$3_latex_src"
+export DOC_TITLE="$4" # exported as it's read by sphinx_resources
+export VERSION="$5"   # exported as it's read by sphinx_resources
 
-virtualenv -p python3 ${VENV}
-source ${VENV}/bin/activate
+# Run sphinx build to get the HTML output.
+echo "Generating HTML: ${DOC_TARGET_HTML}..."
+sphinx-build \
+    -b html \
+    -c "@CMAKE_SOURCE_DIR@/../sphinx_resources/common" \
+    -D "breathe_projects.project=@PROJECT_BINARY_DIR@/docs/doxygen/xml" \
+    ${DOC_SOURCE_DIR} \
+    ${DOC_TARGET_HTML}
 
-pip install numpy
-# There is an error when using sphinx 3.5.0.
-# https://github.com/sphinx-doc/sphinx/issues/8880
-pip install sphinx==3.4.3 breathe==4.26.1 docutils==0.16
-pip install typing_extensions
+# Generate LaTeX sources from which we can generate the PDF output.
+echo "Generating LaTeX sources: ${DOC_TARGET_LATEX_SRC}..."
+sphinx-build \
+    -b latex \
+    -c "@CMAKE_SOURCE_DIR@/../sphinx_resources/common" \
+    -D "breathe_projects.project=@PROJECT_BINARY_DIR@/docs/doxygen/xml" \
+    ${DOC_SOURCE_DIR} \
+    ${DOC_TARGET_LATEX_SRC}
 
-source @POPLAR_ENABLE_SCRIPT@
-
-export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart:$PYTHONPATH
-export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$PYTHONPATH
-export PYTHONPATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$PYTHONPATH
-export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$LIBRARY_PATH
-export LIBRARY_PATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$LIBRARY_PATH
-export LD_LIBRARY_PATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$LD_LIBRARY_PATH
-
-echo gen_docs.sh
-echo "PYTHONPATH=$PYTHONPATH"
-echo "LIBRARY_PATH=$LIBRARY_PATH"
-echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-echo @PYTHON_EXECUTABLE@ ${*}
-@PYTHON_EXECUTABLE@ ${*}
+# Make the PDF from LaTeX sources.
+echo "Generating PDF: ${DOC_TARGET_PDF}..."
+cd ${DOC_TARGET_LATEX_SRC} && make LATEXMKOPTS='-silent -f'
+mv "${DOC_TARGET_LATEX_SRC}/doc.pdf" ${DOC_TARGET_PDF}
