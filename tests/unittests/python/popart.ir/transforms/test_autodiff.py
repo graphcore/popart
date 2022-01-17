@@ -70,8 +70,20 @@ def test_subgraph():
     with main:
         grad_seed = pir.constant(np.ones((16, 16), np.float32))
         activations = ss_bwd_info.get_inputs_from_forward_call_info(call_info)
-        grads = ops.call(bwd_graph,
-                         grad_seed,
-                         subgraph_in_to_parent_in=activations)
+        grads_with_info = ops.call_with_info(
+            bwd_graph, grad_seed, subgraph_in_to_parent_in=activations)
+        grads = grads_with_info.get_output_tensors()
 
     assert len(grads) == len(ss_bwd_info.expected_outputs)
+
+    grad_subgraph_tensor_map = ss_bwd_info.get_fwd_subgraph_to_grad_tensor_map(
+        grads_with_info)
+    assert all(t.name in g.name for t, g in grad_subgraph_tensor_map.items())
+    assert all(t.shape == g.shape for t, g in grad_subgraph_tensor_map.items())
+    assert all(
+        'ScaleNShift' in t.id for t, g in grad_subgraph_tensor_map.items())
+
+    grad_tensor_map = ss_bwd_info.get_fwd_inputs_to_grad_tensor_map(
+        call_info, grads_with_info)
+    assert all(t.shape == g.shape for t, g in grad_tensor_map.items())
+    assert all('ScaleNShift' not in t.id for t, g in grad_tensor_map.items())

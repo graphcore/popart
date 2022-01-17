@@ -121,14 +121,28 @@ class GradGraphInfo:
 
     def get_inputs_from_forward_call_info(
             self, call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
-        """Utility function for constructing inputs to calling a grad graph.
+        """
+        Construct grad graph `subgraph_in_to_parent_in` inputs from a forwards call site.
+
+        Example:
+
+        .. code-block:: python
+            # `module`: subgraph module, `x` graph inputs, `x_dash` grad graph input
+            graph = ir.create_graph(module, x, out_features=16) # Forwards graph
+            call_info = ops.call_with_info(
+                graph, x, subgraph_in_to_parent_in={module.W: W, module.b: b})
+
+            grads_graph = pir.transforms.autodiff(graph)
+            activations = ss_bwd_info.get_inputs_from_forward_call_info(call_info)
+            grads_call_info = ops.call_with_info(
+                grads_graph, x_dash, subgraph_in_to_parent_in=activations)
 
         Args:
-            call_info: `popart.ir.ops.call.SubgraphOpInfo`
-                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+            call_info (SubgraphOpInfo):
+                Callsite info of a call to the forwards graph that was auto-differentiated. This can be accessed by
                 using `ops.call_with_info()`
 
-        Returns: `Mapping[Tensor, Tensor]`
+        Returns: `Dict[Tensor, Tensor]`
             from: a Tensor in the gradient Graph
             to: an input or output tensor at a callsite of the corresponding forward Graph.
         """
@@ -142,6 +156,83 @@ class GradGraphInfo:
             call_info.subgraph_to_op_tensor(act.fwd_tensor)
             for idx, act in enumerate(self.expected_inputs)
             if act.connection_type == ExpectedConnectionType.Fwd
+        }
+
+    def get_fwd_subgraph_to_grad_tensor_map(
+            self, call_with_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
+        """
+        Returns a mapping betwen forward subgraph tensors and grad call site tensors.
+
+        Example:
+
+        .. code-block:: python
+            # `module`: subgraph module, `x` graph inputs, `x_dash` grad graph input
+            graph = ir.create_graph(module, x, out_features=16) # Forwards graph
+            call_info = ops.call_with_info(
+                graph, x, subgraph_in_to_parent_in={module.W: W, module.b: b})
+
+            grads_graph = pir.transforms.autodiff(graph)
+            activations = ss_bwd_info.get_inputs_from_forward_call_info(call_info)
+            grads_call_info = ops.call_with_info(
+                grads_graph, x_dash, subgraph_in_to_parent_in=activations)
+
+            # Obtain a mapping between subgraph tensor that corresponds to `x`, `W` and `b` and the corresponding grad Tensors
+            grad_tensor_map = grads_graph.get_fwd_subgraph_to_grad_tensor_map(grads_call_info)
+            assert [t.id for t in grad_tensor_map.keys()] == [
+                'Module_subgraph(0)/x', 'Module_subgraph(0)/W', 'Module_subgraph(0)/b']
+        
+        Args:
+            call_info (SubgraphOpInfo):
+                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+                using `ops.call_with_info()`
+
+        Returns: `Dict[Tensor, Tensor]`
+            from: a Tensor in the forwards subgraph
+            to: corresponding Tensor in the gradient graph
+        """
+        return {
+            t: call_with_info.subgraph_to_op_tensor(
+                self.graph.get_output_tensors()[idx])
+            for idx, t in enumerate(self.get_output_tensors())
+        }
+
+    def get_fwd_inputs_to_grad_tensor_map(
+            self, fwd_call_info: SubgraphOpInfo,
+            grad_call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
+        """
+        Returns a mapping between forward call site inputs and grad call site outputs.
+
+        Example:
+
+        .. code-block:: python
+            # `module`: subgraph module, `x` graph inputs, `x_dash` grad graph input
+            graph = ir.create_graph(module, x, out_features=16) # Forwards graph
+            call_info = ops.call_with_info(
+                graph, x, subgraph_in_to_parent_in={module.W: W, module.b: b})
+
+            grads_graph = pir.transforms.autodiff(graph)
+            activations = ss_bwd_info.get_inputs_from_forward_call_info(call_info)
+            grads_call_info = ops.call_with_info(
+                grads_graph, x_dash, subgraph_in_to_parent_in=activations)
+
+            # Obtain a mapping input tensors `x`, `W` and `b` and the corresponding grad Tensors
+            grad_tensor_map = grads_graph.get_fwd_inputs_to_grad_tensor_map(call_info, grads_call_info)
+            assert [t.id for t in grad_tensor_map.keys()] == ['x', 'W', 'b']
+        
+        Args:
+            call_info (SubgraphOpInfo):
+                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+                using `ops.call_with_info()`
+
+        Returns: `Dict[Tensor, Tensor]`
+            from: a input Tensor for the forwards graph
+            to: corresponding Tensor in the gradient graph
+        """
+        return {
+            fwd_call_info.subgraph_to_op_tensor(t):
+            grad_call_info.subgraph_to_op_tensor(
+                self.graph.get_output_tensors()[idx])
+            for idx, t in enumerate(self.get_output_tensors())
         }
 
 
