@@ -1760,3 +1760,14 @@ def test_error_on_invalid_input_tensor():
 
     # Check error mentions unknown tensor name.
     assert ('\'blaaa\'' in str(e))
+
+
+# For some ops we need to specify the number of outputs.
+# This test checks that an error is thrown in case too many outputs are specified
+def test_too_many_outputs():
+    builder = popart.Builder()
+    i = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 1, 1]))
+    # rnn has only 2 outputs
+    with pytest.raises(popart.popart_exception) as e:
+        builder.aiOnnx.rnn([i, i, i], 3)
+    assert "has an invalid number of outputs" in e.value.args[0]

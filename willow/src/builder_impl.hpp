@@ -116,7 +116,7 @@ public:
    * \param opid The operator identifier.
    * \param opsetVersion The opset for the domain of the op.
    * \param inputs The input tensor ids.
-   * \param numOutputs The number if output tensors.
+   * \param numOutputs The number of output tensors.
    * \param opAttributes The attributes of the op.
    * \param name Debug information.
    * \param validateInput Callback function to validate the inputs & attributes.
@@ -133,6 +133,15 @@ public:
      std::function<void(std::vector<TensorId>,
                         std::map<std::string, popart::any>)> validateInput =
          nullptr) {
+
+    // numOutputs == 0 could imply an unbounded number of outputs
+    if (opid.numOutputs != 0 && opid.numOutputs < numOutputs) {
+      throw error(
+          "{} has an invalid number of outputs {}. Must be between 0..{}",
+          opid.type,
+          numOutputs,
+          opid.numOutputs);
+    }
 
     std::vector<TensorId> outputs(numOutputs);
 
