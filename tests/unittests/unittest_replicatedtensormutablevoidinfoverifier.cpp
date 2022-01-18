@@ -42,12 +42,12 @@ BOOST_AUTO_TEST_CASE(ReplicatedTensorMutableVoidInfoVerifier) {
   std::vector<long int> base{3, 4};
 
   for (VariableSettings vs : configs) {
-    std::string id =
-        "ofVS[cg(" + static_cast<char>(vs.getSharedVariableDomain().type) +
-        std::string(", ") +
-        static_cast<char>(vs.getSharedVariableDomain().replicaGroupSize) +
-        std::string(") ") + static_cast<char>(vs.getRetrievalMode()) +
-        std::string("]");
+    auto id = std::string("ofVS[cg(") +
+              static_cast<char>(vs.getSharedVariableDomain().type) +
+              std::string(", ") +
+              static_cast<char>(vs.getSharedVariableDomain().replicaGroupSize) +
+              std::string(") ") + static_cast<char>(vs.getRetrievalMode()) +
+              std::string("]");
 
     Tensor t(id, vs, graph);
     t.info = TensorInfo(DataType::FLOAT, base);
