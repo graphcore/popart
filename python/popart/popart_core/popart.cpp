@@ -2814,10 +2814,18 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("nodeOutputName"),
             DOC(popart, Builder, getPartialsType));
     cls.def("setAvailableMemoryProportion",
-            &Builder::setAvailableMemoryProportion,
+            static_cast<void (Builder::*)(const TensorId &, const float)>(
+                &Builder::setAvailableMemoryProportion),
             py::arg("nodeOutputName"),
             py::arg("availableMemoryProportion"),
             DOC(popart, Builder, setAvailableMemoryProportion));
+    cls.def(
+        "setAvailableMemoryProportion",
+        static_cast<void (Builder::*)(const std::set<TensorId> &, const float)>(
+            &Builder::setAvailableMemoryProportion),
+        py::arg("nodeOutputNames"),
+        py::arg("availableMemoryProportion"),
+        DOC(popart, Builder, setAvailableMemoryProportion));
     cls.def("setEnableConvDithering",
             &Builder::setEnableConvDithering,
             py::arg("nodeOutputName"),

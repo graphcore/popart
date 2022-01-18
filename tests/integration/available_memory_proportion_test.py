@@ -118,6 +118,34 @@ def insert_scatter_reduce(builder, inputs, weights, avail_mem_prop):
     return act
 
 
+def insert_lstm(builder, inputs, weights, avail_mem_prop):
+    np.random.seed(0)
+    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
+                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+
+    input_size = d1.shape[2]
+    hidden_size = 7
+
+    d2 = np.random.rand(1, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.zeros((1, 4 * hidden_size, hidden_size)).astype(np.float32)
+
+    i1 = builder.addInitializedInputTensor(d1)
+    i2 = builder.addInitializedInputTensor(d2)
+    i3 = builder.addInitializedInputTensor(d3)
+
+    Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+    builder.setAvailableMemoryProportion({Y, Y_h, Y_c}, avail_mem_prop)
+
+    act = builder.aiOnnx.matmul([inputs, weights])
+    shape = builder.aiOnnx.constant(np.array([3, 2, 2, 8]))
+    act = builder.aiOnnx.reshape([act, shape])
+    starts = builder.aiOnnx.constant(np.array([0, 0, 0, 0]))
+    ends = builder.aiOnnx.constant(np.array([2, 1, 2, 7]))
+    act = builder.aiOnnx.slice([act, starts, ends])
+    act = builder.aiOnnx.add([act, Y])
+    return act
+
+
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
@@ -177,3 +205,15 @@ def test_scatter_reduce_avail_memory_log(capfd):
                                                  avail_mem_prop)
     pattern = f"availableMemoryProportion={avail_mem_prop:0.1f}"
     assert_contains(pattern, output)
+
+
+@tu.requires_ipu_model
+def test_lstm_avail_memory_log(capfd):
+    avail_mem_prop = 0.4
+    output = available_memory_proportion_harness(capfd, insert_lstm,
+                                                 avail_mem_prop)
+    # This is the available tile memory for the matmul.
+    # TODO: Update this if future chips have more memory per tile.
+    avail_mem = int(np.floor(avail_mem_prop * 638976))
+    patt = f"Planning convolution with a per-tile memory limit of {avail_mem}"
+    assert_contains(patt, output)

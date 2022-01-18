@@ -18,9 +18,11 @@ LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
                nonstd::optional<int64_t> hidden_size,
                ActivationFunction activation,
                ActivationFunction recurrent_activation,
-               const Op::Settings &settings_)
+               const Op::Settings &settings_,
+               const nonstd::optional<float> available_memory_proportion_)
     : Op(_opid, settings_), hidden_size_attribute(hidden_size),
-      activation(activation), recurrent_activation(recurrent_activation) {
+      activation(activation), recurrent_activation(recurrent_activation),
+      available_memory_proportion(available_memory_proportion_) {
   // TODO : Use the output_sequence attribute in version 1
 }
 
@@ -175,6 +177,10 @@ int64_t LSTMOp::getHiddenSize() const {
   return inShape(getRecurrenceInIndex())[2];
 }
 
+nonstd::optional<float> LSTMOp::getAvailableMemoryProportion() const {
+  return available_memory_proportion;
+}
+
 bool LSTMOp::hasBiasInput() const { return input->hasIndex(getBiasInIndex()); }
 
 bool LSTMOp::hasInitialHInput() const {
@@ -203,6 +209,8 @@ void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("hidden_size", hidden_size_attribute);
   os.appendAttribute("activation", activation);
   os.appendAttribute("recurrent_activation", recurrent_activation);
+  os.appendAttribute("available_memory_proportion",
+                     available_memory_proportion);
 }
 
 int LSTMOp::getInBatchAxis(InIndex index) const {
@@ -357,22 +365,28 @@ const std::map<int, int> &LSTMGradOp::gradOutToNonGradIn() const {
 
 const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 
-PopartLSTMOp::PopartLSTMOp(const OperatorIdentifier &opid_,
-                           bool outputFullSequence_,
-                           const Op::Settings &settings_)
+PopartLSTMOp::PopartLSTMOp(
+    const OperatorIdentifier &opid_,
+    bool outputFullSequence_,
+    const Op::Settings &settings_,
+    const nonstd::optional<float> available_memory_proportion_)
     : PopartLSTMOp(opid_,
                    outputFullSequence_,
                    ActivationFunction::Tanh,
                    ActivationFunction::Sigmoid,
-                   settings_) {}
+                   settings_,
+                   available_memory_proportion_) {}
 
-PopartLSTMOp::PopartLSTMOp(const OperatorIdentifier &opid_,
-                           bool outputFullSequence_,
-                           ActivationFunction activation,
-                           ActivationFunction recurrent_activation,
-                           const Op::Settings &settings_)
+PopartLSTMOp::PopartLSTMOp(
+    const OperatorIdentifier &opid_,
+    bool outputFullSequence_,
+    ActivationFunction activation,
+    ActivationFunction recurrent_activation,
+    const Op::Settings &settings_,
+    const nonstd::optional<float> available_memory_proportion_)
     : Op(opid_, settings_), outputFullSequence(outputFullSequence_),
-      activation(activation), recurrent_activation(recurrent_activation) {}
+      activation(activation), recurrent_activation(recurrent_activation),
+      available_memory_proportion(available_memory_proportion_) {}
 
 std::unique_ptr<Op> PopartLSTMOp::clone() const {
   return std::make_unique<PopartLSTMOp>(*this);
@@ -386,6 +400,10 @@ std::vector<std::unique_ptr<Op>> PopartLSTMOp::getGradOps() {
 
 int64_t PopartLSTMOp::getNumIntermediates() const {
   return lstmGetNumIntermediates(getIr().getSessionOptions());
+}
+
+nonstd::optional<float> PopartLSTMOp::getAvailableMemoryProportion() const {
+  return available_memory_proportion;
 }
 
 void PopartLSTMOp::setup() {
@@ -686,11 +704,18 @@ static OpCreator<LSTMOp> lstmOpCreator(
             info.attributes.getAttribute<Attributes::Int>("hidden_size");
       }
 
+      nonstd::optional<float> availableMemoryProportion;
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+        availableMemoryProportion =
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
       return std::unique_ptr<Op>(new LSTMOp(info.opid,
                                             hidden_size,
                                             activation,
                                             recurrent_activation,
-                                            info.settings));
+                                            info.settings,
+                                            availableMemoryProportion));
     },
     true);
 
@@ -709,8 +734,16 @@ static OpCreator<PopartLSTMOp> popartLSTMOpCreator(
       bool outputFullSequence = info.attributes.getAttribute<Attributes::Int>(
                                     "output_full_sequence", 1) != 0;
 
-      return std::unique_ptr<Op>(
-          new PopartLSTMOp(info.opid, outputFullSequence, info.settings));
+      nonstd::optional<float> availableMemoryProportion;
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
+        availableMemoryProportion =
+            info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
+      return std::unique_ptr<Op>(new PopartLSTMOp(info.opid,
+                                                  outputFullSequence,
+                                                  info.settings,
+                                                  availableMemoryProportion));
     },
     true);
 

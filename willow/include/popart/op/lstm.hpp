@@ -16,7 +16,8 @@ public:
          nonstd::optional<int64_t> hidden_size,
          ActivationFunction activation,
          ActivationFunction recurrent_activation,
-         const Op::Settings &settings_);
+         const Op::Settings &settings_,
+         const nonstd::optional<float> available_memory_proportion_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -28,6 +29,7 @@ public:
   int64_t getInputSize() const;
   int64_t getNumDirections() const;
   int64_t getHiddenSize() const;
+  nonstd::optional<float> getAvailableMemoryProportion() const;
 
   bool hasBiasInput() const;
   bool hasInitialHInput() const;
@@ -95,6 +97,8 @@ private:
 
   ActivationFunction activation;
   ActivationFunction recurrent_activation;
+
+  nonstd::optional<float> available_memory_proportion;
 };
 
 class LSTMGradOp : public Op {
@@ -170,13 +174,17 @@ class PopartLSTMOp : public Op {
 public:
   PopartLSTMOp(const OperatorIdentifier &,
                bool outputFullSequence_,
-               const Op::Settings &);
+               const Op::Settings &,
+               const nonstd::optional<float> available_memory_proportion_ =
+                   nonstd::optional_lite::nullopt);
 
   PopartLSTMOp(const OperatorIdentifier &,
                bool outputFullSequence_,
                ActivationFunction activation,
                ActivationFunction recurrent_activation,
-               const Op::Settings &);
+               const Op::Settings &,
+               const nonstd::optional<float> available_memory_proportion_ =
+                   nonstd::optional_lite::nullopt);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -208,6 +216,8 @@ public:
   // use in the backward pass.
   int64_t getNumIntermediates() const;
 
+  nonstd::optional<float> getAvailableMemoryProportion() const;
+
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;
 
@@ -221,6 +231,8 @@ public:
 private:
   const ActivationFunction activation;
   const ActivationFunction recurrent_activation;
+
+  nonstd::optional<float> available_memory_proportion;
 };
 
 class PopartLSTMGradOp : public Op {

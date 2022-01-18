@@ -47,6 +47,17 @@ std::unique_ptr<snap::Tensor> LSTMOpx::createIntermediate() const {
   }
 }
 
+static poplar::OptionFlags
+addAvailableMemoryProportionOption(const LSTMOp &op,
+                                   const poplar::OptionFlags &flags) {
+  auto rflags     = flags;
+  const auto &amp = op.getAvailableMemoryProportion();
+  if (amp.has_value()) {
+    rflags.set("availableMemoryProportion", std::to_string(*amp));
+  }
+  return rflags;
+}
+
 void LSTMOpx::grow(snap::program::Sequence &prog) const {
   prepareWeights(prog);
   growBias(prog);
@@ -59,6 +70,9 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
   auto input    = getInput(prog);
   auto &lstm_op = getOp<LSTMOp>();
   auto seq_lens = getSeqLens();
+  auto options =
+      addAvailableMemoryProportionOption(lstm_op, dv_p->lowering().lstmOptions);
+
   std::tie(outputP, cell_stateP) =
       popnn::lstm::lstmFwd(graph().getPoplarGraph(),
                            createLSTMParams(lstm_op, seq_lens),
@@ -68,7 +82,7 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
                            getPoplarTensor(intermediate.get()),
                            prog.getPoplarSequence(),
                            debugContext("lstmFwd"),
-                           dv_p->lowering().lstmOptions,
+                           options,
                            &dv_p->matmulCache);
   snap::Tensor output{outputP, graph()};
   snap::Tensor cell_state{cell_stateP, graph()};
@@ -218,8 +232,9 @@ snap::Tensor LSTMOpx::createLSTMInput() const {
   auto &lstm_op    = getOp<LSTMOp>();
   auto seq_lens    = getSeqLens();
   auto lstm_params = createLSTMParams(lstm_op, seq_lens);
-  auto options     = dv_p->lowering().lstmOptions;
-  auto cache       = &dv_p->matmulCache;
+  auto options =
+      addAvailableMemoryProportionOption(lstm_op, dv_p->lowering().lstmOptions);
+  auto cache = &dv_p->matmulCache;
 
   return snap::Tensor{popnn::lstm::createInput(graph().getPoplarGraph(),
                                                lstm_params,
@@ -231,11 +246,12 @@ snap::Tensor LSTMOpx::createLSTMInput() const {
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
   if (!initial_state) {
-    auto options     = dv_p->lowering().lstmOptions;
     auto cache       = &dv_p->matmulCache;
     auto &lstm_op    = getOp<LSTMOp>();
     auto seq_lens    = getSeqLens();
     auto lstm_params = createLSTMParams(lstm_op, seq_lens);
+    auto options     = addAvailableMemoryProportionOption(
+        lstm_op, dv_p->lowering().lstmOptions);
 
     initial_state = createInitialState(graph().getPoplarGraph(),
                                        lstm_params,
@@ -252,8 +268,9 @@ popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
     auto &lstm_op    = getOp<LSTMOp>();
     auto seq_lens    = getSeqLens();
     auto lstm_params = createLSTMParams(lstm_op, seq_lens);
-    auto options     = dv_p->lowering().lstmOptions;
-    auto cache       = &dv_p->matmulCache;
+    auto options     = addAvailableMemoryProportionOption(
+        lstm_op, dv_p->lowering().lstmOptions);
+    auto cache = &dv_p->matmulCache;
 
     weights = popnn::lstm::createWeights(graph().getPoplarGraph(),
                                          lstm_params,

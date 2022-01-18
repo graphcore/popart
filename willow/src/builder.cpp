@@ -1733,17 +1733,24 @@ std::string Builder::getPartialsType(const TensorId &nodeOutputName) {
 void Builder::setAvailableMemoryProportion(
     const TensorId &nodeOutputName,
     const float availableMemoryProportion) {
+  std::set<TensorId> tensors = {nodeOutputName};
+  setAvailableMemoryProportion(tensors, availableMemoryProportion);
+}
+
+void Builder::setAvailableMemoryProportion(
+    const std::set<TensorId> &nodeOutputNames,
+    const float availableMemoryProportion) {
   if (availableMemoryProportion > 1.0f || availableMemoryProportion <= 0.0f) {
     throw error("availableMemoryProportion must be in (0,1]");
   }
 
-  if (nodeHasAttribute(sAvailMemAttribute, {nodeOutputName})) {
+  if (nodeHasAttribute(sAvailMemAttribute, nodeOutputNames)) {
     // Remove the previous value before updating to workaround ONNX limitation
-    removeNodeAttribute(sAvailMemAttribute, {nodeOutputName});
+    removeNodeAttribute(sAvailMemAttribute, nodeOutputNames);
   }
 
   addNodeAttribute(
-      sAvailMemAttribute, availableMemoryProportion, {nodeOutputName});
+      sAvailMemAttribute, availableMemoryProportion, nodeOutputNames);
 }
 
 void Builder::setEnableConvDithering(const TensorId &nodeOutputName,

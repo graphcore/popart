@@ -1292,6 +1292,22 @@ public:
   // clang-format on
   void setAvailableMemoryProportion(const TensorId &nodeOutputName,
                                     const float availableMemoryProportion);
+
+  // clang-format off
+  // Need long lines for URL
+  /**
+   * Set the available memory for the given node. Used on the convolution op.
+   *
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
+
+   *
+   * \param nodeOutputNames Names of all the output tensors of the ONNX node.
+   * \param availableMemoryProportion The available memory proportion [0, 1).
+   */
+  // clang-format on
+  void setAvailableMemoryProportion(const std::set<TensorId> &nodeOutputNames,
+                                    const float availableMemoryProportion);
+
   /**
    * Set an attribute that will be set on all subsequent operations.
    */
