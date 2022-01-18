@@ -48,8 +48,8 @@ public:
     RngStateFromHost,
     Program,
     RngStateToHost,
-    WeightstoHost,
-    CycleCountTensortoHost,
+    WeightsToHost,
+    CycleCountTensorToHost,
     N // The number of programs
   };
 
@@ -66,9 +66,9 @@ public:
     Backward,
     VarUpdateFromAccumulator,
     RngStateToHost,
-    WeightstoHost,
+    WeightsToHost,
     ToHostFinalCopy,
-    CycleCountTensortoHost,
+    CycleCountTensorToHost,
     N // The number of program fragments
   };
 

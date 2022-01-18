@@ -67,25 +67,23 @@ std::ostream &operator<<(std::ostream &out,
     out << "RngStateToHost";
     break;
   }
-  case PopPrograms::ProgramFragmentIndex::WeightstoHost: {
-    out << "WeightstoHost";
+  case PopPrograms::ProgramFragmentIndex::WeightsToHost: {
+    out << "WeightsToHost";
     break;
   }
   case PopPrograms::ProgramFragmentIndex::ToHostFinalCopy: {
     out << "ToHostFinalCopy";
     break;
   }
-  case PopPrograms::ProgramFragmentIndex::CycleCountTensortoHost: {
-    out << "CycleCountTensortoHost";
+  case PopPrograms::ProgramFragmentIndex::CycleCountTensorToHost: {
+    out << "CycleCountTensorToHost";
     break;
   }
   case PopPrograms::ProgramFragmentIndex::N: {
     out << "N";
     break;
   }
-  default: {
-    throw internal_error("Invalid value for ProgramFragmentIndex");
-  }
+  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
   };
   return out;
 }
@@ -154,11 +152,11 @@ snap::program::Sequence &PopPrograms::rngStateToHostFragment() {
 const snap::program::Sequence &
 PopPrograms::cycleCountTensorToHostFragment() const {
   return seqs.at(
-      static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
+      static_cast<int>(ProgramFragmentIndex::CycleCountTensorToHost));
 }
 snap::program::Sequence &PopPrograms::cycleCountTensorToHostFragment() {
   return seqs.at(
-      static_cast<int>(ProgramFragmentIndex::CycleCountTensortoHost));
+      static_cast<int>(ProgramFragmentIndex::CycleCountTensorToHost));
 }
 
 const snap::program::Sequence &PopPrograms::initFragment() const {
@@ -212,11 +210,11 @@ snap::program::Sequence &PopPrograms::accumulateOuterFragment() {
 }
 
 const snap::program::Sequence &PopPrograms::weightsToHostFragment() const {
-  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightsToHost));
 }
 
 snap::program::Sequence &PopPrograms::weightsToHostFragment() {
-  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightstoHost));
+  return seqs.at(static_cast<int>(ProgramFragmentIndex::WeightsToHost));
 }
 
 snap::program::Sequence PopPrograms::weightsFromHost() const {
@@ -519,8 +517,8 @@ const std::vector<snap::program::Program> PopPrograms::progs() const {
   ps[ProgramIndex::RngStateFromHost]       = rngStateFromHost();
   ps[ProgramIndex::Program]                = program();
   ps[ProgramIndex::RngStateToHost]         = rngStateToHost();
-  ps[ProgramIndex::WeightstoHost]          = weightsToHost();
-  ps[ProgramIndex::CycleCountTensortoHost] = cycleCountTensorToHost();
+  ps[ProgramIndex::WeightsToHost]          = weightsToHost();
+  ps[ProgramIndex::CycleCountTensorToHost] = cycleCountTensorToHost();
 
   return ps;
 }

@@ -348,6 +348,7 @@ private:
 
   std::vector<std::string> cycleCountIds;
   PopTensors tensors_;
+  PopPrograms progs_;
 
 public:
   IrLowering(const Ir &,
@@ -356,8 +357,6 @@ public:
   virtual ~IrLowering();
 
   const Ir &ir() const { return _ir; }
-
-  PopPrograms progs;
 
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;
@@ -404,8 +403,10 @@ public:
   }
 
   const PopTensors &tensors() const { return tensors_; }
-
   PopTensors &tensors() { return tensors_; }
+
+  const PopPrograms &progs() const { return progs_; }
+  PopPrograms &progs() { return progs_; }
 
   void instrumentWithHardwareCycleCounter(snap::program::Sequence &,
                                           int64_t tileId = 0,
@@ -556,7 +557,7 @@ public:
     return aliasZeroCopy.get();
   }
 
-  const DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
+  const DeviceInfo *getDeviceInfo() const { return deviceInfo.get(); }
 
   std::unique_ptr<PopOpx> createOpx(Op *);
 

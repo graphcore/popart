@@ -210,7 +210,7 @@ PriTask RngStateLowering::randomSeedToHost() {
 
     SequenceMap seqs(graph.get());
     auto &seq =
-        seqs.getSequence(&irLowering.get().progs.randomSeedToHostFragment());
+        seqs.getSequence(&irLowering.get().progs().randomSeedToHostFragment());
 
     seq.add(snap::program::Copy(
         streamedSeed, streamSeedToHost, false, {"randomSeedToHost"}));
@@ -236,7 +236,7 @@ PriTask RngStateLowering::rngStateFromHost() {
 
     SequenceMap seqs(graph.get());
     auto &seq =
-        seqs.getSequence(&irLowering.get().progs.rngStateFromHostFragment());
+        seqs.getSequence(&irLowering.get().progs().rngStateFromHostFragment());
 
     // Stream newRngState to combinedRngStateTensor
     seq.add(snap::program::Copy(streamRngFromHost,
@@ -274,7 +274,7 @@ PriTask RngStateLowering::rngStateToHost() {
 
     SequenceMap seqs(graph.get());
     auto &seq =
-        seqs.getSequence(&irLowering.get().progs.rngStateToHostFragment());
+        seqs.getSequence(&irLowering.get().progs().rngStateToHostFragment());
 
     // Update combinedRngStateTensor with the new values of
     // identicalSeedsRngStateTensor and differingSeedsRngStateTensor

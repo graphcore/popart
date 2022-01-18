@@ -246,7 +246,7 @@ void Devicex::weightsToHost() {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightstoHost, "WeightsToHost");
+    run(PopPrograms::ProgramIndex::WeightsToHost, "WeightsToHost");
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
     logging::devicex::debug("Writing weights to host complete.");
@@ -420,7 +420,7 @@ void Devicex::weightsToHost(
 
     pEngine->disableExecutionProfiling();
     // Weights on the IPU
-    run(PopPrograms::ProgramIndex::WeightstoHost, "WeightsToHost");
+    run(PopPrograms::ProgramIndex::WeightsToHost, "WeightsToHost");
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
 
@@ -453,7 +453,7 @@ std::map<std::string, std::vector<uint64_t>> Devicex::cycleCountTensorToHost() {
     // Calls the copy from device to host
     logging::devicex::debug("Writing cycle count to host");
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::CycleCountTensortoHost,
+    run(PopPrograms::ProgramIndex::CycleCountTensorToHost,
         "CycleCountTensorToHost");
     logging::devicex::debug("Writing cycle count to host complete.");
 

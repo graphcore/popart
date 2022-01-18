@@ -48,11 +48,14 @@ public:
   // corrupted data
   size_t readExecutableHash() const;
 
-  // Return true if the stream contains a Poplar executable
+  // Returns true if the stream contains a Poplar executable
   bool containsPoplarExecutable() const;
 
-  // Return true if the stream contains a Popart executable
+  // Returns true if the stream contains a Popart executable
   bool containsExecutable() const;
+
+  // Returns true if the stream contains a Popef metadata
+  bool containsPopefMetadata();
 
   // Load a poplar executable
   poplar::Executable deserializePoplarExecutable() const;

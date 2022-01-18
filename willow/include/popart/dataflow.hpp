@@ -258,7 +258,7 @@ private:
 
   // The set of anchor tensors (as std::vector).
   std::vector<TensorId> v_anchors;
-  // The set of anchor tensors (as std::vector).
+  // The set of anchor tensors (as std::set).
   std::set<TensorId> s_anchors;
 
   // The unique set of return periods for all anchors.

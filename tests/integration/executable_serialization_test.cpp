@@ -1,7 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ExecutableSerializationTest
 
+#include <algorithm>
+#include <map>
+#include <tuple>
+#include <vector>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
+
+#include <popef/Reader.hpp>
+
 #include <filereader.hpp>
 #include <random_util.hpp>
 #include <popart/adam.hpp>
@@ -12,6 +22,7 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/ndarraywrapper.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
@@ -20,16 +31,7 @@
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <popart/ndarraywrapper.hpp>
 #include <popart/testdevice.hpp>
-
-#include <algorithm>
-#include <map>
-#include <tuple>
-#include <vector>
 
 using namespace popart;
 
@@ -76,9 +78,9 @@ std::string getModelPath(const std::string &testDir) {
   return addPaths(testDir, modelName);
 }
 
-void compare_tensors(const Tensor *t1,
-                     const Tensor *t2,
-                     bool compare_data = false) {
+void compareTensors(const Tensor *t1,
+                    const Tensor *t2,
+                    bool compare_data = false) {
   BOOST_CHECK(t1->id == t2->id);
   BOOST_CHECK(t1->info == t2->info);
   BOOST_CHECK(t1->tensorLocationInfo.isSharded() ==
@@ -96,8 +98,8 @@ void compare_tensors(const Tensor *t1,
   }
 }
 
-void compare_executables(const popx::Executablex &exe1,
-                         const popx::Executablex &exe2) {
+void compareExecutables(const popx::Executablex &exe1,
+                        const popx::Executablex &exe2) {
 
   BOOST_CHECK(exe2.getWeightTensors().size() == exe1.getWeightTensors().size());
   BOOST_CHECK(exe2.getAnchorTensors().size() == exe1.getAnchorTensors().size());
@@ -109,25 +111,25 @@ void compare_executables(const popx::Executablex &exe1,
   for (int i = 0; i < exe1.getWeightTensors().size(); ++i) {
     auto t1 = exe1.getWeightTensors()[i];
     auto t2 = exe2.getTensor(t1->id);
-    compare_tensors(t1, t2, true);
+    compareTensors(t1, t2, true);
   }
 
   for (int i = 0; i < exe1.getOptimizerTensors().size(); ++i) {
     auto t1 = exe1.getOptimizerTensors()[i];
     auto t2 = exe2.getTensor(t1->id);
-    compare_tensors(t1, t2, true);
+    compareTensors(t1, t2, true);
   }
 
   for (int i = 0; i < exe1.getDataStreamTensors().size(); ++i) {
     auto t1 = exe1.getDataStreamTensors()[i];
     auto t2 = exe2.getTensor(t1->id);
-    compare_tensors(t1, t2, false);
+    compareTensors(t1, t2, false);
   }
 
   for (int i = 0; i < exe1.getAnchorTensors().size(); ++i) {
     auto t1 = exe1.getAnchorTensors()[i];
     auto t2 = exe2.getTensor(t1->id);
-    compare_tensors(t1, t2, false);
+    compareTensors(t1, t2, false);
   }
 
   BOOST_CHECK(exe2.getSeedTensor() == exe1.getSeedTensor());
@@ -154,6 +156,201 @@ void compare_executables(const popx::Executablex &exe1,
     BOOST_CHECK(it1->second.gatheredToRefSlices ==
                 it2->second.gatheredToRefSlices);
     ++it2;
+  }
+}
+
+void checkTensorsAndAnchorsConsistency(
+    const popef::Metadata &metadata,
+    const std::vector<popef::TensorReader> tensors) {
+  const std::vector<popef::Anchor> &anchors = metadata.anchors();
+  const bool isSeedSet                      = !metadata.seedHandle().empty();
+  bool seedTensorExists                     = false;
+
+  for (const auto &tensor : tensors) {
+    auto anchorIt = std::find_if(
+        anchors.begin(), anchors.end(), [&tensor](const popef::Anchor &anchor) {
+          return tensor.info.name() == anchor.name();
+        });
+    BOOST_CHECK(anchorIt != anchors.end());
+
+    if (anchorIt->type() == popef::TensorType::INPUT ||
+        anchorIt->type() == popef::TensorType::OUTPUT) {
+      BOOST_CHECK(anchorIt->handle().find(anchorIt->name()) !=
+                  std::string::npos);
+    }
+
+    const auto &tensorShape = tensor.info.tensorInfo().shape();
+    const auto &anchorShape = anchorIt->tensorInfo().shape();
+    BOOST_CHECK(std::equal(tensorShape.begin(),
+                           tensorShape.end(),
+                           anchorShape.begin(),
+                           anchorShape.end()));
+    BOOST_CHECK(anchorIt->tensorInfo().dataType() ==
+                tensor.info.tensorInfo().dataType());
+
+    if (isSeedSet && !seedTensorExists) {
+      const bool isSeedTensor =
+          metadata.seedHandle().find(anchorIt->name()) != std::string::npos;
+      const bool isHandleConsistent =
+          metadata.seedHandle() == anchorIt->handle();
+      seedTensorExists = isHandleConsistent && isSeedTensor;
+    }
+  }
+
+  if (isSeedSet) {
+    BOOST_CHECK(seedTensorExists);
+  }
+}
+
+void checkOptionsConsistency(const std::vector<popef::Option> &opts,
+                             const poplar::OptionFlags &optFlags) {
+  auto optsIt     = opts.begin();
+  auto optFlagsIt = optFlags.begin();
+
+  BOOST_CHECK(std::distance(optsIt, opts.end()) ==
+              std::distance(optFlagsIt, optFlags.end()));
+
+  while (optsIt != opts.end() && optFlagsIt != optFlags.end()) {
+    BOOST_CHECK(optsIt->name() == optFlagsIt->first);
+    BOOST_CHECK(optsIt->value() == optFlagsIt->second);
+    optsIt++;
+    optFlagsIt++;
+  }
+}
+
+void checkCorrectionPopefMetadata(
+    const popx::Executablex &exe,
+    const popef::Metadata &metadata,
+    const std::vector<popef::TensorReader> tensors) {
+  const popx::IrLowering &lowering = exe.lowering();
+  const Ir &ir                     = lowering.ir();
+  const SessionOptions &opts       = ir.getSessionOptions();
+  const int64_t numProcs =
+      opts.enableDistributedReplicatedGraphs ? opts.globalReplicationFactor : 1;
+  const std::string ipuVersionStr =
+      lowering.getDeviceInfo()->getTarget().getTargetArchString();
+  const size_t pos = ipuVersionStr.find_first_of("0123456789");
+  BOOST_CHECK(pos != std::string::npos);
+  const int64_t ipuVersion = std::atoi(ipuVersionStr.substr(pos).c_str());
+  const std::string targetSystem =
+      lowering.getDeviceInfo()->getTarget().getTargetSystemString();
+  const bool isPOD = targetSystem.find("POD") != std::string::npos;
+
+  checkTensorsAndAnchorsConsistency(metadata, tensors);
+  checkOptionsConsistency(metadata.engineOptions(), lowering.engineOptions);
+  checkOptionsConsistency(metadata.deviceOptions(),
+                          lowering.getDeviceInfo()->getOptionFlags());
+  BOOST_CHECK(metadata.replicationFactor() == lowering.getReplicationFactor());
+  BOOST_CHECK(metadata.numProcesses() == numProcs);
+  if (metadata.isInference()) {
+    BOOST_CHECK(ir.getExecutionMode() == Ir::ExecutionMode::Inference);
+  }
+  BOOST_CHECK(metadata.ipuVersion() == ipuVersion);
+  BOOST_CHECK(metadata.isPOD() == isPOD);
+  BOOST_CHECK(metadata.numIpus() == lowering.getDeviceInfo()->getNumIpus());
+}
+
+const popef::TensorReader *
+getPopefTensor(const std::string &tensorId,
+               const std::vector<popef::TensorReader> &popefTensors) {
+  auto tensorMatcher = [&tensorId](const popef::TensorReader &tensor) {
+    return tensor.info.name() == tensorId;
+  };
+
+  auto it =
+      std::find_if(popefTensors.begin(), popefTensors.end(), tensorMatcher);
+  if (it == popefTensors.end()) {
+    throw error("Popef file does not contain expected tensor.");
+  }
+
+  return it != popefTensors.end() ? boost::addressof(*it) : nullptr;
+}
+
+void checkCorrectionPopefTensor(
+    const Tensor &tensor,
+    const popef::TensorReader &popefTensor,
+    const std::vector<TensorId> expectedMismatchDataForIds) {
+  const int64_t popefTensorSize = popefTensor.info.tensorInfo().sizeInBytes();
+  const auto &shape             = tensor.info.shape();
+  const auto &popefShape        = popefTensor.info.tensorInfo().shape();
+
+  const bool expectedDataMismatch =
+      std::find(expectedMismatchDataForIds.begin(),
+                expectedMismatchDataForIds.end(),
+                tensor.id) != expectedMismatchDataForIds.end();
+
+  BOOST_CHECK(tensor.id == popefTensor.info.name());
+  BOOST_CHECK(std::equal(
+      shape.begin(), shape.end(), popefShape.begin(), popefShape.end()));
+  BOOST_CHECK(tensor.info.nbytes() == popefTensorSize);
+
+  std::vector<char> popefTensorData(popefTensorSize);
+  popefTensor.getStandaloneDataStream()->read(popefTensorData.data(),
+                                              popefTensorSize);
+  const bool areDataConsistent = std::memcmp(tensor.tensorData()->data(),
+                                             popefTensorData.data(),
+                                             popefTensorSize) == 0;
+  // areDataConsistent | expectedDataMismatch | Result |
+  //         1         |            1         |  FAIL  |
+  //         1         |            0         |  PASS  |
+  //         0         |            1         |  PASS  |
+  //         0         |            0         |  FAIL  |
+  BOOST_CHECK(!expectedDataMismatch == areDataConsistent);
+}
+
+void checkCorrectionPopefTensors(
+    const std::vector<Tensor *> &tensors,
+    const std::vector<popef::TensorReader> &popefTensors,
+    const std::vector<TensorId> expectedMismatchDataForIds) {
+  for (auto tensor : tensors) {
+    const popef::TensorReader *popefTensor =
+        getPopefTensor(tensor->id, popefTensors);
+    const bool tensorExists = popefTensor != nullptr;
+    BOOST_CHECK(tensorExists);
+    if (tensorExists)
+      checkCorrectionPopefTensor(
+          *tensor, *popefTensor, expectedMismatchDataForIds);
+  }
+}
+
+void checkCorrectionPopefData(
+    const popx::Executablex &exe,
+    const std::string &popefFilePath,
+    const std::vector<TensorId> expectedMismatchDataForIds = {}) {
+  auto ifs =
+      std::make_shared<std::ifstream>(popefFilePath, std::fstream::binary);
+  popef::Reader reader;
+  reader.parseStream(ifs);
+
+  const Tensor *seedTensor     = exe.getSeedTensor();
+  const auto &popefTensors     = reader.tensors();
+  const int expectedTensorsNum = exe.getWeightTensors().size() +
+                                 exe.getOptimizerTensors().size() +
+                                 (seedTensor != nullptr ? 1 : 0);
+  BOOST_CHECK(
+      reader.executables().size() == 1 ||
+      (reader.opaqueBlobs().size() == 1 && reader.metadata().size() == 1));
+  BOOST_CHECK(reader.feeds().size() == 0);
+  BOOST_CHECK(popefTensors.size() == expectedTensorsNum);
+
+  BOOST_CHECK(reader.opaqueBlobs().at(0).executable ==
+              reader.metadata().at(0).executable());
+
+  checkCorrectionPopefMetadata(exe, reader.metadata().at(0), popefTensors);
+  checkCorrectionPopefTensors(
+      exe.getWeightTensors(), popefTensors, expectedMismatchDataForIds);
+  checkCorrectionPopefTensors(
+      exe.getOptimizerTensors(), popefTensors, expectedMismatchDataForIds);
+
+  if (seedTensor != nullptr) {
+    const popef::TensorReader *popefSeedTensor =
+        getPopefTensor(seedTensor->id, popefTensors);
+    const bool tensorExists = popefSeedTensor != nullptr;
+    BOOST_CHECK(tensorExists);
+    if (tensorExists) {
+      checkCorrectionPopefTensor(
+          *seedTensor, *popefSeedTensor, expectedMismatchDataForIds);
+    }
   }
 }
 
@@ -246,12 +443,15 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     ir.setOnnxModel(modelProto);
     popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
+
+    checkCorrectionPopefData(executable, executablePath);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
-    compare_executables(executable, *deserializedExecutable);
+    compareExecutables(executable, *deserializedExecutable);
   }
 
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
@@ -322,12 +522,15 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
 
     popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
+
+    checkCorrectionPopefData(executable, executablePath);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
-    compare_executables(executable, *deserializedExecutable);
+    compareExecutables(executable, *deserializedExecutable);
   }
 
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
@@ -399,12 +602,15 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
 
     popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
+
+    checkCorrectionPopefData(executable, executablePath);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
-    compare_executables(executable, *deserializedExecutable);
+    compareExecutables(executable, *deserializedExecutable);
   }
 
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
@@ -479,7 +685,10 @@ BOOST_AUTO_TEST_CASE(
 
     popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
+
+    checkCorrectionPopefData(executable, executablePath);
 
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
@@ -629,11 +838,13 @@ BOOST_AUTO_TEST_CASE(
     ir.setOnnxModel(modelProto);
     popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
+    BOOST_CHECK(reader.containsPopefMetadata());
     BOOST_CHECK(!reader.containsPoplarExecutable());
+    checkCorrectionPopefData(executable, executablePath);
     bool skipGraphCompilation = true;
     popx::IrLowering ir_lowering(ir, device, skipGraphCompilation);
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
-    compare_executables(executable, *deserializedExecutable);
+    compareExecutables(executable, *deserializedExecutable);
   }
 
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
@@ -811,6 +1022,7 @@ void testSessionRunFromSerializedExe(bool useCache) {
       BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     }
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), executablePath);
 
     WeightsIO weightsRead1;
     weightsRead1.insert(A_id, {A_readback2_init.data(), A_info});
@@ -1034,6 +1246,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
     cacheFile = session->getExecutable().getCachePath(cachePath);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
   }
 
   // reset output values
@@ -1077,6 +1290,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
 
     session->weightsFromHost();
     session->run(stepio);
@@ -1275,6 +1489,7 @@ BOOST_AUTO_TEST_CASE(
     session->weightsToHost();
     session->readWeights(weightsRead);
     cacheFile = session->getExecutable().getCachePath(cachePath);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
   }
 
   std::vector<float> A_readback2(A_info.nelms(), -1.0f);
@@ -1310,6 +1525,7 @@ BOOST_AUTO_TEST_CASE(
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
 
     session->weightsFromHost();
     session->run(stepio);
@@ -1450,6 +1666,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
     session->weightsToHost();
     session->readWeights(weightsRead);
     cacheFile = session->getExecutable().getCachePath(cachePath);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1481,6 +1698,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
 
     session->weightsFromHost();
     session->run(stepio);
@@ -1628,6 +1846,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
     session->weightsToHost();
     session->readWeights(weightsRead);
     cacheFile = session->getExecutable().getCachePath(cachePath);
+    checkCorrectionPopefData(
+        session->getExecutable(), cacheFile, {seedTensor->id});
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1667,6 +1887,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(
+        session->getExecutable(), cacheFile, {seedTensor->id});
 
     session->weightsFromHost();
     session->run(stepio);
@@ -1805,6 +2027,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
     session->weightsToHost();
     session->readWeights(weightsRead);
     cacheFile = session->getExecutable().getCachePath(testDir);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1838,6 +2061,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
 
     session->weightsFromHost();
     session->run(stepio);
@@ -1985,6 +2209,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
     session->weightsToHost();
     session->readWeights(weightsRead);
     cacheFile = session->getExecutable().getCachePath(testDir);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile, {A_id, B_id});
   }
 
   auto C_ground_truth = raw_C_out;
@@ -2026,6 +2251,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile, {A_id, B_id});
 
     session->weightsFromHost();
     WeightsIO weightsRead1;
@@ -2168,6 +2394,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
     BOOST_CHECK(session->getIr().hashMatched() == false);
     cacheFile = session->getExecutable().getCachePath(cachePath);
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
   }
 
   // reset output values
@@ -2197,6 +2424,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
     BOOST_CHECK(session->getIr().hashMatched());
     BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
     BOOST_CHECK(session->getExecutable().isDeserialized());
+    checkCorrectionPopefData(session->getExecutable(), cacheFile);
 
     float newLearningRate = 0.01f;
     float newMomentum     = 0.09f;

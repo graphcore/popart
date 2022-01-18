@@ -346,7 +346,7 @@ IrLowering::IrLowering(const Ir &ir,
       replicatedTensorShardingBundle(_ir),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
       tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
-      progs(PopPrograms(this)), rngStateLowering() {
+      progs_(PopPrograms(this)), rngStateLowering() {
   POPART_TRACEPOINT();
 
   // Set the opxTrace flag based on the environment variable
@@ -560,7 +560,7 @@ void IrLowering::instrumentWithHardwareCycleCounter(snap::program::Sequence &sq,
   // Add program fragment to copy to host stream
   auto cyclesToHostStream =
       snap::program::Copy(cycleCountTensor, st, true, {"copyCycleCounter"});
-  progs.cycleCountTensorToHostFragment().add(cyclesToHostStream);
+  progs_.cycleCountTensorToHostFragment().add(cyclesToHostStream);
 }
 
 snap::Tensor IrLowering::getConst(snap::Graph &graph,
@@ -630,7 +630,7 @@ toPoplarProgs(const std::vector<snap::program::Program> &snapProgs) {
 std::string IrLowering::getSerializedGraph() const {
   std::stringstream ss;
   pGraph->getPoplarGraph().serialize(
-      ss, toPoplarProgs(progs.progs()), poplar::SerializationFormat::Binary);
+      ss, toPoplarProgs(progs_.progs()), poplar::SerializationFormat::Binary);
   return ss.str();
 }
 
@@ -1086,7 +1086,7 @@ PriTask IrLowering::initRandomSeed(Tensor *tensor) {
   auto initRandomSeedTask = [this, streamedSeedId, tensor]() {
     logging::devicex::debug("Initializing random seed.");
     SequenceMap seqs(graph());
-    auto &prog = seqs.getSequence(&progs.randomSeedFromHostFragment());
+    auto &prog = seqs.getSequence(&progs_.randomSeedFromHostFragment());
 
     // NOTE: The `streamedSeedId` tensor is a 2xUINT32 tensor streamed from the
     // host to the device and serves as the basis of two mechanisms:
@@ -1422,16 +1422,16 @@ void IrLowering::setStreamTensor(TensorId tid, snap::Tensor t) {
 }
 
 int IrLowering::getNumFragments(const Graph &graph) const {
-  return progs.getNumFragments(graph);
+  return progs_.getNumFragments(graph);
 }
 
 bool IrLowering::containsFragments(const Graph &graph) const {
-  return progs.containsFragments(graph);
+  return progs_.containsFragments(graph);
 }
 
 bool IrLowering::containsFragment(const Graph &graph,
                                   SubgraphPartIndex subgraphPart) const {
-  return progs.containsFragment(graph, subgraphPart);
+  return progs_.containsFragment(graph, subgraphPart);
 }
 
 void IrLowering::createFragment(const Graph &graph_,
@@ -1439,14 +1439,14 @@ void IrLowering::createFragment(const Graph &graph_,
 
   const auto addOpTasksTimer =
       ir().timePartitionLogger().scopedStopwatch("IrLowering::createFragment");
-  return progs.createFragment(graph_, subgraphPart);
+  return progs_.createFragment(graph_, subgraphPart);
 }
 
 std::vector<poplar::Function> &
 IrLowering::getFragmentFunctions(const Graph &_graph) {
   logging::devicex::trace("[getFragmentFunction] Getting function for graph {}",
                           _graph.id.str());
-  return progs.getFragmentFunctions(_graph, graph());
+  return progs_.getFragmentFunctions(_graph, graph());
 }
 
 poplar::Function &
@@ -1456,7 +1456,7 @@ IrLowering::getFragmentFunction(const Graph &_graph,
       "[getFragmentFunction] Getting function for graph {}, part {}",
       _graph.id.str(),
       subgraphPart);
-  return progs.getFragmentFunction(_graph, subgraphPart, graph());
+  return progs_.getFragmentFunction(_graph, subgraphPart, graph());
 }
 
 void IrLowering::addPipelinedCopyTasks(PriTasks &tasks) {
@@ -1484,7 +1484,7 @@ PriTask IrLowering::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
   auto f = [this, copyOp, copyOpx]() {
     SequenceMap seqs(graph());
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
-    auto &prog = progs.pipelineIpuCopyFragment(
+    auto &prog = progs_.pipelineIpuCopyFragment(
         logging::format("{}, {}, PipelineStage({})",
                         copyOp->debugName(),
                         copyOp->getFromToStr(),
@@ -1961,7 +1961,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
     if (!containingGraph.id.str().empty()) {
       // We need to create a mapping to avoid the index operator creating just
       // a singleton vector of sequence, as opposed to having all parts.
-      seqs.addScopeFragments(progs.scopeFragments(containingGraph));
+      seqs.addScopeFragments(progs_.scopeFragments(containingGraph));
       // Get the right subgraphPart for op to lower in to.
       auto subgraphPart = subgraphPartitioner->getOpSubgraphPartBegin(op);
       PopOpx *opx       = getOpx(op->id);
@@ -1971,7 +1971,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
           containingGraph.id.str(),
           subgraphPart);
       // Record each scope task fragment separately first.
-      growOpx(opx, seqs[&progs.scopeFragment(containingGraph, subgraphPart)]);
+      growOpx(opx, seqs[&progs_.scopeFragment(containingGraph, subgraphPart)]);
 
     } else if (opts.implicitPipeliningEnabled()) {
       pipelinedOpTaskFunc(opTaskId(op), op, seqs);
@@ -2328,17 +2328,17 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   contextOpRegistry[{context, taskId}].push_back(op);
 
   if (context == ExecutionContext::OptimizerFromHostFragment) {
-    growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
+    growOpx(opx, seqs[&progs_.streamOptimizerFromHostFragment()]);
   }
 
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsFromHostFragment) {
-    growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
+    growOpx(opx, seqs[&progs_.streamWeightsFromHostFragment()]);
   }
 
   // Special case for running operators after the main loop.
   else if (context == ExecutionContext::WeightsToHostFragment) {
-    growOpx(opx, seqs[&progs.weightsToHostFragment()]);
+    growOpx(opx, seqs[&progs_.weightsToHostFragment()]);
   }
 
   // pre-loss : create vertices for all recompute types
@@ -2349,7 +2349,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
         op->settings.recomputeType == RecomputeType::Undefined ||
         op->settings.recomputeType == RecomputeType::Recomputed) {
       logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
-      growOpx(opx, seqs[&progs.forwardFragment()]);
+      growOpx(opx, seqs[&progs_.forwardFragment()]);
     }
 
     // Pre-loss, recompute
@@ -2358,9 +2358,9 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               op->settings.recomputeType,
                               op->debugName());
 
-      growOpx(opx, progs.createRecomputeFragment(op->id));
-      seqs.getSequence(&progs.forwardFragment())
-          .add(*progs.recomputeFragment(op->id));
+      growOpx(opx, progs_.createRecomputeFragment(op->id));
+      seqs.getSequence(&progs_.forwardFragment())
+          .add(*progs_.recomputeFragment(op->id));
     }
 
     // Pre-loss, not recompute or checkpoint
@@ -2387,7 +2387,7 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
     if (ir().getSessionOptions().enableGradientAccumulation &&
         context == ExecutionContext::AccumulateOuterFragment) {
       outerLoopFragEmpty = false;
-      growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
+      growOpx(opx, seqs[&progs_.accumulateOuterFragment()]);
     } else {
       auto found = requiredRecomputes.find(taskId);
       if (found != requiredRecomputes.end()) {
@@ -2396,8 +2396,8 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           logging::devicex::debug("Adding (second) recompute Op {}",
                                   opToRerun->debugName());
 
-          seqs.getSequence(&progs.backwardFragment())
-              .add(*progs.recomputeFragment(opToRerun->id));
+          seqs.getSequence(&progs_.backwardFragment())
+              .add(*progs_.recomputeFragment(opToRerun->id));
           contextOpRegistry[{context, taskId}].push_back(opToRerun);
           ExecutionPhase phase =
               op->hasExecutionPhase() &&
@@ -2406,14 +2406,14 @@ void IrLowering::opTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
                               .executionPhaseSettings.phases >= 2
                   ? op->getExecutionPhase()
                   : -1;
-          progs.recordRecomputed(opToRerun->id, phase);
+          progs_.recordRecomputed(opToRerun->id, phase);
         }
       }
 
       logging::devicex::debug("Adding post-turning check-point Op {}",
                               op->debugName());
 
-      growOpx(opx, seqs[&progs.backwardFragment()]);
+      growOpx(opx, seqs[&progs_.backwardFragment()]);
     }
   }
 
@@ -2430,28 +2430,28 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
   contextOpRegistry[{context, taskId}].push_back(op);
 
   if (context == ExecutionContext::OptimizerFromHostFragment) {
-    growOpx(opx, seqs[&progs.streamOptimizerFromHostFragment()]);
+    growOpx(opx, seqs[&progs_.streamOptimizerFromHostFragment()]);
   } else if (op->isConvertibleTo<HostLoadOp>()) {
     growOpx(opx,
-            seqs[&progs.pipelineToDeviceStreamFragment(op->getPipelineStage(),
-                                                       op->debugName())]);
+            seqs[&progs_.pipelineToDeviceStreamFragment(op->getPipelineStage(),
+                                                        op->debugName())]);
   }
 
   else if (ir().getSessionOptions().enableGradientAccumulation &&
            context == ExecutionContext::AccumulateOuterFragment) {
     outerLoopFragEmpty = false;
-    growOpx(opx, seqs[&progs.accumulateOuterFragment()]);
+    growOpx(opx, seqs[&progs_.accumulateOuterFragment()]);
   }
 
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsFromHostFragment) {
-    growOpx(opx, seqs[&progs.streamWeightsFromHostFragment()]);
+    growOpx(opx, seqs[&progs_.streamWeightsFromHostFragment()]);
   }
 
   // Special case for running operators before the main loop.
   else if (context == ExecutionContext::WeightsToHostFragment) {
     // Special case for running operators before the main loop.
-    growOpx(opx, seqs[&progs.weightsToHostFragment()]);
+    growOpx(opx, seqs[&progs_.weightsToHostFragment()]);
   }
 
   else {
@@ -2463,15 +2463,15 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       for (auto opToRerun : rerunSchedule) {
         logging::devicex::debug("Adding (second) recompute Op {}",
                                 opToRerun->debugName());
-        if (progs.hasBeenRecomputed(opToRerun->id, -1)) {
+        if (progs_.hasBeenRecomputed(opToRerun->id, -1)) {
           throw internal_error("Ops to recompute should only appear in once in "
                                "requiredRecomputes");
         }
-        progs.recordRecomputed(opToRerun->id, -1);
+        progs_.recordRecomputed(opToRerun->id, -1);
         seqs
-            .getSequence(&progs.pipelineMainFragment(
+            .getSequence(&progs_.pipelineMainFragment(
                 op->getPipelineStage(), "recompute of " + opToRerun->str()))
-            .add(*progs.recomputeFragment(opToRerun->id));
+            .add(*progs_.recomputeFragment(opToRerun->id));
 
         contextOpRegistry[{context, taskId}].push_back(opToRerun);
       }
@@ -2492,7 +2492,7 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
           op->str(),
           op->debugName());
       auto seqsKey =
-          &progs.pipelineMainFragment(op->getPipelineStage(), op->str());
+          &progs_.pipelineMainFragment(op->getPipelineStage(), op->str());
       logging::devicex::debug("Obtained pipeline forward frag for ",
                               op->debugName());
       logging::devicex::debug(
@@ -2503,10 +2503,10 @@ void IrLowering::pipelinedOpTaskFunc(TaskId taskId, Op *op, SequenceMap &seqs) {
       logging::devicex::debug("Adding (first) recompute Op {}",
                               op->debugName());
 
-      growOpx(opx, progs.createRecomputeFragment(op->id));
+      growOpx(opx, progs_.createRecomputeFragment(op->id));
       seqs.getSequence(
-              &progs.pipelineMainFragment(op->getPipelineStage(), op->str()))
-          .add(*progs.recomputeFragment(op->id));
+              &progs_.pipelineMainFragment(op->getPipelineStage(), op->str()))
+          .add(*progs_.recomputeFragment(op->id));
     }
   }
 }
@@ -2578,7 +2578,7 @@ void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
       poplar::FloatingPointBehaviour behaviour(true, true, true, false, true);
       poplar::setFloatingPointBehaviour(
           graph.getPoplarGraph(),
-          progs.initFragment().getPoplarSequence(),
+          progs_.initFragment().getPoplarSequence(),
           behaviour,
           "/init");
     } else {
@@ -2596,7 +2596,7 @@ void IrLowering::setStochasticRoundingBehaviour(snap::Graph &graph) {
       logging::devicex::info("Enabling stochastic rounding");
       bool behaviour = true;
       poplar::setStochasticRounding(graph.getPoplarGraph(),
-                                    progs.initFragment().getPoplarSequence(),
+                                    progs_.initFragment().getPoplarSequence(),
                                     behaviour,
                                     "/init");
     } else {
@@ -2773,7 +2773,7 @@ void IrLowering::prepareGraph() {
   }
 
   initPoplarGraph();
-  progs.initWithSnapGraph(graph());
+  progs_.initWithSnapGraph(graph());
   rngStateLowering = std::make_unique<RngStateLowering>(*this, graph());
 
   logging::devicex::info("Poplar graph initialised");
@@ -3009,12 +3009,12 @@ void IrLowering::prepareGraph() {
       // 2
       tasks.add(streamFromHostTask(tensor->id, {tensor}));
       // 3
-      tasks.add(fromHostTask(tensor, progs.streamWeightsFromHostFragment()));
+      tasks.add(fromHostTask(tensor, progs_.streamWeightsFromHostFragment()));
       // 4
       tasks.add(streamToHostTask(tensor->id, {tensor}, false));
       // 5
       tasks.add(toHostTask(
-          tensor, progs.weightsToHostFragment(), ToHostStreamType::NonAnchor));
+          tensor, progs_.weightsToHostFragment(), ToHostStreamType::NonAnchor));
     } else {
       // 2
       tasks.add(setInitTensorValTask(tensor));
@@ -3090,7 +3090,7 @@ void IrLowering::prepareGraph() {
   // Init the random seed
   if (RandomSetup::hasRandomSeed(ir()) and !ir().useSyntheticData()) {
     auto seedTen = ir().getTensor(RandomSetup::getStreamedSeedTensorId());
-    tasks.add(fromHostTask(seedTen, progs.randomSeedFromHostFragment()));
+    tasks.add(fromHostTask(seedTen, progs_.randomSeedFromHostFragment()));
     tasks.add(initRandomSeed(seedTen));
     tasks.add(rngStateLowering->randomSeedToHost());
   }
@@ -3105,8 +3105,8 @@ void IrLowering::prepareGraph() {
   // tensors may need to be added to the graph to keep track of
   // batch count.
   if (ir().getDataFlow().isBatchCountingRequired()) {
-    tasks.add(initBatchCounterTensorsTask(progs.initFragment()));
-    tasks.add(updateBatchCountTask(progs.preForwardFragment()));
+    tasks.add(initBatchCounterTensorsTask(progs_.initFragment()));
+    tasks.add(updateBatchCountTask(progs_.preForwardFragment()));
   }
 
   // stream-to-host tensors : 1) make streams 2) make copy programs
@@ -3137,15 +3137,16 @@ void IrLowering::prepareGraph() {
               tensor,
               ir().getDataFlow().art(anchorId).rp(),
               tensor->tensorType() == TensorType::Variable
-                  ? progs.backwardFragment()
-                  : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+                  ? progs_.backwardFragment()
+                  : progs_.forwardOrBackwardFragment(
+                        tensor->scheduledPreLoss)));
         }
         break;
       }
       // Copy program runs at the end of the step
       case (AnchorReturnTypeId::Final): {
         tasks.add(toHostTask(tensor,
-                             progs.toHostFinalCopyFragment(),
+                             progs_.toHostFinalCopyFragment(),
                              ToHostStreamType::NonSumAnchor));
         break;
       }
@@ -3153,7 +3154,7 @@ void IrLowering::prepareGraph() {
         tasks.add(
             anchorReturnTypeSumTask(tensor, getAnchorReturnFragment(tensor)));
         tasks.add(toHostTask(tensor,
-                             progs.toHostFinalCopyFragment(),
+                             progs_.toHostFinalCopyFragment(),
                              ToHostStreamType::SumAnchor));
         break;
       }
@@ -3163,10 +3164,10 @@ void IrLowering::prepareGraph() {
     for (Tensor *tensor : ir().dataStreamTensors()) {
       if (ir().getSessionOptions().implicitPipeliningEnabled()) {
         PipelineStage ps = *tensor->consumers.findLowestPipelineStage();
-        auto &sq = progs.pipelineToDeviceStreamFragment(ps, tensor->str());
+        auto &sq = progs_.pipelineToDeviceStreamFragment(ps, tensor->str());
         tasks.add(fromHostTask(tensor, sq));
       } else {
-        auto &sq = progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
+        auto &sq = progs_.forwardOrBackwardFragment(tensor->scheduledPreLoss);
         tasks.add(fromHostTask(tensor, sq));
       }
     }
@@ -3183,7 +3184,7 @@ void IrLowering::prepareGraph() {
   if (!ir().useSyntheticData()) {
     // create Program to write optimizer tensors to device
     for (auto tensor : ir().optimizerTensors()) {
-      tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
+      tasks.add(fromHostTask(tensor, progs_.streamOptimizerFromHostFragment()));
     }
   }
 
@@ -3374,14 +3375,14 @@ void IrLowering::prepareGraph() {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);
     graph().getPoplarGraph().outputVertexGraph(strm,
-                                               toPoplarProgs(progs.progs()));
+                                               toPoplarProgs(progs_.progs()));
   }
 
   if (ir().getSessionOptions().exportPoplarComputationGraph) {
     std::ofstream strm;
     strm.open("poplar_compute_graph.dot", std::ios::out);
     graph().getPoplarGraph().outputComputeGraph(strm,
-                                                toPoplarProgs(progs.progs()));
+                                                toPoplarProgs(progs_.progs()));
   }
 
   prepareGraphHasBeenCalled_ = true;
@@ -3397,7 +3398,7 @@ snap::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
     if (tensor->hasProducer() &&
         tensor->getProducer()->settings.executionContext ==
             ExecutionContext::AccumulateOuterFragment) {
-      return progs.accumulateOuterFragment();
+      return progs_.accumulateOuterFragment();
     } else {
       PipelineStage ps;
       // Copies of optimizer tensors do not have a pipeline stage.
@@ -3413,13 +3414,13 @@ snap::program::Sequence &IrLowering::getAnchorReturnFragment(Tensor *tensor) {
       else {
         ps = *tensor->consumers.findHighestPipelineStage();
       }
-      return progs.pipelineToHostStreamFragment(ps, tensor->str());
+      return progs_.pipelineToHostStreamFragment(ps, tensor->str());
     }
   } else {
     return (tensor->tensorType() == TensorType::Variable ||
             !tensor->hasProducer())
-               ? progs.backwardFragment()
-               : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
+               ? progs_.backwardFragment()
+               : progs_.forwardOrBackwardFragment(tensor->scheduledPreLoss);
   }
 }
 
@@ -3450,7 +3451,7 @@ poplar::Executable IrLowering::getExecutable() {
       DebugInfo di{{}, "popart"};
       auto executable = poplar::compileGraph(
           graph().getPoplarGraph(),
-          toPoplarProgs(progs.progs()),
+          toPoplarProgs(progs_.progs()),
           engineOptions,
           std::ref(progressLogger),
           {{di.getPathName(), di.getId()}, getPoplarGraphDebugName()});
@@ -3710,7 +3711,7 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     popops::zero(
         graph().getPoplarGraph(),
         accumulatorTensor.getPoplarTensor(),
-        seqs.getSequence(&progs.initFragment()).getPoplarSequence(),
+        seqs.getSequence(&progs_.initFragment()).getPoplarSequence(),
         {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
          "AnchorSumZero_" + tensor->id});
 

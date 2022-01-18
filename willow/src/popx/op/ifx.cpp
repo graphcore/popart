@@ -48,7 +48,7 @@ void IfOpx::copyInputs(snap::program::Sequence &thenProg,
 
 void IfOpx::callBranch(snap::program::Sequence &prog,
                        const Graph &graph) const {
-  auto &branch_progs = dv_p->lowering().progs.scopeFragments(graph);
+  auto &branch_progs = dv_p->lowering().progs().scopeFragments(graph);
   for (auto branch_prog : branch_progs) {
     prog.add(branch_prog);
   }
