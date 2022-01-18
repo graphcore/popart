@@ -36,11 +36,11 @@ def create_adamupdater(acc_first_order: Tensor,
     tensors_to_check = dict(acc_first_order=acc_first_order,
                             acc_second_order=acc_second_order)
 
-    if weight is not None:
+    if isinstance(weight, Tensor):
         tensors_to_check['weight'] = weight
-    if time_step is not None:
+    if isinstance(time_step, Tensor):
         tensors_to_check['time_step'] = time_step
-    if weight_decay is not None:
+    if isinstance(weight_decay, Tensor):
         tensors_to_check['weight_decay'] = weight_decay
 
     check_in_graph(g, **tensors_to_check)

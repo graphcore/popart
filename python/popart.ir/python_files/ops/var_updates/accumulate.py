@@ -41,8 +41,12 @@ def accumulate_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t=t, X=X)
-    check_tensor_ipu_and_tile_set(t=t, X=X)
+    tensors_to_check = dict(t=t, X=X)
+    if isinstance(f, Tensor):
+        tensors_to_check['f'] = f
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     ins = {0: t.id, 1: X.id}
 
@@ -89,8 +93,12 @@ def accumulate_square_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t=t, X=X)
-    check_tensor_ipu_and_tile_set(t=t, X=X)
+    tensors_to_check = dict(t=t, X=X)
+    if isinstance(f, Tensor):
+        tensors_to_check['f'] = f
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     ins = {0: t.id, 1: X.id}
 
@@ -199,8 +207,12 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t=t, X=X)
-    check_tensor_ipu_and_tile_set(t=t, X=X)
+    tensors_to_check = dict(t=t, X=X)
+    if isinstance(f, Tensor):
+        tensors_to_check['f'] = f
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     ins = {0: t.id, 1: X.id}
 
@@ -246,8 +258,12 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t=t, X=X)
-    check_tensor_ipu_and_tile_set(t=t, X=X)
+    tensors_to_check = dict(t=t, X=X)
+    if isinstance(f, Tensor):
+        tensors_to_check['f'] = f
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     ins = {0: t.id, 1: X.id}
 
@@ -290,11 +306,16 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
     g = ctx.graph
     pb_g = g._pb_graph
 
-    check_in_graph(g, t=t)
+    tensors_to_check = dict(t=t)
+    if isinstance(f, Tensor):
+        tensors_to_check['f'] = f
+
+    check_in_graph(g, **tensors_to_check)
+    check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     ins = {0: t.id}
 
-    ov: _ir.OptimizerValue = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(g, f, ins, 2)
 
     settings = ctx._get_op_settings('accumulator_scale')
     op = pb_g.createConnectedOp_AccumulatorScaleOp(
