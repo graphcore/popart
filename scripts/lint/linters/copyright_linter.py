@@ -27,16 +27,16 @@ COMMENT_DELIMITERS = {
 
 class CopyrightLinter:
     """"Linter which inserts a Graphcore copyright if non-existent.
-    
+
     The format of the notice is determined from the source file extension.
 
     The file contents are processed in one of three ways:
     - The file contains a valid notice already, so it is not modified.
     - The file contains no string matching a notice exactly or partially,
-      so a new notice is inserted at the top of the file (unless the first 
+      so a new notice is inserted at the top of the file (unless the first
       line is a shebang, in which case we insert one immediately after the
       first line)
-    - The file contains a string which matches a copyright notice partially, 
+    - The file contains a string which matches a copyright notice partially,
       but not exactly. This might happen is the notice contains a typo, or
       some syntactical differences for example. In order to avoid two notices
       which are technically different, but appear almost idenitcal to the eye
@@ -116,6 +116,7 @@ class CopyrightLinter:
             new_contents = self._insert_copyright_notice(file_path, lines)
         # If its an empty file then we just include the notice
         else:
+            self.set_linter_message("No copyright notice in file.")
             new_contents = self._determine_notice_from_name(file_path)
         return new_contents
 
@@ -150,9 +151,9 @@ class CopyrightLinter:
         This depends on the filename extension of the file because we use this to
         find out what the comment delimiter should be. For example, if a filename
         ends in .py we know the commend delimiter should be '#'.
-        
+
         If we cannot find a filename extension pattern in COMMENT_DELIMETERS which
-        matches the filename, fall back on '//'. Ideally the exclude and include 
+        matches the filename, fall back on '//'. Ideally the exclude and include
         filters should guarantee that the file we are linting has an extension which
         we support.
         """
@@ -168,10 +169,10 @@ class CopyrightLinter:
         return delim + " " + GC_COPYRIGHT_NOTICE
 
     def _partial_match(self, lines: List[str]):
-        """Check the lines of the file for a comment which is a close match to the 
+        """Check the lines of the file for a comment which is a close match to the
         copyright notice, but is not exact enough to be matched by a regular
         expression.
-        
+
         This is often useful for files which do contain copyright notices, but they
         have some syntactical or format errors which cause them not to match the
         notice regular expression. Instead of  inserting a new notice, and creating
@@ -199,7 +200,7 @@ class ArclintCopyrightLinter(ILinter, CopyrightLinter):
 
     def apply_lint_function(self, file_path: str, file_contents: str):
         """Lint function to be called by arc lint.
-        
+
         Returns the modified content of the linter.
         """
         assert file_path is not None, "Copyright linter requires the path to the file."
