@@ -77,20 +77,37 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
 
   // Cut pieces of the tensors that we want to keep for the final tensor
   for (int64_t i = 0; i < currentTensorRegions.size(); ++i) {
+
     auto region = currentTensorRegions[i].first;
     auto tensor = currentTensorRegions[i].second;
+
+    logging::trace("[creatorx] Fragment (before adjustment) has tensor shape "
+                   "{} region {}:{}",
+                   tensor.shape(),
+                   region.getLower(),
+                   region.getUpper());
+
     // Tensor can either have the same shape as the region, or the full size
     // if it is the full size, cut down to relevant region size
     if (tensor.numElements() > region.nelms()) {
-      std::vector<size_t> l(region.rank());
-      std::vector<size_t> u(region.rank());
-      l.assign(region.getLower().begin(), region.getLower().end());
+      std::vector<size_t> l(region.rank(), 0);
+      std::vector<size_t> u_offset(region.rank(), 0);
+      std::vector<size_t> u(region.rank(), 0);
+      u_offset.assign(region.getLower().begin(), region.getLower().end());
       u.assign(region.getUpper().begin(), region.getUpper().end());
+      // Remove offset so that region is 0-aligned on the lower side (and thus
+      // matching the tensor to be sliced)
+      std::transform(u.begin(),
+                     u.end(),
+                     u_offset.begin(),
+                     u.begin(),
+                     std::minus<size_t>());
       tensor = tensor.slice(poplar::ArrayRef<size_t>(l),
                             poplar::ArrayRef<size_t>(u));
     }
 
-    logging::trace("[creatorx] Tensor shape {} region {} {}",
+    logging::trace("[creatorx] Fragment (after adjustment) has tensor shape {} "
+                   "region {}:{}",
                    tensor.shape(),
                    region.getLower(),
                    region.getUpper());
