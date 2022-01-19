@@ -1346,10 +1346,38 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, aliasZeroCopy));
     cls.def_readwrite("enablePrefetchDatastreams",
                       &SessionOptions::enablePrefetchDatastreams);
-    cls.def_readwrite("defaultPrefetchBufferingDepth",
-                      &SessionOptions::defaultPrefetchBufferingDepth);
-    cls.def_readwrite("prefetchBufferingDepthMap",
-                      &SessionOptions::prefetchBufferingDepthMap);
+    cls.def_readwrite("defaultBufferingDepth",
+                      &SessionOptions::defaultBufferingDepth);
+    // defaultPrefetchBufferingDepth is deprecated and maps directly to
+    // defaultBufferingDepth
+    cls.def_property(
+        "defaultPrefetchBufferingDepth",
+        [](const SessionOptions &s) -> unsigned {
+          return s.defaultBufferingDepth;
+        },
+        [](SessionOptions &s, unsigned defaultPrefetchBufferingDepth) -> void {
+          logging::warn(
+              "The session option defaultPrefetchBufferingDepth has "
+              "been deprecated and will be removed in a future release. "
+              "Please use the alias defaultBufferingDepth instead.");
+          s.defaultBufferingDepth = defaultPrefetchBufferingDepth;
+        });
+    cls.def_readwrite("bufferingDepthMap", &SessionOptions::bufferingDepthMap);
+    // prefetchBufferingDepthMap is deprecated and maps directly to
+    // defaultBufferingDepth
+    cls.def_property(
+        "prefetchBufferingDepthMap",
+        [](const SessionOptions &s) -> std::map<TensorId, unsigned> {
+          return s.bufferingDepthMap;
+        },
+        [](SessionOptions &s,
+           std::map<TensorId, unsigned> &prefetchBufferingDepthMap) -> void {
+          logging::warn(
+              "The session option prefetchBufferingDepthMap has "
+              "been deprecated and will be removed in a future release. "
+              "Please use the alias bufferingDepthMap instead.");
+          s.bufferingDepthMap = prefetchBufferingDepthMap;
+        });
     cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
     cls.def_readwrite("enableReplicatedGraphs",
                       &SessionOptions::enableReplicatedGraphs,

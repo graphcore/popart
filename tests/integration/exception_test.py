@@ -37,7 +37,7 @@ def test_out_of_memory_exception():
     builder.addOutputTensor(out)
 
     options = popart.SessionOptions()
-    options.defaultPrefetchBufferingDepth = 1
+    options.defaultBufferingDepth = 1
     tempDir = tempfile.TemporaryDirectory()
     options.engineOptions = {
         "debug.allowOutOfMemory": "true",

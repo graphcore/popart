@@ -36,6 +36,7 @@ add_popart_cpp_unit_test(transformtest transform_test.cpp)
 add_popart_cpp_unit_test(vertex_vgid_test vertex_vgid_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_popart_cpp_unit_test(debuginfotest debug_info_test.cpp)
+add_popart_cpp_unit_test(deprecated_session_options_cpp deprecated_session_options.cpp)
 
 add_popart_cpp_unit_test(constop_test constop_test.cpp)
 add_popart_cpp_unit_test(opsetcheck_test opset_check_test.cpp)
@@ -145,6 +146,7 @@ add_popart_py_unit_test(identical_replica_test identical_replica_test.py VARIANT
 add_popart_py_unit_test(version_test version_test.py)
 add_popart_py_unit_test(all_reduce_op test_all_reduce_op.py VARIANTS Hw)
 add_popart_py_unit_test(min_max_unwinding_test min_max_unwinding_test.py)
+add_popart_py_unit_test(deprecated_session_options_py deprecated_session_options.py)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)

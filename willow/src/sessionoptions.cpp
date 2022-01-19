@@ -109,6 +109,9 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
   return os;
 }
 
+const unsigned SessionOptions::initialDefaultPrefetchBufferingDepthValue =
+    111122;
+
 SessionOptions::NumIOTiles::NumIOTiles() : value(0), userAssignedValue(false) {}
 SessionOptions::NumIOTiles::NumIOTiles(int numIOTiles_)
     : value(numIOTiles_), userAssignedValue(true) {}
@@ -137,22 +140,52 @@ SessionOptions::NumIOTiles::operator=(const int &x) {
   return *this;
 }
 
-unsigned
-SessionOptions::getPrefetchBufferingDepth(const TensorId &id,
-                                          unsigned defaultValue) const {
-  unsigned result = 1;
-  if (enablePrefetchDatastreams) {
-    auto mapIt = prefetchBufferingDepthMap.find(id);
-    if (mapIt == prefetchBufferingDepthMap.end()) {
-      result = defaultValue;
-    } else {
-      result = mapIt->second;
-    }
+unsigned SessionOptions::getBufferingDepth(const TensorId &id,
+                                           bool isRearrangedOnHost = false) {
+  // map deprecated session options to non-deprecated ones if necessary
+  if (defaultPrefetchBufferingDepth !=
+      initialDefaultPrefetchBufferingDepthValue) {
+    logging::warn("The session option defaultPrefetchBufferingDepth has "
+                  "been deprecated and will be removed in a future release. "
+                  "Please use the alias defaultBufferingDepth instead.");
+    defaultBufferingDepth         = defaultPrefetchBufferingDepth;
+    defaultPrefetchBufferingDepth = initialDefaultPrefetchBufferingDepthValue;
+  }
+  if (!prefetchBufferingDepthMap.empty()) {
+    logging::warn("The session option prefetchBufferingDepthMap has been "
+                  "deprecated and will be removed in a future release. Please "
+                  "use the alias bufferingDepthMap instead.");
+    bufferingDepthMap         = prefetchBufferingDepthMap;
+    prefetchBufferingDepthMap = {};
+  }
+
+  unsigned result = defaultBufferingDepth;
+  // We should default to 1 when re-arranging on host because not doing this
+  // could result in problems. We still let the user override this value
+  // but they will get an error if it is >1.
+  if (isRearrangedOnHost)
+    result = 1;
+  auto mapIt = bufferingDepthMap.find(id);
+  if (mapIt != bufferingDepthMap.end()) {
+    result = mapIt->second;
   }
   if (result < 1) {
     throw error("Unable to support a buffering depth of {} for tensor {} "
                 "(minimum buffering depth is 1)",
                 result,
+                id);
+  }
+  if (result > 1 && isRearrangedOnHost) {
+    // There is a problem. This tensor is set to re-arrange on the
+    // host but we've configured the engine option
+    // "exchange.streamBufferOverlap" to "hostRearrangeOnly", meaning
+    // that Poplar could overlap the memory of streams that are
+    // rearranged on the host. This makes it incompatible with
+    // bufferingDepths >1.
+    throw error("Unable to support a buffering depth >1 for tensor {} "
+                "because the stream is set to rearrange on the host (and "
+                "PopART allows streams that are rearranged on the host to "
+                "overlap in memory, making this unsafe)",
                 id);
   }
   return result;

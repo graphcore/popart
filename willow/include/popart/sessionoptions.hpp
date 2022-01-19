@@ -602,18 +602,31 @@ struct SessionOptions {
   /// 'preparation' of the data to occur in parallel with compute.
   bool enablePrefetchDatastreams = true;
 
-  /// When #enablePrefetchDatastreams is set this is the default buffering
-  /// depth value used for streams that are not re-arranged on the host.
-  /// This value can be overridden via #prefetchBufferingDepthMap.
-  unsigned defaultPrefetchBufferingDepth = 1;
+  /// This is the default buffering depth value used for streams that are not
+  /// re-arranged on the host. For tensors that are rearranged on host buffering
+  /// depth of 1 will always be used. This default value can be overridden via
+  /// #bufferingDepthMap.
+  unsigned defaultBufferingDepth = 1;
 
-  /// When #enablePrefetchDatastreams is set this mapping can be used to set
-  /// stream-specific buffering depths. This buffering depth could be envisaged
-  /// as being the size of a circular buffer that feeds data to and from Poplar.
-  /// A buffering depth greater than 1 may improve the performance due to
-  /// increased parallelisation but comes at the cost of increasing the memory
-  /// footprint. Streams for tensors that have no entry in this map default to a
-  /// buffering depth of #defaultPrefetchBufferingDepth.
+  /// \deprecated This session option name has been deprecated and will be
+  /// removed in a future release. Please use the alias defaultBufferingDepth
+  /// instead.
+  unsigned defaultPrefetchBufferingDepth =
+      initialDefaultPrefetchBufferingDepthValue;
+
+  /// This mapping can be used to set stream-specific buffering depths. This
+  /// buffering depth could be envisaged as being the size of a circular buffer
+  /// that feeds data to and from Poplar. A buffering depth greater than 1 may
+  /// improve the performance due to increased parallelisation but comes at the
+  /// cost of increasing the memory footprint. Streams for tensors that have no
+  /// entry in this map will default to 1 (if a tensor is rearranged on host) or
+  /// #defaultBufferingDepth (if a tensor is not rearranged on host). Specifying
+  /// a tensor that gets rearranged on host in this map will throw an error.
+  std::map<TensorId, unsigned> bufferingDepthMap;
+
+  /// \deprecated This session option name has been deprecated and will be
+  /// removed in a future release. Please use the alias bufferingDepthMap
+  /// instead.
   std::map<TensorId, unsigned> prefetchBufferingDepthMap;
 
   /// By default, we use the stable softmax Poplar function. The input tensor
@@ -966,13 +979,13 @@ struct SessionOptions {
   /// correct and slightly slower but a user can opt into fast but incorrect.
   bool groupNormStridedChannelGrouping = false;
 
-  /// Get the buffering depth for a TensorId. Will return 1 unless
-  /// prefetching is enabled and the buffering depth is overwritten
-  /// in the \c prefetchBufferingDepthMap variable.
-  ///
-  /// **Not part of public API**
-  unsigned getPrefetchBufferingDepth(const TensorId &id,
-                                     unsigned defaultValue) const;
+  // Get the buffering depth for a TensorId. For tensors that are rearranged on
+  // host this is always 1, and bufferingDepthMap[id] shouldn't exist.
+  // Otherwise returns bufferingDepthMap[id] if it exists, and
+  // defaultBufferingDepth if it doesn't.
+  //
+  // **Not part of public API**
+  unsigned getBufferingDepth(const TensorId &id, bool rearrangedOnHost);
 
   /// Callback function used to to indicate
   /// PopART compilation progress. The function is
@@ -1014,6 +1027,11 @@ struct SessionOptions {
       cachePath           = *cachePathEnv;
     }
   }
+
+private:
+  // Need to make sure that this is both invalid and obscure, so that customers
+  // don't set this particular value accidentally.
+  static const unsigned initialDefaultPrefetchBufferingDepthValue;
 };
 
 } // namespace popart

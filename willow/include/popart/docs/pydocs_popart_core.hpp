@@ -10334,14 +10334,13 @@ input to many operations.)doc";
 static const char *__singlelinedoc_popart_SessionOptions_decomposeGradSum =
     R"doc(Replaces single sums of partial gradients with a tree of additions. This can reduce max liveness at the cost of extra cycles. A typical use case for this would be if a large weight tensor is used as an input to many operations.)doc";
 
-static const char *__doc_popart_SessionOptions_defaultPrefetchBufferingDepth =
-    R"doc(When ``enablePrefetchDatastreams`` is set this is the default buffering
+static const char *__doc_popart_SessionOptions_defaultBufferingDepth =
+    R"doc(This is the default buffering
 depth value used for streams that are not re-arranged on the host.
-This value can be overridden via ``prefetchBufferingDepthMap``.)doc";
+This value can be overridden via ``bufferingDepthMap``.)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_defaultPrefetchBufferingDepth =
-        R"doc(When ``enablePrefetchDatastreams`` is set this is the default buffering depth value used for streams that are not re-arranged on the host. This value can be overridden via ``prefetchBufferingDepthMap``.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_defaultBufferingDepth =
+    R"doc(This is the default buffering depth value used for streams that are not re-arranged on the host. This value can be overridden via ``bufferingDepthMap``.)doc";
 
 static const char *__doc_popart_SessionOptions_delayVarUpdates =
     R"doc(Options to delay variable updates as much as possible.
@@ -10616,15 +10615,15 @@ otherwise
 static const char *__singlelinedoc_popart_SessionOptions_getGlobalReplicationFactor =
     R"doc(Helper method to handle the different replication options. If enableDistributedReplicatedGraphs is true return globalReplicationFactor if enableReplicatedGraphs return replicatedGraphCount otherwise return 1)doc";
 
-static const char *__doc_popart_SessionOptions_getPrefetchBufferingDepth =
+static const char *__doc_popart_SessionOptions_getBufferingDepth =
     R"doc(Get the buffering depth for a TensorId. Will return 1 unless
 prefetching is enabled and the buffering depth is overwritten
-in the ``prefetchBufferingDepthMap`` variable.
+in the ``bufferingDepthMap`` variable.
 
 **Not part of public API**)doc";
 
-static const char *__singlelinedoc_popart_SessionOptions_getPrefetchBufferingDepth =
-    R"doc(Get the buffering depth for a TensorId. Will return 1 unless prefetching is enabled and the buffering depth is overwritten in the ``prefetchBufferingDepthMap`` variable. **Not part of public API**)doc";
+static const char *__singlelinedoc_popart_SessionOptions_getBufferingDepth =
+    R"doc(Get the buffering depth for a TensorId. Will return 1 unless prefetching is enabled and the buffering depth is overwritten in the ``bufferingDepthMap`` variable. **Not part of public API**)doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicaOffset =
     R"doc(The first replica index that this PopART instance is running.)doc";
@@ -10810,17 +10809,17 @@ By default, this is not set, so no global partials type is imposed.)doc";
 static const char *__singlelinedoc_popart_SessionOptions_partialsTypeMatMuls =
     R"doc(Set the partials type globally for matmuls. Can be overridden individually with Builder.setPartialsType(). Valid values are :code:`"float"` and :code:`"half"`. By default, this is not set, so no global partials type is imposed.)doc";
 
-static const char *__doc_popart_SessionOptions_prefetchBufferingDepthMap =
-    R"doc(When ``enablePrefetchDatastreams`` is set this mapping can be used to set
+static const char *__doc_popart_SessionOptions_bufferingDepthMap =
+    R"doc(This mapping can be used to set
 stream-specific buffering depths. This buffering depth could be envisaged
 as being the size of a circular buffer that feeds data to and from Poplar.
 A buffering depth greater than 1 may improve the performance due to
 increased parallelisation but comes at the cost of increasing the memory
 footprint. Streams for tensors that have no entry in this map default to a
-buffering depth of ``defaultPrefetchBufferingDepth``.)doc";
+buffering depth of ``defaultBufferingDepth``.)doc";
 
-static const char *__singlelinedoc_popart_SessionOptions_prefetchBufferingDepthMap =
-    R"doc(When ``enablePrefetchDatastreams`` is set this mapping can be used to set stream-specific buffering depths. This buffering depth could be envisaged as being the size of a circular buffer that feeds data to and from Poplar. A buffering depth greater than 1 may improve the performance due to increased parallelisation but comes at the cost of increasing the memory footprint. Streams for tensors that have no entry in this map default to a buffering depth of ``defaultPrefetchBufferingDepth``.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_bufferingDepthMap =
+    R"doc(This mapping can be used to set stream-specific buffering depths. This buffering depth could be envisaged as being the size of a circular buffer that feeds data to and from Poplar. A buffering depth greater than 1 may improve the performance due to increased parallelisation but comes at the cost of increasing the memory footprint. Streams for tensors that have no entry in this map default to a buffering depth of ``defaultBufferingDepth``.)doc";
 
 static const char *__doc_popart_SessionOptions_rearrangeAnchorsOnHost =
     R"doc(Before anchor tensors are streamed from device to host, they are not
