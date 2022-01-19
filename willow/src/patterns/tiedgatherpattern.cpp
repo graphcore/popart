@@ -22,7 +22,7 @@
 #include <popart/op/subtract.hpp>
 #include <popart/op/tiedgather.hpp>
 #include <popart/op/transpose.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/topocons.hpp>
 

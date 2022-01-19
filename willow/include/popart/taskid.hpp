@@ -6,7 +6,7 @@
 #include <ostream>
 
 #include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {

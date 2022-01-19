@@ -5,7 +5,7 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/varupdate.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/optimizervaluemap.hpp>
 
 namespace popart {

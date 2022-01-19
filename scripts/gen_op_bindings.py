@@ -129,7 +129,7 @@ def create__all_file(metadatas: tuple, template_path: Path,
 
 
 def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
-    """Create the graph.cpp.gen file that contains the createOp and createConnectedOp
+    """Create the graph.gen.cpp file that contains the createOp and createConnectedOp
     functions.
 
     Args:

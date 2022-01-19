@@ -18,7 +18,7 @@
 #include <popart/op/slice.hpp>
 #include <popart/op/sqrt.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/util.hpp>
 

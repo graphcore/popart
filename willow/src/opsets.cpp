@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "opsets.cpp.gen"
-#include <popart/opidentifier.hpp>
+#include "opsets.gen.hpp"
+#include <popart/operators.hpp>
 #include <popart/opsets.hpp>
 
 namespace popart {

@@ -11,7 +11,7 @@
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/optimizer.hpp>

@@ -9,7 +9,7 @@
 #include <popart/onnxdebuginfo.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensordebuginfo.hpp>
 
 #include <iostream>

@@ -11,7 +11,7 @@ namespace popart {
 /**
  * Increment Modulo Op
  *
- * This Op takes one Tensor as input (as indicated in \see opidentifier.hpp)
+ * This Op takes one Tensor as input (as indicated in \see graphcoreoperators.hpp)
  * 1. The Tensor to increment (modulo)
  * The output is the tensor  y = (x + increment) % modulus
  *
@@ -39,7 +39,7 @@ private:
 /**
  * Increment Modulo Op
  *
- * This Op takes one Tensor as input (as indicated in \see opidentifier.hpp)
+ * This Op takes one Tensor as input (as indicated in \see graphcoreoperators.hpp)
  * 1. The Tensor to increment (modulo)
  * The output is the tensor  x = (x + increment) % modulus
  *

@@ -4,8 +4,8 @@
  *
  * To regenerate this file run the gen_operators.py script
  */
+#include "popart/docs/opset11_docs.hpp"
 #include <pybind11/functional.h>
-#include <popart/docs/opset11_docs.hpp>
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -14,9 +14,9 @@
 #include "../shared_cpp/np_utils.hpp"
 #include "../shared_cpp/pyarray_accessor.hpp"
 
-#include <popart/builder.hpp>
-#include <popart/tensors.hpp>
-#include <popart/version.hpp>
+#include "popart/builder.hpp"
+#include "popart/tensors.hpp"
+#include "popart/version.hpp"
 
 namespace py = pybind11;
 using namespace popart;

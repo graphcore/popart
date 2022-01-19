@@ -10,7 +10,7 @@ namespace popart {
  * Dynamic Slice Op
  *
  * This Op takes two or three \c TensorIds as input (as indicated in \see
- * opidentifier.hpp)
+ * graphcoreoperators.hpp)
  *
  * 1. The \c TensorId of tensor to slice from.
  * 2. The (optional) \c TensorId of the index of the starting point of the slice
@@ -47,7 +47,7 @@ public:
  * Dynamic Slice Inplace Op
  *
  * This Op takes two or three \c TensorIds as input (as indicated in \see
- * opidentifier.hpp)
+ * graphcoreoperators.hpp)
  *
  * 1. The \c TensorId of tensor to slice from.
  * 2. The (optional) \c TensorId of the index of the starting point of the slice

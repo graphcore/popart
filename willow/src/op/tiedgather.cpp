@@ -2,7 +2,7 @@
 #include <popart/op/tiedgather.hpp>
 
 #include <popart/error.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 #include <memory>
 #include <vector>

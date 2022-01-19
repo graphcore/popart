@@ -3,7 +3,7 @@
 
 #include <onnxutil.hpp>
 #include <popart/logging.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 // used for float to half conversion
 #include <poplar/Target.hpp>

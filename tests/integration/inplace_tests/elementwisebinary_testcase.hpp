@@ -10,7 +10,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
 
 #include <vector>

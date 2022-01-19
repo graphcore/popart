@@ -12,7 +12,7 @@
 #include <popart/op/mul.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/topocons.hpp>
 
 namespace popart {

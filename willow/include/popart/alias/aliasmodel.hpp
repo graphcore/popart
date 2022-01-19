@@ -11,7 +11,7 @@
 #include <poprithms/memory/inplace/tensor.hpp>
 #include <poprithms/memory/inplace/tensormap.hpp>
 
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 namespace popart {
 

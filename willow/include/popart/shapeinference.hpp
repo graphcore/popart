@@ -2,7 +2,7 @@
 #ifndef GUARD_SHAPEINFERENCE_HPP
 #define GUARD_SHAPEINFERENCE_HPP
 #include <popart/attributes.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
 
 namespace popart {

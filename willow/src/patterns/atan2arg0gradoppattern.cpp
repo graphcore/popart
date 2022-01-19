@@ -5,7 +5,7 @@
 #include <popart/op/div.hpp>
 #include <popart/op/reducesum.hpp>
 #include <popart/op/square.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/atan2arg0gradoppattern.hpp>
 
 #include <iostream>

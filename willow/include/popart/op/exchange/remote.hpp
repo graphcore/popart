@@ -16,7 +16,7 @@ namespace popart {
  * \c offset (see below).
  *
  * This class takes between one and two \c TensorIds as inputs
- * (as indicated in \see opidentifier.hpp).
+ * (as indicated in \see graphcoreoperators.hpp).
  *
  * 1. The \c TensorId of the \c inTensor to copy to remote memory.
  * 2. The (optional) \c TensorId 0-rank tensor called \c offset .
@@ -91,7 +91,7 @@ public:
  * \c inTensor.
  *
  * This class takes between one and two \c TensorIds as inputs
- * (as indicated in \see opidentifier.hpp).
+ * (as indicated in \see graphcoreoperators.hpp).
  *
  * 1. The \c TensorId of the \c inTensor.
  *    - In the \a inplace version this will be aliased to the output tensor

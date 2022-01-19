@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include "popart/error.hpp"
-#include "popart/opidentifier.hpp"
+#include "popart/operators.hpp"
 #include <algorithm>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>

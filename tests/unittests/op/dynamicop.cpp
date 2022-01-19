@@ -11,7 +11,7 @@
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/testdevice.hpp>

@@ -5,7 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 namespace py = pybind11;
 

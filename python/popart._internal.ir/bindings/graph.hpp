@@ -21,7 +21,7 @@ void bindGraph(py::module &m);
  * Binds the create Op function to the graph class. This includes all the
  * createOp_<OpName> functions for all ops. See
  * python/popart._internal.ir/templates/graph.cpp.j2 which renders the
- * graph.cpp.gen file containing all these functions.
+ * graph.gen.cpp file containing all these functions.
  * Rendered file will end up in
  * <build-dir>>/build/popart/python/popart._internal.ir/bindings/graph.gen.cpp
  *
@@ -33,7 +33,7 @@ void bindCreateOpFunctionToGraphClass(py::class_<Graph> g);
  * Binds the create connected Op function to the graph class. This includes all
  * the createConnectedOp_<OpName> functions for all ops. See
  * python/popart._internal.ir/templates/graph.cpp.j2 which renders the
- * graph.cpp.gen file containing all these functions.
+ * graph.gen.cpp file containing all these functions.
  *
  * \param g The pybind11 Graph class_ to bind the functions to.
  */

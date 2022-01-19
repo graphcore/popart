@@ -13,7 +13,7 @@
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/scheduler_requireoptimal.hpp>
 #include <popart/sessionoptions.hpp>

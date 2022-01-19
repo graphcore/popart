@@ -13,13 +13,17 @@
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/scatterreduce.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/variablesettings.hpp>
 
+#include <popart/domainopset.hpp>
 #include <popart/vendored/any.hpp>
 #include <popart/vendored/optional.hpp>
+
+// Include the generated builder.gen.hpp code
+#include "popart/builder.gen.hpp"
 
 namespace popart {
 
@@ -40,22 +44,6 @@ class BuilderImpl;
 class Builder;
 enum class DataType;
 enum class RecomputeType;
-
-class DomainOpSet {
-
-protected:
-  std::unique_ptr<BuilderImpl> &impl;
-
-  virtual int getOpsetVersion() const = 0;
-
-public:
-  DomainOpSet(std::unique_ptr<BuilderImpl> &impl_) : impl(impl_) {}
-  DomainOpSet(const DomainOpSet &other) = default;
-  virtual ~DomainOpSet()                = default;
-};
-
-// Include the generated builder.h code
-#include "builder.h.gen"
 
 class AiOnnxMlOpset1 : public DomainOpSet {
 

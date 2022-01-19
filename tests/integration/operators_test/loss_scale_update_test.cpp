@@ -8,7 +8,7 @@
 #include <popart/builder.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/lossscaleupdate.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
 

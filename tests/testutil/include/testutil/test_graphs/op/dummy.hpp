@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 #include <memory>
 

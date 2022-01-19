@@ -12,7 +12,7 @@
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>

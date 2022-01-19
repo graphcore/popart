@@ -4,10 +4,12 @@
  *
  * To regenerate this file run the gen_operators.py script
  */
+#ifndef GUARD_NEURALNET_OPSETS_GEN_HPP
+#define GUARD_NEURALNET_OPSETS_GEN_HPP
 
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
 #include <map>
-#include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
 
 namespace popart {
 using OpTypeMap = std::map<OpType, OperatorIdentifier>;
@@ -754,3 +756,4 @@ OpsetMap getOpsets() {
   return opsets;
 }
 } // namespace popart
+#endif

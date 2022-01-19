@@ -4,7 +4,7 @@
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/op/receptive.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 #include <onnx/defs/schema.h>
 #include <onnx/defs/shape_inference.h>

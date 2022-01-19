@@ -16,7 +16,7 @@
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/opdebuginfo.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/region.hpp>
 #include <popart/scope.hpp>
 #include <popart/subgraph/subgraphnames.hpp>

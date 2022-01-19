@@ -32,7 +32,7 @@ namespace popart {
  *
  * The word "dynamic" refers to the fact that the \a index can be specified
  * during runtime, where \a index is the second tensor argument of this operator
- * as specified in \see opidentifier.hpp. The \a axes specifies along which axes
+ * as specified in \see graphcoreoperators.hpp. The \a axes specifies along which axes
  * the tensor should be sliced. The \a size specifies the size of the slices.
  *
  * A slice along an axis can be defined as by the tuple

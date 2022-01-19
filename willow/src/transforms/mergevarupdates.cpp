@@ -11,7 +11,7 @@
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>

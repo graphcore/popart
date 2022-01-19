@@ -14,7 +14,7 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/init.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 
 #include <iostream>
 #include <map>

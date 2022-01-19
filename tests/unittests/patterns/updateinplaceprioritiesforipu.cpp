@@ -14,7 +14,7 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>

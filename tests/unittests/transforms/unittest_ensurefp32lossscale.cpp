@@ -12,7 +12,7 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/scale.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>

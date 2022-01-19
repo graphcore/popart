@@ -6,7 +6,7 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/session.hpp>
 

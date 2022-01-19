@@ -4,6 +4,11 @@
  *
  * To regenerate this file run the gen_operators.py script
  */
+
+#include "popart/builder.gen.hpp"
+#include "builder_helper.hpp"
+#include "builderdebuginfo.hpp"
+namespace popart {
 TensorId AiOnnxOpset6::abs(const std::vector<TensorId> &args,
                            const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
@@ -4450,3 +4455,5 @@ TensorId AiOnnxOpset11::unsqueeze(const std::vector<TensorId> &args,
   di.setOutputs(outputs);
   return outputs[0];
 }
+
+} // namespace popart

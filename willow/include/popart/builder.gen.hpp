@@ -4,6 +4,19 @@
  *
  * To regenerate this file run the gen_operators.py script
  */
+#ifndef GUARD_NEURALNET_BUILDER_GEN_HPP
+#define GUARD_NEURALNET_BUILDER_GEN_HPP
+
+#include <string>
+#include <vector>
+
+#include "popart/debugcontext.hpp"
+#include "popart/domainopset.hpp"
+#include "popart/names.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class Builder;
 class AiOnnxOpset6 : private DomainOpSet {
 
 protected:
@@ -4348,3 +4361,6 @@ public:
                      const std::vector<int64_t> &axes,
                      const popart::DebugContext &debugContext = {});
 };
+
+} // namespace popart
+#endif

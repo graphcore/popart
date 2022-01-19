@@ -7,7 +7,7 @@
 #include <popart/builder.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/histogram.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
 

@@ -4,7 +4,7 @@
 
 #include <map>
 #include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensornames.hpp>
 
 namespace popart {

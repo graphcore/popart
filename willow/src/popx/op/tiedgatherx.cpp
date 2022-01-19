@@ -2,7 +2,7 @@
 #include <popart/popx/op/tiedgatherx.hpp>
 
 #include <popart/op/tiedgather.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>

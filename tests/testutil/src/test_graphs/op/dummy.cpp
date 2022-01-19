@@ -7,7 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/scheduler.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>

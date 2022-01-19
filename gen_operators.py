@@ -484,15 +484,36 @@ def addHeader(f: io.TextIOWrapper, opset_version: int) -> None:
     f.write(" *\n")
     f.write(" * To regenerate this file run the gen_operators.py script\n")
     f.write(" */\n")
+    # Add guard for hpp files
+    file_base_name = os.path.basename(f.name)
+    if file_base_name.endswith(".hpp"):
+        f.write(
+            f"#ifndef GUARD_NEURALNET_{file_base_name.upper().replace('.', '_')}\n"
+        )
+        f.write(
+            f"#define GUARD_NEURALNET_{file_base_name.upper().replace('.', '_')}\n"
+        )
     # Include the docs in the popart_opset#.gen.cpp files.
     if opset_version:
-        f.write(f"#include <popart/docs/opset{opset_version}_docs.hpp>\n")
+        f.write(f'#include "popart/docs/opset{opset_version}_docs.hpp"\n')
 
 
 def genBuilderHpp(filename: str, schema: Schema) -> None:
     with io.open(filename, 'w') as f:
 
         addHeader(f, None)
+        f.write("""
+#include <string>
+#include <vector>
+
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/domainopset.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class Builder;
+""")
 
         for k, v, in schema.domains.items():
             if k != 'ai.onnx':
@@ -637,9 +658,10 @@ def genBuilderHpp(filename: str, schema: Schema) -> None:
                             "     {}const popart::DebugContext& debugContext = {});\n"
                             .format(spaces(len(op.CppName())), '{}'))
                         f.write("\n")
-
                 f.write("};\n")
                 f.write("\n")
+            f.write("} // namespace popart\n")
+            f.write("#endif")
 
     subprocess.run(["clang-format", "-i", filename])
 
@@ -648,6 +670,13 @@ def genBuilderCpp(filename: str, schema: Schema):
     with io.open(filename, 'w') as f:
 
         addHeader(f, None)
+
+        f.write("""
+#include "builder_helper.hpp"
+#include "builderdebuginfo.hpp"
+#include "popart/builder.gen.hpp"
+namespace popart {
+""")
 
         for k, v, in schema.domains.items():
             if k != 'ai.onnx':
@@ -834,7 +863,7 @@ def genBuilderCpp(filename: str, schema: Schema):
 
                     f.write("}\n")
                     f.write("\n")
-
+        f.write("} // namespace popart\n")
     subprocess.run(["clang-format", "-i", filename])
 
 
@@ -871,9 +900,9 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                 #include "../shared_cpp/np_utils.hpp"
                 #include "../shared_cpp/pyarray_accessor.hpp"
 
-                #include <popart/builder.hpp>
-                #include <popart/tensors.hpp>
-                #include <popart/version.hpp>
+                #include "popart/builder.hpp"
+                #include "popart/tensors.hpp"
+                #include "popart/version.hpp"
 
                 namespace py = pybind11;
                 using namespace popart;
@@ -1093,10 +1122,17 @@ def write_docs_header(f: io.TextIOWrapper, opset_version: int) -> None:
 def genOpIdentifiersHpp(filename: str, schema: Schema) -> None:
     with io.open(filename, 'w') as f:
         addHeader(f, None)
+        f.write("""
+#include "popart/attributes.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
 
-        f.write("namespace Onnx {\n")
-        f.write("namespace Operators {\n")
+namespace popart {
 
+namespace Onnx {
+namespace Operators {
+""")
         for k, v, in schema.domains.items():
             if k != 'ai.onnx':
                 continue
@@ -1170,6 +1206,10 @@ def genOpIdentifiersHpp(filename: str, schema: Schema) -> None:
 
         f.write("}\n")
 
+        f.write("}\n")
+
+        f.write("#endif")
+
 
 # Given a domain, return the highest version of each op
 # whose version is lower than or equal to the opsetVersion.
@@ -1189,14 +1229,14 @@ def getOpsInOpset(domain: Domain, opsetVersion: int) -> list:
                   key=lambda x: x[0])
 
 
-def genOpsetsCpp(filename: str, schema: Schema) -> None:
+def genOpsetsHpp(filename: str, schema: Schema) -> None:
     with open(filename, 'w') as f:
         addHeader(f, None)
 
         f.write("""
 #include <map>
-#include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
 using OpTypeMap = std::map<OpType, OperatorIdentifier>;
@@ -1242,6 +1282,7 @@ OpsetMap getOpsets() {
   return opsets;
 }
 } // namespace popart
+#endif
 """)
     subprocess.run(["clang-format", "-i", filename])
 
@@ -1250,13 +1291,12 @@ def main():
 
     schema = parseDefinitions()
 
-    #genOpIdentifiers('gen/opidentifier_gen.hpp', schema)
-    genBuilderHpp('willow/include/popart/builder.h.gen', schema)
-    genBuilderCpp('willow/src/builder.cpp.gen', schema)
-    genOpIdentifiersHpp('willow/include/popart/opidentifier.hpp.gen', schema)
+    genBuilderHpp('willow/include/popart/builder.gen.hpp', schema)
+    genBuilderCpp('willow/src/builder.gen.cpp', schema)
+    genOpIdentifiersHpp('willow/include/popart/onnxoperators.gen.hpp', schema)
     genPythonBuilderBinds(schema)
     genPythonDocs(schema)
-    genOpsetsCpp('willow/src/opsets.cpp.gen', schema)
+    genOpsetsHpp('willow/src/opsets.gen.hpp', schema)
 
 
 if __name__ == '__main__':

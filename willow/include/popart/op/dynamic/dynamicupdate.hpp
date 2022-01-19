@@ -10,7 +10,7 @@ namespace popart {
  * Dynamic Update Op
  *
  * This class takes three \c TensorIds as input (as indicated in \see
- * opidentifier.hpp)
+ * graphcoreoperators.hpp)
  *
  * 1. The \c TensorId of the tensor to be updated.
  * 2. The \c TensorId of the index of the starting point of the slice

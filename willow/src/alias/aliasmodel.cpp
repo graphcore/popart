@@ -5,7 +5,7 @@
 #include <popart/op/elementwise.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/scaledadd.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/topocons.hpp>
 

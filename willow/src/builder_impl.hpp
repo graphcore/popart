@@ -7,7 +7,7 @@
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/names.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/variablesettings.hpp>
 
 #include <popart/vendored/any.hpp>

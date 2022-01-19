@@ -13,7 +13,7 @@
 #include <onnxutil.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
-#include <popart/opidentifier.hpp>
+#include <popart/operators.hpp>
 #include <popart/shapeinference.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
