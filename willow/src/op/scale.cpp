@@ -18,6 +18,11 @@ ScaleInplaceOp::ScaleInplaceOp(const ScaleOp &scale_op)
                                 scale_op.getSettings()),
       scale_factor(scale_op.getScaleFactor()) {}
 
+ScaleInplaceOp::ScaleInplaceOp(const OperatorIdentifier &_opid,
+                               float scale_,
+                               const Op::Settings &settings_)
+    : ElementWiseInplaceUnaryOp(_opid, settings_), scale_factor(scale_) {}
+
 std::unique_ptr<Op>
 ScaleOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ScaleInplace) {

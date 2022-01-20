@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_SUBGRAPHX_HPP
 
 #include <popart/popx/popopx.hpp>
+#include <popart/popx/preparedtensor.hpp>
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -12,10 +13,8 @@ class SubgraphOpx : public PopOpx {
 public:
   SubgraphOpx(Op *, Devicex *);
   bool outputCreatedExternally(OutIndex) const final { return true; }
-  std::vector<std::tuple<TensorId, TensorId, bool>>
-  getInputsToPrepare() const override;
-  std::vector<std::tuple<TensorId, TensorId, bool>>
-  getOutputsToPrepare() const override;
+  PreparedTensorInfos getInputsToPrepare() const override;
+  PreparedTensorInfos getOutputsToPrepare() const override;
 
 private:
 };

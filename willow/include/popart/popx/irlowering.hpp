@@ -236,8 +236,10 @@ private:
   // If dependencyFree is true, the creator must not depend on any other tensor
   // having been created. This can be (sparingly) used to resolve cyclic
   // dependencies
-  InitTensorPtrs getInitTensorCreators(const Tensor *,
-                                       bool dependencyFree = false) const;
+  InitTensorPtrs
+  getInitTensorCreators(const Tensor *,
+                        RequireParallelWritable requireParallelWritable,
+                        bool dependencyFree = false) const;
 
   // Task to create a snap::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
@@ -388,8 +390,10 @@ public:
     efficientlyCreatedInputTensors.insert(id);
   }
 
-  bool tryInitTensorByPostIRAliasing(TensorId dstId,
-                                     const ViewChangers &viewChangers);
+  bool
+  tryInitTensorByPostIRAliasing(TensorId dstId,
+                                RequireParallelWritable requireParallelWritable,
+                                const ViewChangers &viewChangers);
 
   static std::string cycleCountStreamId(std::string id);
   const std::vector<std::string> &getCycleCountIds() const {

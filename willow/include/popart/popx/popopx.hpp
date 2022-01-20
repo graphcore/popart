@@ -13,6 +13,7 @@
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/popx/preparedtensor.hpp>
 
 namespace popart {
 
@@ -279,12 +280,10 @@ public:
   // This allows growing the data flows through subgraphs independently, and
   // growing the PopOpx that calls the subgraph can be deferred until after all
   // data flows through the called subgraph are grown.
-  virtual std::vector<std::tuple<TensorId, TensorId, bool>>
-  getOutputsToPrepare() const;
+  virtual PreparedTensorInfos getOutputsToPrepare() const;
 
   // The PopOpx inputs that go to any subgraph and need to be prepared
-  virtual std::vector<std::tuple<TensorId, TensorId, bool>>
-  getInputsToPrepare() const;
+  virtual PreparedTensorInfos getInputsToPrepare() const;
 
 protected:
   // The Devicex to which this PopOpx belongs

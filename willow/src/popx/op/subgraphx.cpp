@@ -12,35 +12,36 @@ namespace popx {
 
 SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-SubgraphOpx::getInputsToPrepare() const {
+PreparedTensorInfos SubgraphOpx::getInputsToPrepare() const {
 
   const auto addGraphTask = op_p->getIr().timePartitionLogger().scopedStopwatch(
       "SubgraphOpx::getInputsToPrepare");
 
   auto &subgraphop = getOp<SubgraphOp>();
-  std::vector<std::tuple<TensorId, TensorId, bool>> inputs;
+  PreparedTensorInfos inputs;
   auto sgInIds = subgraphop.getCalledGraph().getInputIds();
   for (InIndex sgInIdx = 0; sgInIdx < sgInIds.size(); ++sgInIdx) {
     InIndex opInIdx = subgraphop.subgraphInToOpInIndex(sgInIdx);
     if (subgraphop.hasInput(opInIdx)) {
-      inputs.emplace_back(
-          subgraphop.input->id(opInIdx), sgInIds.at(sgInIdx), false);
+      inputs.emplace_back(subgraphop.input->id(opInIdx),
+                          sgInIds.at(sgInIdx),
+                          CanAlias::No,
+                          RequireParallelWritable::Yes);
     } else {
-      inputs.emplace_back("", sgInIds.at(sgInIdx), false);
+      inputs.emplace_back(
+          "", sgInIds.at(sgInIdx), CanAlias::No, RequireParallelWritable::Yes);
     }
   }
   return inputs;
 }
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-SubgraphOpx::getOutputsToPrepare() const {
+PreparedTensorInfos SubgraphOpx::getOutputsToPrepare() const {
 
   const auto addGraphTask = op_p->getIr().timePartitionLogger().scopedStopwatch(
       "SubgraphOpx::getOutputsToPrepare");
 
   auto &subgraphop = getOp<SubgraphOp>();
-  std::vector<std::tuple<TensorId, TensorId, bool>> outputs;
+  PreparedTensorInfos outputs;
   for (auto &output : subgraphop.output->tensorMap()) {
     OutIndex outIdx = output.first;
 
@@ -72,7 +73,10 @@ SubgraphOpx::getOutputsToPrepare() const {
 
     logging::opx::trace(
         "To prepare op output {}, aliased: {}", callOutId, aliased);
-    outputs.emplace_back(prepOutId, callOutId, aliased);
+    outputs.emplace_back(prepOutId,
+                         callOutId,
+                         aliased ? CanAlias::Yes : CanAlias::No,
+                         RequireParallelWritable::Yes);
   }
   return outputs;
 }

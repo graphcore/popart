@@ -170,18 +170,18 @@ IfGradOpx::IfGradOpx(Op *op, Devicex *devicex) : IfOpx(op, devicex) {
   verifyOp<IfGradOp>(op, Onnx::CustomGradOperators::IfGrad);
 }
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-IfOpx::getInputsToPrepare() const {
+PreparedTensorInfos IfOpx::getInputsToPrepare() const {
   auto &ifop = getOp<IfOp>();
 
-  std::vector<std::tuple<TensorId, TensorId, bool>> inputs;
+  PreparedTensorInfos inputs;
 
   for (auto graph : ifop.getCalledGraphs()) {
     auto &idxMap = ifop.getBranchInIndicesMap(*graph);
     for (auto &kv : idxMap) {
       inputs.emplace_back(ifop.input->tensor(kv.first)->id,
                           graph->getInputId(kv.second),
-                          false);
+                          CanAlias::No,
+                          RequireParallelWritable::Yes);
     }
   }
 

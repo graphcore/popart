@@ -54,8 +54,24 @@ view::RegMap LoopOpx::unwindRegion(InIndex in, OutIndex out) const {
   }
 }
 
+std::vector<snap::Tensor> LoopOpx::cloneBodyOutputs() const {
+  std::vector<snap::Tensor> tensors;
+  auto &op       = getOp<LoopOp>();
+  auto &subgraph = op.getCalledGraph();
+  for (auto outId : subgraph.getOutputIds()) {
+    auto bodyOutputTensor       = get(outId);
+    auto clonedBodyOutputTensor = snap::Tensor{
+        graph().getPoplarGraph().clone(bodyOutputTensor.getPoplarTensor(),
+                                       debugContext(outId)),
+        const_cast<snap::Tensor &>(bodyOutputTensor)};
+    tensors.push_back(clonedBodyOutputTensor);
+  }
+  return tensors;
+}
+
 void LoopOpx::copyExplicitOpInputsToBodyOutputs(
-    snap::program::Sequence &prog) const {
+    snap::program::Sequence &prog,
+    std::vector<snap::Tensor> &clonedBodyOutputs) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
 
@@ -66,34 +82,36 @@ void LoopOpx::copyExplicitOpInputsToBodyOutputs(
   for (int i = 0; i < op.getCalledGraph().getOutputIds().size(); ++i) {
     if (hasInput(i + 1)) {
 
-      TensorId inId  = op.inId(i + 1);
-      TensorId outId = subgraph.getOutputId(i);
+      TensorId opInId    = op.inId(i + 1);
+      TensorId bodyOutId = subgraph.getOutputId(i);
 
-      auto opInputTensor    = getInTensor(i + 1);
-      auto bodyOutputTensor = get(outId);
+      auto opInputTensor = getInTensor(i + 1);
+
+      snap::Tensor bodyOutputTensor = clonedBodyOutputs.at(i);
 
       auto aliases =
           dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
               {op.getIr().getTensor(op.inId(i + 1))}, true);
 
-      if (aliases.find(op.getIr().getTensor(subgraph.getOutputId(i))) ==
-          aliases.end()) {
-        if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op,
-                                                                   i + 1) ||
-            dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(
-                &op, op.subgraphOutToOpOutIndex(i))) {
-          snap::program::Copy copyProg(
-              opInputTensor, bodyOutputTensor, false, debugContext("inputs"));
-          prog.add(copyProg);
-          logging::opx::trace(
-              "[LoopOpx] explicit input {} -> output {} copied", inId, outId);
-        } else {
-          logging::opx::trace(
-              "[LoopOpx] explicit input {} -> output {} skipped", inId, outId);
-        }
-      } else {
+      bool aliased =
+          aliases.find(op.getIr().getTensor(subgraph.getOutputId(i))) !=
+          aliases.end();
+
+      if (dv_p->lowering().getAliasZeroCopy()->copyInputRequired(&op, i + 1) ||
+          dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(
+              &op, op.subgraphOutToOpOutIndex(i))) {
+        snap::program::Copy copyProg(
+            opInputTensor, bodyOutputTensor, false, debugContext("inputs"));
+        prog.add(copyProg);
         logging::opx::trace(
-            "[LoopOpx] explicit input {} -> output {} aliased", inId, outId);
+            "[LoopOpx] explicit input {} -> output {} copied (aliased: {})",
+            opInId,
+            bodyOutId,
+            aliased);
+      } else {
+        logging::opx::trace("[LoopOpx] explicit input {} -> output {} skipped",
+                            opInId,
+                            bodyOutId);
       }
     }
   }
@@ -146,13 +164,31 @@ void LoopOpx::copyImplicitOpInputsToImplicitBodyInputs(
   }
 }
 
+void LoopOpx::copyBodyOutputsToBodyOutputClones(
+    snap::program::Sequence &prog,
+    std::vector<snap::Tensor> &clonedBodyOutputs) const {
+  auto &op       = getOp<LoopOp>();
+  auto &subgraph = op.getCalledGraph();
+  for (int i = 0; i < op.getCalledGraph().getOutputIds().size(); ++i) {
+    TensorId outId              = subgraph.getOutputId(i);
+    auto bodyOutputTensor       = get(outId);
+    auto clonedBodyOutputTensor = clonedBodyOutputs.at(i);
+
+    prog.add(
+        snap::program::Copy(bodyOutputTensor,
+                            clonedBodyOutputTensor,
+                            false,
+                            debugContext("copyBodyOutputsToBodyOutputClones")));
+  }
+}
+
 void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
-    snap::program::Sequence &prog) const {
+    snap::program::Sequence &prog,
+    std::vector<snap::Tensor> &clonedBodyOutputs) const {
   auto &op       = getOp<LoopOp>();
   auto &subgraph = op.getCalledGraph();
 
-  snap::program::Sequence tmpCopiesProg(graph());
-  snap::program::Sequence finalCopiesProg(graph());
+  snap::program::Sequence copiesProg(graph());
 
   // Skip the trip count tensor
   // Body output 0   ->  Body input 1
@@ -166,42 +202,35 @@ void LoopOpx::copyBodyOutputsToExplicitBodyInputs(
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {op.getIr().getTensor(outId)}, true);
 
-    if (inId != outId &&
-        aliases.find(op.getIr().getTensor(inId)) == aliases.end()) {
-      if (dv_p->lowering().getAliasZeroCopy()->copyLoopCarriedRequired(&op,
-                                                                       i)) {
-        // Only copy if the input is not directly wired through to the output,
-        // and if there are no aliases
-        auto bodyInputTensor  = get(inId);
-        auto bodyOutputTensor = get(outId);
+    bool aliased = (inId == outId ||
+                    aliases.find(op.getIr().getTensor(inId)) != aliases.end());
+    if (dv_p->lowering().getAliasZeroCopy()->copyLoopCarriedRequired(&op, i)) {
+      auto bodyInputTensor = get(inId);
 
-        // Clone to avoid issues with implicit aliases
-        auto tmp = snap::Tensor{dstVirtualGraph(op.subgraphOutToOpOutIndex(i))
-                                    .getPoplarGraph()
-                                    .clone(bodyOutputTensor.getPoplarTensor()),
-                                dstVirtualGraph(op.subgraphOutToOpOutIndex(i))};
-        tmpCopiesProg.add(snap::program::Copy(
-            bodyOutputTensor, tmp, false, debugContext("tmpCopies")));
-        finalCopiesProg.add(snap::program::Copy(
-            tmp, bodyInputTensor, false, debugContext("finalCopies")));
-        logging::opx::trace(
-            "[LoopOpx] output {} -> explicit input {} copied", outId, inId);
-      } else {
-        logging::opx::trace(
-            "[LoopOpx] output {} -> explicit input {} skipped", outId, inId);
-      }
+      // Use clones to avoid issues with implicit aliases
+      auto clonedBodyOutput = clonedBodyOutputs.at(i);
+
+      copiesProg.add(snap::program::Copy(
+          clonedBodyOutput,
+          bodyInputTensor,
+          false,
+          debugContext("copyBodyOutputsToExplicitBodyInputs")));
+      logging::opx::trace(
+          "[LoopOpx] output {} -> explicit input {} copied (aliased: {})",
+          outId,
+          inId,
+          aliased);
     } else {
       logging::opx::trace(
-          "[LoopOpx] output {} -> explicit input {} aliased", outId, inId);
+          "[LoopOpx] output {} -> explicit input {} skipped", outId, inId);
     }
   }
-  // Do temporary copies before final copies to avoid overwriting results
-  // due to possible aliases between the inputs and outputs
-  prog.add(tmpCopiesProg);
-  prog.add(finalCopiesProg);
+  prog.add(copiesProg);
 }
 
-void LoopOpx::copyBodyOutputsToOpOutputs(snap::program::Sequence &prog) const {
+void LoopOpx::copyBodyOutputsToOpOutputs(
+    snap::program::Sequence &prog,
+    std::vector<snap::Tensor> &clonedBodyOutputs) const {
   auto &op = getOp<LoopOp>();
 
   // Skip the cond-out tensor
@@ -215,24 +244,22 @@ void LoopOpx::copyBodyOutputsToOpOutputs(snap::program::Sequence &prog) const {
 
     auto aliases = dv_p->lowering().getAliasZeroCopy()->getActiveAliasedTensors(
         {op.getIr().getTensor(bodyOutputTensorId)}, true);
+    bool aliased =
+        aliases.find(op.getIr().getTensor(opOutputTensorId)) != aliases.end();
 
-    if (aliases.find(op.getIr().getTensor(opOutputTensorId)) == aliases.end()) {
-      if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&op, i - 1)) {
-        auto bodyOutputTensor = get(bodyOutputTensorId);
-        auto opOutputTensor   = get(opOutputTensorId);
-        snap::program::Copy copyProg(
-            bodyOutputTensor, opOutputTensor, false, debugContext("outputs"));
-        prog.add(copyProg);
-        logging::opx::trace("[LoopOpx] output {} -> output {} copied",
-                            bodyOutputTensorId,
-                            opOutputTensorId);
-      } else {
-        logging::opx::trace("[LoopOpx] output {} -> output {} skipped",
-                            bodyOutputTensorId,
-                            opOutputTensorId);
-      }
+    if (dv_p->lowering().getAliasZeroCopy()->copyOutputRequired(&op, i - 1)) {
+      auto bodyOutputTensor = clonedBodyOutputs.at(i);
+      auto opOutputTensor   = get(opOutputTensorId);
+      snap::program::Copy copyProg(
+          bodyOutputTensor, opOutputTensor, false, debugContext("outputs"));
+      prog.add(copyProg);
+      logging::opx::trace(
+          "[LoopOpx] output {} -> output {} copied (aliased: {})",
+          bodyOutputTensorId,
+          opOutputTensorId,
+          aliased);
     } else {
-      logging::opx::trace("[LoopOpx] output {} -> output {} aliased",
+      logging::opx::trace("[LoopOpx] output {} -> output {} skipped",
                           bodyOutputTensorId,
                           opOutputTensorId);
     }
@@ -302,7 +329,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   //     // loopExitProg
   //   } else {
   //     // loopContinueProg
-  //     copyBodyOutputsToBodyInputs();
+  //     copyBodyOutputsToExplicitBodyInputs();
   //     body(); // can update condOut
   //   }
   // }
@@ -322,7 +349,11 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   auto fconst = getConst(poplar::BOOL, {}, false, "fconst");
 
-  auto condOutTensor = get(op.getCalledGraph().getOutputId(0));
+  // Clone body outputs
+  auto bodyOutputClones = cloneBodyOutputs();
+
+  auto condOutTensor =
+      bodyOutputClones.at(LoopOp::getLoopGraphTerminationConditionOutIndex());
 
   // 0: Set condOut to true if the cond is not shipped as op input
   if (!hasInput(LoopOp::getTerminationConditionInIndex())) {
@@ -331,7 +362,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // 1: Copy explicit inputs to body outputs
-  copyExplicitOpInputsToBodyOutputs(prog);
+  copyExplicitOpInputsToBodyOutputs(prog, bodyOutputClones);
 
   // 2: Copy implicit inputs to body inputs
   copyImplicitOpInputsToImplicitBodyInputs(prog);
@@ -390,7 +421,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // 8: Copy body outputs to body inputs
-  copyBodyOutputsToExplicitBodyInputs(loopContinueProg);
+  copyBodyOutputsToExplicitBodyInputs(loopContinueProg, bodyOutputClones);
 
   // 9: Copy iterator to body input
   auto bodyInputTensor = get(
@@ -407,6 +438,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
     auto dbgStr = logging::format("{}/{}", called_graph.id.str(), part);
     loopContinueProg.add(snap::program::Call(
         graph(), graph_progs.at(part), debugContext(dbgStr)));
+    copyBodyOutputsToBodyOutputClones(loopContinueProg, bodyOutputClones);
   }
 
   // 11: Increment the loop iterator
@@ -437,7 +469,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
       snap::program::Repeat(maxTripCountValue, loopProg, debugContext("loop")));
 
   // 14: Copy body outputs to op outputs
-  copyBodyOutputsToOpOutputs(prog);
+  copyBodyOutputsToOpOutputs(prog, bodyOutputClones);
 
   // 15: Copy modified inputs
   copyModifiedBodyInputsToOpInputs(prog);

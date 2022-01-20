@@ -7,6 +7,7 @@
 #include <vector>
 #include <poplar/Program.hpp>
 #include <popart/names.hpp>
+#include <popart/popx/preparedtensor.hpp>
 
 namespace popart {
 namespace popx {
@@ -34,7 +35,10 @@ using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 class InitTensorBase {
 public:
   virtual ~InitTensorBase() {}
-  InitTensorBase(InitMethod method, TensorId dstId, double priority);
+  InitTensorBase(InitMethod method,
+                 TensorId dstId,
+                 RequireParallelWritable requireParallelWritable,
+                 double priority);
 
   // Creates a Poplar tensor corresponding to dstId
   virtual bool initTensor(IrLowering &irLowering) const = 0;
@@ -68,8 +72,13 @@ protected:
   // The method identifier, used to generate a string representation for each
   // InitTensor
   InitMethod method;
+
   // The tensor to be created
   TensorId dstId;
+
+  // The resulting tensor must be parallel writable
+  RequireParallelWritable requireParallelWritable;
+
   // The priority this InitTensor object has
   double priority;
 };
@@ -91,7 +100,10 @@ using InitTensorPtrs = std::set<InitTensorPtr, PInitTensorCmp>;
  */
 class InitTensorAliasing : public InitTensorBase {
 public:
-  InitTensorAliasing(TensorId srcId, TensorId dstId, double priority);
+  InitTensorAliasing(TensorId srcId,
+                     TensorId dstId,
+                     RequireParallelWritable requireParallelWritable,
+                     double priority);
   bool initTensor(IrLowering &irLowering) const override;
   bool hasSrcId() const override { return true; }
   TensorId getSrcId() const override { return srcId; }
@@ -106,7 +118,10 @@ private:
  */
 class InitTensorPostIrAliasing : public InitTensorBase {
 public:
-  InitTensorPostIrAliasing(TensorId srcId, TensorId dstId, double priority);
+  InitTensorPostIrAliasing(TensorId srcId,
+                           TensorId dstId,
+                           RequireParallelWritable requireParallelWritable,
+                           double priority);
   bool initTensor(IrLowering &irLowering) const override;
   bool hasSrcId() const override { return true; }
   TensorId getSrcId() const override { return srcId; }
@@ -120,7 +135,10 @@ protected:
  */
 class InitTensorCloning : public InitTensorBase {
 public:
-  InitTensorCloning(TensorId srcId, TensorId dstId, double priority);
+  InitTensorCloning(TensorId srcId,
+                    TensorId dstId,
+                    RequireParallelWritable requireParallelWritable,
+                    double priority);
   bool initTensor(IrLowering &irLowering) const override;
   bool hasSrcId() const override { return true; }
   TensorId getSrcId() const override { return srcId; }
@@ -137,6 +155,7 @@ public:
   InitTensorCreator(ICreatorCandidatePtr candidate,
                     std::set<TensorId> mustExist,
                     TensorId dstId,
+                    RequireParallelWritable requireParallelWritable,
                     double priority);
   bool initTensor(IrLowering &irLowering) const override;
   std::string extraStr() const override;
@@ -152,7 +171,9 @@ private:
  */
 class InitTensorLinear : public InitTensorBase {
 public:
-  InitTensorLinear(TensorId dstId, double priority);
+  InitTensorLinear(TensorId dstId,
+                   RequireParallelWritable requireParallelWritable,
+                   double priority);
   bool initTensor(IrLowering &irLowering) const override;
 };
 

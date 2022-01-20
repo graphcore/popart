@@ -27,8 +27,10 @@ snap::Graph &getDstGraph(Tensor *t, IrLowering &irLowering) {
 
 InitTensorBase::InitTensorBase(InitMethod method_,
                                TensorId dstId_,
+                               RequireParallelWritable requireParallelWritable_,
                                double priority_)
-    : method(method_), dstId(dstId_), priority(priority_) {}
+    : method(method_), dstId(dstId_),
+      requireParallelWritable(requireParallelWritable_), priority(priority_) {}
 
 std::set<TensorId> InitTensorBase::getDependsOnIds() const {
   if (hasSrcId()) {
@@ -58,10 +60,16 @@ std::string InitTensorBase::str() const {
   return ss.str();
 }
 
-InitTensorAliasing::InitTensorAliasing(TensorId srcId_,
-                                       TensorId dstId_,
-                                       double priority_)
-    : InitTensorBase(InitMethod::Aliasing, dstId_, priority_), srcId(srcId_) {}
+InitTensorAliasing::InitTensorAliasing(
+    TensorId srcId_,
+    TensorId dstId_,
+    RequireParallelWritable requireParallelWritable_,
+    double priority_)
+    : InitTensorBase(InitMethod::Aliasing,
+                     dstId_,
+                     requireParallelWritable_,
+                     priority_),
+      srcId(srcId_) {}
 
 bool InitTensorAliasing::initTensor(IrLowering &irLowering) const {
   logging::debug("Aliasing tensor {} to {}", srcId, getDstId());
@@ -69,16 +77,22 @@ bool InitTensorAliasing::initTensor(IrLowering &irLowering) const {
   return true;
 }
 
-InitTensorPostIrAliasing::InitTensorPostIrAliasing(TensorId srcId_,
-                                                   TensorId dstId_,
-                                                   double priority_)
-    : InitTensorBase(InitMethod::PostIrAliasing, dstId_, priority_),
+InitTensorPostIrAliasing::InitTensorPostIrAliasing(
+    TensorId srcId_,
+    TensorId dstId_,
+    RequireParallelWritable requireParallelWritable_,
+    double priority_)
+    : InitTensorBase(InitMethod::PostIrAliasing,
+                     dstId_,
+                     requireParallelWritable_,
+                     priority_),
       srcId(srcId_) {}
 
 bool InitTensorPostIrAliasing::initTensor(IrLowering &irLowering) const {
   if (irLowering.tensors().contains(getSrcId()) &&
       irLowering.tryInitTensorByPostIRAliasing(
           getDstId(),
+          requireParallelWritable,
           irLowering.tensors().hasViewChangers(getSrcId())
               ? irLowering.tensors().getViewChangers(getSrcId())
               : ViewChangers())) {
@@ -87,10 +101,16 @@ bool InitTensorPostIrAliasing::initTensor(IrLowering &irLowering) const {
   return false;
 }
 
-InitTensorCloning::InitTensorCloning(TensorId srcId_,
-                                     TensorId dstId_,
-                                     double priority_)
-    : InitTensorBase(InitMethod::Cloning, dstId_, priority_), srcId(srcId_) {}
+InitTensorCloning::InitTensorCloning(
+    TensorId srcId_,
+    TensorId dstId_,
+    RequireParallelWritable requireParallelWritable_,
+    double priority_)
+    : InitTensorBase(InitMethod::Cloning,
+                     dstId_,
+                     requireParallelWritable_,
+                     priority_),
+      srcId(srcId_) {}
 
 bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   if (!irLowering.tensors().contains(srcId)) {
@@ -134,11 +154,16 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   return true;
 }
 
-InitTensorCreator::InitTensorCreator(ICreatorCandidatePtr candidate_,
-                                     std::set<TensorId> mustExist_,
-                                     TensorId dstId_,
-                                     double priority_)
-    : InitTensorBase(InitMethod::Creator, dstId_, priority_),
+InitTensorCreator::InitTensorCreator(
+    ICreatorCandidatePtr candidate_,
+    std::set<TensorId> mustExist_,
+    TensorId dstId_,
+    RequireParallelWritable requireParallelWritable_,
+    double priority_)
+    : InitTensorBase(InitMethod::Creator,
+                     dstId_,
+                     requireParallelWritable_,
+                     priority_),
       candidate(candidate_), mustExist(mustExist_) {}
 
 bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
@@ -165,8 +190,8 @@ bool InitTensorCreator::initTensor(IrLowering &irLowering) const {
                               tensor->getDebugInfo().getPathName())});
 
   // Try if an existing Poplar tensor can be reused
-  if (irLowering.tryInitTensorByPostIRAliasing(getDstId(),
-                                               inputAndView.second)) {
+  if (irLowering.tryInitTensorByPostIRAliasing(
+          getDstId(), requireParallelWritable, inputAndView.second)) {
     return true;
   }
 
@@ -202,12 +227,19 @@ std::set<TensorId> InitTensorCreator::getDependsOnIds() const {
   return mustExist;
 }
 
-InitTensorLinear::InitTensorLinear(TensorId dstId_, double priority_)
-    : InitTensorBase(InitMethod::Linear, dstId_, priority_) {}
+InitTensorLinear::InitTensorLinear(
+    TensorId dstId_,
+    RequireParallelWritable requireParallelWritable,
+    double priority_)
+    : InitTensorBase(InitMethod::Linear,
+                     dstId_,
+                     requireParallelWritable,
+                     priority_) {}
 
 bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
   // Try if an existing Poplar tensor can be reused
-  if (irLowering.tryInitTensorByPostIRAliasing(getDstId(), ViewChangers())) {
+  if (irLowering.tryInitTensorByPostIRAliasing(
+          getDstId(), requireParallelWritable, ViewChangers())) {
     return true;
   }
   Tensor *tensor = irLowering.ir().getTensor(getDstId());

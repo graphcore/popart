@@ -709,7 +709,8 @@ TaskId IrLowering::taskWhichPopulates(TensorId id) const {
 PriTask
 IrLowering::getDependencyFreeInitTensorCreatorTask(const TensorId &tensorID) {
   const Tensor *tensor = ir().getTensor(tensorID);
-  return initTensorTask(getInitTensorCreators(tensor, true));
+  return initTensorTask(
+      getInitTensorCreators(tensor, RequireParallelWritable::Yes));
 }
 
 std::vector<ICreatorCandidatePtr>
@@ -1038,8 +1039,10 @@ IrLowering::getTensorCreators(const Tensor *tensor, bool dependencyFree) const {
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-InitTensorPtrs IrLowering::getInitTensorCreators(const Tensor *tensor,
-                                                 bool dependencyFree) const {
+InitTensorPtrs IrLowering::getInitTensorCreators(
+    const Tensor *tensor,
+    RequireParallelWritable requireParallelWritable,
+    bool dependencyFree) const {
   auto candidates = getTensorCreators(tensor, dependencyFree);
 
   // 1. A unique candidate creator will create the tensor
@@ -1062,7 +1065,7 @@ InitTensorPtrs IrLowering::getInitTensorCreators(const Tensor *tensor,
             candidate->str(),
             mustExist);
         auto creator = std::make_shared<InitTensorCreator>(
-            candidate, mustExist, tensor->id, 1.0f);
+            candidate, mustExist, tensor->id, requireParallelWritable, 1.0f);
         creators.insert(creator);
       }
     }
@@ -1070,7 +1073,8 @@ InitTensorPtrs IrLowering::getInitTensorCreators(const Tensor *tensor,
     return creators;
   } else {
     logging::devicex::trace("Reverting to linear creator");
-    return {std::make_shared<InitTensorLinear>(tensor->id, 1.0f)};
+    return {std::make_shared<InitTensorLinear>(
+        tensor->id, requireParallelWritable, 1.0f)};
   }
 }
 
@@ -1573,26 +1577,34 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
           "adding Op input Tensor tasks (Ir Lowering)");
 
       auto opInput = opInputs[i];
-      if (!tasks.contains(initTensorTaskId(std::get<1>(opInput)))) {
-        if (std::get<0>(opInput).empty()) {
+      if (!tasks.contains(initTensorTaskId(opInput.dstId))) {
+        if (opInput.srcId.empty()) {
           // No tensor to clone or alias from
-          auto creators =
-              getInitTensorCreators(ir().getTensor(std::get<1>(opInput)));
-          initTensorMap[std::get<1>(opInput)].insert(creators.begin(),
-                                                     creators.end());
+          auto creators = getInitTensorCreators(
+              ir().getTensor(opInput.dstId), opInput.requireParallelWritable);
+          initTensorMap[opInput.dstId].insert(creators.begin(), creators.end());
         } else {
           // Tensor can be cloned or aliased
-          if (std::get<2>(opInput)) {
-            initTensorMap[std::get<1>(opInput)].insert(
+          if (opInput.canAlias == CanAlias::Yes) {
+            initTensorMap[opInput.dstId].insert(
                 std::make_shared<InitTensorAliasing>(
-                    std::get<0>(opInput), std::get<1>(opInput), 100.0f));
+                    opInput.srcId,
+                    opInput.dstId,
+                    opInput.requireParallelWritable,
+                    100.0f));
           }
-          initTensorMap[std::get<1>(opInput)].insert(
+          initTensorMap[opInput.dstId].insert(
               std::make_shared<InitTensorPostIrAliasing>(
-                  std::get<0>(opInput), std::get<1>(opInput), 50.0f));
-          initTensorMap[std::get<1>(opInput)].insert(
+                  opInput.srcId,
+                  opInput.dstId,
+                  opInput.requireParallelWritable,
+                  50.0f));
+          initTensorMap[opInput.dstId].insert(
               std::make_shared<InitTensorCloning>(
-                  std::get<0>(opInput), std::get<1>(opInput), 10.0f));
+                  opInput.srcId,
+                  opInput.dstId,
+                  opInput.requireParallelWritable,
+                  10.0f));
         }
       }
     }
@@ -1603,26 +1615,35 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
       const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
           "adding Op output Tensor tasks (Ir Lowering)");
       auto opOutput = opOutputs[i];
-      if (!tasks.contains(initTensorTaskId(std::get<1>(opOutput)))) {
-        if (std::get<0>(opOutput).empty()) {
+      if (!tasks.contains(initTensorTaskId(opOutput.dstId))) {
+        if (opOutput.srcId.empty()) {
           // No tensor to clone or alias from
-          auto creators =
-              getInitTensorCreators(ir().getTensor(std::get<1>(opOutput)));
-          initTensorMap[std::get<1>(opOutput)].insert(creators.begin(),
-                                                      creators.end());
+          auto creators = getInitTensorCreators(
+              ir().getTensor(opOutput.dstId), opOutput.requireParallelWritable);
+          initTensorMap[opOutput.dstId].insert(creators.begin(),
+                                               creators.end());
         } else {
           // Tensor can be cloned or aliased
-          if (std::get<2>(opOutput)) {
-            initTensorMap[std::get<1>(opOutput)].insert(
+          if (opOutput.canAlias == CanAlias::Yes) {
+            initTensorMap[opOutput.dstId].insert(
                 std::make_shared<InitTensorAliasing>(
-                    std::get<0>(opOutput), std::get<1>(opOutput), 100.0f));
+                    opOutput.srcId,
+                    opOutput.dstId,
+                    opOutput.requireParallelWritable,
+                    100.0f));
           }
-          initTensorMap[std::get<1>(opOutput)].insert(
+          initTensorMap[opOutput.dstId].insert(
               std::make_shared<InitTensorPostIrAliasing>(
-                  std::get<0>(opOutput), std::get<1>(opOutput), 50.0f));
-          initTensorMap[std::get<1>(opOutput)].insert(
+                  opOutput.srcId,
+                  opOutput.dstId,
+                  opOutput.requireParallelWritable,
+                  50.0f));
+          initTensorMap[opOutput.dstId].insert(
               std::make_shared<InitTensorCloning>(
-                  std::get<0>(opOutput), std::get<1>(opOutput), 10.0f));
+                  opOutput.srcId,
+                  opOutput.dstId,
+                  opOutput.requireParallelWritable,
+                  10.0f));
         }
       }
     }
@@ -1655,6 +1676,7 @@ void IrLowering::addOpTasks(PriTasks &tasks) {
 
 bool IrLowering::tryInitTensorByPostIRAliasing(
     TensorId dstId,
+    RequireParallelWritable requireParallelWritable,
     const ViewChangers &viewChangers) {
 
   const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
@@ -1662,7 +1684,9 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
 
   for (Tensor *aliased :
        aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
-    if (tensors_.contains(aliased->id)) {
+    if (tensors_.contains(aliased->id) &&
+        (requireParallelWritable == RequireParallelWritable::No ||
+         tensors_.get(aliased->id).getPoplarTensor().isParallelWriteable())) {
 
       // Can only alias if the view changers associated with the tensors are
       // also compatible
@@ -2963,7 +2987,8 @@ void IrLowering::prepareGraph() {
     }
 
     // 1
-    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
+    tasks.add(initTensorTask(
+        getInitTensorCreators(tensor, RequireParallelWritable::Yes)));
 
     if (!ir().streamingIsDisabledForTensor(id)) {
       // 2
@@ -2988,7 +3013,8 @@ void IrLowering::prepareGraph() {
     logging::devicex::debug("Adding initTensorTask for Const {}", id);
     Tensor *tensor = ir().getTensor(id);
     // 1
-    tasks.add(initTensorTask(getInitTensorCreators(tensor)));
+    tasks.add(initTensorTask(
+        getInitTensorCreators(tensor, RequireParallelWritable::No)));
     // 2
     tasks.add(setInitTensorValTask(tensor));
   }
@@ -3006,7 +3032,8 @@ void IrLowering::prepareGraph() {
         logging::devicex::trace("Adding {} output initTensorTask for {}",
                                 op->debugName(),
                                 t_inds.first->id);
-        tasks.add(initTensorTask(getInitTensorCreators(t_inds.first)));
+        tasks.add(initTensorTask(
+            getInitTensorCreators(t_inds.first, RequireParallelWritable::Yes)));
       }
     }
   }
@@ -3032,7 +3059,8 @@ void IrLowering::prepareGraph() {
       Tensor *tensor = ir().getTensor(id);
 
       // 1
-      tasks.add(initTensorTask(getInitTensorCreators(tensor)));
+      tasks.add(initTensorTask(
+          getInitTensorCreators(tensor, RequireParallelWritable::Yes)));
       logging::devicex::debug("Adding initTensorTask for Stream {}", id);
 
       // 2

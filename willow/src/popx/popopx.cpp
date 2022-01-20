@@ -379,15 +379,9 @@ snap::Tensor PopOpx::getZerosTensor(std::vector<std::size_t> shape,
   return snap::Tensor{zero, graph()};
 }
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-PopOpx::getOutputsToPrepare() const {
-  return {};
-}
+PreparedTensorInfos PopOpx::getOutputsToPrepare() const { return {}; }
 
-std::vector<std::tuple<TensorId, TensorId, bool>>
-PopOpx::getInputsToPrepare() const {
-  return {};
-}
+PreparedTensorInfos PopOpx::getInputsToPrepare() const { return {}; }
 
 } // namespace popx
 } // namespace popart

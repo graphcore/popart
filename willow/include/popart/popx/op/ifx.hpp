@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_IFX_HPP
 
 #include <popart/popx/popopx.hpp>
+#include <popart/popx/preparedtensor.hpp>
 
 namespace popart {
 
@@ -25,8 +26,7 @@ private:
 
   std::vector<snap::Tensor> prepareOutputs() const;
 
-  std::vector<std::tuple<TensorId, TensorId, bool>>
-  getInputsToPrepare() const override;
+  PreparedTensorInfos getInputsToPrepare() const override;
 };
 
 class IfGradOpx : public IfOpx {

@@ -129,5 +129,6 @@ add_popart_py_unit_test(packed_data_test_ipu_model packed_data_test_ipu_model.py
 
 add_popart_cpp_unit_test(cast_test cast_test.cpp)
 add_popart_cpp_unit_test(histogram_test histogram_test.cpp)
+add_popart_cpp_unit_test(loop_alias_test loop_alias_test.cpp)
 add_popart_cpp_unit_test(lossscaleupdate_test loss_scale_update_test.cpp)
 add_popart_cpp_unit_test(hostop_test hostop_test.cpp VARIANTS "Hw")

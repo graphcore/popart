@@ -18,22 +18,36 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 
 private:
+  // Clone the body outputs to avoid non-writable tensors
+  std::vector<snap::Tensor> cloneBodyOutputs() const;
+
   // Copy inputs which are loop-carried from the Loop's input to the subgraph
   // body's output. If the iteration count is 0, the outputs are equal to the
   // inputs.
-  void copyExplicitOpInputsToBodyOutputs(snap::program::Sequence &prog) const;
+  void copyExplicitOpInputsToBodyOutputs(
+      snap::program::Sequence &prog,
+      std::vector<snap::Tensor> &clonedBodyOutputs) const;
 
   // Copy inputs which are not loop-carried from the Loop's input to the
   // subgraph body's input.
   void
   copyImplicitOpInputsToImplicitBodyInputs(snap::program::Sequence &prog) const;
 
+  // Copy the body outputs to the body output clones (to avoid aliasing issues).
+  void copyBodyOutputsToBodyOutputClones(
+      snap::program::Sequence &prog,
+      std::vector<snap::Tensor> &clonedBodyOutputs) const;
+
   // Copy the body outputs back to the body inputs (loop carry).
-  void copyBodyOutputsToExplicitBodyInputs(snap::program::Sequence &prog) const;
+  void copyBodyOutputsToExplicitBodyInputs(
+      snap::program::Sequence &prog,
+      std::vector<snap::Tensor> &clonedBodyOutputs) const;
 
   // Copy the body outputs to the Loop's outputs (final values on loop
   // termination).
-  void copyBodyOutputsToOpOutputs(snap::program::Sequence &prog) const;
+  void copyBodyOutputsToOpOutputs(
+      snap::program::Sequence &prog,
+      std::vector<snap::Tensor> &clonedBodyOutputs) const;
 
   // Copy any Loop input that the LoopOp should modify inplace from the body to
   // the Loop's inputs.
