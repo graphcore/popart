@@ -10,6 +10,8 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -42,8 +44,7 @@ void TopKGradOpx::grow(snap::program::Sequence &prog) const {
           gradIn.elementType(), getGradOutShape(), debugContext("dataGrad")),
       graph()};
 
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             dataGrad.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph(), dataGrad);
 
   popops::zero(graph().getPoplarGraph(),
                dataGrad.getPoplarTensor(),
@@ -98,7 +99,7 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
   indsShape[1]   = K;
   auto topKInds  = graph().getPoplarGraph().addVariable(
       poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(), topKInds);
+  snap::poputil::mapTensorLinearly(graph(), snap::Tensor{topKInds, graph()});
 
   auto topKVals = popnn::topK(graph().getPoplarGraph(),
                               input,

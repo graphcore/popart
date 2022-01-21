@@ -8,6 +8,8 @@
 #include <popops/Sort.hpp>
 #include <poputil/TileMapping.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -66,7 +68,7 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
     auto t = graph().getPoplarGraph().addVariable(popType(info), shape, dnai);
 
     // Map it linearly
-    poputil::mapTensorLinearly(graph().getPoplarGraph(), t);
+    snap::poputil::mapTensorLinearly(graph(), snap::Tensor{t, graph()});
 
     // DimShuffle back to the desired shape
     std::vector<unsigned> permutation(t.rank());

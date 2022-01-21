@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 #include <set>
+#include <snap/poputil/TileMapping.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>
@@ -251,9 +252,8 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
                      graph};
 
     // Map it linearly
-    poputil::mapTensorLinearly(
-        opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex).getPoplarGraph(),
-        fullTensor.getPoplarTensor());
+    snap::poputil::mapTensorLinearly(
+        opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex), fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                             input.shape());
@@ -313,11 +313,9 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
                                    graph};
 
     // Map it linearly
-    poputil::mapTensorLinearly(
-        pathToInput.back()
-            .opx->srcVirtualGraph(pathToInput.back().inIndex)
-            .getPoplarGraph(),
-        fullTensor.getPoplarTensor());
+    snap::poputil::mapTensorLinearly(
+        pathToInput.back().opx->srcVirtualGraph(pathToInput.back().inIndex),
+        fullTensor);
 
     logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",
                             input.shape());

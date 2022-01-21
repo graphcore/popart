@@ -9,6 +9,8 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -372,8 +374,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   iteratorTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
                                     poplar::INT, {}, debugContext("iterator")),
                                 graph()};
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             iteratorTensor.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph(), iteratorTensor);
   popops::zero(graph().getPoplarGraph(),
                iteratorTensor.getPoplarTensor(),
                prog.getPoplarSequence(),
@@ -383,8 +384,7 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   auto exitTensor = snap::Tensor{graph().getPoplarGraph().addVariable(
                                      poplar::BOOL, {}, debugContext("exit")),
                                  graph()};
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             exitTensor.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph(), exitTensor);
   prog.add(
       snap::program::Copy(fconst, exitTensor, {}, debugContext("exit_false")));
 

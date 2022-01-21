@@ -9,6 +9,8 @@
 
 #include <ostream>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -79,8 +81,7 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Copy the zero-view tensor into a new tensor and remap
   auto outTensor = cloneNcopy(prog, snap::Tensor{output, graph()});
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             outTensor.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph(), outTensor);
 
   // Create a subsample view of the output
   auto ss_output = subsample(outTensor, gradOp.strides_u32());

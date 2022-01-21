@@ -13,6 +13,8 @@
 #include <popops/Reduce.hpp>
 #include <poputil/VarStructure.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace pe = popops::expr;
 
 namespace popart {
@@ -44,8 +46,7 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
                                  d,
                                  poplar::TensorCloneMethod::CREATE_NEW_ORDER),
         g};
-    poputil::mapTensorLinearly(
-        g.getPoplarGraph(), outTensor.getPoplarTensor(), 0, grain_size);
+    snap::poputil::mapTensorLinearly(g, outTensor, 0, grain_size);
 
     // Copy the values to it.
     p.add(snap::program::Copy(t,

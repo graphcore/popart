@@ -6,6 +6,8 @@
 
 #include <popops/GatherStatistics.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -13,17 +15,16 @@ void HistogramOpx::grow(snap::program::Sequence &prog) const {
   auto &op    = getOp<HistogramOp>();
   auto levels = op.getLevels();
 
-  auto levelsT = graph().getPoplarGraph().addConstant(
-      getInTensor(op.getInIndex()).elementType(),
-      {levels.size()},
-      poplar::ArrayRef<float>(levels),
-      debugContext("levels"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(), levelsT);
+  auto levelsT = graph().addConstant(getInTensor(op.getInIndex()).elementType(),
+                                     {levels.size()},
+                                     poplar::ArrayRef<float>(levels),
+                                     debugContext("levels"));
+  snap::poputil::mapTensorLinearly(graph(), levelsT);
 
   auto out = popops::histogram(
       graph().getPoplarGraph(),
       getInTensor(op.getInIndex()).flatten().getPoplarTensor(),
-      levelsT,
+      levelsT.getPoplarTensor(),
       op.getAbsoluteOfInput(),
       prog.getPoplarSequence(),
       debugContext());

@@ -93,6 +93,8 @@
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace pe = popops::expr;
 
 namespace popart {
@@ -3750,11 +3752,8 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
 
       getConst(graph(), poplar::INT, {}, N, "batchCounter");
 
-      poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                                 batchCountingTensors[N].getPoplarTensor());
-      poputil::mapTensorLinearly(
-          graph().getPoplarGraph(),
-          batchCountCheckingTensors[N].getPoplarTensor());
+      snap::poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
+      snap::poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
 
       // Set the initial values of the tensors_.
       popops::zero(graph().getPoplarGraph(),

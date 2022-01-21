@@ -2,6 +2,8 @@
 #include <poputil/TileMapping.hpp>
 #include <popart/popx/op/sortutilx.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 namespace popart {
 namespace popx {
 namespace sortutilx {
@@ -26,8 +28,7 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
                                          poplar::ArrayRef<int>(iotaVals),
                                          {dnai, "constant"}),
       graph};
-  poputil::mapTensorLinearly(graph.getPoplarGraph(),
-                             singleRowIota.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph, singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices =
