@@ -124,7 +124,7 @@ class Installer:
     def _install_uninstalled_pip_packages(self):
         """Install pip packages.
         """
-        pip_packages = ("yapf", "clang-format")
+        pip_packages = ("yapf", "clang-format", "pylint")
         for pip_package in pip_packages:
             if pip_package in self.linters_to_install:
                 command = f"pip3 install {pip_package}=={self.version_checker.version_list[pip_package]}"
@@ -145,9 +145,9 @@ class Installer:
         """
         print("\n\x1b[6;30;42mSuccess!\x1b[0m")
         print("Ensure that the linters are available by adding for example")
-        print(f"export PATH=\"{self.path}/bin:$PATH\"")
+        print(f"export PATH=\"{self.path}:$PATH\"")
         print(
-            f"export LD_LIBRARY_PATH=\"{self.ld_library_path}/lib:$LD_LIBRARY_PATH\""
+            f"export LD_LIBRARY_PATH=\"{self.ld_library_path}:$LD_LIBRARY_PATH\""
         )
         print("To $HOME/.bashrc or the like")
 

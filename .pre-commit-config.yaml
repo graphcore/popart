@@ -53,6 +53,17 @@ repos:
                     docs/user_guide/files/tests/test_examples.py|
                     tests/linters/.*
                 )$
+          # Note: pylint to be run locally:
+          # https://pylint.pycqa.org/en/latest/user_guide/pre-commit-integration.html
+          - id: pylint
+            name: pylint
+            entry: pylint
+            language: system
+            types: [python]
+            args:
+              [
+                --rcfile=scripts/lint/linters/pylintrc
+              ]
     -   repo: https://github.com/pre-commit/pre-commit-hooks
         rev: v2.3.0
         hooks:
