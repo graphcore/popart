@@ -646,7 +646,7 @@ public:
   using OpaqueReaderIt  = std::vector<popef::OpaqueReader>::const_iterator;
   using ExecReaderIt    = std::vector<popef::ExecutableReader>::const_iterator;
 
-  ReaderImpl(const std::istream &in)
+  ReaderImpl(std::shared_ptr<std::istream> in)
       : popefReader(setupReader(in)), popartMetadata(findPopartMetadata()),
         poplarExecutable(findPoplarExecutable()), hash(getExecutableHash()) {}
 
@@ -656,10 +656,9 @@ public:
   size_t hash;
 
 private:
-  popef::Reader setupReader(const std::istream &in) {
-    auto in_ptr = std::make_shared<std::istream>(in.rdbuf());
+  popef::Reader setupReader(std::shared_ptr<std::istream> in) {
     popef::Reader reader;
-    reader.parseStream(in_ptr);
+    reader.parseStream(in);
     return reader;
   }
 
@@ -739,8 +738,9 @@ private:
   }
 };
 
-Reader::Reader(const std::istream &in)
+Reader::Reader(std::shared_ptr<std::istream> in)
     : _impl(std::make_unique<ReaderImpl>(in)) {}
+Reader::Reader(Reader &&reader) : _impl(std::move(reader._impl)) {}
 Reader::~Reader() = default;
 
 size_t Reader::readExecutableHash() { return _impl->hash; }

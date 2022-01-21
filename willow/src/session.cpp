@@ -37,9 +37,10 @@ HashesMap getCacheEntries(const std::string &cachePath) {
   }
   for (auto &entry : boost::filesystem::directory_iterator(cachePath)) {
     if (boost::filesystem::is_regular_file(entry)) {
-      std::ifstream in(entry.path().string(), std::ifstream::binary);
+      auto ifs = std::make_shared<std::ifstream>(entry.path().string(),
+                                                 std::ifstream::binary);
       try {
-        popart::popx::serialization::Reader reader(in);
+        popart::popx::serialization::Reader reader(ifs);
         auto hash = reader.readExecutableHash();
         cacheEntries.emplace(hash, entry.path().string());
       } catch (const std::exception &e) {
@@ -132,8 +133,9 @@ bool Session::tryLoadExecutable() {
   }
 
   auto popartCachePath = cacheEntries.at(ir->getHash());
-  std::ifstream executableFs(popartCachePath, std::ifstream::binary);
-  if (executableFs.is_open()) {
+  auto executableFs =
+      std::make_shared<std::ifstream>(popartCachePath, std::ifstream::binary);
+  if (executableFs->is_open()) {
     logging::session::info("Loading serialized PopART executable from {}",
                            popartCachePath);
     try {
@@ -152,14 +154,15 @@ bool Session::tryLoadExecutable() {
 }
 
 void Session::loadExecutableFromFile(const std::string &filename) {
-  std::ifstream executableFs(filename, std::ifstream::binary);
-  if (!executableFs.is_open()) {
+  auto execFs =
+      std::make_shared<std::ifstream>(filename, std::ifstream::binary);
+  if (!execFs->is_open()) {
     throw error("Could not open file {}", filename);
   }
   logging::session::info("Loading serialized PopART executable from {}",
                          filename);
   try {
-    loadExecutableFromStream(executableFs);
+    loadExecutableFromStream(execFs);
   } catch (...) {
     logging::session::err(
         "Failed to load serialized PopART executable from {}:", filename);
@@ -168,6 +171,11 @@ void Session::loadExecutableFromFile(const std::string &filename) {
 }
 
 void Session::loadExecutableFromStream(std::istream &in) {
+  auto in_ptr = std::make_shared<std::istream>(in.rdbuf());
+  loadExecutableFromStream(in_ptr);
+}
+
+void Session::loadExecutableFromStream(std::shared_ptr<std::istream> in) {
   bool skipGraphCompilation = true;
   lowering_.reset(new popx::IrLowering(*ir, deviceInfo_, skipGraphCompilation));
 

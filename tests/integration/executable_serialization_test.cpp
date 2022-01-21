@@ -33,6 +33,42 @@
 
 using namespace popart;
 
+popx::serialization::Reader createReader(const std::string &executablePath) {
+  auto ifs =
+      std::make_shared<std::ifstream>(executablePath, std::fstream::binary);
+  return popx::serialization::Reader(ifs);
+}
+
+std::string createDirForTest() {
+  auto executableDir = "./tmp_1" + randomString(10);
+  boost::filesystem::remove(executableDir);
+  BOOST_CHECK(boost::filesystem::create_directories(executableDir));
+
+  return executableDir;
+}
+
+std::string addPaths(const std::string &lhs, const std::string &rhs) {
+  auto dirPath = boost::filesystem::path(lhs);
+  auto dstPath = dirPath / rhs;
+  return dstPath.string();
+}
+
+std::string getCachePath(const std::string &testDir) {
+  const std::string cacheDir = "session_cache1";
+  return addPaths(testDir, cacheDir);
+}
+
+std::string getExecutablePath(const std::string &testDir) {
+  const std::string executableName = "executable.popef";
+  return addPaths(testDir, executableName);
+}
+
+std::string getModelPath(const std::string &testDir) {
+  auto dirPath                = boost::filesystem::path(testDir);
+  const std::string modelName = "model.onnx";
+  return addPaths(testDir, modelName);
+}
+
 void compare_tensors(const Tensor *t1,
                      const Tensor *t2,
                      bool compare_data = false) {
@@ -187,10 +223,11 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
 
   session->prepareDevice();
 
-  const char *serializedExecutableFilePath = "temp.capnp";
-  const auto &executable                   = session->getExecutable();
+  const std::string testDir        = createDirForTest();
+  const std::string executablePath = getExecutablePath(testDir);
+  const auto &executable           = session->getExecutable();
   {
-    std::ofstream out(serializedExecutableFilePath);
+    std::ofstream out(executablePath);
     popx::serialization::serializeEngineExecutable(
         out, nullptr, &executable, 0);
   }
@@ -200,8 +237,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     ir.setDataFlow(dataFlow);
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
-    std::ifstream ifs(serializedExecutableFilePath);
-    popx::serialization::Reader reader(ifs);
+    popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
@@ -210,6 +246,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 // T36910 identified that the Accum tensor was getting saved in the executable.
@@ -260,10 +298,11 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
 
   session->prepareDevice();
 
-  const char *serializedExecutableFilePath = "temp.capnp";
-  const auto &executable                   = session->getExecutable();
+  const std::string testDir        = createDirForTest();
+  const std::string executablePath = getExecutablePath(testDir);
+  const auto &executable           = session->getExecutable();
   {
-    std::ofstream out(serializedExecutableFilePath);
+    std::ofstream out(executablePath);
     popx::serialization::serializeEngineExecutable(
         out, nullptr, &executable, 0);
   }
@@ -274,8 +313,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
 
-    std::ifstream ifs(serializedExecutableFilePath);
-    popx::serialization::Reader reader(ifs);
+    popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
@@ -284,6 +322,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
@@ -330,10 +370,11 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
 
   session->prepareDevice();
 
-  const char *serializedExecutableFilePath = "temp.capnp";
-  const auto &executable                   = session->getExecutable();
+  const std::string testDir        = createDirForTest();
+  const std::string executablePath = getExecutablePath(testDir);
+  const auto &executable           = session->getExecutable();
   {
-    std::ofstream out(serializedExecutableFilePath);
+    std::ofstream out(executablePath);
     popx::serialization::serializeEngineExecutable(
         out, nullptr, &executable, 0);
   }
@@ -349,8 +390,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
                 opts,
                 popart::Patterns(PatternsLevel::Default)});
 
-    std::ifstream ifs(serializedExecutableFilePath);
-    popx::serialization::Reader reader(ifs);
+    popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
@@ -359,6 +399,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(
@@ -406,10 +448,11 @@ BOOST_AUTO_TEST_CASE(
 
   session->prepareDevice();
 
-  const char *serializedExecutableFilePath = "temp.capnp";
-  const auto &executable                   = session->getExecutable();
+  const std::string testDir        = createDirForTest();
+  const std::string executablePath = getExecutablePath(testDir);
+  const auto &executable           = session->getExecutable();
   {
-    std::ofstream out(serializedExecutableFilePath);
+    std::ofstream out(executablePath);
     popx::serialization::serializeEngineExecutable(
         out, nullptr, &executable, 0);
   }
@@ -427,8 +470,7 @@ BOOST_AUTO_TEST_CASE(
                 opts,
                 popart::Patterns(PatternsLevel::Default)});
 
-    std::ifstream ifs(serializedExecutableFilePath);
-    popx::serialization::Reader reader(ifs);
+    popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
     BOOST_CHECK(!reader.containsPoplarExecutable());
 
@@ -440,6 +482,8 @@ BOOST_AUTO_TEST_CASE(
     BOOST_CHECK_THROW(reader.deserializeExecutable(ir, ir_lowering),
                       popart::error);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 // Test is copied from `remotebuffer_test.cpp`.
@@ -562,10 +606,11 @@ BOOST_AUTO_TEST_CASE(
 
   session->prepareDevice();
 
-  const char *serializedExecutableFilePath = "temp.capnp";
-  const auto &executable                   = session->getExecutable();
+  const std::string testDir        = createDirForTest();
+  const std::string executablePath = getExecutablePath(testDir);
+  const auto &executable           = session->getExecutable();
   {
-    std::ofstream out(serializedExecutableFilePath);
+    std::ofstream out(executablePath);
     popx::serialization::serializeEngineExecutable(
         out, nullptr, &executable, 0);
   }
@@ -575,8 +620,7 @@ BOOST_AUTO_TEST_CASE(
     ir.setDataFlow(dataFlow);
     ir.setUserOptions(opts);
     ir.setOnnxModel(modelProto);
-    std::ifstream ifs(serializedExecutableFilePath);
-    popx::serialization::Reader reader(ifs);
+    popx::serialization::Reader reader(createReader(executablePath));
     BOOST_CHECK(reader.containsExecutable());
     BOOST_CHECK(!reader.containsPoplarExecutable());
     bool skipGraphCompilation = true;
@@ -584,9 +628,11 @@ BOOST_AUTO_TEST_CASE(
     auto deserializedExecutable = reader.deserializeExecutable(ir, ir_lowering);
     compare_executables(executable, *deserializedExecutable);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
-BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
+void testSessionRunFromSerializedExe(bool useCache) {
   // the dimensions of the matrices
   int K = 6;
   int M = 7;
@@ -633,18 +679,14 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_1" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
-  auto opts                = SessionOptions();
-  opts.enableEngineCaching = true;
-  opts.cachePath           = cachePath;
+  auto opts = SessionOptions();
+  if (useCache) {
+    opts.enableEngineCaching = true;
+    opts.cachePath           = cachePath;
+  }
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -671,8 +713,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   std::vector<float> A_readback1_init(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
 
-  size_t irBundleHash1 = 0;
-  std::string cacheFile;
+  size_t irBundleHash1       = 0;
+  std::string executablePath = useCache ? "" : getExecutablePath(testDir);
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
 
@@ -688,6 +730,14 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
         opts,
         popart::Patterns(PatternsLevel::Default));
     session->prepareDevice();
+
+    if (!useCache) {
+      session->compileAndExport(executablePath);
+      session->loadEngineAndConnectStreams();
+    } else {
+      executablePath = session->getExecutable().getCachePath(cachePath);
+    }
+
     irBundleHash1 = session->getIr().getIrBundleHash();
 
     BOOST_CHECK(session->getExecutable().isDeserialized() == false);
@@ -710,7 +760,6 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
 
     session->weightsToHost();
     session->readWeights(weightsRead2);
-    cacheFile = session->getExecutable().getCachePath(cachePath);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -718,7 +767,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
   // reset output values
   std::fill(raw_C_out.begin(), raw_C_out.end(), -9.0f);
 
-  BOOST_CHECK(boost::filesystem::exists(cacheFile));
+  BOOST_CHECK(boost::filesystem::exists(executablePath));
 
   std::vector<float> A_readback2(A_info.nelms(), -9.0f);
   std::vector<float> B_readback2(B_info.nelms(), -99.0f);
@@ -740,12 +789,20 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
         popart::InputShapeInfo(),
         opts,
         popart::Patterns(PatternsLevel::Default));
-    session->prepareDevice();
+    if (useCache) {
+      session->prepareDevice();
+    } else {
+      session->loadExecutableFromFile(executablePath);
+      session->getDevice().prepare();
+      session->loadEngineAndConnectStreams();
+    }
     irBundleHash2 = session->getIr().getIrBundleHash();
     BOOST_CHECK(irBundleHash1 == irBundleHash2);
 
-    BOOST_CHECK(session->getIr().hashMatched());
-    BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
+    if (useCache) {
+      BOOST_CHECK(session->getIr().hashMatched());
+      BOOST_CHECK(session->getIrLowering().usingCachedExecutable());
+    }
     BOOST_CHECK(session->getExecutable().isDeserialized());
 
     WeightsIO weightsRead1;
@@ -790,6 +847,17 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe) {
                                 B_readback1.end(),
                                 B_readback2.begin(),
                                 B_readback2.end());
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
+}
+
+BOOST_AUTO_TEST_CASE(
+    session_run_from_serialized_exe_using_save_load_functionality) {
+  testSessionRunFromSerializedExe(false);
+}
+
+BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_using_cache) {
+  testSessionRunFromSerializedExe(true);
 }
 
 BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
@@ -839,14 +907,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_1" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = false;
@@ -1034,6 +1096,8 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
                                 B_readback1.end(),
                                 B_readback2.begin(),
                                 B_readback2.end());
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 // Test is copied from `remotebuffer_test.cpp`.
@@ -1152,14 +1216,8 @@ BOOST_AUTO_TEST_CASE(
   std::map<popart::TensorId, popart::IArray &> inputs = {};
   popart::StepIO stepio(inputs, anchors);
 
-  auto cacheDir = "./tmp_2" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache2";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   opts.virtualGraphMode              = VirtualGraphMode::ExecutionPhases;
   opts.explicitRecomputation         = true;
@@ -1278,6 +1336,8 @@ BOOST_AUTO_TEST_CASE(
                                 D_readback1.end(),
                                 D_readback2.begin(),
                                 D_readback2.end());
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
@@ -1327,14 +1387,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_3" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1446,6 +1500,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
                                 B_readback1.end(),
                                 B_readback2.begin(),
                                 B_readback2.end());
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
@@ -1495,14 +1551,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_4" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache3";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                     = SessionOptions();
   opts.enableEngineCaching      = true;
@@ -1636,6 +1686,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
                                 B_readback1.end(),
                                 B_readback2.begin(),
                                 B_readback2.end());
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
@@ -1685,14 +1737,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_5" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1808,6 +1854,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
                                   B_readback2.begin(),
                                   B_readback2.end());
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
@@ -1857,14 +1905,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_6" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto dir                    = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = dir / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -1894,10 +1936,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
   std::vector<float> A_readback1_init(A_info.nelms(), -9.0f);
   std::vector<float> B_readback1_init(B_info.nelms(), -99.0f);
-  size_t irBundleHash1   = 0;
-  std::string modelPath_ = "model.onnx";
-  auto relModelPath_     = dir / modelPath_;
-  auto modelPath         = relModelPath_.string();
+  size_t irBundleHash1        = 0;
+  const std::string modelPath = getModelPath(testDir);
   std::string cacheFile;
   {
     auto device = popart::createTestDevice(TestDeviceType::Hw);
@@ -2014,6 +2054,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
     BOOST_CHECK(A_readback2_init != A_readback1_init);
     BOOST_CHECK(B_readback2_init != B_readback1_init);
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
@@ -2063,14 +2105,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  auto cacheDir = "./tmp_7" + randomString(10);
-  boost::filesystem::remove(cacheDir);
-  BOOST_CHECK(boost::filesystem::create_directories(cacheDir));
-  auto d                      = boost::filesystem::path(cacheDir);
-  const std::string cacheName = "session_cache1";
-  auto n                      = boost::filesystem::path(cacheName);
-  auto cachePath_             = d / n;
-  auto cachePath              = cachePath_.string();
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
@@ -2173,6 +2209,8 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_update_optimizer) {
       }
     }
   }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
 BOOST_AUTO_TEST_CASE(optimizer_hash_tests) {

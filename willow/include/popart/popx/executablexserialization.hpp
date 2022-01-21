@@ -40,7 +40,8 @@ void serializeEngineExecutable(std::ostream &out,
 
 class Reader {
 public:
-  Reader(const std::istream &in);
+  Reader(std::shared_ptr<std::istream> in);
+  Reader(Reader &&reader);
   ~Reader();
 
   // Returns the executable hash or 0 if the stream contains
