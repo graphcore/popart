@@ -710,7 +710,7 @@ PriTask
 IrLowering::getDependencyFreeInitTensorCreatorTask(const TensorId &tensorID) {
   const Tensor *tensor = ir().getTensor(tensorID);
   return initTensorTask(
-      getInitTensorCreators(tensor, RequireParallelWritable::Yes));
+      getInitTensorCreators(tensor, RequireParallelWritable::Yes, true));
 }
 
 std::vector<ICreatorCandidatePtr>
