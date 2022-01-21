@@ -259,6 +259,8 @@ const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");
 const static AiGraphcoreOpIdV1 ClipInplace("ClipInplace");
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatGradInplace");
 const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
+const static AiGraphcoreOpIdV1 CastFromFp8("CasttFromFp8");
+const static AiGraphcoreOpIdV1 CastToFp8("CasttToFp8");
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate", 2, 1);
 const static AiGraphcoreOpIdV1 Ctc("Ctc", 4, 2);
@@ -408,6 +410,8 @@ const static OperatorIdentifier BitwiseOr     = CustomOperators::BitwiseOr;
 const static OperatorIdentifier BitwiseXor    = CustomOperators::BitwiseXor;
 const static OperatorIdentifier BitwiseXnor   = CustomOperators::BitwiseXnor;
 const static OperatorIdentifier Call          = CustomOperators::Call_1;
+const static OperatorIdentifier CastFromFp8   = CustomOperators::CastFromFp8;
+const static OperatorIdentifier CastToFp8     = CustomOperators::CastToFp8;
 const static OperatorIdentifier CopyVarUpdate = CustomOperators::CopyVarUpdate;
 const static OperatorIdentifier Ctc           = CustomOperators::Ctc;
 const static OperatorIdentifier CtcBeamSearchDecoder =

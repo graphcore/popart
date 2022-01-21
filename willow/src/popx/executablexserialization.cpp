@@ -106,6 +106,8 @@ popart::cap::DataType toCapnpDataType(popart::DataType type) {
     return popart::cap::DataType::BOOL;
   case popart::DataType::FLOAT:
     return popart::cap::DataType::FLOAT;
+  case popart::DataType::FLOAT8:
+    return popart::cap::DataType::FLOAT8;
   case popart::DataType::FLOAT16:
     return popart::cap::DataType::FLOAT16;
   case popart::DataType::BFLOAT16:
@@ -147,6 +149,8 @@ popart::DataType toPopartDataType(popart::cap::DataType type) {
     return popart::DataType::BOOL;
   case popart::cap::DataType::FLOAT:
     return popart::DataType::FLOAT;
+  case popart::cap::DataType::FLOAT8:
+    return popart::DataType::FLOAT8;
   case popart::cap::DataType::FLOAT16:
     return popart::DataType::FLOAT16;
   case popart::cap::DataType::BFLOAT16:

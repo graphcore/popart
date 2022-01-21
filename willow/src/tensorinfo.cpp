@@ -416,6 +416,7 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
       {DataType::UINT64, {DataType::UINT64, 8, true, "UINT64", "uint64"}},
       {DataType::BOOL, {DataType::BOOL, 1, true, "BOOL", "bool"}},
       // floating point types
+      {DataType::FLOAT8, {DataType::FLOAT8, 1, false, "FLOAT8", "float8"}},
       {DataType::FLOAT16, {DataType::FLOAT16, 2, false, "FLOAT16", "float16"}},
       {DataType::BFLOAT16,
        {DataType::BFLOAT16, 2, false, "BFLOAT16", "bfloat16"}},

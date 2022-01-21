@@ -73,6 +73,7 @@ set(POPART_ONLY_DEPS_INCLUDES
 )
 set(POPART_ONLY_DEPS_LIBS
     popef
+    popfloat
     poplar
     poplin
     popnn

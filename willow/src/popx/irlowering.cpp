@@ -20,6 +20,7 @@
 
 #include <filereader.hpp>
 #include <gcl/TileAllocation.hpp>
+#include <popfloat/experimental/codelets.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplar/RandomSeed.hpp>
@@ -1203,6 +1204,11 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
     }
     case DataType::FLOAT16: {
       setInitValHalf(tensor);
+      break;
+    }
+    case DataType::FLOAT8: {
+      // poplar does not have FLOAT8 support, it is saved in INT8
+      setInitVal<int8_t>(tensor);
       break;
     }
     case DataType::BOOL: {
@@ -2773,6 +2779,7 @@ void IrLowering::prepareGraph() {
     poplin::addCodelets(graph().getPoplarGraph());
     popnn::addCodelets(graph().getPoplarGraph());
     poprand::addCodelets(graph().getPoplarGraph());
+    popfloat::experimental::addCodelets(graph().getPoplarGraph());
 
     // Add custom codelets as per the user provided list of paths. Allow poplar
     // to infer the file type from the extension. Also feed through the compile
@@ -4055,6 +4062,11 @@ poplar::Type popType(const TensorInfo &info) {
   }
   case DataType::FLOAT16: {
     return poplar::HALF;
+  }
+  case DataType::FLOAT8: {
+    // poplar does not have FLOAT8 support, the data is saved in SIGNED_CHAR
+    // format
+    return poplar::SIGNED_CHAR;
   }
   case DataType::BOOL: {
     return poplar::BOOL;

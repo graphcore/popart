@@ -489,6 +489,7 @@ void BuilderImpl::populateTensorProtoFromConstVoidData(
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:
   case DataType::BFLOAT16:
+  case DataType::FLOAT8:
     throw error("Unsupported data type for initialized data ({})",
                 initData.info);
   }
