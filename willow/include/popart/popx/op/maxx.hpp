@@ -10,10 +10,16 @@ namespace popart {
 namespace popx {
 
 // Refactor needed, see T7199
-class MaxOpx : public ElementWiseUnaryOpx {
+class MaxOpx : public PopOpx {
 public:
   MaxOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
+
+  InputCreatorType getInputCreatorType(InIndex) const override;
+
+  snap::Tensor
+      unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 class MaxArgGradOpx : public PopOpx {

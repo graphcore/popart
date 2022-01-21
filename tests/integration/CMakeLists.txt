@@ -144,6 +144,7 @@ add_popart_py_unit_test(int8_host_stream_test int8_host_stream_test.py VARIANTS 
 add_popart_py_unit_test(identical_replica_test identical_replica_test.py VARIANTS Hw)
 add_popart_py_unit_test(version_test version_test.py)
 add_popart_py_unit_test(all_reduce_op test_all_reduce_op.py VARIANTS Hw)
+add_popart_py_unit_test(min_max_unwinding_test min_max_unwinding_test.py)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)

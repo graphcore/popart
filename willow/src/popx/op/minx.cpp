@@ -15,7 +15,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-MinOpx::MinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
+MinOpx::MinOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<MinOp>(op, {Onnx::Operators::Min_8, Onnx::Operators::Min_6});
 }
 

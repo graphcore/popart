@@ -15,7 +15,7 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
-MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
+MaxOpx::MaxOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<MaxOp>(op, {Onnx::Operators::Max_8, Onnx::Operators::Max_6});
 }
 
@@ -39,6 +39,25 @@ void MaxOpx::grow(snap::program::Sequence &prog) const {
   }
 
   setOutTensor(MaxOp::getOutIndex(), outTensor);
+}
+
+InputCreatorType MaxOpx::getInputCreatorType(InIndex index) const {
+  // If one of the operations is a broadcast then the tensor cannot be unwound.
+  if (op_p->inInfo(index) != op_p->outInfo(0)) {
+    return InputCreatorType::Deadend;
+  }
+
+  // Default behaviour.
+  return InputCreatorType::CanUnwind;
+}
+
+snap::Tensor
+MaxOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+  return tensor;
+}
+
+view::RegMap MaxOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
 MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_)

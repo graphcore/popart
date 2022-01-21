@@ -10,7 +10,7 @@ namespace popart {
 namespace popx {
 
 // Refactor needed, see T7199
-class MinOpx : public ElementWiseUnaryOpx {
+class MinOpx : public PopOpx {
 public:
   MinOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
