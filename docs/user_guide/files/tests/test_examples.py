@@ -103,6 +103,16 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "call_with_info_popart_ir.py"
         self.run_python(filename, self.base_path)
 
+    def test_documentation_popart_ir_repeat_0(self):
+        """Test the popart.ir basic repeat example"""
+        filename = "repeat_subgraph_popart_ir_0.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popart_ir_repeat_1(self):
+        """Test the popart.ir subgraph in parent in repeat example"""
+        filename = "repeat_subgraph_popart_ir_1.py"
+        self.run_python(filename, self.base_path)
+
 
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""

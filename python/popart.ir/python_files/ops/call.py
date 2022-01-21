@@ -146,6 +146,8 @@ def call(subgraph: Graph,
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
             popart.ir.subgraph_input. Defaults to an empty dictionary.
+            Note that, it is not needed if the inputs can be passed in the right
+            order with `subgraph_fn_param_inputs`.
 
     Returns:
         Tuple[Tensor, ...]:

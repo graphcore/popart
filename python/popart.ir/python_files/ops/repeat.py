@@ -14,13 +14,13 @@ __all__ = ['repeat', 'repeat_with_info']
 
 @op_debug_context
 def repeat(repeat_subgraph: Graph,
-           repeat_trip_count: int,
-           *subgraph_fn_param_inputs: Tensor,
+           repeat_count: int,
+           *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
            subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
            ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
     """
     Repeat Op: An op that repeats a subgraph with the provided input tensors
-        `repeat_trip_count` number of times.
+        `repeat_count` number of times..
 
     Implementation detail: In order to maintain the input / output indices of the subgraph, we must
         call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
@@ -55,16 +55,23 @@ def repeat(repeat_subgraph: Graph,
                         Going
 
     Args:
-        repeat_subgraph (Graph): User defined graph to repeat `repeat_trip_count` times.
-        repeat_trip_count (int): Number of times to repeat the subgraph.
+        repeat_subgraph (Graph): User defined graph to repeat `repeat_count` times.
+        repeat_count (int): Number of times to repeat the subgraph.
+        *subgraph_fn_param_inputs  (Tensor, List[Tensor]):
+            parent tensors that correspond to the inputs of the callable passed
+            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
+            The inputs passed MUST be provided here in the EXACT SAME ORDER as
+            to ir.create_graph(callable, ...).
         subgraph_in_to_parent_in (Optional[Mapping[Tensor, Tensor]]):
             Mapping of `subgraph tensor -> parent tensor` that corresponds to
             the inputs that the callable defined internally, e.g. by using
             popart.ir.subgraph_input. Defaults to an empty dictionary.
             Works effectively the same as the call op's `subgraph_in_to_parent_in` argument.
+            Note that, it is not needed if the inputs can be passed in the right
+            order with `subgraph_fn_param_inputs`.
 
     Throws:
-        ValueError: If repeat_trip_count <= 1.
+        ValueError: If repeat_count <= 1.
         ValueError: If the number of explicitly passed inputs + the number of loop created inputs
             != the number of outputs.
 
@@ -104,7 +111,7 @@ def repeat(repeat_subgraph: Graph,
     """
     loop_info = repeat_with_info(
         repeat_subgraph,
-        repeat_trip_count,
+        repeat_count,
         *subgraph_fn_param_inputs,
         subgraph_in_to_parent_in=subgraph_in_to_parent_in)
 
@@ -123,16 +130,16 @@ def repeat(repeat_subgraph: Graph,
 def repeat_with_info(
         subgraph: Graph,
         repeat_count: int,
-        *subgraph_fn_param_inputs: Tensor,
+        *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
         check_inputs: bool = True) -> SubgraphOpInfo:
     """Repeat Op: An op that repeats a subgraph with the provided input tensors
-        `repeat_trip_count` number of times.
+        `repeat_count` number of times.
         Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
 
     Args:
-        repeat_subgraph (Graph): User defined graph to repeat `repeat_trip_count` times.
-        repeat_trip_count (int): Number of times to repeat the subgraph.
+        repeat_subgraph (Graph): User defined graph to repeat `repeat_count` times.
+        repeat_count (int): Number of times to repeat the subgraph.
         *subgraph_fn_param_inputs (Tensor, List[Tensor]):
             parent tensors that correspond to the inputs of the callable passed
             to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
@@ -146,7 +153,7 @@ def repeat_with_info(
         check_inputs (bool = True):
             Check when called if all inputs have been provided.
     Raises:
-        ValueError: If repeat_trip_count <= 1.
+        ValueError: If repeat_count <= 1.
         ValueError: If the number of explicitly passed inputs + the number of loop created inputs
             != the number of outputs.
 
@@ -179,16 +186,23 @@ def repeat_with_info(
     bottom_graph = subgraph
     pb_bottom_graph = bottom_graph._pb_graph
 
+    subgraph_fn_param_inputs_flat = []
+    for x in subgraph_fn_param_inputs:
+        if isinstance(x, (list, tuple)):
+            subgraph_fn_param_inputs_flat.extend(x)
+        else:
+            subgraph_fn_param_inputs_flat.append(x)
+
     # The loop op requires the same number of inputs as outputs.
     if check_inputs and (
-            len(subgraph_fn_param_inputs) + len(subgraph_in_to_parent_in) !=
-            len(pb_bottom_graph.getOutputIds())):
+            len(subgraph_fn_param_inputs_flat) + len(subgraph_in_to_parent_in)
+            != len(pb_bottom_graph.getOutputIds())):
         raise ValueError(
-            f"The number of explicitly passed inputs ({len(subgraph_fn_param_inputs)}):"
-            f" {[t.id for t in subgraph_fn_param_inputs]}\n"
-            f" + the number of loop created inputs ({len(subgraph_in_to_parent_in)}):"
+            f"The number of passed inputs ({len(subgraph_fn_param_inputs_flat)}):"
+            f" {[t.id for t in subgraph_fn_param_inputs_flat]}\n"
+            f" + the number of mapped inputs ({len(subgraph_in_to_parent_in)}):"
             f" {[t.id for t in subgraph_in_to_parent_in.values()]}\n"
-            f" must equal the number of outputs ({len(pb_bottom_graph.getOutputIds())}):"
+            f" must equal to the number of outputs ({len(pb_bottom_graph.getOutputIds())}):"
             f" {pb_bottom_graph.getOutputIds()}")
 
     # Create the middle graph, call and loop ops
@@ -206,7 +220,7 @@ def repeat_with_info(
                 f"Tensor {top_graph} is not in graph {parent_tensor}")
 
     # 1, 2. Connect inputs.
-    _setup_inputs(subgraph_fn_param_inputs, subgraph_in_to_parent_in,
+    _setup_inputs(subgraph_fn_param_inputs_flat, subgraph_in_to_parent_in,
                   pb_top_graph, pb_bottom_graph, pb_middle_graph, pb_callop,
                   pb_loop_op)
 
