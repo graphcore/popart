@@ -46,6 +46,7 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
       popType(rnn_op.inInfo(RNNOp::getInputInIndex()));
   auto output = graph().addVariable(elem_type,
                                     {seqLen, 1, batchSize, hiddenSize},
+                                    poplar::VariableMappingMethod::LINEAR,
                                     debugContext("rnn/output"));
   for (int i = 0; i < seqLen; i++) {
 

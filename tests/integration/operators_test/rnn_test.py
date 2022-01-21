@@ -24,6 +24,7 @@ def np_zeros(*shape):
 
 
 # Compare with onnx implementation with minimal inputs when doing inference
+@tu.requires_ipu_model
 def test_rnn_onnx(op_tester):
     d1 = np.random.randint(0, 20, size=(2, 2, 3)).astype(np.float32)
 
@@ -52,6 +53,7 @@ def test_rnn_onnx(op_tester):
 
 
 # Compare with Pytorch implementation with minimal inputs when doing inference
+@tu.requires_ipu_model
 def test_rnn_torch(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -89,6 +91,7 @@ def test_rnn_torch(op_tester):
 
 
 # Compare with Pytorch implementation with minimal inputs when training
+@tu.requires_ipu_model
 def test_rnn_torch_grad(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -149,6 +152,7 @@ def test_rnn_torch_grad(op_tester):
 
 
 # Compare with onnx implementation when using biases in onnx
+@tu.requires_ipu_model
 def test_rnn_biases_onnx(op_tester):
     d1 = np.random.randint(0, 20, size=(2, 2, 3)).astype(np.float32)
 
@@ -181,6 +185,7 @@ def test_rnn_biases_onnx(op_tester):
 
 
 # Compare with Pytorch implementation when using biases in inference
+@tu.requires_ipu_model
 def test_rnn_biases_torch(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -225,6 +230,7 @@ def test_rnn_biases_torch(op_tester):
 
 
 # Commpare with onnx implementation when using initial_h in inference
+@tu.requires_ipu_model
 def test_rnn_initial_h_onnx(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -267,6 +273,7 @@ def test_rnn_initial_h_onnx(op_tester):
 
 
 # Test against pytorch implementation with the 2 activation functions supported by Pytorch
+@tu.requires_ipu_model
 @pytest.mark.parametrize("activation", ["Tanh", "Relu"])
 def test_rnn_nondefault_activation(op_tester, activation):
     d1 = np.random.rand(2, 2, 3).astype(np.float32)
@@ -331,6 +338,7 @@ def test_rnn_nondefault_activation(op_tester, activation):
 
 # Grad with bias and initial_h inputs
 # Compare to pytorch implementation
+@tu.requires_ipu_model
 def test_rnn_torch_grad_all_inputs(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -430,6 +438,7 @@ def test_rnn_torch_grad_all_inputs(op_tester):
 # Check that the following model
 #   rnn -> rnn -> rnn -> rnn -> identity
 # with identical rnn ops gets outlined so that there is only 1 rnn op
+@tu.requires_ipu_model
 def test_rnn_outlining(op_tester):
     d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
                    [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
@@ -474,6 +483,7 @@ def test_rnn_outlining(op_tester):
 
 
 # Try an activation not supported by Poplar
+@tu.requires_ipu_model
 def test_rnn_unsupported_activation(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -506,6 +516,7 @@ def test_rnn_unsupported_activation(op_tester):
 
 
 # Only one activation is supported, try 0
+@tu.requires_ipu_model
 def test_rnn_bad_number_of_activations(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -537,6 +548,7 @@ def test_rnn_bad_number_of_activations(op_tester):
 
 
 # Test that wrong hidden_size attribute throws error
+@tu.requires_ipu_model
 def test_rnn_wrong_hidden_size(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -568,6 +580,7 @@ def test_rnn_wrong_hidden_size(op_tester):
 
 
 # Test that there's no error when hidden_size attribute matches up with the inferred hidden size
+@tu.requires_ipu_model
 def test_rnn_correct_hidden_size(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -596,6 +609,7 @@ def test_rnn_correct_hidden_size(op_tester):
 
 
 # Test activation_alpha attribute throws error
+@tu.requires_ipu_model
 def test_rnn_activation_alpha_error(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -627,6 +641,7 @@ def test_rnn_activation_alpha_error(op_tester):
 
 
 # Test activation_beta attribute throws error
+@tu.requires_ipu_model
 def test_rnn_activation_beta_error(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -658,6 +673,7 @@ def test_rnn_activation_beta_error(op_tester):
 
 
 # Test clip attribute throws error
+@tu.requires_ipu_model
 def test_rnn_clip_error(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -689,6 +705,7 @@ def test_rnn_clip_error(op_tester):
 
 
 # Test direction attribute throws error when direction != "forward"
+@tu.requires_ipu_model
 def test_rnn_direction_error(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
@@ -720,6 +737,7 @@ def test_rnn_direction_error(op_tester):
 
 
 # Test forward direction attribute does not throw error
+@tu.requires_ipu_model
 def test_rnn_forward_direction(op_tester):
     d1 = np.array([[[1.]]]).astype(np.float32)
 
