@@ -54,6 +54,29 @@ void DynamicZeroOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(DynamicBinaryBaseOp::getOutIndex(), outTensor);
 }
 
+snap::Tensor DynamicZeroOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                InIndex in,
+                                                OutIndex) const {
+  if (in == DynamicZeroOp::getUpdateInIndex()) {
+    return tensor;
+  } else {
+    return PopOpx::unwindTensorLayout(tensor, in, 0);
+  }
+}
+
+view::RegMap DynamicZeroOpx::unwindRegion(InIndex index, OutIndex) const {
+  DynamicBinaryBaseOp *op = dynamic_cast<DynamicBinaryBaseOp *>(this->op_p);
+  auto shape              = op->inShape(index);
+  return [shape](const view::Region &) {
+    return view::Regions(1, view::Region::getFull(shape));
+  };
+}
+
+snap::Tensor DynamicZeroOpx::cloneNcopyOpt(snap::program::Sequence &s,
+                                           const snap::Tensor &t) const {
+  return cloneNcopy(s, t);
+}
+
 InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
   return index == DynamicBinaryBaseOp::getUpdateInIndex()
              ? InputCreatorType::CanUnwind

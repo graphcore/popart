@@ -9,11 +9,15 @@
 namespace popart {
 namespace popx {
 
-class DynamicZeroOpx : public DynamicUpdateOpx {
+class DynamicZeroOpx : public PopOpx {
 public:
-  DynamicZeroOpx(Op *op, Devicex *devicex) : DynamicUpdateOpx(op, devicex) {}
+  DynamicZeroOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
   void grow(snap::program::Sequence &) const override;
   InputCreatorType getInputCreatorType(InIndex index) const final;
+  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
+  view::RegMap unwindRegion(InIndex, OutIndex) const final;
+  virtual snap::Tensor cloneNcopyOpt(snap::program::Sequence &,
+                                     const snap::Tensor &) const;
 };
 
 class DynamicZeroInplaceOpx : public DynamicZeroOpx {

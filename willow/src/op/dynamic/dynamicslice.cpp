@@ -123,7 +123,7 @@ view::RegMap DynamicSliceInplaceOp::bwdRegMap(InIndex inIndex,
 
 view::Regions DynamicSliceInplaceOp::modifies(InIndex in) const {
   if (in == getSliceInIndex()) {
-    return {view::Region::getFull(inShape(in))};
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else {
     return {view::Region::getEmpty(inRank(in))};
   }
@@ -131,7 +131,7 @@ view::Regions DynamicSliceInplaceOp::modifies(InIndex in) const {
 
 view::Regions DynamicSliceInplaceOp::aliases(InIndex in, OutIndex) const {
   if (in == getSliceInIndex()) {
-    return {view::Region::getFull(inShape(in))};
+    return {view::Region::getFull(inShape(in), view::AccessType::Write)};
   } else {
     return {view::Region::getEmpty(inRank(in))};
   }
