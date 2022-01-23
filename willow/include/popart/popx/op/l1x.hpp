@@ -13,6 +13,10 @@ public:
   L1Opx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
+
+  snap::Tensor
+  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 class L1GradOpx : public PopOpx {

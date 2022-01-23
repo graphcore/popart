@@ -74,8 +74,21 @@ void L1GradOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(0, snap::Tensor{gradTensor, graph()});
 }
 
-InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CanUnwind;
+InputCreatorType L1Opx::getInputCreatorType(InIndex index) const {
+  if (getOp<L1Op>().getReductionType() == ReductionType::NoReduction &&
+      index == L1Op::getInIndex()) {
+    return InputCreatorType::CanUnwind;
+  }
+  return InputCreatorType::Deadend;
+}
+
+view::RegMap L1Opx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
+snap::Tensor
+L1Opx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
+  return tensor;
 }
 
 // lambda * sum_{0,..rank-1} |v|
