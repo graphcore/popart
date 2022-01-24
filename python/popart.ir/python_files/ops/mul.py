@@ -8,7 +8,8 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Multiplies two Tensors element-wise.
+    Multiplies two tensors element-wise.
+
     Follows numpy broadcasting rules.
     Arguments must have the same dtype.
 

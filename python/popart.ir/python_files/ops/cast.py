@@ -9,7 +9,9 @@ from .utils import check_in_graph
 @op_debug_context
 def cast(t: Tensor, data_type: dtype) -> Tensor:
     """
-    Casts tensor `t` to data type `dtype`.
+    Casts a tensor to a specific data type.
+
+    This operation casts tensor `t` to data type `data_type`.
 
     Args:
         t: Tensor

@@ -17,8 +17,10 @@ def repeat(repeat_subgraph: Graph,
            subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
            ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
     """
-    Repeat Op: An op that repeats a subgraph with the provided input tensors
-        `repeat_count` number of times..
+    Repeatedly executes a subgraph.
+
+    This operation repeatedly executes a subgraph `repeat_trip_count` number of times. The
+    provided input tensors are provided as graph inputs for the first iteration.
 
     Implementation detail: In order to maintain the input / output indices of the subgraph, we must
         call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
@@ -131,9 +133,13 @@ def repeat_with_info(
         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
         check_inputs: bool = True) -> SubgraphOpInfo:
-    """Repeat Op: An op that repeats a subgraph with the provided input tensors
-        `repeat_count` number of times.
-        Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
+    """
+    Repeatedly executes a subgraph and returns information about the callsite.
+
+    This operation repeatedly executes a subgraph `repeat_trip_count` number of times. The
+    provided input tensors are provided as graph inputs for the first iteration.
+
+    Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
 
     Args:
         repeat_subgraph (Graph): User defined graph to repeat `repeat_count` times.

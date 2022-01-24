@@ -13,7 +13,7 @@ def scaled_add(X: Tensor,
                a: Union[float, Tensor] = 1.0,
                b: Union[float, Tensor] = 1.0) -> Tensor:
     """
-    Calculates `Z = aX + bY`.
+    Compute `Z = aX + bY`.
 
     Does not apply numpy broadcasting.
     Uses mixed precision poplibs operations.
@@ -65,7 +65,7 @@ def scaled_add_(X: Tensor,
                 a: Union[float, Tensor] = 1.0,
                 b: Union[float, Tensor] = 1.0) -> Tensor:
     """
-    Calculates `X = aX + bY`. Inplace on X.
+    Compute `X = aX + bY` (inplace on `X`).
 
     Does not apply numpy broadcasting.
     Uses mixed precision poplibs operations.

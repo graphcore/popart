@@ -14,7 +14,10 @@ from .init import init
 def remote_load(remote_buffer: RemoteBuffer,
                 offset: Union[int, Tensor],
                 name: Optional[str] = None) -> Tensor:
-    """Load a tensor from the remote buffer residing in the off-chip streaming memory.
+    """
+    Loads a tensor from streaming memory.
+
+    This operation loads a tensor from the remote buffer residing in the off-chip streaming memory.
 
     The tensor will be loaded from the memory location corresponding to
     ``remote_buffer_id`` (specified in the ``remote_buffer``).
@@ -82,7 +85,10 @@ def remote_load(remote_buffer: RemoteBuffer,
 @op_debug_context
 def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
                  t: Tensor) -> Tensor:
-    """Load a tensor inplace from the remote buffer residing in the off-chip streaming memory.
+    """
+    Loads a tensor from streaming memory (inplace).
+
+    This operation load a tensor inplace from the remote buffer residing in the off-chip streaming memory.
 
     This op is identical to ``remote_load``, but with the exception that the tensor loaded from
     the remote buffer will be written to ``t`` directly.

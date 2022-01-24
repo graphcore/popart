@@ -10,8 +10,11 @@ def print_tensor(t: Tensor,
                  title: str = None,
                  print_self: bool = True,
                  print_gradient: bool = False) -> Tensor:
-    """Print a tensor everytime this op runs in the graph. Note this will print in the context it
-        is placed. E.g. if within a loop op, it will run each loop iteration.
+    """
+    Print a tensor.
+
+    Print a tensor everytime this op runs in the graph. Note this will print in the context it
+    is placed. E.g. if within a loop op, it will run each loop iteration.
 
     Args:
         t (Tensor): The tensor to print.

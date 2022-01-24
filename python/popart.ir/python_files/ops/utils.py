@@ -23,7 +23,9 @@ def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
 
 def check_in_graph(graph: Graph, *args, **tensors: Tensor):
     """
-    Checks if tensors are in graph and is a tensor. If not, raises a ValueError or TypeError.
+    Checks if tensors are in graph and is a tensor.
+
+    If not, raises a ValueError or TypeError.
     Specify all tensors using keyword augments to aid the error message.
     """
     #Python >=3.7 signature `check_in_graph(graph, *, **tensors: Tensor)`

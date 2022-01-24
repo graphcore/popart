@@ -9,7 +9,8 @@ from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 @op_debug_context
 def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Compares two Tensors element-wise with an AND operator.
+    Applies a logical AND elemement-wise.
+
     Follows numpy broadcasting rules.
     Inputs will be cast to bool if needed.
 

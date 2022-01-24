@@ -10,7 +10,9 @@ from .utils import check_in_graph
 def transpose(t: Tensor,
               permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
-    Permute the axes of a Tensor. By default reverses the axes of t.
+    Permute the axes of a tensor.
+
+    By default this operation reverses the axes of `t`.
 
     Args:
         t: Tensor
@@ -48,7 +50,9 @@ def transpose(t: Tensor,
 def transpose_(t: Tensor,
                permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
-    Permute the axes of a Tensor. By default reverses the axes of t.
+    Permutes the axes of a tensor (inplace).
+
+    By default this operation reverses the axes of `t`.
 
     This is the inplace version of :func:`~ops.transpose`. Behaviour is the same, but modifies the
         tensor inplace.

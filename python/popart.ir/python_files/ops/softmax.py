@@ -8,9 +8,10 @@ from .utils import check_in_graph, handle_negative_axis
 @op_debug_context
 def softmax(t: Tensor, axis: int) -> Tensor:
     """
-    Computes the softmax operation on a Tensor. This recales the slices of axis
-    such that all elements are within [0, 1] and sum to 1.
-    The output shape and dtype matches the input.
+    Computes the softmax on an input.
+
+    This recales the slices of axis such that all elements are within [0, 1] and
+    sum to 1. The output shape and dtype matches the input.
 
     Args:
         t: Tensor

@@ -231,7 +231,7 @@ class Tensor:
     def copy_to_ipu(self, destination: int,
                     source: Optional[int] = None) -> 'Tensor':
         """
-        Copies a Tensor to a ipu.
+        Copies a tensor to a IPU.
 
         Args:
             destination (int):

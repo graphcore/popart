@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def io_tile_copy(t: Tensor) -> Tensor:
     """
-    Copies a Tensor to/from io tiles on the current ipu.
+    Copies a tensor to/from IO tiles on the current IPU.
 
     Args:
         t: Tensor

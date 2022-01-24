@@ -9,7 +9,8 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set, cast_if_needed
 @op_debug_context
 def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Element wise `lhs if condition else rhs`.
+    Element-wise `lhs if condition else rhs`.
+
     Chooses either elements `lhs` or `rhs` depending on `condition`.
     The operator supports multi-directional broadcasting (numpy-style).
 

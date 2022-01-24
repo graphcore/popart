@@ -133,7 +133,9 @@ def call(subgraph: Graph,
          subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
          ) -> Tuple[Tensor, ...]:
     """
-    Call Op: An op that invokes a subgraph with the provided input tensors.
+    An op that invokes a subgraph.
+
+    The provided input tensors are passed as graph inputs.
 
     Args:
         subgraph (Graph): The called graph.
@@ -168,8 +170,10 @@ def call_with_info(
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
         check_inputs: bool = True) -> SubgraphOpInfo:
     """
-    Call Op: An op that invokes a subgraph with the provided input tensors.
-        Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
+    An op that invokes a subgraph and returns information about the callsite.
+
+    The provided input tensors are passed as graph inputs. This op returns
+    SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
 
     Args:
         subgraph (Graph): The called graph.

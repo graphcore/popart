@@ -29,8 +29,9 @@ def matmul(lhs: Tensor,
            serialise_factor: int = 1,
            output_type: Optional[dtypes.dtype] = None,
            partials_type: Optional[dtypes.dtype] = None) -> Tensor:
-    """Matrix multiplies two Tensors. Follows numpy matrix multiplication
-    rules for N-D tensors, see
+    """Matrix multiplies two tensors.
+
+    Follows numpy matrix multiplication rules for N-D tensors, see
     https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
 
     Arguments must have the same dtype. Shapes must be compatible as per

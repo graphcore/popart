@@ -8,8 +8,9 @@ from .utils import check_in_graph
 @op_debug_context
 def gelu(t: Tensor) -> Tensor:
     """
-    Computes the Gelu activation on a Tensor.
-    https://arxiv.org/abs/1606.08415
+    Computes the GELU activation on a Tensor.
+
+    See: https://arxiv.org/abs/1606.08415
 
     Args:
         t: Tensor

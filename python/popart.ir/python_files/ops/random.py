@@ -14,7 +14,10 @@ def random_uniform(seed_tensor: Tensor,
                    high: float = 1.0,
                    dtype: dtypes.dtype = dtypes.float32):
     """
-    Randomly sample from a uniform distribution with minimum value `low` and maximum value `high`.
+    Randomly sample from a uniform distribution.
+
+    This operation will sample uniformly from a range with minimum value `low`
+    and maximum value `high`.
 
     Note: not compatible with `IPUModel`.
 
@@ -64,7 +67,9 @@ def random_normal(seed_tensor: Tensor,
                   std: float = 1.0,
                   dtype: dtypes.dtype = dtypes.float32):
     """
-    Randomly sample from a normal distribution with `mean` and standard deviation `std`.
+    Randomly sample from a normal distribution.
+
+    The distribution will have mean and the standard deviation is specified by `mean` and `std` respectively.
 
     Note: not compatible with `IPUModel`.
 

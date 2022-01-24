@@ -10,15 +10,15 @@ from .utils import check_in_graph
 def ipu_copy(t: Tensor, destination: int,
              source: Optional[int] = None) -> Tensor:
     """
-    Copies a Tensor to an ipu.
+    Copies a tensor to an IPU.
 
     Args:
         t: Tensor
             Tensor to be copied.
         destination: int
-            Ipu for the tensor to be copied to.
+            IPU for the tensor to be copied to.
         source: Optional[int]
-            Ipu for the tensor to be copied from.
+            IPU for the tensor to be copied from.
             By default, the source will be taken from the producer of `t`.
             If `t` does not have a producer a source MUST be provided.
 

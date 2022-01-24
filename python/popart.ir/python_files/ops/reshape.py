@@ -16,7 +16,7 @@ def reshape_handle_negative_axis(t: Tensor,
 @op_debug_context
 def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
-    Reshape a Tensor.
+    Reshape a tensor.
 
     Args:
         t: Tensor
@@ -56,7 +56,7 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 @op_debug_context
 def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
-    Reshape a Tensor inplace.
+    Reshape a tensor (inplace).
 
     This is the inplace version of :func:`~ops.reshape`
 
@@ -98,7 +98,9 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 @debug_context_frame_offset(1)
 def flatten(t: Tensor) -> Tensor:
     """
-    Flatten a tensor. Uses `reshape`.
+    Flatten a tensor.
+
+    Internally this uses `reshape`.
 
     Args:
         t (Tensor): input tensor
@@ -112,7 +114,9 @@ def flatten(t: Tensor) -> Tensor:
 @debug_context_frame_offset(1)
 def flatten_(t: Tensor) -> Tensor:
     """
-    Flatten a tensor inplace. Uses `reshape_` (inplace).
+    Flatten a tensor (inplace).
+
+    Internally this uses `reshape_` (inplace).
 
     This is the inplace version of :func:`~ops.flatten`
 

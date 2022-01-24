@@ -362,7 +362,10 @@ def op_debug_context(name: Fn) -> Fn:
 
 
 def op_debug_context(name):  # type: ignore
-    """Decorator to specify a new op debug context. Typical usage:
+    """
+    Decorator to specify a new op debug context.
+
+    Typical usage:
 
     .. code-block:: python
 

@@ -9,6 +9,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 def add(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
     Adds two Tensors element-wise.
+
     Follows numpy broadcasting rules. Arguments must have the same dtype.
 
     Args:

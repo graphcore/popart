@@ -80,7 +80,7 @@ def slice_(t: Tensor,
            step: Optional[Union[int, List[Optional[int]]]] = None,
            axis: Optional[Union[int, List[int]]] = None) -> Tensor:
     """
-    Selects elements from a tensor using a slice or multiple slices. Inplace.
+    Selects elements from a tensor using a slice or multiple slices (inplace).
 
     This is the inplace version of :func:`~ops.slice`. Behaviour is the same, but modifies the
         tensor inplace.

@@ -15,7 +15,9 @@ def gather(
         zero_OOR=False,
 ) -> Tensor:
     """
-    Select multiple elements from an array, given by `indices`, along a specified axis.
+    Selects multiple elements from an array.
+
+    Elements are specified via `indices`, along a specified axis.
     Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
 
     Examples:
@@ -94,8 +96,10 @@ def tied_gather(
         zero_OOR=False,
 ) -> Tensor:
     """
-    Select multiple elements from an array, given by `indices`, along a specified axis.
-    Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
+    Select multiple elements from an array.
+
+    Elements are specified given by `indices`, along a specified axis.
+    Equivalent to `numpy.take`. Note that this is different from `torch.gather`.
 
     Numerically the same as the `gather` op but does not specify the tile
     layout of the `indices` tensor. When preceding a `matmul` op the tile

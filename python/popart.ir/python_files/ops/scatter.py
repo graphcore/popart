@@ -13,7 +13,9 @@ def scatter(t: Tensor,
             axis: int = 0,
             available_memory_proportion: Optional[float] = None) -> Tensor:
     """
-    Select multiple elements from an array, given by `indices`, and updates the values from `values`.
+    Update multiple elements from an array
+
+    Elements are specified by `indices`. The indices are updated with the values in `values`.
 
     Scatter takes three inputs data, indices, and values of the same rank r >= 1 and an optional
     attribute axis that identifies an axis of data (by default, the outer-most axis, that is axis 0).

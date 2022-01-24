@@ -12,11 +12,15 @@ from .init import init
 def host_load(h2d_stream: HostToDeviceStream,
               name: Optional[str] = None) -> Tensor:
     """
-    Host Load Op: an op to represent the transfer of data from the host to the
+    Transfers a tensor from the host to the device.
+
+    This operation represents the transfer of data from the host to the
     device. It uses the existing host to device transfers created when building
     the IR, but defers the actual poplar::Copy until the op itself runs. This
     allows the copy to be scheduled as part of the normal op scheduling.
 
+    Data is sent from the host via the :py:class:`IStepIO` object passed to
+    `session.run()`.
 
     Args:
         h2d_stream: (HostToDeviceStream) Stream to load from.

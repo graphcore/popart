@@ -11,7 +11,7 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
                    axes: Iterable[int], sizes: Iterable[int],
                    no_overlap: bool) -> Tensor:
     """
-    Dynamically updates a tensor.
+    Updates a slice of a tensor.
 
     The word "dynamic" refers to the fact that the index can be specified
     during runtime.
@@ -85,10 +85,10 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
                     axes: Iterable[int], sizes: Iterable[int],
                     no_overlap: bool) -> Tensor:
     """
-    Dynamically updates tensor `t` inplace.
+    Updates a slice of a tensor (inplace).
 
-    The word "dynamic" refers to the fact that the index can be specified
-    during runtime.
+    Dynamically updates tensor `t` inplace. The word "dynamic" refers to the
+    fact that the index can be specified during runtime.
 
     index, axes and sizes determines the slice of t which will be updated.
     The dimension of this slice and t_update must match.

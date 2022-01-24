@@ -10,7 +10,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
                   no_overlap: bool) -> Tensor:
     """
-    Returns a cloned slice of the input Tensor.
+    Returns a cloned slice of the input tensor.
 
     The word "dynamic" refers to the fact that the index can be specified
     during runtime.

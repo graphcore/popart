@@ -10,10 +10,15 @@ from .utils import check_in_graph
 @op_debug_context
 def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     """
-    Host Store: an op to represent the transfer of data from the device to the
+    Transfers a tensor from the device to the host.
+
+    This operation represents the transfer of data from the device to the
     host. It uses the existing device to host transfers created when building
     the IR, but defers the actual poplar::Copy until the op itself runs. This
     allows the copy to be scheduled as part of the normal op scheduling.
+
+    Data is received on the host via the :py:class:`IStepIO` object passed to
+    `session.run()`.
 
     Args:
         t (Tensor): The input tensor to copy to host.

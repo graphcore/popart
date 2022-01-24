@@ -8,7 +8,8 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def div(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Divides two Tensors element-wise.
+    Divides two tensors element-wise.
+
     Follows numpy broadcasting rules. Arguments must have the same dtype.
     Output will be the same dtype as the inputs.
     With integer values floor division is used.

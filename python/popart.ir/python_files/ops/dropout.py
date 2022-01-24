@@ -8,8 +8,11 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def dropout(t: Tensor, seed_tensor: Tensor, p: float):
     """
-    Randomly zeros elements of `t` with a probability of `p`. The dropout mask is created using samples
-    from a Bernoulli distribution seeded with the `seed_tensor`.
+    Randomly zero elements of the input tensor.
+
+    This operation will zero elements of tensor `t` with a probability of `p`.
+    The dropout mask is created using samples from a Bernoulli distribution
+    seeded with the `seed_tensor`.
 
     The user needs to manage updating the `seed_tensor` for each forward pass and replica.
 

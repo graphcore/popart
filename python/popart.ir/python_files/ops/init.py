@@ -10,8 +10,9 @@ from popart.ir.context import get_current_context, op_debug_context
 def init(shape: Iterable[int], dtype: dtypes.dtype,
          name: Optional[str] = None) -> Tensor:
     """
-    Init Op: create a tensor with zero values.
-        The returned tensor is not considered a variable.
+    Creates a tensor with zero values.
+
+    The returned tensor is not considered a variable.
 
     Args:
         dtype (dtypes.dtype): Data type for the output Tensor

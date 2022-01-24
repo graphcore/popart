@@ -11,7 +11,10 @@ from .utils import check_in_graph
 @op_debug_context
 def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
                  t: Tensor) -> None:
-    """Store the input tensor to the remote buffer residing in the off-chip streaming memory.
+    """
+    Stores a tensor in streaming memory.
+
+    This operation stores the input tensor to the remote buffer residing in the off-chip streaming memory.
 
     This Op is typically used when the user wants to store several different identically
     shaped tensors to the same remote buffer by specifying the offset (see below).

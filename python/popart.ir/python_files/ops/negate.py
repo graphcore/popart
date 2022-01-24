@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def negate(t: Tensor) -> Tensor:
     """
-    Negates tensor `t`
+    Logical negation of a tensor.
 
     Args:
         t: Tensor
