@@ -27,7 +27,7 @@ with main:
     increment_graph = ir.create_graph(increment_fn, x)
 
     # call graph
-    o = ops.call(increment_graph, x)
+    o, = ops.call(increment_graph, x)
     # Op end
     # host store
     o_d2h = pir.d2h_stream(o.shape, o.dtype, name="output_stream")

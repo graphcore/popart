@@ -754,7 +754,7 @@ def subgraph_input(shape: Iterable[int],
             w = pir.variable(1)
             x = pir.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
-            y = ops.call(add_w_graph, x, w)
+            y, = ops.call(add_w_graph, x, w)
 
     Args:
         shape (Tuple[int, ...])
@@ -807,7 +807,7 @@ def subgraph_output(t: Tensor) -> None:
             w = pir.variable(1)
             x = pir.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
-            y = ops.call(add_w_graph, x, w)
+            y, = ops.call(add_w_graph, x, w)
 
     Args:
         t (Tensor):

@@ -20,7 +20,7 @@ def test_modified():
         sg = ir.create_graph(
             lambda x: ops.var_updates.accumulate_(x, pir.constant(1)), x)
 
-        ops.call(sg, x)  # type: ignore
+        ops.call(sg, x)
         # Store x
         x_non_modify_stream = pir.d2h_stream(x.shape, x.dtype)
         ops.host_store(x_non_modify_stream, x)

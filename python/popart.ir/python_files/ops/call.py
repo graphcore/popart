@@ -131,7 +131,7 @@ class SubgraphOpInfo:
 def call(subgraph: Graph,
          *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
          subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
-         ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
+         ) -> Tuple[Tensor, ...]:
     """
     Call Op: An op that invokes a subgraph with the provided input tensors.
 
@@ -148,28 +148,15 @@ def call(subgraph: Graph,
             popart.ir.subgraph_input. Defaults to an empty dictionary.
 
     Returns:
-        None: If `subgraph` has no output tensors.
-        Tensor:
-            The output tensor of the call in the parent graph, if #subgraph has
-            exactly 1 output.
         Tuple[Tensor, ...]:
-            Tuple of the output tensors of the call in the parent graph, if
-            `subgraph` has >1 outputs. The tensors will be in ascending order of
-            the graph output index of the corresponding subgraph tensor.
+            Tuple of the output tensors of the call in the parent graph.
+            The tensors will be in ascending order of the graph output
+            index of the corresponding subgraph tensor.
     """
     info = call_with_info(subgraph,
                           *subgraph_fn_param_inputs,
                           subgraph_in_to_parent_in=subgraph_in_to_parent_in)
-    out_tensors = info.get_output_tensors()
-
-    # Return nothing if no outputs.
-    if len(out_tensors) == 0:
-        return
-    # Return single tensor if only one output.
-    if len(out_tensors) == 1:
-        return out_tensors[0]
-    # Return tuple of output tensors if multiple outputs.
-    return out_tensors
+    return info.get_output_tensors()
 
 
 @op_debug_context("call")

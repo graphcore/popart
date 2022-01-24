@@ -22,7 +22,7 @@ class TestCall:
             a = pir.variable(1)
 
             id_graph = ir.create_graph(id_fn, a)
-            b = ops.call(id_graph, a)
+            b, = ops.call(id_graph, a)
 
         assert len(g.get_tensors()) == 2
         assert len(g.get_variables()) == 1
@@ -56,20 +56,20 @@ class TestCall:
 
             with pytest.raises(ValueError):
                 # Call without `subgraph_in_to_parent_in`
-                y0 = ops.call(add_weight_graph0, x0)
+                y0, = ops.call(add_weight_graph0, x0)
 
             # First call site
-            y0 = ops.call(add_weight_graph0,
-                          x0,
-                          subgraph_in_to_parent_in={add_weight0.w: w0})
+            y0, = ops.call(add_weight_graph0,
+                           x0,
+                           subgraph_in_to_parent_in={add_weight0.w: w0})
 
             # Second call site of same graph
             w1 = pir.variable(1)
             x1 = pir.variable(1)
 
-            y1 = ops.call(add_weight_graph0,
-                          x1,
-                          subgraph_in_to_parent_in={add_weight0.w: w1})
+            y1, = ops.call(add_weight_graph0,
+                           x1,
+                           subgraph_in_to_parent_in={add_weight0.w: w1})
 
             # Second graph from new instance of module.
             # ir.create_graph should be able to create a new unique Graph name.
@@ -77,9 +77,9 @@ class TestCall:
             add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
-            y2 = ops.call(add_weight_graph1,
-                          x0,
-                          subgraph_in_to_parent_in={add_weight1.w: w1})
+            y2, = ops.call(add_weight_graph1,
+                           x0,
+                           subgraph_in_to_parent_in={add_weight1.w: w1})
 
             # Third graph that reuses module add_weight1.
             # This calls `build` again, and thus simply overwrites add_weight1.w
@@ -90,9 +90,9 @@ class TestCall:
             assert old_w1_id != add_weight1.w.id
 
             # Call third graph. Reuse x1 and w0 as inputs.
-            y3 = ops.call(add_weight_graph2,
-                          x1,
-                          subgraph_in_to_parent_in={add_weight1.w: w0})
+            y3, = ops.call(add_weight_graph2,
+                           x1,
+                           subgraph_in_to_parent_in={add_weight1.w: w0})
 
         # Test main graph
         # 4 vars + y0 + y1 + y2 + y3
@@ -146,7 +146,7 @@ class TestCall:
         with ir.main_graph():
             a = pir.variable(1)
             add_g = ir.create_graph(lambda x, y: x + y, a, a)
-            b = ops.call(add_g, a, a)
+            b, = ops.call(add_g, a, a)
 
     def test_mismatch_inputs_error(self):
         ir = pir.Ir()
@@ -178,7 +178,7 @@ class TestCall:
 
             g = ir.create_graph(sum_, a, [a, a, a], a)
 
-            x = ops.call(g, a, [a, a, a], a)
+            x, = ops.call(g, a, [a, a, a], a)
 
         assert len(g.get_input_tensors()) == 5
         assert len(g.get_output_tensors()) == 1

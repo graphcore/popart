@@ -34,8 +34,8 @@ with main:
                           name="value2")
 
     # call graph
-    o = ops.call(increment_graph, x, value1)
-    o = ops.call(increment_graph, o, value2)
+    o, = ops.call(increment_graph, x, value1)
+    o, = ops.call(increment_graph, o, value2)
     # Op end
 
     # host store

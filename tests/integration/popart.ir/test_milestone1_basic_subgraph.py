@@ -61,12 +61,12 @@ def build_model(
         lin = Linear()
         lin_graph = ir.create_graph(lin, x, out_features=out_features)
 
-        y = ops.call(lin_graph,
-                     x,
-                     subgraph_in_to_parent_in={
-                         lin.W: W,
-                         lin.b: b
-                     })
+        y, = ops.call(lin_graph,
+                      x,
+                      subgraph_in_to_parent_in={
+                          lin.W: W,
+                          lin.b: b
+                      })
 
         y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="y_stream")
         ops.host_store(y_d2h, y)

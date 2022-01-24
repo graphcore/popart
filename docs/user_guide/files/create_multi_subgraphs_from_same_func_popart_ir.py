@@ -34,8 +34,8 @@ with main:
     # Op end
 
     # call graph
-    o = ops.call(matmul_graph1, x, w1)
-    o = ops.call(matmul_graph2, o, w2)
+    o, = ops.call(matmul_graph1, x, w1)
+    o, = ops.call(matmul_graph2, o, w2)
 
     # host store
     o_d2h = pir.d2h_stream(o.shape, o.dtype, name="output_stream")

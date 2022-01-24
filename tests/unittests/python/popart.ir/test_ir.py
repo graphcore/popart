@@ -67,7 +67,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(foo, v1, v2, 5)
 
-            z = ops.call(g, v1, v2)
+            z, = ops.call(g, v1, v2)
 
         assert len(g._by_ref_inputs) == 1
         x = g.get_input_tensors()[0]
@@ -93,7 +93,7 @@ class TestCreateGraph:
             bar = Bar()
             g = ir.create_graph(bar, a, b)
 
-            y1 = ops.call(g, a, b, subgraph_in_to_parent_in={bar.y: y})
+            y1, = ops.call(g, a, b, subgraph_in_to_parent_in={bar.y: y})
 
         assert len(g.get_input_tensors()) == 3
         assert len(g.get_output_tensors()) == 1
@@ -162,7 +162,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(sum_xab, x)
 
-            y = ops.call(g, x)
+            y, = ops.call(g, x)
 
         assert len(g.get_input_tensors()) == 1
         assert len(g.get_output_tensors()) == 1
@@ -274,7 +274,7 @@ class TestCreateGraph:
                                 x=x[6],
                                 z=x[7])
 
-            y = ops.call(g, *x)
+            y, = ops.call(g, *x)
 
         assert len(g.get_input_tensors()) == len(x)
         assert len(g.get_output_tensors()) == 1
