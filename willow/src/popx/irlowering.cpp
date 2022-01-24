@@ -1693,7 +1693,7 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
        aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
     if (tensors_.contains(aliased->id) &&
         (requireParallelWritable == RequireParallelWritable::No ||
-         tensors_.get(aliased->id).getPoplarTensor().isParallelWriteable())) {
+         tensors_.get(aliased->id).isParallelWriteable())) {
 
       // Can only alias if the view changers associated with the tensors are
       // also compatible

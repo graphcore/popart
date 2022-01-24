@@ -74,7 +74,7 @@ void DynamicAddOpx::grow(snap::program::Sequence &prog) const {
 
 snap::Tensor DynamicAddInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
                                                  const snap::Tensor &t) const {
-  if (t.getPoplarTensor().isParallelWriteable()) {
+  if (t.isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

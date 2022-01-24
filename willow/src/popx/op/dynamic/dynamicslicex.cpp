@@ -224,7 +224,7 @@ void DynamicSliceInplaceOpx::grow(snap::program::Sequence &prog) const {
                    graph()};
 
   auto writeableSlice = slice;
-  if (!writeableSlice.getPoplarTensor().isParallelWriteable()) {
+  if (!writeableSlice.isParallelWriteable()) {
     writeableSlice = cloneNcopy(
         prog,
         slice,

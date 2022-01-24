@@ -15,17 +15,16 @@ namespace popart {
 namespace popx {
 
 namespace {
-bool twoTensorsParallelWritable(const poplar::Tensor &a,
-                                const poplar::Tensor &b) {
+bool twoTensorsParallelWritable(const snap::Tensor &a, const snap::Tensor &b) {
   if (a.rank() != b.rank()) {
     throw error("CopyVarUpdateOpx needs the tensors to be the same rank.");
   }
 
   if (a.rank() == 0) {
-    return poplar::concat(a.flatten(), b.flatten()).isParallelWriteable();
+    return snap::concat(a.flatten(), b.flatten()).isParallelWriteable();
   }
 
-  return poplar::concat(a, b).isParallelWriteable();
+  return snap::concat(a, b).isParallelWriteable();
 }
 } // namespace
 
@@ -38,8 +37,7 @@ void CopyVarUpdateOpx::grow(snap::program::Sequence &prog) const {
   auto &updater  = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
   auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
-  if (twoTensorsParallelWritable(updater.getPoplarTensor(),
-                                 toUpdate.getPoplarTensor())) {
+  if (twoTensorsParallelWritable(updater, toUpdate)) {
     snap::program::Copy copy(updater, toUpdate, false, debugContext());
     prog.add(copy);
   } else {

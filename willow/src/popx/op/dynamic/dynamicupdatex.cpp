@@ -199,7 +199,7 @@ DynamicUpdateInplaceOpx::DynamicUpdateInplaceOpx(Op *op, Devicex *devicex)
 snap::Tensor
 DynamicUpdateInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
                                        const snap::Tensor &t) const {
-  if (t.getPoplarTensor().isParallelWriteable()) {
+  if (t.isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

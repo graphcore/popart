@@ -85,7 +85,7 @@ InputCreatorType DynamicZeroOpx::getInputCreatorType(InIndex index) const {
 
 snap::Tensor DynamicZeroInplaceOpx::cloneNcopyOpt(snap::program::Sequence &s,
                                                   const snap::Tensor &t) const {
-  if (t.getPoplarTensor().isParallelWriteable()) {
+  if (t.isParallelWriteable()) {
     return t;
   } else {
     // Outplace because t has internal aliases

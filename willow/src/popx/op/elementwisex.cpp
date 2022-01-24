@@ -104,7 +104,7 @@ void ElementWiseUnaryInplaceOpx::grow(snap::program::Sequence &prog) const {
   // if all of the elements in the tensor are distinct in memory,
   // them we can use the poplar inplace version. Otherwise, we must
   // use a non-inplace version.  See T7110 for a possible improvement
-  if (!outTensor.getPoplarTensor().isParallelWriteable()) {
+  if (!outTensor.isParallelWriteable()) {
     outTensor = cx->outplace(prog,
                              graph(),
                              outTensor,
@@ -256,7 +256,7 @@ void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
   const auto tIn = getInTensor(cx->getOutplaceArgInIndex());
   auto &g        = graph();
 
-  if (!tInOut.getPoplarTensor().isParallelWriteable()) {
+  if (!tInOut.isParallelWriteable()) {
     logging::debug(
         "Unable to inplace operation {}, tensor is not parallel writeable",
         debugContext().getPathName());

@@ -83,7 +83,7 @@ void PopTensors::insert(TensorId id, const snap::Tensor &pt) {
 }
 
 bool PopTensors::canAlias(TensorId id) const {
-  return get(id).getPoplarTensor().isParallelWriteable();
+  return get(id).isParallelWriteable();
 }
 
 void PopTensors::insertAliased(TensorId to, TensorId from) {

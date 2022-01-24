@@ -38,8 +38,7 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
     return tw;
   }
   // Outplace fallback
-  if (!t.getPoplarTensor().isParallelWriteable() ||
-      t.getPoplarTensor().containsConstant()) {
+  if (!t.isParallelWriteable() || t.getPoplarTensor().containsConstant()) {
     logging::opx::warn("Tensor {} is not a writable remote buffer "
                        "copy target, cloning. "
                        "The aliasing properties have changed implicitly.",
@@ -90,7 +89,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().setStreamTensor(id, streamTensor);
   }
-  if (!t.getPoplarTensor().isParallelWriteable()) {
+  if (!t.isParallelWriteable()) {
     logging::opx::debug("Tensor {} is not a writable host load tensor "
                         " target, cloning. "
                         "The aliasing properties have changed implicitly.",
