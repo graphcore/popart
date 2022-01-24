@@ -66,7 +66,13 @@ std::vector<Tensor *> getToTrackTensors(Graph &graph) {
 
     if (producesToTrackTensors(op)) {
       for (Tensor *tensor : op->output->tensors()) {
-        toTrackTensors.push_back(tensor);
+        // In the case where gradient tensors of type float32 and float16 are
+        // present in the list of candidate 'ToTrackTensors', filter out the
+        // float32 gradients. They should not influence the loss scaling
+        // factor. Keep only float16 tensors.
+        if (tensor->info.dataType() == DataType::FLOAT16) {
+          toTrackTensors.push_back(tensor);
+        }
       }
     }
   }
@@ -107,9 +113,7 @@ std::vector<float> getLevels(Tensor *tensor, float binEdgeLocation) {
   }
 
   auto dtype = tensor->info.dataType();
-  if (dtype == DataType::FLOAT) {
-    return {std::numeric_limits<float>::max() * binEdgeLocation};
-  } else if (dtype == DataType::FLOAT16) {
+  if (dtype == DataType::FLOAT16) {
     return {static_cast<float>(std::numeric_limits<uint16_t>::max()) *
             binEdgeLocation};
   } else {

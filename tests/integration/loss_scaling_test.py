@@ -373,10 +373,11 @@ def test_auto_loss_scaling_threshold_upper_count_proportion_range(
     hyperparameter is outside [0, 1].
     """
     builder = popart.Builder()
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t0 = builder.addInputTensor("FLOAT16", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float16)
     t1 = builder.addInitializedInputTensor(t1_data)
     mm0 = builder.aiOnnx.matmul([t0, t1])
+    mm0 = builder.aiOnnx.matmul([mm0, mm0])
     loss = builder.aiGraphcore.identityloss([mm0])
 
     optimizer = popart.SGD({"lossScaling": (2, False)})
@@ -411,10 +412,11 @@ def test_auto_loss_scaling_bin_edge_factor_range(binEdgeLocation):
     outside [0, 1].
     """
     builder = popart.Builder()
-    t0 = builder.addInputTensor("FLOAT", [2, 2])
-    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t0 = builder.addInputTensor("FLOAT16", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float16)
     t1 = builder.addInitializedInputTensor(t1_data)
     mm0 = builder.aiOnnx.matmul([t0, t1])
+    mm0 = builder.aiOnnx.matmul([mm0, mm0])
     loss = builder.aiGraphcore.identityloss([mm0])
 
     optimizer = popart.SGD({"lossScaling": (2, False)})
@@ -459,6 +461,7 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
     t2 = builder.aiOnnx.cast([mm0], "FLOAT16")
     t3 = builder.addInputTensor("FLOAT16", [2, 2])
     mm1 = builder.aiOnnx.matmul([t2, t3])
+    mm1 = builder.aiOnnx.matmul([mm1, mm1])
     loss = builder.aiGraphcore.identityloss([mm1])
 
     optimizer = popart.SGD({"lossScaling": (2, False)})
@@ -475,6 +478,39 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
                                      optimizer=optimizer,
                                      userOptions=opts)
     session.prepareDevice()
+
+
+def test_auto_loss_scaling_remove_float32_from_to_track_tensors():
+    """
+    Test if FLOAT16 tensors from ToTrackTensors is removed and 
+    if No tracked tensors error is thrown.
+    """
+    builder = popart.Builder()
+    t0 = builder.addInputTensor("FLOAT", [2, 2])
+    t1_data = np.random.rand(2, 2).astype(np.float32)
+    t1 = builder.addInitializedInputTensor(t1_data)
+    mm0 = builder.aiOnnx.matmul([t0, t1])
+    loss = builder.aiGraphcore.identityloss([mm0])
+
+    optimizer = popart.SGD({"lossScaling": (2, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
+
+    with pytest.raises(popart.popart_exception) as e_info:
+
+        session = popart.TrainingSession(builder.getModelProto(),
+                                         deviceInfo=tu.create_test_device(),
+                                         dataFlow=popart.DataFlow(1, [loss]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+        session.prepareDevice()
+
+    assert e_info.value.args[0].endswith(
+        "[AutomaticLossScale transform] No tracked tensors were found")
 
 
 @pytest.mark.parametrize("optimizer", getOptimizers())
