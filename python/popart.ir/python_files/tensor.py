@@ -25,12 +25,12 @@ ScalarType = Union[int, float, bool]
 HostTensor = Union[np.ndarray, Iterable[ScalarType]]
 """Container types that can be coerced into a Tensor"""
 
-host_tensor_types = [np.ndarray, Iterable]
+host_tensor_types = tuple([np.ndarray, Iterable])
 
 try:
     import torch
-    HostTensor = Union[HostTensor, torch.tensor]
-    host_tensor_types += [torch.tensor]
+    HostTensor = Union[HostTensor, torch.Tensor]
+    host_tensor_types = tuple([*host_tensor_types, torch.Tensor])
 except ModuleNotFoundError:
     pass
 
