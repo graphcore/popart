@@ -8,8 +8,10 @@
 namespace popart {
 namespace boollogic {
 
-Term::Term(Type type_, std::string var_, std::vector<Term> terms_)
-    : type(type_), var(var_), terms(terms_) {}
+Term::Term(Type type_, std::string var_, std::set<Term> terms_)
+    : type(type_), var(var_), terms() {
+  terms.insert(terms_.begin(), terms_.end());
+}
 
 Term::Term(std::string var_) : type(Type::Var), var(var_), terms() {}
 Term::Term(bool val) : type(val ? Type::True : Type::False), var(), terms() {}
@@ -22,7 +24,7 @@ Term Term::varTerm(const std::string &var) { return Term(Type::Var, var, {}); }
 
 Term Term::notTerm(Term term) { return Term(Type::Not, "", {term}); }
 
-Term Term::andTerm(const std::vector<Term> &terms) {
+Term Term::andTerm(const std::set<Term> &terms) {
   if (terms.empty()) {
     return Term::trueTerm();
   }
@@ -30,11 +32,34 @@ Term Term::andTerm(const std::vector<Term> &terms) {
   return Term(Type::And, "", terms);
 }
 
-Term Term::orTerm(const std::vector<Term> &terms) {
+Term Term::orTerm(const std::set<Term> &terms) {
   if (terms.empty()) {
     return Term::falseTerm();
   }
   return Term(Type::Or, "", terms);
+}
+
+Term Term::andTermFromVector(const std::vector<Term> &terms) {
+  if (terms.empty()) {
+    return Term::trueTerm();
+  }
+  std::set<Term> termSet(terms.begin(), terms.end());
+  return Term(Type::And, "", termSet);
+}
+
+Term Term::orTermFromVector(const std::vector<Term> &terms) {
+  if (terms.empty()) {
+    return Term::falseTerm();
+  }
+  std::set<Term> termSet(terms.begin(), terms.end());
+  return Term(Type::Or, "", termSet);
+}
+
+std::vector<Term> Term::getTermsAsVector() const {
+  std::vector<Term> vterms;
+  vterms.reserve(terms.size());
+  vterms.insert(vterms.begin(), terms.begin(), terms.end());
+  return vterms;
 }
 
 Term Term::pushNots() const { return pushNots(false); }
@@ -45,21 +70,19 @@ Term Term::pushNots(bool isNot) const {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return terms.front().pushNots(!isNot);
+    return (*(terms.begin())).pushNots(!isNot);
   }
   case Type::And: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
-      subterms.push_back(t.pushNots(isNot));
+      subterms.insert(t.pushNots(isNot));
     }
     return isNot ? orTerm(subterms) : andTerm(subterms);
   }
   case Type::Or: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
-      subterms.push_back(t.pushNots(isNot));
+      subterms.insert(t.pushNots(isNot));
     }
     return isNot ? andTerm(subterms) : orTerm(subterms);
   }
@@ -100,13 +123,23 @@ bool Term::operator==(const Term &other) const {
   return terms == other.terms;
 }
 
+bool Term::operator<(const Term &other) const {
+  return std::make_tuple<const Type &,
+                         const std::string &,
+                         const std::set<Term> &>(type, var, terms) <
+         std::make_tuple<const Type &,
+                         const std::string &,
+                         const std::set<Term> &>(
+             other.type, other.var, other.terms);
+}
+
 std::string Term::str() const {
   switch (type) {
   case Type::Not: {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return "!" + terms.front().str();
+    return "!" + (*terms.begin()).str();
   }
   case Type::And: {
     std::vector<std::string> subterms;
@@ -144,7 +177,7 @@ bool Term::evaluate(const std::map<std::string, bool> &vals) const {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return !terms.front().evaluate(vals);
+    return !(*terms.begin()).evaluate(vals);
   }
   case Type::And: {
     return std::all_of(terms.begin(), terms.end(), [&vals](const Term &t) {
@@ -180,21 +213,19 @@ Term Term::replace(const std::map<std::string, Term> &iterms) const {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return !terms.front().replace(iterms);
+    return !(*terms.begin()).replace(iterms);
   }
   case Type::And: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
-      subterms.push_back(t.replace(iterms));
+      subterms.insert(t.replace(iterms));
     }
     return andTerm(subterms);
   }
   case Type::Or: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
-      subterms.push_back(t.replace(iterms));
+      subterms.insert(t.replace(iterms));
     }
     return orTerm(subterms);
   }
@@ -222,30 +253,28 @@ Term Term::flatten() const {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return notTerm(terms.front().flatten());
+    return notTerm((*terms.begin()).flatten());
   }
   case Type::And: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
       auto tflat = t.flatten();
       if (t.type == type) {
-        subterms.insert(subterms.end(), tflat.terms.begin(), tflat.terms.end());
+        subterms.insert(tflat.terms.begin(), tflat.terms.end());
       } else {
-        subterms.push_back(tflat);
+        subterms.insert(tflat);
       }
     }
     return andTerm(subterms);
   }
   case Type::Or: {
-    std::vector<Term> subterms;
-    subterms.reserve(terms.size());
+    std::set<Term> subterms;
     for (auto &t : terms) {
       auto tflat = t.flatten();
       if (t.type == type) {
-        subterms.insert(subterms.end(), tflat.terms.begin(), tflat.terms.end());
+        subterms.insert(tflat.terms.begin(), tflat.terms.end());
       } else {
-        subterms.push_back(tflat);
+        subterms.insert(tflat);
       }
     }
     return orTerm(subterms);
@@ -270,23 +299,21 @@ Term Term::distribute(Type dtype) const {
     Type otype = dtype == Type::Or ? Type::And : Type::Or;
     if (dtype == type) {
       // Distribute term
-      Term tflat = flatten();
+      Term tflat               = flatten();
+      std::vector<Term> vterms = tflat.getTermsAsVector();
       // Sort so that terms that can't be distributed over are processed first
-      std::stable_sort(tflat.terms.begin(),
-                       tflat.terms.end(),
-                       [otype](const Term &a, const Term &b) {
-                         return a.type != otype && b.type == otype;
-                       });
-      Term term0 = tflat.terms.front();
-      for (size_t i = 1; i < tflat.terms.size(); ++i) {
-        Term &term1 = tflat.terms.at(i);
+      std::stable_sort(
+          vterms.begin(), vterms.end(), [otype](const Term &a, const Term &b) {
+            return a.type != otype && b.type == otype;
+          });
+      Term term0 = vterms.at(0);
+      for (const Term &term1 : vterms) {
         if (term1.type == otype) {
           // Distribute
-          std::vector<Term> subterms;
-          subterms.reserve(term1.terms.size());
+          std::set<Term> subterms;
           for (Term t : term1.terms) {
             t = dtype == Type::Or ? orTerm({term0, t}) : andTerm({term0, t});
-            subterms.push_back(t.distribute(dtype));
+            subterms.insert(t.distribute(dtype));
           }
           term0 = otype == Type::Or ? orTerm(subterms) : andTerm(subterms);
         } else {
@@ -299,9 +326,9 @@ Term Term::distribute(Type dtype) const {
       return term0.flatten();
     } else {
       // Distribute subterms
-      std::vector<Term> subterms;
+      std::set<Term> subterms;
       for (auto &t : terms) {
-        subterms.push_back(t.distribute(dtype));
+        subterms.insert(t.distribute(dtype));
       }
       return type == Type::Or ? orTerm(subterms).flatten()
                               : andTerm(subterms).flatten();
@@ -313,7 +340,7 @@ Term Term::distribute(Type dtype) const {
     if (terms.size() != 1) {
       throw error("Unsupported term {} with {} subterms", type, terms.size());
     }
-    return !terms.front().distribute(dtype);
+    return !(*terms.begin()).distribute(dtype);
   }
   case Type::And: {
     return dist();

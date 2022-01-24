@@ -1734,20 +1734,20 @@ PriTask IrLowering::initTensorTask(InitTensorPtrs inits) {
 
   TensorId dstId;
   std::map<TensorId, bool> dependencyTensorValues;
-  std::vector<boollogic::Term> terms;
+  std::set<boollogic::Term> terms;
   for (auto &init : inits) {
     dstId = init->getDstId();
     if (init->getDependsOnIds().empty()) {
       // No dependencies
-      terms.push_back(true);
+      terms.insert(true);
     } else {
       // Dependencies
-      std::vector<boollogic::Term> subterms;
+      std::set<boollogic::Term> subterms;
       for (auto srcId : init->getDependsOnIds()) {
-        subterms.push_back(boollogic::Term::varTerm(srcId));
+        subterms.insert(boollogic::Term::varTerm(srcId));
         dependencyTensorValues[srcId] = false;
       }
-      terms.push_back(boollogic::Term::andTerm(subterms));
+      terms.insert(boollogic::Term::andTerm(subterms));
     }
   }
 

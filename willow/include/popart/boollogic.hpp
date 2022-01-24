@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_BOOLLOGIC_HPP
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -22,12 +23,15 @@ public:
   static Term falseTerm();
   static Term varTerm(const std::string &var);
   static Term notTerm(Term term);
-  static Term andTerm(const std::vector<Term> &terms);
-  static Term orTerm(const std::vector<Term> &terms);
+  static Term andTerm(const std::set<Term> &terms);
+  static Term orTerm(const std::set<Term> &terms);
+  static Term andTermFromVector(const std::vector<Term> &terms);
+  static Term orTermFromVector(const std::vector<Term> &terms);
 
   Type getType() const { return type; }
 
-  const std::vector<Term> &getTerms() const { return terms; }
+  const std::set<Term> &getTerms() const { return terms; }
+  std::vector<Term> getTermsAsVector() const;
 
   std::string getVar() const { return var; }
 
@@ -50,6 +54,7 @@ public:
   Term operator||(const Term &other) const;
   Term operator!() const;
   bool operator==(const Term &other) const;
+  bool operator<(const Term &other) const;
 
   std::string str() const;
 
@@ -59,11 +64,11 @@ public:
 private:
   Term pushNots(bool isNot) const;
 
-  Term(Type type, std::string var, std::vector<Term> terms);
+  Term(Type type, std::string var, std::set<Term> terms);
 
   Type type;
   std::string var;
-  std::vector<Term> terms;
+  std::set<Term> terms;
 };
 
 std::ostream &operator<<(std::ostream &os, const Term &term);
