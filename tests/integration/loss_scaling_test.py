@@ -194,7 +194,8 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
                                          loss=loss,
                                          optimizer=optimizer,
                                          userOptions=opts)
-    assert e_info.value.args[0].endswith("No tracked tensors were found")
+    assert e_info.value.args[0].endswith(
+        "No tracked gradient tensors of type fp16 were found.")
 
 
 def test_auto_loss_scaling_histogram_schedule_priority():
@@ -510,7 +511,8 @@ def test_auto_loss_scaling_remove_float32_from_to_track_tensors():
         session.prepareDevice()
 
     assert e_info.value.args[0].endswith(
-        "[AutomaticLossScale transform] No tracked tensors were found")
+        "[AutomaticLossScale transform] No tracked gradient tensors of type fp16 were found."
+    )
 
 
 @pytest.mark.parametrize("optimizer", getOptimizers())

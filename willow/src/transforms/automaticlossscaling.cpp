@@ -79,7 +79,8 @@ std::vector<Tensor *> getToTrackTensors(Graph &graph) {
 
   // Verify that we are returning a non-empty vector of to-track tensors
   if (toTrackTensors.size() == 0) {
-    throw error("[AutomaticLossScale transform] No tracked tensors were found");
+    throw error("[AutomaticLossScale transform] No tracked gradient tensors of "
+                "type fp16 were found.");
   }
 
   return toTrackTensors;
