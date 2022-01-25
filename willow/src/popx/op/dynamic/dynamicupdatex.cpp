@@ -59,37 +59,12 @@ void DynamicUpdateOpx::grow(snap::program::Sequence &prog) const {
 }
 
 InputCreatorType DynamicUpdateOpx::getInputCreatorType(InIndex index) const {
-  DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
-  auto itUpdate            = op->settings.inferTensorMappingToFrom.find(
-      DynamicTernaryBaseOp::getUpdateInIndex());
-  auto itIn = op->settings.inferTensorMappingToFrom.find(
-      DynamicTernaryBaseOp::getInIndex());
-
-  bool inferUpdateFromIn =
-      itUpdate != op->settings.inferTensorMappingToFrom.end() &&
-      itUpdate->second == DynamicTernaryBaseOp::getInIndex();
-  bool inferInFromUpdate =
-      itIn != op->settings.inferTensorMappingToFrom.end() &&
-      itIn->second == DynamicTernaryBaseOp::getUpdateInIndex();
-
   if (index == DynamicTernaryBaseOp::getUpdateInIndex()) {
-    if (inferUpdateFromIn) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferInFromUpdate) {
-      return InputCreatorType::Deadend;
-    } else {
-      return InputCreatorType::CanUnwind;
-    }
+    return InputCreatorType::CanCreateOrUnwind;
   }
 
   if (index == DynamicTernaryBaseOp::getInIndex()) {
-    if (inferInFromUpdate) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferUpdateFromIn) {
-      return InputCreatorType::Deadend;
-    } else {
-      return InputCreatorType::CanUnwind;
-    }
+    return InputCreatorType::CanCreateOrUnwind;
   }
 
   return PopOpx::getInputCreatorType(index);
@@ -171,9 +146,9 @@ snap::Tensor DynamicUpdateOpx::unwindTensorLayout(snap::Tensor tensor,
                                                   InIndex in,
                                                   OutIndex) const {
   if (in == DynamicUpdateOp::getInIndex()) {
-    auto &op = getOp<DynamicUpdateOp>();
-    std::vector<size_t> paxes(op.getAxes().begin(), op.getAxes().end());
-    std::vector<size_t> psizes(op.getSizes().begin(), op.getSizes().end());
+    DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
+    std::vector<size_t> paxes(op->getAxes().begin(), op->getAxes().end());
+    std::vector<size_t> psizes(op->getSizes().begin(), op->getSizes().end());
 
     return snap::Tensor{popops::createSliceTensor(graph().getPoplarGraph(),
                                                   tensor.getPoplarTensor(),
@@ -201,19 +176,13 @@ view::RegMap DynamicUpdateOpx::unwindRegion(InIndex index, OutIndex) const {
 std::set<TensorId>
 DynamicUpdateOpx::mustExistBeforeCreate(InIndex index) const {
   DynamicTernaryBaseOp *op = dynamic_cast<DynamicTernaryBaseOp *>(this->op_p);
-
   std::set<TensorId> mustExist;
-
-  auto it = op->settings.inferTensorMappingToFrom.find(index);
-
-  if (it != op->settings.inferTensorMappingToFrom.end() &&
-      ((it->first == DynamicTernaryBaseOp::getInIndex() &&
-        it->second == DynamicTernaryBaseOp::getUpdateInIndex()) ||
-       (it->first == DynamicTernaryBaseOp::getUpdateInIndex() &&
-        it->second == DynamicTernaryBaseOp::getInIndex()))) {
-    mustExist.insert(op->input->tensor(it->second)->id);
-  }
-
+  mustExist.insert(
+      op->input
+          ->tensor(index == DynamicTernaryBaseOp::getUpdateInIndex()
+                       ? DynamicTernaryBaseOp::getInIndex()
+                       : DynamicTernaryBaseOp::getUpdateInIndex())
+          ->id);
   return mustExist;
 }
 

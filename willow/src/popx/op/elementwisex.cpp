@@ -47,55 +47,25 @@ ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
   if (op_p->inInfo(index) !=
       op_p->outInfo(ElementWiseBinaryBaseOp::getOutIndex())) {
     return InputCreatorType::Deadend;
+  } else if (inInfo(index) ==
+             inInfo(index == ElementWiseBinaryOp::getArg0InIndex()
+                        ? ElementWiseBinaryOp::getArg1InIndex()
+                        : ElementWiseBinaryOp::getArg0InIndex())) {
+    return InputCreatorType::CanCreateOrUnwind;
+  } else {
+    return InputCreatorType::CanUnwind;
   }
-
-  const auto &settings = this->op_p->settings;
-  const auto arg0Idx   = ElementWiseBinaryBaseOp::getArg0InIndex();
-  const auto arg1Idx   = ElementWiseBinaryBaseOp::getArg1InIndex();
-
-  const auto itArg0 = settings.inferTensorMappingToFrom.find(arg0Idx);
-  const auto itArg1 = settings.inferTensorMappingToFrom.find(arg1Idx);
-
-  const bool inferArg0FromArg1 =
-      itArg0 != settings.inferTensorMappingToFrom.end() &&
-      itArg0->second == arg1Idx;
-  const bool inferArg1FromArg0 =
-      itArg1 != settings.inferTensorMappingToFrom.end() &&
-      itArg1->second == arg0Idx;
-
-  if (index == arg0Idx) {
-    if (inferArg0FromArg1) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferArg1FromArg0) {
-      return InputCreatorType::Deadend;
-    }
-  } else if (index == arg1Idx) {
-    if (inferArg1FromArg0) {
-      return InputCreatorType::CanCreateOrUnwind;
-    } else if (inferArg0FromArg1) {
-      return InputCreatorType::Deadend;
-    }
-  }
-
-  return InputCreatorType::CanUnwind;
 }
 
 std::set<TensorId>
 ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
-
-  const auto &settings = this->op_p->settings;
-  const auto arg0Idx   = ElementWiseBinaryBaseOp::getArg0InIndex();
-  const auto arg1Idx   = ElementWiseBinaryBaseOp::getArg1InIndex();
+  const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
+  const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
 
   std::set<TensorId> mustExist;
 
-  auto it = settings.inferTensorMappingToFrom.find(index);
-
-  if (it != settings.inferTensorMappingToFrom.end() &&
-      ((it->first == arg0Idx && it->second == arg1Idx) ||
-       (it->first == arg1Idx && it->second == arg0Idx))) {
-    mustExist.insert(op_p->input->tensor(it->second)->id);
-  }
+  mustExist.insert(
+      op_p->input->tensor(index == arg0Idx ? arg1Idx : arg0Idx)->id);
 
   return mustExist;
 }

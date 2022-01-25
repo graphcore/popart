@@ -7366,12 +7366,6 @@ static const char *__doc_popart_Op_Settings_graph = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_Settings_graph = R"doc()doc";
 
-static const char *__doc_popart_Op_Settings_inferTensorMappingToFrom =
-    R"doc()doc";
-
-static const char *__singlelinedoc_popart_Op_Settings_inferTensorMappingToFrom =
-    R"doc()doc";
-
 static const char *__doc_popart_Op_Settings_inplacePriorityVeto = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_Settings_inplacePriorityVeto =

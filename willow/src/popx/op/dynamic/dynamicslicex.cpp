@@ -62,10 +62,15 @@ void DynamicSliceOpx::grow(snap::program::Sequence &prog) const {
 }
 
 InputCreatorType DynamicSliceOpx::getInputCreatorType(InIndex index) const {
-  return (index == DynamicSliceBaseOp::getInIndex() ||
-          index == DynamicSliceInplaceOp::getSliceInIndex())
-             ? InputCreatorType::CanCreateOrUnwind
-             : PopOpx::getInputCreatorType(index);
+  if (index == DynamicSliceBaseOp::getInIndex() ||
+      index == DynamicSliceInplaceOp::getSliceInIndex()) {
+    if (op_p->hasInput(DynamicSliceOp::getSliceInIndex())) {
+      return InputCreatorType::CanCreateOrUnwind;
+    } else {
+      return InputCreatorType::CanUnwind;
+    }
+  }
+  return PopOpx::getInputCreatorType(index);
 }
 
 snap::Tensor
@@ -237,20 +242,11 @@ std::set<TensorId> DynamicSliceOpx::mustExistBeforeCreate(InIndex index) const {
 
   std::set<TensorId> mustExist;
 
-  auto it = op->settings.inferTensorMappingToFrom.find(index);
-
-  // Check if the infer tensor mapping is requested from either:
-  // 2) SliceInIndex -> InIndex
-  // or:
-  // 1) InIndex -> SliceInIndex
-  // and insert the respective "from" tensor in mustExist
-  if (it != op->settings.inferTensorMappingToFrom.end() &&
-      ((it->first == DynamicSliceOp::getInIndex() &&
-        it->second == DynamicSliceOp::getSliceInIndex()) ||
-       (it->first == DynamicSliceOp::getSliceInIndex() &&
-        it->second == DynamicSliceOp::getInIndex()))) {
-    mustExist.insert(op->input->tensor(it->second)->id);
-  }
+  mustExist.insert(op->input
+                       ->tensor(index == DynamicSliceOp::getInIndex()
+                                    ? DynamicSliceOp::getSliceInIndex()
+                                    : DynamicSliceOp::getInIndex())
+                       ->id);
 
   return mustExist;
 }

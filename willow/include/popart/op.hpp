@@ -179,9 +179,6 @@ public:
     // such as gradient accumulation
     ExecutionContext executionContext{ExecutionContext::Normal};
 
-    // Tensor layout mapping should be inferred "to" tensor <- "from" tensor
-    std::map<InIndex, InIndex> inferTensorMappingToFrom;
-
     // all Ops will be topologically sorted "as close to" the order of
     // priority (highest to lowest) while still resulting in a valid
     // topological ordering.

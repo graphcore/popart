@@ -32,8 +32,6 @@ void bindOp(py::module &m) {
       .def("getIr", &Op::Settings::getIr)
       .def_readwrite("vgraphId", &Op::Settings::vgraphId)
       .def_readwrite("pipelineStage", &Op::Settings::pipelineStage)
-      .def_readwrite("inferTensorMappingToFrom",
-                     &Op::Settings::inferTensorMappingToFrom)
       .def_readwrite("debugInfoId", &Op::Settings::debugInfoId)
       .def_readwrite("executionContext", &Op::Settings::executionContext)
       .def_readwrite("tileSet", &Op::Settings::tileSet);

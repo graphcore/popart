@@ -166,7 +166,7 @@ InputCreatorCandidate::InputCreatorCandidate(
     const PopOpx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_,
     int64_t scheduleIndex_)
-    : index(index_), opx(opx_), scheduleIndex(scheduleIndex_) {
+    : index(index_), opx(opx_), scheduleIndex(scheduleIndex_), numElements(0) {
 
   pathFromInput.reserve(pathFromInput_.size());
   for (OpxInAndOutIndex &pathElem : pathFromInput_) {
@@ -174,19 +174,16 @@ InputCreatorCandidate::InputCreatorCandidate(
       pathFromInput.push_back(pathElem);
     }
   }
+  for (auto &r : unwind()) {
+    numElements += r.nelms();
+  }
 }
 
 double InputCreatorCandidate::getMaxCreatorPriority() {
   return getOpx()->inputCreatorPriority;
 }
 
-int64_t InputCreatorCandidate::getNumElems() {
-  int64_t n = 0;
-  for (auto &r : unwind()) {
-    n += r.nelms();
-  }
-  return n;
-}
+int64_t InputCreatorCandidate::getNumElems() { return numElements; }
 
 view::Regions InputCreatorCandidate::unwind() {
   return unwind(view::Region::getFull(opx->inShape(index)));

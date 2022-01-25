@@ -27,7 +27,6 @@
 #include <popart/patterns/expgradoppattern.hpp>
 #include <popart/patterns/expm1gradoppattern.hpp>
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
-#include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/lambserialisedweight.hpp>
 #include <popart/patterns/likeopspattern.hpp>
@@ -195,7 +194,8 @@ bool Patterns::isPatternEnabled(const std::string &t) {
 }
 
 bool Patterns::isInitAccumulateEnabled() {
-  return isPatternEnabled<InitAccumulatePattern>();
+  logging::warn("InitAccumulatePattern is deprecated.");
+  return false;
 }
 
 bool Patterns::isPreUniReplEnabled() { return isPatternEnabled<PreUniRepl>(); }
@@ -341,7 +341,8 @@ bool Patterns::isTiedGatherAccumulateEnabled() {
 }
 
 Patterns &Patterns::enableInitAccumulate(bool v) {
-  return enablePattern<InitAccumulatePattern>(v);
+  logging::warn("InitAccumulatePattern is deprecated.");
+  return *this;
 }
 
 Patterns &Patterns::enablePreUniRepl(bool v) {
@@ -591,7 +592,6 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
       {std::type_index(typeid(LikeOpsPattern<RandomNormalLikeOp>)), 41},
       {std::type_index(typeid(FmodArg0GradOpPattern)), 39},
       {std::type_index(typeid(UpsampleToResizePattern)), 38},
-      {std::type_index(typeid(InitAccumulatePattern)), 37},
       {std::type_index(typeid(PreUniRepl)), 36},
       {std::type_index(typeid(PostNRepl)), 35},
       {std::type_index(typeid(SoftmaxGradDirect)), 34},

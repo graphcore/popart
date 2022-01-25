@@ -67,10 +67,6 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     settings = ctx._get_op_settings('dynamicupdate')
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdate", 1,
                                   _ir.NumInputs(3, 3), 1)
-    # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`
-    # with `t_update`.
-    # Does the user need control over this?
-    settings.inferTensorMappingToFrom = {0: 2}
     op = pb_g.createConnectedOp_DynamicUpdateOp(
         {
             0: t.id,
@@ -139,10 +135,6 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
     check_tensor_ipu_and_tile_set(t=t, index=index, t_update=t_update)
 
     settings = ctx._get_op_settings('dynamicupdate_inplace')
-    # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`
-    # with `t_update`.
-    # Does the user need control over this?
-    settings.inferTensorMappingToFrom = {0: 2}
     opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdateInplace", 1,
                                   _ir.NumInputs(3, 3), 1)
     op = pb_g.createConnectedOp_DynamicUpdateInplaceOp(
