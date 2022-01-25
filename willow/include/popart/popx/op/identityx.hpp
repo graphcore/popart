@@ -32,6 +32,10 @@ public:
   IdentityLossOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
+
+  snap::Tensor
+  unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const override;
+  view::RegMap unwindRegion(InIndex, OutIndex) const override;
 };
 
 class IdentityLossGradOpx : public PopOpx {

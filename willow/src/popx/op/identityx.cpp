@@ -83,8 +83,23 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
   }
 }
 
-InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CanUnwind;
+InputCreatorType IdentityLossOpx::getInputCreatorType(InIndex index) const {
+  if (getOp<IdentityLossOp>().getReductionType() ==
+          ReductionType::NoReduction &&
+      index == IdentityLossOp::getInIndex()) {
+    return InputCreatorType::CanUnwind;
+  }
+  return InputCreatorType::Deadend;
+}
+
+view::RegMap IdentityLossOpx::unwindRegion(InIndex, OutIndex) const {
+  return [](const view::Region &r) { return view::Regions(1, r); };
+}
+
+snap::Tensor IdentityLossOpx::unwindTensorLayout(snap::Tensor tensor,
+                                                 InIndex,
+                                                 OutIndex) const {
+  return tensor;
 }
 
 void IdentityLossOpx::grow(snap::program::Sequence &prog) const {
