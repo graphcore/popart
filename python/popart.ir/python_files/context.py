@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from popart.ir.tensor import Tensor
 
 __all__ = [
-    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'virtual_graph',
-    'pipeline_stage', 'in_sequence', 'name_scope', 'ipu', 'io_tiles'
+    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'pipeline_stage',
+    'in_sequence', 'name_scope', 'ipu', 'io_tiles'
 ]
 
 
@@ -25,7 +25,7 @@ class Context:
 
     def _reset(self):
         self._graphs: List['Graph'] = []
-        self._virtual_graph_id: int = 0
+        self._ipu_id: int = 0
         self._pipeline_stage: Optional[int] = None
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[_ir.GraphId, List[int]] = defaultdict(
@@ -41,11 +41,11 @@ class Context:
 
     def _get_op_settings(self, name: str) -> _ir.Settings:
         """Return an internal_ir Settings object using any values specified by a context.
-            For example: virtual_graph"""
+            For example: ipu"""
         pb_g = self.graph._pb_graph
         settings = _ir.Settings(pb_g, "/".join((*self.name_scopes, name)))
 
-        vgid = self.virtual_graph_id
+        vgid = self._ipu_id
         if vgid is not None:
             settings.vgraphId = _ir.OptionalVGraphId(vgid)
 
@@ -64,8 +64,8 @@ class Context:
         return settings
 
     @property
-    def virtual_graph_id(self) -> Optional[int]:
-        return self._virtual_graph_id
+    def ipu_id(self) -> Optional[int]:
+        return self._ipu_id
 
     @property
     def pipeline_stage(self) -> Optional[int]:
@@ -256,17 +256,14 @@ gmg = get_main_graph
 
 
 @contextmanager
-def virtual_graph(vgid: int):
-    """Set the virtual graph id on Ops created in this context."""
+def ipu(ipu: int):
+    """Set the ipu on ops created in this context.
+    Popart internally does this using poplar virtual graphs."""
     ctx = get_current_context()
-    prev = ctx._virtual_graph_id
-    ctx._virtual_graph_id = vgid
-    yield vgid
-    ctx._virtual_graph_id = prev
-
-
-# Alias for virtual_graph
-ipu = virtual_graph
+    prev = ctx._ipu_id
+    ctx._ipu_id = ipu
+    yield ipu
+    ctx._ipu_id = prev
 
 
 @contextmanager

@@ -69,7 +69,7 @@ def test_all_reduce_op():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -80,7 +80,7 @@ def test_all_reduce_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,
@@ -112,7 +112,7 @@ def test_all_reduce_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -136,7 +136,7 @@ def test_all_reduce_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,
@@ -167,7 +167,7 @@ def test_all_reduce_identical_inputs_op():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -178,7 +178,7 @@ def test_all_reduce_identical_inputs_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,
@@ -209,7 +209,7 @@ def test_all_reduce_identical_inputs_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -235,7 +235,7 @@ def test_all_reduce_identical_inputs_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,
@@ -266,7 +266,7 @@ def test_all_reduce_identical_grad_inputs_op():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -279,7 +279,7 @@ def test_all_reduce_identical_grad_inputs_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,
@@ -311,7 +311,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
@@ -337,7 +337,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.virtual_graph(ipu):
+            with pir.ipu(ipu):
                 y_i = y[ipu]
                 y_d2h = pir.d2h_stream(y_i.shape,
                                        y_i.dtype,

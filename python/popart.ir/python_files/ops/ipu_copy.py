@@ -35,11 +35,11 @@ def ipu_copy(t: Tensor, destination: int,
     check_in_graph(g, t=t)
 
     if source is None:
-        # Use internal method to infer the input tensor's virtual graph.
+        # Use internal method to infer the input tensor's ipu.
         source = t._pb_tensor.getVirtualGraphIdUnsafe()
         if source == -1:
             raise ValueError(
-                f"Could not infer virtual graph for Tensor to be copied \"{t}\" . "
+                f"Could not infer the ipu for Tensor to be copied \"{t}\" . "
                 "Please specify `source` when copying for this tensor.")
 
     settings = ctx._get_op_settings('ipucopy')

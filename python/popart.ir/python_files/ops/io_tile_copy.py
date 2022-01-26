@@ -10,7 +10,7 @@ __all__ = ['io_tile_copy']
 @op_debug_context
 def io_tile_copy(t: Tensor) -> Tensor:
     """
-    Copies a Tensor to/from io tiles on the current virtual_graph.
+    Copies a Tensor to/from io tiles on the current ipu.
 
     Args:
         t: Tensor

@@ -3,13 +3,13 @@ import popart._internal.ir as _ir
 import popart.ir as pir
 
 
-def test_virtual_graph_with():
+def test_ipu_with():
     ir = pir.Ir()
     g = ir.main_graph()
 
     with g:
         x = pir.variable(1)
-        with pir.virtual_graph(0):
+        with pir.ipu(0):
             y = x + 1
 
     ops = g._pb_graph.getOpSchedule()

@@ -210,7 +210,7 @@ class Tensor:
     def copy_to_ipu(self, destination: int,
                     source: Optional[int] = None) -> 'Tensor':
         """
-        Copies a Tensor to a virtual graph.
+        Copies a Tensor to a ipu.
 
         Args:
             destination (int):

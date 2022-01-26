@@ -62,20 +62,20 @@ def build_model(weights_data: np.array, input_shape: Tuple[int]
         t_in_h2d = pir.h2d_stream(input_shape, pir.float32, name="t_in_stream")
 
         # Operations on IPU 0
-        with pir.virtual_graph(0):
+        with pir.ipu(0):
             t_in = ops.host_load(t_in_h2d, "t_in")
             t_1 = ops.matmul(t_in, weights)
             # Copy to IPU 1
             t_1_c = ops.ipu_copy(t_1, 1)
 
         # Operations on IPU 1
-        with pir.virtual_graph(1):
+        with pir.ipu(1):
             t_2 = ops.gelu(t_1_c)
             # Copy to IPU 2
             t_2_c = ops.ipu_copy(t_2, 2)
 
         # Operations on IPU 2
-        with pir.virtual_graph(2):
+        with pir.ipu(2):
             t_out = ops.softmax(t_2_c, axis=1)
             t_out_d2h = pir.d2h_stream(t_out.shape,
                                        pir.float32,
