@@ -8,6 +8,12 @@ from popart.ir.dtypes import dtype
 from popart.ir.errors import UndefinedValue
 from typing import List
 
+__all__ = [
+    "cast_if_needed", "check_in_graph", "check_tensor_ipu_and_tile_set",
+    "handle_negative_axis", "convert_optional_float", "convert_optional_int",
+    "convert_optional_dtype"
+]
+
 
 def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
     from popart.ir.ops.cast import cast

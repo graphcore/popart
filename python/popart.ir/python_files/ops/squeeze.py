@@ -5,8 +5,6 @@ from popart.ir.tensor import Tensor
 from .reshape import reshape
 from .utils import handle_negative_axis
 
-__all__ = ["squeeze"]
-
 
 @debug_context_frame_offset(1)
 def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:

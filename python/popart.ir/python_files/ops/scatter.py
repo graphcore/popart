@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_tile_set
 
-__all__ = ["scatter"]
-
 
 @op_debug_context
 def scatter(t: Tensor,
@@ -53,7 +51,7 @@ def scatter(t: Tensor,
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
-                
+
     Returns:
         scatter: Tensor
             The tensor with updated values.

@@ -8,8 +8,6 @@ from popart.ir.tensor import Tensor
 from popart.ir import dtypes
 from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_tile_set
 
-__all__ = ["matmul", "SerialiseMode"]
-
 
 class SerialiseMode(Enum):
     """Enum for the serialise mode
@@ -43,10 +41,10 @@ def matmul(lhs: Tensor,
         available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation. Defaults to 1.0.
-        serialise_mode (SerialiseMode, optional): 
+        serialise_mode (SerialiseMode, optional):
             The serialisation mode to use (NoSerialisation, ReducingDim, InputChannels, OutputChannels).
             Defaults to SerialiseMode.NoSerialisation.
-        serialise_factor (int, optional): 
+        serialise_factor (int, optional):
             The factor to serialise by. Defaults to 1.
         output_type (Optional[dtypes.dtype], optional): 3
             Output datatype to enforce. Defaults to the dtype of lhs/rhs.

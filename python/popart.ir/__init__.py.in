@@ -13,22 +13,58 @@ if (actualVersion != requiredVersion):
     raise RuntimeError("This version of popart.ir is not compatible with Python %d.%d (it was built against Python %d.%d)" % \
         (actualVersion + requiredVersion))
 
-from popart.ir.context import *
-from popart.ir.dtypes import *
-from popart.ir.graph import *
-from popart.ir.ir import *
-from popart.ir.tensor import *
-from popart.ir.streams import *
-from popart.ir.random_seed import *
-from popart.ir.module import *
-from popart.ir.remote_buffer import *
-import popart.ir.transforms
+__all__ = [
+    # context.py
+    "get_current_graph", "get_main_graph", "gcg", "gmg", "pipeline_stage",
+    "in_sequence", "name_scope", "ipu", "io_tiles",
+    # dtypes.py
+    "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
+    "uint32", "uint64", "half", "float16", "float", "float32", "double",
+    "float64", "complex64", "complex128",
+    # graph.py
+    "Graph",
+    # ir.py
+    "Ir",
+    # module.py
+    "Module",
+    # random_seed.py,
+    "create_seeds",
+    # remote_buffer.py
+    "RemoteBuffer", "remote_buffer",
+    # streams.py
+    "HostToDeviceStream", "DeviceToHostStream", "h2d_stream", "d2h_stream",
+    # tensor.py
+    "Tensor", "variable", "remote_variable", "remote_replica_sharded_variable",
+    "replica_sharded_variable", "constant", "subgraph_input", "subgraph_output",
+    "TensorByRef",
+    # tensorlocation.py
+    "TensorStorage", "TensorLocation", "ReplicatedTensorSharding", "TileSet",
+    "ExecutionContext"
+]
+
+from .context import (get_current_graph, get_main_graph, gcg, gmg,
+    pipeline_stage, in_sequence, name_scope, ipu, io_tiles)
+from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
+    uint16, uint32, uint64, half, float16, float, float32, double, float64,
+    complex64, complex128)
+from .graph import Graph
+from .module import Module
+from .ir import Ir
+from .random_seed import create_seeds
+from .remote_buffer import (RemoteBuffer, remote_buffer)
+from .streams import (HostToDeviceStream, DeviceToHostStream,
+    h2d_stream, d2h_stream)
+from .tensor import (Tensor, variable, remote_variable,
+    remote_replica_sharded_variable, replica_sharded_variable, constant,
+    subgraph_input, subgraph_output, TensorByRef)
+from .tensorlocation import (TensorStorage, TensorLocation,
+    ReplicatedTensorSharding, TileSet, ExecutionContext)
+
+from . import transforms
 
 del sys
 del actualVersion
 del requiredVersion
-
-__all__ = [name for name in dir()]
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

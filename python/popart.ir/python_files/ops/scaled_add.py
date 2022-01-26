@@ -6,8 +6,6 @@ from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-__all__ = ['scaled_add', 'scaled_add_']
-
 
 @op_debug_context
 def scaled_add(X: Tensor,

@@ -13,7 +13,7 @@ from typing import Mapping, Union, Tuple, Optional, List
 
 # TODO: Bind subgraph op T53714
 class SubgraphOpInfo:
-    """Info relating to an op that calls into a subgraph, e.g. a call op or repeat op. This is a 
+    """Info relating to an op that calls into a subgraph, e.g. a call op or repeat op. This is a
     convenience class for extracting information about the op and it's subgraph.
     """
 

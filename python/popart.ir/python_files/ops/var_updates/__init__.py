@@ -1,4 +1,25 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from .accumulate import *
-from .adam_updater import *
-from .copy_var_update import *
+__all__ = [
+    # accumulate.py
+    'accumulate_',
+    'accumulate_square_',
+    'accumulate_mean_',
+    'accumulate_moving_average_',
+    'accumulate_moving_average_square_',
+    'sparse_accumulate_',
+    'accumulator_scale_',
+    'accumulator_zero_',
+    # adam_updater.py
+    'adam_updater',
+    'lamb_updater',
+    'adamax_updater',
+    # copy_var_update.py
+    'copy_var_update_',
+]
+
+from .accumulate import (accumulate_, accumulate_square_, accumulate_mean_,
+                         accumulate_moving_average_,
+                         accumulate_moving_average_square_, sparse_accumulate_,
+                         accumulator_scale_, accumulator_zero_)
+from .adam_updater import adam_updater, lamb_updater, adamax_updater
+from .copy_var_update import copy_var_update_

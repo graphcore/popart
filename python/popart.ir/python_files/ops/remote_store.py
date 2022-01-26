@@ -7,8 +7,6 @@ from popart.ir import constant
 from popart.ir.dtypes import uint32
 from .utils import check_in_graph
 
-__all__ = ["remote_store"]
-
 
 @op_debug_context
 def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
@@ -37,7 +35,7 @@ def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
         serialized graph.
         One way to circumvent this is by using ``with pir.in_sequence(True)``
 
-    See also: 
+    See also:
         ``remote_buffer``, ``remote_load``, ``remote_load_``.
 
     Args:

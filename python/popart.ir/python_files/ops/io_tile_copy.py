@@ -4,8 +4,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ['io_tile_copy']
-
 
 @op_debug_context
 def io_tile_copy(t: Tensor) -> Tensor:

@@ -8,12 +8,6 @@ from popart.ir.tensor import Tensor
 from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 from .utils import handle_optimizer_value
 
-__all__ = [
-    'accumulate_', 'accumulate_square_', 'accumulate_mean_',
-    'accumulate_moving_average_', 'accumulate_moving_average_square_',
-    'sparse_accumulate_', 'accumulator_scale_', 'accumulator_zero_'
-]
-
 
 @op_debug_context
 def accumulate_(t: Tensor, X: Tensor,

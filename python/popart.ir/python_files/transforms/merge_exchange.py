@@ -4,8 +4,6 @@ from contextlib import contextmanager
 import popart._internal.ir as _ir
 from popart.ir.context import io_tiles, in_sequence, get_current_graph, get_current_context
 
-__all__ = ["merge_exchange", "io_tile_exchange"]
-
 
 @contextmanager
 def io_tile_exchange(verify_overlap: bool = True):

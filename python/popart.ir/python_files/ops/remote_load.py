@@ -9,8 +9,6 @@ from popart.ir.dtypes import uint32
 from .utils import check_in_graph
 from .init import init
 
-__all__ = ["remote_load", "remote_load_"]
-
 
 @op_debug_context
 def remote_load(remote_buffer: RemoteBuffer,
@@ -30,7 +28,7 @@ def remote_load(remote_buffer: RemoteBuffer,
         serialized graph.
         One way to circumvent this is by using ``with pir.in_sequence(True)``
 
-    See also: 
+    See also:
         ``remote_buffer``, ``remote_store``, ``remote_load_``
 
     Args:
@@ -95,7 +93,7 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
         serialized graph.
         One way to circumvent this is by using ``with pir.in_sequence(True)``
 
-    See also: 
+    See also:
         ``remote_buffer``, ``remote_store``, ``remote_load``
 
     Args:

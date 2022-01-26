@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, handle_negative_axis
 
-__all__ = ["split"]
-
 
 @op_debug_context
 def split(t: Tensor, splits: Union[int, List[int]],

@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 
-__all__ = ['logical_or']
-
 
 @op_debug_context
 def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:

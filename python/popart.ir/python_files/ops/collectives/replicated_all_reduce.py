@@ -6,8 +6,6 @@ from popart.ir.tensor import Tensor
 from .collectives import CommGroup, to_collective_op, CollectiveOps
 from popart.ir.ops.utils import check_in_graph
 
-__all__ = ["replicated_all_reduce", "replicated_all_reduce_"]
-
 
 def replicated_all_reduce(t: Tensor,
                           op: CollectiveOps = 'add',
@@ -28,7 +26,7 @@ def replicated_all_reduce(t: Tensor,
             The input is optional, if omitted, the group will be determined heuristically.
             The tensor is used for graph traversal only and not consumed by the Op, therefore
             shape and data type do not matter.
-            
+
     Returns:
         Tensor: Reduced tensor
     """
@@ -78,7 +76,7 @@ def replicated_all_reduce_(t: Tensor,
             The input is optional, if omitted, the group will be determined heuristically.
             The tensor is used for graph traversal only and not consumed by the Op, therefore
             shape and data type do not matter.
-            
+
     Returns:
         Tensor: Reduced tensor
     """

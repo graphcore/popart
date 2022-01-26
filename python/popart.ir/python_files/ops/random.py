@@ -6,8 +6,6 @@ from typing import Tuple
 from popart.ir import dtypes
 from .utils import check_in_graph, convert_optional_dtype
 
-__all__ = ['random_uniform', 'random_normal']
-
 
 @op_debug_context
 def random_uniform(seed_tensor: Tensor,
@@ -25,11 +23,11 @@ def random_uniform(seed_tensor: Tensor,
             Used to seed the probability distribution. Must have data type uint32 and shape (2,).
         shape (Tuple[int, ...]):
             Shape of output tensor
-        low (float, optional): 
+        low (float, optional):
             Minimum value. Defaults to 0.0.
-        high (float, optional): 
+        high (float, optional):
             Maximum value. Defaults to 1.0.
-        dtype (dtypes.dtype, optional): 
+        dtype (dtypes.dtype, optional):
             Data type of output tensor. Defaults to dtypes.float32.
 
     Returns:
@@ -75,11 +73,11 @@ def random_normal(seed_tensor: Tensor,
             Used to seed the probability distribution. Must have data type uint32 and shape (2,).
         shape (Tuple[int, ...]):
             Shape of output tensor
-        mean (float, optional): 
+        mean (float, optional):
             Mean of distribution. Defaults to 0.0.
-        std (float, optional): 
+        std (float, optional):
             Standard deviation of distribution. Defaults to 1.0.
-        dtype (dtypes.dtype, optional): 
+        dtype (dtypes.dtype, optional):
             Data type of output tensor. Defaults to dtypes.float32.
 
     Returns:

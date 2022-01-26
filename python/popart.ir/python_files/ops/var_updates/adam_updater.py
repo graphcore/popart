@@ -7,8 +7,6 @@ from popart.ir.tensor import Tensor
 from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 from .utils import handle_optimizer_value
 
-__all__ = ['adam_updater', 'lamb_updater', 'adamax_updater']
-
 
 def weight_decay_is_required(weight_decay: Union[None, float, Tensor]):
     if isinstance(weight_decay, Tensor):

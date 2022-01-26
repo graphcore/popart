@@ -5,8 +5,6 @@ import numpy as np
 
 MAX_UINT64 = 2**64 - 1
 
-__all__ = ['create_seeds']
-
 
 def create_seeds(seed: int,
                  offset: int = 0,

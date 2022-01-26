@@ -4,8 +4,6 @@ from popart.ir.context import debug_context_frame_offset, get_current_context, o
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-__all__ = ['group_norm', 'layer_norm']
-
 
 @op_debug_context
 def group_norm(t: Tensor,

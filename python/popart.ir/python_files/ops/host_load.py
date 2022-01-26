@@ -7,8 +7,6 @@ from popart.ir.tensor import Tensor
 from popart.ir.streams import HostToDeviceStream
 from .init import init
 
-__all__ = ['host_load']
-
 
 @op_debug_context
 def host_load(h2d_stream: HostToDeviceStream,

@@ -2,10 +2,9 @@
 from popart.ir.context import gcg
 from typing import Tuple
 import popart._internal.ir as _ir
-from popart.ir.dtypes import dtype
-from popart.ir import Ir, Tensor
-
-__all__ = ["RemoteBuffer", "remote_buffer"]
+from .dtypes import dtype
+from .ir import Ir
+from .tensor import Tensor
 
 
 class RemoteBuffer:

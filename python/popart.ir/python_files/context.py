@@ -12,11 +12,6 @@ if TYPE_CHECKING:
     from popart.ir.graph import Graph
     from popart.ir.tensor import Tensor
 
-__all__ = [
-    'get_current_graph', 'get_main_graph', 'gcg', 'gmg', 'pipeline_stage',
-    'in_sequence', 'name_scope', 'ipu', 'io_tiles'
-]
-
 
 class Context:
     def __init__(self):
@@ -179,7 +174,7 @@ class Context:
             any order. But if the False context is nested inside a True context
             then all Ops within the False context will be treated as a single Op for the purpose
             of the outer True context. For example:
-            
+
             .. code-block:: python
 
                 with in_sequence(True):
@@ -188,7 +183,7 @@ class Context:
                         OpB()
                         OpC()
                     OpD()
-            
+
             OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
             """
         g = op.getGraph()
@@ -368,9 +363,9 @@ def op_debug_context(name: Fn) -> Fn:
 
 def op_debug_context(name):  # type: ignore
     """Decorator to specify a new op debug context. Typical usage:
-    
+
     .. code-block:: python
-    
+
         @op_debug_context
         def add(lhs, rhs):
             ...

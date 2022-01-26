@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["slice", "slice_"]
-
 INT_MIN = -2**31
 INT_MAX = 2**31 - 1
 

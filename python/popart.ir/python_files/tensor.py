@@ -4,20 +4,14 @@ from typing_extensions import Literal
 import numpy as np
 
 import popart._internal.ir as _ir
-from popart.ir import dtypes
-from popart.ir.context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
-from popart.ir.typing_ import NewAliasAnnotation
-from popart.ir.errors import UndefinedValue
+from . import dtypes
+from .context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
+from .typing_ import NewAliasAnnotation
+from .errors import UndefinedValue
 
 if TYPE_CHECKING:
     from popart.ir import Ir
     from popart.ir.remote_buffer import RemoteBuffer
-
-__all__ = [
-    'Tensor', 'variable', 'remote_variable', 'remote_replica_sharded_variable',
-    'replica_sharded_variable', 'constant', 'subgraph_input',
-    'subgraph_output', 'TensorByRef'
-]
 
 ScalarType = Union[int, float, bool]
 """Scalar types that can be coerced into a Tensor"""
@@ -426,7 +420,7 @@ class Tensor:
             x.shape == (3, 2)
             mask = pir.variable([True, False, True], dtype=pir.bool)
             x[mask] == Tensor([x[0], 0, x[1]]) # Broadcast mask: zero row 1
-        
+
         """
 
         import popart.ir.ops as ops
@@ -541,7 +535,7 @@ def variable(
     parameter that can change while running a model.
 
     Must be created in the main graph scope. Example:
-    
+
     .. code-block:: python
 
         import popart.ir as pir
@@ -574,7 +568,7 @@ def variable(
 
 def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
                     offset: int) -> Constant:
-    """Store the tensor off-chip in remote memory. 
+    """Store the tensor off-chip in remote memory.
 
     Args:
         var (Variable): The variable to be stored remotely.
@@ -582,7 +576,7 @@ def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
         offset (int): The offset to index the tensor in the remote tensor.
 
     Returns:
-        Constant: The tensor associated with the remote variable. Note: this is not the remote 
+        Constant: The tensor associated with the remote variable. Note: this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
     """
     var._pb_tensor.setTensorLocationInfo(
@@ -649,8 +643,8 @@ def remote_replica_sharded_variable(
 
 def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
                              offset: int) -> Tuple[Constant, Tensor]:
-    """Scatter a tensor in equal shards across replicas (data parallelism) of the 
-        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does 
+    """Scatter a tensor in equal shards across replicas (data parallelism) of the
+        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does
         not need to be present on each IPU. Does not store the full tensor in remote memory.
 
     Args:
@@ -661,7 +655,7 @@ def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
     Returns:
         Tuple[Constant, Tensor]:
             A tuple of tensors:
-            1. The tensor associated with the remote variable. Note: this is not the remote 
+            1. The tensor associated with the remote variable. Note: this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
             2. The sharded variable.
     """
@@ -794,7 +788,7 @@ def subgraph_output(t: Tensor) -> None:
     Example:
 
     .. code-block:: python
-    
+
         import popart.ir as pir
 
         def add_w(x):

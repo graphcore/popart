@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_tile_set
 
-__all__ = ["gather", "tied_gather"]
-
 
 @op_debug_context
 def gather(
@@ -21,7 +19,7 @@ def gather(
     Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
 
     Examples:
-    
+
     .. code-block:: python
 
         x = pir.variable(np.arange(16).reshape(4,4))
@@ -139,7 +137,7 @@ def tied_gather(
         zero_OOR: bool
             If False, out of range (OOR) indices will produce garbage data.
             If True, OOR indices will produce zeros.
-                
+
     Returns:
         gather: Tensor
             The gathered elements concatenated.

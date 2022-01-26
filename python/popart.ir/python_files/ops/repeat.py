@@ -9,8 +9,6 @@ from popart.ir.tensor import Tensor, subgraph_input
 
 from .utils import check_in_graph
 
-__all__ = ['repeat', 'repeat_with_info']
-
 
 @op_debug_context
 def repeat(repeat_subgraph: Graph,

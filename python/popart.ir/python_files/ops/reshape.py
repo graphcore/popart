@@ -6,8 +6,6 @@ from popart.ir.context import get_current_context, debug_context_frame_offset, o
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["reshape", "reshape_", "flatten", "flatten_"]
-
 
 def reshape_handle_negative_axis(t: Tensor,
                                  shape: Tuple[int, ...]) -> Tuple[int, ...]:

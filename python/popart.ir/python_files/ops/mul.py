@@ -4,8 +4,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-__all__ = ['mul']
-
 
 @op_debug_context
 def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
@@ -13,7 +11,7 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     Multiplies two Tensors element-wise.
     Follows numpy broadcasting rules.
     Arguments must have the same dtype.
-    
+
     Args:
         lhs, rhs: Tensor
             Tensors to be multiplied.

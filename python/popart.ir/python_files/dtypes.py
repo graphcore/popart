@@ -232,10 +232,3 @@ double = float64
 
 # Delete the `dtype` factory from the `dtype` class.
 del dtype._factory
-
-# Must define all statically so language servers can parse import *
-__all__ = [
-    "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
-    "uint32", "uint64", "half", "float16", "float", "float32", "double",
-    "float64", "complex64", "complex128"
-]

@@ -5,8 +5,6 @@ from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-__all__ = ["dynamic_slice"]
-
 
 @op_debug_context
 def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
@@ -46,7 +44,7 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
             If set to true, then correct gradient backpropagation is only guaranteed if
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
-            There are no run-time or compile-time checks possible to ensure this.            
+            There are no run-time or compile-time checks possible to ensure this.
     Returns:
         out: Tensor
             A clone (i.e. not a view) of the sliced input tensor.

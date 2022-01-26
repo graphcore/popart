@@ -3,8 +3,6 @@ import popart._internal.ir as _ir
 from typing import Union
 from typing_extensions import Literal
 
-__all__ = ['CommGroup', 'CommGroupType']
-
 CommGroup = _ir.CommGroup
 CommGroupType = _ir.CommGroupType
 

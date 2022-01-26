@@ -7,11 +7,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from popart.ir import Ir
 
-__all__ = [
-    'TensorStorage', 'TensorLocation', 'ReplicatedTensorSharding', 'TileSet',
-    'ExecutionContext'
-]
-
 
 class TensorStorage(Enum):
     OnChip = "OnChip"

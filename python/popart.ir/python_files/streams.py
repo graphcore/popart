@@ -1,15 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from popart.ir.context import gcg
-from popart.ir.tensor import Tensor
-from popart.ir.dtypes import dtype
+from .context import gcg
+from .tensor import Tensor
+from .dtypes import dtype
 
 import popart._internal.ir as _ir
 
 from typing import Any, Iterable, Optional, Tuple
-
-__all__ = [
-    'HostToDeviceStream', 'DeviceToHostStream', 'h2d_stream', 'd2h_stream'
-]
 
 
 class _Stream:

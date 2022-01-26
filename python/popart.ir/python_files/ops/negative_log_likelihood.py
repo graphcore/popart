@@ -6,8 +6,6 @@ from popart.ir.tensor import Tensor, constant
 from popart.ir.dtypes import float32
 from .utils import check_in_graph, convert_optional_int, check_tensor_ipu_and_tile_set
 
-__all__ = ['nll_loss_with_softmax_grad']
-
 
 @op_debug_context
 def nll_loss_with_softmax_grad(

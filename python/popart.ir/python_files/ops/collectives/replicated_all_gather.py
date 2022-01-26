@@ -6,8 +6,6 @@ from popart.ir.tensor import Tensor
 from .collectives import CommGroup
 from popart.ir.ops.utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-__all__ = ["replicated_all_gather"]
-
 
 def replicated_all_gather(t: Tensor,
                           group: Optional[CommGroup] = None,

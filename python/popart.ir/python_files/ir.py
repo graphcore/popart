@@ -9,15 +9,13 @@ import os
 
 import popart
 import popart._internal.ir as _ir
-from popart.ir.context import get_main_graph
-from popart.ir.graph import Graph
-from popart.ir.module import Module
-from popart.ir.tensor import Tensor, TensorByRef, subgraph_input, subgraph_output
+from .context import get_main_graph
+from .graph import Graph
+from .module import Module
+from .tensor import Tensor, TensorByRef, subgraph_input, subgraph_output
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
-
-__all__ = ['Ir']
 
 
 class Ir:
@@ -107,7 +105,7 @@ class Ir:
         The function `fn` can take any arguments. Any Tensor arguments are
         automatically detected. Any Tensor arguments inside a tuple, list,
         `*arg` or `**kwargs` are also detected. `*args`, `**kwargs`, lists
-        cannot contain a mixture of tensors and other types. Nested lists 
+        cannot contain a mixture of tensors and other types. Nested lists
         or dicts of tensors are not supported.
 
         If an input is type hinted with `TensorByRef` or `List[TensorByRef]`

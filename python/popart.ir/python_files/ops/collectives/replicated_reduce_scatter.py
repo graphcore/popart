@@ -6,8 +6,6 @@ from popart.ir.tensor import Tensor
 from .collectives import CommGroup, to_collective_op, CollectiveOps
 from popart.ir.ops.utils import check_in_graph
 
-__all__ = ["replicated_reduce_scatter"]
-
 
 def replicated_reduce_scatter(
         t: Tensor,

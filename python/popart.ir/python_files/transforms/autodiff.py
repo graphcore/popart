@@ -8,8 +8,6 @@ from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 from popart.ir.ops.call import SubgraphOpInfo
 
-__all__ = ['autodiff']
-
 
 class ExpectedConnectionType(Enum):
     Fwd = "Fwd"
@@ -180,7 +178,7 @@ class GradGraphInfo:
             grad_tensor_map = grads_graph.get_fwd_subgraph_to_grad_tensor_map(grads_call_info)
             assert [t.id for t in grad_tensor_map.keys()] == [
                 'Module_subgraph(0)/x', 'Module_subgraph(0)/W', 'Module_subgraph(0)/b']
-        
+
         Args:
             call_info (SubgraphOpInfo):
                 Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
@@ -218,7 +216,7 @@ class GradGraphInfo:
             # Obtain a mapping input tensors `x`, `W` and `b` and the corresponding grad Tensors
             grad_tensor_map = grads_graph.get_fwd_inputs_to_grad_tensor_map(call_info, grads_call_info)
             assert [t.id for t in grad_tensor_map.keys()] == ['x', 'W', 'b']
-        
+
         Args:
             call_info (SubgraphOpInfo):
                 Callsite info of a call to the graph that was auto-differentiated. This can be accessed by

@@ -4,8 +4,6 @@ from popart.ir.context import get_current_context
 from popart.ir.tensor import Tensor
 from .utils import check_in_graph
 
-__all__ = ["lamb_square"]
-
 
 def lamb_square(t: Tensor) -> Tensor:
     """
