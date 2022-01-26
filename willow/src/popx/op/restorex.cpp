@@ -7,6 +7,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 
@@ -54,12 +55,8 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
   }
 
   // Create a "1" tensor and grow program to increment stash index by 1.
-  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     stashIndex.getPoplarTensor(),
-                     one,
-                     prog.getPoplarSequence(),
-                     debugContext());
+  auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  snap::popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
                      stashIndex.getPoplarTensor(),
                      stashSizeTensor,

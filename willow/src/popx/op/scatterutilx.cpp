@@ -6,6 +6,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Cast.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
@@ -80,7 +81,7 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
                               snap::Tensor indices,
                               int numDataCols) {
   // Linearize the indices: map from 2-d indices to 1-d
-  auto result     = indices.getPoplarTensor().flatten(1, indices.rank());
+  auto result     = indices.flatten(1, indices.rank());
   int numCols     = static_cast<int>(result.dim(1));
   auto colIndices = scatterutilx::linspace(opx.graph(),
                                            0,
@@ -90,27 +91,25 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
                                            result.elementType());
 
   // numDataCols * indices + colIndices
-  result =
-      opx.cloneNcopy(prog, snap::Tensor{result, opx.graph()}, "copyIndices")
-          .getPoplarTensor();
+  result                = opx.cloneNcopy(prog, result, "copyIndices");
   auto numDataColsConst = opx.graph().getPoplarGraph().addConstant(
       result.elementType(), {}, numDataCols, opx.getDebugNameAndId("numCols"));
   opx.graph().getPoplarGraph().setTileMapping(numDataColsConst, 0);
 
   popops::mulInPlace(opx.graph().getPoplarGraph(),
-                     result,
+                     result.getPoplarTensor(),
                      numDataColsConst,
                      prog.getPoplarSequence(),
                      opx.getDebugNameAndId("numColsMulIndices"));
-  popops::addInPlace(opx.graph().getPoplarGraph(),
-                     result,
-                     colIndices.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     opx.getDebugNameAndId("indicesAddColIds"));
+  snap::popops::addInPlace(opx.graph(),
+                           result,
+                           colIndices,
+                           prog,
+                           opx.getDebugNameAndId("indicesAddColIds"));
 
   result = result.flatten();
   result = result.expand({1});
-  return snap::Tensor{result, opx.graph()};
+  return result;
 }
 
 void growScatter(snap::program::Sequence &prog,

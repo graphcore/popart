@@ -12,6 +12,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/Gru.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
@@ -446,11 +447,11 @@ void GRUGradOpx::grow(snap::program::Sequence &prog) const {
     weights.biases = weights.biases.reshape({3, 2, hidden_size});
   }
 
-  popops::addInPlace(graph().getPoplarGraph(),
-                     output_grad[output_grad.dim(0) - 1].getPoplarTensor(),
-                     output_h_grad.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     debugContext());
+  snap::popops::addInPlace(graph(),
+                           output_grad[output_grad.dim(0) - 1],
+                           output_h_grad,
+                           prog,
+                           debugContext());
 
   poplar::Tensor input_grad;
   popnn::gru::GruWeights weights_grad;

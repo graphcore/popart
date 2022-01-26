@@ -7,6 +7,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 
@@ -89,13 +90,8 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
   setOutTensor(StashOp::getOutIndex(), outTensor);
 
   // Create a "1" tensor and grow program to increment stash index by 1.
-  const auto one =
-      getConst(poplar::UNSIGNED_INT, {}, 1.0, "one").getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     stashIndex.getPoplarTensor(),
-                     one,
-                     prog.getPoplarSequence(),
-                     debugContext());
+  const auto one = getConst(poplar::UNSIGNED_INT, {}, 1.0, "one");
+  snap::popops::addInPlace(graph(), stashIndex, one, prog, debugContext());
   popops::remInPlace(graph().getPoplarGraph(),
                      stashIndex.getPoplarTensor(),
                      stashSize.getPoplarTensor(),

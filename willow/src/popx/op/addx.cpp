@@ -8,6 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <poputil/TileMapping.hpp>
 
@@ -36,11 +37,7 @@ void AddComputex::inplace(snap::program::Sequence &prog,
                           const snap::Tensor &tIn,
                           const poplar::DebugNameAndId &dnai,
                           const std::string &name) const {
-  popops::addInPlace(graph.getPoplarGraph(),
-                     tInOut.getPoplarTensor(),
-                     tIn.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, name});
+  snap::popops::addInPlace(graph, tInOut, tIn, prog, {dnai, name});
 }
 
 AddOpx::AddOpx(Op *op, Devicex *devicex)

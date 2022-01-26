@@ -13,10 +13,10 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplar/Type.hpp>
 #include <popnn/Lstm.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 
 namespace popart {
@@ -153,12 +153,12 @@ void LSTMOpx::growBias(snap::program::Sequence &prog) const {
         bias_input.slice(0, 4 * hidden_size, 1), biases, false, debugContext());
     prog.add(copyProg);
 
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    snap::popops::mapInPlace(
+        graph(),
         popops::expr::BinaryOpType::ADD,
-        biases.getPoplarTensor(),
-        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1).getPoplarTensor(),
-        prog.getPoplarSequence(),
+        biases,
+        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
+        prog,
         debugContext("add"));
   } else {
     popops::zero(graph().getPoplarGraph(),
@@ -437,13 +437,12 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
 
   // TODO find out what this is for
   // it's done in tensorflow and enigma
-  auto output_grad_copy =
-      cloneNcopy(prog, snap::Tensor{output_grad, graph()}).getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     output_grad_copy[output_grad_copy.dim(0) - 1],
-                     output_h_grad.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     debugContext());
+  auto output_grad_copy = cloneNcopy(prog, snap::Tensor{output_grad, graph()});
+  snap::popops::addInPlace(graph(),
+                           output_grad_copy[output_grad_copy.dim(0) - 1],
+                           output_h_grad,
+                           prog,
+                           debugContext());
 
   poplar::Tensor input_grad;
   popnn::lstm::LstmWeights weights_grad;
@@ -474,7 +473,7 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
                                        weights,
                                        forward_input,
                                        forward_output,
-                                       output_grad_copy,
+                                       output_grad_copy.getPoplarTensor(),
                                        lastStepStateGradPtr,
                                        &input_grad,
                                        weights_grad,

@@ -13,6 +13,7 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/NonLinearity.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
@@ -189,62 +190,51 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // get output grads and combine them
-  poplar::Tensor output_full_grad = getFullOutputGrad(prog).getPoplarTensor();
-  poplar::Tensor output_last_grad = getLastOutputGrad(prog).getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     output_full_grad[output_full_grad.dim(0) - 1],
-                     output_last_grad,
-                     prog.getPoplarSequence(),
-                     debugContext("rnngrad/combine_output_grads"));
+  snap::Tensor output_full_grad = getFullOutputGrad(prog);
+  snap::Tensor output_last_grad = getLastOutputGrad(prog);
+  snap::popops::addInPlace(graph(),
+                           output_full_grad[output_full_grad.dim(0) - 1],
+                           output_last_grad,
+                           prog,
+                           debugContext("rnngrad/combine_output_grads"));
   // Crete tensors for intermediate and output grads
 
   // combined gradient of the output and further iterations of the RNN
   // dh[i] combines output[i] and dh[i+1]
-  poplar::Tensor dh =
-      cloneNcopy(
-          prog,
-          getZerosTensor(forward_output.shape(), elem_type, "rnngrad/zero_dh"))
-          .getPoplarTensor();
+  snap::Tensor dh = cloneNcopy(
+      prog,
+      getZerosTensor(forward_output.shape(), elem_type, "rnngrad/zero_dh"));
 
-  poplar::Tensor input_grad =
-      cloneNcopy(prog,
-                 getZerosTensor(forward_input.shape(),
-                                elem_type,
-                                "rnngrad/zero_input_grad"))
-          .getPoplarTensor();
-  poplar::Tensor input_weights_grad =
-      cloneNcopy(prog,
-                 getZerosTensor(
-                     W.shape(), elem_type, "rnngrad/zero_input_weights_grad"))
-          .getPoplarTensor();
-  poplar::Tensor recurrence_weights_grad =
-      cloneNcopy(prog,
-                 getZerosTensor(R.shape(),
-                                elem_type,
-                                "rnngrad/zero_recurrence_weights_grad"))
-          .getPoplarTensor();
+  snap::Tensor input_grad = cloneNcopy(
+      prog,
+      getZerosTensor(
+          forward_input.shape(), elem_type, "rnngrad/zero_input_grad"));
+  snap::Tensor input_weights_grad = cloneNcopy(
+      prog,
+      getZerosTensor(W.shape(), elem_type, "rnngrad/zero_input_weights_grad"));
+  snap::Tensor recurrence_weights_grad = cloneNcopy(
+      prog,
+      getZerosTensor(
+          R.shape(), elem_type, "rnngrad/zero_recurrence_weights_grad"));
   // bias_grad contains grad for one bias element, not both, because the grads
   // are identical.
-  poplar::Tensor bias_grad;
+  snap::Tensor bias_grad;
   // no need to initialize the grad tensor if we won't use it
   if (rnn_grad_op.hasBiasInput) {
     // initialize bias_grad tensor
     // Tensor has size of a single bias element, not both
-    bias_grad =
-        cloneNcopy(prog,
-                   getZerosTensor(
-                       {1, hidden_size}, elem_type, "rnngrad/zero_bias_grad"))
-            .getPoplarTensor();
+    bias_grad = cloneNcopy(
+        prog,
+        getZerosTensor({1, hidden_size}, elem_type, "rnngrad/zero_bias_grad"));
   }
-  poplar::Tensor initialH_grad;
+  snap::Tensor initialH_grad;
   // no need to initialize the grad tensor if we won't use it
   if (rnn_grad_op.hasInitialHInput) {
     // initialize initialH_grad
     initialH_grad = cloneNcopy(prog,
                                getZerosTensor(initialH_input.shape(),
                                               elem_type,
-                                              "rnngrad/zero_initialH_grad"))
-                        .getPoplarTensor();
+                                              "rnngrad/zero_initialH_grad"));
   }
 
   // For convenience denote:
@@ -268,127 +258,134 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
   //   da[i+1]/dR = h[i]
 
   // set last layer of dh
-  prog.getPoplarSequence().add(
-      poplar::program::Copy(output_full_grad[seq_length - 1],
-                            dh[seq_length - 1],
-                            false,
-                            debugContext("rnngrad/copy_dh_last")));
+  prog.add(snap::program::Copy(output_full_grad[seq_length - 1],
+                               dh[seq_length - 1],
+                               false,
+                               debugContext("rnngrad/copy_dh_last")));
 
   // Calculate all subsequent layers of dh backwards
   // This unrolls all but the first iteration, as the first one uses initial_H
   for (int i = seq_length - 1; i >= 0; i--) {
     for (int j = 0; j < batch_size; j++) {
       // Gradient back through nonlinearity
-      poplar::Tensor da =
+      snap::Tensor da = snap::Tensor{
           popnn::nonLinearityInputGradient(graph().getPoplarGraph(),
                                            activation,
                                            forward_output[i][0][j],
-                                           dh[i][0][j],
+                                           dh[i][0][j].getPoplarTensor(),
                                            prog.getPoplarSequence(),
-                                           debugContext("rnngrad/da"));
+                                           debugContext("rnngrad/da")),
+          graph()};
 
       if (i != 0) {
         // dh[i-1][0][j] = R[0]^T * da + output_full_grad[i][0][j]
-        prog.getPoplarSequence().add(poplar::program::Copy(
-            popops::add(graph().getPoplarGraph(),
-                        output_full_grad[i - 1][0][j],
-                        poplin::matMul(graph().getPoplarGraph(),
-                                       R[0].transpose(),
-                                       da.reshape({hidden_size, 1}),
-                                       prog.getPoplarSequence(),
-                                       debugContext("rnngrad/R*da"))
-                            .reshape({hidden_size}),
-                        prog.getPoplarSequence(),
-                        debugContext("rnngrad/R*da+output_full_grad")),
+        prog.add(snap::program::Copy(
+            snap::Tensor{
+                popops::add(graph().getPoplarGraph(),
+                            output_full_grad[i - 1][0][j].getPoplarTensor(),
+                            poplin::matMul(
+                                graph().getPoplarGraph(),
+                                R[0].transpose(),
+                                da.reshape({hidden_size, 1}).getPoplarTensor(),
+                                prog.getPoplarSequence(),
+                                debugContext("rnngrad/R*da"))
+                                .reshape({hidden_size}),
+                            prog.getPoplarSequence(),
+                            debugContext("rnngrad/R*da+output_full_grad")),
+                graph()},
             dh[i - 1][0][j],
             false,
             debugContext("rnngrad/copy_dh")));
       } else if (rnn_grad_op.hasInitialHInput) {
         // initialH_grad[0][j] = R[0]^T * da
-        prog.getPoplarSequence().add(
-            poplar::program::Copy(poplin::matMul(graph().getPoplarGraph(),
-                                                 R[0].transpose(),
-                                                 da.reshape({hidden_size, 1}),
-                                                 prog.getPoplarSequence(),
-                                                 debugContext("rnngrad/da*R_2"))
-                                      .reshape({hidden_size}),
-                                  initialH_grad[0][j],
-                                  false,
-                                  debugContext("rnngrad/copy_initialH_grad")));
+        prog.add(snap::program::Copy(
+            snap::Tensor{
+                poplin::matMul(graph().getPoplarGraph(),
+                               R[0].transpose(),
+                               da.reshape({hidden_size, 1}).getPoplarTensor(),
+                               prog.getPoplarSequence(),
+                               debugContext("rnngrad/da*R_2")),
+                graph()}
+                .reshape({hidden_size}),
+            initialH_grad[0][j],
+            false,
+            debugContext("rnngrad/copy_initialH_grad")));
       }
 
       // input_grad[i][j] = W[0]^T * da
-      prog.getPoplarSequence().add(
-          poplar::program::Copy(poplin::matMul(graph().getPoplarGraph(),
-                                               W[0].transpose(),
-                                               da.reshape({hidden_size, 1}),
-                                               prog.getPoplarSequence(),
-                                               debugContext("rnngrad/W*da"))
-                                    .reshape({input_size}),
-                                input_grad[i][j],
-                                false,
-                                debugContext("rnngrad/copy_input_grad")));
+      prog.add(snap::program::Copy(
+          snap::Tensor{
+              poplin::matMul(graph().getPoplarGraph(),
+                             W[0].transpose(),
+                             da.reshape({hidden_size, 1}).getPoplarTensor(),
+                             prog.getPoplarSequence(),
+                             debugContext("rnngrad/W*da")),
+              graph()}
+              .reshape({input_size}),
+          input_grad[i][j],
+          false,
+          debugContext("rnngrad/copy_input_grad")));
 
       // input_weights_grad[0] += da * forward_input[i][j]^T
-      popops::addInPlace(
-          graph().getPoplarGraph(),
+      snap::popops::addInPlace(
+          graph(),
           input_weights_grad[0], // hidden_size x input_size
-          poplin::matMul(graph().getPoplarGraph(),
-                         da.reshape({hidden_size, 1}),
-                         forward_input[i][j].reshape({1, input_size}),
-                         prog.getPoplarSequence(),
-                         debugContext("rnngrad/da*forward_input")),
-          prog.getPoplarSequence(),
+          snap::Tensor{
+              poplin::matMul(graph().getPoplarGraph(),
+                             da.reshape({hidden_size, 1}).getPoplarTensor(),
+                             forward_input[i][j].reshape({1, input_size}),
+                             prog.getPoplarSequence(),
+                             debugContext("rnngrad/da*forward_input")),
+              graph()},
+          prog,
           debugContext("rnngrad/addTo_input_weights_grad"));
 
       // recurrence_weights_grad[0] += da * forward_output[i-1][0][j]^T
-      popops::addInPlace(
-          graph().getPoplarGraph(),
+      snap::popops::addInPlace(
+          graph(),
           recurrence_weights_grad[0], // hidden_size x hidden_size
-          poplin::matMul(
-              graph().getPoplarGraph(),
-              da.reshape({hidden_size, 1}),
-              (i == 0 ? initialH_input[0][j] : forward_output[i - 1][0][j])
-                  .reshape({1, hidden_size}),
-              prog.getPoplarSequence(),
-              debugContext("rnngrad/da*forward_output")),
-          prog.getPoplarSequence(),
+          snap::Tensor{
+              poplin::matMul(
+                  graph().getPoplarGraph(),
+                  da.reshape({hidden_size, 1}).getPoplarTensor(),
+                  (i == 0 ? initialH_input[0][j] : forward_output[i - 1][0][j])
+                      .reshape({1, hidden_size}),
+                  prog.getPoplarSequence(),
+                  debugContext("rnngrad/da*forward_output")),
+              graph()},
+          prog,
           debugContext("rnngrad/addTo_recurrence_weights_grad"));
 
       if (rnn_grad_op.hasBiasInput) {
         // bias_grad[0] += da
-        popops::addInPlace(graph().getPoplarGraph(),
-                           bias_grad[0], // hidden_size
-                           da,           // hidden_size
-                           prog.getPoplarSequence(),
-                           debugContext("rnngrad/addTo_bias_grad"));
+        snap::popops::addInPlace(graph(),
+                                 bias_grad[0], // hidden_size
+                                 da,           // hidden_size
+                                 prog,
+                                 debugContext("rnngrad/addTo_bias_grad"));
       }
     }
   }
 
   // set input gradient
-  setOutTensor(RNNGradOp::getInputOutIndex(),
-               snap::Tensor{input_grad, graph()});
+  setOutTensor(RNNGradOp::getInputOutIndex(), input_grad);
 
   // set input weights gradient
-  setOutTensor(RNNGradOp::getInputWeightsOutIndex(),
-               snap::Tensor{input_weights_grad, graph()});
+  setOutTensor(RNNGradOp::getInputWeightsOutIndex(), input_weights_grad);
 
   // set hidden state weights gradient
   setOutTensor(RNNGradOp::getRecurrenceWeightsOutIndex(),
-               snap::Tensor{recurrence_weights_grad, graph()});
+               recurrence_weights_grad);
 
   // set biases gradient
   if (rnn_grad_op.hasBiasInput) {
     // propagate same gradient to both input and hidden bias
-    setOutTensor(RNNGradOp::getBiasOutIndex(),
-                 snap::Tensor{bias_grad.broadcast(2, 1), graph()});
+    setOutTensor(RNNGradOp::getBiasOutIndex(), bias_grad.broadcast(2, 1));
   }
 
   // set initialH gradient
   if (rnn_grad_op.hasInitialHInput) {
-    setOutTensor(RNNGradOp::getInitialHOutIndex(),
-                 snap::Tensor{initialH_grad, graph()});
+    setOutTensor(RNNGradOp::getInitialHOutIndex(), initialH_grad);
   }
 }
 

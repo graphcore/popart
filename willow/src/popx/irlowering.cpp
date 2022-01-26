@@ -89,7 +89,7 @@
 #include <stepiosplitter.hpp>
 #include <popart/subgraphpartitioner.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
@@ -1118,13 +1118,14 @@ PriTask IrLowering::initRandomSeed(Tensor *tensor) {
     // `streamedSeedId` are now replica distinct and 2) we can set the RNG
     // state to it's natural resting state: replica differing.
 
-    auto offset = graph().getPoplarGraph().addReplicationIndexConstant();
-    graph().getPoplarGraph().setTileMapping(offset, 0);
-    popops::addInPlace(
-        graph().getPoplarGraph(),
-        seed[0].getPoplarTensor(),
+    auto offset = snap::Tensor{
+        graph().getPoplarGraph().addReplicationIndexConstant(), graph()};
+    graph().getPoplarGraph().setTileMapping(offset.getPoplarTensor(), 0);
+    snap::popops::addInPlace(
+        graph(),
+        seed[0],
         offset,
-        prog.getPoplarSequence(),
+        prog,
         {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
          "initStreamedSeedId"});
 
@@ -3686,11 +3687,11 @@ PriTask IrLowering::anchorReturnTypeSumTask(Tensor *tensor,
     tensors_.insertUnsafe(accumulatorId, accumulatorTensor);
 
     logging::devicex::debug("Adding AnchorSum operations to {}", tensor->id);
-    popops::addInPlace(
-        graph().getPoplarGraph(),
-        accumulatorTensor.getPoplarTensor(),
-        poplarTensor.getPoplarTensor(),
-        seqs.getSequence(&sq).getPoplarSequence(),
+    snap::popops::addInPlace(
+        graph(),
+        accumulatorTensor,
+        poplarTensor,
+        seqs.getSequence(&sq),
         {{tensor->getDebugInfo().getPathName(), tensor->getDebugInfo().getId()},
          "AnchorSum_" + tensor->id});
     // Zero the accumulator
@@ -3778,11 +3779,11 @@ PriTask IrLowering::updateBatchCountTask(snap::program::Sequence &sq) {
     // the anchor tensor is required, and check if it is a
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
-      popops::addInPlace(graph().getPoplarGraph(),
-                         batchCountingTensors[N].getPoplarTensor(),
-                         getConst(graph(), poplar::INT, {}, 1, "batchCount/one")
-                             .getPoplarTensor(),
-                         seqs.getSequence(&sq).getPoplarSequence());
+      snap::popops::addInPlace(
+          graph(),
+          batchCountingTensors[N],
+          getConst(graph(), poplar::INT, {}, 1, "batchCount/one"),
+          seqs.getSequence(&sq));
 
       batchCountCheckingTensors[N] = snap::Tensor{
           popops::eq(graph().getPoplarGraph(),

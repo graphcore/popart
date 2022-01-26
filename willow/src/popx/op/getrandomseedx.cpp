@@ -9,32 +9,30 @@
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/randomsetup.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
 
 void GetRandomSeedOpx::grow(snap::program::Sequence &prog) const {
-  auto seed = getInTensor(op_p->getSeedInIndex()).getPoplarTensor();
+  auto seed = getInTensor(op_p->getSeedInIndex());
 
   // Increment the seed
-  auto one = getConst(seed.elementType(), {1}, 1.0, "one").getPoplarTensor();
+  auto one = getConst(seed.elementType(), {1}, 1.0, "one");
   // The LHS of the seed is offset by the replication index when loaded onto the
   // device, see IrLowering::initRandomSeed(). Incrementing by replicationFactor
   // ensures no overlap in the LHS of the seed between replicas
   auto grf = getConst(seed.elementType(),
                       {1},
                       dv_p->lowering().getGlobalReplicationFactor(),
-                      "globalReplicationFactor")
-                 .getPoplarTensor();
-  popops::addInPlace(graph().getPoplarGraph(),
-                     seed,
-                     poplar::concat({grf, one}),
-                     prog.getPoplarSequence(),
-                     debugContext("RandomSeedIncrement"));
+                      "globalReplicationFactor");
+  snap::popops::addInPlace(graph(),
+                           seed,
+                           snap::concat({grf, one}),
+                           prog,
+                           debugContext("RandomSeedIncrement"));
 
-  setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(),
-               snap::Tensor{seed, graph()});
+  setOutTensor(GetRandomSeedOp::getUpdatedSeedOutIndex(), seed);
 }
 
 GetRandomSeedOpx::GetRandomSeedOpx(Op *op, Devicex *devicex)

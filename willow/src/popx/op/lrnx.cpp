@@ -6,6 +6,7 @@
 #include <popart/popx/op/lrnx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
 #include <popops/ElementWise.hpp>
@@ -48,19 +49,16 @@ poplar::Tensor getScale(snap::Graph &graph,
     // i == 0 added by default,
     if ((i != 0L) &&
         (channels - std::max<int64_t>(0L, i)) - std::max<int64_t>(0L, -i) > 0)
-      popops::addInPlace(graph.getPoplarGraph(),
-                         square_sum
-                             .slice(std::max<int64_t>(0L, -i),
-                                    channels - std::max<int64_t>(0L, i),
-                                    1)
-                             .getPoplarTensor(),
-                         square
-                             .slice(std::max<int64_t>(0L, i),
-                                    channels - std::max<int64_t>(0L, -i),
-                                    1)
-                             .getPoplarTensor(),
-                         prog.getPoplarSequence(),
-                         {di});
+      snap::popops::addInPlace(
+          graph,
+          square_sum.slice(std::max<int64_t>(0L, -i),
+                           channels - std::max<int64_t>(0L, i),
+                           1),
+          square.slice(std::max<int64_t>(0L, i),
+                       channels - std::max<int64_t>(0L, -i),
+                       1),
+          prog,
+          {di});
   }
 
   auto scale = popops::map(

@@ -1,4 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/Zero.hpp>
@@ -75,11 +76,11 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
                  reference.getPoplarTensor(),
                  prog.getPoplarSequence(),
                  debugContext("zero_identity_reference_tensor"));
-    popops::addInPlace(graph().getPoplarGraph(),
-                       reference.getPoplarTensor(),
-                       output.getPoplarTensor(),
-                       prog.getPoplarSequence(),
-                       debugContext("add_gradient_to_reference"));
+    snap::popops::addInPlace(graph(),
+                             reference,
+                             output,
+                             prog,
+                             debugContext("add_gradient_to_reference"));
   }
 }
 
