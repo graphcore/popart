@@ -301,6 +301,24 @@ const std::vector<size_t> PopOpx::outShapeSzt(OutIndex index) const {
   return outInfo(index).shape_szt();
 }
 
+snap::Graph &PopOpx::inGraph(InIndex in) const {
+  if (op_p->hasVirtualGraphId()) {
+    std::set<OpId> visited;
+    auto vgid = op_p->getIntrospectionInVirtualGraphId(in, visited);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+  return dv_p->lowering().graph();
+}
+
+snap::Graph &PopOpx::outGraph(OutIndex out) const {
+  if (op_p->hasVirtualGraphId()) {
+    std::set<OpId> visited;
+    auto vgid = op_p->getIntrospectionOutVirtualGraphId(out, visited);
+    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
+  }
+  return dv_p->lowering().graph();
+}
+
 // If the operator has been named return the name, (i.e. "my_add/23")
 // else return the id (i.e "23")
 std::string PopOpx::idStr() const {

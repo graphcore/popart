@@ -225,6 +225,8 @@ const static AiGraphcoreOpIdV1 PackedDataBlock("PackedDataBlock", {}, 1);
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 Remainder("Remainder", 2, 1);
 const static AiGraphcoreOpIdV1 MultiExchange("MultiExchange");
+const static AiGraphcoreOpIdV1
+    MultiReplicatedAllReduce("MutliReplicatedAllReduce");
 const static AiGraphcoreOpIdV1 RemoteLoad("RemoteLoad", {1, 2}, 1);
 const static AiGraphcoreOpIdV1
     RemoteLoadInplace("RemoteLoadInplace", {1, 2}, 1);

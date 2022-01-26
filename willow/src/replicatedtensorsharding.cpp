@@ -1,8 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/op/collectives/replicatedallgather.hpp>
-#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
@@ -91,10 +89,10 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceVisitor(Tensor *t) {
     }
   }
 
-  auto checkCollectiveLinkedTensor = [this](CollectivesBaseOp *collectiveOp) {
-    if (collectiveOp->hasInput(CollectivesBaseOp::getCollectiveLinkedIndex())) {
-      auto link =
-          collectiveOp->inTensor(CollectivesBaseOp::getCollectiveLinkedIndex());
+  auto checkCollectiveLinkedTensor = [this](CollectivesBaseOp *collectiveOp,
+                                            Tensor *t) {
+    if (collectiveOp->hasCorrespondingLinkedIndexTensor(t)) {
+      auto link = collectiveOp->getCorrespondingLinkedIndexTensor(t);
       group.collectiveLinkedTensorIds.insert(link->id);
       for (auto linkRoot : graphutils::rootTensors(link)) {
         group.collectiveLinkedTensorIds.insert(linkRoot->id);
@@ -105,14 +103,10 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceVisitor(Tensor *t) {
   for (Op *c : t->consumers.getOps()) {
     if (CollectivesBaseOp *collectiveOp =
             dynamic_cast<CollectivesBaseOp *>(c)) {
-      auto indices = collectiveOp->input->indices(t);
-      bool isLinked =
-          std::find(indices.begin(),
-                    indices.end(),
-                    CollectivesBaseOp::getCollectiveLinkedIndex()) !=
-          indices.end();
+      auto indices  = collectiveOp->input->indices(t);
+      bool isLinked = collectiveOp->isCollectiveLinkedIndexTensor(t);
       if (shapeMatch || isLinked) {
-        checkCollectiveLinkedTensor(collectiveOp);
+        checkCollectiveLinkedTensor(collectiveOp, t);
         group.collectiveOpIds[collectiveOp->id].id = collectiveOp->id;
       }
       if (shapeMatch) {
@@ -137,7 +131,7 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceVisitor(Tensor *t) {
       if (CollectivesBaseOp *collectiveOp =
               dynamic_cast<CollectivesBaseOp *>(p)) {
         auto indices = collectiveOp->output->indices(t);
-        checkCollectiveLinkedTensor(collectiveOp);
+        checkCollectiveLinkedTensor(collectiveOp, t);
         group.collectiveOpIds[collectiveOp->id].id = collectiveOp->id;
         group.collectiveOpIds[collectiveOp->id].outIndices.insert(
             indices.begin(), indices.end());
@@ -252,35 +246,41 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceFilter(Op *op,
     return true;
   }
 
-  // ReplicatedAllGatherOp should be traversed
-  if (op->isConvertibleTo<ReplicatedAllGatherOp>()) {
-    if ((op->input->hasIndex(ReplicatedAllGatherOp::getInIndex()) &&
-         op->input->id(ReplicatedAllGatherOp::getInIndex()) == tn->id)) {
-      // Input can be sharded
-      return true;
-    }
-    if ((op->input->hasIndex(
-             ReplicatedAllGatherOp::getCollectiveLinkedIndex()) &&
-         op->input->id(ReplicatedAllGatherOp::getCollectiveLinkedIndex()) ==
-             tn->id)) {
-      // Collective linked tensors should be traversed
-      return true;
-    }
-  }
-
-  // ReplicatedReduceScatter should be traversed
-  if (op->isConvertibleTo<ReplicatedReduceScatterOp>()) {
-    if ((op->output->hasIndex(ReplicatedReduceScatterOp::getOutIndex()) &&
-         op->output->id(ReplicatedReduceScatterOp::getOutIndex()) == tn->id)) {
-      // Output can be sharded
-      return true;
-    }
-    if ((op->input->hasIndex(
-             ReplicatedReduceScatterOp::getCollectiveLinkedIndex()) &&
-         op->input->id(ReplicatedReduceScatterOp::getCollectiveLinkedIndex()) ==
-             tn->id)) {
-      // Collective linked tensors should be traversed
-      return true;
+  // Collective ops may specify additional matching conditions
+  if (CollectivesBaseOp *collectiveOp = dynamic_cast<CollectivesBaseOp *>(op)) {
+    for (auto rtsIndices : collectiveOp->getReplicatedTensorShardingIndices()) {
+      auto &inIndices  = rtsIndices.first;
+      auto &outIndices = rtsIndices.second;
+      for (InIndex in : inIndices) {
+        if (collectiveOp->hasInput(in)) {
+          // Check if tn is an rts input
+          if (collectiveOp->inId(in) == tn->id) {
+            return true;
+          }
+          // Check if tn is a linked index tensor for rts
+          if (collectiveOp->hasCorrespondingLinkedIndexTensor(in)) {
+            if (collectiveOp->getCorrespondingLinkedIndexTensor(in)->id ==
+                tn->id) {
+              return true;
+            }
+          }
+        }
+      }
+      for (OutIndex out : outIndices) {
+        if (collectiveOp->hasOutput(out)) {
+          // Check if tn is an rts output
+          if (collectiveOp->outId(out) == tn->id) {
+            return true;
+          }
+          // Check if tn is a linked index tensor for the rts output
+          if (collectiveOp->hasCorrespondingLinkedIndexTensor(out)) {
+            if (collectiveOp->getCorrespondingLinkedIndexTensor(out)->id ==
+                tn->id) {
+              return true;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -332,8 +332,26 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceFilter(Op *op,
 
 bool ReplicatedTensorShardingTracer::hasGroup(
     const ReplicatedTensorShardingOpInfo &opInfo) const {
-  auto it = opIdGroupMap.find(opInfo);
-  return it != opIdGroupMap.end();
+  // A group contains a subset of input and output indices for a given op
+  // hasGroup checks whether there already exists a group for a given opId which
+  // exactly covers all the input and output indices of opInfo
+  for (auto entry : opIdGroupMap) {
+    ReplicatedTensorShardingOpInfo info = entry.first;
+    if (info.id == opInfo.id) {
+      bool allInputsAreIngroup  = std::includes(info.inIndices.begin(),
+                                               info.inIndices.end(),
+                                               opInfo.inIndices.begin(),
+                                               opInfo.inIndices.end());
+      bool allOutputsAreIngroup = std::includes(info.outIndices.begin(),
+                                                info.outIndices.end(),
+                                                opInfo.outIndices.begin(),
+                                                opInfo.outIndices.end());
+      if (allInputsAreIngroup && allOutputsAreIngroup) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool ReplicatedTensorShardingTracer::hasGroup(const TensorId &tensorId) const {
@@ -343,16 +361,30 @@ bool ReplicatedTensorShardingTracer::hasGroup(const TensorId &tensorId) const {
 
 const ReplicatedTensorShardingGroup &ReplicatedTensorShardingTracer::getGroup(
     const ReplicatedTensorShardingOpInfo &opInfo) const {
-  auto it = opIdGroupMap.find(opInfo);
-  if (it == opIdGroupMap.end()) {
-    throw error(
-        "[ReplicatedTensorShardingGroup "
-        "&ReplicatedTensorShardingTracer::getGroup] OpInfo {} is not part "
-        "of a replication tensor sharding (RTS) group",
-        opInfo);
-  } else {
-    return groups.at(it->second);
+  // getGroup returns the group for a given opId which
+  // exactly covers all the input and output indices of opInfo
+  // if no such group exists an error is thrown
+  for (auto entry : opIdGroupMap) {
+    ReplicatedTensorShardingOpInfo info = entry.first;
+    if (info.id == opInfo.id) {
+      bool allInputsAreIngroup  = std::includes(info.inIndices.begin(),
+                                               info.inIndices.end(),
+                                               opInfo.inIndices.begin(),
+                                               opInfo.inIndices.end());
+      bool allOutputsAreIngroup = std::includes(info.outIndices.begin(),
+                                                info.outIndices.end(),
+                                                opInfo.outIndices.begin(),
+                                                opInfo.outIndices.end());
+      if (allInputsAreIngroup && allOutputsAreIngroup) {
+        return groups.at(entry.second);
+      }
+    }
   }
+  throw error(
+      "[ReplicatedTensorShardingGroup "
+      "&ReplicatedTensorShardingTracer::getGroup] OpInfo {} is not part "
+      "of a replication tensor sharding (RTS) group",
+      opInfo);
 }
 
 const ReplicatedTensorShardingGroup &

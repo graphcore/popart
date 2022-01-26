@@ -399,6 +399,64 @@ getOpsWithBefores(const std::vector<Op *> &ops) {
   return getOpsWithBefores(opss);
 }
 
+bool hasDataDependency(Op *const op,
+                       const std::vector<Op *> &opSchedule,
+                       const std::vector<Op *> &potentialDependencyOps) {
+  if (potentialDependencyOps.empty()) {
+    return false;
+  }
+
+  int i = 0;
+  std::map<OpId, int> opToPosition;
+  for (Op *opS : opSchedule) {
+    opToPosition[opS->id] = i++;
+  }
+
+  int earliestpotentialDependencyOpPos = 0;
+  std::set<OpId> depOpIds;
+  for (auto &depOp : potentialDependencyOps) {
+    depOpIds.insert(depOp->id);
+    int positionInSchedule = opToPosition.at(depOp->id);
+    earliestpotentialDependencyOpPos =
+        std::min(positionInSchedule, earliestpotentialDependencyOpPos);
+  }
+
+  std::vector<Tensor *> inputs;
+  for (auto input : op->input->tensorMap()) {
+    inputs.push_back(input.second);
+  }
+
+  bool dataDependency = false;
+  graphutils::traverse(
+      inputs,
+      [&depOpIds, &dataDependency](Tensor *t) {
+        if (t->hasProducer()) {
+          if (depOpIds.find(t->getProducer()->id) != depOpIds.end()) {
+            // The op depends on data/tensor created by one of the
+            // potential dependency ops
+            dataDependency = true;
+            return false;
+          }
+        }
+        return true;
+      },
+      [&earliestpotentialDependencyOpPos, &opToPosition, &op](
+          Op *traverse, Tensor *t0, Tensor *t1) {
+        if (op->getGraph().id != traverse->getGraph().id) {
+          return true;
+        } else if (opToPosition.count(traverse->id) > 0) {
+          int traversePositionSchedule = opToPosition.at(traverse->id);
+          return earliestpotentialDependencyOpPos < traversePositionSchedule;
+        }
+        return false;
+      },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Backward);
+
+  return dataDependency;
+}
+
 namespace {
 class PartialMatch {
 public:

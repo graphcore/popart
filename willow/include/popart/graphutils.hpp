@@ -174,6 +174,20 @@ getOpsWithBefores(const std::set<Op *, POpCmp> &ops);
 std::map<Op *, std::set<Op *, POpCmp>, POpCmp>
 getOpsWithBefores(const std::vector<Op *> &ops);
 
+/**
+ * Walk back from the current op and ensure we do not encounter
+ * any of the ops in the vector of potential dependency ops
+ * \param the op from which to walk back
+ * \param opSchedule the schedule of ops which is used for the traversal
+ * \param potentialDependencyOps a list of ops against which to check for
+ *        data dependency
+ * \return true, if there is a data dependency between op and any of
+ *        the potential dependency ops
+ */
+bool hasDataDependency(Op *const op,
+                       const std::vector<Op *> &opSchedule,
+                       const std::vector<Op *> &potentialDependencyOps);
+
 class Edge {
 public:
   Edge() : fromIndex(-1), toIndex(-1), out(-1), in(-1) {}

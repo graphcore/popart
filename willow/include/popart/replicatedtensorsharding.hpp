@@ -10,7 +10,6 @@ namespace popart {
 
 struct PTensorCmp;
 
-using ReplicatedTensorShardingGroupId = int;
 
 /**
  * Struct that describes which inputs/outputs of an Op belong to the

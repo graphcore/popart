@@ -180,6 +180,19 @@ public:
   // shortcut for op_p->output.tensor(int)->info.shape_zt()
   const std::vector<size_t> outShapeSzt(OutIndex) const;
 
+  /**
+   * Return the virtual graph associated with input at index in
+   * \param in the input index
+   * \return the corresponding snap virtual graph
+   */
+  virtual snap::Graph &inGraph(InIndex in) const;
+  /**
+   * Return the virtual graph associated with output at index out
+   * \param out the output index
+   * \return the corresponding snap virtual graph
+   */
+  virtual snap::Graph &outGraph(OutIndex out) const;
+
   // The Op corresponding to this PopOpx
   Op *op_p;
 

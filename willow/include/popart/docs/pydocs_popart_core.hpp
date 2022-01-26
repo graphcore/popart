@@ -10351,6 +10351,22 @@ This value can be overridden via ``bufferingDepthMap``.)doc";
 static const char *__singlelinedoc_popart_SessionOptions_defaultBufferingDepth =
     R"doc(This is the default buffering depth value used for streams that are not re-arranged on the host. This value can be overridden via ``bufferingDepthMap``.)doc";
 
+static const char *
+    __doc_popart_SessionOptions_ReplicatedCollectivesSettings_prepareScheduleForMergingCollectives =
+        R"doc(Constraints the schedule so that collective ops which can be merged are scheduled to run one right after the other)doc";
+
+static const char *
+    __singlelinedoc_popart_SessionOptions_ReplicatedCollectivesSettings_prepareScheduleForMergingCollectives =
+        R"doc(Identifies allreduce operations which can be scheduled together and merges them together into one larger allreduce operation. This can provide better utilization of the available bandwidth.)doc";
+
+static const char *
+    __doc_popart_SessionOptions_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
+        R"doc(Merges allreduce collectives which have been scheduled to occur right after on another)doc";
+
+static const char *
+    __singlelinedoc_popart_SessionOptions_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
+        R"doc(Merges allreduce collectives which have been scheduled to occur right after on another)doc";
+
 static const char *__doc_popart_SessionOptions_delayVarUpdates =
     R"doc(Options to delay variable updates as much as possible.
 TODO: Remove with T19212)doc";

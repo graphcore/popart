@@ -26,6 +26,15 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
+  bool hasCorrespondingLinkedIndexTensor(Tensor *t) override { return false; }
+  Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override {
+    throw error("AllReduce does not support linked index tensors");
+  }
+  bool isCollectiveLinkedIndexTensor(InIndex in) const override {
+    return false;
+  }
+  bool isCollectiveLinkedIndexTensor(Tensor *t) const override { return false; }
+
   std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
   fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
                              const ReplEqInputMap &inputMap,

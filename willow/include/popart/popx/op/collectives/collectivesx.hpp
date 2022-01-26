@@ -60,7 +60,7 @@ private:
 };
 
 // If the (tile-balanced) input/output to a collective op is rearranged and/or
-// padded, provide a view of the tenosr data that matches the IR expectations
+// padded, provide a view of the tensor data that matches the IR expectations
 // of the tensor.
 // Note: The view is suitable for consumption by all ops, as all data carrying
 // regions are included in the view and arranged correctly
@@ -149,24 +149,50 @@ public:
    * starting point (\c ReduceScatter & \c AllGather) and tracks all associated
    * Ops that propagate \a RTS with a \a DFS search on the graph.
    *
+   * \param groupIndex The index of the rtsIndices for which to return the
+   *                collective group.
+   *
    * \return  Returns all linked tensors and their connected ops to coordinate
    *          tensor mapping of collective inputs and outputs
    */
-  ReplicatedTensorShardingGroup getCollectiveLinkedGroup() const;
+  ReplicatedTensorShardingGroup getCollectiveLinkedGroup(
+      ReplicatedTensorShardingIndicesIndex groupIndex) const;
 
   /**
    * Get the existing \a CBR
+   * \param groupIndex The index of the rtsIndices for which to return the
+   *                collective group.
    * \return Existing CBR for the input/output tensor of the collective Op
    */
-  gcl::CollectiveBalancedReorder *getCollectiveBalancedReorder() const;
+  gcl::CollectiveBalancedReorder *getCollectiveBalancedReorder(
+      ReplicatedTensorShardingIndicesIndex groupIndex) const;
 
   /**
    * Create a new \a CBR instance for the reference \c tensor
    * \param tensor non-sharded reference tensor
+   * \param groupIndex The index of the rtsIndices for which to return the
+   *                collective group.
    * \return New CBR for the input/output tensor of the collective Op
    */
-  gcl::CollectiveBalancedReorder *
-  createCollectiveBalancedReorder(snap::Tensor tensor) const;
+  gcl::CollectiveBalancedReorder *createCollectiveBalancedReorder(
+      snap::Tensor tensor,
+      ReplicatedTensorShardingIndicesIndex groupIndex) const;
+};
+
+class MultiCollectiveBaseOpx : public CollectivesBaseOpx {
+public:
+  MultiCollectiveBaseOpx(Op *op, Devicex *devicex);
+
+  // Which "parts" use the input tensor
+  // there are "output->n()" parts
+  //  part "i" uses input "i" and the indices at "i + output->n()"
+  // this also works for allreduce (no indices, just input tensors)
+  std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const override;
+
+  // Which "part" constructs the output tensor
+  // there are "output->n()" parts
+  // each part "i" produces output "i"
+  OpxGrowPartId getOutGrowPartId(Tensor *outTensor) const override;
 };
 
 /**

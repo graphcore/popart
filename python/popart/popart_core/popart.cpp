@@ -1072,6 +1072,21 @@ PYBIND11_MODULE(popart_core, m) {
   }
   {
     // This setting is experimental and may change.
+    py::class_<ReplicatedCollectivesSettings> cls(
+        m, "ReplicatedCollectivesSettings");
+    cls.def(py::init<>());
+    cls.def(py::init<bool, bool>(),
+            py::arg("prepareScheduleForMergingCollectives") = false,
+            py::arg("mergeAllReduceCollectives")            = false);
+    cls.def_readwrite(
+        "prepareScheduleForMergingCollectives",
+        &ReplicatedCollectivesSettings::prepareScheduleForMergingCollectives);
+    cls.def_readwrite(
+        "mergeAllReduceCollectives",
+        &ReplicatedCollectivesSettings::mergeAllReduceCollectives);
+  }
+  {
+    // This setting is experimental and may change.
     py::enum_<BatchSerializationBatchSchedule> en(
         m,
         "BatchSerializationBatchSchedule",
@@ -1550,6 +1565,8 @@ PYBIND11_MODULE(popart_core, m) {
         DOC(popart, SessionOptions, enableLoadAndOffloadRNGState));
     cls.def_readwrite("automaticLossScalingSettings",
                       &SessionOptions::automaticLossScalingSettings);
+    cls.def_readwrite("replicatedCollectivesSettings",
+                      &SessionOptions::replicatedCollectivesSettings);
     cls.def_readwrite("useHostCopyOps", &SessionOptions::useHostCopyOps);
     cls.def_readwrite(
         "enableSupportedDataTypeCasting",

@@ -4,6 +4,7 @@
 
 #include <popart/commgroup.hpp>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
 
@@ -38,6 +39,24 @@ public:
   // Gathered/reduced/scattered output
   static OutIndex getOutIndex() { return 0; }
 
+  // Return the default ReplicatedTensorShardingIndicesIndex
+  static ReplicatedTensorShardingIndicesIndex
+  getDefaultTensorShardingGroupIndex() {
+    return 0;
+  }
+
+  // Generalization functions for working with linked indices
+  virtual bool hasCorrespondingLinkedIndexTensor(Tensor *t);
+  bool hasCorrespondingLinkedIndexTensor(InIndex in) {
+    return hasCorrespondingLinkedIndexTensor(inTensor(in));
+  };
+  virtual Tensor *getCorrespondingLinkedIndexTensor(Tensor *t);
+  Tensor *getCorrespondingLinkedIndexTensor(InIndex in) {
+    return getCorrespondingLinkedIndexTensor(inTensor(in));
+  }
+  virtual bool isCollectiveLinkedIndexTensor(InIndex in) const;
+  virtual bool isCollectiveLinkedIndexTensor(Tensor *t) const;
+
   void setGCLCommGroup(CommGroup group_) { group = group_; }
   CommGroup getGCLCommGroup() const { return group; }
 
@@ -59,6 +78,40 @@ public:
 
 private:
   CommGroup group;
+};
+
+class MultiCollectiveBaseOp : public CollectivesBaseOp {
+public:
+  MultiCollectiveBaseOp(
+      const OperatorIdentifier &operatorIdentifier,
+      CommGroup commGroup,
+      const Op::Settings &settings,
+      std::vector<bool> modifiesIndexInplace,
+      std::vector<TensorInfo> outInfoFromBaseOps,
+      std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
+      std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
+  void setup();
+  VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex in) const;
+  VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex out) const;
+  std::vector<bool> getModifiesIndexInplace() const {
+    return modifiesIndexInplace;
+  }
+  VGraphIdAndTileSet
+  getIntrospectionInVirtualGraphId(InIndex in,
+                                   std::set<OpId> &visited) const override;
+  VGraphIdAndTileSet
+  getIntrospectionOutVirtualGraphId(OutIndex out,
+                                    std::set<OpId> &visited) const override;
+  bool hasCorrespondingLinkedIndexTensor(Tensor *t) override;
+  Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override;
+  bool isCollectiveLinkedIndexTensor(InIndex in) const override;
+  bool isCollectiveLinkedIndexTensor(Tensor *t) const override;
+
+private:
+  std::vector<bool> modifiesIndexInplace;
+  std::vector<TensorInfo> outInfoFromBaseOps;
+  std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet;
+  std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet;
 };
 
 /**

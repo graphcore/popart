@@ -66,6 +66,7 @@
 #include <popart/transforms/automaticlossscaling.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
+#include <popart/transforms/contiguatecollectivesformerging.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
 #include <popart/transforms/ensurefp32lossscale.hpp>
@@ -76,6 +77,7 @@
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/iocomputetilecopy.hpp>
 #include <popart/transforms/mainloops.hpp>
+#include <popart/transforms/mergecollectives.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
 #include <popart/transforms/mergeexchange.hpp>
@@ -1532,6 +1534,15 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // Must be called before outlining.
   applyTransform(InplaceAccumulateGradPartialsIntoOptimizerAccumTensor::id(),
                  getMainGraph());
+
+  if (userOptions.replicatedCollectivesSettings
+          .prepareScheduleForMergingCollectives) {
+    applyTransform(ContiguateCollectivesTransform::id(), getMainGraph());
+  }
+  if (userOptions.replicatedCollectivesSettings.mergeAllReduceCollectives) {
+    applyTransform(MergeCollectivesTransform::id(), getMainGraph());
+    updateVertices();
+  }
 
   dotCheckpoint(*this, "PreAlias");
 

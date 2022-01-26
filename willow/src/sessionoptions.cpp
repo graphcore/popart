@@ -63,6 +63,20 @@ BatchSerializationSettings::BatchSerializationSettings(
       transformContext{transformContext_}, method{method_},
       batchSchedule{batchSchedule_} {}
 
+ReplicatedCollectivesSettings::ReplicatedCollectivesSettings(
+    bool prepareScheduleForMergingCollectives_,
+    bool mergeAllReduceCollectives_)
+    : prepareScheduleForMergingCollectives(
+          prepareScheduleForMergingCollectives_),
+      mergeAllReduceCollectives{mergeAllReduceCollectives_} {}
+
+std::size_t ReplicatedCollectivesSettings::hash() const {
+  std::size_t seed = 0;
+  boost::hash_combine(seed, prepareScheduleForMergingCollectives);
+  boost::hash_combine(seed, mergeAllReduceCollectives);
+  return seed;
+}
+
 std::string toString(VirtualGraphMode v) {
   switch (v) {
   case VirtualGraphMode::Off:
@@ -287,6 +301,7 @@ std::size_t hash<popart::SessionOptions>::operator()(
   boost::hash_combine(seed, so.explicitRecomputation);
   boost::hash_combine(seed, so.partialsTypeMatMuls);
   boost::hash_combine(seed, so.decomposeGradSum);
+  boost::hash_combine(seed, so.replicatedCollectivesSettings.hash());
   boost::hash_combine(seed, static_cast<int>(so.virtualGraphMode));
   boost::hash_combine(seed, so.delayVarUpdates);
   boost::hash_combine(seed, so.scheduleNonWeightUpdateGradientConsumersEarly);

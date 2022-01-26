@@ -33,7 +33,8 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
       allGatherOptions);
   if (getOp<ReplicatedAllGatherOp>()
           .isconfigureOutputForReplicatedTensorSharding()) {
-    auto cbr = getCollectiveBalancedReorder();
+    auto cbr = getCollectiveBalancedReorder(
+        CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
     if (cbr) {
       gathered = cbr->undoRearrangeForCollective(gathered);
     } else {
@@ -63,7 +64,8 @@ ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
 snap::Tensor ReplicatedAllGatherOpx::unwindTensorLayout(snap::Tensor tensor,
                                                         InIndex,
                                                         OutIndex) const {
-  auto cbr = createCollectiveBalancedReorder(tensor);
+  auto cbr = createCollectiveBalancedReorder(
+      tensor, CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
   return snap::Tensor{cbr->createReplicaSlice(tensor.elementType()), graph()};
 }
 
@@ -89,7 +91,8 @@ snap::Tensor ReplicatedAllGatherOpx::createInputTensor(
     auto outTensor =
         graph().addVariable(popType(outInfo), outInfo.shape_szt(), dnai);
     dv_p->lowering().getLinearMapper().mapTensor(graph(), outTensor);
-    auto cbr = createCollectiveBalancedReorder(outTensor);
+    auto cbr = createCollectiveBalancedReorder(
+        outTensor, CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
     return snap::Tensor{cbr->createReplicaSlice(popType(outInfo)), graph()};
   }
 
@@ -104,7 +107,8 @@ bool ReplicatedAllGatherOpx::hasCreatorViewChangers(InIndex index) const {
 ViewChangers
 ReplicatedAllGatherOpx::getCreatorViewChangers(InIndex index) const {
   if (index == ReplicatedAllGatherOp::getInIndex()) {
-    auto group = getCollectiveLinkedGroup();
+    auto group = getCollectiveLinkedGroup(
+        CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
 
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(

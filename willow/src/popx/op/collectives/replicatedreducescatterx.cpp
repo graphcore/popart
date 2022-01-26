@@ -30,7 +30,8 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
 
   if (getOp<ReplicatedReduceScatterOp>()
           .isconfigureOutputForReplicatedTensorSharding()) {
-    auto group = getCollectiveLinkedGroup();
+    auto group = getCollectiveLinkedGroup(
+        CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
 
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherInScatterOutViewChanger>(
@@ -45,8 +46,10 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
                           inId(ReplicatedReduceScatterOp::getInIndex()));
 
       // Tensor not rearranged for reduceScatter yet, do it now
-      auto cbr = createCollectiveBalancedReorder(toReduceScatter);
-      auto c   = snap::Tensor{cbr->createCollectivesTensor(
+      auto cbr = createCollectiveBalancedReorder(
+          toReduceScatter,
+          CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
+      auto c = snap::Tensor{cbr->createCollectivesTensor(
                                 toReduceScatter.elementType(),
                                 inId(ReplicatedReduceScatterOp::getInIndex())),
                             graph()};
@@ -94,7 +97,8 @@ ReplicatedReduceScatterOpx::getInputCreatorType(InIndex index) const {
   bool canCreate = false;
 
   if (hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex())) {
-    auto group = getCollectiveLinkedGroup();
+    auto group = getCollectiveLinkedGroup(
+        CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
     for (auto cbrOpId : group.collectiveOpIds) {
       // Can't exist on itself
       if (cbrOpId.first != rrsOp.id) {
@@ -130,7 +134,8 @@ snap::Tensor ReplicatedReduceScatterOpx::createInputTensor(
         inIndex);
   }
 
-  auto cbr = getCollectiveBalancedReorder();
+  auto cbr = getCollectiveBalancedReorder(
+      CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
   if (!cbr) {
     throw error("ReplicatedReduceScatterOpx::createInput, "
                 "CollectiveBalancedReorder not found for Op {}",
@@ -146,7 +151,8 @@ snap::Tensor ReplicatedReduceScatterOpx::createInputTensor(
 DnfTensorIds
 ReplicatedReduceScatterOpx::mustExistBeforeCreateDNF(InIndex) const {
   const auto &rrsOp = getOp<ReplicatedReduceScatterOp>();
-  auto group        = getCollectiveLinkedGroup();
+  auto group        = getCollectiveLinkedGroup(
+      CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
   DnfTensorIds mustExist;
   for (auto cbrOpId : group.collectiveOpIds) {
     // Can't depend on itself
@@ -173,10 +179,14 @@ bool ReplicatedReduceScatterOpx::hasCreatorViewChangers(InIndex index) const {
 ViewChangers
 ReplicatedReduceScatterOpx::getCreatorViewChangers(InIndex index) const {
   if (index == ReplicatedReduceScatterOp::getInIndex()) {
-    auto cbr = getCollectiveBalancedReorder();
+    auto cbr = getCollectiveBalancedReorder(
+        CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
     ViewChangers viewChangers(
         {std::make_shared<ReplicatedGatherOutScatterInViewChanger>(
-            cbr, getCollectiveLinkedGroup().id)});
+            cbr,
+            getCollectiveLinkedGroup(
+                CollectivesBaseOp::getDefaultTensorShardingGroupIndex())
+                .id)});
     return viewChangers;
   }
   throw error(

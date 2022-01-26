@@ -103,6 +103,26 @@ enum class MergeVarUpdateType {
 };
 
 /**
+ * A structure containing settings for replicated collective operations
+ */
+struct ReplicatedCollectivesSettings {
+  ReplicatedCollectivesSettings(
+      bool prepareScheduleForMergingCollectives = false,
+      bool mergeAllReduceCollectives            = false);
+
+  std::size_t hash() const;
+
+  /// Insert constraints into the schedule such that collectives
+  /// which can be merged occur one right after the other
+  bool prepareScheduleForMergingCollectives = false;
+
+  /// Identifies allreduce operations which can be scheduled
+  /// at the same time, and performs them as one larger operation
+  /// so as to better utilize the bandwidth between replicas
+  bool mergeAllReduceCollectives = false;
+};
+
+/**
  * Enum type used to specify a virtual graph mode.
  */
 enum class VirtualGraphMode {
@@ -879,6 +899,9 @@ struct SessionOptions {
   /// use case for this would be if a large weight tensor is used as an
   /// input to many operations.
   bool decomposeGradSum = false;
+
+  /// Control the behavior of different collective operations
+  ReplicatedCollectivesSettings replicatedCollectivesSettings;
 
   /// Enable training with Poplar replicated graphs across multiple PopART
   /// instances.

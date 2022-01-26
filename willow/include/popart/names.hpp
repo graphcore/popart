@@ -86,6 +86,17 @@ using CollectiveBalancedReorderId = int;
  **/
 using ReplicatedTensorShardingIndices =
     std::set<std::pair<std::set<InIndex>, std::set<OutIndex>>>;
+/**
+ *  The position in ReplicatedTensorShardingIndices for which to
+ *  get the ReplicatedTensorShardingGroup
+ **/
+using ReplicatedTensorShardingIndicesIndex = int;
+
+/**
+ *  The unique integer id for a ReplicatedTensorShardingGroup
+ **/
+using ReplicatedTensorShardingGroupId = int;
+
 using PipelineCycle = int64_t;
 using VGraphId      = int64_t;
 // Virtual graphs (IPUs) are counted from 0

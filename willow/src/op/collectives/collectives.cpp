@@ -25,6 +25,113 @@ void CollectivesBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
           group.replicaGroupSize});
 }
 
+bool CollectivesBaseOp::hasCorrespondingLinkedIndexTensor(Tensor *t) {
+  if (isCollectiveLinkedIndexTensor(t)) {
+    return true;
+  } else if (hasInput(getCollectiveLinkedIndex())) {
+    return inId(getInIndex()) == t->id || outId(getOutIndex()) == t->id;
+  }
+  return false;
+}
+
+Tensor *CollectivesBaseOp::getCorrespondingLinkedIndexTensor(Tensor *t) {
+  if (!hasCorrespondingLinkedIndexTensor(t)) {
+    throw error("Must check hasCorrespondingLinkedIndexTensor"
+                "before calling getCorrespondingLinkedIndexTensor.");
+  }
+  if (isCollectiveLinkedIndexTensor(t)) {
+    return t;
+  } else if (inId(getInIndex()) == t->id || outId(getOutIndex()) == t->id) {
+    return inTensor(getCollectiveLinkedIndex());
+  }
+  throw error("The provided tensor is neither the input nor the link");
+}
+
+bool CollectivesBaseOp::isCollectiveLinkedIndexTensor(InIndex in) const {
+  return in == getCollectiveLinkedIndex();
+}
+
+bool CollectivesBaseOp::isCollectiveLinkedIndexTensor(Tensor *t) const {
+  if (hasInput(getCollectiveLinkedIndex())) {
+    return inId(getCollectiveLinkedIndex()) == t->id;
+  }
+  return false;
+}
+
+MultiCollectiveBaseOp::MultiCollectiveBaseOp(
+    const OperatorIdentifier &_opid,
+    CommGroup group,
+    const Op::Settings &settings_,
+    std::vector<bool> modifiesIndexInplace_,
+    std::vector<TensorInfo> outInfoFromBaseOps_,
+    std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet_,
+    std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
+    : CollectivesBaseOp(_opid, group, settings_),
+      modifiesIndexInplace(modifiesIndexInplace_),
+      outInfoFromBaseOps(outInfoFromBaseOps_),
+      inputVirtualGraphIdAndTileSet(inputVirtualGraphIdAndTileSet_),
+      outputVirtualGraphIdAndTileSet(outputVirtualGraphIdAndTileSet_) {}
+
+void MultiCollectiveBaseOp::setup() {
+  // Set the output infos
+  for (OutIndex i = 0; i < output->n(); ++i) {
+    outInfo(i) = outInfoFromBaseOps.at(i);
+  }
+}
+
+VGraphIdAndTileSet
+MultiCollectiveBaseOp::getIntrospectionInVirtualGraphId(InIndex in) const {
+  return inputVirtualGraphIdAndTileSet.at(in);
+}
+
+VGraphIdAndTileSet
+MultiCollectiveBaseOp::getIntrospectionOutVirtualGraphId(OutIndex out) const {
+  return outputVirtualGraphIdAndTileSet.at(out);
+}
+
+VGraphIdAndTileSet MultiCollectiveBaseOp::getIntrospectionInVirtualGraphId(
+    InIndex in,
+    std::set<OpId> &visited) const {
+  return inputVirtualGraphIdAndTileSet.at(in);
+}
+
+VGraphIdAndTileSet MultiCollectiveBaseOp::getIntrospectionOutVirtualGraphId(
+    OutIndex out,
+    std::set<OpId> &visited) const {
+  return outputVirtualGraphIdAndTileSet.at(out);
+}
+
+bool MultiCollectiveBaseOp::hasCorrespondingLinkedIndexTensor(Tensor *t) {
+  if (input->contains(t)) {
+    return isCollectiveLinkedIndexTensor(t) ||
+           hasInput(inIndex(t) + output->n());
+  } else if (output->contains(t)) {
+    return hasInput(outIndex(t) + output->n());
+  }
+  return false;
+}
+
+Tensor *MultiCollectiveBaseOp::getCorrespondingLinkedIndexTensor(Tensor *t) {
+  if (isCollectiveLinkedIndexTensor(t)) {
+    return t;
+  } else if (input->contains(t)) {
+    return inTensor(inIndex(t) + output->n());
+  } else if (output->contains(t)) {
+    return inTensor(outIndex(t) + output->n());
+  }
+  throw error("Collective Linked Tensor does not exist"
+              "Must check hasCorrespondingLinkedIndexTensor"
+              "before calling getCorrespondingLinkedIndexTensor.");
+}
+
+bool MultiCollectiveBaseOp::isCollectiveLinkedIndexTensor(InIndex in) const {
+  return in >= output->n();
+}
+
+bool MultiCollectiveBaseOp::isCollectiveLinkedIndexTensor(Tensor *t) const {
+  return input->contains(t) && isCollectiveLinkedIndexTensor(inIndex(t));
+}
+
 std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op) {
   switch (op) {
   case CollectiveOperator::Add:
