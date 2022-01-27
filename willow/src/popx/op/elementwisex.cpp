@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/poputil/TileMapping.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/popx/devicex.hpp>
@@ -261,14 +262,11 @@ void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
         "Unable to inplace operation {}, tensor is not parallel writeable",
         debugContext().getPathName());
     canComputeInplace = false;
-  } else if (poputil::getTileImbalance(g.getPoplarGraph(),
-                                       tInOut.getPoplarTensor()) >
-             maxTileImbalance) {
+  } else if (snap::poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
     logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
                    "is too high",
                    debugContext().getPathName(),
-                   poputil::getTileImbalance(g.getPoplarGraph(),
-                                             tInOut.getPoplarTensor()));
+                   snap::poputil::getTileImbalance(g, tInOut));
     canComputeInplace = false;
   }
 

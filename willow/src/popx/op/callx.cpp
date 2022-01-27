@@ -130,7 +130,7 @@ void CallOpx::copyOutput(snap::program::Sequence &prog,
       (aliases.find(callop.getIr().getTensor(call_output_id)) != aliases.end());
 
   for (int j = 0; j < callop.input->n(); j++) {
-    auto input = get(callop.inId(j)).getPoplarTensor();
+    auto input = get(callop.inId(j));
     // Fully aliased from CallOp input to CallOp output & shape did not
     // change
     auto aliasRegions = callop.aliases(j, i);

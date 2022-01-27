@@ -89,19 +89,17 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
 
 static std::pair<snap::Tensor, snap::Tensor>
 matInitReshape(MatMulBaseOp &matmul, snap::Tensor lhs, snap::Tensor rhs) {
-
-  auto a = lhs.getPoplarTensor();
-  auto b = rhs.getPoplarTensor();
-
-  if (a.rank() < matmul.getExpandedLhsShape().size()) {
-    a = a.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape()));
+  if (lhs.rank() < matmul.getExpandedLhsShape().size()) {
+    lhs =
+        lhs.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape()));
   }
 
-  if (b.rank() < matmul.getExpandedRhsShape().size()) {
-    b = b.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedRhsShape()));
+  if (rhs.rank() < matmul.getExpandedRhsShape().size()) {
+    rhs =
+        rhs.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedRhsShape()));
   }
 
-  return {snap::Tensor{a, lhs}, snap::Tensor{b, rhs}};
+  return {lhs, rhs};
 }
 
 static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
@@ -282,7 +280,7 @@ static snap::Tensor matSqueezeBroadcastDims(snap::Tensor result,
       squeezeDims.push_back(i);
     }
   }
-  return snap::Tensor{result.squeeze(squeezeDims).getPoplarTensor(), result};
+  return result.squeeze(squeezeDims);
 }
 
 template <typename T1, typename T2>

@@ -221,15 +221,15 @@ void PopOpx::setOutViewChangers(OutIndex index,
 }
 
 void PopOpx::setOutTensor(OutIndex index, const snap::Tensor &t) const {
-  auto tensor = t.getPoplarTensor();
   if (dv_p->lowering().ir().getSessionOptions().opxAliasChecking) {
     // Verify no unsolicited aliasing takes place
     Op &op = getOp<Op>();
     for (auto inputs : op.input->indicesMap()) {
       InIndex inIndex   = inputs.second.front();
-      auto &inputTensor = getInTensor(inIndex).getPoplarTensor();
-      if (tensor.elementType() == inputTensor.elementType()) {
-        if (!tensor.containsAliases() && !inputTensor.containsAliases()) {
+      auto &inputTensor = getInTensor(inIndex);
+      if (t.elementType() == inputTensor.elementType()) {
+        if (!t.getPoplarTensor().containsAliases() &&
+            !inputTensor.getPoplarTensor().containsAliases()) {
           // Can only safely test for aliases between the input and output
           // if the input and output tensors alone are free from aliases
           auto aliasedRegions = op.aliases(inIndex, index);
@@ -238,7 +238,8 @@ void PopOpx::setOutTensor(OutIndex index, const snap::Tensor &t) const {
                           aliasedRegions.end(),
                           [](view::Region &r) { return !r.isEmpty(); });
           bool aliasesInPoplar =
-              poplar::concat(tensor.flatten(), inputTensor.flatten(), 0)
+              snap::concat(t.flatten(), inputTensor.flatten(), 0)
+                  .getPoplarTensor()
                   .containsAliases();
           // If the op is outplace in the ir, but inplace in poplar, that is an
           // error. Note, there may be cases where the op is inplace in the ir,
