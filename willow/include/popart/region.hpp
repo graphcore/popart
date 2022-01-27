@@ -46,6 +46,20 @@ AccessType combine(std::set<AccessType> accessTypes);
 Regions mergeRegions(Regions regions);
 
 /**
+ * Get the region (bounding box) that includes all regions.
+ *
+ * For example,
+ * \c regionBounds({{{2,3},{4,5}},{{0,5},{8,6}}}) returns
+ * \code
+ * {{0,3},{8,6}}
+ * \code
+ *
+ * \param regions Regions to get the boundig box around.
+ * \return        Region that includes all \p regions.
+ */
+Region regionBounds(Regions regions);
+
+/**
  * A sub-region of a Shape.
  *
  * The sub-region is an orthotope (or hyperrectangle) of the Shape.

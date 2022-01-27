@@ -16,6 +16,16 @@ using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 struct UnwindEndpoint;
 using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 
+struct TensorRegion {
+  TensorRegion(view::Region offset_, view::Region region_, snap::Tensor tensor_)
+      : offset(offset_), region(region_), tensor(tensor_) {}
+  view::Region offset;
+  view::Region region;
+  snap::Tensor tensor;
+};
+
+using TensorRegions = std::vector<TensorRegion>;
+
 // A bundle struct to represent the path a tensor
 // takes through an Opx
 struct OpxInAndOutIndex {
@@ -115,6 +125,12 @@ protected:
   std::vector<OpxInAndOutIndex> pathFromInput;
 
 private:
+  std::pair<snap::Tensor, ViewChangers>
+  unwindOnPath(const OpxInAndOutIndex &opxOnPath,
+               const snap::Tensor &outTensor,
+               const view::Regions &outRegions,
+               view::Regions &inRegions);
+
   // Input index on the creating Op
   InIndex index;
   const PopOpx *opx;

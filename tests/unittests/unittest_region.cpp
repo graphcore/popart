@@ -283,3 +283,13 @@ BOOST_AUTO_TEST_CASE(Region_indices) {
     BOOST_CHECK_EQUAL(flatIndex, i);
   }
 }
+
+BOOST_AUTO_TEST_CASE(Region_RegionBounds0) {
+
+  view::Region r0({0, 0}, {3, 4});
+  view::Region r1({1, 3}, {5, 6});
+
+  view::Region rs = view::regionBounds({r0, r1});
+
+  BOOST_CHECK(rs == view::Region({0, 0}, {5, 6}));
+}

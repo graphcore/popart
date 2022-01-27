@@ -16,37 +16,34 @@ namespace popx {
 
 namespace {
 
-std::vector<std::pair<view::Region, snap::Tensor>> fragment(
-    const view::Region fullRegion,
-    const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions) {
+TensorRegions fragment(const view::Region fullRegion,
+                       const TensorRegions &tensorRegions) {
 
   std::vector<std::set<int64_t>> cuts(fullRegion.rank());
 
   for (auto &tr : tensorRegions) {
     for (int64_t i = 0; i < fullRegion.rank(); ++i) {
-      cuts[i].insert(tr.first.getLower()[i]);
-      cuts[i].insert(tr.first.getUpper()[i]);
+      cuts[i].insert(tr.region.getLower()[i]);
+      cuts[i].insert(tr.region.getUpper()[i]);
     }
   }
 
-  std::vector<std::pair<view::Region, snap::Tensor>> allTensorRegions;
+  TensorRegions allTensorRegions;
 
   for (auto &tr : tensorRegions) {
-    view::Regions cutRegions = tr.first.cut(cuts);
+    view::Regions cutRegions = tr.region.cut(cuts);
     for (auto &r : cutRegions) {
-      allTensorRegions.push_back({r, tr.second});
+      allTensorRegions.push_back({tr.offset, r, tr.tensor});
     }
   }
 
   return allTensorRegions;
 }
 
-snap::Tensor
-compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
-        const view::Region fullRegion,
-        snap::Tensor fullTensor) {
-  std::vector<std::pair<view::Region, snap::Tensor>> currentTensorRegions =
-      tensorRegions;
+snap::Tensor compose(const TensorRegions &tensorRegions,
+                     const view::Region fullRegion,
+                     snap::Tensor fullTensor) {
+  TensorRegions currentTensorRegions = tensorRegions;
 
   logging::devicex::trace("[creatorx] Full region {} {}",
                           fullRegion.getLower(),
@@ -54,7 +51,7 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
 
   view::Regions regions;
   for (auto &tensorRegion : tensorRegions) {
-    regions.push_back(tensorRegion.first);
+    regions.push_back(tensorRegion.region);
     logging::devicex::trace("[creatorx] Tensor region {} {}",
                             regions.back().getLower(),
                             regions.back().getUpper());
@@ -67,7 +64,7 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
     logging::devicex::trace("[creatorx] Adding linear region {} {}",
                             region.getLower(),
                             region.getUpper());
-    currentTensorRegions.emplace_back(region, fullTensor);
+    currentTensorRegions.emplace_back(fullRegion, region, fullTensor);
   }
 
   // At this point, currentTensorRegions should contain enough regions to
@@ -78,35 +75,43 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
 
   // Cut pieces of the tensors that we want to keep for the final tensor
   for (int64_t i = 0; i < currentTensorRegions.size(); ++i) {
-    auto region = currentTensorRegions[i].first;
-    auto tensor = currentTensorRegions[i].second;
+    auto offset = currentTensorRegions[i].offset;
+    auto region = currentTensorRegions[i].region;
+    auto tensor = currentTensorRegions[i].tensor;
     // Tensor can either have the same shape as the region, or the full size
     // if it is the full size, cut down to relevant region size
     if (tensor.numElements() > region.nelms()) {
       std::vector<size_t> l(region.rank());
       std::vector<size_t> u(region.rank());
+      std::vector<size_t> o(region.rank());
       l.assign(region.getLower().begin(), region.getLower().end());
       u.assign(region.getUpper().begin(), region.getUpper().end());
+      o.assign(offset.getLower().begin(), offset.getLower().end());
+
+      std::transform(
+          l.begin(), l.end(), o.begin(), l.begin(), std::minus<size_t>());
+      std::transform(
+          u.begin(), u.end(), o.begin(), u.begin(), std::minus<size_t>());
+
       tensor = tensor.slice(poplar::ArrayRef<size_t>(l),
                             poplar::ArrayRef<size_t>(u));
     }
 
-    logging::trace("[creatorx] Tensor shape {} region {} {}",
+    logging::trace("[creatorx] Tensor shape {} region {} (full region: {})",
                    tensor.shape(),
-                   region.getLower(),
-                   region.getUpper());
+                   region,
+                   fullRegion);
 
-    currentTensorRegions[i] = std::make_pair(region, tensor);
+    currentTensorRegions[i] = TensorRegion(offset, region, tensor);
   }
 
   std::sort(currentTensorRegions.begin(),
             currentTensorRegions.end(),
-            [](const std::pair<view::Region, snap::Tensor> &a,
-               const std::pair<view::Region, snap::Tensor> &b) -> bool {
-              return a.first.getLower() < b.first.getLower();
+            [](const TensorRegion &a, const TensorRegion &b) -> bool {
+              return a.region.getLower() < b.region.getLower();
             });
 
-  std::vector<std::pair<view::Region, snap::Tensor>> nextTensorRegions;
+  TensorRegions nextTensorRegions;
 
   // Merge along dimensions
   for (int64_t d = fullRegion.rank() - 1; d >= 0; --d) {
@@ -115,22 +120,22 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
     for (auto &tensorRegion : currentTensorRegions) {
       std::pair<int64_t, view::Region> rd(-1, view::Region({}, {}));
       if (r.has_value()) {
-        rd = r.value().merge(tensorRegion.first);
+        rd = r.value().merge(tensorRegion.region);
       }
       if (rd.first != d) {
         // Can't merge regions directly
         if (r.has_value() && t.has_value()) {
           // Push back last region
-          nextTensorRegions.push_back({r.value(), t.value()});
+          nextTensorRegions.emplace_back(fullRegion, r.value(), t.value());
         }
         // Load next region
-        r = tensorRegion.first;
-        t = tensorRegion.second;
+        r = tensorRegion.region;
+        t = tensorRegion.tensor;
       } else {
         // Merge region & concatenate tensor if possible
         if (rd.first == d) {
           t = snap::Tensor{poplar::concat(t->getPoplarTensor(),
-                                          tensorRegion.second.getPoplarTensor(),
+                                          tensorRegion.tensor.getPoplarTensor(),
                                           static_cast<uint32_t>(d)),
                            t.value()};
           r = rd.second;
@@ -138,13 +143,13 @@ compose(const std::vector<std::pair<view::Region, snap::Tensor>> &tensorRegions,
       }
     }
     if (t.has_value() && r.has_value()) {
-      nextTensorRegions.push_back({r.value(), t.value()});
+      nextTensorRegions.emplace_back(fullRegion, r.value(), t.value());
     }
     currentTensorRegions = nextTensorRegions;
     nextTensorRegions.clear();
   }
 
-  return currentTensorRegions.front().second;
+  return currentTensorRegions.front().tensor;
 }
 
 } // namespace
@@ -207,6 +212,82 @@ view::Regions InputCreatorCandidate::unwind(popart::view::Region region) {
 }
 
 std::pair<snap::Tensor, ViewChangers>
+InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
+                                    const snap::Tensor &outTensor,
+                                    const view::Regions &outRegions,
+                                    view::Regions &inRegions) {
+  logging::devicex::trace("[creatorx] Unwinding at {}",
+                          opxOnPath.opx->getOp<Op>().debugName());
+
+  // All efficiently created regions
+  for (auto outRegion : outRegions) {
+    auto rs = opxOnPath.opx->unwindRegion(opxOnPath.inIndex,
+                                          opxOnPath.outIndex)(outRegion);
+    for (auto &r : rs) {
+      inRegions.push_back(r);
+    }
+  }
+
+  // Unwound tensor
+  auto inTensor = opxOnPath.opx->unwindTensorLayout(
+      outTensor, opxOnPath.inIndex, opxOnPath.outIndex);
+
+  if (opxOnPath.opx->hasCreatorViewChangers(opxOnPath.inIndex)) {
+    // Early stop unwinding; tensor has view change
+    logging::devicex::debug(
+        "[creatorx] Early stopping unwinding due to view-changing at Op {}",
+        opxOnPath.opx->getOp<Op>().debugName());
+    return {inTensor, opxOnPath.opx->getCreatorViewChangers(opxOnPath.inIndex)};
+  }
+
+  auto outShape = opxOnPath.opx->getOp<Op>()
+                      .output->tensor(opxOnPath.outIndex)
+                      ->info.shape();
+  auto inShape =
+      opxOnPath.opx->getOp<Op>().input->tensor(opxOnPath.inIndex)->info.shape();
+
+  // The offset at which the unwound tensor represents a part of the input
+  // region
+  auto offsetRegion = opxOnPath.opx->unwindRegion(
+      opxOnPath.inIndex, opxOnPath.outIndex)(view::Region::getFull(outShape));
+  auto fullRegion = view::Region::getFull(inShape);
+
+  logging::devicex::trace("[creatorx] Expected (in)shape {}", inShape);
+
+  auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
+
+  auto &graph     = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
+  auto fullTensor = snap::Tensor{graph.getPoplarGraph().addVariable(
+                                     popType(inInfo), inInfo.shape_szt(), ""),
+                                 graph};
+
+  // Map it linearly
+  snap::poputil::mapTensorLinearly(graph, fullTensor);
+
+  logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
+                          inTensor.shape());
+
+  TensorRegions tensorRegions;
+  tensorRegions.reserve(inRegions.size());
+  for (auto &tRegion : inRegions) {
+    tensorRegions.emplace_back(
+        view::regionBounds(offsetRegion), tRegion, inTensor);
+  }
+
+  // Compose a tensor of fullRegion shape, using as many of the tensorRegions
+  // as necessary, and filling in missing pieces by taking them
+  // from the linearly created fullTensor.
+  inTensor = compose(tensorRegions, fullRegion, fullTensor);
+
+  logging::devicex::trace("[creatorx] Tensor shape after compose {}",
+                          inTensor.shape());
+
+  logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
+                          inTensor.shape());
+  return {inTensor, ViewChangers()};
+}
+
+std::pair<snap::Tensor, ViewChangers>
 InputCreatorCandidate::unwind(snap::Tensor input) {
 
   // Reverse the path,
@@ -217,116 +298,22 @@ InputCreatorCandidate::unwind(snap::Tensor input) {
   auto pathToInput = getPathsFromInput().front();
   std::reverse(pathToInput.begin(), pathToInput.end());
 
-  auto region              = view::Region::getFull(opx->inShape(index));
+  auto region = view::Region::getFull(opx->inShape(index));
+
   view::Regions outRegions = {region};
-  view::Regions inRegions;
 
+  snap::Tensor output;
   for (auto &opxOnPath : pathToInput) {
-    logging::devicex::trace("[creatorx] Unwinding at {}",
-                            opxOnPath.opx->getOp<Op>().debugName());
-
-    for (auto outRegion : outRegions) {
-      auto rs = opxOnPath.opx->unwindRegion(opxOnPath.inIndex,
-                                            opxOnPath.outIndex)(outRegion);
-      for (auto &r : rs) {
-        inRegions.push_back(r);
-      }
-    }
-
-    auto expectedShape = opxOnPath.opx->getOp<Op>()
-                             .output->tensor(opxOnPath.outIndex)
-                             ->info.shape();
-    auto fullRegion = view::Region::getFull(expectedShape);
-
-    logging::devicex::trace("[creatorx] Expected shape {}", expectedShape);
-
-    auto outInfo = opxOnPath.opx->getOp<Op>().outInfo(opxOnPath.outIndex);
-
-    auto &graph = opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex);
-    auto fullTensor =
-        graph.addVariable(popType(outInfo), outInfo.shape_szt(), "");
-
-    // Map it linearly
-    snap::poputil::mapTensorLinearly(
-        opxOnPath.opx->dstVirtualGraph(opxOnPath.outIndex), fullTensor);
-
-    logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
-                            input.shape());
-
-    std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions;
-    tensorRegions.reserve(outRegions.size());
-    for (auto &tRegion : outRegions) {
-      tensorRegions.push_back({tRegion, input});
-    }
-
-    // Compose a tensor of fullRegion shape, using as many of the tensorRegions
-    // as necessary, and filling in missing pieces by taking them
-    // from the linearly created fullTensor.
-    input = compose(tensorRegions, fullRegion, fullTensor);
-
-    logging::devicex::trace(
-        "[creatorx] Tensor shape after compose / before unwind: {}",
-        input.shape());
-
-    input = opxOnPath.opx->unwindTensorLayout(
-        input, opxOnPath.inIndex, opxOnPath.outIndex);
-
-    if (opxOnPath.opx->hasCreatorViewChangers(opxOnPath.inIndex)) {
+    view::Regions inRegions;
+    auto out = unwindOnPath(opxOnPath, input, outRegions, inRegions);
+    if (out.second != ViewChangers()) {
       // Early stop unwinding; tensor has view change
-      logging::devicex::debug(
-          "[creatorx] Early stopping unwinding due to view-changing at Op {}",
-          opxOnPath.opx->getOp<Op>().debugName());
-      return {input, opxOnPath.opx->getCreatorViewChangers(opxOnPath.inIndex)};
+      return out;
+    } else {
+      // Continue
+      input = out.first;
     }
-
-    logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
-                            input.shape());
-
     outRegions = inRegions;
-    inRegions.clear();
-  }
-
-  if (pathToInput.size() > 0) {
-    const Op &op              = pathToInput.back().opx->getOp<Op>();
-    const Tensor *t           = op.input->tensor(pathToInput.back().inIndex);
-    const Shape expectedShape = t->info.shape();
-    auto fullRegion           = view::Region::getFull(expectedShape);
-
-    logging::devicex::trace(
-        "[creatorx] Expected final shape {} for tensor {} consumer {}",
-        expectedShape,
-        t->id,
-        op.debugName());
-
-    auto inInfo =
-        pathToInput.back().opx->getOp<Op>().inInfo(pathToInput.back().inIndex);
-
-    auto &graph =
-        pathToInput.back().opx->srcVirtualGraph(pathToInput.back().inIndex);
-    auto fullTensor =
-        graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
-
-    // Map it linearly
-    snap::poputil::mapTensorLinearly(
-        pathToInput.back().opx->srcVirtualGraph(pathToInput.back().inIndex),
-        fullTensor);
-
-    logging::devicex::trace("[creatorx] Tensor shape before final compose: {}",
-                            input.shape());
-
-    std::vector<std::pair<view::Region, snap::Tensor>> tensorRegions;
-    tensorRegions.reserve(outRegions.size());
-    for (auto &region_ : outRegions) {
-      tensorRegions.push_back({region_, input});
-    }
-
-    // Compose a tensor of fullRegion shape, using as many of the tensorRegions
-    // as necessary, and filling in missing pieces by taking them
-    // from the linearly created fullTensor.
-    input = compose(tensorRegions, fullRegion, fullTensor);
-
-    logging::devicex::trace("[creatorx] Tensor shape after final compose: {}",
-                            input.shape());
   }
 
   return {input, ViewChangers()};
@@ -435,7 +422,7 @@ std::pair<snap::Tensor, ViewChangers>
 InputMultiCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
   auto candidateIdx = 0;
 
-  std::vector<std::pair<view::Region, snap::Tensor>> currentTensorRegions;
+  TensorRegions currentTensorRegions;
 
   for (auto &candidate : candidates) {
     auto tensorAndView = candidate.first->createInput(
@@ -445,16 +432,20 @@ InputMultiCreatorCandidate::createInput(const poplar::DebugNameAndId &dnai) {
                             candidate.second,
                             tensor.shape());
     for (auto acceptedRegion : candidate.second)
-      currentTensorRegions.push_back({acceptedRegion, tensor});
+      currentTensorRegions.push_back(
+          {view::Region::getFull(
+               vector_cast<Shape::value_type>(tensor.shape())),
+           acceptedRegion,
+           tensor});
     ++candidateIdx;
   }
 
   // Fallback linearly mapped tensor, inferred from first candidate
-  auto popShape = currentTensorRegions.front().second.shape();
+  auto popShape = currentTensorRegions.front().tensor.shape();
   std::vector<int64_t> shape(popShape.size());
   shape.assign(popShape.begin(), popShape.end());
   auto fullRegion = view::Region::getFull(shape);
-  auto fullTensor = currentTensorRegions.front().second;
+  auto fullTensor = currentTensorRegions.front().tensor;
 
   return {compose(currentTensorRegions, fullRegion, fullTensor),
           ViewChangers()};

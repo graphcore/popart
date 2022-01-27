@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <utility>
 
 #include <popart/error.hpp>
@@ -125,6 +126,31 @@ Regions mergeRegions(Regions inRegions) {
     }
   }
   return outRegions;
+}
+
+Region regionBounds(Regions regions) {
+  if (regions.empty()) {
+    return Region({}, {});
+  }
+  std::vector<int64_t> lower = regions.front().getLower();
+  std::vector<int64_t> upper = regions.front().getUpper();
+  for (size_t i = 1; i < regions.size(); ++i) {
+    auto &l = regions.at(i).getLower();
+    auto &u = regions.at(i).getUpper();
+    std::transform(
+        lower.begin(),
+        lower.end(),
+        l.begin(),
+        lower.begin(),
+        [](const int64_t &a, const int64_t &b) { return std::min(a, b); });
+    std::transform(
+        upper.begin(),
+        upper.end(),
+        u.begin(),
+        upper.begin(),
+        [](const int64_t &a, const int64_t &b) { return std::max(a, b); });
+  }
+  return Region(lower, upper);
 }
 
 bool Region::operator==(const Region &r) const {
