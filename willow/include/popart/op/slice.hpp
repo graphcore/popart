@@ -17,6 +17,7 @@ public:
               const std::vector<int64_t> &axes_,
               const std::vector<int64_t> &steps_,
               const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   static InIndex getInIndex() { return 0; }
   static InIndex getStartsInIndex() { return 1; }

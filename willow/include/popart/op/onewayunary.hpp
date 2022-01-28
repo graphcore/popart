@@ -11,6 +11,7 @@ namespace popart {
 class OneWayUnaryOp : public ElementWiseUnaryOp {
 public:
   OneWayUnaryOp(const OperatorIdentifier &, const Op::Settings &);
+  std::unique_ptr<Op> clone() const override;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
@@ -18,6 +19,7 @@ public:
 class OneWayUnaryInPlaceOp : public ElementWiseInplaceUnaryOp {
 public:
   OneWayUnaryInPlaceOp(const OperatorIdentifier &, const Op::Settings &);
+  std::unique_ptr<Op> clone() const override;
 };
 
 } // namespace popart

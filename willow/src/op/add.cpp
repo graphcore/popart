@@ -40,6 +40,14 @@ OperatorIdentifier AddOp::getRhsOperatorIdentifier() const {
   return Onnx::CustomOperators::AddRhsInplace;
 }
 
+std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
+  return std::make_unique<AddLhsInplaceOp>(*this);
+}
+
+std::unique_ptr<Op> AddRhsInplaceOp::clone() const {
+  return std::make_unique<AddRhsInplaceOp>(*this);
+}
+
 AddArg0GradOp::AddArg0GradOp(const Op &op, const std::vector<int64_t> &_axes)
     : ReduceSumOp(Onnx::GradOperators::AddArg0Grad,
                   _axes,

@@ -12,6 +12,8 @@ public:
              int64_t axis,
              const Op::Settings &settings);
 
+  std::unique_ptr<Op> clone() const override;
+
   int64_t getAxis() const;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;

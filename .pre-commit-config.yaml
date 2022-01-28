@@ -97,3 +97,12 @@ repos:
             ]
     #      - id: cpplint
     #      - id: include-what-you-use
+    # The clone linter should run after the format linters so that it only works on formatted files
+    - repo: local
+      hooks:
+          - id: clone-linter
+            name: Clone linter
+            description: Ensures that all Ops implements a clone().
+            entry: python3 -m scripts.lint.linters.clone_linter
+            language: python
+            files: "willow/include/popart/op/.*.hpp"

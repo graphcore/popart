@@ -21,6 +21,10 @@ TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)
     : Op(_opid, settings_), perm(perm_) {}
 
+std::unique_ptr<Op> TransposeBaseOp::clone() const {
+  return std::make_unique<TransposeBaseOp>(*this);
+}
+
 view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex, OutIndex) const {
   if (inIndex != 0) {
     throw internal_error("[TransposeBaseOp::fwdRegMap] "

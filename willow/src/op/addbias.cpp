@@ -161,6 +161,10 @@ AddBiasBiasGradOp::AddBiasBiasGradOp(const AddBiasOp &op_,
                   0,
                   op_.getSettings()) {}
 
+std::unique_ptr<Op> AddBiasBiasGradOp::clone() const {
+  return std::make_unique<AddBiasBiasGradOp>(*this);
+}
+
 const std::map<int, int> &AddBiasBiasGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getOutIndex(), AddBiasOp::getBiasInIndex()}};
@@ -177,6 +181,10 @@ const std::vector<GradInOutMapper> &AddBiasBiasGradOp::gradInputInfo() const {
 
 AddBiasDataGradOp::AddBiasDataGradOp(const AddBiasOp &op)
     : IdentityOp(Onnx::CustomGradOperators::AddBiasDataGrad, op.getSettings()) {
+}
+
+std::unique_ptr<Op> AddBiasDataGradOp::clone() const {
+  return std::make_unique<AddBiasDataGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &AddBiasDataGradOp::gradInputInfo() const {

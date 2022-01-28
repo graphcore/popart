@@ -10,6 +10,10 @@ BaseSortOp::BaseSortOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
     : Op(_opid, settings_), axis(axis_) {}
 
+std::unique_ptr<Op> BaseSortOp::clone() const {
+  return std::make_unique<BaseSortOp>(*this);
+}
+
 void BaseSortOp::validateAxis() const {
   auto shape = inShape(getInIndex());
 

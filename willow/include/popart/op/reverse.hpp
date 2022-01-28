@@ -15,6 +15,7 @@ public:
                 const Op::Settings &settings_,
                 const std::vector<int64_t> &dimensions_)
       : Op(_opid, settings_), dimensions(dimensions_) {}
+  std::unique_ptr<Op> clone() const override;
 
   void setup() final;
 
@@ -79,6 +80,7 @@ public:
 class ReverseGradOp : public ReverseOp {
 public:
   ReverseGradOp(const ReverseOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

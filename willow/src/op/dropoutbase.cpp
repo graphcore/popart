@@ -12,6 +12,10 @@ DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
                              const Op::Settings &settings_)
     : RandomBaseOp(opid_, OptionalDataType(), settings_), ratio(ratio_) {}
 
+std::unique_ptr<Op> DropoutBaseOp::clone() const {
+  return std::make_unique<DropoutBaseOp>(*this);
+}
+
 // Dropout in testing mode can be replaced by the identity
 bool DropoutBaseOp::canBeReplacedByIdentity() const {
   return (getIr().isTesting() || ratio == 0);

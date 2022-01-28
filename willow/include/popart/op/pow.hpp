@@ -26,21 +26,24 @@ private:
   OperatorIdentifier getLhsOperatorIdentifier() const final;
 };
 
-class PowLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<PowLhsInplaceOp> {
+class PowLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
 public:
   PowLhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::PowLhsInplace,
                                       _settings) {}
+  std::unique_ptr<Op> clone() const final;
 };
 
-class PowArg0GradOp : public ElementWiseBinaryArg0GradOp<PowArg0GradOp> {
+class PowArg0GradOp : public ElementWiseBinaryArg0GradOp {
 public:
   PowArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
-class PowArg1GradOp : public ElementWiseBinaryArg1GradOp<PowArg1GradOp> {
+class PowArg1GradOp : public ElementWiseBinaryArg1GradOp {
 public:
   PowArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace popart

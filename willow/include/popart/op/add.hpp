@@ -27,7 +27,7 @@ private:
   OperatorIdentifier getRhsOperatorIdentifier() const final;
 };
 
-class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp<AddLhsInplaceOp> {
+class AddLhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
 public:
   AddLhsInplaceOp(const OperatorIdentifier &_, const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
@@ -36,13 +36,15 @@ public:
   AddLhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::AddLhsInplace,
                                       _settings) {}
+  std::unique_ptr<Op> clone() const final;
 };
 
-class AddRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp<AddRhsInplaceOp> {
+class AddRhsInplaceOp : public ElementWiseBinaryInplaceRhsOp {
 public:
   AddRhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceRhsOp(Onnx::CustomOperators::AddRhsInplace,
                                       _settings) {}
+  std::unique_ptr<Op> clone() const final;
 };
 
 class AddArg0GradOp : public ReduceSumOp {

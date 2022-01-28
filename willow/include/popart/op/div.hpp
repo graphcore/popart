@@ -19,15 +19,17 @@ public:
 };
 
 // gradOut / arg_1
-class DivArg0GradOp : public ElementWiseBinaryArg0GradOp<DivArg0GradOp> {
+class DivArg0GradOp : public ElementWiseBinaryArg0GradOp {
 public:
   DivArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
 // - (gradOut * arg_0) / arg_1^2
-class DivArg1GradOp : public ElementWiseBinaryArg1GradOp<DivArg1GradOp> {
+class DivArg1GradOp : public ElementWiseBinaryArg1GradOp {
 public:
   DivArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace popart

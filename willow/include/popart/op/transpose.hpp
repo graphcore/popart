@@ -15,6 +15,8 @@ public:
   TransposeBaseOp(const OperatorIdentifier &_opid,
                   const Shape &perm_,
                   const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
+  void setup() final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
@@ -28,8 +30,6 @@ public:
 
   // Get the permutation required to reverse the Transpose operation
   Shape generateReversePermutation() const;
-
-  void setup() final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

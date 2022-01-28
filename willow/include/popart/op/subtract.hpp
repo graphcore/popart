@@ -21,18 +21,19 @@ public:
 class SubtractArg0GradOp : public ReduceSumOp {
 public:
   SubtractArg0GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
 
 private:
   TensorInfo forward_op_arg_info;
 };
 
-class SubtractArg1GradOp
-    : public ElementWiseBinaryArg1GradOp<SubtractArg1GradOp> {
+class SubtractArg1GradOp : public ElementWiseBinaryArg1GradOp {
 public:
   SubtractArg1GradOp(const Op &, const std::vector<int64_t> &_reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 
 private:
   TensorInfo forward_op_arg_info;

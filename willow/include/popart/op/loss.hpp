@@ -15,6 +15,7 @@ public:
   LossOp(const OperatorIdentifier &_opid,
          const Op::Settings &settings_,
          const ReductionType reduction_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   bool isLossOp() const override;
 

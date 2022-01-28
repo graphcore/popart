@@ -69,6 +69,10 @@ ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
                                        const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 
+std::unique_ptr<Op> ElementWiseUnaryOp::clone() const {
+  return std::make_unique<ElementWiseUnaryOp>(*this);
+}
+
 void ElementWiseUnaryOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
@@ -84,6 +88,14 @@ ElementWiseUnaryBooleanOp::ElementWiseUnaryBooleanOp(
     const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 
+std::unique_ptr<Op> ElementWiseUnaryBooleanOp::clone() const {
+  return std::make_unique<ElementWiseUnaryBooleanOp>(*this);
+}
+
+std::unique_ptr<Op> ElementWiseInplaceUnaryOp::clone() const {
+  return std::make_unique<ElementWiseInplaceUnaryOp>(*this);
+}
+
 void ElementWiseUnaryBooleanOp::setup() {
   outInfo(getOutIndex()) = {DataType::BOOL, inInfo(getInIndex()).shape()};
 }
@@ -92,6 +104,10 @@ ElementWiseNonLinearUnaryGradOp::ElementWiseNonLinearUnaryGradOp(
     const OperatorIdentifier &_opid,
     const ElementWiseUnaryOp &op)
     : Op(_opid, op.getSettings()) {}
+
+std::unique_ptr<Op> ElementWiseNonLinearUnaryGradOp::clone() const {
+  return std::make_unique<ElementWiseNonLinearUnaryGradOp>(*this);
+}
 
 const std::vector<GradInOutMapper> &
 ElementWiseNonLinearUnaryGradOp::gradInputInfo() const {
@@ -120,6 +136,10 @@ ElementWiseBinaryBaseOp::ElementWiseBinaryBaseOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
     : Op(_opid, settings_) {}
+
+std::unique_ptr<Op> ElementWiseBinaryBaseOp::clone() const {
+  return std::make_unique<ElementWiseBinaryBaseOp>(*this);
+}
 
 void ElementWiseBinaryBaseOp::setup() {
   outInfo(getOutIndex()) =
@@ -175,6 +195,10 @@ ElementWiseBinaryBaseOp::getReplicatedTensorShardingIndices() const {
 ElementWiseBinaryOp::ElementWiseBinaryOp(const OperatorIdentifier &_opid,
                                          const Op::Settings &_settings)
     : ElementWiseBinaryBaseOp(_opid, _settings) {}
+
+std::unique_ptr<Op> ElementWiseBinaryOp::clone() const {
+  return std::make_unique<ElementWiseBinaryOp>(*this);
+}
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ElementWiseBinaryOp::inplacePriorityDefault() const {
@@ -246,6 +270,14 @@ OperatorIdentifier ElementWiseBinaryOp::getRhsOperatorIdentifier() const {
   throw error("Operator {} does not have RHS OperatorIdentifier", opid);
 }
 
+std::unique_ptr<Op> ElementWiseBinaryInplaceLhsOp::clone() const {
+  return std::make_unique<ElementWiseBinaryInplaceLhsOp>(*this);
+}
+
+std::unique_ptr<Op> ElementWiseBinaryInplaceRhsOp::clone() const {
+  return std::make_unique<ElementWiseBinaryInplaceRhsOp>(*this);
+}
+
 ElementWiseBinaryGradOp::ElementWiseBinaryGradOp(
     const OperatorIdentifier &_opid,
     const std::vector<int64_t> &reduction_axes_,
@@ -258,9 +290,21 @@ void ElementWiseBinaryGradOp::setup() {
   outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
+std::unique_ptr<Op> ElementWiseBinaryArg0GradOp::clone() const {
+  return std::make_unique<ElementWiseBinaryArg0GradOp>(*this);
+}
+
+std::unique_ptr<Op> ElementWiseBinaryArg1GradOp::clone() const {
+  return std::make_unique<ElementWiseBinaryArg1GradOp>(*this);
+}
+
 BinaryComparisonOp::BinaryComparisonOp(const OperatorIdentifier &_opid,
                                        const Op::Settings &settings_)
     : Op(_opid, settings_) {}
+
+std::unique_ptr<Op> BinaryComparisonOp::clone() const {
+  return std::make_unique<BinaryComparisonOp>(*this);
+}
 
 void BinaryComparisonOp::setup() {
   outInfo(getOutIndex()) = {DataType::BOOL,

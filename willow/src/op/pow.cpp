@@ -22,6 +22,10 @@ OperatorIdentifier PowOp::getLhsOperatorIdentifier() const {
   return Onnx::CustomOperators::PowLhsInplace;
 }
 
+std::unique_ptr<Op> PowLhsInplaceOp::clone() const {
+  return std::make_unique<PowLhsInplaceOp>(*this);
+}
+
 PowArg0GradOp::PowArg0GradOp(const Op &op,
                              const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg0GradOp(Onnx::GradOperators::PowArg0Grad,
@@ -29,12 +33,20 @@ PowArg0GradOp::PowArg0GradOp(const Op &op,
                                   op.inInfo(PowOp::getArg0InIndex()),
                                   op.getSettings()) {}
 
+std::unique_ptr<Op> PowArg0GradOp::clone() const {
+  return std::make_unique<PowArg0GradOp>(*this);
+}
+
 PowArg1GradOp::PowArg1GradOp(const Op &op,
                              const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::PowArg1Grad,
                                   _reduction_axes,
                                   op.inInfo(PowOp::getArg1InIndex()),
                                   op.getSettings()) {}
+
+std::unique_ptr<Op> PowArg1GradOp::clone() const {
+  return std::make_unique<PowArg1GradOp>(*this);
+}
 
 namespace {
 

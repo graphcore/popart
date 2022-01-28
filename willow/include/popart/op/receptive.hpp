@@ -28,6 +28,7 @@ public:
       const OperatorIdentifier &_opid,
       const HasReceptiveFieldOp::ReceptiveOpAttributes &attributes,
       const Op::Settings &settings);
+  std::unique_ptr<Op> clone() const override = 0;
 
   int getNSpatialDims() const;
   int64_t getBatchSize() const;

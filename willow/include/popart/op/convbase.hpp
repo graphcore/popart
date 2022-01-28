@@ -139,12 +139,13 @@ public:
                   std::vector<int64_t> flatDilations_,
                   const AutoPad &padType_,
                   const MultiConvOptions &convOpts_);
+  std::unique_ptr<Op> clone() const override;
+  void setup() override;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   static void appendConvParameterAttributes(const ConvParameters &,
                                             const std::string &,
                                             OpSerialiserBase &);
-  void setup() override;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
   static InIndex getDataInIndex(int convIndex) { return 2 * convIndex; }
@@ -269,13 +270,15 @@ class MultiConvWeightsGradBaseOp : public Op {
 public:
   MultiConvWeightsGradBaseOp(const MultiConvBaseOp &,
                              const OperatorIdentifier &);
+  std::unique_ptr<Op> clone() const override;
+  void setup() final;
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final {
     return inInfo;
   }
   const std::map<int, int> &gradOutToNonGradIn() const final {
     return gradOutInfo;
   }
-  void setup() final;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -312,6 +315,7 @@ private:
 class MultiConvDataGradBaseOp : public Op {
 public:
   MultiConvDataGradBaseOp(const MultiConvBaseOp &, const OperatorIdentifier &);
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   float getSubgraphValue() const final { return getHighSubgraphValue(); }

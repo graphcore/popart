@@ -14,12 +14,13 @@ public:
   RandomBaseOp(const OperatorIdentifier &opid_,
                const OptionalDataType &dataType_,
                const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   static std::vector<DataType> supportedDataTypes();
 
   bool requiresRandomSeed() const final { return true; }
 
-  std::vector<DataType> getSupportedDataTypes() const {
+  std::vector<DataType> getSupportedDataTypes() const override {
     return supportedDataTypes();
   }
 
@@ -34,6 +35,7 @@ public:
                      float mean_,
                      float scale_,
                      const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -53,6 +55,8 @@ public:
                       float high_,
                       float low_,
                       const Op::Settings &settings_);
+
+  std::unique_ptr<Op> clone() const override;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 

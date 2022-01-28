@@ -16,6 +16,7 @@ public:
   ShapeOrLikeOp(const OperatorIdentifier &opid_,
                 const OptionalDataType &dataType_,
                 const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   static OptionalDataType getOptionalDataType(const Attributes &attr,
                                               OperatorIdentifier opid);

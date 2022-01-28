@@ -21,6 +21,10 @@ BasePadOp::BasePadOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), pads(_pads), flips(_flips), pad_value(value_),
       mode(_mode) {}
 
+std::unique_ptr<Op> BasePadOp::clone() const {
+  return std::make_unique<BasePadOp>(*this);
+}
+
 BasePadOutplaceOp::BasePadOutplaceOp(const OperatorIdentifier &_opid,
                                      const std::vector<int64_t> &_pads,
                                      const std::vector<unsigned> &_flips,
@@ -29,6 +33,10 @@ BasePadOutplaceOp::BasePadOutplaceOp(const OperatorIdentifier &_opid,
                                      const Op::Settings &settings_)
     : BasePadOp(_opid, _pads, _flips, value_, _mode, settings_) {}
 
+std::unique_ptr<Op> BasePadOutplaceOp::clone() const {
+  return std::make_unique<BasePadOutplaceOp>(*this);
+}
+
 PadOp::PadOp(const OperatorIdentifier &_opid,
              const std::vector<int64_t> &_pads,
              const std::vector<unsigned> &_flips,
@@ -36,6 +44,10 @@ PadOp::PadOp(const OperatorIdentifier &_opid,
              const std::string &_mode,
              const Op::Settings &settings_)
     : BasePadOutplaceOp(_opid, _pads, _flips, value_, _mode, settings_) {}
+
+std::unique_ptr<Op> PadOp::clone() const {
+  return std::make_unique<PadOp>(*this);
+}
 
 // check pads are even, and check than rank agrees with input tensor
 void BasePadOp::runtimeConfirmShapes() const {
@@ -71,10 +83,6 @@ std::vector<Slice> BasePadOp::getSlices() const {
         {lowerPadding[i], upperPadding[i], static_cast<int64_t>(i)});
   }
   return slices;
-}
-
-std::unique_ptr<Op> PadOp::clone() const {
-  return std::make_unique<PadOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {

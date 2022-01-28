@@ -267,6 +267,10 @@ BaseSliceOp::BaseSliceOp(const OperatorIdentifier &_opid,
       axes(sanitizeAxes(starts_, axes_)),
       steps(sanitizeSteps(starts_, steps_)) {}
 
+std::unique_ptr<Op> BaseSliceOp::clone() const {
+  return std::make_unique<BaseSliceOp>(*this);
+}
+
 SliceOp::SliceOp(const OperatorIdentifier &_opid,
                  const std::vector<int64_t> &starts_,
                  const std::vector<int64_t> &ends_,

@@ -21,7 +21,7 @@ public:
          const Op::Settings &settings_);
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
   virtual void connectInTensor(InIndex, TensorId) final;
 
@@ -49,6 +49,7 @@ private:
 class TileGradOp : public TileOp {
 public:
   TileGradOp(const TileOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

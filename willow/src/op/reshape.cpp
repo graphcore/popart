@@ -158,6 +158,10 @@ std::vector<std::unique_ptr<Op>> ReshapeOp::getGradOps() {
   return upops;
 }
 
+std::unique_ptr<Op> ReshapeBaseOp::clone() const {
+  return std::make_unique<ReshapeBaseOp>(*this);
+}
+
 void ReshapeBaseOp::setup() {
   // output type  : same as input type;
   // output shape : outShape, determined in the constructor
@@ -209,6 +213,10 @@ ReshapeGradOp::ReshapeGradOp(const ReshapeOp &op_)
           // the output shape of this bwd op is the input shape of the fwd op
           op_.inInfo(ReshapeOp::getInIndex()).shape(),
           op_.getSettings()) {}
+
+std::unique_ptr<Op> ReshapeGradOp::clone() const {
+  return std::make_unique<ReshapeGradOp>(*this);
+}
 
 const std::vector<GradInOutMapper> &ReshapeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of reshape

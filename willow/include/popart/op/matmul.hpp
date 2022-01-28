@@ -37,8 +37,9 @@ public:
                const OptionalDataType outputType_,
                const MatMulPartialsType partialsType_,
                const bool enableFullyConnectedPass_ = true);
-  MatMulBaseOp(const MatMulBaseOp &) = default;
-  ~MatMulBaseOp() override           = default;
+  MatMulBaseOp(const MatMulBaseOp &)         = default;
+  ~MatMulBaseOp() override                   = default;
+  std::unique_ptr<Op> clone() const override = 0;
 
   // Return the expanded shape of the lhs input to matmul
   // minium shape G x N x M
@@ -152,6 +153,7 @@ public:
                    Phase phase);
   MatMulBaseGradOp(const MatMulBaseGradOp &) = default;
   ~MatMulBaseGradOp() override               = default;
+  std::unique_ptr<Op> clone() const override = 0;
 
   const MatMulOp *getCloneOfCreator() const;
 

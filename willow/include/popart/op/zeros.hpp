@@ -14,10 +14,11 @@ public:
   ZerosBaseOp(const OperatorIdentifier &opid_,
               const OptionalDataType &dataType_,
               const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   static std::vector<DataType> supportedDataTypes();
 
-  std::vector<DataType> getSupportedDataTypes() const {
+  std::vector<DataType> getSupportedDataTypes() const override {
     return supportedDataTypes();
   }
 };
@@ -45,7 +46,7 @@ public:
 
   void setup() final;
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
 
   std::unique_ptr<ZerosOp> foldInputTensor(const Op::Settings &) const;
 };
@@ -57,6 +58,7 @@ class UnaryZeroGradOp : public ZerosLikeOp {
 public:
   UnaryZeroGradOp(const OperatorIdentifier &opid_,
                   const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const final;
 
   static std::vector<std::unique_ptr<Op>>
   getGradOpVector(const Op::Settings &settings_);

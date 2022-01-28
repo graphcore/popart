@@ -32,8 +32,9 @@ namespace popart {
  *
  * The word "dynamic" refers to the fact that the \a index can be specified
  * during runtime, where \a index is the second tensor argument of this operator
- * as specified in \see graphcoreoperators.hpp. The \a axes specifies along which axes
- * the tensor should be sliced. The \a size specifies the size of the slices.
+ * as specified in \see graphcoreoperators.hpp. The \a axes specifies along
+ * which axes the tensor should be sliced. The \a size specifies the size of the
+ * slices.
  *
  * A slice along an axis can be defined as by the tuple
  * ( \a start, \a stop, \a step )
@@ -67,6 +68,7 @@ public:
                 std::vector<int64_t> sizes_,
                 bool noOverlap_,
                 const Op::Settings &);
+  std::unique_ptr<Op> clone() const override;
   void setup() override;
 
   static InIndex getIndexInIndex() { return 1; }
@@ -105,6 +107,7 @@ public:
                      std::vector<int64_t> sizes_,
                      bool noOverlap_,
                      const Op::Settings &);
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   TensorInfo createOutInfo() const;
@@ -128,6 +131,7 @@ public:
                       bool noOverlap_,
                       const Op::Settings &settings_,
                       TensorInfo updateInInfo_ = TensorInfo());
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   const TensorInfo &getUpdateTensorInfo() const { return updateInInfo; }
@@ -154,6 +158,7 @@ public:
                              bool noOverlap_,
                              const Op::Settings &settings_,
                              TensorInfo updateInInfo_ = TensorInfo());
+  std::unique_ptr<Op> clone() const override;
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
@@ -180,6 +185,7 @@ public:
                        bool noOverlap_,
                        const Op::Settings &settings_,
                        TensorInfo updateInInfo_ = TensorInfo());
+  std::unique_ptr<Op> clone() const override;
   static InIndex getUpdateInIndex() { return 0; }
   static InIndex getInIndex() { return 2; }
 };
@@ -192,6 +198,7 @@ public:
                               bool noOverlap_,
                               const Op::Settings &settings_,
                               TensorInfo updateInInfo_ = TensorInfo());
+  std::unique_ptr<Op> clone() const override;
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;

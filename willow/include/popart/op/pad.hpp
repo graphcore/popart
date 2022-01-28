@@ -15,6 +15,7 @@ public:
             float value_,
             const std::string &_mode,
             const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   // returns true if all pad sizes in all dimensions
   // and on all sides, are zero. i.e. no padding.
@@ -92,6 +93,7 @@ public:
                     float value_,
                     const std::string &_mode,
                     const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   bool canBeReplacedByIdentity() const override { return padSizeZero(); }
 

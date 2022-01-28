@@ -19,6 +19,7 @@ class ElementWiseUnaryOp : public Op {
 public:
   ElementWiseUnaryOp(const OperatorIdentifier &_opid,
                      const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -52,6 +53,7 @@ class ElementWiseUnaryBooleanOp : public Op {
 public:
   ElementWiseUnaryBooleanOp(const OperatorIdentifier &_opid,
                             const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -69,6 +71,7 @@ public:
   ElementWiseInplaceUnaryOp(const OperatorIdentifier &_opid,
                             const Op::Settings &_settings)
       : ElementWiseUnaryOp(_opid, _settings) {}
+  std::unique_ptr<Op> clone() const override;
 
   view::Regions modifies(InIndex index) const final { return uses(index); }
   view::Regions aliases(InIndex in, OutIndex) const final { return uses(in); }
@@ -84,9 +87,11 @@ class ElementWiseNonLinearUnaryGradOp : public Op {
 public:
   ElementWiseNonLinearUnaryGradOp(const OperatorIdentifier &_opid,
                                   const ElementWiseUnaryOp &fwdOp);
+  std::unique_ptr<Op> clone() const override;
+  void setup() final;
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
 
   // This grad op takes 2 inputs,
   // 1) the gradient of the output of the corresponding forward op, and
@@ -107,6 +112,7 @@ class ElementWiseBinaryBaseOp : public Op {
 public:
   ElementWiseBinaryBaseOp(const OperatorIdentifier &_opid,
                           const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override;
   void setup() override;
 
   // Current implementation places arg0 input at index 0, and arg1 input
@@ -139,6 +145,7 @@ class ElementWiseBinaryOp : public ElementWiseBinaryBaseOp {
 public:
   ElementWiseBinaryOp(const OperatorIdentifier &_opid,
                       const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
@@ -173,6 +180,13 @@ public:
                                              const Op::Settings &_settings)
       : ElementWiseBinaryOp(_opid, _settings) {}
 
+  std::unique_ptr<Op> clone() const override {
+    return std::unique_ptr<
+        ElementWiseNpBroadcastableBinaryWithGradOp<Arg0GradOp, Arg1GradOp>>(
+        new ElementWiseNpBroadcastableBinaryWithGradOp<Arg0GradOp, Arg1GradOp>(
+            opid, settings));
+  }
+
   virtual std::vector<std::unique_ptr<Op>> getGradOps() final {
     std::vector<std::unique_ptr<Op>> upops;
 
@@ -189,13 +203,14 @@ public:
 };
 
 // Base class for inplace LHS for elementwise binary operations
-template <class Derived>
 class ElementWiseBinaryInplaceLhsOp : public ElementWiseBinaryBaseOp {
 public:
   ElementWiseBinaryInplaceLhsOp(const OperatorIdentifier &_opid,
                                 const Op::Settings &_settings)
       : ElementWiseBinaryBaseOp(_opid, _settings) {}
 
+  std::unique_ptr<Op> clone() const override;
+
   view::Regions modifies(InIndex index) const final {
     if (index == getArg0InIndex()) {
       return {view::Region::getFull(inShape(index))};
@@ -217,20 +232,17 @@ public:
                   opid);
     }
   }
-
-  std::unique_ptr<Op> clone() const final {
-    return std::unique_ptr<Derived>(new Derived(getSettings()));
-  }
 };
 
 // Base class for inplace RHS for elementwise binary operations
-template <class Derived>
 class ElementWiseBinaryInplaceRhsOp : public ElementWiseBinaryBaseOp {
 public:
   ElementWiseBinaryInplaceRhsOp(const OperatorIdentifier &_opid,
                                 const Op::Settings &_settings)
       : ElementWiseBinaryBaseOp(_opid, _settings) {}
 
+  std::unique_ptr<Op> clone() const override;
+
   view::Regions modifies(InIndex index) const final {
     if (index == getArg0InIndex()) {
       return {view::Region::getEmpty(inRank(index))};
@@ -251,10 +263,6 @@ public:
       throw error("Invalid index passed to aliases method for Operator {}",
                   opid);
     }
-  }
-
-  std::unique_ptr<Op> clone() const final {
-    return std::unique_ptr<Derived>(new Derived(getSettings()));
   }
 };
 
@@ -266,6 +274,7 @@ public:
                           const std::vector<int64_t> &_reduction_axes,
                           const TensorInfo &_forward_op_arg_info,
                           const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override = 0;
   void setup() final;
 
   // Returns the axes along which to perform the reduction, as set in the
@@ -328,7 +337,6 @@ private:
 };
 
 // Base class of ElementWiseBinaryGradOp for Arg0
-template <class Derived>
 class ElementWiseBinaryArg0GradOp : public ElementWiseBinaryGradOp {
 public:
   ElementWiseBinaryArg0GradOp(const OperatorIdentifier &_opid,
@@ -340,17 +348,13 @@ public:
                                 _forward_op_arg_info,
                                 _settings) {}
 
-  std::unique_ptr<Op> clone() const final {
-    return std::unique_ptr<Derived>(
-        new Derived(*dynamic_cast<const Derived *>(this)));
-  }
+  std::unique_ptr<Op> clone() const override;
 
 protected:
   virtual bool isArg1Grad() const final { return false; }
 };
 
 // Base class of ElementWiseBinaryGradOp for Arg1
-template <class Derived>
 class ElementWiseBinaryArg1GradOp : public ElementWiseBinaryGradOp {
 public:
   ElementWiseBinaryArg1GradOp(const OperatorIdentifier &_opid,
@@ -362,10 +366,7 @@ public:
                                 _forward_op_arg_info,
                                 _settings) {}
 
-  std::unique_ptr<Op> clone() const final {
-    return std::unique_ptr<Derived>(
-        new Derived(*dynamic_cast<const Derived *>(this)));
-  }
+  std::unique_ptr<Op> clone() const override;
 
 protected:
   virtual bool isArg1Grad() const final { return true; }
@@ -376,6 +377,7 @@ class BinaryComparisonOp : public Op {
 public:
   BinaryComparisonOp(const OperatorIdentifier &_opid,
                      const Op::Settings &_settings);
+  std::unique_ptr<Op> clone() const override;
   void setup() final;
 
   // Current implementation places arg0 input at index 0, and arg1 input

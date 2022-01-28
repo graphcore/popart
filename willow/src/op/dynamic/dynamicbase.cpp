@@ -20,6 +20,10 @@ DynamicBaseOp::DynamicBaseOp(const OperatorIdentifier &_opid,
                              const Op::Settings &settings_)
     : Op(_opid, settings_), axes(axes_), sizes(sizes_), noOverlap(noOverlap_) {}
 
+std::unique_ptr<Op> DynamicBaseOp::clone() const {
+  return std::make_unique<DynamicBaseOp>(*this);
+}
+
 void DynamicBaseOp::setup() {}
 
 void DynamicBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -34,6 +38,10 @@ DynamicSliceBaseOp::DynamicSliceBaseOp(const OperatorIdentifier &_opid,
                                        bool noOverlap_,
                                        const Op::Settings &settings_)
     : DynamicBaseOp(_opid, axes_, sizes_, noOverlap_, settings_) {}
+
+std::unique_ptr<Op> DynamicSliceBaseOp::clone() const {
+  return std::make_unique<DynamicSliceBaseOp>(*this);
+}
 
 void DynamicSliceBaseOp::setup() { outInfo(getOutIndex()) = createOutInfo(); }
 
@@ -64,6 +72,10 @@ DynamicBinaryBaseOp::DynamicBinaryBaseOp(const OperatorIdentifier &_opid,
     : DynamicBaseOp(_opid, axes_, sizes_, noOverlap_, settings_),
       updateInInfo(updateInInfo_) {}
 
+std::unique_ptr<Op> DynamicBinaryBaseOp::clone() const {
+  return std::make_unique<DynamicBinaryBaseOp>(*this);
+}
+
 void DynamicBinaryBaseOp::setup() {
   if (input->hasIndex(getUpdateInIndex())) {
     updateInInfo = inInfo(getUpdateInIndex());
@@ -85,6 +97,10 @@ DynamicBinaryBaseInplaceOp::DynamicBinaryBaseInplaceOp(
                           settings_,
                           updateInInfo_) {}
 
+std::unique_ptr<Op> DynamicBinaryBaseInplaceOp::clone() const {
+  return std::make_unique<DynamicBinaryBaseInplaceOp>(*this);
+}
+
 DynamicTernaryBaseOp::DynamicTernaryBaseOp(const OperatorIdentifier &_opid,
                                            std::vector<int64_t> axes_,
                                            std::vector<int64_t> sizes_,
@@ -97,6 +113,10 @@ DynamicTernaryBaseOp::DynamicTernaryBaseOp(const OperatorIdentifier &_opid,
                           noOverlap_,
                           settings_,
                           updateInInfo_) {}
+
+std::unique_ptr<Op> DynamicTernaryBaseOp::clone() const {
+  return std::make_unique<DynamicTernaryBaseOp>(*this);
+}
 
 view::RegMap DynamicBinaryBaseInplaceOp::fwdRegMap(InIndex inIndex,
                                                    OutIndex outIndex) const {
@@ -156,6 +176,10 @@ DynamicTernaryBaseInplaceOp::DynamicTernaryBaseInplaceOp(
                            noOverlap_,
                            settings_,
                            updateInInfo_) {}
+
+std::unique_ptr<Op> DynamicTernaryBaseInplaceOp::clone() const {
+  return std::make_unique<DynamicTernaryBaseInplaceOp>(*this);
+}
 
 view::RegMap DynamicTernaryBaseInplaceOp::fwdRegMap(InIndex inIndex,
                                                     OutIndex outIndex) const {

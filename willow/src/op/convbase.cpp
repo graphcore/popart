@@ -203,6 +203,10 @@ MultiConvBaseOp::MultiConvBaseOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), flatStrides(flatStrides_), flatPads(flatPads_),
       flatDilations(flatDilations_), convOpts(convOpts_), padType(padType_) {}
 
+std::unique_ptr<Op> MultiConvBaseOp::clone() const {
+  return std::make_unique<MultiConvBaseOp>(*this);
+}
+
 Shape MultiConvBaseOp::getOutShape(int convIndex, const ConvPads &pads) const {
   const auto nSpatialDims = getNSpatialDims(convIndex);
   Shape outShape(2 + nSpatialDims, 0);
@@ -752,6 +756,10 @@ MultiConvWeightsGradBaseOp::MultiConvWeightsGradBaseOp(
   }
 }
 
+std::unique_ptr<Op> MultiConvWeightsGradBaseOp::clone() const {
+  return std::make_unique<MultiConvWeightsGradBaseOp>(*this);
+}
+
 void MultiConvWeightsGradBaseOp::setup() {
   for (int i = 0; i < weightsInfo.size(); i++) {
     outInfo(getOutIndex(i)) = weightsInfo.at(i);
@@ -799,6 +807,10 @@ MultiConvDataGradBaseOp::MultiConvDataGradBaseOp(
     // Set the params for each convolution
     params.push_back(popx::getConvGradParameters(op_.getParameters(i)));
   }
+}
+
+std::unique_ptr<Op> MultiConvDataGradBaseOp::clone() const {
+  return std::make_unique<MultiConvDataGradBaseOp>(*this);
 }
 
 void MultiConvDataGradBaseOp::setup() {

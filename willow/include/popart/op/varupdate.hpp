@@ -16,6 +16,7 @@ namespace popart {
 class VarUpdateOp : public Op {
 public:
   VarUpdateOp(const OperatorIdentifier &, const Op::Settings &);
+  std::unique_ptr<Op> clone() const override = 0;
 
   // the Var to be updated received at this index
   static InIndex getVarToUpdateInIndex() { return 0; }
@@ -44,6 +45,7 @@ class VarUpdateWithUpdaterOp : public VarUpdateOp {
 public:
   VarUpdateWithUpdaterOp(const OperatorIdentifier &opid,
                          const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   // the gradient (for SGD) or source of copy (for CopyVarUpdate) or any other
   // tensor used to update the variable tensor is received at this index

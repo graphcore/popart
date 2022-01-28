@@ -13,6 +13,7 @@ public:
                const Op::Settings &settings_,
                RemoteBufferId rbid_)
       : ExchangeBaseOp(_opid, settings_), remoteBufferId(rbid_) {}
+  std::unique_ptr<Op> clone() const = 0;
 
   virtual RemoteBufferId getRemoteBufferId() const final {
     return remoteBufferId;

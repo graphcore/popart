@@ -16,9 +16,10 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
-class FmodArg0GradOp : public ElementWiseBinaryArg0GradOp<FmodArg0GradOp> {
+class FmodArg0GradOp : public ElementWiseBinaryArg0GradOp {
 public:
   FmodArg0GradOp(const FmodOp &op, const std::vector<int64_t> &reductionAxes);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace popart

@@ -15,6 +15,7 @@ class AccumulatorZeroOp : public AccumulatorScaleOp {
 public:
   AccumulatorZeroOp(const Op::Settings &settings)
       : AccumulatorScaleOp(0.0, settings) {}
+  std::unique_ptr<Op> clone() const override;
 };
 
 } // namespace popart

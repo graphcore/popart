@@ -22,6 +22,10 @@ OperatorIdentifier Atan2Op::getLhsOperatorIdentifier() const {
   return Onnx::CustomOperators::Atan2Inplace;
 }
 
+std::unique_ptr<Op> Atan2LhsInplaceOp::clone() const {
+  return std::make_unique<Atan2LhsInplaceOp>(*this);
+}
+
 Atan2Arg0GradOp::Atan2Arg0GradOp(const Op &op,
                                  const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg0GradOp(Onnx::GradOperators::Atan2Arg0Grad,
@@ -29,12 +33,20 @@ Atan2Arg0GradOp::Atan2Arg0GradOp(const Op &op,
                                   op.inInfo(Atan2Op::getArg0InIndex()),
                                   op.getSettings()) {}
 
+std::unique_ptr<Op> Atan2Arg0GradOp::clone() const {
+  return std::make_unique<Atan2Arg0GradOp>(*this);
+}
+
 Atan2Arg1GradOp::Atan2Arg1GradOp(const Op &op,
                                  const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::Atan2Arg1Grad,
                                   _reduction_axes,
                                   op.inInfo(Atan2Op::getArg1InIndex()),
                                   op.getSettings()) {}
+
+std::unique_ptr<Op> Atan2Arg1GradOp::clone() const {
+  return std::make_unique<Atan2Arg1GradOp>(*this);
+}
 
 namespace {
 

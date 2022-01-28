@@ -11,6 +11,10 @@ ZerosBaseOp::ZerosBaseOp(const OperatorIdentifier &opid_,
                          const Op::Settings &settings_)
     : ShapeOrLikeOp(opid_, dataType_, settings_) {}
 
+std::unique_ptr<Op> ZerosBaseOp::clone() const {
+  return std::make_unique<ZerosBaseOp>(*this);
+}
+
 std::vector<DataType> ZerosBaseOp::supportedDataTypes() {
   return {DataType::FLOAT16, DataType::FLOAT, DataType::INT32};
 }
@@ -50,6 +54,10 @@ ZerosLikeOp::foldInputTensor(const Op::Settings &settings) const {
 UnaryZeroGradOp::UnaryZeroGradOp(const OperatorIdentifier &opid_,
                                  const Op::Settings &settings_)
     : ZerosLikeOp(opid_, settings_) {}
+
+std::unique_ptr<Op> UnaryZeroGradOp::clone() const {
+  return std::make_unique<UnaryZeroGradOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>>
 UnaryZeroGradOp::getGradOpVector(const Op::Settings &settings) {

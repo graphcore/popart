@@ -6,6 +6,10 @@
 
 namespace popart {
 
+std::unique_ptr<Op> ReverseBaseOp::clone() const {
+  return std::make_unique<ReverseBaseOp>(*this);
+}
+
 void ReverseBaseOp::setup() {
   // Validate dimensions
   auto rank = inRank(getInIndex());
@@ -102,6 +106,10 @@ const std::map<int, int> &ReverseGradOp::gradOutToNonGradIn() const {
 
 std::unique_ptr<Op> ReverseInplaceOp::clone() const {
   return std::make_unique<ReverseInplaceOp>(*this);
+}
+
+std::unique_ptr<Op> ReverseGradOp::clone() const {
+  return std::make_unique<ReverseGradOp>(*this);
 }
 
 std::unique_ptr<Op>

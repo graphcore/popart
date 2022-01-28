@@ -118,6 +118,10 @@ TileGradOp::TileGradOp(const TileOp &op_)
              op_.getRepeats(),
              op_.getSettings()) {}
 
+std::unique_ptr<Op> TileGradOp::clone() const {
+  return std::make_unique<TileGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &TileGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of tile
   static const std::vector<GradInOutMapper> inInfo = {

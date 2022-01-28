@@ -50,10 +50,18 @@ VariadicGradOp::VariadicGradOp(const OperatorIdentifier &_opid,
   gradOutToNonGradInInfo = {{getOutIndex(), getFwdIndex()}};
 }
 
+std::unique_ptr<Op> VariadicGradOp::clone() const {
+  return std::make_unique<VariadicGradOp>(*this);
+}
+
 LinearVariadicGradOp::LinearVariadicGradOp(const OperatorIdentifier &_opid,
                                            const VariadicOp &op_,
                                            InIndex index)
     : VariadicGradOp(_opid, op_, index) {}
+
+std::unique_ptr<Op> LinearVariadicGradOp::clone() const {
+  return std::make_unique<LinearVariadicGradOp>(*this);
+}
 
 NonLinearVariadicGradOp::NonLinearVariadicGradOp(
     const OperatorIdentifier &_opid,
@@ -65,6 +73,10 @@ NonLinearVariadicGradOp::NonLinearVariadicGradOp(
       {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GradOut},
       {getFwdInIndex(), getFwdIndex(), GradOpInType::In},
       {getFwdOutInIndex(), VariadicOp::getOutIndex(), GradOpInType::Out}};
+}
+
+std::unique_ptr<Op> NonLinearVariadicGradOp::clone() const {
+  return std::make_unique<NonLinearVariadicGradOp>(*this);
 }
 
 const std::map<int, int> &VariadicGradOp::gradOutToNonGradIn() const {

@@ -11,8 +11,10 @@ public:
   SubsampleBaseOp(const OperatorIdentifier &_opid,
                   const std::vector<int64_t> &strides_,
                   const Op::Settings &settings_);
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  std::unique_ptr<Op> clone() const override;
   void setup() override;
+
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

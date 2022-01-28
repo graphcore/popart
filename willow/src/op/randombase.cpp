@@ -24,12 +24,20 @@ RandomBaseOp::RandomBaseOp(const OperatorIdentifier &opid_,
                            const Op::Settings &settings_)
     : ShapeOrLikeOp(opid_, dataType_, settings_) {}
 
+std::unique_ptr<Op> RandomBaseOp::clone() const {
+  return std::make_unique<RandomBaseOp>(*this);
+}
+
 RandomNormalBaseOp::RandomNormalBaseOp(const OperatorIdentifier &opid_,
                                        const OptionalDataType &dataType_,
                                        float mean_,
                                        float scale_,
                                        const Op::Settings &settings_)
     : RandomBaseOp(opid_, dataType_, settings_), mean(mean_), scale(scale_) {}
+
+std::unique_ptr<Op> RandomNormalBaseOp::clone() const {
+  return std::make_unique<RandomNormalBaseOp>(*this);
+}
 
 void RandomNormalBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
@@ -43,6 +51,10 @@ RandomUniformBaseOp::RandomUniformBaseOp(const OperatorIdentifier &opid_,
                                          float low_,
                                          const Op::Settings &settings_)
     : RandomBaseOp(opid_, dataType_, settings_), high(high_), low(low_) {}
+
+std::unique_ptr<Op> RandomUniformBaseOp::clone() const {
+  return std::make_unique<RandomUniformBaseOp>(*this);
+}
 
 void RandomUniformBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);

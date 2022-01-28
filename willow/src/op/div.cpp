@@ -22,12 +22,20 @@ DivArg0GradOp::DivArg0GradOp(const Op &op,
                                   op.inInfo(DivOp::getArg0InIndex()),
                                   op.getSettings()) {}
 
+std::unique_ptr<Op> DivArg0GradOp::clone() const {
+  return std::make_unique<DivArg0GradOp>(*this);
+}
+
 DivArg1GradOp::DivArg1GradOp(const Op &op,
                              const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::DivArg1Grad,
                                   _reduction_axes,
                                   op.inInfo(DivOp::getArg1InIndex()),
                                   op.getSettings()) {}
+
+std::unique_ptr<Op> DivArg1GradOp::clone() const {
+  return std::make_unique<DivArg1GradOp>(*this);
+}
 
 namespace {
 

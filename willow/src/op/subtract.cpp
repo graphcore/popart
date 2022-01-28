@@ -25,6 +25,10 @@ SubtractArg0GradOp::SubtractArg0GradOp(
                   op.getSettings()),
       forward_op_arg_info(op.inInfo(SubtractOp::getArg0InIndex())) {}
 
+std::unique_ptr<Op> SubtractArg0GradOp::clone() const {
+  return std::make_unique<SubtractArg0GradOp>(*this);
+}
+
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, SubtractOp::getArg0InIndex()}};
 
@@ -49,6 +53,10 @@ SubtractArg1GradOp::SubtractArg1GradOp(
                                   _reduction_axes,
                                   op.inInfo(SubtractOp::getArg1InIndex()),
                                   op.getSettings()) {}
+
+std::unique_ptr<Op> SubtractArg1GradOp::clone() const {
+  return std::make_unique<SubtractArg1GradOp>(*this);
+}
 
 namespace {
 

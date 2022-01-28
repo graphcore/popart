@@ -227,7 +227,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ret_val = 0
     for filename in args.filenames:
         copyright_linter = CopyrightLinter()
-        ret_val = copyright_linter.apply_lint_function(filename)
+        cur_ret_val = copyright_linter.apply_lint_function(filename)
+        ret_val |= cur_ret_val
 
     return ret_val
 

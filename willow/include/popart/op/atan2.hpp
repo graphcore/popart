@@ -22,22 +22,24 @@ private:
   OperatorIdentifier getLhsOperatorIdentifier() const final;
 };
 
-class Atan2LhsInplaceOp
-    : public ElementWiseBinaryInplaceLhsOp<Atan2LhsInplaceOp> {
+class Atan2LhsInplaceOp : public ElementWiseBinaryInplaceLhsOp {
 public:
   Atan2LhsInplaceOp(const Op::Settings &_settings)
       : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::Atan2Inplace,
                                       _settings) {}
+  std::unique_ptr<Op> clone() const final;
 };
 
-class Atan2Arg0GradOp : public ElementWiseBinaryArg0GradOp<Atan2Arg0GradOp> {
+class Atan2Arg0GradOp : public ElementWiseBinaryArg0GradOp {
 public:
   Atan2Arg0GradOp(const Op &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
-class Atan2Arg1GradOp : public ElementWiseBinaryArg1GradOp<Atan2Arg1GradOp> {
+class Atan2Arg1GradOp : public ElementWiseBinaryArg1GradOp {
 public:
   Atan2Arg1GradOp(const Op &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace popart

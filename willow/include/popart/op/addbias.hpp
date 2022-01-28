@@ -62,6 +62,7 @@ public:
 class AddBiasDataGradOp : public IdentityOp {
 public:
   AddBiasDataGradOp(const AddBiasOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -74,6 +75,7 @@ public:
 class AddBiasBiasGradOp : public ReduceSumOp {
 public:
   AddBiasBiasGradOp(const AddBiasOp &, const std::vector<int64_t> &axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

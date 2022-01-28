@@ -24,6 +24,7 @@ public:
 
   // parent: Graph this CallOp belongs to
   SubgraphOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 

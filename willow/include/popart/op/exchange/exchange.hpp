@@ -215,6 +215,7 @@ class ExchangeBaseOp : public Op {
 public:
   ExchangeBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings)
       : Op(_opid, settings) {}
+  std::unique_ptr<Op> clone() const override = 0;
 
   virtual int getNumExchanges() const { return 1; }
 

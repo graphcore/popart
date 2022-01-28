@@ -13,6 +13,7 @@ public:
                       OptimizerValue initialSlr0,
                       OptimizerValue initialWdsf0,
                       const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   // If the scaled learning rate is not constant, this is the index at which it
   // will be consumed by this Op

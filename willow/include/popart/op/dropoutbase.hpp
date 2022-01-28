@@ -16,6 +16,7 @@ public:
   DropoutBaseOp(const OperatorIdentifier &_opid,
                 float ratio_,
                 const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
 
   // Inputs
   static InIndex getInIndex() { return 0; }

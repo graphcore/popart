@@ -31,6 +31,10 @@ FmodArg0GradOp::FmodArg0GradOp(const FmodOp &op,
                                   op.inInfo(FmodOp::getArg0InIndex()),
                                   op.getSettings()) {}
 
+std::unique_ptr<Op> FmodArg0GradOp::clone() const {
+  return std::make_unique<FmodArg0GradOp>(*this);
+}
+
 namespace {
 
 static OpDefinition::DataTypes T = {DataType::UINT8,

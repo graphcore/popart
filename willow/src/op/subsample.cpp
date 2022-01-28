@@ -66,6 +66,10 @@ SubsampleBaseOp::SubsampleBaseOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)
     : Op(_opid, settings_), strides(strides_) {}
 
+std::unique_ptr<Op> SubsampleBaseOp::clone() const {
+  return std::make_unique<SubsampleBaseOp>(*this);
+}
+
 std::unique_ptr<Op> SubsampleOp::clone() const {
   return std::make_unique<SubsampleOp>(*this);
 }

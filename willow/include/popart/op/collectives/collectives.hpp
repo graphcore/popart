@@ -27,6 +27,7 @@ public:
   CollectivesBaseOp(const OperatorIdentifier &_opid,
                     CommGroup group,
                     const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override = 0;
 
   // Input to gather/reduce/scatter
   static InIndex getInIndex() { return 0; }

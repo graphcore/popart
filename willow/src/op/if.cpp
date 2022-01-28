@@ -560,6 +560,10 @@ IfConditionGradOp::IfConditionGradOp(const IfOp &fwdOp)
     : IdentityOp(Onnx::CustomGradOperators::IfConditionGrad,
                  fwdOp.getSettings()) {}
 
+std::unique_ptr<Op> IfConditionGradOp::clone() const {
+  return std::make_unique<IfConditionGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &IfConditionGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getInIndex(), IfOp::getConditionInIndex(), GradOpInType::In}};

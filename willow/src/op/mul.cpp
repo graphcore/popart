@@ -86,6 +86,10 @@ void MulOp::setup() {
   outInfo(getOutIndex()) = out;
 }
 
+std::unique_ptr<Op> MulLhsInplaceOp::clone() const {
+  return std::make_unique<MulLhsInplaceOp>(*this);
+}
+
 void MulLhsInplaceOp::setup() {
   auto out =
       prettyNpOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), false);
@@ -93,6 +97,10 @@ void MulLhsInplaceOp::setup() {
       inInfo(getArg0InIndex()), inInfo(getArg1InIndex()), str());
   out.set(outType);
   outInfo(getOutIndex()) = out;
+}
+
+std::unique_ptr<Op> MulRhsInplaceOp::clone() const {
+  return std::make_unique<MulRhsInplaceOp>(*this);
 }
 
 void MulRhsInplaceOp::setup() {
@@ -111,12 +119,20 @@ MulArg0GradOp::MulArg0GradOp(const Op &op_,
                                   op_.inInfo(MulOp::getArg0InIndex()),
                                   op_.getSettings()) {}
 
+std::unique_ptr<Op> MulArg0GradOp::clone() const {
+  return std::make_unique<MulArg0GradOp>(*this);
+}
+
 MulArg1GradOp::MulArg1GradOp(const Op &op,
                              const std::vector<int64_t> &_reduction_axes)
     : ElementWiseBinaryArg1GradOp(Onnx::GradOperators::MulArg1Grad,
                                   _reduction_axes,
                                   op.inInfo(MulOp::getArg1InIndex()),
                                   op.getSettings()) {}
+
+std::unique_ptr<Op> MulArg1GradOp::clone() const {
+  return std::make_unique<MulArg1GradOp>(*this);
+}
 
 namespace {
 
