@@ -101,15 +101,28 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-  # Generate supported ops rst doc.
-  set(SUPPORTED_POPART_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/supported_ops_gen.rst)
+  # Generate supported PopART ops rst doc.
+  set(SUPPORTED_POPART_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popart_supported_ops_gen.rst)
   add_custom_command(
     OUTPUT ${SUPPORTED_POPART_OPS_GEN}
     COMMAND
         bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
         python3 gen_popart_supported_ops.py ${SUPPORTED_POPART_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating supported ops in ${SUPPORTED_POPART_OPS_GEN}"
+    COMMENT "Creating PopART supported ops in ${SUPPORTED_POPART_OPS_GEN}"
+    DEPENDS popart-py
+            ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+  )
+
+  # Generate supported popart.ir ops rst doc.
+  set(SUPPORTED_POPARTIR_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popartir_supported_ops_gen.rst)
+  add_custom_command(
+    OUTPUT ${SUPPORTED_POPARTIR_OPS_GEN}
+    COMMAND 
+        bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+        python3 gen_popartir_supported_ops.py ${SUPPORTED_POPARTIR_OPS_GEN}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Creating popart.ir supported ops in ${SUPPORTED_POPARTIR_OPS_GEN}"
     DEPENDS popart-py
             ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
   )
@@ -143,6 +156,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
+            ${SUPPORTED_POPARTIR_OPS_GEN}
             ${USER_GUIDE_SOURCE_FILES}
   )
 
@@ -192,6 +206,7 @@ if (BUILD_DOCS)
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       DEPENDS SphinxRequirements
               ${SUPPORTED_POPART_OPS_GEN}
+              ${SUPPORTED_POPARTIR_OPS_GEN}
               ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
               ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
               ${PROJECT_BINARY_DIR}/enable.sh
@@ -235,6 +250,10 @@ if (BUILD_DOCS)
   add_custom_target(supported_popart_ops_copy ALL
     COMMAND cp ${SUPPORTED_POPART_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_POPART_OPS_GEN_FILE_NAME}
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
+  )
+  add_custom_target(supported_popartir_ops_copy ALL
+    COMMAND cp ${SUPPORTED_POPARTIR_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_POPARTIR_OPS_GEN_FILE_NAME}
+    DEPENDS ${SUPPORTED_POPARTIR_OPS_GEN}
   )
 
   add_custom_target(pdf_copy ALL

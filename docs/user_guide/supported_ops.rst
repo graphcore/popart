@@ -12,7 +12,7 @@ are listed below.
 See `ONNX Operators <https://github.com/onnx/onnx/blob/master/docs/Operators.md>`_
 for more information.
 
-.. include:: ../supported_ops_gen.rst
+.. include:: ../popart_supported_ops_gen.rst
 
 Limitations
 -----------

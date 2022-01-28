@@ -38,3 +38,10 @@ then store data from device to host by using
   host_store(d2h_stream: DeviceToHostStream, t: Tensor)
 
 where the ``t`` is the tensor to copy to host.
+
+List of available operations
+""""""""""""""""""""""""""""
+
+The operations currently supported in ``popart.ir`` are listed below:
+
+.. include:: ../popartir_supported_ops_gen.rst
