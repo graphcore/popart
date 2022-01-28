@@ -257,9 +257,7 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
   auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
 
   auto &graph     = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
-  auto fullTensor = snap::Tensor{graph.getPoplarGraph().addVariable(
-                                     popType(inInfo), inInfo.shape_szt(), ""),
-                                 graph};
+  auto fullTensor = graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
 
   // Map it linearly
   snap::poputil::mapTensorLinearly(graph, fullTensor);
