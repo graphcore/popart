@@ -115,8 +115,9 @@ std::vector<float> getLevels(Tensor *tensor, float binEdgeLocation) {
 
   auto dtype = tensor->info.dataType();
   if (dtype == DataType::FLOAT16) {
-    return {static_cast<float>(std::numeric_limits<uint16_t>::max()) *
-            binEdgeLocation};
+    // TODO: T54890 don't use magic numbers. Get max value of IeeeHalf
+    // programatically.
+    return {static_cast<float>(65504.0) * binEdgeLocation};
   } else {
     throw error("[AutomaticLossScale transform] Unsupported data type {} for "
                 "to-track tensor '{}'",
