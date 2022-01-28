@@ -211,6 +211,9 @@ def op_tester(tmpdir):
                 lossId = anchorIds[0]
                 lossId = bld.aiGraphcore.identityloss(
                     [lossId], reduction=self.lossReduction)
+                if (self.options.virtualGraphMode ==
+                        popart.VirtualGraphMode.Manual):
+                    bld.virtualGraph(lossId, 0)
 
                 session = popart.TrainingSession(fnModel=bld.getModelProto(),
                                                  dataFlow=dataFlow,

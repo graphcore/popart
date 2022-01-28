@@ -293,6 +293,7 @@ const static AiGraphcoreOpIdV1 BitwiseOr("BitwiseOr", 2, 1);
 const static AiGraphcoreOpIdV1 BitwiseXor("BitwiseXor", 2, 1);
 const static AiGraphcoreOpIdV1 BitwiseXnor("BitwiseXnor", 2, 1);
 const static AiGraphcoreOpIdV1 AllReduce("AllReduce");
+const static AiGraphcoreOpIdV1 TensorRemap_1("TensorRemap", {1, 2}, 1);
 } // namespace CustomOperators
 
 namespace AiGraphcore {
@@ -360,6 +361,7 @@ const static OperatorIdentifier Abort         = CustomOperators::Abort;
 const static OperatorIdentifier ScatterReduce = CustomOperators::ScatterReduce;
 const static OperatorIdentifier Swish         = CustomOperators::Swish;
 const static OperatorIdentifier AllReduce     = CustomOperators::AllReduce;
+const static OperatorIdentifier TensorRemap   = CustomOperators::TensorRemap_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

@@ -26,6 +26,7 @@
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/scatterreduce.hpp>
+#include <popart/op/tensorremap.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
@@ -540,6 +541,12 @@ PYBIND11_MODULE(popart_core, m) {
     en.value(
         "NoInit", InitType::NoInit, SINGLE_LINE_DOC(popart, InitType, NoInit));
     en.value("Zero", InitType::Zero, SINGLE_LINE_DOC(popart, InitType, Zero));
+  }
+  {
+    py::enum_<TensorRemapType> en(m, "TensorRemapType");
+    en.value("FwdBwdReverse", TensorRemapType::FwdBwdReverse);
+    en.value("FwdBwd", TensorRemapType::FwdBwd);
+    en.value("Fwd", TensorRemapType::Fwd);
   }
   {
     py::enum_<TileSet> en(m, "TileSet", DOC(popart, TileSet));
@@ -2446,6 +2453,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("modulus"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, incrementmod));
+    cls.def("tensorremap",
+            &AiGraphcoreOpset1::tensorremap,
+            py::arg("args"),
+            py::arg("remap_type") =
+                static_cast<int>(TensorRemapType::FwdBwdReverse),
+            py::arg("debugPrefix") = std::string());
   }
   {
     py::class_<Builder> cls(m, "_BuilderCore");

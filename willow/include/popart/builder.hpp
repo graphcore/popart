@@ -534,6 +534,34 @@ public:
                         const DebugContext &debugContext = {});
 
   /**
+   * Add a tensor remap operation to the model
+   *
+   * Changes the tensor layout to conform to the downstream consumers, which
+   * means the consumers can read the tensor without having to rearrange it.
+   *
+   * \param args      [tensor_to_remap] Single tensor that should be copied
+   *                  to a new tensor with a tensor layout conforming to the
+   *                  downstream consumer.
+   * \param remapType Type of remap to perform on the forward/backward pass.
+   *                  (backward pass remapping requires the Op to exist in the
+   *                  IR  before autodiff).
+   *                  FwdBwdReverse: Remap the tensor in the forward pass,
+   *                                 reverse-apply the remapping in the
+   *                                 backward pass. That means the gradient
+   *                                 tensor of the input to this Op will have
+   *                                 the same layout as the input tensor itself.
+   *                  FwdBwd:        Remap the tensor in the forward pass and
+   *                                 backward pass independently.
+   *                  Fwd:           Only remap the tensor in the forward pass,
+   *                                 use identity for the backward pass.
+   * \param name      Optional identifier for operation
+   * \return          The name of the result tensor
+   */
+  TensorId tensorremap(const std::vector<TensorId> &args,
+                       Attributes::Int remap_type,
+                       const DebugContext &debugContext = {});
+
+  /**
    * Add a connectionist temporal classification (CTC) loss operation to the
    * model.
    *

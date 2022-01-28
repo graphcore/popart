@@ -1171,6 +1171,18 @@ TensorId AiGraphcoreOpset1::incrementmod(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::tensorremap(const std::vector<TensorId> &args,
+                                        Attributes::Int remap_type,
+                                        const DebugContext &debugContext) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::TensorRemap,
+           getOpsetVersion(),
+           args,
+           {{"remap_type", remap_type}},
+           debugContext)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,
