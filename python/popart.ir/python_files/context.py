@@ -253,7 +253,7 @@ gmg = get_main_graph
 @contextmanager
 def ipu(ipu: int):
     """Set the ipu on ops created in this context.
-    Popart internally does this using poplar virtual graphs."""
+    PopART internally uses poplar virtual graphs."""
     ctx = get_current_context()
     prev = ctx._ipu_id
     ctx._ipu_id = ipu
@@ -299,7 +299,7 @@ def io_tiles():
 
 @contextmanager
 def name_scope(name: str):
-    """Set the virtual graph id on Ops created in this context."""
+    """Set the name scope on Ops created in this context."""
     ctx = get_current_context()
     ctx.push_name_scope(name)
     yield ctx.name_scopes
