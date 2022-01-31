@@ -17,7 +17,7 @@
 namespace popart {
 namespace popx {
 
-popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op);
+gcl::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op);
 
 struct ReorderMetadata {
   ReorderMetadata(int64_t offset_,

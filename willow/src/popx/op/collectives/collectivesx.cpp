@@ -21,26 +21,26 @@
 namespace popart {
 namespace popx {
 
-popops::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
+gcl::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
   switch (op) {
   case CollectiveOperator::Add:
-    return popops::CollectiveOperator::ADD;
+    return gcl::CollectiveOperator::ADD;
   case CollectiveOperator::Mean:
-    return popops::CollectiveOperator::MEAN;
+    return gcl::CollectiveOperator::MEAN;
   case CollectiveOperator::Mul:
-    return popops::CollectiveOperator::MUL;
+    return gcl::CollectiveOperator::MUL;
   case CollectiveOperator::Min:
-    return popops::CollectiveOperator::MIN;
+    return gcl::CollectiveOperator::MIN;
   case CollectiveOperator::Max:
-    return popops::CollectiveOperator::MAX;
+    return gcl::CollectiveOperator::MAX;
   case CollectiveOperator::LogicalAnd:
-    return popops::CollectiveOperator::LOGICAL_AND;
+    return gcl::CollectiveOperator::LOGICAL_AND;
   case CollectiveOperator::LogicalOr:
-    return popops::CollectiveOperator::LOGICAL_OR;
+    return gcl::CollectiveOperator::LOGICAL_OR;
   case CollectiveOperator::SquareAdd:
-    return popops::CollectiveOperator::SQUARE_ADD;
+    return gcl::CollectiveOperator::SQUARE_ADD;
   case CollectiveOperator::Local:
-    return popops::CollectiveOperator::LOCAL;
+    return gcl::CollectiveOperator::LOCAL;
   default:
     throw error("Unsupported operator {}", static_cast<int>(op));
   }

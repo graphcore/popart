@@ -36,7 +36,7 @@ void AllReduceOpx::grow(snap::program::Sequence &prog) const {
   auto reduceOutput =
       gcl::allReduceWithinReplica(topLevelGraph().getPoplarGraph(),
                                   reduceInput,
-                                  popops::CollectiveOperator::ADD,
+                                  gcl::CollectiveOperator::ADD,
                                   prog.getPoplarSequence(),
                                   "all_reduce");
 
