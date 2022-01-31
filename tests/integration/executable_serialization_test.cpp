@@ -53,6 +53,13 @@ std::string addPaths(const std::string &lhs, const std::string &rhs) {
   return dstPath.string();
 }
 
+void createDummyFile(const std::string &testDir) {
+  const std::string dummyDir = "dummyFile";
+  std::ofstream out(addPaths(testDir, dummyDir));
+  out << "Dummy" << std::endl;
+  out.close();
+}
+
 std::string getCachePath(const std::string &testDir) {
   const std::string cacheDir = "session_cache1";
   return addPaths(testDir, cacheDir);
@@ -1737,12 +1744,12 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  const std::string testDir   = createDirForTest();
-  const std::string cachePath = getCachePath(testDir);
+  const std::string testDir = createDirForTest();
+  createDummyFile(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
-  opts.cachePath           = cachePath;
+  opts.cachePath           = testDir;
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -1797,7 +1804,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_reset_host_weights) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(testDir);
   }
 
   auto C_ground_truth = raw_C_out;
@@ -1905,12 +1912,12 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
   int batchesPerStep = 1;
   auto dataFlow      = DataFlow(batchesPerStep, {{C_id, art}});
 
-  const std::string testDir   = createDirForTest();
-  const std::string cachePath = getCachePath(testDir);
+  const std::string testDir = createDirForTest();
+  createDummyFile(testDir);
 
   auto opts                = SessionOptions();
   opts.enableEngineCaching = true;
-  opts.cachePath           = cachePath;
+  opts.cachePath           = testDir;
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -1977,7 +1984,7 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_checkpoint) {
 
     session->weightsToHost();
     session->readWeights(weightsRead);
-    cacheFile = session->getExecutable().getCachePath(cachePath);
+    cacheFile = session->getExecutable().getCachePath(testDir);
   }
 
   auto C_ground_truth = raw_C_out;

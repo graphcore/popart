@@ -651,9 +651,9 @@ public:
         poplarExecutable(findPoplarExecutable()), hash(getExecutableHash()) {}
 
   popef::Reader popefReader;
-  OpaqueReaderOpt popartMetadata;
-  ExecReaderOpt poplarExecutable;
-  size_t hash;
+  const OpaqueReaderOpt popartMetadata;
+  const ExecReaderOpt poplarExecutable;
+  const size_t hash;
 
 private:
   popef::Reader setupReader(std::shared_ptr<std::istream> in) {
@@ -677,7 +677,9 @@ private:
         std::find_if(opaques.begin(), opaques.end(), popartOpaqueMatcher);
 
     const bool opaqueExists = opaqueIt != opaques.end();
-    return opaqueExists ? OpaqueReaderOpt(*opaqueIt) : nonstd::nullopt;
+    const OpaqueReaderOpt opaqueReader =
+        opaqueExists ? OpaqueReaderOpt(*opaqueIt) : nonstd::nullopt;
+    return opaqueReader;
   }
 
   ExecReaderOpt findPoplarExecutable() {
@@ -715,23 +717,19 @@ private:
     return execReader;
   }
 
-  size_t getExecutableHash() {
+  size_t getExecutableHash() const {
     size_t hash = 0;
 
-    if (!poplarExecutable.has_value() && !popartMetadata.has_value()) {
-      throw error(
-          "The file contains neither poplar executable nor popart metadata.");
-    }
-
-    const std::string &hashString = poplarExecutable.has_value()
-                                        ? poplarExecutable->get().name
-                                        : popartMetadata->get().executable;
-
-    std::stringstream ss(hashString);
-    ss >> hash;
-    if (ss.fail()) {
-      throw error("Neither the poplar executable nor the popart metadata "
-                  "contains a hash number.");
+    if (poplarExecutable.has_value() || popartMetadata.has_value()) {
+      const std::string &hashString = poplarExecutable.has_value()
+                                          ? poplarExecutable->get().name
+                                          : popartMetadata->get().executable;
+      std::stringstream ss(hashString);
+      ss >> hash;
+      if (ss.fail()) {
+        throw error("Neither the poplar executable nor the popart metadata "
+                    "contains a hash number.");
+      }
     }
 
     return hash;
@@ -743,15 +741,17 @@ Reader::Reader(std::shared_ptr<std::istream> in)
 Reader::Reader(Reader &&reader) : _impl(std::move(reader._impl)) {}
 Reader::~Reader() = default;
 
-size_t Reader::readExecutableHash() { return _impl->hash; }
+size_t Reader::readExecutableHash() const { return _impl->hash; }
 
-bool Reader::containsPoplarExecutable() {
+bool Reader::containsPoplarExecutable() const {
   return _impl->poplarExecutable.has_value();
 }
 
-bool Reader::containsExecutable() { return _impl->popartMetadata.has_value(); }
+bool Reader::containsExecutable() const {
+  return _impl->popartMetadata.has_value();
+}
 
-poplar::Executable Reader::deserializePoplarExecutable() {
+poplar::Executable Reader::deserializePoplarExecutable() const {
   if (!containsPoplarExecutable()) {
     throw error("The file does not contain poplar executable.");
   }
@@ -763,7 +763,7 @@ poplar::Executable Reader::deserializePoplarExecutable() {
 
 std::unique_ptr<popart::popx::Executablex>
 Reader::deserializeExecutable(popart::Ir &ir,
-                              popart::popx::IrLowering &lowering) {
+                              popart::popx::IrLowering &lowering) const {
   if (!containsExecutable()) {
     throw error("The file does not contain popart metadata.");
   }

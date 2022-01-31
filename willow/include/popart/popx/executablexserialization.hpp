@@ -46,20 +46,21 @@ public:
 
   // Returns the executable hash or 0 if the stream contains
   // corrupted data
-  size_t readExecutableHash();
+  size_t readExecutableHash() const;
 
   // Return true if the stream contains a Poplar executable
-  bool containsPoplarExecutable();
+  bool containsPoplarExecutable() const;
 
   // Return true if the stream contains a Popart executable
-  bool containsExecutable();
+  bool containsExecutable() const;
 
   // Load a poplar executable
-  poplar::Executable deserializePoplarExecutable();
+  poplar::Executable deserializePoplarExecutable() const;
 
   // Load a popart executable
   std::unique_ptr<popart::popx::Executablex>
-  deserializeExecutable(popart::Ir &ir, popart::popx::IrLowering &lowering);
+  deserializeExecutable(popart::Ir &ir,
+                        popart::popx::IrLowering &lowering) const;
 
 private:
   std::unique_ptr<ReaderImpl> _impl;

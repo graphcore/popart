@@ -37,16 +37,24 @@ HashesMap getCacheEntries(const std::string &cachePath) {
   }
   for (auto &entry : boost::filesystem::directory_iterator(cachePath)) {
     if (boost::filesystem::is_regular_file(entry)) {
-      auto ifs = std::make_shared<std::ifstream>(entry.path().string(),
-                                                 std::ifstream::binary);
+      const std::string &filePath = entry.path().string();
+      auto ifs =
+          std::make_shared<std::ifstream>(filePath, std::ifstream::binary);
       try {
         popart::popx::serialization::Reader reader(ifs);
-        auto hash = reader.readExecutableHash();
-        cacheEntries.emplace(hash, entry.path().string());
+        if (reader.containsExecutable() && reader.containsPoplarExecutable()) {
+          auto hash = reader.readExecutableHash();
+          cacheEntries.emplace(hash, entry.path().string());
+          logging::session::info("PopART cache file has been found: {}",
+                                 filePath);
+        } else {
+          logging::session::info("Ignoring file not compatible with PopArt "
+                                 "cache file structure: {}",
+                                 filePath);
+        }
       } catch (const std::exception &e) {
-        logging::session::trace("Ignoring invalid cache file {}: {}",
-                                entry.path().string(),
-                                e.what());
+        logging::session::trace(
+            "Ignoring invalid cache file {}: {}", filePath, e.what());
       }
     }
   }
