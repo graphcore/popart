@@ -178,11 +178,6 @@ void Session::loadExecutableFromFile(const std::string &filename) {
   }
 }
 
-void Session::loadExecutableFromStream(std::istream &in) {
-  auto in_ptr = std::make_shared<std::istream>(in.rdbuf());
-  loadExecutableFromStream(in_ptr);
-}
-
 void Session::loadExecutableFromStream(std::shared_ptr<std::istream> in) {
   bool skipGraphCompilation = true;
   lowering_.reset(new popx::IrLowering(*ir, deviceInfo_, skipGraphCompilation));

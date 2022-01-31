@@ -155,14 +155,6 @@ public:
    * Load the \c poplar::Executable and the PopART metadata from the given
    * stream. The stream must have been created with compileAndExport()
    *
-   * \param in Stream to load the executable from.
-   */
-  void loadExecutableFromStream(std::istream &in);
-
-  /**
-   * Load the \c poplar::Executable and the PopART metadata from the given
-   * stream. The stream must have been created with compileAndExport()
-   *
    * \param in Shared pointer to the std stream to load the executable from.
    */
   void loadExecutableFromStream(std::shared_ptr<std::istream> in);
