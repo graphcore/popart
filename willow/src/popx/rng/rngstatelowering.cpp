@@ -5,6 +5,8 @@
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/RandomSeed.hpp>
 
+#include <snap/poputil/TileMapping.hpp>
+
 #include <poprand/RandomGen.hpp>
 
 #include <popops/ElementWise.hpp>
@@ -143,12 +145,9 @@ void RngStateLowering::layoutRNGStateTensor(snap::Graph &graph,
 
   auto numTiles = graph.getTarget().getNumTiles();
   if (tensor.rank() >= 1 && tensor.dim(0) == numTiles) {
-
-    for (auto tile = 0U; tile != numTiles; ++tile) {
-      auto slice = tensor.slice({tile, tile + 1}, 0);
-      graph.getPoplarGraph().setTileMapping(slice.getPoplarTensor(), tile);
-    }
-
+    unsigned minElementsPerTile = tensor[0].numElements();
+    snap::poputil::mapTensorLinearly(
+        graph, tensor, minElementsPerTile, minElementsPerTile);
   } else {
     throw internal_error("[RngStateLowering] Expected tensor with first "
                          "dimension of {} (got tensor shape {})",
