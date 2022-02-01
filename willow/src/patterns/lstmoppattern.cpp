@@ -96,15 +96,15 @@ bool LSTMPattern::apply(Op *op) const {
     return add({concat0, concat1});
   };
 
-  auto inputWeights      = lstmOp->inId(LSTMOp::getWeightsInIndex());
-  auto recurrenceWeights = lstmOp->inId(LSTMOp::getRecurrenceInIndex());
+  auto inputWeights      = lstmOp->inId(LSTMOp::getInputWeightsInIndex());
+  auto recurrenceWeights = lstmOp->inId(LSTMOp::getRecurrenceWeightsInIndex());
   inputWeights           = reshapeWeights(inputWeights);
   recurrenceWeights      = reshapeWeights(recurrenceWeights);
   auto concatWeights     = concat({inputWeights, recurrenceWeights}, 1);
 
   auto biases = TensorId();
-  if (lstmOp->input->hasIndex(LSTMOp::getBiasInIndex())) {
-    auto x = lstmOp->inId(LSTMOp::getBiasInIndex());
+  if (lstmOp->input->hasIndex(LSTMOp::getBiasesInIndex())) {
+    auto x = lstmOp->inId(LSTMOp::getBiasesInIndex());
     biases = reshapeBiases(x);
   }
 
@@ -118,9 +118,9 @@ bool LSTMPattern::apply(Op *op) const {
 
   auto input = lstmOp->inId(LSTMOp::getInputInIndex());
 
-  auto output      = lstmOp->outId(LSTMOp::getOutputOutIndex());
-  auto hiddenState = lstmOp->outId(LSTMOp::getHiddenStateOutIndex());
-  auto cellState   = lstmOp->outId(LSTMOp::getCellStateOutIndex());
+  auto output      = lstmOp->outId(LSTMOp::getFullHiddenStateOutIndex());
+  auto hiddenState = lstmOp->outId(LSTMOp::getLastHiddenStateOutIndex());
+  auto cellState   = lstmOp->outId(LSTMOp::getLastCellStateOutIndex());
 
   lstmOp->disconnectAllInputs();
   lstmOp->disconnectAllOutputs();

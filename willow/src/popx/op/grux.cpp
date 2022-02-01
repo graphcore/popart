@@ -129,20 +129,20 @@ void GRUOpx::grow(snap::program::Sequence &prog) const {
     setOutTensor(GRUOp::getIntermediatesPassThroughIndex(), *intermediate);
   }
 
-  reshapeAndInsert(GRUOp::getOutputOutIndex(), output);
+  reshapeAndInsert(GRUOp::getFullHiddenStateOutIndex(), output);
 
   auto output_h_state = output[createGRUParams().rnn.timeSteps - 1];
 
   // cloneNcopy to ensure outputs are not aliases of each other
   // TODO T18126 remove requirement for this cloneNcopy
-  reshapeAndInsert(GRUOp::getHiddenStateOutIndex(),
+  reshapeAndInsert(GRUOp::getLastHiddenStateOutIndex(),
                    cloneNcopy(prog, output_h_state));
 
-  setOutTensor(GRUOp::getInitStateOutputPassThroughIndex(), init_state_h);
+  setOutTensor(GRUOp::getInitialHPassThroughIndex(), init_state_h);
 
   setOutTensor(GRUOp::getInputWeightsPassThroughIndex(),
                snap::Tensor{weights->inputWeights, graph()});
-  setOutTensor(GRUOp::getOutputWeightsPassThroughIndex(),
+  setOutTensor(GRUOp::getRecurrenceWeightsPassThroughIndex(),
                snap::Tensor{weights->outputWeights, graph()});
 
   auto biases = weights->biases;
@@ -152,10 +152,6 @@ void GRUOpx::grow(snap::program::Sequence &prog) const {
   }
   setOutTensor(GRUOp::getBiasesPassThroughIndex(),
                snap::Tensor{biases, graph()});
-
-  setOutTensor(GRUOp::getInputPassThroughIndex(), input);
-
-  setOutTensor(GRUOp::getOutputPassThroughIndex(), output);
 }
 
 void GRUOpx::reshapeAndInsert(OutIndex index,
@@ -170,7 +166,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   unsigned hidden_size = static_cast<unsigned>(gru_op.getHiddenSize());
   auto biases          = snap::Tensor{getGRUWeights().biases, graph()};
 
-  if (!gru_op.hasBiasInput()) {
+  if (!gru_op.hasBiasesInput()) {
     popops::zero(graph().getPoplarGraph(),
                  biases.getPoplarTensor(),
                  prog.getPoplarSequence(),
@@ -182,7 +178,7 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   // First subtensors are the input biases [bz, br, bh]
   // Following are the hidden biases [bhz, bhr, bhh]
   auto bias_input =
-      getInTensor(GRUOp::getBiasInIndex()).reshape({6, hidden_size});
+      getInTensor(GRUOp::getBiasesInIndex()).reshape({6, hidden_size});
 
   std::vector<poplar::Interval> intervals{
       {0, 1}, {1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}};
@@ -230,8 +226,8 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
 
 InputCreatorType GRUOpx::getInputCreatorType(InIndex index) const {
   if (index == GRUOp::getInputInIndex() ||
-      index == GRUOp::getWeightsInIndex() ||
-      index == GRUOp::getRecurrenceInIndex() ||
+      index == GRUOp::getInputWeightsInIndex() ||
+      index == GRUOp::getRecurrenceWeightsInIndex() ||
       index == GRUOp::getInitialHInIndex()) {
     return InputCreatorType::CanCreate;
   } else {
@@ -245,10 +241,10 @@ snap::Tensor GRUOpx::createInputTensor(InIndex index,
 
   if (index == GRUOp::getInputInIndex()) {
     return createGRUInput();
-  } else if (index == GRUOp::getWeightsInIndex()) {
+  } else if (index == GRUOp::getInputWeightsInIndex()) {
     auto inputWeights = getGRUWeights().inputWeights;
     return reshapePoplibWeightsForOnnx(snap::Tensor{inputWeights, graph()});
-  } else if (index == GRUOp::getRecurrenceInIndex()) {
+  } else if (index == GRUOp::getRecurrenceWeightsInIndex()) {
     auto outputWeights = getGRUWeights().outputWeights;
     return reshapePoplibWeightsForOnnx(snap::Tensor{outputWeights, graph()});
   } else if (index == GRUOp::getInitialHInIndex()) {
@@ -358,38 +354,35 @@ popnn::gru::GruWeights GRUOpx::getGRUWeights() const {
   return *weights;
 }
 
-popnn::gru::GruParams GRUOpx::createGRUParams(const GRUOp &gru_op) {
+popnn::gru::GruParams GRUOpx::createGRUParams() const {
+  auto &gru_op         = getOp<GRUOp>();
   auto in_info         = gru_op.inInfo(GRUOp::getInputInIndex());
-  auto seq_length      = static_cast<unsigned>(gru_op.getSeqLength());
+  auto max_seq_length  = static_cast<unsigned>(gru_op.getMaxSeqLength());
   auto batch_size      = static_cast<unsigned>(gru_op.getBatchSize());
   unsigned input_size  = static_cast<unsigned>(gru_op.getInputSize());
   unsigned hidden_size = static_cast<unsigned>(gru_op.getHiddenSize());
 
   auto params = popnn::gru::GruParams(
-      popType(in_info), batch_size, seq_length, {input_size, hidden_size});
+      popType(in_info), batch_size, max_seq_length, {input_size, hidden_size});
   params.resetAfter = gru_op.getLinearBeforeResetAttribute() != 0;
   return params;
-}
-
-popnn::gru::GruParams GRUOpx::createGRUParams() const {
-  auto &gru_op = getOp<GRUOp>();
-  return createGRUParams(gru_op);
 }
 
 std::set<TensorId> GRUOpx::mustExistBeforeCreate(InIndex) const { return {}; }
 
 void GRUOpx::prepareWeights(snap::program::Sequence &prog) const {
   // check to see if the weights were created
-  prog.add(snap::program::Copy(getInTensor(GRUOp::getWeightsInIndex()),
+  prog.add(snap::program::Copy(getInTensor(GRUOp::getInputWeightsInIndex()),
                                reshapePoplibWeightsForOnnx(snap::Tensor{
                                    getGRUWeights().inputWeights, graph()}),
                                false,
                                debugContext()));
-  prog.add(snap::program::Copy(getInTensor(GRUOp::getRecurrenceInIndex()),
-                               reshapePoplibWeightsForOnnx(snap::Tensor{
-                                   getGRUWeights().outputWeights, graph()}),
-                               false,
-                               debugContext()));
+  prog.add(
+      snap::program::Copy(getInTensor(GRUOp::getRecurrenceWeightsInIndex()),
+                          reshapePoplibWeightsForOnnx(snap::Tensor{
+                              getGRUWeights().outputWeights, graph()}),
+                          false,
+                          debugContext()));
 }
 
 snap::Tensor GRUOpx::getInput(snap::program::Sequence &prog) const {
@@ -409,39 +402,39 @@ GRUGradOpx::GRUGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void GRUGradOpx::grow(snap::program::Sequence &prog) const {
-  snap::Tensor init_state_h =
-      getInTensor(GRUGradOp::getInitStateOutputInIndex());
+  snap::Tensor init_state_h = getInTensor(GRUGradOp::getInitialHInIndex());
 
   popnn::gru::GruWeights weights;
   weights.inputWeights =
       getInTensor(GRUGradOp::getInputWeightsInIndex()).getPoplarTensor();
   weights.outputWeights =
-      getInTensor(GRUGradOp::getOutputWeightsInIndex()).getPoplarTensor();
+      getInTensor(GRUGradOp::getRecurrenceWeightsInIndex()).getPoplarTensor();
   weights.biases = getInTensor(GRUGradOp::getBiasesInIndex()).getPoplarTensor();
 
-  auto intermediates  = getInTensor(GRUGradOp::getIntermediatesInIndex());
-  auto forward_input  = getInTensor(GRUGradOp::getInputInIndex());
-  auto forward_output = getInTensor(GRUGradOp::getOutputInIndex());
-
   auto &gru_grad_op   = getOp<GRUGradOp>();
-  auto &gru_op        = gru_grad_op.getForwardOp();
-  auto batch_size     = static_cast<unsigned>(gru_op.getBatchSize());
-  auto hidden_size    = static_cast<unsigned>(gru_op.getHiddenSize());
-  auto seq_length     = static_cast<unsigned>(gru_op.getSeqLength());
-  auto num_directions = static_cast<unsigned>(gru_op.getNumDirections());
+  auto batch_size     = gru_grad_op.batch_size;
+  auto hidden_size    = gru_grad_op.hidden_size;
+  auto max_seq_length = gru_grad_op.max_seq_length;
+  auto num_directions = gru_grad_op.num_directions;
   auto gru_params     = createGRUParams();
 
+  auto intermediates = getInTensor(GRUGradOp::getIntermediatesInIndex());
+  auto forward_input = getInTensor(GRUGradOp::getInputInIndex());
+  // implementation expects that there is no numDirections dimension
+  auto forward_output = getInTensor(GRUGradOp::getFullHiddenStateInIndex())
+                            .reshape({max_seq_length, batch_size, hidden_size});
+
   auto output_grad =
-      snap::Tensor{getInTensor(GRUGradOp::getOutputGradInIndex())
+      snap::Tensor{getInTensor(GRUGradOp::getFullHiddenStateGradInIndex())
                        .getPoplarTensor()
-                       .reshape({seq_length, batch_size, hidden_size}),
+                       .reshape({max_seq_length, batch_size, hidden_size}),
                    graph()};
 
   output_grad = cloneNcopy(prog, output_grad);
 
   auto output_h_grad = getHiddenStateGrad();
 
-  if (gru_op.getLinearBeforeResetAttribute()) {
+  if (gru_grad_op.linear_before_reset_attribute) {
     // poplibs shapes the gradient tensors just like the corresponding
     // weights - need to ensure correct shape here
     weights.biases = weights.biases.reshape({3, 2, hidden_size});
@@ -473,31 +466,31 @@ void GRUGradOpx::grow(snap::program::Sequence &prog) const {
 
   setOutTensor(GRUGradOp::getInputOutIndex(),
                snap::Tensor{input_grad, graph()});
-  setOutTensor(GRUGradOp::getWeightsOutIndex(),
+  setOutTensor(GRUGradOp::getInputWeightsOutIndex(),
                GRUOpx::reshapePoplibWeightsForOnnx(
                    snap::Tensor{weights_grad.inputWeights, graph()}));
-  setOutTensor(GRUGradOp::getRecurrenceOutIndex(),
+  setOutTensor(GRUGradOp::getRecurrenceWeightsOutIndex(),
                GRUOpx::reshapePoplibWeightsForOnnx(
                    snap::Tensor{weights_grad.outputWeights, graph()}));
 
-  if (gru_op.hasBiasInput()) {
+  if (gru_grad_op.hasBiasesInput) {
     auto b_grad = GRUOpx::reshapePoplibBiasesForOnnx(
         snap::Tensor{weights_grad.biases, graph()});
 
-    if (gru_op.getLinearBeforeResetAttribute()) {
+    if (gru_grad_op.linear_before_reset_attribute) {
       // separate gradients for input and hidden bias
       auto b_grad_ = b_grad.reshape({1, 6 * hidden_size});
-      setOutTensor(GRUGradOp::getBiasOutIndex(), b_grad_);
+      setOutTensor(GRUGradOp::getBiasesOutIndex(), b_grad_);
     } else {
       // propagate same gradient to both input and hidden bias
-      setOutTensor(GRUGradOp::getBiasOutIndex(),
+      setOutTensor(GRUGradOp::getBiasesOutIndex(),
                    snap::Tensor{poplar::concat({b_grad.getPoplarTensor(),
                                                 b_grad.getPoplarTensor()},
                                                1),
                                 graph()});
     }
   }
-  if (gru_op.hasInitialHInput()) {
+  if (gru_grad_op.hasInitialHInput) {
     setOutTensor(GRUGradOp::getInitialHOutIndex(),
                  snap::Tensor{init_state_grad.reshape(
                                   {num_directions, batch_size, hidden_size}),
@@ -507,21 +500,19 @@ void GRUGradOpx::grow(snap::program::Sequence &prog) const {
 
 snap::Tensor GRUGradOpx::getHiddenStateGrad() const {
   auto &gru_grad_op = getOp<GRUGradOp>();
-  auto &gru_op      = gru_grad_op.getForwardOp();
 
-  unsigned batch_size  = static_cast<unsigned>(gru_op.getBatchSize());
-  unsigned hidden_size = static_cast<unsigned>(gru_op.getHiddenSize());
+  unsigned batch_size  = static_cast<unsigned>(gru_grad_op.batch_size);
+  unsigned hidden_size = static_cast<unsigned>(gru_grad_op.hidden_size);
 
-  auto elem_type = getInTensor(GRUGradOp::getOutputGradInIndex())
+  auto elem_type = getInTensor(GRUGradOp::getFullHiddenStateGradInIndex())
                        .getPoplarTensor()
                        .elementType();
 
-  if (gru_grad_op.hasHiddenStateGradInput()) {
-    return snap::Tensor{
-        getInTensor(GRUGradOp::getHiddenStateOutputGradInIndex())
-            .getPoplarTensor()
-            .reshape({batch_size, hidden_size}),
-        graph()};
+  if (gru_grad_op.hasLastHiddenStateGradInput()) {
+    return snap::Tensor{getInTensor(GRUGradOp::getLastHiddenStateGradInIndex())
+                            .getPoplarTensor()
+                            .reshape({batch_size, hidden_size}),
+                        graph()};
   } else {
     auto zero =
         getScalarVariable(elem_type, "gru/zero_hidden_state").getPoplarTensor();
@@ -535,8 +526,17 @@ snap::Tensor GRUGradOpx::getHiddenStateGrad() const {
 }
 
 popnn::gru::GruParams GRUGradOpx::createGRUParams() const {
-  auto &gru_grad_op = getOp<GRUGradOp>();
-  return GRUOpx::createGRUParams(gru_grad_op.getForwardOp());
+  auto &gru_grad_op       = getOp<GRUGradOp>();
+  auto in_info            = gru_grad_op.inInfo(GRUOp::getInputInIndex());
+  unsigned max_seq_length = gru_grad_op.max_seq_length;
+  unsigned batch_size     = gru_grad_op.batch_size;
+  unsigned input_size     = gru_grad_op.input_size;
+  unsigned hidden_size    = gru_grad_op.hidden_size;
+
+  auto params = popnn::gru::GruParams(
+      popType(in_info), batch_size, max_seq_length, {input_size, hidden_size});
+  params.resetAfter = gru_grad_op.linear_before_reset_attribute != 0;
+  return params;
 }
 
 namespace {

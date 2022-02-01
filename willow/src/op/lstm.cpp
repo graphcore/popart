@@ -20,8 +20,8 @@ LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
                ActivationFunction recurrent_activation,
                const Op::Settings &settings_,
                const nonstd::optional<float> available_memory_proportion_)
-    : Op(_opid, settings_), hidden_size_attribute(hidden_size),
-      activation(activation), recurrent_activation(recurrent_activation),
+    : BaseOnnxRNNOp(_opid, hidden_size, settings_), activation(activation),
+      recurrent_activation(recurrent_activation),
       available_memory_proportion(available_memory_proportion_) {
   // TODO : Use the output_sequence attribute in version 1
 }
@@ -74,18 +74,10 @@ void LSTMOp::setup() {
   if (input->hasIndex(getPeepholeInIndex())) {
     throw error("Popart does not support peephole connections");
   }
-  int64_t hidden_size = 0;
-  if (!hidden_size_attribute) {
-    hidden_size = inShape(getRecurrenceInIndex())[2];
-  } else if (*hidden_size_attribute != inShape(getRecurrenceInIndex())[2]) {
-    throw error("LSTMOp hidden_size attribute, {}, does not match calculated "
-                "hidden size, {}.",
-                *hidden_size_attribute,
-                inShape(getRecurrenceInIndex())[2]);
-  } else {
-    hidden_size = *hidden_size_attribute;
-  }
 
+  checkHiddenSize();
+
+  int64_t hidden_size = getHiddenSize();
   auto max_seq_length = getMaxSeqLength();
   auto num_directions = getNumDirections();
   auto batch_size     = getBatchSize();
@@ -108,17 +100,17 @@ void LSTMOp::setup() {
 
   Shape y_shape{max_seq_length, num_directions, batch_size, hidden_size};
 
-  trySetOutInfo(getOutputOutIndex(), {data_type, y_shape});
+  trySetOutInfo(getFullHiddenStateOutIndex(), {data_type, y_shape});
 
   Shape yhc_shape{num_directions, batch_size, hidden_size};
-  trySetOutInfo(getHiddenStateOutIndex(), {data_type, yhc_shape});
-  trySetOutInfo(getCellStateOutIndex(), {data_type, yhc_shape});
+  trySetOutInfo(getLastHiddenStateOutIndex(), {data_type, yhc_shape});
+  trySetOutInfo(getLastCellStateOutIndex(), {data_type, yhc_shape});
 
   maybeCreatePassThroughOutput("initstateoutput",
-                               getInitStateOutputPassThroughIndex(),
+                               getInitialHPassThroughIndex(),
                                {data_type, Shape{batch_size, hidden_size}});
   maybeCreatePassThroughOutput("initstatecellstate",
-                               getInitStateCellStatePassThroughIndex(),
+                               getInitialCPassThroughIndex(),
                                {data_type, Shape{batch_size, hidden_size}});
   maybeCreatePassThroughOutput(
       "intermediates",
@@ -129,19 +121,11 @@ void LSTMOp::setup() {
                                getInputWeightsPassThroughIndex(),
                                {data_type, Shape{4, input_size, hidden_size}});
   maybeCreatePassThroughOutput("outputweights",
-                               getOutputWeightsPassThroughIndex(),
+                               getRecurrenceWeightsPassThroughIndex(),
                                {data_type, Shape{4, hidden_size, hidden_size}});
   maybeCreatePassThroughOutput("biases",
                                getBiasesPassThroughIndex(),
                                {data_type, Shape{4, hidden_size}});
-  maybeCreatePassThroughOutput(
-      "input",
-      getInputPassThroughIndex(),
-      {data_type, Shape{max_seq_length, batch_size, input_size}});
-  maybeCreatePassThroughOutput(
-      "output",
-      getOutputPassThroughIndex(),
-      {data_type, Shape{max_seq_length, batch_size, hidden_size}});
 }
 
 void LSTMOp::maybeCreatePassThroughOutput(const TensorId &new_id,
@@ -163,50 +147,27 @@ void LSTMOp::maybeCreatePassThroughOutput(const TensorId &new_id,
 
 unsigned LSTMOp::getNumChannels() const { return 1; }
 
-int64_t LSTMOp::getMaxSeqLength() const {
-  return inShape(getInputInIndex())[0];
-}
-
-int64_t LSTMOp::getBatchSize() const { return inShape(getInputInIndex())[1]; }
-
-int64_t LSTMOp::getInputSize() const { return inShape(getInputInIndex())[2]; }
-
 int64_t LSTMOp::getNumDirections() const { return 1; }
-
-int64_t LSTMOp::getHiddenSize() const {
-  return inShape(getRecurrenceInIndex())[2];
-}
 
 nonstd::optional<float> LSTMOp::getAvailableMemoryProportion() const {
   return available_memory_proportion;
-}
-
-bool LSTMOp::hasBiasInput() const { return input->hasIndex(getBiasInIndex()); }
-
-bool LSTMOp::hasInitialHInput() const {
-  return input->hasIndex(getInitialHInIndex());
 }
 
 bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
 }
 
-bool LSTMOp::hasSeqLenInput() const {
-  return input->hasIndex(getSequenceLensInIndex());
-}
-
 bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
 
 std::set<InIndex> LSTMOp::optionalInputs() const {
-  return {getInitialHInIndex(),
-          getInitialCInIndex(),
-          getSequenceLensInIndex(),
-          getPeepholeInIndex()};
+  auto optionals = BaseOnnxRNNOp::optionalInputs();
+  optionals.insert(getInitialCInIndex());
+  optionals.insert(getPeepholeInIndex());
+  return optionals;
 }
 
 void LSTMOp::appendOutlineAttributes(OpSerialiserBase &os) const {
-  Op::appendOutlineAttributes(os);
-  os.appendAttribute("hidden_size", hidden_size_attribute);
+  BaseOnnxRNNOp::appendOutlineAttributes(os);
   os.appendAttribute("activation", activation);
   os.appendAttribute("recurrent_activation", recurrent_activation);
   os.appendAttribute("available_memory_proportion",
@@ -222,148 +183,99 @@ int LSTMOp::getInBatchAxis(InIndex index) const {
 }
 
 int LSTMOp::getOutBatchAxis(OutIndex index) const {
-  if (index == getOutputOutIndex()) {
+  if (index == getFullHiddenStateOutIndex()) {
     return 2;
-  } else if (index == getHiddenStateOutIndex() ||
-             index == getCellStateOutIndex()) {
+  } else if (index == getLastHiddenStateOutIndex() ||
+             index == getLastCellStateOutIndex()) {
     return 1;
   }
   return 0;
 }
 
-view::Regions LSTMOp::aliases(InIndex in, OutIndex out) const {
-  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
-    return {view::Region::getFull(inShape(in))};
-  } else {
-    return {view::Region::getEmpty(inRank(in))};
-  }
-}
-
-view::RegMap LSTMOp::fwdRegMap(InIndex in, OutIndex out) const {
-  auto emptyRegion = view::Region::getEmpty(outRank(out));
-  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
-    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
-  } else {
-    return [emptyRegion](const view::Region &r) {
-      return view::Regions(1, emptyRegion);
-    };
-  }
-}
-
-view::RegMap LSTMOp::bwdRegMap(InIndex in, OutIndex out) const {
-  auto emptyRegion = view::Region::getEmpty(inRank(in));
-  if (in == getInputInIndex() && out == getInputPassThroughIndex()) {
-    return [emptyRegion](const view::Region &r) { return view::Regions(1, r); };
-  } else {
-    return [emptyRegion](const view::Region &r) {
-      return view::Regions(1, emptyRegion);
-    };
-  }
-}
-
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
-    : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
-      forward_op(fwd_op), inInfo(gradInputInfo(fwd_op)) {}
+    : BaseOnnxRNNGradOp(Onnx::GradOperators::LSTMGrad, fwd_op),
+      hasInitialCInput(fwd_op.hasInitialCInput()),
+      fwd_debug_name(fwd_op.debugName()), activation(fwd_op.getActivation()),
+      recurrent_activation(fwd_op.getRecurrentActivation()),
+      fwdInitialCInInfo(getInitialCInInfo(fwd_op)) {}
+
+nonstd::optional<TensorInfo>
+LSTMGradOp::getInitialCInInfo(const LSTMOp &fwd_op) {
+  if (hasInitialCInput) {
+    return fwd_op.inInfo(LSTMOp::getInitialCInIndex());
+  }
+  return nonstd::nullopt;
+}
 
 std::unique_ptr<Op> LSTMGradOp::clone() const {
   return std::make_unique<LSTMGradOp>(*this);
 }
 
 void LSTMGradOp::setup() {
-  outInfo(getInputOutIndex()) = forward_op.inInfo(LSTMOp::getInputInIndex());
-  outInfo(getWeightsOutIndex()) =
-      forward_op.inInfo(LSTMOp::getWeightsInIndex());
-  outInfo(getRecurrenceOutIndex()) =
-      forward_op.inInfo(LSTMOp::getRecurrenceInIndex());
-
-  if (forward_op.hasBiasInput()) {
-    outInfo(getBiasOutIndex()) = forward_op.inInfo(LSTMOp::getBiasInIndex());
-  }
-  if (forward_op.hasInitialHInput()) {
-    outInfo(getInitialHOutIndex()) =
-        forward_op.inInfo(LSTMOp::getInitialHInIndex());
-  }
-  if (forward_op.hasInitialCInput()) {
-    outInfo(getInitialCOutIndex()) =
-        forward_op.inInfo(LSTMOp::getInitialCInIndex());
+  BaseOnnxRNNGradOp::setup();
+  if (hasInitialCInput) {
+    outInfo(getInitialCOutIndex()) = fwdInitialCInInfo.value();
   }
 }
 
-bool LSTMGradOp::hasCellStateGradInput() const {
-  return input->hasIndex(getCellStateOutputGradInIndex());
-}
-
-bool LSTMGradOp::hasHiddenStateGradInput() const {
-  return input->hasIndex(getHiddenStateOutputGradInIndex());
+bool LSTMGradOp::hasLastCellStateGradInput() const {
+  return input->hasIndex(getLastCellStateGradInIndex());
 }
 
 std::set<InIndex> LSTMGradOp::optionalInputs() const {
-  return {getCellStateOutputGradInIndex(),
-          getHiddenStateOutputGradInIndex(),
+  return {getLastCellStateGradInIndex(),
+          getLastHiddenStateGradInIndex(),
           getSequenceLensInIndex()};
 }
 
-std::vector<GradInOutMapper>
-LSTMGradOp::gradInputInfo(const LSTMOp &forwardOp) {
-  std::vector<GradInOutMapper> result = {
-      {getInitStateOutputInIndex(),
-       LSTMOp::getInitStateOutputPassThroughIndex(),
-       GradOpInType::Out},
-      {getInitStateCellStateInIndex(),
-       LSTMOp::getInitStateCellStatePassThroughIndex(),
-       GradOpInType::Out},
-      {getIntermediatesInIndex(),
-       LSTMOp::getIntermediatesPassThroughIndex(),
-       GradOpInType::Out},
-      {getInputWeightsInIndex(),
-       LSTMOp::getInputWeightsPassThroughIndex(),
-       GradOpInType::Out},
-      {getOutputWeightsInIndex(),
-       LSTMOp::getOutputWeightsPassThroughIndex(),
-       GradOpInType::Out},
-      {getBiasesInIndex(),
-       LSTMOp::getBiasesPassThroughIndex(),
-       GradOpInType::Out},
-      {getInputInIndex(),
-       LSTMOp::getInputPassThroughIndex(),
-       GradOpInType::Out},
-      {getOutputInIndex(),
-       LSTMOp::getOutputPassThroughIndex(),
-       GradOpInType::Out},
-      {getCellStateOutputGradInIndex(),
-       LSTMOp::getCellStateOutIndex(),
-       GradOpInType::GradOut},
-      {getHiddenStateOutputGradInIndex(),
-       LSTMOp::getHiddenStateOutIndex(),
-       GradOpInType::GradOut},
-      {getOutputGradInIndex(),
-       LSTMOp::getOutputOutIndex(),
-       GradOpInType::GradOut}};
-  if (forwardOp.hasSeqLenInput()) {
-    result.push_back({getSequenceLensInIndex(),
-                      LSTMOp::getSequenceLensInIndex(),
-                      GradOpInType::In});
-  }
-  return result;
-}
-
 const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
+  // Initialize LSTM-specific inputs in addition to BaseOnnxRNNGradOp ones
+  static const std::vector<GradInOutMapper> inInfo =
+      [baseInInfo = BaseOnnxRNNGradOp::gradInputInfo()]() mutable {
+        baseInInfo.push_back(
+            {LSTMGradOp::getInitialHInIndex(), // initial_h, provided by user or
+                                               // 0
+             LSTMOp::getInitialHPassThroughIndex(),
+             GradOpInType::Out});
+        baseInInfo.push_back(
+            {LSTMGradOp::getInputWeightsInIndex(), // W, restructured
+             LSTMOp::getInputWeightsPassThroughIndex(),
+             GradOpInType::Out});
+        baseInInfo.push_back(
+            {LSTMGradOp::getRecurrenceWeightsInIndex(), // R, restructured
+             LSTMOp::getRecurrenceWeightsPassThroughIndex(),
+             GradOpInType::Out});
+        baseInInfo.push_back({LSTMGradOp::getBiasesInIndex(), // b, restructured
+                              LSTMOp::getBiasesPassThroughIndex(),
+                              GradOpInType::Out});
+        baseInInfo.push_back(
+            {LSTMGradOp::getIntermediatesInIndex(), // intermediate tensors
+             LSTMOp::getIntermediatesPassThroughIndex(),
+             GradOpInType::Out});
+        baseInInfo.push_back(
+            {LSTMGradOp::getInitialCInIndex(), // initial_c, provided by user or
+                                               // 0
+             LSTMOp::getInitialCPassThroughIndex(),
+             GradOpInType::Out});
+        baseInInfo.push_back(
+            {LSTMGradOp::getLastCellStateGradInIndex(), // d_cell_last
+             LSTMOp::getLastCellStateOutIndex(),
+             GradOpInType::GradOut});
+        return baseInInfo;
+      }();
   return inInfo;
 }
 
 const std::map<int, int> &LSTMGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {getInputOutIndex(), LSTMOp::getInputInIndex()},
-      {getWeightsOutIndex(), LSTMOp::getWeightsInIndex()},
-      {getRecurrenceOutIndex(), LSTMOp::getRecurrenceInIndex()},
-      {getBiasOutIndex(), LSTMOp::getBiasInIndex()},
-      {getInitialHOutIndex(), LSTMOp::getInitialHInIndex()},
-      {getInitialCOutIndex(), LSTMOp::getInitialCInIndex()}};
+  static const std::map<int, int> outInfo =
+      [baseOutInfo = BaseOnnxRNNGradOp::gradOutToNonGradIn()]() mutable {
+        baseOutInfo[LSTMGradOp::getInitialCOutIndex()] =
+            LSTMOp::getInitialCInIndex();
+        return baseOutInfo;
+      }();
 
   return outInfo;
 }
-
-const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 
 PopartLSTMOp::PopartLSTMOp(
     const OperatorIdentifier &opid_,

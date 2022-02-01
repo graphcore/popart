@@ -40,7 +40,7 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
   auto &rnn_op        = getOp<RNNOp>();
   auto activation     = convert(rnn_op.activation_attribute);
   unsigned inputSize  = rnn_op.getInputSize();
-  unsigned seqLen     = rnn_op.getSeqLength();
+  unsigned seqLen     = rnn_op.getMaxSeqLength();
   unsigned hiddenSize = rnn_op.getHiddenSize();
   unsigned batchSize  = rnn_op.getBatchSize();
   const poplar::Type elem_type =
@@ -101,11 +101,12 @@ void RNNOpx::grow(snap::program::Sequence &prog) const {
 
   // set outputs
   snap::Tensor output_last = output[seqLen - 1];
-  if (getOp<RNNOp>().hasOutput(RNNOp::getFullOutputOutIndex())) {
-    setOutTensor(RNNOp::getFullOutputOutIndex(), output);
+  if (getOp<RNNOp>().hasOutput(RNNOp::getFullHiddenStateOutIndex())) {
+    setOutTensor(RNNOp::getFullHiddenStateOutIndex(), output);
   }
-  if (getOp<RNNOp>().hasOutput(RNNOp::getLastOutputOutIndex())) {
-    setOutTensor(RNNOp::getLastOutputOutIndex(), cloneNcopy(prog, output_last));
+  if (getOp<RNNOp>().hasOutput(RNNOp::getLastHiddenStateOutIndex())) {
+    setOutTensor(RNNOp::getLastHiddenStateOutIndex(),
+                 cloneNcopy(prog, output_last));
   }
 }
 
@@ -114,13 +115,13 @@ snap::Tensor RNNOpx::getBias(snap::program::Sequence &prog) const {
   auto &rnn_op         = getOp<RNNOp>();
   unsigned hidden_size = rnn_op.getHiddenSize();
   // default to a 0 tensor if bias not provided by user
-  if (!rnn_op.hasBiasInput()) {
+  if (!rnn_op.hasBiasesInput()) {
     const poplar::Type elem_type =
         popType(rnn_op.inInfo(RNNOp::getInputInIndex()));
     bias = getZerosTensor({1, hidden_size}, elem_type, "rnn/zero_bias");
   } else {
     // ONNX format is [1, 2 * hidden_size]
-    auto bias_input = getInTensor(RNNOp::getBiasInIndex())
+    auto bias_input = getInTensor(RNNOp::getBiasesInIndex())
                           .getPoplarTensor()
                           .reshape({2, 1, hidden_size});
 
@@ -161,19 +162,19 @@ RNNGradOpx::RNNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void RNNGradOpx::grow(snap::program::Sequence &prog) const {
-  auto &rnn_grad_op    = getOp<RNNGradOp>();
-  auto activation      = convert(rnn_grad_op.activation_attribute);
-  unsigned batch_size  = rnn_grad_op.batch_size;
-  unsigned hidden_size = rnn_grad_op.hidden_size;
-  unsigned seq_length  = rnn_grad_op.seq_length;
-  unsigned input_size  = rnn_grad_op.input_size;
+  auto &rnn_grad_op       = getOp<RNNGradOp>();
+  auto activation         = convert(rnn_grad_op.activation_attribute);
+  unsigned batch_size     = rnn_grad_op.batch_size;
+  unsigned hidden_size    = rnn_grad_op.hidden_size;
+  unsigned max_seq_length = rnn_grad_op.max_seq_length;
+  unsigned input_size     = rnn_grad_op.input_size;
   const poplar::Type elem_type =
       popType(rnn_grad_op.inInfo(RNNGradOp::getInputInIndex()));
   // get input tensors of forward op
   poplar::Tensor forward_input =
       getInTensor(RNNGradOp::getInputInIndex()).getPoplarTensor();
   poplar::Tensor forward_output =
-      getInTensor(RNNGradOp::getFullOutputInIndex()).getPoplarTensor();
+      getInTensor(RNNGradOp::getFullHiddenStateInIndex()).getPoplarTensor();
   poplar::Tensor R =
       getInTensor(RNNGradOp::getRecurrenceWeightsInIndex()).getPoplarTensor();
   poplar::Tensor W =
@@ -220,7 +221,7 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
   // are identical.
   snap::Tensor bias_grad;
   // no need to initialize the grad tensor if we won't use it
-  if (rnn_grad_op.hasBiasInput) {
+  if (rnn_grad_op.hasBiasesInput) {
     // initialize bias_grad tensor
     // Tensor has size of a single bias element, not both
     bias_grad = cloneNcopy(
@@ -258,14 +259,14 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
   //   da[i+1]/dR = h[i]
 
   // set last layer of dh
-  prog.add(snap::program::Copy(output_full_grad[seq_length - 1],
-                               dh[seq_length - 1],
+  prog.add(snap::program::Copy(output_full_grad[max_seq_length - 1],
+                               dh[max_seq_length - 1],
                                false,
                                debugContext("rnngrad/copy_dh_last")));
 
   // Calculate all subsequent layers of dh backwards
   // This unrolls all but the first iteration, as the first one uses initial_H
-  for (int i = seq_length - 1; i >= 0; i--) {
+  for (int i = max_seq_length - 1; i >= 0; i--) {
     for (int j = 0; j < batch_size; j++) {
       // Gradient back through nonlinearity
       snap::Tensor da = snap::Tensor{
@@ -356,7 +357,7 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
           prog,
           debugContext("rnngrad/addTo_recurrence_weights_grad"));
 
-      if (rnn_grad_op.hasBiasInput) {
+      if (rnn_grad_op.hasBiasesInput) {
         // bias_grad[0] += da
         snap::popops::addInPlace(graph(),
                                  bias_grad[0], // hidden_size
@@ -378,9 +379,9 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
                recurrence_weights_grad);
 
   // set biases gradient
-  if (rnn_grad_op.hasBiasInput) {
+  if (rnn_grad_op.hasBiasesInput) {
     // propagate same gradient to both input and hidden bias
-    setOutTensor(RNNGradOp::getBiasOutIndex(), bias_grad.broadcast(2, 1));
+    setOutTensor(RNNGradOp::getBiasesOutIndex(), bias_grad.broadcast(2, 1));
   }
 
   // set initialH gradient
@@ -392,8 +393,8 @@ void RNNGradOpx::grow(snap::program::Sequence &prog) const {
 snap::Tensor
 RNNGradOpx::getLastOutputGrad(snap::program::Sequence &prog) const {
   auto &rnn_grad_op = getOp<RNNGradOp>();
-  if (rnn_grad_op.hasLastOutputGradInput()) {
-    return getInTensor(RNNGradOp::getLastOutputGradInIndex());
+  if (rnn_grad_op.hasLastHiddenStateGradInput()) {
+    return getInTensor(RNNGradOp::getLastHiddenStateGradInIndex());
   } else {
     unsigned batch_size  = rnn_grad_op.batch_size;
     unsigned hidden_size = rnn_grad_op.hidden_size;
@@ -409,20 +410,22 @@ RNNGradOpx::getLastOutputGrad(snap::program::Sequence &prog) const {
 snap::Tensor
 RNNGradOpx::getFullOutputGrad(snap::program::Sequence &prog) const {
   auto &rnn_grad_op = getOp<RNNGradOp>();
-  if (rnn_grad_op.hasFullOutputGradInput()) {
-    auto output_full_grad = getInTensor(RNNGradOp::getFullOutputGradInIndex());
+  if (rnn_grad_op.hasFullHiddenStateGradInput()) {
+    auto output_full_grad =
+        getInTensor(RNNGradOp::getFullHiddenStateGradInIndex());
     return cloneNcopy(prog, output_full_grad);
   } else {
     const poplar::Type elem_type =
         popType(rnn_grad_op.inInfo(RNNGradOp::getInputInIndex()));
-    unsigned batch_size  = rnn_grad_op.batch_size;
-    unsigned hidden_size = rnn_grad_op.hidden_size;
-    unsigned seq_length  = rnn_grad_op.seq_length;
+    unsigned batch_size     = rnn_grad_op.batch_size;
+    unsigned hidden_size    = rnn_grad_op.hidden_size;
+    unsigned max_seq_length = rnn_grad_op.max_seq_length;
 
-    return cloneNcopy(prog,
-                      getZerosTensor({seq_length, 1, batch_size, hidden_size},
-                                     elem_type,
-                                     "rnngrad/zero_getFullOutputGrad"));
+    return cloneNcopy(
+        prog,
+        getZerosTensor({max_seq_length, 1, batch_size, hidden_size},
+                       elem_type,
+                       "rnngrad/zero_getFullOutputGrad"));
   }
 }
 

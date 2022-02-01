@@ -22,7 +22,6 @@ public:
                     const poplar::DebugNameAndId &dnai) const final;
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
-  static popnn::gru::GruParams createGRUParams(const GRUOp &);
   static snap::Tensor reshapePoplibWeightsForOnnx(snap::Tensor);
   static snap::Tensor reshapePoplibBiasesForOnnx(snap::Tensor);
 

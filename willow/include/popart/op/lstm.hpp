@@ -5,12 +5,18 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/lstmutil.hpp>
+#include <popart/op/rnnbase.hpp>
 
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
 
-class LSTMOp : public Op {
+/**
+ * This op applies a single-layer LSTM with a non-linearity to a batch of
+ * input sequences. The op follows the ONNX specification described in
+ * https://github.com/onnx/onnx/blob/main/docs/Operators.md#LSTM
+ */
+class LSTMOp : public BaseOnnxRNNOp {
 public:
   LSTMOp(const OperatorIdentifier &_opid,
          nonstd::optional<int64_t> hidden_size,
@@ -23,18 +29,11 @@ public:
   void setup() final;
 
   unsigned getNumChannels() const;
-
-  int64_t getMaxSeqLength() const;
-  int64_t getBatchSize() const;
-  int64_t getInputSize() const;
   int64_t getNumDirections() const;
-  int64_t getHiddenSize() const;
+
   nonstd::optional<float> getAvailableMemoryProportion() const;
 
-  bool hasBiasInput() const;
-  bool hasInitialHInput() const;
   bool hasInitialCInput() const;
-  bool hasSeqLenInput() const;
   bool hasOutput(OutIndex) const;
 
   std::set<InIndex> optionalInputs() const final;
@@ -43,42 +42,34 @@ public:
 
   bool isTraining() const;
 
-  static InIndex getInputInIndex() { return 0; }
-  static InIndex getWeightsInIndex() { return 1; }
-  static InIndex getRecurrenceInIndex() { return 2; }
-  static InIndex getBiasInIndex() { return 3; }
-  static InIndex getSequenceLensInIndex() { return 4; }
-  static InIndex getInitialHInIndex() { return 5; }
+  // inputs 0-5 defined in BaseOnnxRNNOp
   static InIndex getInitialCInIndex() { return 6; }
   static InIndex getPeepholeInIndex() { return 7; }
 
-  static OutIndex getOutputOutIndex() { return 0; }
-  static OutIndex getHiddenStateOutIndex() { return 1; }
-  static OutIndex getCellStateOutIndex() { return 2; }
+  // outputs 0-1 defined in BaseOnnxRNNOp
+  static OutIndex getLastCellStateOutIndex() { return 2; }
 
-  static OutIndex getInitStateOutputPassThroughIndex() { return 3; }
-  static OutIndex getInitStateCellStatePassThroughIndex() { return 4; }
+  // set to 0 if not provided by user
+  static OutIndex getInitialHPassThroughIndex() { return 3; }
+  // set to 0 if not provided by user
+  static OutIndex getInitialCPassThroughIndex() { return 4; }
+  // intermediate values needed to calculate the grad
   static OutIndex getIntermediatesPassThroughIndex() { return 5; }
+  // restructured input weights to be used with poplar implementation
   static OutIndex getInputWeightsPassThroughIndex() { return 6; }
-  static OutIndex getOutputWeightsPassThroughIndex() { return 7; }
+  // restructured recurrence weights to be used with poplar implementation
+  static OutIndex getRecurrenceWeightsPassThroughIndex() { return 7; }
+  // restructured biases to be used with poplar implementation
+  // also they are set to 0 if not provided by user
   static OutIndex getBiasesPassThroughIndex() { return 8; }
-  static OutIndex getInputPassThroughIndex() { return 9; }
-  static OutIndex getOutputPassThroughIndex() { return 10; }
 
   // T7504
   bool isOutlineable() const override { return false; }
 
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
-
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;
 
-  view::Regions aliases(InIndex, OutIndex) const final;
-  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
-
-  view::RegMap fwdRegMap(InIndex, OutIndex) const final;
-  view::RegMap bwdRegMap(InIndex, OutIndex) const final;
-
+  // getters for attributes
   ActivationFunction getActivation() const { return activation; }
   ActivationFunction getRecurrentActivation() const {
     return recurrent_activation;
@@ -93,15 +84,16 @@ private:
   int64_t getNumIntermediates() const;
   void trySetOutInfo(OutIndex, const TensorInfo &);
 
-  nonstd::optional<int64_t> hidden_size_attribute;
-
   ActivationFunction activation;
   ActivationFunction recurrent_activation;
 
   nonstd::optional<float> available_memory_proportion;
 };
 
-class LSTMGradOp : public Op {
+/**
+ * Gradient operator for LSTM op
+ */
+class LSTMGradOp : public BaseOnnxRNNGradOp {
 public:
   LSTMGradOp(const LSTMOp &);
   std::unique_ptr<Op> clone() const final;
@@ -109,46 +101,30 @@ public:
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-  const LSTMOp &getForwardOp() const;
 
-  bool hasCellStateGradInput() const;
-  bool hasHiddenStateGradInput() const;
+  bool hasLastCellStateGradInput() const;
 
   std::set<InIndex> optionalInputs() const final;
 
-  static InIndex getInitStateOutputInIndex() { return 0; }
-  static InIndex getInitStateCellStateInIndex() { return 1; }
-  static InIndex getIntermediatesInIndex() { return 2; }
-  static InIndex getInputWeightsInIndex() { return 3; }
-  static InIndex getOutputWeightsInIndex() { return 4; }
-  static InIndex getBiasesInIndex() { return 5; }
-  static InIndex getInputInIndex() { return 6; }
-  static InIndex getOutputInIndex() { return 7; }
-  static InIndex getSequenceLensInIndex() { return 8; }
+  // inputs 0-8 defined in BaseOnnxRNNGradOp
+  static InIndex getInitialCInIndex() { return 9; }
+  static InIndex getIntermediatesInIndex() { return 10; }
+  static InIndex getLastCellStateGradInIndex() { return 11; }
 
-  static InIndex getCellStateOutputGradInIndex() { return 9; }
-  static InIndex getHiddenStateOutputGradInIndex() { return 10; }
-  static InIndex getOutputGradInIndex() { return 11; }
-
-  static OutIndex getInputOutIndex() { return 0; }
-  static OutIndex getWeightsOutIndex() { return 1; }
-  static OutIndex getRecurrenceOutIndex() { return 2; }
-  static OutIndex getBiasOutIndex() { return 3; }
-  static OutIndex getInitialHOutIndex() { return 4; }
+  // outputs 0-4 are defined in BaseOnnxRNNGradOp
   static OutIndex getInitialCOutIndex() { return 5; }
 
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+  const bool hasInitialCInput;
+  const std::string fwd_debug_name;
+  const ActivationFunction activation;
+  const ActivationFunction recurrent_activation;
 
 private:
-  const LSTMOp &forward_op;
+  // used to initialize fwdInitialCInInfo
+  nonstd::optional<TensorInfo> getInitialCInInfo(const LSTMOp &fwd_op);
 
-  // This is usually a static variable in the method `gradInputInfo`, but for
-  // this op `inInfo` can change depending on the result of
-  // `getForwardOp()->hasSeqLenInput()`.
-  const std::vector<GradInOutMapper> inInfo;
-  // This static method allows us to calculate `inInfo` during member
-  // initialization, and then `inInfo` may be marked `const`.
-  static std::vector<GradInOutMapper> gradInputInfo(const LSTMOp &forwardOp);
+  // used to set inInfo for InitialC
+  const nonstd::optional<TensorInfo> fwdInitialCInInfo;
 };
 
 // LSTM op that more closely resembles the poplar lstm.
@@ -235,6 +211,9 @@ private:
   nonstd::optional<float> available_memory_proportion;
 };
 
+/**
+ * Gradient operator for PopartLSTMOp
+ */
 class PopartLSTMGradOp : public Op {
 public:
   PopartLSTMGradOp(const PopartLSTMOp &);
@@ -246,7 +225,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
-  const PopartLSTMOp &getForwardOp() const;
 
   std::set<InIndex> optionalInputs() const final;
 

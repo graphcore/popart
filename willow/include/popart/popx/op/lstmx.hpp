@@ -26,8 +26,7 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static snap::Tensor reshapePoplibWeightsForOnnx(snap::Tensor, bool transpose);
-  static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &,
-                                                  const snap::Tensor &);
+  popnn::lstm::LstmParams createLSTMParams() const;
 
 private:
   void growBias(snap::program::Sequence &) const;
@@ -57,6 +56,7 @@ private:
   snap::Tensor getCellStateGrad() const;
   snap::Tensor getHiddenStateGrad() const;
   snap::Tensor getSeqLens() const;
+  popnn::lstm::LstmParams createLSTMParams() const;
 };
 
 } // namespace popx
