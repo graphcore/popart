@@ -135,11 +135,16 @@ public:
   // Size of single RNG state in bytes
   static const unsigned rngStateSizePerWorker = 4;
 
-private:
+protected:
+  // Helper function to create a tensor to hold the inacive RNG state.
+  static snap::Tensor createRNGStateTensor(snap::Graph &graph,
+                                           const std::string &name);
+
   // Helper function to ensure our tensors have a layout that prevents
   // unnecessary exchanges.
-  void setTensorLayout(snap::Tensor &tensor);
+  static void layoutRNGStateTensor(snap::Graph &graph, snap::Tensor &tensor);
 
+private:
   // Helper function for calling `setHwSeeds` with `rngState`.
   virtual void lowerSetHwSeeds(snap::program::Sequence &seq,
                                snap::Tensor &rngState,

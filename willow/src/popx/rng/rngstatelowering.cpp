@@ -23,22 +23,16 @@ RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
 
   // Create the PRNG state tensor tensors.
   // Create tensor to hold the inacive RNG state.
-  std::vector<size_t> rngStateTensorShape{
-      getNumTiles(), getNumWorkersPerTile(), rngStateSizePerWorker};
   differingSeedsRngStateTensor =
-      graph.get().addVariable(poplar::UNSIGNED_INT,
-                              rngStateTensorShape,
-                              {"differingSeedsRngStateTensor"});
+      createRNGStateTensor(graph.get(), "differingSeedsRngStateTensor");
   // Layout tensor carefully to avoid exchanges.
-  setTensorLayout(differingSeedsRngStateTensor);
+  layoutRNGStateTensor(graph.get(), differingSeedsRngStateTensor);
 
   // Create tensor to hold the inacive RNG state.
   identicalSeedsRngStateTensor =
-      graph.get().addVariable(poplar::UNSIGNED_INT,
-                              rngStateTensorShape,
-                              {"identicalSeedsRngStateTensor"});
+      createRNGStateTensor(graph.get(), "identicalSeedsRngStateTensor");
   // Layout tensor carefully to avoid exchanges.
-  setTensorLayout(identicalSeedsRngStateTensor);
+  layoutRNGStateTensor(graph.get(), identicalSeedsRngStateTensor);
 }
 
 RngStateLowering::~RngStateLowering() = default;
@@ -135,15 +129,24 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
   }
 }
 
-void RngStateLowering::setTensorLayout(snap::Tensor &tensor) {
+snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
+                                                    const std::string &name) {
+  auto &target = graph.getTarget();
+  std::vector<size_t> rngStateTensorShape{target.getNumTiles(),
+                                          target.getNumWorkerContexts(),
+                                          rngStateSizePerWorker};
+  return graph.addVariable(poplar::UNSIGNED_INT, rngStateTensorShape, {name});
+}
 
-  auto numTiles = graph.get().getTarget().getNumTiles();
-  if (tensor.rank() >= 1 && tensor.shape()[0] == numTiles) {
+void RngStateLowering::layoutRNGStateTensor(snap::Graph &graph,
+                                            snap::Tensor &tensor) {
+
+  auto numTiles = graph.getTarget().getNumTiles();
+  if (tensor.rank() >= 1 && tensor.dim(0) == numTiles) {
 
     for (auto tile = 0U; tile != numTiles; ++tile) {
       auto slice = tensor.slice({tile, tile + 1}, 0);
-      graph.get().getPoplarGraph().setTileMapping(slice.getPoplarTensor(),
-                                                  tile);
+      graph.getPoplarGraph().setTileMapping(slice.getPoplarTensor(), tile);
     }
 
   } else {
