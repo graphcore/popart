@@ -87,3 +87,72 @@ def test_subgraph():
         call_info, grads_with_info)
     assert all(t.shape == g.shape for t, g in grad_tensor_map.items())
     assert all('ScaleNShift' not in t.id for t, g in grad_tensor_map.items())
+
+
+def test_non_required_grads():
+    """This is a test to show that if you don't require the gradients for `gamma` and `beta`,
+        the output of the autodiff subgraph shouldn't include them.
+
+    However previously, autodiff didn't even add them to the Grad Op, causing a map::at error."""
+    import popart
+
+    ir = pir.Ir()
+    main = ir.main_graph()
+
+    def fwd(x, gamma, beta):
+        return ops.group_norm(x, gamma, beta, 1)
+
+    with main:
+        x = pir.variable(np.random.normal(0, 0.02, (4, 16)), pir.float32)
+        gamma = pir.variable(np.ones((16, )), pir.float32, name="gamma")
+        beta = pir.variable(np.zeros((16, )), pir.float32, name="beta")
+
+        fwd_graph = ir.create_graph(fwd, x, gamma, beta)
+        grads_required = fwd_graph.get_input_tensors()[:1]
+        # Note only 1 tensor here.
+        print(grads_required)
+        grad_info = pir.transforms.autodiff(fwd_graph,
+                                            grads_required=grads_required)
+
+        fwd_info = ops.call_with_info(fwd_graph, x, gamma, beta)
+        dx = ops.call(grad_info.graph,
+                      pir.constant(np.ones((4, 16)), pir.float32),
+                      subgraph_in_to_parent_in=grad_info.
+                      get_inputs_from_forward_call_info(fwd_info))
+
+    grad_ops = grad_info.graph._pb_graph.getOps()
+    group_norm_grad = None
+    for op in grad_ops:
+        if op.opType() == "GroupNormalizationGrad":
+            group_norm_grad = op
+            break
+    assert group_norm_grad
+
+    dataFlow = popart.DataFlow(batchesPerStep=1, anchorTensors={})
+
+    _ir = ir._pb_ir
+    _ir.setDataFlow(dataFlow)
+
+    opts = ir._pb_ir.getSessionOptions()
+    opts.constantWeights = False
+    opts.useHostCopyOps = True
+    opts.enableExplicitMainLoops = True
+    opts.aliasZeroCopy = True
+    opts.explicitRecomputation = True
+
+    _ir.removeIsolatedGraphs()
+    _ir.removeIsolatedTensors(True)
+
+    for g in _ir.getAllGraphs():
+        _ir.applyPreAliasPatterns(g)
+
+    _ir.updateVertices()
+    _ir.logIr()
+
+    device = popart.DeviceManager().createIpuModelDevice({"numIPUs": 1})
+
+    session = popart.InferenceSession.fromIr(ir=_ir, deviceInfo=device)
+    session.prepareDevice()
+
+    # This grad op should have 3 outputs, not 1.
+    assert len(group_norm_grad.getOutputTensors()) == 3
