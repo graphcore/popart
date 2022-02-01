@@ -41,9 +41,7 @@ TensorId gemm(Builder *builder, TensorId ip, TensorId w0, TensorId b0) {
                            "CustomGEMM")[0];
 }
 
-// TODO T53563 re-enable
-BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case,
-                     *boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case) {
 
   // Build the following three layered NN:
   // (in0) -> [GEMM0] -> [GEMM1] -> [GEMM2] -> (out)
@@ -57,11 +55,11 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case,
     TensorInfo wshape{"FLOAT", std::vector<int64_t>{10, 10}};
     TensorInfo bshape{"FLOAT", std::vector<int64_t>{10, 1}};
 
-    std::vector<float> ones(1.0f, 1.0f);
+    std::vector<float> ones(100, 1.0f);
     ConstVoidData ones_data = {ones.data(), wshape};
 
-    std::vector<float> zeros(0.0f, 1);
-    ConstVoidData zeros_data = {ones.data(), bshape};
+    std::vector<float> zeros(10, 0.0f);
+    ConstVoidData zeros_data = {zeros.data(), bshape};
 
     auto ip0 = builder->addInputTensor(wshape);
 
@@ -119,8 +117,8 @@ BOOST_AUTO_TEST_CASE(ExplicitRecomputation_Case,
         }
       } else {
         // All Forward pass Ops must have recomputeType set to Recompute
-        // if explicit recomputation is turned off and path is not from loss
-        if (op->fromLoss == PathFromLoss::No) {
+        // if explicit recomputation is turned off and path is to the loss
+        if (op->toLoss == PathToLoss::Yes) {
           BOOST_CHECK(op->settings.recomputeType == RecomputeType::Recompute);
         }
 
