@@ -52,7 +52,7 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
-  bool isOutlineable() const final { return true; };
+  bool isOutlineable() const final { return true; }
 
 private:
   TensorRemapType remap_type;
