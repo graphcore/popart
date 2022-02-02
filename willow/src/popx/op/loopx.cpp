@@ -63,7 +63,7 @@ std::vector<snap::Tensor> LoopOpx::cloneBodyOutputs() const {
   for (auto outId : subgraph.getOutputIds()) {
     auto bodyOutputTensor = get(outId);
     auto clonedBodyOutputTensor =
-        graph().clone(bodyOutputTensor, debugContext(outId));
+        graph().clone(bodyOutputTensor, debugContext(outId + "_tmpClone"));
     tensors.push_back(clonedBodyOutputTensor);
   }
   return tensors;

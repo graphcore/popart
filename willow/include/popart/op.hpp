@@ -549,13 +549,21 @@ public:
    */
   bool modifiesIndex(InIndex in) const;
 
-  /** Check if an op overwrites a tensor at a specific index in.
+  /** Check if an op overwrites a tensor.
    *
    * \param t     Tensor to check.
    * \returns     True if it overwrites the tensor,
    *              false otherwise.
    */
   bool overwritesTensor(Tensor *t) const;
+
+  /** Check if an op modifies a tensor.
+   *
+   * \param t     Tensor to check.
+   * \returns     True if it modifies the tensor,
+   *              false otherwise.
+   */
+  bool modifiesTensor(Tensor *t) const;
 
   /**
    * Is this op a view changing op? E.g. does it not modify it's input, and is

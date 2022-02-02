@@ -153,7 +153,9 @@ private:
   void insertAlias(Tensor *ta, Tensor *tb);
 
   // Find the liveness start of a consumed tensor
-  int64_t findStart(Tensor *consumedTensor, int64_t scheduleIndex) const;
+  int64_t findStart(Tensor *consumedTensor,
+                    int64_t scheduleIndex,
+                    bool crossContextTensor) const;
 
   bool checkCandidatesCompatible(Tensor *ta, Tensor *tb);
 

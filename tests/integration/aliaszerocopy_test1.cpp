@@ -127,13 +127,18 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   // Check alias zero copy
   // Expected output:
   // 11111121112111
-  // ************** (A)
-  // ************** (B)
+  // ______________ (A)
+  // **___*___*____ (B)
   // ______________ (C)
   // ************** (D)
-  // ************** (loop_subgraph(0)/A)
-  // _____*___*____ (loop_subgraph(0)/B)
+  // ______________ (loop_subgraph(0)/A)
+  // **___*___*____ (loop_subgraph(0)/B)
   // __***_***_**__ (loop_subgraph(0)/D)
+  //
+  // B -> loop_subgraph(0)/B alias
+  // C, loop_subgraph(0)/A, A are never read
+  // loop_subgraph(0)/D is loop_subgraph(0)/B + loop_subgraph(0)/B
+  // D is an anchored tensor and conservatively kept always live
 
   zeroCopy.printLivenessIntervals(
       {
@@ -150,7 +155,10 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   Intervals refFull;
   refFull.insert(0, 14);
 
+  Intervals refEmpty;
+
   Intervals refStbId;
+  refStbId.insert(0, 2);
   refStbId.insert(5, 6);
   refStbId.insert(9, 10);
 
@@ -160,11 +168,11 @@ BOOST_AUTO_TEST_CASE(AliasZeroCopyLoopTest0) {
   refStdId.insert(10, 12);
 
   BOOST_CHECK_EQUAL(zeroCopy.getCandidateLivenessIntervals(ir.getTensor(taId)),
-                    refFull);
+                    refEmpty);
   BOOST_CHECK(
       zeroCopy.getCandidateLivenessIntervals(ir.getTensor(tcId)).empty());
   BOOST_CHECK_EQUAL(zeroCopy.getCandidateLivenessIntervals(ir.getTensor(staId)),
-                    refFull);
+                    refEmpty);
   BOOST_CHECK_EQUAL(zeroCopy.getCandidateLivenessIntervals(ir.getTensor(stbId)),
                     refStbId);
   BOOST_CHECK_EQUAL(zeroCopy.getCandidateLivenessIntervals(ir.getTensor(stdId)),

@@ -17,6 +17,8 @@ class SubgraphOp;
 
 namespace liveness {
 
+ExecutionContext sanitizeExecutionContext(ExecutionContext context);
+
 class SubgraphCopyingStrategy;
 
 // A vector of Op*s comprising a call stack.
@@ -83,6 +85,18 @@ public:
 
   // If the operation consumes t
   bool isConsumerOf(Tensor *t) const;
+
+  // If the operation overwrites t
+  bool overwritesTensor(Tensor *t) const;
+
+  // If the operation modifies t
+  bool modifiesTensor(Tensor *t) const;
+
+  // Get the underlying, sanitized execution context
+  ExecutionContext getExecutionContext() const {
+    auto executionContext = callStack.back()->settings.executionContext;
+    return sanitizeExecutionContext(executionContext);
+  }
 
 private:
   void setUsedTensorIds();
@@ -178,6 +192,12 @@ public:
     return graphCallSiteOps.at(id);
   }
 
+  // Get the start position of a context, returns -1 if not found
+  int64_t getContextStartIndex(ExecutionContext context) const;
+
+  // Get the end position of a context, returns -1 if not found
+  int64_t getContextEndIndex(ExecutionContext context) const;
+
 private:
   // Global schedule including all subgraphs recursively
   void addToSchedule(const Graph *graphToAdd,
@@ -233,6 +253,10 @@ private:
 
   // Map of all ops that call the graph referred to by GraphId
   std::map<GraphId, std::vector<Op *>> graphCallSiteOps;
+
+  // Map of the context starts and ends
+  std::map<ExecutionContext, int64_t> contextStarts;
+  std::map<ExecutionContext, int64_t> contextEnds;
 };
 
 } // namespace liveness

@@ -72,9 +72,12 @@ InitTensorAliasing::InitTensorAliasing(
       srcId(srcId_) {}
 
 bool InitTensorAliasing::initTensor(IrLowering &irLowering) const {
-  logging::debug("Aliasing tensor {} to {}", srcId, getDstId());
-  irLowering.tensors().insertAliased(getDstId(), getSrcId());
-  return true;
+  if (irLowering.tensors().canAlias(getSrcId(), requireParallelWritable)) {
+    logging::debug("Aliasing tensor {} to {}", srcId, getDstId());
+    irLowering.tensors().insertAliased(getDstId(), getSrcId());
+    return true;
+  }
+  return false;
 }
 
 InitTensorPostIrAliasing::InitTensorPostIrAliasing(

@@ -15,6 +15,11 @@
 namespace popart {
 namespace liveness {
 
+ExecutionContext sanitizeExecutionContext(ExecutionContext context) {
+  return context == ExecutionContext::Subgraph ? ExecutionContext::Normal
+                                               : context;
+}
+
 LivenessNode::LivenessNode(const OpStatus status_,
                            int index_,
                            SubgraphIndex subgraphIndex_,
@@ -320,6 +325,64 @@ bool LivenessNode::isConsumerOf(Tensor *t) const {
   }
 }
 
+// If the operation overwrites t
+bool LivenessNode::overwritesTensor(Tensor *t) const {
+  auto op = getOp();
+
+  switch (status) {
+  case OpStatus::CopyInput: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyLoopCarried: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyModified: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyOutput: {
+    return isProducerOf(t);
+  }
+  case OpStatus::Normal: {
+    return op->overwritesTensor(t);
+  }
+  case OpStatus::Enter: {
+    return isProducerOf(t);
+  }
+  default: {
+    return false;
+  }
+  }
+}
+
+// If the operation modifies t
+bool LivenessNode::modifiesTensor(Tensor *t) const {
+  auto op = getOp();
+
+  switch (status) {
+  case OpStatus::CopyInput: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyLoopCarried: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyModified: {
+    return isProducerOf(t);
+  }
+  case OpStatus::CopyOutput: {
+    return isProducerOf(t);
+  }
+  case OpStatus::Normal: {
+    return op->modifiesTensor(t);
+  }
+  case OpStatus::Enter: {
+    return isProducerOf(t);
+  }
+  default: {
+    return false;
+  }
+  }
+}
+
 LivenessAnalyzer::LivenessAnalyzer(
     const Ir *ir_,
     const SubgraphCopyingStrategy *subgraphCopyingStrat_)
@@ -338,6 +401,11 @@ void LivenessAnalyzer::apply() {
   PendingCopies pendingCopies;
   addToSchedule(&(ir->getMainGraph()), false, {}, pendingCopies);
 
+  if (!pendingCopies.empty()) {
+    throw error("{} pending copies were not added, IR is inconsistent",
+                pendingCopies.size());
+  }
+
   for (int64_t i = 0; i < opSchedule.size(); ++i) {
     for (TensorId tensorId : opSchedule.at(i).usedTensorIds()) {
       tensorScheduleMap[tensorId].push_back(i);
@@ -346,10 +414,51 @@ void LivenessAnalyzer::apply() {
 
   // Log the global schedule.
   logging::devicex::trace("[LivenessAnalyzer] Global schedule:");
-  size_t i = 0;
-  for (const auto &node : opSchedule) {
-    logging::devicex::trace("[LivenessAnalyzer] #{}: {}", i++, node);
+  nonstd::optional<ExecutionContext> context;
+  for (size_t i = 0; i < opSchedule.size(); ++i) {
+    const auto &node = opSchedule.at(i);
+    auto currentContext =
+        sanitizeExecutionContext(node.getOp()->settings.executionContext);
+    if (!context.has_value() || currentContext != context) {
+      if (context.has_value()) {
+        contextEnds[context.value()] = std::max<size_t>(0, i - 1);
+      }
+      contextStarts[currentContext] = std::min<size_t>(opSchedule.size(), i);
+      context                       = currentContext;
+    }
+    logging::devicex::trace(
+        "[LivenessAnalyzer] #{}: {} context: {}", i, node, currentContext);
   }
+  if (context.has_value()) {
+    contextEnds[context.value()] = std::max<size_t>(0, opSchedule.size() - 1);
+  }
+
+  // Log context starts/ends
+  logging::devicex::trace("[LivenessAnalyzer] Context starts/ends:");
+  for (ExecutionContext context : std::vector<ExecutionContext>{
+           ExecutionContext::WeightsFromHostFragment,
+           ExecutionContext::OptimizerFromHostFragment,
+           ExecutionContext::Normal,
+           ExecutionContext::WeightsToHostFragment}) {
+    logging::trace("[LivenessAnalyzer] Context: {}, start: {}, end: {}",
+                   context,
+                   getContextStartIndex(context),
+                   getContextEndIndex(context));
+  }
+}
+
+// Get the start position of a context
+int64_t LivenessAnalyzer::getContextStartIndex(ExecutionContext context) const {
+  // Treats `Subgraph` and `Normal` the same
+  auto it = contextStarts.find(sanitizeExecutionContext(context));
+  return it == contextStarts.end() ? -1 : it->second;
+}
+
+// Get the end position of a context
+int64_t LivenessAnalyzer::getContextEndIndex(ExecutionContext context) const {
+  // Treats `Subgraph` and `Normal` the same
+  auto it = contextEnds.find(sanitizeExecutionContext(context));
+  return it == contextEnds.end() ? -1 : it->second;
 }
 
 void LivenessAnalyzer::addCopiesToPending(const Graph *subgraph,

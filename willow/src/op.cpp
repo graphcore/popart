@@ -1366,6 +1366,22 @@ bool Op::overwritesTensor(Tensor *t) const {
   return overwrite;
 }
 
+bool Op::modifiesTensor(Tensor *t) const {
+  auto consumers = t->consumers.getOps();
+  if (std::find(consumers.begin(), consumers.end(), this) == consumers.end()) {
+    return false;
+  }
+
+  auto indices = input->indices(t);
+
+  for (auto index : indices) {
+    if (modifiesIndex(index)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Op::inputsUnmodifiable() const {
   for (auto &in : input->tensorIdMap()) {
     if (inputUnmodifiable(in.first)) {

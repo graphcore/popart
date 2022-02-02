@@ -53,6 +53,9 @@ PreparedTensorInfos SubgraphOpx::getOutputsToPrepare() const {
       prepOutId = subgraphop.getCalledGraph().getOutputIds().at(sgOutIdx);
     }
 
+    // Note that this type of aliasing will alias the Op input to the Op output
+    // Can still fall back to outplace if initializing the tensor by aliasing
+    // fails
     bool aliased = false;
     for (auto &input : subgraphop.input->tensorMap()) {
       InIndex inIdx = input.first;

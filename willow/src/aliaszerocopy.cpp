@@ -287,6 +287,9 @@ void AliasZeroCopy::apply() {
     }
   }
 
+  printLivenessIntervals(getTensorsWithPostIRAliases(),
+                         ProducerInterval::Enforce);
+
   logPostIRAliases();
 
   logging::devicex::debug("[AliasZeroCopy] Done.");
@@ -324,11 +327,13 @@ void AliasZeroCopy::disableDeadCodeNodes() {
                             pass);
     ++pass;
     changed = false;
-    for (int64_t i = analyzer->getOpScheduleSize() - 1; i >= 0; --i) {
-      auto &node = analyzer->getOpScheduleAt(i);
+    for (int64_t currentScheduleIndex = analyzer->getOpScheduleSize() - 1;
+         currentScheduleIndex >= 0;
+         --currentScheduleIndex) {
+      auto &node = analyzer->getOpScheduleAt(currentScheduleIndex);
       // Probing: Does the tensor need to be live after the producer?
       Intervals probe;
-      probe.insert(i, i + 1);
+      probe.insert(currentScheduleIndex, currentScheduleIndex + 1);
 
       switch (node.getStatus()) {
       case OpStatus::CopyInput: {
@@ -340,7 +345,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         // If the input tensor is not required to be live after CopyInput,
         // then the CopyInput is not required either
         if (!doOverlap(liveness, probe)) {
-          disableNode(i);
+          disableNode(currentScheduleIndex);
         }
         break;
       }
@@ -355,7 +360,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         // If the input tensor is not required to be live after CopyLoopCarried,
         // then the CopyLoopCarried is not required either
         if (!doOverlap(liveness, probe)) {
-          disableNode(i);
+          disableNode(currentScheduleIndex);
         }
         break;
       }
@@ -368,7 +373,7 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         // If the modified tensor is not required to be live after CopyModified,
         // then the CopyModified is not required either
         if (!doOverlap(liveness, probe)) {
-          disableNode(i);
+          disableNode(currentScheduleIndex);
         }
         break;
       }
@@ -378,34 +383,38 @@ void AliasZeroCopy::disableDeadCodeNodes() {
         auto liveness =
             getCandidateLivenessIntervals(t, ProducerInterval::Ignore);
 
-        // If the input tensor is not required to be live after CopyInput,
-        // then the CopyInput is not required either
+        // If the input tensor is not required to be live after CopyOutput,
+        // then the CopyOutput is not required either
         if (!doOverlap(liveness, probe)) {
-          disableNode(i);
+          disableNode(currentScheduleIndex);
         }
         break;
       }
-      case OpStatus::Exit:
+      case OpStatus::Exit: {
+        if (!node.getOp()->hasSideEffect()) {
+          // If all CopyModified and CopyOutput are disabled on side-effect
+          // free SubgraphOps, then this node can be disabled too.
+          bool disable = true;
+          int64_t enterScheduleIndex =
+              analyzer->getCallSiteLinksInvAt(currentScheduleIndex).front();
+          for (int64_t i = enterScheduleIndex; i < currentScheduleIndex; ++i) {
+            auto otherNode = analyzer->getOpScheduleAt(i);
+            if (otherNode.getOp() == node.getOp() &&
+                (otherNode.getStatus() == OpStatus::CopyModified ||
+                 otherNode.getStatus() == OpStatus::CopyOutput) &&
+                !disabledNodes[i]) {
+              disable = false;
+            }
+          }
+          if (disable) {
+            disableNode(currentScheduleIndex);
+          }
+        }
+        break;
+      }
       case OpStatus::Normal: {
         if (!node.getOp()->hasSideEffect()) {
           // Side-effect free node
-
-          if (node.getStatus() == OpStatus::Exit) {
-            // When using a JustInTime copying strategy an output tensor may not
-            // be live by the time you get to the exit node of a call, as
-            // outputs may have been copied early. We increase the probe
-            // interval for calls here to ensure we do not inadvertently prune
-            // out calls we think have no effect.
-            int64_t j      = analyzer->getCallSiteLinksInvAt(i).front();
-            auto enterNode = analyzer->getOpScheduleAt(j);
-            if (enterNode.getStatus() != OpStatus::Enter) {
-              throw error("[AliasZeroCopy] findFront: OpStatus {} unexpected.",
-                          static_cast<int>(enterNode.getStatus()));
-            }
-            probe = Intervals();
-            probe.insert(j, i + 1);
-          }
-
           bool disable = true;
           for (auto &out : node.getOp()->output->tensorMap()) {
             auto liveness = getCandidateLivenessIntervals(
@@ -418,28 +427,29 @@ void AliasZeroCopy::disableDeadCodeNodes() {
             auto liveness = getCandidateLivenessIntervals(
                 in.second, ProducerInterval::Ignore);
             // ... and none of the modified inputs either ...
-            if (node.getOp()->modifiesIndex(in.first)) {
+            if (node.modifiesTensor(in.second)) {
               disable &= !doOverlap(liveness, probe);
             }
           }
           // ... then the Exit/Normal node is not required either
           if (disable) {
-            disableNode(i);
+            disableNode(currentScheduleIndex);
           }
         }
         break;
       }
       case OpStatus::Enter: {
         // Enter coupled to Exit
-        int64_t j     = analyzer->getCallSiteLinksAt(i).front();
-        auto exitNode = analyzer->getOpScheduleAt(j);
+        int64_t exitScheduleIndex =
+            analyzer->getCallSiteLinksAt(currentScheduleIndex).front();
+        auto exitNode = analyzer->getOpScheduleAt(exitScheduleIndex);
         if (exitNode.getStatus() != OpStatus::Exit) {
           throw error("[AliasZeroCopy] findFront: OpStatus {} unexpected.",
                       static_cast<int>(exitNode.getStatus()));
         }
-        if (disabledNodes[j]) {
+        if (disabledNodes.at(exitScheduleIndex)) {
           // If exit is disabled -> disable enter
-          disableNode(i);
+          disableNode(currentScheduleIndex);
         }
         break;
       }
@@ -475,27 +485,47 @@ void AliasZeroCopy::disableDeadCodeNodes() {
 }
 
 int64_t AliasZeroCopy::findStart(Tensor *consumedTensor,
-                                 int64_t scheduleIndex) const {
+                                 int64_t scheduleIndex,
+                                 bool crossContextTensor) const {
   auto &tensorIndices = analyzer->getScheduleIndices(consumedTensor);
+
+  // If an execution context is crossed, the tensor is assumed to be live
+  // from the start of that context
+  // Use std::min because the liveness span can be 1 element longer than the
+  // schedule size.
+  auto opScheduleEntryForContext = &analyzer->getOpScheduleAt(std::min(
+      scheduleIndex, static_cast<int64_t>(analyzer->getOpScheduleSize() - 1)));
+  auto context = opScheduleEntryForContext->getExecutionContext();
 
   auto i     = bisect(tensorIndices, scheduleIndex).first;
   auto index = tensorIndices.at(
       std::min(i, static_cast<int64_t>(tensorIndices.size() - 1)));
 
+  if (index > scheduleIndex) {
+    // Start before end, fall back to context start
+    return analyzer->getContextStartIndex(context);
+  }
+
+  auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
+
   // Walk back on schedule until the closest previous
   // tensor producer or consumer is found
   // Note that the node/op can exist multiple times in the schedule,
   // if the node/op is located in a subgraph
-  auto opScheduleEntry = &analyzer->getOpScheduleAt(index);
   while (!(opScheduleEntry->isProducerOf(consumedTensor) ||
            opScheduleEntry->isConsumerOf(consumedTensor)) ||
          disabledNodes[index] || index == scheduleIndex) {
     --i;
     if (i < 0) {
-      return -1;
+      return analyzer->getContextStartIndex(context);
     }
     index           = tensorIndices.at(i);
     opScheduleEntry = &analyzer->getOpScheduleAt(index);
+  }
+
+  // Context has changed
+  if (opScheduleEntry->getExecutionContext() != context) {
+    return analyzer->getContextStartIndex(context);
   }
 
   return index;
@@ -526,19 +556,19 @@ AliasZeroCopy::getLivenessIntervals(Tensor *t,
 
   auto &tensorScheduleIndices = analyzer->getScheduleIndices(t);
 
-  if ((!t->hasProducer() && t->getGraph().id == ir->getMainGraph().id) ||
-      t->tensorType() == TensorType::Const) {
-    // Being conservative and keeping main graph tensors without producer
-    // always live
+  if (t->tensorType() == TensorType::Const) {
+    // Being conservative and keeping constants always live
     insertInterval(0, analyzer->getOpScheduleSize());
     return intervals;
   }
 
-  auto anchors = ir->getRootAnchors();
-  if (std::find(anchors.begin(), anchors.end(), t->id) != anchors.end()) {
-    // Being conservative and keeping anchored tensors always live
-    insertInterval(0, analyzer->getOpScheduleSize());
-    return intervals;
+  if (!ir->getSessionOptions().useHostCopyOps) {
+    auto anchors = ir->getRootAnchors();
+    if (std::find(anchors.begin(), anchors.end(), t->id) != anchors.end()) {
+      // Being conservative and keeping anchored tensors always live
+      insertInterval(0, analyzer->getOpScheduleSize());
+      return intervals;
+    }
   }
 
   auto &mainOutputs = ir->getMainGraph().getOutputIds();
@@ -549,25 +579,27 @@ AliasZeroCopy::getLivenessIntervals(Tensor *t,
     return intervals;
   }
 
-  if (t->hasProducer() && !(t->getProducer()->settings.executionContext ==
-                                ExecutionContext::Normal ||
-                            t->getProducer()->settings.executionContext ==
-                                ExecutionContext::Subgraph)) {
-    // Being conservative and keeping tensors that are touched outside the
-    // training loop always live
-    insertInterval(0, analyzer->getOpScheduleSize());
-    return intervals;
+  // Check if a tensor crosses multiple execution contexts or is a variable
+  // tensor without producer
+  bool crossContextTensor = false;
+
+  crossContextTensor |=
+      (!t->hasProducer() && t->tensorType() == TensorType::Variable);
+  crossContextTensor |=
+      (!t->hasProducer() && t->tensorType() == TensorType::Stream);
+
+  std::set<ExecutionContext> contexts;
+
+  if (t->hasProducer()) {
+    contexts.insert(
+        sanitizeExecutionContext(t->getProducer()->settings.executionContext));
   }
 
   for (Op *c : t->consumers.getOps()) {
-    if (!(c->settings.executionContext == ExecutionContext::Normal ||
-          c->settings.executionContext == ExecutionContext::Subgraph)) {
-      // Being conservative and keeping tensors that are touched outside the
-      // training loop always live
-      insertInterval(0, analyzer->getOpScheduleSize());
-      return intervals;
-    }
+    contexts.insert(sanitizeExecutionContext(c->settings.executionContext));
   }
+
+  crossContextTensor |= contexts.size() > 1;
 
   for (auto scheduleIndex : tensorScheduleIndices) {
     auto opScheduleEntry = &analyzer->getOpScheduleAt(scheduleIndex);
@@ -580,18 +612,31 @@ AliasZeroCopy::getLivenessIntervals(Tensor *t,
 
     // Handle consumers, graph outputs, loop carried dependencies, copy modified
     if (!disabledNodes[scheduleIndex] && opScheduleEntry->isConsumerOf(t)) {
-      int64_t startIndex = findStart(t, scheduleIndex);
-      if (startIndex > -1 && !opScheduleEntry->getOp()->overwritesTensor(t)) {
+      int64_t startIndex = findStart(t, scheduleIndex, crossContextTensor);
+      if (startIndex > -1 && !opScheduleEntry->overwritesTensor(t)) {
         insertInterval(startIndex, scheduleIndex);
       }
       if (opScheduleEntry->getOp()->input->contains(t)) {
-        auto inIndices = opScheduleEntry->getOp()->input->indices(t);
-        for (auto inIndex : inIndices) {
-          if (producerInterval != ProducerInterval::Ignore &&
-              opScheduleEntry->getOp()->modifiesIndex(inIndex)) {
-            insertInterval(scheduleIndex, scheduleIndex + 1);
-          }
+        if (producerInterval != ProducerInterval::Ignore &&
+            opScheduleEntry->modifiesTensor(t)) {
+          insertInterval(scheduleIndex, scheduleIndex + 1);
         }
+      }
+    }
+  }
+
+  if (crossContextTensor) {
+    // Fill in from last liveness to end of context for every context, also
+    // for those not using the tensor
+    for (ExecutionContext context : std::vector<ExecutionContext>{
+             ExecutionContext::WeightsFromHostFragment,
+             ExecutionContext::OptimizerFromHostFragment,
+             ExecutionContext::Normal,
+             ExecutionContext::WeightsToHostFragment}) {
+      auto scheduleIndex = analyzer->getContextEndIndex(context);
+      if (scheduleIndex > -1) {
+        int64_t startIndex = findStart(t, scheduleIndex, crossContextTensor);
+        insertInterval(startIndex, scheduleIndex + 1);
       }
     }
   }
@@ -691,8 +736,6 @@ void AliasZeroCopy::insertAlias(Tensor *ta, Tensor *tb) {
         [](const view::Region &r) { return view::Regions(1, r); });
     postIRAliases[ta].insert(tb);
     postIRAliases[tb].insert(ta);
-  } else {
-    printLivenessIntervals({ta, tb}, ProducerInterval::Enforce);
   }
 }
 
@@ -770,7 +813,6 @@ AliasZeroCopy::getCandidateLivenessIntervals(Tensor *startTensor,
       combinedIntervals += it->second;
     }
   }
-
   return combinedIntervals;
 }
 
@@ -792,6 +834,8 @@ bool AliasZeroCopy::checkCandidatesCompatible(Tensor *ta, Tensor *tb) {
 }
 
 bool AliasZeroCopy::checkSubgraphInputCompatible(Tensor *ta, Tensor *tb) {
+  printLivenessIntervals({ta, tb}, ProducerInterval::Enforce);
+
   bool compatible =
       (ta->info == tb->info && ta->getVirtualGraphIdAndTileSetUnsafe() ==
                                    tb->getVirtualGraphIdAndTileSetUnsafe());

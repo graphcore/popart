@@ -1690,12 +1690,17 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
   const auto addOpTasksTimer = ir().timePartitionLogger().scopedStopwatch(
       "Initializing Tensor By Post IR Aliasing (Ir Lowering)");
 
-  for (Tensor *aliased :
-       aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId))) {
-    if (tensors_.contains(aliased->id) &&
-        (requireParallelWritable == RequireParallelWritable::No ||
-         tensors_.get(aliased->id).isParallelWriteable())) {
+  auto aliasingCandidates =
+      aliasZeroCopy->getPostIRAliases(ir().getTensor(dstId));
 
+  if (!aliasingCandidates.empty()) {
+    logging::devicex::trace("[PopTensors] Candidates for aliasing to {}: {}",
+                            dstId,
+                            aliasingCandidates.size());
+  }
+
+  for (Tensor *aliased : aliasingCandidates) {
+    if (tensors_.contains(aliased->id)) {
       // Can only alias if the view changers associated with the tensors are
       // also compatible
       bool viewChangerCompatible = true;
@@ -1707,7 +1712,8 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
         viewChangerCompatible = aliasedViewChangers == viewChangers;
       }
 
-      if (tensors_.canAlias(aliased->id) && viewChangerCompatible) {
+      if (tensors_.canAlias(aliased->id, requireParallelWritable) &&
+          viewChangerCompatible) {
         logging::devicex::debug("Creating snap::Tensor '{}' "
                                 "by aliasing from snap::Tensor '{}'",
                                 dstId,
@@ -1718,13 +1724,19 @@ bool IrLowering::tryInitTensorByPostIRAliasing(
         return true;
       } else {
         logging::devicex::trace(
-            "[PopTensors] Rejecting aliasing of {} due to {}",
+            "[PopTensors] Rejecting aliasing of {} to {} due to {}",
             aliased->id,
+            dstId,
             viewChangerCompatible ? "constant or aliased region"
                                   : "differing view changers");
         // Tensor can't be aliased
         aliasZeroCopy->removePostIRAliases(ir().getTensor(aliased->id));
       }
+    } else {
+      logging::devicex::trace("[PopTensors] Rejecting aliasing of {} to {} due "
+                              "to the tensor not existing yet.",
+                              aliased->id,
+                              dstId);
     }
   }
   return false;

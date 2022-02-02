@@ -31,7 +31,8 @@ public:
   bool contains(TensorId) const;
   const std::map<TensorId, std::shared_ptr<snap::Tensor>> &getTensors() const;
 
-  bool canAlias(TensorId) const;
+  bool canAlias(TensorId,
+                RequireParallelWritable requireParallelWritable) const;
 
 private:
   void verify(TensorId, const snap::Tensor &);
