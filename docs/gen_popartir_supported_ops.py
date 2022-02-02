@@ -4,7 +4,6 @@
 import sys
 import importlib
 import inspect
-import popart.ir.ops as pirops
 
 if len(sys.argv) < 2:
     sys.exit("gen_popartir_supported_ops.py <output file>")

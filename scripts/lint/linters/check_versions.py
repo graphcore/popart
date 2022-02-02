@@ -12,7 +12,8 @@ class VersionChecker:
     def __init__(self) -> None:
         """Set up class and populate members by calling check_version.
         """
-        version_file = Path(__file__).parent.joinpath("versions.yaml")
+        self.install_dir = Path(__file__).parents[1].joinpath("install")
+        version_file = self.install_dir.joinpath("versions.yaml")
 
         with version_file.open("r") as file:
             self.version_list = yaml.load(file, Loader=yaml.SafeLoader)
@@ -27,8 +28,6 @@ class VersionChecker:
         self.missing_errors = dict()
         self.version_errors = dict()
         self.linter_with_errors = set()
-
-        self.cur_dir = Path(__file__).parent
 
         self.check_versions()
 
@@ -61,7 +60,7 @@ class VersionChecker:
             print()
         if len(self.missing_errors) != 0 or len(self.version_errors) != 0:
             repo_dir = Path(__file__).parents[3]
-            relative_path = self.cur_dir.joinpath(
+            relative_path = self.install_dir.joinpath(
                 'install_linters.py').relative_to(repo_dir)
             module_path = str(relative_path.with_suffix("")).replace("/", ".")
             print("You can install the correct linter version using "
@@ -81,7 +80,7 @@ class VersionChecker:
 
         if len(self.version_errors) != 0:
             print(
-                f"See {self.cur_dir.joinpath('versions.yaml')} for version specification."
+                f"See {self.install_dir.joinpath('versions.yaml')} for version specification."
             )
 
 

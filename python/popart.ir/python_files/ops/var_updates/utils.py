@@ -3,7 +3,6 @@ from typing import Any, Dict
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
-from ..utils import check_in_graph
 
 
 def handle_optimizer_value(g: Graph, f: Any, ins: Dict[int, str],

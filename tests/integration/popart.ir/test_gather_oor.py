@@ -3,7 +3,6 @@ import pytest
 import popart
 import popart.ir as pir
 import popart.ir.ops as ops
-from popart.ir import dtypes
 import numpy as np
 
 # `import test_util` requires adding to sys.path

@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
 import popart._internal.ir as _ir

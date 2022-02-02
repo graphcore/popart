@@ -4,7 +4,8 @@ import popart
 import test_util as tu
 import onnx
 from onnx import numpy_helper
-import pva  # type: ignore
+# pva is needed for allclose to return True
+import pva  # pylint: disable=unused-import
 import tempfile
 
 

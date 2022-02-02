@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
-from numpy.core.numeric import indices
 import pytest
 
 import popart._internal.ir as _ir

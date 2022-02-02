@@ -1,4 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+# Pylint has a False positive on Type as it's used as a type hint encapsulated in a string
+# pylint: disable=unused-import
 from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union, TYPE_CHECKING
 from typing_extensions import Literal
 import numpy as np

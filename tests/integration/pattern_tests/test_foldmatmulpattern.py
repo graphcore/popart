@@ -7,7 +7,8 @@ import json
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent / 'operators_test'))
-from conftest import op_tester  # type: ignore
+# pylint is disabled as op_tester is used as a fixture
+from conftest import op_tester  # pylint: disable=unused-import
 
 
 def test_issue(op_tester):

@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from typing import Union
 from typing_extensions import Literal
 
 CommGroup = _ir.CommGroup

@@ -2,7 +2,8 @@
 import numpy as np
 import popart
 import torch
-from operators_test.conftest import op_tester  # type: ignore
+# Pylint disable as op_tester is used as a fixture
+from operators_test.conftest import op_tester  # pylint: disable=unused-import
 
 
 def test_pad_sum1(op_tester):

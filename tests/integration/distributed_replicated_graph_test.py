@@ -22,7 +22,8 @@ PARTITION_NAME = 'partition0'
 
 def mpi4py_installed():
     try:
-        from mpi4py import MPI
+        # Ignoring pylint here as this function is checking whether mpi4py is installed
+        from mpi4py import MPI  # pylint: disable=unused-import
     except ModuleNotFoundError:
         return False
     return True

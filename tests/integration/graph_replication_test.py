@@ -9,7 +9,8 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
-from operators_test.conftest import op_tester  # type: ignore
+# pylint is disabled as op_tester is used as a fixture
+from operators_test.conftest import op_tester  # pylint: disable=unused-import
 
 
 def test_weight_update(op_tester):

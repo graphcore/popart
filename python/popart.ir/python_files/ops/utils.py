@@ -6,7 +6,6 @@ from popart.ir.tensor import Tensor
 from popart.ir.graph import Graph
 from popart.ir.dtypes import dtype
 from popart.ir.errors import UndefinedValue
-from typing import List
 
 __all__ = [
     "cast_if_needed", "check_in_graph", "check_tensor_ipu_and_tile_set",

@@ -7,7 +7,8 @@ import json
 import onnx
 from onnx import numpy_helper
 import tempfile
-import pva  # type: ignore
+# pva is needed for allclose to return True
+import pva  # pylint: disable=unused-import
 
 
 @tu.requires_ipu

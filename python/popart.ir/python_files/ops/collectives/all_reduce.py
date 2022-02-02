@@ -1,12 +1,12 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional, Tuple, Union, List
+from typing import Optional, List
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.tensor import Tensor
 from popart.ir.errors import UndefinedValue
 from ..utils import check_in_graph
 from .collectives import to_collective_op, CollectiveOps
-from typing import Union, List
+from typing import List
 
 
 @op_debug_context

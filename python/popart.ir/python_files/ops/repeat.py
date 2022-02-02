@@ -5,7 +5,7 @@ import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, op_debug_context
 from popart.ir.graph import Graph
 from popart.ir.ops.call import SubgraphOpInfo
-from popart.ir.tensor import Tensor, subgraph_input
+from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
 

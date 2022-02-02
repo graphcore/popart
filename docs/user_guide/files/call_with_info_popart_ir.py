@@ -4,7 +4,6 @@ The intention of this example is to show how to use
 call_with_info op.
 '''
 
-import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
 import popart

@@ -1,13 +1,14 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
-from operators_test.conftest import op_tester  # type: ignore
+# pylint is disabled as op_tester is used as a fixture
+from operators_test.conftest import op_tester  # pylint: disable=unused-import
 
 
 def test_dont_inplace_output_consumers(op_tester):
     """
 
     Check that an Op, in a sugbraph, with an input which is a graph output,
-    is not inplace. Example below : the Op with * cannot be inplaced. 
+    is not inplace. Example below : the Op with * cannot be inplaced.
 
     Input = [1,1]
       |

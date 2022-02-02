@@ -7,7 +7,7 @@ import subprocess
 import argparse
 import site
 from pathlib import Path
-from scripts.lint.install.check_versions import VersionChecker
+from scripts.lint.linters.check_versions import VersionChecker
 
 
 def call_command(cmd: str) -> None:

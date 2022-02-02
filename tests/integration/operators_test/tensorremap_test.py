@@ -1,17 +1,15 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import json
 import numpy as np
 import popart
 import torch
-import pytest
 import tempfile
-import pva
+# pva is needed when calling session.getReport()
+import pva  # pylint: disable=unused-import
 
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
 sys.path.append(Path(__file__).resolve().parent.parent)
-import test_util as tu
 
 
 # Demonstrates a situation in which TensorRemapOp can reduce total memory

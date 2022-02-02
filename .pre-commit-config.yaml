@@ -24,7 +24,7 @@ repos:
           - id: version-checker
             name: Version checker
             description: Ensures that the correct version of the linters are used.
-            entry: python3 -m scripts.lint.install.check_versions
+            entry: python3 -m scripts.lint.linters.check_versions
             language: python
             exclude: ".*"  # Does not run on files
             always_run: true
