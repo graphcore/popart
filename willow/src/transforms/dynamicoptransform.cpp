@@ -191,6 +191,15 @@ bool DynamicOpTransform::apply(Graph &graph) const {
       op->setup();
       schedule[i] = op;
     }
+
+    // Dynamic update tensor layout preference is Update <- In
+    if (dynamic_cast<DynamicTernaryBaseOp *>(op)) {
+      if (op->settings.inferTensorMappingToFrom.empty()) {
+        op->settings.inferTensorMappingToFrom.insert(
+            {DynamicTernaryBaseOp::getUpdateInIndex(),
+             DynamicTernaryBaseOp::getInIndex()});
+      }
+    }
   }
 
   chainDynamicInplaceGradOps(ir, opsToChainMap, aliasModel);
@@ -356,6 +365,12 @@ void DynamicOpTransform::gradSumToGradChain(Ir &ir,
       // Create a new tensor to add to the chain.
       outId = ir.createIntermediateTensorId(gradTensor->id);
       op->createAndConnectOutTensor(DynamicTernaryBaseOp::getOutIndex(), outId);
+    }
+
+    if (i == 0) {
+      op->settings.inferTensorMappingToFrom.insert(
+          {DynamicTernaryBaseOp::getUpdateInIndex(),
+           DynamicTernaryBaseOp::getInIndex()});
     }
 
     op->setup();

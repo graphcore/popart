@@ -292,6 +292,12 @@ bool DecomposeGradSum::apply(Graph &graph) const {
         addLhsId = partSummedId;
       }
 
+      // Gradient accumulator needs the same tensor layout as the gradient.
+      // Allow the AddOp to propagate the tensor layout from the gradient
+      // to the InitOp output:
+      op->settings.inferTensorMappingToFrom.insert(
+          {AddOp::getArg0InIndex(), AddOp::getArg1InIndex()});
+
       op->inheritPlacementAttributes(true, aliasModel);
       op->setup();
       op->toLoss   = PathToLoss::No;

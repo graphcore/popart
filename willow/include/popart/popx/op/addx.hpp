@@ -31,6 +31,7 @@ public:
 class AddOpx : public ElementWiseBinaryOutplaceOpx {
 public:
   AddOpx(Op *, Devicex *);
+  InputCreatorType getInputCreatorType(InIndex) const override;
 };
 
 class AddLhsInplaceOpx : public ElementWiseBinaryInplaceOpx {

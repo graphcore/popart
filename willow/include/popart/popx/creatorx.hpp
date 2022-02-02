@@ -62,8 +62,6 @@ public:
 
   virtual double getMaxCreatorPriority() = 0;
 
-  // Number of efficiently laid out tensor elements by the creator candidate
-  // after unwinding
   virtual int64_t getNumElems() = 0;
 
   virtual std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() = 0;
@@ -99,7 +97,6 @@ public:
   DnfTensorIds mustExistBeforeCreate() override;
 
   double getMaxCreatorPriority() override;
-
   int64_t getNumElems() override;
 
   InIndex getIndex() const { return index; }
@@ -136,9 +133,6 @@ private:
   const PopOpx *opx;
   // Global schedule index to order the creators by global schedule position
   int64_t scheduleIndex;
-  // Number of efficiently laid out tensor elements by the creator candidate
-  // after unwinding
-  int64_t numElements;
 };
 
 struct UnwindEndpoint {

@@ -222,6 +222,9 @@ ShardingHelper::dynamicConcat(int64_t axis,
                                settings.at(b % settings.size())));
     updateOp->connectInTensor(DynamicUpdateOp::getUpdateInIndex(), lastId);
 
+    updateOp->settings.inferTensorMappingToFrom.insert(
+        {DynamicUpdateOp::getUpdateInIndex(), DynamicUpdateOp::getInIndex()});
+
     lastId = (b == tensorIds.size() - 1 && origSliceShape[axis] == 1)
                  ? concatId
                  : graph->getIr().createIntermediateTensorId(concatId);
@@ -520,6 +523,9 @@ std::vector<Op *> ShardingHelper::dynamicUpdate(int64_t axis,
   updateOp->connectInTensor(DynamicUpdateOp::getInIndex(), sliceReId);
   updateOp->connectInTensor(DynamicUpdateOp::getIndexInIndex(), indexId);
   updateOp->connectInTensor(DynamicUpdateOp::getUpdateInIndex(), inReId);
+
+  updateOp->settings.inferTensorMappingToFrom.insert(
+      {DynamicUpdateOp::getUpdateInIndex(), DynamicUpdateOp::getInIndex()});
 
   updateOp->createAndConnectOutTensor(DynamicUpdateOp::getOutIndex(), outReId);
   updateOp->setup();
