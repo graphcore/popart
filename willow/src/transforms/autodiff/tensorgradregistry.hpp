@@ -31,15 +31,15 @@ public:
 
   int getNumberExpectedEdges(Tensor *nonGrad) const;
 
-  // Return a non-gradient tensor which has ALL their
+  // Return a non-gradient tensors which has ALL their
   // required gradients registered, and is thus ready to
   // have their edge gradients summed to
   // obtain the final gradient, if available.
   // Note that this is NOT a const pop member function
   nonstd::optional<TMap::value_type> popComplete();
 
-  // Return a non-gradient tensor for which we've failed
-  // to create the required gradients, if available.
+  // Return a non-gradient tensors for which we've failed
+  // to create the requird gradients, if available.
   // Note that this is NOT a const pop member function
   nonstd::optional<TMap::value_type> popFailed();
 
