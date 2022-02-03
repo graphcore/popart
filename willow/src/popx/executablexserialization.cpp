@@ -212,10 +212,6 @@ popef::DataType toPopefDataType(popart::DataType type) {
     errorStream << "There is no popef mapping for popart::DataType " << type;
     throw error(errorStream.str());
   }
-
-  std::stringstream errorStream;
-  errorStream << "Invalid DataType " << type;
-  throw error(errorStream.str());
 }
 
 void serializeTensor(const popart::Tensor *tensor,
