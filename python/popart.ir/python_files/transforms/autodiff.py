@@ -118,7 +118,7 @@ class GradGraphInfo:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_outputs))
 
     def get_inputs_from_forward_call_info(
-            self, call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
+            self, fwd_call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
         """
         Construct grad graph `subgraph_in_to_parent_in` inputs from a forwards call site.
 
@@ -136,7 +136,7 @@ class GradGraphInfo:
                 grads_graph, x_dash, subgraph_in_to_parent_in=activations)
 
         Args:
-            call_info (SubgraphOpInfo):
+            fwd_call_info (SubgraphOpInfo):
                 Callsite info of a call to the forwards graph that was auto-differentiated. This can be accessed by
                 using `ops.call_with_info()`
 
@@ -144,22 +144,22 @@ class GradGraphInfo:
             from: a Tensor in the gradient Graph
             to: an input or output tensor at a callsite of the corresponding forward Graph.
         """
-        if call_info.called_graph != self.forward_graph:
+        if fwd_call_info.called_graph != self.forward_graph:
             raise TypeError(
                 "The called graph does not match the graph that was auto-differentiated."
             )
 
         return {
             Tensor._from_pb_tensor(self.graph._pb_graph.getInputTensor(idx)):
-            call_info.subgraph_to_op_tensor(act.fwd_tensor)
+            fwd_call_info.subgraph_to_op_tensor(act.fwd_tensor)
             for idx, act in enumerate(self.expected_inputs)
             if act.connection_type == ExpectedConnectionType.Fwd
         }
 
     def get_fwd_subgraph_to_grad_tensor_map(
-            self, call_with_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
+            self, grad_call_info: SubgraphOpInfo) -> Dict[Tensor, Tensor]:
         """
-        Returns a mapping betwen forward subgraph tensors and grad call site tensors.
+        Returns a mapping between forward subgraph tensors and grad call site tensors.
 
         Example:
 
@@ -180,8 +180,8 @@ class GradGraphInfo:
                 'Module_subgraph(0)/x', 'Module_subgraph(0)/W', 'Module_subgraph(0)/b']
 
         Args:
-            call_info (SubgraphOpInfo):
-                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+            grad_call_info (SubgraphOpInfo):
+                Callsite info of a call to a gradient graph. This can be accessed by
                 using `ops.call_with_info()`
 
         Returns: `Dict[Tensor, Tensor]`
@@ -189,7 +189,7 @@ class GradGraphInfo:
             to: corresponding Tensor in the gradient graph
         """
         return {
-            t: call_with_info.subgraph_to_op_tensor(
+            t: grad_call_info.subgraph_to_op_tensor(
                 self.graph.get_output_tensors()[idx])
             for idx, t in enumerate(self.get_output_tensors())
         }
@@ -218,8 +218,11 @@ class GradGraphInfo:
             assert [t.id for t in grad_tensor_map.keys()] == ['x', 'W', 'b']
 
         Args:
-            call_info (SubgraphOpInfo):
-                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
+            fwd_call_info (SubgraphOpInfo):
+                Callsite info of a call to the forwards graph that was auto-differentiated. This can be accessed by
+                using `ops.call_with_info()`
+            grad_call_info (SubgraphOpInfo):
+                Callsite info of a call to the associated gradient graph. This can be accessed by
                 using `ops.call_with_info()`
 
         Returns: `Dict[Tensor, Tensor]`
