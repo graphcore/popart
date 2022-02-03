@@ -264,21 +264,8 @@ def test_auto_loss_scaling_histogram_schedule_priority():
             filter(lambda op: op["type"] == "Histogram", ops)))
 
 
-def test_auto_loss_scaling_expected_loss_scale_tensor_values():
-    """
-    Pick a very small loss scale value so that gradient tensor values occupy
-    the lower part of the fp16 dynamic range.
-    Observe that this is the case, and that the loss scale factor is adjusted
-    as expected after each weight update.
-    """
-    init_loss_scale = np.finfo(np.float16).eps * 2
-    optimizer = popart.SGD({"lossScaling": (init_loss_scale, False)})
-
-    opts = popart.SessionOptions()
-    opts.automaticLossScalingSettings.enabled = True
-    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
-    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
-
+def run_simple_training(optimizer, opts):
+    """Helper function which trains a simple model with bps = 4."""
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()
     bps = 4
 
@@ -301,15 +288,34 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
                                    bps * label_shape[0]).astype(np.int32)
     stepio = popart.PyStepIO({t0: t0_data, label: label_data}, anchors)
     session.run(stepio)
+    return loss_scale_id, gradient_anchor_ids, anchors
+
+
+def test_auto_loss_scaling_expected_loss_upscale_tensor_values():
+    """
+    Pick a very small loss scale value so that gradient tensor values occupy
+    the lower part of the fp16 dynamic range.
+    Observe that this is the case, and that the loss scale factor is adjusted
+    as expected (multiplied with 2) after each weight update.
+    """
+    init_loss_scale = np.finfo(np.float16).eps * 2
+    optimizer = popart.SGD({"lossScaling": (init_loss_scale, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
+
+    loss_scale_id, gradient_anchor_ids, anchors = run_simple_training(
+        optimizer, opts)
 
     # Manually determine the direction of the loss scale update
     f16_max = np.finfo(np.float16).max
     histogram_bin_edges = [-1, 0.5 * f16_max, f16_max]
     prev_loss_scale = init_loss_scale
-    for i in range(bps):
+    for i in range(len(anchors[loss_scale_id])):
         num_small_grad_elements = 0
         num_large_grad_elements = 0
-        print(anchors[loss_scale_id][i])
         for id in gradient_anchor_ids:
             abs_grad_data = np.abs(anchors[id][i])
             hist, _ = np.histogram(abs_grad_data, histogram_bin_edges)
@@ -324,7 +330,35 @@ def test_auto_loss_scaling_expected_loss_scale_tensor_values():
 
         # Therefore the loss scale will increase for each batch in the step
         if i > 0:
+            # NOTE: We are comparing floats with strict equal
+            #       This should be ok due to the precision of fp16 on low numbers
             assert anchors[loss_scale_id][i] == 2 * prev_loss_scale
+            prev_loss_scale = anchors[loss_scale_id][i]
+
+
+def test_auto_loss_scaling_expected_loss_downscale_tensor_values():
+    """
+    Set the loss scale to a big number and the binEdgeLocation to a small
+    number and observe that the loss scale factor is halved after each
+    weight update (as the proportion of small grad elements will be small,
+    and thus trigger a downscale).
+    """
+    init_loss_scale = 1e20
+    optimizer = popart.SGD({"lossScaling": (init_loss_scale, False)})
+
+    opts = popart.SessionOptions()
+    opts.automaticLossScalingSettings.enabled = True
+    opts.automaticLossScalingSettings.binEdgeLocation = 1e-20
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.99
+
+    loss_scale_id, _, anchors = run_simple_training(optimizer, opts)
+
+    prev_loss_scale = init_loss_scale
+    for i in range(len(anchors[loss_scale_id])):
+        # Therefore the loss scale is halved each step
+        if i > 0:
+            assert np.allclose(anchors[loss_scale_id][i],
+                               0.5 * prev_loss_scale)
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
@@ -370,7 +404,7 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
                          [-0.1, 0.0, 0.5, 1.0, 1.1])
 def test_auto_loss_scaling_threshold_upper_count_proportion_range(
         thresholdUpperCountProportion):
-    """Test if an error is thrown if the thresholdUpperCountProportion 
+    """Test if an error is thrown if the thresholdUpperCountProportion
     hyperparameter is outside [0, 1].
     """
     builder = popart.Builder()
@@ -409,7 +443,7 @@ def test_auto_loss_scaling_threshold_upper_count_proportion_range(
 
 @pytest.mark.parametrize("binEdgeLocation", [-0.1, 0.0, 0.5, 1.0, 1.1])
 def test_auto_loss_scaling_bin_edge_factor_range(binEdgeLocation):
-    """Test if an error is thrown if the binEdgeLocation hyperparameter is 
+    """Test if an error is thrown if the binEdgeLocation hyperparameter is
     outside [0, 1].
     """
     builder = popart.Builder()
@@ -483,7 +517,7 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
 
 def test_auto_loss_scaling_remove_float32_from_to_track_tensors():
     """
-    Test if FLOAT16 tensors from ToTrackTensors is removed and 
+    Test if FLOAT16 tensors from ToTrackTensors is removed and
     if No tracked tensors error is thrown.
     """
     builder = popart.Builder()
@@ -513,6 +547,27 @@ def test_auto_loss_scaling_remove_float32_from_to_track_tensors():
     assert e_info.value.args[0].endswith(
         "[AutomaticLossScale transform] No tracked gradient tensors of type fp16 were found."
     )
+
+
+def test_weight_updates_for_larger_than_max_fp16(tmpdir):
+    """
+    Test that confirms weight updates match non-als when loss scale is >max(fp16).
+    """
+    sgd0 = popart.SGD({
+        "lossScaling": (np.finfo(np.float16).max + 1, False),
+        "defaultMomentum": (0.5, False),
+        "defaultVelocityScaling": (0.5, False),
+        "defaultDampening": (0.5, False),
+        "defaultWeightDecay": (0.5, False)
+    })
+    sgd1 = popart.SGD({
+        "lossScaling": (1000 * np.finfo(np.float16).max, False),
+        "defaultMomentum": (0.5, False),
+        "defaultVelocityScaling": (0.5, False),
+        "defaultDampening": (0.5, False),
+        "defaultWeightDecay": (0.5, False)
+    })
+    run_automatic_loss_scaling_comparison_test(tmpdir, [sgd0, sgd1])
 
 
 @pytest.mark.parametrize("optimizer", getOptimizers())

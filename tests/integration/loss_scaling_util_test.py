@@ -91,7 +91,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
                                                update_period=None,
                                                expected_loss_scale=[]):
     """
-    An integration test: verify that the weight updats computed by a session
+    An integration test: verify that the weight updates computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
     disabled.
     """
