@@ -95,14 +95,17 @@ class Tensor:
     ## Properties
     @property
     def id(self) -> str:
+        """The fully qualified identifier of the tensor (e.g. 'graph1/Gradient___x')."""
         return str(self._pb_tensor.id)
 
     @property
     def name(self) -> str:
+        """The identifier of the tensor with the graph scope removed (e.g. 'Gradient___x')."""
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
     def scope(self) -> str:
+        """The graph scope component of the tensor's identifier (e.g. 'graph1')."""
         return self._pb_tensor.getGraph().getScope().str()
 
     @property

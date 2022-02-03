@@ -159,6 +159,20 @@ class TestTensor:
                 with pytest.raises(ValueError):
                     x = pir.variable(1)
 
+    def test_repr(self):
+        def subgraph1(a: pir.Tensor):
+            return a + a
+
+        ir = pir.Ir()
+        with ir.main_graph():
+            a = pir.variable([1], name="bob")
+            g = ir.create_graph(subgraph1, a)
+
+            assert repr(a) == 'Tensor[bob popart.ir.dtypes.int32 (1,)]'
+            assert repr(
+                g.get_input_tensors()[0]
+            ) == 'Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popart.ir.dtypes.int32 (1,)]'
+
 
 class TestTensorIpuAndTileSet:
     def test_ipu_undefined(self):
