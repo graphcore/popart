@@ -2,9 +2,9 @@
 from popart.ir.context import gcg
 from typing import Tuple
 import popart._internal.ir as _ir
-from .dtypes import dtype
-from .ir import Ir
-from .tensor import Tensor
+from popart.ir.dtypes import dtype
+from popart.ir import Ir
+from popart.ir.tensor import Tensor
 
 
 class RemoteBuffer:

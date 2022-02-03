@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from .context import gcg
-from .tensor import Tensor, TensorSpec
-from .dtypes import dtype
+from popart.ir.context import gcg
+from popart.ir.tensor import Tensor, TensorSpec
+from popart.ir.dtypes import dtype
 
 import popart._internal.ir as _ir
 

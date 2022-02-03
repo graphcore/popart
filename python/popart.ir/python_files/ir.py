@@ -9,9 +9,9 @@ import os
 
 import popart
 import popart._internal.ir as _ir
-from .graph import Graph
-from .module import Module
-from .tensor import Tensor, TensorByRef, subgraph_input, subgraph_output, TensorSpec
+from popart.ir.graph import Graph
+from popart.ir.module import Module
+from popart.ir.tensor import Tensor, TensorByRef, subgraph_input, subgraph_output, TensorSpec
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']

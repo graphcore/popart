@@ -7,9 +7,9 @@ import numpy as np
 
 import popart._internal.ir as _ir
 from . import dtypes
-from .context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
-from .typing_ import NewAliasAnnotation
-from .errors import UndefinedValue
+from popart.ir.context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
+from popart.ir.typing_ import NewAliasAnnotation
+from popart.ir.errors import UndefinedValue
 
 if TYPE_CHECKING:
     from popart.ir import Ir

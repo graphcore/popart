@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Set
 
 import popart._internal.ir as _ir
 
-from .tensor import Tensor, Variable, Constant
-from .context import get_current_context
+from popart.ir.tensor import Tensor, Variable, Constant
+from popart.ir.context import get_current_context
 
 if TYPE_CHECKING:
     from popart.ir.ir import Ir

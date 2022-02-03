@@ -183,7 +183,6 @@ disable=abstract-method,
         wildcard-import,
         wrong-import-order,
         wrong-import-position,
-        relative-beyond-top-level,
 
 
 # Enable the message, report, category or checker with the given id(s). You can
