@@ -23,6 +23,7 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
+#include <popart/topocons.hpp>
 
 #include <subgraph/wrappedop.hpp>
 
@@ -200,7 +201,12 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       }
       pole = pole == 0 ? 1 : 0;
     }
-    auto sched = ir.getOpSchedule(topoCons, RequireOptimalSchedule::Yes);
+
+    ir.getMainGraph().topoCons->insert(topoCons, false);
+
+    ir.setIsPrepared();
+
+    auto sched = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     // The training schedule looks like this (05 / September / 2019)
     //

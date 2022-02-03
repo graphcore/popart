@@ -130,6 +130,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness1Test) {
       scOp->settings.schedulePriority = scOp->getScaleFactor() + 100.;
     }
   }
+  ir.setIsPrepared();
 
   // expectation: adds as early as possible, except when scales have priority.
   std::vector<std::pair<bool, double>> expected;
@@ -181,6 +182,7 @@ BOOST_AUTO_TEST_CASE(ScheduleLiveness2Test) {
 
   // This topo con should not disturb the priority order
   ir.getMainGraph().topoCons->insert(scaleOps[2], scaleOps[4], true);
+  ir.setIsPrepared();
 
   auto opSchedule = ir.getOpSchedule({}, RequireOptimalSchedule::Yes);
 

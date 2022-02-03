@@ -310,6 +310,12 @@ public:
    * */
   void setOnnxToOnnx(std::unique_ptr<onnxpasses::IOnnxToOnnx>);
 
+  /**
+   * Finalizes the graph schedule. Schedule cannot change anymore after this was
+   * called. Calling finalize multiple times results in an error.
+   */
+  void finalizeSchedule();
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

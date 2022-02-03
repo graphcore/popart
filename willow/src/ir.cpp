@@ -1692,7 +1692,18 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
       timePartitionLoggerStr());
 }
 
-void Ir::setIsPrepared() { isPrepared_ = true; }
+void Ir::setIsPrepared() {
+  if (isPrepared_) {
+    logging::warn("[Ir::setIsPrepared] setIsPrepared was already called. It "
+                  "should only be called once.");
+  }
+
+  for (auto &graph : getAllGraphs()) {
+    getGraph(graph->id).finalizeSchedule();
+  }
+
+  isPrepared_ = true;
+}
 
 void Ir::addAdditionalModelProtoTensors() {
   if (!additionalModelProtoTensors.empty() && !hasOnnxModel()) {

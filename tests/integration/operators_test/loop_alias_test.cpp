@@ -116,7 +116,6 @@ BOOST_AUTO_TEST_CASE(LoopAliasTest0) {
   ir->setDataFlow(DataFlow{
       1, {{"C", AnchorReturnType("All")}, {"D", AnchorReturnType("All")}}});
   ir->updateVertices();
-  ir->setIsPrepared();
 
   const auto session = InferenceSession::createFromIr(
       std::move(ir), createTestDevice(TEST_TARGET));

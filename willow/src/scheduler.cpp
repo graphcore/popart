@@ -157,6 +157,10 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
                        const double timeLimitScheduler,
                        const int64_t swapLimitScheduler,
                        const std::string &kahnTieBreakerString) {
+  if (finalized) {
+    logging::debug("[Scheduler::getSchedule] Returning finalized schedule.");
+    return finalizedSchedules.at(pg.id);
+  }
 
   const auto sw = pg.getIr().timePartitionLogger().scopedStopwatch(
       "Preparation for scheduling");
@@ -228,9 +232,33 @@ Scheduler::getSchedule(const OpsBeforeKey &gCons,
   return finalSchedule;
 }
 
+void Scheduler::finalizeSchedule(
+    const OpsBeforeKey &gCons,
+    const Graph &pg,
+    const RequireOptimalSchedule requireOptimalSchedule,
+    const bool respectExecutionPhases,
+    const double timeLimitScheduler,
+    const int64_t swapLimitScheduler,
+    const std::string &kahnTieBreakerString) {
+
+  finalized                 = false;
+  finalizedSchedules[pg.id] = getSchedule(gCons,
+                                          pg,
+                                          requireOptimalSchedule,
+                                          respectExecutionPhases,
+                                          timeLimitScheduler,
+                                          swapLimitScheduler,
+                                          kahnTieBreakerString);
+  finalized                 = true;
+}
+
 bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
                               const Graph &pg,
                               bool respectExecutionPhases) const {
+  if (isFinalized()) {
+    // Schedule does not change anymore
+    return true;
+  }
   ShiftGraphGrower grower(pg);
   defaultAnnotate(&grower,
                   gCons,
@@ -241,7 +269,8 @@ bool Scheduler::isSchedulable(const OpsBeforeKey &gCons,
   return grower.isSchedulable();
 }
 
-Scheduler::Scheduler() : cacher(std::make_unique<shift::ScheduleCache>()) {}
+Scheduler::Scheduler()
+    : cacher(std::make_unique<shift::ScheduleCache>()), finalized(false) {}
 Scheduler::~Scheduler() = default;
 
 } // namespace popart

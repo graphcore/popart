@@ -553,7 +553,7 @@ public:
   getAllRemoteBufferInfos() const;
 
   void setExecutionPhasesReady() { executionPhasesReady = true; }
-  bool getExecutionPhasesReady() { return executionPhasesReady; }
+  bool getExecutionPhasesReady() const { return executionPhasesReady; }
 
   PipelineStage getNumPipelineStages() const;
   PipelineInfo pipelineInfo() const;
@@ -566,6 +566,8 @@ public:
   /**
    * Marks the Ir as "prepared". This means the Ir is now ready to be lowered.
    * Failing to do this before lowering the Ir will result in an error.
+   * The schedule of all graphs will be fixed by calling this.
+   * Modifying the graphs afther the IR is prepared will result in an error.
    */
   void setIsPrepared();
 

@@ -29,26 +29,29 @@ public:
   ~Scheduler();
 
   /**
+   * Get a valid schedule based on the settings.
    * \param opsBeforeKey topological constraints external to \a graph
    *
    * \param  graph the Graph whose Ops are to be scheduled
    *
-   * \param requireOptimalSchedule whether the true optimal schedule is
-   *        required, which is expensive to compute, or merely any valid
-   *        topological ordering
+   * \param  requireOptimalSchedule whether the true optimal schedule is
+   *         required, which is expensive to compute, or merely any valid
+   *         topological ordering
    *
-   * \param respectExecutionPhase if true: Ops must appear in ascending order of
-   *        ping-pong phase
+   * \param  respectExecutionPhase if true: Ops must appear in ascending order
+   *of ping-pong phase
    *
-   * \param khanTieBreaker the initial scheduling is done with Kahn's algorithm.
-   *        When several Ops are free to be scheduled, this controls which one
-   *        is chosen
+   * \param  kahnTieBreaker the initial scheduling is done with Kahn's
+   *algorithm. When several Ops are free to be scheduled, this controls which
+   *one is chosen
    *
-   * \param timeLimitSeconds the maximum permitted time for schedule
-   *        improvement, before it must be returned
+   * \param  timeLimitSeconds the maximum permitted time for schedule
+   *         improvement, before it must be returned
    *
-   * \param swapLimitCount the maximum number of schedule-improving swaps
-   *        allowed before a schedule must be returned
+   * \param  swapLimitCount the maximum number of schedule-improving swaps
+   *         allowed before a schedule must be returned
+   *
+   * \return vector of operations representing the schedule
    *
    **/
 
@@ -60,6 +63,39 @@ public:
               double timeLimitSeconds,
               int64_t swapLimitCount,
               const std::string &kahnTieBreaker);
+
+  /**
+   * Get a valid schedule based on the settings, and make it final.
+   * \param opsBeforeKey topological constraints external to \a graph
+   *
+   * \param  graph the Graph whose Ops are to be scheduled
+   *
+   * \param requireOptimalSchedule whether the true optimal schedule is
+   *        required, which is expensive to compute, or merely any valid
+   *        topological ordering
+   *
+   * \param respectExecutionPhase if true: Ops must appear in ascending order of
+   *        ping-pong phase
+   *
+   * \param kahnTieBreaker the initial scheduling is done with Kahn's algorithm.
+   *        When several Ops are free to be scheduled, this controls which one
+   *        is chosen
+   *
+   * \param timeLimitSeconds the maximum permitted time for schedule
+   *        improvement, before it must be returned
+   *
+   * \param swapLimitCount the maximum number of schedule-improving swaps
+   *        allowed before a schedule must be returned
+   *
+   **/
+  void finalizeSchedule(const OpsBeforeKey &opsBeforeKey,
+                        const Graph &graph,
+                        const RequireOptimalSchedule requireOptimalSchedule,
+                        bool respectExecutionPhase,
+                        double timeLimitSeconds,
+                        int64_t swapLimitCount,
+                        const std::string &kahnTieBreaker);
+
   /**
    *  to determine if a Graph is schedulable - that is, it contains no cycles -
    *  is a simpler problem than finding the schedule in the first place. This
@@ -70,8 +106,12 @@ public:
                      const Graph &,
                      bool respectExecutionPhase) const;
 
+  bool isFinalized() const { return finalized; }
+
 private:
   std::unique_ptr<poprithms::schedule::shift::ScheduleCache> cacher;
+  std::map<GraphId, std::vector<Op *>> finalizedSchedules;
+  bool finalized;
 };
 
 } // namespace popart

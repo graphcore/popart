@@ -192,7 +192,6 @@ class TestTensorLocation():
             opts.accumulationFactor = ACCL_FACTOR
 
         ir._pb_ir.updateVertices()
-        ir._pb_ir.setIsPrepared()
         p = _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal)
         ir._pb_ir.setPatterns(p)
         for _g in ir._pb_ir.getAllGraphs():

@@ -70,6 +70,24 @@ void Graph::setOnnxToOnnx(
   onnxToOnnx = std::move(onnxToOnnx_);
 }
 
+void Graph::finalizeSchedule() {
+
+  POPART_TRACEPOINT();
+  const auto respectExecutionPhases = getIr().getExecutionPhasesReady();
+  const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
+
+  const auto timeLimit = getIr().getSessionOptions().timeLimitScheduler;
+  const auto swapLimit = getIr().getSessionOptions().swapLimitScheduler;
+
+  scheduler->finalizeSchedule({},
+                              *this,
+                              RequireOptimalSchedule::Yes,
+                              respectExecutionPhases,
+                              timeLimit,
+                              swapLimit,
+                              ktb);
+}
+
 const std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() const { return ops; }
 std::map<OpId, std::unique_ptr<Op>> &Graph::getOps() { return ops; }
 
@@ -514,7 +532,7 @@ std::vector<Op *> Graph::getOpSchedule(
     const OpsBeforeKey &gCons,
     const RequireOptimalSchedule requireOptimalSchedule) const {
   POPART_TRACEPOINT();
-  const auto respectExecutionPhases = ir.getExecutionPhasesReady();
+  const auto respectExecutionPhases = getIr().getExecutionPhasesReady();
   const std::string &ktb = getIr().getSessionOptions().kahnTieBreaker;
 
   const bool optSched = requireOptimalSchedule == RequireOptimalSchedule::Yes;
