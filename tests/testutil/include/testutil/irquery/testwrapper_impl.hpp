@@ -16,6 +16,7 @@ TestWrapper<T>::TestWrapper(Ir &ir_, T wrappedObj_)
 
 // Implementation of TestWrapper::get.
 template <typename T> T TestWrapper<T>::unwrap() { return wrappedObj; }
+template <typename T> T TestWrapper<T>::unwrap() const { return wrappedObj; }
 
 } // namespace irquery
 } // namespace popart

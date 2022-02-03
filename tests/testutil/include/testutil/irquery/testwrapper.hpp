@@ -31,6 +31,7 @@ template <typename T> class TestWrapper {
 public:
   // Get copy of object we're wrapping.
   T unwrap();
+  T unwrap() const;
 
 protected:
   // Constructor.
