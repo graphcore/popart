@@ -31,6 +31,30 @@ class TestAdd:
         assert len(g.get_variables()) == 2
         assert contains_op_of_type("Add", _ir.op.AddOp, g)
 
+    def test_fn_inplace(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(1)
+            b = pir.variable(2)
+            c = ops.add_(a, b)
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 2
+        assert contains_op_of_type("AddLhsInplace", _ir.op.AddLhsInplaceOp, g)
+
+    def test_inplace_dunder(self):
+        ir = pir.Ir()
+        g = ir.main_graph()
+
+        with g:
+            a = pir.variable(1)
+            b = pir.variable(2)
+            a += b
+        assert len(g.get_tensors()) == 3
+        assert len(g.get_variables()) == 2
+        assert contains_op_of_type("AddLhsInplace", _ir.op.AddLhsInplaceOp, g)
+
     def test_ensure_tensor(self):
         ir = pir.Ir()
         g = ir.main_graph()

@@ -323,6 +323,14 @@ class Tensor:
         return ops.add(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
+    def __iadd__(self, other: TensorLike) -> 'Tensor':
+        """Uses ops.add_ to add 'other' inplace on this tensor (on the left hand side,
+            i.e on to this tensor)."""
+        import popart.ir.ops as ops
+        ops.add_(self, self._ensure_tensor(other))
+        return self
+
+    @debug_context_frame_offset(1)
     def __sub__(self, other: TensorLike) -> 'Tensor':
         """Returns `ops.sub(self, other)`."""
         import popart.ir.ops as ops

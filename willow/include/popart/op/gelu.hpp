@@ -21,6 +21,8 @@ public:
 class GeluInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   GeluInplaceOp(const GeluOp &);
+  GeluInplaceOp(const Op::Settings &opSettings);
+
   std::unique_ptr<Op> clone() const final;
 };
 

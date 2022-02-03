@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
@@ -6,16 +6,16 @@ import popart._internal.ir as _ir
 from utils import contains_op_of_type
 
 
-class TestGelu:
+class TestRelu:
     def test_fn(self):
         ir = pir.Ir()
         g = ir.main_graph()
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
-            c = ops.gelu(a)
+            c = ops.relu(a)
         assert len(g.get_tensors()) == 2
-        assert contains_op_of_type("Gelu", _ir.op.GeluOp, g)
+        assert contains_op_of_type("Relu", _ir.op.ReluOp, g)
 
     def test_inplace_fn(self):
         ir = pir.Ir()
@@ -23,6 +23,6 @@ class TestGelu:
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
-            c = ops.gelu_(a)
+            c = ops.relu_(a)
         assert len(g.get_tensors()) == 2
-        assert contains_op_of_type("GeluInplace", _ir.op.GeluInplaceOp, g)
+        assert contains_op_of_type("ReluInplace", _ir.op.ReluInplaceOp, g)

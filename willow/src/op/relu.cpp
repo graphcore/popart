@@ -27,6 +27,9 @@ ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ReluInplace,
                                 relu_op.getSettings()) {}
 
+ReluInplaceOp::ReluInplaceOp(const Settings &settings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ReluInplace, settings) {}
+
 std::unique_ptr<Op> ReluInplaceOp::clone() const {
   return std::make_unique<ReluInplaceOp>(*this);
 }

@@ -19,7 +19,7 @@ def unary_op_tester(op_name: str,
         op_name (str): Name of op to create. Must match the create<op_name> function.
         g (_ir.Graph): The graph to add the op to.
         inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
-        connected (bool, optional): Whether to use the createConnected<opname> function or 
+        connected (bool, optional): Whether to use the createConnected<opname> function or
             just create<opname>. Defaults to False.
     """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
@@ -43,7 +43,7 @@ def binary_op_tester(op_name: str,
         op_name (str): Name of op to create. Must match the create<op_name> function.
         g (_ir.Graph): The graph to add the op to.
         inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
-        connected (bool, optional): [Whether to use the createConnected<opname> function or 
+        connected (bool, optional): [Whether to use the createConnected<opname> function or
             just create<opname>. Defaults to False.
     """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
@@ -68,7 +68,7 @@ def ternary_op_tester(op_name: str,
         op_name (str): Name of op to create. Must match the create<op_name> function.
         g (_ir.Graph): The graph to add the op to.
         inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
-        connected (bool, optional): [Whether to use the createConnected<opname> function or 
+        connected (bool, optional): [Whether to use the createConnected<opname> function or
             just create<opname>. Defaults to False.
     """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
@@ -118,7 +118,7 @@ def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
     """Test unary (3 in, 1 out) ops
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
         inplace (bool): Whether this op is inplace
         op_name (str): Name of the op e.g. AddOp
@@ -160,7 +160,7 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
     Args:
         op_name (str): The op name e.g. AddOp
         inplace (bool): Whether this op is inplace
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
         kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
     """
@@ -175,7 +175,9 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 [
 ("HostLoadOp", {"sid_": "streamTensor"}),
 ("ReluOp", {}),
+("ReluInplaceOp", {}),
 ("GeluOp", {}),
+("GeluInplaceOp", {}),
 ("TransposeOp", {"perm_": [0, 2, 1]}),
 ("SliceOp", {"starts_":[1], "ends_":[3], "steps_":[1], "axes_":[0]}),
 ("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}),
@@ -204,7 +206,7 @@ def test_unary_ops(connected: bool, op_name: str,
     """Test unary (1 in, 1 out) ops
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
         op_name (str): Name of the op e.g. AddOp
         kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
@@ -220,7 +222,7 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
     """Test that the input and output tensors of remote store op are correct
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
         use_offset (bool): Whether or not to specify the optional offset Tensor
     """
@@ -288,7 +290,7 @@ def test_remote_load_op(connected: bool, use_offset: bool,
     """Test that the input and output tensors of remote load op are correct.
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
         use_offset (bool): Whether or not to specify the optional offset Tensor
         inplace (bool): Whether or not to use the inplace version
@@ -366,7 +368,7 @@ def test_host_store_op(connected: bool) -> None:
     """Test the host store op
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -396,7 +398,7 @@ def test_ipu_copy_op(source: int, destination: int, connected: bool) -> None:
     Args:
         source (int): Source IPU
         destination (int): Destination IPU
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -433,7 +435,7 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
 
     Args:
         init_type (_ir.InitType): The initialisation type to use (zero/no init)
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -474,7 +476,7 @@ def test_matmul_op(serialise_mode: _ir.op.SerialiseSettingsMode,
         serialise_mode (_ir.op.SerialiseSettingsMode): Serialisation mode (see matmul.hpp)
         serialise_factor (int): Factor to serialise by.
         partials_type (_ir.op.MatMulPartialsType): Partials calculation type (FLOAT, HALF)
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir()
@@ -516,7 +518,7 @@ def test_call_op(connected: bool):
     """Test the special case of the call op
 
     Args:
-        connected (bool): Whether to use the createConnected<opname> function or 
+        connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>
     """
     _, graphs = create_ir(["sub_graph"])  # main graph and 'sub_graph'
@@ -1071,7 +1073,7 @@ def test_adam_updater_op(connected: bool) -> None:
 @pytest.mark.parametrize("connected", [True, False])
 def test_lambsquare_op(connected: bool) -> None:
     """Test the LambSquare Op.
-    
+
     Args:
         connected (bool): Whether to use the createConnected<opname> function or
             just create<opname>

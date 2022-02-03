@@ -21,6 +21,7 @@ public:
 class ReluInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ReluInplaceOp(const ReluOp &);
+  ReluInplaceOp(const Op::Settings &opSettings);
   std::unique_ptr<Op> clone() const final;
 };
 

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import TYPE_CHECKING
 
-from .add import add
+from .add import add, add_
 from .call import call, call_with_info, SubgraphOpInfo
 from .cast import cast
 from .detach import detach, detach_
@@ -10,7 +10,7 @@ from .dropout import dropout
 from .dynamic_slice import dynamic_slice
 from .dynamic_update import dynamic_update, dynamic_update_
 from .gather import gather, tied_gather
-from .gelu import gelu
+from .gelu import gelu, gelu_
 from .group_norm import group_norm, layer_norm
 from .host_load import host_load
 from .host_store import host_store
@@ -28,6 +28,7 @@ from .negate import negate
 from .negative_log_likelihood import nll_loss_with_softmax_grad
 from .print_tensor import print_tensor
 from .random import random_uniform, random_normal
+from .relu import relu, relu_
 from .repeat import repeat, repeat_with_info
 from .reshape import reshape, reshape_, flatten, flatten_
 from .remote_load import remote_load, remote_load_
@@ -48,6 +49,7 @@ from . import var_updates
 __all__ = [
     # add.py
     "add",
+    "add_",
     # call.py
     "call",
     "call_with_info",
@@ -71,6 +73,7 @@ __all__ = [
     "tied_gather",
     # gelu.py
     "gelu",
+    "gelu_",
     # group_norm.py
     "group_norm",
     "layer_norm",
@@ -93,6 +96,9 @@ __all__ = [
     "logical_not",
     # logical_or.py
     "logical_or",
+    # relu.py,
+    "relu",
+    "relu_",
     # repeat.py,
     "repeat",
     "repeat_with_info",

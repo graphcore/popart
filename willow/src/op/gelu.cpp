@@ -43,6 +43,10 @@ GeluInplaceOp::GeluInplaceOp(const GeluOp &op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::GeluInplace,
                                 op.getSettings()) {}
 
+GeluInplaceOp::GeluInplaceOp(const Op::Settings &opSettings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::GeluInplace,
+                                opSettings) {}
+
 std::unique_ptr<Op> GeluInplaceOp::clone() const {
   return std::make_unique<GeluInplaceOp>(*this);
 }
