@@ -6,8 +6,8 @@ from typing_extensions import Literal
 import numpy as np
 
 import popart._internal.ir as _ir
-from . import dtypes
-from popart.ir.context import gcg, debug_context_frame_offset, _execution_context, get_main_graph
+from popart.ir import dtypes
+from popart.ir.context import gcg, gmg, debug_context_frame_offset, _execution_context, get_main_graph
 from popart.ir.typing_ import NewAliasAnnotation
 from popart.ir.errors import UndefinedValue
 
@@ -590,14 +590,25 @@ def variable(
     """
     g = gcg()
     pb_g = g._pb_graph
+
+    if g != gmg():
+        raise ValueError(
+            "You cannot initialise a variable tensor within a subgraph. "
+            "It can only be initialised within the main graph. "
+            "Please create a subgraph input for this variable (`pir.subgraph_input`) "
+            "or use a constant tensor (`pir.constant`). "
+            "See popart.ir user guide for more details.")
+
     np_dtype = dtype.as_numpy() if dtype is not None else None
     np_data: np.ndarray = np.array(data, dtype=np_dtype)
     if np_data.dtype in downcast_np_dtypes and downcast and dtype is None:
         np_data = np_data.astype(downcast_np_dtypes[np_data.dtype])
     pir_dt = dtypes.dtype.as_dtype(np_data)
+
     info = _ir.TensorInfo(pir_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
     pb_g.addVarInit(pb_id, info, np_data)
+
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 

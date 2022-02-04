@@ -151,6 +151,14 @@ class TestTensor:
             with pytest.raises(ValueError):
                 len(x)
 
+    def test_subgraph_variable_error(self):
+        ir = pir.Ir()
+        with ir.main_graph():
+            subgraph = ir.create_empty_graph()
+            with subgraph:
+                with pytest.raises(ValueError):
+                    x = pir.variable(1)
+
 
 class TestTensorIpuAndTileSet:
     def test_ipu_undefined(self):
