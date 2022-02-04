@@ -112,6 +112,8 @@
 
 // used for float to half conversion
 #include <poplar/Target.hpp>
+// used to get the packageHash()
+#include <poplar/Graph.hpp>
 #include <poprithms/memory/inplace/allowmultigatealias.hpp>
 
 #include <popart/alias/aliasmodel.hpp>
@@ -4247,8 +4249,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
@@ -4264,6 +4266,8 @@ std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   boost::hash_combine(seed,
                       std::hash<popart::SessionOptions>{}(bundle.userOptions));
   boost::hash_combine(seed, std::hash<popart::Patterns>()(bundle.patterns));
+  const std::string poplarHash = poplar::packageHash();
+  boost::hash_combine(seed, poplarHash);
 
   return seed;
 }
