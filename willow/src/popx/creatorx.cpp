@@ -43,7 +43,7 @@ TensorRegions fragment(const view::Region fullRegion,
 snap::Tensor compose(const TensorRegions &tensorRegions,
                      const view::Region fullRegion,
                      snap::Tensor fullTensor) {
-  TensorRegions currentTensorRegions = tensorRegions;
+  TensorRegions currentTensorRegions;
 
   logging::devicex::trace("[creatorx] Full region {} {}",
                           fullRegion.getLower(),
@@ -51,10 +51,15 @@ snap::Tensor compose(const TensorRegions &tensorRegions,
 
   view::Regions regions;
   for (auto &tensorRegion : tensorRegions) {
-    regions.push_back(tensorRegion.region);
-    logging::devicex::trace("[creatorx] Tensor region {} {}",
-                            regions.back().getLower(),
-                            regions.back().getUpper());
+    auto requiredRegions = tensorRegion.region.sub(regions);
+    for (auto region : requiredRegions) {
+      regions.push_back(region);
+      currentTensorRegions.emplace_back(
+          tensorRegion.offset, region, tensorRegion.tensor);
+      logging::devicex::trace("[creatorx] Tensor region {} (offset: {})",
+                              regions.back(),
+                              tensorRegion.offset);
+    }
   }
 
   // Regions for which a linear mapping is chosen
@@ -68,7 +73,7 @@ snap::Tensor compose(const TensorRegions &tensorRegions,
   }
 
   // At this point, currentTensorRegions should contain enough regions to
-  // compose the tensor fully.
+  // compose the tensor fully, and no regions should overlap.
 
   // Fragment into concat-enable pieces
   currentTensorRegions = fragment(fullRegion, currentTensorRegions);
@@ -171,7 +176,7 @@ InputCreatorCandidate::InputCreatorCandidate(
     const PopOpx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_,
     int64_t scheduleIndex_)
-    : index(index_), opx(opx_), scheduleIndex(scheduleIndex_) {
+    : index(index_), opx(opx_), scheduleIndex(scheduleIndex_), numElements(0) {
 
   pathFromInput.reserve(pathFromInput_.size());
   for (OpxInAndOutIndex &pathElem : pathFromInput_) {
@@ -179,19 +184,16 @@ InputCreatorCandidate::InputCreatorCandidate(
       pathFromInput.push_back(pathElem);
     }
   }
+  for (auto &r : unwind()) {
+    numElements += r.nelms();
+  }
 }
 
 double InputCreatorCandidate::getMaxCreatorPriority() {
   return getOpx()->inputCreatorPriority;
 }
 
-int64_t InputCreatorCandidate::getNumElems() {
-  int64_t n = 0;
-  for (auto &r : unwind()) {
-    n += r.nelms();
-  }
-  return n;
-}
+int64_t InputCreatorCandidate::getNumElems() { return numElements; }
 
 view::Regions InputCreatorCandidate::unwind() {
   return unwind(view::Region::getFull(opx->inShape(index)));
@@ -230,10 +232,15 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
       inRegions.push_back(r);
     }
   }
+  // Remove any overlap between the regions
+  inRegions = view::mergeRegions(inRegions);
 
   // Unwound tensor
   auto inTensor = opxOnPath.opx->unwindTensorLayout(
       outTensor, opxOnPath.inIndex, opxOnPath.outIndex);
+
+  logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
+                          inTensor.shape());
 
   if (opxOnPath.opx->hasCreatorViewChangers(opxOnPath.inIndex)) {
     // Early stop unwinding; tensor has view change
@@ -271,6 +278,8 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
   TensorRegions tensorRegions;
   tensorRegions.reserve(inRegions.size());
   for (auto &tRegion : inRegions) {
+    logging::devicex::trace(
+        "[creatorx] Adding tensor region {} offset {}", tRegion, offsetRegion);
     tensorRegions.emplace_back(
         view::regionBounds(offsetRegion), tRegion, inTensor);
   }
@@ -283,8 +292,6 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
   logging::devicex::trace("[creatorx] Tensor shape after compose {}",
                           inTensor.shape());
 
-  logging::devicex::trace("[creatorx] Tensor shape after unwind: {}",
-                          inTensor.shape());
   return {inTensor, ViewChangers()};
 }
 
