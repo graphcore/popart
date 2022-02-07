@@ -1442,14 +1442,14 @@ void IrLowering::createFragment(const Graph &graph_,
   return progs_.createFragment(graph_, subgraphPart);
 }
 
-std::vector<poplar::Function> &
+std::vector<snap::Function> &
 IrLowering::getFragmentFunctions(const Graph &_graph) {
   logging::devicex::trace("[getFragmentFunction] Getting function for graph {}",
                           _graph.id.str());
   return progs_.getFragmentFunctions(_graph, graph());
 }
 
-poplar::Function &
+snap::Function &
 IrLowering::getFragmentFunction(const Graph &_graph,
                                 SubgraphPartIndex subgraphPart) {
   logging::devicex::trace(

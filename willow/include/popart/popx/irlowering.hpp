@@ -492,11 +492,11 @@ public:
   void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return them all.
-  std::vector<poplar::Function> &getFragmentFunctions(const Graph &graph);
+  std::vector<snap::Function> &getFragmentFunctions(const Graph &graph);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return a specific one.
-  poplar::Function &getFragmentFunction(const Graph &graph,
-                                        SubgraphPartIndex subgraphPart);
+  snap::Function &getFragmentFunction(const Graph &graph,
+                                      SubgraphPartIndex subgraphPart);
 
   // A forward search of graph:
   //   - from inputs of the graph

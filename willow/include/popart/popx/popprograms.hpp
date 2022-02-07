@@ -131,13 +131,13 @@ public:
   void createFragment(const Graph &graph, SubgraphPartIndex subgraphPart);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return them all.
-  std::vector<poplar::Function> &getFragmentFunctions(const Graph &graph,
-                                                      snap::Graph &snapGraph);
+  std::vector<snap::Function> &getFragmentFunctions(const Graph &graph,
+                                                    snap::Graph &snapGraph);
   // Wrap all Poplar sequences associated with a graph in to a poplar function
   // that can be called and return a specific one.
-  poplar::Function &getFragmentFunction(const Graph &graph,
-                                        SubgraphPartIndex subgraphPart,
-                                        snap::Graph &snapGraph);
+  snap::Function &getFragmentFunction(const Graph &graph,
+                                      SubgraphPartIndex subgraphPart,
+                                      snap::Graph &snapGraph);
 
   // Get the program fragment for a recomputed op. createRecomputeFragment must
   // be called first.
@@ -179,7 +179,7 @@ public:
       PipelineCycle pCycle,
       snap::program::Sequence &sq,
       std::ostringstream &ss,
-      std::map<PipelineStage, poplar::Function> &mainFunctions) const;
+      std::map<PipelineStage, snap::Function> &mainFunctions) const;
 
   IrLowering *ir_lowering_p;
 
@@ -189,7 +189,7 @@ private:
   // The sub-graph program fragments will be stored here
   std::unordered_map<std::string, std::vector<snap::program::Sequence>>
       scopeSeqs;
-  std::unordered_map<std::string, std::vector<poplar::Function>> funcs;
+  std::unordered_map<std::string, std::vector<snap::Function>> funcs;
 
   // The recompute program fragments will be stored here. We store the sequences
   // in singleton vectors because grow code requires iterators to vectors.

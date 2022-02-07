@@ -83,7 +83,9 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramFragmentIndex");
+  }
   };
   return out;
 }
@@ -270,7 +272,7 @@ void PopPrograms::addPipelineCycle(
     PipelineCycle pCycle,
     snap::program::Sequence &sq,
     std::ostringstream &ss,
-    std::map<PipelineStage, poplar::Function> &mainFunctions) const {
+    std::map<PipelineStage, snap::Function> &mainFunctions) const {
   // Inside each pipeline cycle
   //
   // Always do:
@@ -357,7 +359,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   PipelineInfo pInfo = ir_lowering_p->ir().pipelineInfo();
 
-  std::map<PipelineStage, poplar::Function> mainFunctions;
+  std::map<PipelineStage, snap::Function> mainFunctions;
 
   for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
     const snap::program::Sequence &sequence = stage_seq.second;
@@ -601,7 +603,7 @@ void PopPrograms::createFragment(const Graph &graph,
   }
 }
 
-std::vector<poplar::Function> &
+std::vector<snap::Function> &
 PopPrograms::getFragmentFunctions(const Graph &graph, snap::Graph &snapGraph) {
 
   auto seq2func = [&](snap::program::Sequence &seq) {
@@ -624,10 +626,9 @@ PopPrograms::getFragmentFunctions(const Graph &graph, snap::Graph &snapGraph) {
   return funcsIt->second;
 }
 
-poplar::Function &
-PopPrograms::getFragmentFunction(const Graph &graph,
-                                 SubgraphPartIndex subgraphPart,
-                                 snap::Graph &snapGraph) {
+snap::Function &PopPrograms::getFragmentFunction(const Graph &graph,
+                                                 SubgraphPartIndex subgraphPart,
+                                                 snap::Graph &snapGraph) {
 
   auto &funcs = getFragmentFunctions(graph, snapGraph);
 
