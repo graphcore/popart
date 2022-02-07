@@ -366,7 +366,7 @@ void Graph::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
   connectOutputs(out, opid);
 }
 
-void Graph::eraseOp(OpId opid) {
+std::map<int, std::unique_ptr<popart::Op>>::iterator Graph::eraseOp(OpId opid) {
   auto found = ops.find(opid);
   if (found == ops.end()) {
     throw internal_error("no op {} to erase", std::to_string(opid));
@@ -374,7 +374,7 @@ void Graph::eraseOp(OpId opid) {
   // Clean up topo cons for removed op, because the caller can't be trusted
   // to clean this up properly, resulting in horrible accidents.
   topoCons->remove(found->second.get());
-  ops.erase(opid);
+  return ops.erase(found);
 }
 
 // T12001

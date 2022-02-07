@@ -121,7 +121,7 @@ public:
   void connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id);
   void connectOutputsFromOutputMapWrapper(const OutputMapWrapper &, OpId opId);
 
-  void eraseOp(OpId id);
+  std::map<int, std::unique_ptr<popart::Op>>::iterator eraseOp(OpId id);
 
   // The variable update ops must be final consumers of the
   // input variable tensor. This function imposes these constraints

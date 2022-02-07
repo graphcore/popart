@@ -60,9 +60,12 @@ bool producesToTrackTensors(Op *op) {
 }
 
 void removeProxyOps(Graph &graph) {
-
-  for (auto &id_op : graph.getOps()) {
-    auto op = id_op.second.get();
+  auto &opIdOpMap = graph.getOps();
+  // We would like to delete contents of the map while looping through, hence
+  // the following loop
+  for (auto opIdOpMapIt = opIdOpMap.begin(); opIdOpMapIt != opIdOpMap.end();
+       /* Increment happens in body */) {
+    auto op = opIdOpMapIt->second.get();
     if (op->opid.type == "AutoLossScaleProxy") {
       auto tensorIn  = op->input->tensors()[0];
       auto tensorOut = op->output->tensors()[0];
@@ -77,15 +80,22 @@ void removeProxyOps(Graph &graph) {
 
       op->disconnectAllInputs();
       op->disconnectAllOutputs();
-      op->getGraph().eraseOp(op->id);
+
+      // Returns iterator following the last removed element
+      opIdOpMapIt = graph.eraseOp(op->id);
+    } else {
+      ++opIdOpMapIt;
     }
   }
 }
 
 void removeProxyGradOps(Graph &graph) {
-
-  for (auto &id_op : graph.getOps()) {
-    auto op = id_op.second.get();
+  auto &opIdOpMap = graph.getOps();
+  // We would like to delete contents of the map while looping through, hence
+  // the following loop
+  for (auto opIdOpMapIt = opIdOpMap.begin(); opIdOpMapIt != opIdOpMap.end();
+       /* Increment happens in body */) {
+    auto op = opIdOpMapIt->second.get();
     if (op->opid.type == "AutoLossScaleProxyGrad") {
       auto tensorIn  = op->input->tensors()[0];
       auto tensorOut = op->output->tensors()[0];
@@ -100,7 +110,10 @@ void removeProxyGradOps(Graph &graph) {
         producer->connectOutTensor(i, tensorOut->id);
       }
 
-      op->getGraph().eraseOp(op->id);
+      // Returns iterator following the last removed element
+      opIdOpMapIt = graph.eraseOp(op->id);
+    } else {
+      ++opIdOpMapIt;
     }
   }
 }
