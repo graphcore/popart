@@ -5,7 +5,7 @@ import popart
 import popart._internal.ir as _ir
 import pytest
 
-from utils import *
+from utils import create_ir, create_dummy_op
 
 
 def test_op_creation():
@@ -36,9 +36,9 @@ def test_op_attributes(attribute: str, shorthand: str, input_id: int):
     """Test the various attributes that can be applied to ops.
 
     Args:
-        attribute (str): Name of the attribute 
+        attribute (str): Name of the attribute
         shorthand (str): Shorthand of the attribute e.g. VirtualGraphId -> VGraphId
-        input_id (int): Long int for the id to use for the attribute. 
+        input_id (int): Long int for the id to use for the attribute.
     """
     _, graphs = create_ir(["A"])
     g = graphs[0]
@@ -171,7 +171,7 @@ def test_graph_in_outs():
 @pytest.mark.parametrize("dtype", ["FLOAT", "FLOAT16", "BOOL"])
 def test_shapes(shape1: List[int], shape2: List[int], expected: List[int],
                 dtype: str):
-    """Test the shapes and np broadcasting. Don't really need to test the 
+    """Test the shapes and np broadcasting. Don't really need to test the
     broadcasting as that is tested at C++ level. But try a few cases to be sure
     binding works correctly.
 
@@ -207,7 +207,7 @@ def test_string_methods(op_name: str, domain: str, op_type: str, op_num: int,
     Args:
         op_name (str): Name for the op
         domain (str): Domain e.g. ai.onnx
-        op_type (str): Op type 
+        op_type (str): Op type
         op_num (int): Op number to test against (default 100)
         op_version (int): Op version
     """

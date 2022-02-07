@@ -6,7 +6,6 @@ from popart.ir.tensor import Tensor
 from popart.ir.errors import UndefinedValue
 from ..utils import check_in_graph
 from .collectives import to_collective_op, CollectiveOps
-from typing import List
 
 
 @op_debug_context

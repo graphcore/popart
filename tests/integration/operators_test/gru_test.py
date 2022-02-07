@@ -7,7 +7,6 @@ from pathlib import Path
 
 # `import test_util` requires adding to sys.path
 import sys
-from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -466,7 +465,7 @@ def test_gru_torch_grad_all_inputs(op_tester):
             popart.reservedGradientPrefix() + Y1,
             popart.reservedGradientPrefix() + i1,  # input
             popart.reservedGradientPrefix() + i2,  # input/1
-            popart.reservedGradientPrefix() + i3,  # input/2 
+            popart.reservedGradientPrefix() + i3,  # input/2
             popart.reservedGradientPrefix() + i4,  # input/3
             popart.reservedGradientPrefix() + i6  # input/4
         ]

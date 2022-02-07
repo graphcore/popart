@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import pytest
-from utils import *
+from utils import add_actgrad_tensor, create_new_op, add_random_tensor
 
 import popart
 import popart._internal.ir as _ir

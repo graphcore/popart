@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Mapping, Union, Tuple
+from typing import Mapping, Union, Tuple, Optional, List
 
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, debug_context_frame_offset, op_debug_context
@@ -7,8 +7,6 @@ from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 
 from .utils import check_in_graph
-
-from typing import Mapping, Union, Tuple, Optional, List
 
 
 # TODO: Bind subgraph op T53714

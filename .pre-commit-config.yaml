@@ -35,6 +35,7 @@ repos:
             description: Ensures that files have the proper copyright line.
             entry: python3 -m scripts.lint.linters.copyright_linter
             language: python
+            exclude: tests/integration/operators_test/rnn_helper.py
             additional_dependencies:
                 # dataclasses was introduced in Python 3.7
                 # For python 3.6 it therefore needs to be added as a dependency

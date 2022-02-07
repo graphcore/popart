@@ -16,7 +16,6 @@ from run_lint import (LinterOutput, create_linter_configs,
 
 def test_import_from_string():
     join = import_from_string("os.path.join")
-    import os
     assert join is os.path.join
 
     ilinter = import_from_string("lint.linters.ILinter")

@@ -2,7 +2,9 @@
 import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 from popart.session import _initAnchorArrays
-import torch
+# Pylint detect this as a self-import
+# However, this import imports the original torch package (and not the contents of this dir)
+import torch  # pylint: disable=import-self
 import torch.nn as nn
 from torch.onnx.utils import _model_to_graph
 from torch.onnx import ONNX_ARCHIVE_MODEL_PROTO_NAME, ExportTypes, OperatorExportTypes

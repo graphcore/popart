@@ -6,7 +6,6 @@ import popart.ir as pir
 from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart.ir.ops as ops
 import popart._internal.ir as _ir
-from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart
 import numpy as np
 from typing import Tuple

@@ -8,7 +8,6 @@ import tempfile
 import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
-import popart
 
 # `import test_util` requires adding to sys.path
 import sys
