@@ -19,6 +19,8 @@ add_popart_cpp_unit_test(mergeexchange mergeexchange_test.cpp VARIANTS "Hw")
 
 add_popart_cpp_unit_test(running_mean_counter running_mean_counter_test.cpp VARIANTS "IpuModel")
 
+add_popart_cpp_unit_test(automatic_loss_scaling automatic_loss_scaling_test.cpp)
+
 add_subdirectory(mergevarupdates)
 
 add_popart_py_unit_test(serializematmul serializematmul.py)

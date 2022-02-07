@@ -82,6 +82,7 @@
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/overlapio.hpp>
 #include <popart/transforms/pipeline.hpp>
+#include <popart/transforms/preautomaticlossscaling.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/remotesetup.hpp>
@@ -1249,6 +1250,12 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
 
   if (RandomSetup::requiresRandomSeed(*this)) {
     setRequiresRandomSeed();
+  }
+
+  if (getSessionOptions().automaticLossScalingSettings.enabled &&
+      getSessionOptions()
+          .automaticLossScalingSettings.toTrackTensors.has_value()) {
+    applyTransform(PreAutomaticLossScale::id(), getMainGraph());
   }
 
   applyTransform(RandomSetup::id(), getMainGraph());
@@ -4249,8 +4256,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

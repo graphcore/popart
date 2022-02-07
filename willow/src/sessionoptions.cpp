@@ -26,7 +26,7 @@ std::size_t AutomaticLossScalingSettings::hash() const {
   boost::hash_combine(seed, enabled);
   boost::hash_combine(seed, binEdgeLocation);
   boost::hash_combine(seed, thresholdUpperCountProportion);
-  if (toTrackTensors) {
+  if (toTrackTensors.has_value()) {
     boost::hash_combine(seed, toTrackTensors.value());
   }
   boost::hash_combine(seed, updatePeriod);

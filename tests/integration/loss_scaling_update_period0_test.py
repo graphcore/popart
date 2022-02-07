@@ -58,3 +58,11 @@ def test_auto_loss_scaling_identical_weight_updates_sharded_update_period2(
         optimizer=optimizer,
         update_period=2,
         expected_loss_scale=[10., 20., 20., 40., 40., 80., 80., 160.])
+
+
+# @pytest.mark.parametrize("optimizer", getOptimizers())
+# def test_auto_loss_scaling_user_track_tensors(tmpdir, optimizer):
+#     run_automatic_loss_scaling_comparison_test(
+#         tmpdir,
+#         optimizer,
+#         toTrackTensors=["init_input/1", "BatchNormalization:0", "init_input"])

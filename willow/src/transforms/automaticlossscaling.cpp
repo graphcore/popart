@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
@@ -58,7 +59,77 @@ bool producesToTrackTensors(Op *op) {
   return false;
 }
 
-std::vector<Tensor *> getToTrackTensors(Graph &graph) {
+void removeProxyOps(Graph &graph) {
+
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->opid.type == "AutoLossScaleProxy") {
+      auto tensorIn  = op->input->tensors()[0];
+      auto tensorOut = op->output->tensors()[0];
+
+      for (auto &consumer : tensorOut->consumers.getOps()) {
+        std::vector<int> indices = consumer->input->indicesMap().at(tensorOut);
+        for (auto i : indices) {
+          consumer->disconnectInTensor(i, tensorOut);
+          consumer->connectInTensor(i, tensorIn->id);
+        }
+      }
+
+      op->disconnectAllInputs();
+      op->disconnectAllOutputs();
+      op->getGraph().eraseOp(op->id);
+    }
+  }
+}
+
+void removeProxyGradOps(Graph &graph) {
+
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->opid.type == "AutoLossScaleProxyGrad") {
+      auto tensorIn  = op->input->tensors()[0];
+      auto tensorOut = op->output->tensors()[0];
+
+      op->disconnectAllInputs();
+      op->disconnectAllOutputs();
+
+      Op *producer             = tensorIn->getProducer();
+      std::vector<int> indices = producer->output->indicesMap().at(tensorIn);
+      producer->disconnectOutTensor(tensorIn);
+      for (auto i : indices) {
+        producer->connectOutTensor(i, tensorOut->id);
+      }
+
+      op->getGraph().eraseOp(op->id);
+    }
+  }
+}
+
+// Users can provide names of forward tensors in order to their
+// gradient tensors were used for automatic loss scaling.
+// They are temporarily annotated in graphs by AutoLossScaleProxyOp
+// to find their gradient tensors after automatic differentiation.
+// We have to remove the AutoLossScaleProxyOps and AutoLossScaleProxyGradOps.
+// Collect the gradient tensors.
+std::vector<Tensor *> getToTrackTensorsUser(Graph &graph) {
+  std::vector<Tensor *> toTrackTensors;
+
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->opid.type == "AutoLossScaleProxyGrad") {
+      for (Tensor *tensor : op->output->tensors()) {
+        toTrackTensors.push_back(tensor);
+      }
+    }
+  }
+
+  removeProxyOps(graph);
+  removeProxyGradOps(graph);
+
+  return toTrackTensors;
+}
+
+std::vector<Tensor *> getToTrackTensorsDefault(Graph &graph) {
   std::vector<Tensor *> toTrackTensors;
 
   for (auto &id_op : graph.getOps()) {
@@ -84,6 +155,15 @@ std::vector<Tensor *> getToTrackTensors(Graph &graph) {
   }
 
   return toTrackTensors;
+}
+
+std::vector<Tensor *> getToTrackTensors(Graph &graph) {
+
+  return graph.getIr()
+                 .getSessionOptions()
+                 .automaticLossScalingSettings.toTrackTensors.has_value()
+             ? getToTrackTensorsUser(graph)
+             : getToTrackTensorsDefault(graph);
 }
 
 // A tensor has (or is close to having) overflow if some of its elements have

@@ -89,7 +89,8 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
                                                accumulation_factor=3,
                                                bps=4,
                                                update_period=None,
-                                               expected_loss_scale=[]):
+                                               expected_loss_scale=[],
+                                               toTrackTensors=None):
     """
     An integration test: verify that the weight updates computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
@@ -142,6 +143,8 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     opts.automaticLossScalingSettings.enabled = True
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
+    if toTrackTensors is not None:
+        opts.automaticLossScalingSettings.toTrackTensors = toTrackTensors
     if update_period is not None:
         opts.automaticLossScalingSettings.updatePeriod = update_period
 

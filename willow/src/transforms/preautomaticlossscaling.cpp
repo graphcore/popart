@@ -115,12 +115,16 @@ bool PreAutomaticLossScale::apply(Graph &graph) const {
   return true;
 }
 
-std::size_t PreAutomaticLossScale::getId() const {
+std::size_t PreAutomaticLossScale::id() {
   return typeid(PreAutomaticLossScale).hash_code();
 }
 
 std::string PreAutomaticLossScale::getName() const {
   return "PreAutomaticLossScale";
+}
+
+namespace {
+bool init = Transform::registerTransform(new PreAutomaticLossScale);
 }
 
 } // namespace popart

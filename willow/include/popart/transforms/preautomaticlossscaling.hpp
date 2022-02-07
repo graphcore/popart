@@ -33,6 +33,8 @@ namespace popart {
  */
 class PreAutomaticLossScale : public Transform {
 public:
+  static std::size_t id();
+
   PreAutomaticLossScale() : Transform() {}
   virtual ~PreAutomaticLossScale() override {}
 
@@ -52,7 +54,7 @@ public:
    */
   virtual bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const final;
+  virtual std::size_t getId() const final { return id(); }
 
   virtual std::string getName() const final;
 };
