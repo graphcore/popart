@@ -37,6 +37,8 @@ add_popart_py_unit_test(test_excludes test_excludes.py)
 
 add_popart_py_unit_test(test_enable_patterns test_enable_patterns.py)
 
+add_popart_py_unit_test(test_expandcast test_expandcast.py VARIANTS IpuModel)
+
 add_popart_py_unit_test(test_view_simplify_pattern test_view_simplify_pattern.py VARIANTS IpuModel)
 
 add_popart_py_unit_test(test_foldmatmulpattern test_foldmatmulpattern.py)

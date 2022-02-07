@@ -219,6 +219,7 @@ public:
   bool isSqrtGradOpEnabled();
   bool isConvFlipWeightsDoubleFlipEnabled();
   bool isConvFlipWeightsGradOpEnabled();
+  bool isExpandCastEnabled();
   bool isExpGradOpEnabled();
   bool isExpm1GradOpEnabled();
   bool isLog1pGradOpEnabled();

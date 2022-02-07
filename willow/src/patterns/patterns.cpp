@@ -24,6 +24,7 @@
 #include <popart/patterns/divarg0gradoppattern.hpp>
 #include <popart/patterns/divarg1gradoppattern.hpp>
 #include <popart/patterns/elementwisegradoppattern.hpp>
+#include <popart/patterns/expandcast.hpp>
 #include <popart/patterns/expgradoppattern.hpp>
 #include <popart/patterns/expm1gradoppattern.hpp>
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
@@ -276,6 +277,10 @@ bool Patterns::isConvFlipWeightsDoubleFlipEnabled() {
 
 bool Patterns::isConvFlipWeightsGradOpEnabled() {
   return isPatternEnabled<ConvFlipWeightsGradOpPattern>();
+}
+
+bool Patterns::isExpandCastEnabled() {
+  return isPatternEnabled<ExpandCastPattern>();
 }
 
 bool Patterns::isExpGradOpEnabled() {
@@ -579,6 +584,7 @@ std::vector<std::unique_ptr<PreAliasPattern>> Patterns::getPreAliasList() {
   }
 
   static std::map<std::type_index, float> patternPriority{
+      {std::type_index(typeid(ExpandCastPattern)), 54},
       {std::type_index(typeid(ConvFlipWeightsDoubleFlipPattern)), 53},
       {std::type_index(typeid(ConvFlipWeightsGradOpPattern)), 52},
       {std::type_index(typeid(Atan2Arg0GradOpPattern)), 51},
