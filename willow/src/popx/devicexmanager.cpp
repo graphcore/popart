@@ -263,7 +263,9 @@ DevicexInfo::~DevicexInfo() {
 
 bool DevicexInfo::attach() {
   bool wasAttached = isAttached_;
-  isAttached_      = device.attach();
+  writeToDeviceAccessLog("attach-before-poplar-call");
+  isAttached_ = device.attach();
+  writeToDeviceAccessLog("attach-after-poplar-call");
   if (!wasAttached && isAttached_) {
     writeToDeviceAccessLog("attach");
   }
@@ -276,7 +278,9 @@ void DevicexInfo::detach() {
   }
 
   isAttached_ = false;
+  writeToDeviceAccessLog("detach-before-poplar-call");
   device.detach();
+  writeToDeviceAccessLog("detach-after-poplar-call");
 }
 
 std::vector<int> DevicexIpuInfo::getChildIds() const {
