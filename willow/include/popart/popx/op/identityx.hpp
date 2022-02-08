@@ -9,16 +9,35 @@
 namespace popart {
 namespace popx {
 
-class IdentityOpx : public ElementWiseUnaryOpx {
+class IdentityComputex : public EwuComputex {
 public:
-  IdentityOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
+  IdentityComputex() {}
+
+  snap::Tensor outplace(snap::program::Sequence &,
+                        snap::Graph &,
+                        const snap::Tensor &tensor,
+                        const poplar::DebugNameAndId &,
+                        const std::string &) const final;
+
+  void inplace(snap::program::Sequence &,
+               snap::Graph &,
+               const snap::Tensor &,
+               const poplar::DebugNameAndId &,
+               const std::string &) const final;
+
+  static std::unique_ptr<EwuComputex> get() {
+    return std::unique_ptr<EwuComputex>(new IdentityComputex());
+  }
 };
 
-class IdentityInplaceOpx : public PopOpx {
+class IdentityOpx : public ElementWiseUnaryOutplaceOpx {
+public:
+  IdentityOpx(Op *, Devicex *);
+};
+
+class IdentityInplaceOpx : public ElementWiseUnaryInplaceOpx {
 public:
   IdentityInplaceOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const final;
 };
 
 class IdentityGradOpx : public ElementWiseUnaryOpx {

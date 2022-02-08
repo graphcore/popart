@@ -16,22 +16,30 @@ namespace pe = popops::expr;
 namespace popart {
 namespace popx {
 
+snap::Tensor IdentityComputex::outplace(snap::program::Sequence &prog,
+                                        snap::Graph &graph,
+                                        const snap::Tensor &tensor,
+                                        const poplar::DebugNameAndId &dnai,
+                                        const std::string &s) const {
+  return cloneNcopy(prog, graph, tensor, dnai);
+}
+
+void IdentityComputex::inplace(snap::program::Sequence &prog,
+                               snap::Graph &graph,
+                               const snap::Tensor &tensor,
+                               const poplar::DebugNameAndId &dnai,
+                               const std::string &s) const {
+  // Do nothing
+}
+
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
+    : ElementWiseUnaryOutplaceOpx(op, devicex, IdentityComputex::get()) {
   verifyOp<IdentityOp>(op, Onnx::Operators::Identity_1);
 }
 
-void IdentityOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(0, PopOpx::cloneNcopy(prog, getInTensor(0)));
-}
-
 IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
-    : PopOpx(op, devicex) {
+    : ElementWiseUnaryInplaceOpx(op, devicex, IdentityComputex::get()) {
   verifyOp<IdentityInplaceOp>(op);
-}
-
-void IdentityInplaceOpx::grow(snap::program::Sequence &) const {
-  setOutTensor(0, getInTensor(0));
 }
 
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
