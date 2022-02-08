@@ -1,8 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, List
+from typing import Dict, List, Tuple
+from tempfile import TemporaryDirectory
+from numpy.core import shape_base
 import numpy as np
 import pytest
 import popart
+import os
 
 import sys
 from pathlib import Path
@@ -16,11 +19,12 @@ DATA_LEN = 3
 O_DIM = 2
 # Learning rate 1 for easy comparison.
 LEARNING_RATE = 1.0
+TEMPFILE = "temporary_file"
 """
 Autogen a weight array
 """
 
-key_parse = {
+KEY_PARSE = {
     "commType": {
         "All": popart.CommGroupType.All,
         "Consecutive": popart.CommGroupType.Consecutive,
@@ -44,10 +48,10 @@ def is_default_settings(var_set: popart.VariableSettings):
 def get_variable_settings(repl_config):
     vs = popart.VariableSettings(
         popart.CommGroup(
-            key_parse["commType"][
+            KEY_PARSE["commType"][
                 repl_config["commType"]],  # How the groups are configured
             int(repl_config["commSize"])),  # Size of groups
-        key_parse["retrieval"][
+        KEY_PARSE["retrieval"][
             repl_config["retrieval"]])  # How much and what to retrieve
     return vs
 
@@ -110,22 +114,29 @@ Simple Model
 """
 
 
-def get_model(repl_config: Dict, builder, groups, var_settings):
+def get_model(repl_config: Dict,
+              builder,
+              groups,
+              var_settings,
+              initialize=True):
     """
     Get a simple test
     """
     input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
 
     # Create an appropriate underlying weight-array
-    arrays_one = get_weights_array(input_shape, seed=1337)
-    arrays_two = get_weights_array(input_shape, groups)
-    arrays_two_init = get_weights_array(input_shape, groups)
+    if initialize:
+        arrays_one = get_weights_array(input_shape, seed=1337)
+        arrays_two = get_weights_array(input_shape, groups)
+        arrays_two_init = get_weights_array(input_shape, groups)
+    else:
+        re_input_shape = [len(groups)].extend(input_shape).\
+                          reshape([-1].extend(input_shape))
+        arrays_one = np.zeros(input_shape)
+        arrays_two = np.zeros(re_input_shape)
+        arrays_two_init = np.zeros(re_input_shape)
+
     assert np.allclose(arrays_two, arrays_two_init)
-
-    micro_batch_size = BATCH_SIZE // int(repl_config["repl"])
-
-    returned = var_settings.numReplicasReturningVariable(
-        int(repl_config["repl"]))
 
     # shapes
     data_shape = popart.TensorInfo("FLOAT", input_shape)
@@ -272,7 +283,7 @@ configs = [
         "retrieval": "OnePerGroup"
     },
     {  # Cons 1
-        "c.idx": '7',  # Debug Config ID
+        "c.idx": '6',  # Debug Config ID
         "ipus": '1',  # Number of IPUs to run on
         "repl": '2',  # Replication Factor
         "commType": "Consecutive",
@@ -296,6 +307,8 @@ if (len(run_tests) == 0):
 @tu.requires_ipu
 def test_grouped_initialization(config):
     # skip if unimplemented
+    if (config["c.idx"] == configs[0]["c.idx"]):
+        print()
     if (int(config["c.idx"]) not in run_tests
             or int(config["c.idx"]) in skp_tests):
         pytest.skip()
@@ -376,3 +389,84 @@ def test_grouped_initialization(config):
             # checks that the gradient is different from different groups
 
         verify(config, var_set, buffer_two, groups)
+
+
+onnx_tests = [1, 2, 3, 4, 5]
+onnx_configs = []
+for test in onnx_tests:
+    onnx_configs += [configs[test]]
+
+
+@pytest.mark.parametrize("config", onnx_configs)
+@tu.requires_ipu
+def test_onnx_checkpointing(config):
+    if onnx_tests[0] == int(config["c.idx"]):
+        print()
+    with TemporaryDirectory() as tmpdir:
+        tmpfile = os.path.join(tmpdir, "model.onnx")
+
+        var_set = get_variable_settings(config)
+        returned = var_set.numReplicasReturningVariable(int(config["repl"]))
+        groups = [] if returned == 1 else get_group_idxs(
+            config, var_set, returned)
+
+        builder = popart.Builder()
+        builder.embedReplicationFactor(int(config["repl"]))
+        session, tensors, arrays, input_shape, label_shape = get_model(
+            config, builder, groups, var_set, initialize=True)
+
+        ip, lb, w1, w2 = tensors
+        array_one, array_two = arrays
+
+        session.weightsFromHost()
+
+        buffer_one = np.ones(array_one.shape).astype(np.float32)
+        buffer_two = np.ones(array_two.shape).astype(np.float32)
+        if (config["retrieval"] == "AllReplicas"):
+            old_shape = buffer_two.shape
+            buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
+                                   returned, 0)
+            reshape = (returned, ) + old_shape
+            buffer_two = buffer_two.reshape(reshape)
+        weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
+
+        session.weightsToHost()
+        session.readWeights(weightsIo)
+
+        if returned == 1:
+            assert array_one.shape == buffer_two.shape
+            assert builder.getTensorShape(w1) == builder.getTensorShape(w2)
+        else:
+            assert returned == buffer_two.shape[0]
+            assert array_one.shape == buffer_two.shape[1:]
+
+        # write to file
+        session.modelToHost(tmpfile)
+
+        # Clean Cut
+        del session
+        del builder
+
+        builder = popart.Builder()
+        session, tensors, array, input_shape, label_shape = get_model(
+            config, builder, groups, var_set, initialize=True)
+
+        _, _, w1, w2 = tensors
+        session.resetHostWeights(tmpfile, True)
+        session.weightsFromHost()
+
+        buffer_one = np.ones(array_one.shape).astype(np.float32)
+        buffer_two = np.ones(array_two.shape).astype(np.float32)
+        if (config["retrieval"] == "AllReplicas"):
+            old_shape = buffer_two.shape
+            buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
+                                   returned, 0)
+            reshape = (returned, ) + old_shape
+            buffer_two = buffer_two.reshape(reshape)
+        weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
+
+        session.weightsToHost()
+        session.readWeights(weightsIo)
+
+        assert np.allclose(array_one, buffer_one)
+        assert np.allclose(array_two, buffer_two)

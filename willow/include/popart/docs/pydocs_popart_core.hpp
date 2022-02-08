@@ -2553,6 +2553,9 @@ Args:
  nodeOutputNames: Names of the output tensors of the ONNX node used to
                         find the node in the ONNX model.)doc";
 
+static const char *__doc_popart_Builder_embedReplicationFactor =
+    R"doc(Embeds a replication-factor into the underlying onnx model.)doc";
+
 static const char *__singlelinedoc_popart_Builder_getAllNodeAttributeNames =
     R"doc(Get all the attribute names from the ONNX node. This functions will throw an exception if it can't find the unique node. Args: nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 

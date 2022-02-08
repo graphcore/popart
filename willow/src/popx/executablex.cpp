@@ -200,6 +200,15 @@ void Executablex::resetWeights(
     const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
   auto &onnxGraph = modelProto.graph();
 
+  auto replicationFactor = 0;
+
+  for (auto &m : modelProto.metadata_props()) {
+    if (m.key() == sReplicationFactor) {
+      replicationFactor = static_cast<size_t>(std::stoi(m.value()));
+      break;
+    }
+  }
+
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     if (!containsTensor(tenId)) {
@@ -211,8 +220,24 @@ void Executablex::resetWeights(
       }
     }
     auto tensor = getTensor(tenId);
-    if (tensor->info != TensorInfo(initializer)) {
-      throw runtime_error("trying to reset weights using tensor with non "
+    auto groupCount =
+        tensor->getVariableSettings().groupCount(replicationFactor);
+
+    if (replicationFactor > 0 && groupCount != 1) {
+      auto info           = TensorInfo(initializer);
+      Shape grouped_shape = Shape(0);
+      grouped_shape.push_back(groupCount);
+      grouped_shape.insert(grouped_shape.begin() + 1,
+                           tensor->info.shape().begin(),
+                           tensor->info.shape().end());
+      if (grouped_shape != info.shape() ||
+          tensor->info.dataType() != info.dataType()) {
+        throw runtime_error("Trying to reset weights using tensor with non "
+                            "matching tensor info. Tensor ID: {}",
+                            tensor->id);
+      }
+    } else if (tensor->info != TensorInfo(initializer)) {
+      throw runtime_error("Trying to reset weights using tensor with non "
                           "matching tensor info. Tensor ID: {}",
                           tensor->id);
     }

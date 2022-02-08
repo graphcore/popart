@@ -303,6 +303,22 @@ public:
   std::vector<TensorId>
   checkpointOutput(const std::vector<TensorId> &nodeOutputNames);
 
+  /**
+   * Embed the value of replicationFactor into the OnnxModel.
+   * Should be interpreted as 1 if not present in the model.
+   * \param replicationFactor The replication factor.
+   */
+  void embedReplicationFactor(int replicationFactor);
+
+  /**
+   * Fetch the replication factor from the model
+   * Note: if no replication-factor is found, this
+   * function returns 0. This means no replication-
+   * factor has been given.
+   * \return The replication-factor, or zero if none given.
+   */
+  int64_t readReplicationFactor();
+
 private:
   ONNX_NAMESPACE::ValueInfoProto *addGraphInput(const TensorId &id);
 

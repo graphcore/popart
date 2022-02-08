@@ -93,6 +93,12 @@ public:
   unsigned groupCount(unsigned replicaCount) const;
 
   /**
+   * \param replicaCount The replicationFactor of the graph
+   * \return             Accurate size of the graph
+   */
+  unsigned getRealGroupSize(unsigned replicaCount) const;
+
+  /**
    * Get the default \a first member of a group
    * \param  group The group to return the representative for.
    * \return       The representative replica of this group.

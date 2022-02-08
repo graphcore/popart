@@ -555,7 +555,9 @@ void Session::modelToHost(const std::string &fn) {
       mvd.data = reinterpret_cast<void *>(externalTensorBuffers[tenId].data());
       initMap[tenId] = mvd;
     } else {
-      initMap[tenId] = onnxutil::getMutableData(tp);
+      TensorInfo info(tp);
+      MutableVoidData mvd = onnxutil::getMutableData(tp);
+      initMap[tenId]      = mvd;
     }
   }
 

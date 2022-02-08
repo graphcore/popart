@@ -517,6 +517,20 @@ TensorId BuilderImpl::addInitializedInputTensor(
   auto *type = input->mutable_type();
   *type      = initData.info.getOnnxTypeProto();
 
+  // Replication Factor Awareness
+  auto replicationFactor = readReplicationFactor();
+  if (replicationFactor > 1) {
+    Shape grouped_shape(0);
+    grouped_shape.push_back(variableSettings.groupCount(replicationFactor));
+    for (auto &elem : initData.info.shape()) {
+      grouped_shape.push_back(elem);
+    }
+    TensorInfo proxy(initData.info.data_type(), grouped_shape);
+    *type = proxy.getOnnxTypeProto();
+  } else {
+    *type = initData.info.getOnnxTypeProto();
+  }
+
   auto *initializer = graph->add_initializer();
   populateTensorProtoFromConstVoidData(initData, id, initializer);
 
@@ -565,6 +579,27 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   if (!found) {
     output->set_name(arg0);
   }
+}
+
+void BuilderImpl::embedReplicationFactor(int replicationFactor) {
+  auto meta_data = model_.mutable_metadata_props();
+  auto a         = meta_data->Add();
+  a->set_key(std::string(sReplicationFactor));
+  a->set_value(std::to_string(replicationFactor));
+}
+
+int64_t BuilderImpl::readReplicationFactor() {
+
+  // Check if the value exists before fetching it
+  if (!hasAttribute(std::string(sReplicationFactor))) {
+    return 0;
+  }
+
+  // Fetch the attribtue
+  ONNX_NAMESPACE::AttributeProto &attr =
+      getNodeAttribute(std::string(sReplicationFactor), {});
+
+  return attr.i();
 }
 
 void BuilderImpl::op(

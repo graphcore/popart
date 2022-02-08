@@ -278,7 +278,7 @@ static constexpr const char *sCollectiveOperator  = "__collectiveOperator";
 static constexpr const char *sCollectiveCommGroup = "__collectiveCommGroup";
 static constexpr const char *sReplicatedTensorSharding =
     "__replicatedTensorSharding";
-
+static constexpr const char *sReplicationFactor = "__replicationFactor";
 } // namespace popart
 
 #endif

@@ -2690,6 +2690,10 @@ PYBIND11_MODULE(popart_core, m) {
             &Builder::getAllNodeAttributeNames,
             py::arg("nodeOutputNames"),
             DOC(popart, Builder, getAllNodeAttributeNames));
+    cls.def("embedReplicationFactor",
+            &Builder::embedReplicationFactor,
+            py::arg("replicationFactor"),
+            DOC(popart, Builder, embedReplicationFactor));
     cls.def("getModelProto", [](const Builder &builder) {
       return py::bytes(builder.getModelProto());
     });

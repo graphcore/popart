@@ -44,6 +44,18 @@ class Executablex;
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
+/**
+ * DownsampleStream is a flag used to tell certain functions
+ * that they should only work on the Primary Sample of a Group.
+ */
+enum class DownsampleStream {
+  // Do no downsampling
+  No = 0,
+
+  // Sample only the primary member of a group
+  GroupPrimary
+};
+
 class Devicex {
 private:
   Executablex &executable_;
@@ -286,7 +298,22 @@ private:
   // last to have loaded its engine to deviceInfo's device
   void run(PopPrograms::ProgramIndex ind, std::string debugName);
 
-  void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
+  /** Copy from the host end of a d2h stream, to some final host memory.
+   * This is the step which follows a copy from device to host.
+   * poplar::Streams cannot write to an arbitrary dynamic address,
+   * they are connected to a fixed host address. This function copies
+   * from that fixed address to a dynamic address (mv_data).
+   *
+   * \param mv_data    Destination mutable data
+   * \param id         Tensor to move into mutable data
+   * \param downsample a flag (No/GroupPrimary), sending the entire stream if
+   *                   set to no, and sampling only the group primaries (based
+   *                   on the VariableSettings) of the tensor in question.
+   *
+   */
+  void hostStreamToHost(const MutableVoidData &mv_data,
+                        TensorId id,
+                        DownsampleStream downsample);
 
   // Call hostToHostStream on all the Tensors in pir->dataStreamTensors()
   void anchorsHostToHostStreams(IStepIO &stepio);

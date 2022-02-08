@@ -126,6 +126,21 @@ unsigned VariableSettings::groupCount(unsigned replicaCount) const {
   }
 }
 
+unsigned VariableSettings::getRealGroupSize(unsigned replicaCount) const {
+  switch (sharedVariableDomain.type) {
+  case CommGroupType::All:
+    return replicaCount;
+  case CommGroupType::None:
+    return 1;
+  case CommGroupType::Consecutive:
+  case CommGroupType::Orthogonal:
+    return sharedVariableDomain.replicaGroupSize;
+  default:
+    throw internal_error("Bad CommGroupType {} in VariableSetting.\n",
+                         sharedVariableDomain.type);
+  }
+}
+
 unsigned VariableSettings::getGroupRepresentative(unsigned group) const {
   switch (sharedVariableDomain.type) {
   case CommGroupType::All:

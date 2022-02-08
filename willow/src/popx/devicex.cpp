@@ -382,7 +382,7 @@ void Devicex::readWeights(const IWeightsIO &weights) {
       logging::devicex::debug("Reading weights (host stream -> host) for {}",
                               id);
       MutableVoidData stepout = weights.weight(id);
-      hostStreamToHost(stepout, id);
+      hostStreamToHost(stepout, id, DownsampleStream::No);
     } else {
       logging::devicex::debug(
           "Not reading weights (host stream -> host) for {}", id);
@@ -442,7 +442,7 @@ void Devicex::weightsToHost(
           throw runtime_error(oss.str());
         }
         MutableVoidData mv_data = found->second;
-        hostStreamToHost(mv_data, id);
+        hostStreamToHost(mv_data, id, DownsampleStream::GroupPrimary);
       }
     }
   }
@@ -615,12 +615,9 @@ void Devicex::optimizerFromHost() {
   }
 }
 
-// Copy from the host end of a d2h stream, to some final host memory.
-// This is the step which follows a copy from device to host.
-// poplar::Streams cannot write to an arbitrary dynamic address,
-// they are connected to a fixed host address. This function copies
-// from that fixed address to a dynamic address (mv_data).
-void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
+void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
+                               TensorId id,
+                               DownsampleStream downsample) {
   POPART_TRACEPOINT();
 
   // The host end of the poplar::Stream,
@@ -631,8 +628,37 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   // It is a char vector, so this is in bytes.
   int64_t nbytes_src;
 
-  src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
-  nbytes_src = d2hWeightBuffers.at(id).size();
+  Tensor *tensor        = executable_.getTensor(id);
+  auto variableSettings = tensor->getVariableSettings();
+
+  std::vector<char> tmp;
+
+  if (variableSettings.getRetrievalMode() ==
+          VariableRetrievalMode::AllReplicas &&
+      downsample == DownsampleStream::GroupPrimary) {
+    // Down-sample
+    auto groupCount      = variableSettings.groupCount(getReplicationFactor());
+    auto downSampledSize = groupCount * tensor->info.nbytes();
+
+    // Create temporary buffer
+    tmp = std::vector<char>(downSampledSize);
+
+    // Copy the samples into the buffer
+    for (auto group = 0; group < groupCount; group++) {
+
+      auto replica  = variableSettings.getGroupRepresentative(group);
+      auto addr_dst = tmp.data() + (group * tensor->info.nbytes());
+      auto addr_src =
+          d2hWeightBuffers.at(id).data() + (replica * tensor->info.nbytes());
+      memcpy(addr_dst, addr_src, tensor->info.nbytes());
+    }
+    src        = static_cast<const void *>(tmp.data());
+    nbytes_src = downSampledSize;
+  } else {
+    // Do nothing special
+    src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
+    nbytes_src = d2hWeightBuffers.at(id).size();
+  }
 
   auto dst = mv_data.data;
 

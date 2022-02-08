@@ -1821,6 +1821,13 @@ public:
    */
   bool hasParent() const { return parent == nullptr; }
 
+  /**
+   * Embed the value of replicationFactor into the OnnxModel.
+   * Should be interpreted as 1 if not present in the model.
+   * \param replicationFactor The replication factor.
+   */
+  void embedReplicationFactor(int replicationFactor);
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);

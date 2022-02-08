@@ -1407,6 +1407,10 @@ void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
 
+void Builder::embedReplicationFactor(int replicationFactor) {
+  impl_->embedReplicationFactor(replicationFactor);
+}
+
 std::string Builder::getNameScope(const std::string &name) const {
   return impl_->getNameScope(name);
 }
