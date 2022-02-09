@@ -371,9 +371,9 @@ bool Ir::useSyntheticData() const {
 
 bool Ir::usingEngineCache(const SessionOptions &opts, const DeviceInfo *di) {
   return opts.enableEngineCaching && !opts.cachePath.empty() &&
-         (di->getType() == DeviceType::Ipu ||
-          di->getType() == DeviceType::OfflineIpu);
+         di->isHwCompatible();
 }
+
 void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
@@ -4256,8 +4256,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

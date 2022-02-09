@@ -317,6 +317,11 @@ DeviceInfo::DeviceInfo(DeviceProvider &_provider,
 
 DeviceInfo::~DeviceInfo() {}
 
+bool DeviceInfo::isHwCompatible() const {
+  return type == popart::DeviceType::Ipu ||
+         type == popart::DeviceType::OfflineIpu;
+}
+
 const poplar::OptionFlags &DeviceInfo::getOptionFlags() const { return *flags; }
 
 std::string DeviceInfo::toString() const {
@@ -464,14 +469,11 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
 } // namespace popart
 
 namespace std {
-std::size_t
-std::hash<popart::DeviceInfo>::operator()(const popart::DeviceInfo &di) const {
+std::size_t std::hash<popart::DeviceInfo>::
+operator()(const popart::DeviceInfo &di) const {
   std::size_t seed = 0;
-  auto type        = di.getType();
-  bool isHwCompatible =
-      type == popart::DeviceType::Ipu || type == popart::DeviceType::OfflineIpu;
 
-  boost::hash_combine(seed, isHwCompatible);
+  boost::hash_combine(seed, di.isHwCompatible());
 
   poplar::StringRef targetArchString;
   try {

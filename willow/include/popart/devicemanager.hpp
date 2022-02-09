@@ -97,6 +97,10 @@ public:
 
   bool tryAttachUntilTimeout();
 
+  // Return true if this device represents real hardware
+  // (i.e it is not a model or a simulator).
+  bool isHwCompatible() const;
+
   /// Log an event for device debugging purposes. This event will get logged to
   /// the file location set by evironment variable
   /// POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. \param event A textual

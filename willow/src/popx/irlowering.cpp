@@ -2572,7 +2572,7 @@ unsigned IrLowering::getAccumulationFactor() const {
 void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableFloatingPointChecks) {
-    if (deviceInfo->getType() == DeviceType::Ipu) {
+    if (deviceInfo->isHwCompatible()) {
       logging::devicex::info("Enabling all floating point checks");
       // Not enabling stochasitc rounding, that is done in a separate call
       poplar::FloatingPointBehaviour behaviour(true, true, true, false, true);
@@ -2592,7 +2592,7 @@ void IrLowering::setFloatingPointBehaviour(snap::Graph &graph) {
 void IrLowering::setStochasticRoundingBehaviour(snap::Graph &graph) {
 
   if (ir().getSessionOptions().enableStochasticRounding) {
-    if (deviceInfo->getType() == DeviceType::Ipu) {
+    if (deviceInfo->isHwCompatible()) {
       logging::devicex::info("Enabling stochastic rounding");
       bool behaviour = true;
       poplar::setStochasticRounding(graph.getPoplarGraph(),
