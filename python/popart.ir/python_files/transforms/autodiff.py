@@ -165,6 +165,7 @@ class GradGraphInfo:
         Example:
 
         .. code-block:: python
+
             # `module`: subgraph module, `x` graph inputs, `x_dash` grad graph input
             graph = ir.create_graph(module, x, out_features=16) # Forwards graph
             call_info = ops.call_with_info(

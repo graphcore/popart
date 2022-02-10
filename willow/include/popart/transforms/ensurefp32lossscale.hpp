@@ -92,7 +92,7 @@ public:
    * \return True if it is has an implementation known to support mixed
    *     precision inputs.
    **/
-  bool isMixedPrecisionLossGradOp(Op *op) const;
+  static bool isMixedPrecisionLossGradOp(Op *op);
 
   /**
    * Only to be called on an op for which a call to
@@ -102,7 +102,7 @@ public:
    *     there-of) you want to find.
    * \return The input tensor.
    **/
-  Tensor *getLossScaleInputTensor(Op *op) const;
+  static Tensor *getLossScaleInputTensor(Op *op);
 
   /**
    * For deciding whether to continue graph traversal from \a op's outputs,

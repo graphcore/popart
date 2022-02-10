@@ -1,7 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PatternsTest
 
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
@@ -9,11 +11,14 @@
 #include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/graphcoreoperators.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/cast.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/patterns/removeunnecessarylossgradcastpattern.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
@@ -79,6 +84,100 @@ BOOST_AUTO_TEST_CASE(Atan2GradOps) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Div).size() == 2);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::ReduceSum).size() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(RemoveUnnecessaryLossGradCastTest) {
+  // clang-format off
+  // {(fp32LossScale)} -> [Cast] -> (fp16LossScale) -> [NllLossGradOp] -> (fp16Grad)
+  // {(fp16Probs)}     --------------------------------------^
+  //
+  // should become
+  //
+  // {(fp32LossScale)} -> [NllLossGradOp] -> (fp16Grad)
+  // {(fp16Probs)}     ---------^
+  // clang-format on
+
+  Ir ir;
+  auto &mainGraph = ir.getMainGraph();
+
+  // Define the TensorInfos and the TensorIds
+  TensorInfo fp32Info{DataType::FLOAT, std::vector<int64_t>{1}};
+  TensorInfo i16Info{DataType::INT16, std::vector<int64_t>{2}};
+  TensorInfo fp16Info{DataType::FLOAT16, std::vector<int64_t>{2, 2}};
+  // Input to CastOp
+  TensorId fp32LossScale("fp32LossScale");
+  // Output from CastOp
+  TensorId fp16LossScale("fp16LossScale");
+  // Input to NllLossGradOp
+  TensorId fp16Probs("fp16Probs");
+  TensorId i16Labels("i16Labels");
+  // NllLossGradOp placeholder
+  TensorId tmpLoss("tmpLoss");
+  // Output form NllLossGradOp
+  TensorId fp16Grad("fp16Grad");
+
+  // Add input tensors to the graph
+  mainGraph.addInput(fp32LossScale, fp32Info);
+  mainGraph.addInput(i16Labels, i16Info);
+  mainGraph.addInput(fp16Probs, fp16Info);
+
+  // Add the CastOp
+  auto castOp = mainGraph.createConnectedOp<CastOp>(
+      {{CastOp::getInIndex(), fp32LossScale}},
+      {{CastOp::getOutIndex(), fp16LossScale}},
+      Onnx::Operators::Cast_6,
+      DataType::FLOAT16,
+      Op::Settings(mainGraph, ""));
+
+  // Add the NllGradOp
+  auto *nllGradOp = mainGraph.createConnectedOp<NllGradOp>(
+      {{NllGradOp::getProbsInIndex(), fp16Probs},
+       {NllGradOp::getLabelInIndex(), i16Labels},
+       {NllGradOp::getGradInIndex(), fp16LossScale}},
+      {{NllGradOp::getOutIndex(), fp16Grad}},
+      tmpLoss,
+      nonstd::optional<int>(),
+      ReductionType::Mean,
+      false,
+      Op::Settings(mainGraph, ""));
+
+  // Mark fp16Grad as output
+  mainGraph.markAsOutput(fp16Grad);
+
+  // Check that the IR contains the CastOp and fp16LossScale
+  BOOST_CHECK(castOp->input->tensors().size() == 1);
+  BOOST_CHECK(castOp->output->tensors().size() == 1);
+  BOOST_CHECK(ir.getMainGraphTensors().contains(fp16LossScale) == true);
+  // Check the input and output of NllGradOp
+  auto inputs  = nllGradOp->input->tensorIdMap();
+  auto outputs = nllGradOp->output->tensorIdMap();
+  BOOST_CHECK(inputs.at(NllGradOp::getProbsInIndex()) == fp16Probs);
+  BOOST_CHECK(inputs.at(NllGradOp::getLabelInIndex()) == i16Labels);
+  BOOST_CHECK(inputs.at(NllGradOp::getGradInIndex()) == fp16LossScale);
+  BOOST_CHECK(outputs.at(NllGradOp::getOutIndex()) == fp16Grad);
+  // Check that the output has the expected data type
+  BOOST_CHECK(mainGraph.getTensors().get(fp16Grad)->info.dataType() ==
+              DataType::FLOAT16);
+
+  // Apply the pattern
+  RemoveUnnecessaryLossGradCast alsPattern;
+  ir.applyPreAliasPattern(&alsPattern, mainGraph);
+
+  // Check that the CastOp has no connected tensors and that fp16LossScale has
+  // been removed from the IR
+  BOOST_CHECK(castOp->input->tensors().size() == 0);
+  BOOST_CHECK(castOp->output->tensors().size() == 0);
+  BOOST_CHECK(ir.getMainGraphTensors().contains(fp16LossScale) == false);
+  // Check the input and output of NllGradOp
+  inputs  = nllGradOp->input->tensorIdMap();
+  outputs = nllGradOp->output->tensorIdMap();
+  BOOST_CHECK(inputs.at(NllGradOp::getProbsInIndex()) == fp16Probs);
+  BOOST_CHECK(inputs.at(NllGradOp::getLabelInIndex()) == i16Labels);
+  BOOST_CHECK(inputs.at(NllGradOp::getGradInIndex()) == fp32LossScale);
+  BOOST_CHECK(outputs.at(NllGradOp::getOutIndex()) == fp16Grad);
+  // Check that the output has the expected data type
+  BOOST_CHECK(mainGraph.getTensors().get(fp16Grad)->info.dataType() ==
+              DataType::FLOAT16);
 }
 
 BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {

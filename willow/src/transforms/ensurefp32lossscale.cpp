@@ -13,7 +13,7 @@
 
 namespace popart {
 
-bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
+bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) {
   // All NllLoss-grad-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return true;
@@ -31,7 +31,7 @@ bool EnsureFp32LossScale::isMixedPrecisionLossGradOp(Op *op) const {
   return false;
 }
 
-Tensor *EnsureFp32LossScale::getLossScaleInputTensor(Op *op) const {
+Tensor *EnsureFp32LossScale::getLossScaleInputTensor(Op *op) {
   // All NllLoss-grad-like operations
   if (op->isConvertibleTo<NllGradOp>()) {
     return op->inTensor(NllGradOp::getGradInIndex());
