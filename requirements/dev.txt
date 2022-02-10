@@ -25,7 +25,7 @@ lit==0.7.1
 lxml==4.6.3
 pycapnp==0.6.4
 typing==3.7.4.3
-typing-extensions==3.7.4.3
+typing-extensions>=3.7.4.3
 
 # Requirements for linters.
 dataclasses==0.8
