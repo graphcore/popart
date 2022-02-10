@@ -209,6 +209,27 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
   return alignToAxis(snap::Tensor(result, graph), gradOutShape, axis);
 }
 
+snap::Tensor growScatterUpdateGrad(snap::program::Sequence &prog,
+                                   snap::Graph &graph,
+                                   const snap::Tensor &gradIn,
+                                   const snap::Tensor &indicesIn,
+                                   const popart::TensorInfo &gradOutInfo,
+                                   const popops::SlicePlan &plan,
+                                   const poplar::DebugNameAndId &dnai) {
+  auto indices      = indicesIn.reinterpret(poplar::UNSIGNED_INT);
+  auto result       = popops::multiSlice(graph.getPoplarGraph(),
+                                   gradIn.getPoplarTensor(),
+                                   indices.getPoplarTensor(),
+                                   {0},
+                                   {1},
+                                   prog.getPoplarSequence(),
+                                   plan,
+                                   poplar::OptionFlags(),
+                                   dnai);
+  auto result_shape = gradOutInfo.shape_szt();
+  return snap::Tensor(result.reshape(result_shape), graph);
+}
+
 } // namespace scatterutilx
 } // namespace popx
 } // namespace popart

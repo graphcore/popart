@@ -859,7 +859,11 @@ public:
    * Add a scatterreduce operation to the model
    *
    * Reduces all the values from the src tensor at the indices specified along
-   * the given axis.
+   * the given axis. Generally, src and index tensors are required to have the
+   * same shape, however, for two-dimensional inputs they can be different if
+   * the following requirements are met: src is of shape [N, M], index is of
+   * shape [N, 1] and reduction axis is 0. The result in such cases is the same
+   * as if the index tensor was broadcasted to [N, M].
    *
    *  for i in range(axis_size):
    *      output[i] = reduce(src[index == i])

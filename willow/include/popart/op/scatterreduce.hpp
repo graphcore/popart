@@ -49,12 +49,15 @@ public:
   static std::string reductionToString(ScatterReduction reduction);
   static ScatterReduction reductionFromString(const std::string &reductionStr);
 
+  bool indexBroadcasted() const { return index_broadcasted; }
+
 private:
   Shape backward_shape;
   int64_t axis;
   int64_t axis_size;
   ScatterReduction reduction;
   nonstd::optional<float> available_memory_proportion;
+  bool index_broadcasted;
 };
 
 class ScatterReduceGradOp : public Op {
@@ -82,11 +85,14 @@ public:
     return available_memory_proportion;
   }
 
+  bool indexBroadcasted() const { return index_broadcasted; }
+
 private:
   Shape backward_shape;
   int64_t axis;
   ScatterReduction reduction;
   nonstd::optional<float> available_memory_proportion;
+  bool index_broadcasted;
 };
 
 } // namespace popart

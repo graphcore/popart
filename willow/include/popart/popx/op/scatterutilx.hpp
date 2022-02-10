@@ -57,6 +57,15 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
                                    const popops::SlicePlan &plan,
                                    const poplar::DebugNameAndId &dnai);
 
+// Backward pass for cases where indices are not broadcasted.
+snap::Tensor growScatterUpdateGrad(snap::program::Sequence &prog,
+                                   snap::Graph &graph,
+                                   const snap::Tensor &gradIn,
+                                   const snap::Tensor &indicesIn,
+                                   const popart::TensorInfo &gradOutInfo,
+                                   const popops::SlicePlan &plan,
+                                   const poplar::DebugNameAndId &dnai);
+
 } // namespace scatterutilx
 } // namespace popx
 } // namespace popart

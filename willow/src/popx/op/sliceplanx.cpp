@@ -90,6 +90,21 @@ snap::Tensor createDataTensor(snap::Graph &graph,
   return alignToAxis(snap::Tensor{out, graph}, dataInfo.shape(), axis);
 }
 
+snap::Tensor createDataTensor(snap::Graph &graph,
+                              const popart::TensorInfo &dataInfo,
+                              const popops::SlicePlan &plan,
+                              const poplar::DebugNameAndId &dnai) {
+  auto out = popops::createSliceableTensor(graph.getPoplarGraph(),
+                                           popType(dataInfo),
+                                           dataInfo.shape_szt(),
+                                           {0},
+                                           {1},
+                                           plan,
+                                           poplar::OptionFlags(),
+                                           dnai);
+  return snap::Tensor(out, graph);
+}
+
 snap::Tensor createUpdateTensor(snap::Graph &graph,
                                 const popart::TensorInfo &dataInfo,
                                 const popart::TensorInfo &indicesInfo,
@@ -111,6 +126,25 @@ snap::Tensor createUpdateTensor(snap::Graph &graph,
   return alignToAxis(snap::Tensor{out, graph}, indicesInfo.shape(), axis);
 }
 
+snap::Tensor createUpdateTensor(snap::Graph &graph,
+                                const popart::TensorInfo &dataInfo,
+                                const popops::SlicePlan &plan,
+                                const poplar::DebugNameAndId &dnai) {
+  const auto &shape = dataInfo.shape_szt();
+  auto out          = popops::createSliceTensor(graph.getPoplarGraph(),
+                                       popType(dataInfo),
+                                       shape,
+                                       {0},
+                                       {1},
+                                       shape.at(0),
+                                       plan,
+                                       poplar::OptionFlags(),
+                                       dnai);
+  // Match the ir shape.
+  out = out.reshape(shape);
+  return snap::Tensor(out, graph);
+}
+
 snap::Tensor createIndicesTensor(snap::Graph &graph,
                                  const popart::TensorInfo &indicesInfo,
                                  const popops::SlicePlan &plan,
@@ -126,6 +160,22 @@ snap::Tensor createIndicesTensor(snap::Graph &graph,
 
   indices = indices.reinterpret(popType(indicesInfo));
   return alignToAxis(snap::Tensor{indices, graph}, indicesInfo.shape(), axis);
+}
+
+snap::Tensor createIndicesTensor(snap::Graph &graph,
+                                 const popart::TensorInfo &indicesInfo,
+                                 const popops::SlicePlan &plan,
+                                 const poplar::DebugNameAndId &dnai) {
+  const auto &shape = indicesInfo.shape_szt();
+  auto indices      = popops::createIndicesTensor(graph.getPoplarGraph(),
+                                             {0},
+                                             shape.at(0),
+                                             plan,
+                                             poplar::OptionFlags(),
+                                             dnai);
+  // Match the ir type.
+  indices = indices.reinterpret(popType(indicesInfo));
+  return snap::Tensor(indices, graph);
 }
 
 snap::Tensor alignToAxis(const snap::Tensor &input,

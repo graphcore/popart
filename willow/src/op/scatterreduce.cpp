@@ -40,7 +40,8 @@ ScatterReduceOp::ScatterReduceOp(
     const Op::Settings &settings_)
     : Op(_opid, settings_), backward_shape(), axis(axis_),
       axis_size(axis_size_), reduction(reduction_),
-      available_memory_proportion(available_memory_proportion_) {}
+      available_memory_proportion(available_memory_proportion_),
+      index_broadcasted(true) {}
 
 std::unique_ptr<Op> ScatterReduceOp::clone() const {
   return std::make_unique<ScatterReduceOp>(*this);
@@ -53,8 +54,24 @@ std::vector<std::unique_ptr<Op>> ScatterReduceOp::getGradOps() {
 }
 
 void ScatterReduceOp::setup() {
-  auto dataShape   = inShape(dataInIndex());
-  int64_t dataRank = static_cast<int64_t>(dataShape.size());
+  auto dataShape    = inShape(dataInIndex());
+  int64_t dataRank  = static_cast<int64_t>(dataShape.size());
+  auto indicesShape = inShape(indicesInIndex());
+
+  if (indicesShape != dataShape) {
+    // We allow shape mismatches when data is of shape [N, M], index is of shape
+    // [N, 1] and reduction axis is 0. The result in such cases is the same
+    // as if the index tensor was broadcasted to [N, M].
+    if (dataRank != 2 || indicesShape.size() != 2 ||
+        dataShape.at(0) != indicesShape.at(0) || indicesShape.at(1) != 1 ||
+        axis != 0) {
+      throw error(
+          "ScatterReduceOp::setup when 'src' and 'index' shapes are different, "
+          "'src' shape needs to be [N, M], 'index' shape needs to be [N, "
+          "1] and axis needs to be 0");
+    }
+    index_broadcasted = false;
+  }
 
   if (-dataRank > axis || axis > dataRank - 1) {
     throw error("ScatterReduceOp::setup axis = {} is outside the acceptable "
@@ -69,12 +86,6 @@ void ScatterReduceOp::setup() {
     axis += dataRank;
   }
 
-  // indices must have the same shape as the input data
-  auto indicesShape = inShape(indicesInIndex());
-
-  if (indicesShape != dataShape) {
-    throw error("ScatterReduceOp::setup Mismatch indices and data shape");
-  }
   // Output has the same data type as the input and has the same size as the
   // input, except in the axis where the scatter reduction is applied.
   auto dataInfo     = inInfo(dataInIndex());
@@ -93,13 +104,15 @@ void ScatterReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("backward_shape", backward_shape);
   os.appendAttribute("available_memory_proportion",
                      available_memory_proportion);
+  os.appendAttribute("index_broadcasted", index_broadcasted);
 }
 
 ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
     : Op(Onnx::CustomGradOperators::ScatterReduceGradOp, op.getSettings()),
       backward_shape(op.getBackwardShape()), axis(op.getAxis()),
       reduction(op.getReduction()),
-      available_memory_proportion(op.getAvailableMemoryProportion()) {}
+      available_memory_proportion(op.getAvailableMemoryProportion()),
+      index_broadcasted(op.indexBroadcasted()) {}
 
 std::unique_ptr<Op> ScatterReduceGradOp::clone() const {
   return std::make_unique<ScatterReduceGradOp>(*this);
@@ -132,6 +145,7 @@ void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
                      ScatterReduceOp::reductionToString(reduction));
   os.appendAttribute("available_memory_proportion",
                      available_memory_proportion);
+  os.appendAttribute("index_broadcasted", index_broadcasted);
 }
 
 namespace {

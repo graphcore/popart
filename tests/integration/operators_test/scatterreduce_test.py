@@ -109,6 +109,38 @@ def test_scatterreduce_axis(op_tester, axis):
     op_tester.run(init_builder, reference, "train")
 
 
+def test_scatterreduce_indices_data_different_shape(op_tester):
+    # Note how aiGraphcore.scatterreduce differs from the torch implementation,
+    # i.e. for the torch op, we need to expand the indices explicitly.
+    src = torch.ones((6, 3))
+    index = torch.tensor([[0, 1, 2, 3, 4, 0]]).T
+
+    def init_builder(builder):
+        data = builder.addInputTensor(src.numpy())
+        idx = builder.addInputTensor(index.numpy().astype(np.uint32))
+        out = builder.aiGraphcore.scatterreduce(
+            [data, idx],
+            axis=0,
+            axis_size=5,
+        )
+        builder.addOutputTensor(out)
+        return [
+            out,
+            popart.reservedGradientPrefix() + data,
+            popart.reservedGradientPrefix() + out,
+        ]
+
+    def reference(ref_data):
+        src.requires_grad = True
+        out = torch.zeros((5, 3))
+        out = out.scatter_add(src=src, index=index.expand_as(src), dim=0)
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        out.backward(d__o)
+        return [out, src.grad, d__o]
+
+    op_tester.run(init_builder, reference, "train")
+
+
 def test_scatterreduce_shape_inference():
     builder = popart.Builder()
     s = builder.addInputTensor("FLOAT16", [10, 10, 64])
@@ -122,7 +154,7 @@ def test_scatterreduce_shape_inference():
 def test_scatterreduce_bad_axis(op_tester):
     def bad_axis(builder):
         s = builder.addInputTensor(np.ones([2, 3, 4], dtype=np.float32))
-        i = builder.addInputTensor(np.zeros(10, dtype=np.uint32))
+        i = builder.addInputTensor(np.zeros([2, 3, 4], dtype=np.uint32))
         t = builder.aiGraphcore.scatterreduce([s, i], axis=4, axis_size=5)
         return [t]
 
@@ -132,23 +164,10 @@ def test_scatterreduce_bad_axis(op_tester):
     assert "axis = 4 is outside the acceptable range" in e_info.value.args[0]
 
 
-def test_scatterreduce_bad_indices_shape(op_tester):
-    def bad_indices_shape(builder):
-        s = builder.addInputTensor(np.ones([2, 3, 4], dtype=np.float32))
-        i = builder.addInputTensor(np.zeros([1, 2], dtype=np.uint32))
-        t = builder.aiGraphcore.scatterreduce([s, i], axis=0, axis_size=5)
-        return [t]
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(bad_indices_shape, None)
-
-    assert "Mismatch indices and data shape" in e_info.value.args[0]
-
-
 def test_scatterreduce_bad_axis_size(op_tester):
     def bad_axis_size(builder):
         s = builder.addInputTensor(np.ones([2, 3, 4], dtype=np.float32))
-        i = builder.addInputTensor(np.zeros([2], dtype=np.uint32))
+        i = builder.addInputTensor(np.zeros([2, 3, 4], dtype=np.uint32))
         t = builder.aiGraphcore.scatterreduce([s, i], axis_size=0)
         return [t]
 
@@ -156,3 +175,19 @@ def test_scatterreduce_bad_axis_size(op_tester):
         op_tester.run(bad_axis_size, None)
 
     assert "axis_size = 0 is not valid" in e_info.value.args[0]
+
+
+def test_scatterreduce_indices_data_different_bad_shape(op_tester):
+    def bad_shape(builder):
+        src = builder.addInputTensor(np.ones([6, 3], dtype=np.float32))
+        index = builder.addInputTensor(np.zeros([6, 2], dtype=np.uint32))
+        t = builder.aiGraphcore.scatterreduce([src, index],
+                                              axis=0,
+                                              axis_size=5)
+        return [t]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(bad_shape, None)
+
+    assert ("'src' shape needs to be [N, M], 'index' shape needs to be [N, 1] "
+            "and axis needs to be 0") in e_info.value.args[0]
