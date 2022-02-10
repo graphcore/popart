@@ -21,7 +21,7 @@ def test_logexp0(op_tester):
             builder.addOutputTensor(o3)
             return [o3]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             exp(log(exp(log)))(x) = x
             """
@@ -34,7 +34,7 @@ def test_logexp0(op_tester):
 def test_exp0(op_tester):
     """
     Test of both
-    1) 1 ExpInplace and 2 Exp (priority > 0) and 
+    1) 1 ExpInplace and 2 Exp (priority > 0) and
     2) 3 Exp (priority <= 0)
     """
     for inplace_priority in [-100., +100.]:
@@ -55,7 +55,7 @@ def test_exp0(op_tester):
             o4 = builder.aiOnnx.sum([o1, o2, o3])
             return [o4]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             3*exp(in)
             """

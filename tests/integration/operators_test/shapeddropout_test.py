@@ -100,7 +100,7 @@ def test_shapeddropout_inference(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d]
 
     # Without identity pattern...
@@ -228,7 +228,7 @@ def test_shapeddropout_multiple(op_tester):
         builder.addOutputTensor(out)
         return [loss, out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, np.array(True)]
 
     op_tester.run(init_builder, reference, step_type='train', seed=10)

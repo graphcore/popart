@@ -76,7 +76,7 @@ def _test_logsoftmax(op_tester, data, axis=1, inplace=True):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [logsoftmax_reference(torch.tensor(data), axis)]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)

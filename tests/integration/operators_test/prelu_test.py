@@ -18,7 +18,7 @@ def test_prelu_basic(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.clip(data, 0, np.inf) + np.clip(data, -np.inf, 0) * slope
         return [o]
 
@@ -41,7 +41,7 @@ def test_prelu_broadcast(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.clip(data, 0, np.inf) + np.clip(data, -np.inf, 0) * slope
         return [o]
 

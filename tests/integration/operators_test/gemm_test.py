@@ -118,7 +118,7 @@ def _test_gemm(op_tester,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = A
         b = B
         c = C

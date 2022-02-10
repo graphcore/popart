@@ -13,7 +13,7 @@ def test_squeeze(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.squeeze(d1)
         return [o]
 
@@ -30,7 +30,7 @@ def test_squeeze_limited(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.squeeze(d1, axis=1)
         return [o]
 
@@ -47,7 +47,7 @@ def test_squeeze_unsorted_axes(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.squeeze(d1, axis=5)
         o = np.squeeze(o, axis=1)
         return [o]

@@ -23,7 +23,7 @@ def test_slice_basic(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.asarray([[5, 6, 7]], dtype=np.float32)
         return [result]
 
@@ -47,7 +47,7 @@ def test_slice_complex(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         s = data[:, 1:3, :, 0:4, 2:4, :]
         result = dummy + s
         return [result]
@@ -89,7 +89,7 @@ def _test_concat(op_tester, shape, axis):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.concatenate((d0, d1), axis=axis)
         return [result]
 
@@ -119,7 +119,7 @@ def test_concat_3_inputs(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.concatenate((d0, d1, d2), axis=axis)
         return [result]
 

@@ -13,7 +13,7 @@ def test_matmul_grouped_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 
@@ -31,7 +31,7 @@ def test_matmul_grouped_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 
@@ -49,7 +49,7 @@ def test_matmul_grouped_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 
@@ -67,7 +67,7 @@ def test_matmul_grouped_4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 
@@ -85,7 +85,7 @@ def test_matmul_grouped_5(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 

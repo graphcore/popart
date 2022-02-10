@@ -13,7 +13,7 @@ def test_unsqueeze(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = np.expand_dims(d1, 1)
         return [o]
 

@@ -26,7 +26,7 @@ def test_lrn(op_tester):
             result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for nsize in nsizes:
             square_sum = np.zeros_like(data).astype(np.float32)

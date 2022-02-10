@@ -14,7 +14,7 @@ def _subsample_helper(op_tester, input, strides, output, grad_ouput):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output, grad_ouput]
 
     op_tester.lossReduction = popart.ReductionType.Sum

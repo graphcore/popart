@@ -366,7 +366,7 @@ def test_batchnorm_train_2(op_tester):
         builder.addOutputTensor(o_var)
         return [o_y, o_mean, o_var]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -492,7 +492,7 @@ def test_batchnorm_train_4(op_tester):
         builder.addOutputTensor(o_y_detached)
         return [o_y_detached]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -757,7 +757,7 @@ def test_batchnorm_test_0(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -807,7 +807,7 @@ def test_batchnorm_test_1(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -857,7 +857,7 @@ def test_batchnorm_test_2(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -905,7 +905,7 @@ def test_batchnorm_test_3(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # In the case the output should match in the input,
         # torch does not like a all zero input
         _input = torch.tensor(d1, requires_grad=False)
@@ -940,7 +940,7 @@ def test_batchnorm_test_nonspatial(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         _input = torch.tensor(d1, requires_grad=False)
         _weight = torch.tensor(scale, requires_grad=False)
         _bias = torch.tensor(b, requires_grad=False)
@@ -1104,7 +1104,7 @@ def test_batchnorm_repeated():
         assert np.allclose(first_result, np.copy(anchors[o_y])) == True
 
 
-def test_batchnorm_train_half_fp32var(op_tester):
+def test_batchnorm_train_half_fp32var():
     # create test data
     d1 = np.random.rand(1, 3, 2, 2).astype(np.float16) * 100
     scale = np.random.rand(3).astype(np.float16)
@@ -1152,7 +1152,7 @@ def test_batchnorm_train_half_fp32var(op_tester):
     session.run(stepio)
 
 
-def test_batchnorm_inference_half_fp32var(op_tester):
+def test_batchnorm_inference_half_fp32var():
     # create test data
     d1 = np.random.rand(1, 3, 2, 2).astype(np.float16) * 100
     scale = np.random.rand(3).astype(np.float16)
@@ -1196,7 +1196,7 @@ def test_batchnorm_inference_half_fp32var(op_tester):
     session.run(stepio)
 
 
-def test_batchnorm_shapeinference(op_tester):
+def test_batchnorm_shapeinference():
     # create test data
     d1 = np.random.rand(1, 3, 2, 2).astype(np.float32) * 100
     scale = np.random.rand(3).astype(np.float32)

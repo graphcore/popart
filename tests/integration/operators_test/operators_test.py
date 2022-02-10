@@ -103,7 +103,7 @@ def test_logical_if(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             if then_branch is True:
                 return [np.asarray([7, 22, 4]).astype(np.int32)]
             else:
@@ -142,7 +142,7 @@ def test_logical_if_2(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             if then_branch is True:
                 return [np.asarray(3).astype(np.int32)]
             else:
@@ -183,7 +183,7 @@ def test_loop(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
 
@@ -209,7 +209,7 @@ def test_convolution(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         expected = np.array([[[[8., 12., 12., 8.], [12., 18., 18., 12.],
                                [12., 18., 18., 12.], [8., 12., 12., 8.]],
                               [[8., 12., 12., 8.], [12., 18., 18., 12.],
@@ -240,7 +240,7 @@ def test_convolution_2(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + d]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         expected = np.array([[[[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]],
                               [[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]]]],
                             dtype=np.float32)
@@ -272,7 +272,7 @@ def test_convolution_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = torch.tensor(data)
         conv = torch.nn.Conv2d(chans_in,
                                chans_out,
@@ -311,7 +311,7 @@ def test_convolution_4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = torch.tensor(data)
         conv = torch.nn.Conv2d(chans_in,
                                chans_out,
@@ -535,7 +535,7 @@ def test_convolution_3d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = torch.tensor(data)
         conv = torch.nn.Conv3d(chans_in,
                                chans_out,
@@ -634,7 +634,7 @@ def test_convolution_default_infer(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = torch.tensor(data)
         conv = torch.nn.Conv2d(chans_in, chans_out, kernel_size)
         conv.weight.data = torch.tensor(filt)
@@ -706,7 +706,7 @@ def test_convolution_with_bias_1d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = torch.tensor(data)
         conv = torch.nn.Conv1d(chans_in,
                                chans_out,
@@ -731,7 +731,7 @@ def test_reciprocal(op_tester):
         return [o]
 
     # create and run numpy reference
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [1 / d1]
 
     op_tester.run(init_builder, reference)
@@ -748,7 +748,7 @@ def test_div(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = d1 / d2
         return [out]
 
@@ -797,7 +797,7 @@ def test_fmod(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.fmod(d1, d2)
         return [out]
 
@@ -844,7 +844,7 @@ def test_fmod_mixed_sign_float16(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.fmod(d1, d2)
         return [out]
 
@@ -920,7 +920,7 @@ def test_mod_mixed_sign_float16(op_tester, fmod_attr):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.fmod(d1, d2) if fmod_attr == 1 else np.mod(d1, d2)
         return [out]
 
@@ -978,7 +978,7 @@ def test_reverse(op_tester):
         o = builder.aiGraphcore.reverse([i1], [3])
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = torch.flip(torch.tensor(d1), reverse_dims)
         return [out]
 
@@ -1032,7 +1032,7 @@ def test_sqrt(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.sqrt(a)
         return [out]
@@ -1078,7 +1078,7 @@ def test_subtract(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = d1 - d2
         return [out]
 
@@ -1124,7 +1124,7 @@ def test_exp(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.exp(a)
         return [b]
@@ -1168,7 +1168,7 @@ def test_sigmoid(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.sigmoid(a)
         return [b]
@@ -1213,7 +1213,7 @@ def test_topk_2d(op_tester):
             builder.addOutputTensor(vals)
             return [vals, inds]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             a = torch.tensor(d1)
             b = torch.topk(a, k=k, dim=axis)
             return [b.values, b.indices]
@@ -1236,7 +1236,7 @@ def test_topk_2d_smallest(op_tester):
             builder.addOutputTensor(vals)
             return [vals, inds]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             a = torch.tensor(d1)
             b = torch.topk(a, k=k, dim=axis, largest=False)
             return [b.values, b.indices]
@@ -1402,7 +1402,7 @@ def test_transpose(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = np.transpose(d1, axes=[2, 0, 3, 1])
         return [a]
 
@@ -1449,7 +1449,7 @@ def test_transpose_sizes(op_tester):
             popart.reservedGradientPrefix() + o
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return []
 
     op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
@@ -1473,7 +1473,7 @@ def test_asin(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.asin(a)
         return [out]
@@ -1492,7 +1492,7 @@ def test_asin_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.asin(a)
         return [out]
@@ -1537,7 +1537,7 @@ def test_acos(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.acos(a)
         return [out]
@@ -1557,7 +1557,7 @@ def test_acos_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.acos(a)
         return [out]
@@ -1604,7 +1604,7 @@ def test_acosh(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.arccosh(d1)
         return [out]
 
@@ -1623,7 +1623,7 @@ def test_acosh_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.arccosh(d1)
         return [out]
 
@@ -1677,7 +1677,7 @@ def test_atan(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.atan(a)
         return [out]
@@ -1696,7 +1696,7 @@ def test_atan_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.atan(a)
         return [out]
@@ -1740,7 +1740,7 @@ def test_sinh(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.sinh(a)
         return [out]
@@ -1759,7 +1759,7 @@ def test_sinh_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         out = torch.sinh(a)
         return [out]
@@ -1803,7 +1803,7 @@ def test_log(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.log(a)
         return [b]
@@ -1846,7 +1846,7 @@ def test_unsqueeze(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1
         for i in (0, 4):
             o = np.expand_dims(o, axis=i)
@@ -1954,7 +1954,7 @@ def test_pad_negative_padding(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = _negative_padding(data, lower_padding, upper_padding)
         return [result]
 
@@ -1976,7 +1976,7 @@ def test_pad11(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         padding = tuple(zip(pads, pads[len(pads) // 2:]))
         o = np.pad(data, padding, 'constant', constant_values=pad_value)
         print(o)
@@ -2004,7 +2004,7 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         padding = tuple(zip(lower_padding, upper_padding))
         if mode == 'constant':
             o = np.pad(data, padding, mode, constant_values=pad_value)
@@ -2057,7 +2057,7 @@ def test_shape(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.reshape(d1, d2.shape)
         return [out]
 
@@ -2076,7 +2076,7 @@ def test_shape2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.reshape(d1, d2.shape)
         return [out]
 
@@ -2093,7 +2093,7 @@ def test_flatten_infer(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         shape = d1.shape
         new_shape = (1,
                      -1) if axis == 0 else (np.prod(shape[0:axis]).astype(int),
@@ -2116,7 +2116,7 @@ def test_argmin_no_keepdims(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmin(d1, axis=axis)
         return [result.astype(np.int32)]
 
@@ -2134,7 +2134,7 @@ def test_argmin_keepdims(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmin(d1, axis=axis)
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
@@ -2153,7 +2153,7 @@ def test_argmin_negative_axis(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmin(d1, axis=axis)
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
@@ -2174,7 +2174,7 @@ def _test_argmax(op_tester, data, axis, keepdims, opsets):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmax(data, axis=axis)
         if keepdims == 1:
             result = np.expand_dims(result, axis)
@@ -2208,7 +2208,7 @@ def test_argmax_no_keepdims(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmax(d1, axis=axis)
         return [result.astype(np.int32)]
 
@@ -2225,7 +2225,7 @@ def test_ceil(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.ceil(d1)
         return [result.astype(np.float32)]
 
@@ -2245,7 +2245,7 @@ def test_ceil_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.exp(np.ceil(np.log(d1)))
         return [result.astype(np.float32)]
 
@@ -2263,7 +2263,7 @@ def test_ceil_grad(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.ceil(d1).astype(np.float32), np.zeros_like(d1)]
 
     op_tester.run(init_builder, reference, 'train')
@@ -2279,7 +2279,7 @@ def test_floor(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.floor(d1)
         return [result.astype(np.float32)]
 
@@ -2299,7 +2299,7 @@ def test_floor_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.exp(np.floor(np.log(d1)))
         return [result.astype(np.float32)]
 
@@ -2317,7 +2317,7 @@ def test_floor_grad(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.floor(d1).astype(np.float32), np.zeros_like(d1)]
 
     op_tester.run(init_builder, reference, 'train')
@@ -2333,7 +2333,7 @@ def test_clip(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         result = torch.clamp(a, min=-1.5, max=1.5)
         return [result]
@@ -2354,7 +2354,7 @@ def test_clip_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         result = torch.exp(torch.clamp(torch.log(a), min=4, max=7))
         return [result]
@@ -2405,7 +2405,7 @@ def test_clip11(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         result = torch.clamp(a, min=d_min[0], max=d_max[0])
         return [result]
@@ -2431,7 +2431,7 @@ def test_clip11_default_min(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         result = torch.clamp(a,
                              min=torch.finfo(torch.float32).min,
@@ -2459,7 +2459,7 @@ def test_clip11_default_max(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
         # result = torch.clamp(a, min=d_min[0], max=torch.finfo(torch.float32).max)
         result = torch.clamp(a, min=d_min[0], max=100)
@@ -2485,7 +2485,7 @@ def test_argmax_keepdims(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.argmax(d1, axis=axis)
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
@@ -2656,7 +2656,7 @@ def test_constantofshape(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.array([3.1415] * 2 * 3).astype(np.float32)
         out = np.reshape(out, (1, 2, 3))
         return [out]
@@ -2675,7 +2675,7 @@ def test_concat(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.concatenate(values, 1)
         return [out]
 
@@ -2693,7 +2693,7 @@ def test_concat_negative_axis(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.concatenate(values, -1)
         return [out]
 
@@ -2714,7 +2714,7 @@ def test_constant_of_shape(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = data + np.array([5], dtype=np.float32)
         return [o]
 
@@ -2735,7 +2735,7 @@ def test_constant_of_shape_int32(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = data + np.array([5], dtype=np.float32)
         return [o]
 
@@ -2767,7 +2767,7 @@ def test_convtranspose(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         y = np.array([[
             [
                 [0., 1., 3., 3., 2.],  # (1, 2, 5, 5)
@@ -2860,7 +2860,7 @@ def test_convtranspose_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         y = np.array([[[
             [1., 4.],  # (1, 1, 2, 2)
             [5., 15.]
@@ -2893,7 +2893,7 @@ def test_convtranspose_auto_pad_same_upper(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         y = np.array([[[
             [15., 10.],  # (1, 1, 2, 2)
             [11., 4.]
@@ -2921,7 +2921,7 @@ def test_convtranspose_1d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         y = np.array([[
             [0., 1., 3., 3., 2.],  # (1, 2, 5)
             [0., 1., 3., 3., 2.]
@@ -2958,7 +2958,7 @@ def test_convtranspose_3d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         y = np.array([[[[[0., 1., 3., 6., 9., 7., 4.],
                          [5., 12., 21., 27., 33., 24., 13.],
                          [15., 33., 54., 63., 72., 51., 27.],
@@ -3041,7 +3041,7 @@ def test_convtranspose_pytorch(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             data = torch.tensor(x)
             weights = torch.tensor(W)
             if len(kernel) == 1:
@@ -3097,7 +3097,7 @@ def test_convtranspose_pytorch_attributes(op_tester):
                            *kernel).astype(np.float32)
         bias = np.random.rand(out_chans).astype(np.float32)
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             data = torch.tensor(x)
             weights = torch.tensor(W)
 
@@ -3250,7 +3250,7 @@ def test_convtranspose_debug(op_tester):
         # return [o]
         return [o, popart.reservedGradientPrefix() + d]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
@@ -3271,7 +3271,7 @@ def test_where_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3291,7 +3291,7 @@ def test_round(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.round(d1)
         return [result.astype(np.float32)]
 
@@ -3310,7 +3310,7 @@ def test_round_graphcore(op_tester):
         assert (builder.getTensorShape(o) == [2, 7])
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.round(d1)
         return [result.astype(np.float32)]
 
@@ -3331,7 +3331,7 @@ def test_round_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.exp(np.round(np.log(d1)))
         return [result.astype(np.float32)]
 
@@ -3349,7 +3349,7 @@ def test_round_grad(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.round(d1).astype(np.float32), np.zeros_like(d1)]
 
     op_tester.run(init_builder, reference, 'train')
@@ -3368,7 +3368,7 @@ def test_where_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3391,7 +3391,7 @@ def test_where_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3416,7 +3416,7 @@ def test_where_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3441,7 +3441,7 @@ def test_where_4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3466,7 +3466,7 @@ def test_where_5(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ct = torch.tensor(condition)
         cx = torch.tensor(x)
         cy = torch.tensor(y)
@@ -3674,7 +3674,7 @@ def test_bitwise_not(op_tester, npType):
         assert (builder.getTensorShape(o) == [10])
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.bitwise_not(d1)
         return [out]
 
@@ -3699,7 +3699,7 @@ def test_bitwise_binary_op(op_tester, npType, npOp):
         assert (builder.getTensorShape(o) == [10])
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = npOp(d1, d2)
         return [out]
 

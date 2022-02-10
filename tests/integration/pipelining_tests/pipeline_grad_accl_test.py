@@ -105,7 +105,6 @@ def get_model_anchors_model1(doSharding,
                              doTraining,
                              doGradAccl=False,
                              gradAcclFactor=1,
-                             doProfiling=False,
                              doDevicex=True,
                              anchorRestoredTensors=False,
                              labelArray=None):
@@ -217,11 +216,9 @@ def get_model_anchors_model2(doSharding,
                              doTraining,
                              doGradAccl=False,
                              gradAcclFactor=1,
-                             doProfiling=False,
                              doDevicex=True,
                              anchorRestoredTensors=False,
-                             returnRawInput=False,
-                             labelArray=None):
+                             returnRawInput=False):
 
     np.random.seed(1234)
     builder = popart.Builder()

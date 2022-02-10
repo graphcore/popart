@@ -17,7 +17,7 @@ def test_split_basic(op_tester):
 
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         xs = np.split(data, 2)
         out = xs[0] + xs[1]
         return [out]
@@ -39,7 +39,7 @@ def test_split_custom_lengths(op_tester):
 
         return [a, b, c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         xs = np.split(data, (1, 3))
 
         return xs

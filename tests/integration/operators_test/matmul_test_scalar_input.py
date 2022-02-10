@@ -19,7 +19,7 @@ def test_matmul_scalar_input(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.matmul(d1, d2)
         return [out]
 

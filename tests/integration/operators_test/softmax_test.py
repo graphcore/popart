@@ -14,7 +14,7 @@ def test_softmax(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         # 'dim' corresponds to dim index over which
         # to perform softmax
@@ -98,7 +98,7 @@ def _test_softmax(op_tester, data, axis):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         n = 1
         for i in data.shape[:axis]:
             n *= i

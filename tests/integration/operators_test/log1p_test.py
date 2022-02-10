@@ -13,7 +13,7 @@ def test_log1p_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         xp1 = torch.add(torch_test_data, 1.0)
         out = torch.log(xp1)
@@ -31,7 +31,7 @@ def test_log1p_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.log1p(torch_test_data)
         return [out]
@@ -49,7 +49,7 @@ def test_log1p_nan(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.log1p(torch_test_data)
         return [out]
@@ -71,7 +71,7 @@ def test_log1p_inplace_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.log1p(torch_test_data)
         return [out]
@@ -107,7 +107,7 @@ def test_log1p_inplace_1(op_tester):
             builder.addOutputTensor(o3)
             return [o3]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             exp(logp1(sub(exp(logp1(sub))))(x) = x
             """
@@ -144,7 +144,7 @@ def test_log1p_inplace_2(op_tester):
             o4 = builder.aiOnnx.sum([o1, o2, o3])
             return [o4]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             3*log1p(in)
             """

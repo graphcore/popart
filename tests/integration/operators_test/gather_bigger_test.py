@@ -14,7 +14,7 @@ def test_gather_bigger(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out]
 

@@ -119,7 +119,7 @@ def test_np_memory_layout_add_constant():
 def test_np_memory_layout_add_input_tensor_pystepio():
     """ In the case of input / output data a conversion could have significant
         impact on performance and hence we do not allow it. Here, we test it is
-        detected and an error is thrown. 
+        detected and an error is thrown.
 
         NOTE: We don't test non-contiguous outputs in this test as they
         are usually made by a call to initAnchorArrays anyway.
@@ -163,7 +163,7 @@ def test_np_memory_layout_add_input_tensor_pystepio():
 def test_np_memory_layout_add_input_tensor_pystepiocallback():
     """ In the case of input / output data a conversion could have significant
         impact on performance and hence we do not allow it. Here, we test it is
-        detected and an error is thrown. 
+        detected and an error is thrown.
     """
 
     def _test(transposedInput, transposedOutput):
@@ -201,16 +201,17 @@ def test_np_memory_layout_add_input_tensor_pystepiocallback():
         with pytest.raises(
             (Exception, RuntimeError, popart.popart_exception)) as e_info:
 
+            # pylint: disable=unused-argument
             def input_callback(id, prefetch):
                 return input1Value
 
-            def input_complete_callback(id):
+            def input_complete_callback(_):  # id is an unused parameter
                 pass
 
-            def output_callback(id):
+            def output_callback(_):  # id is an unused parameter
                 return output1Value
 
-            def output_complete_callback(id):
+            def output_complete_callback(_):  # id is an unused parameter
                 pass
 
             stepio = popart.PyStepIOCallback(

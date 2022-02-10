@@ -33,7 +33,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                 builder.addOutputTensor(t1)
                 return [t1]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             t1 = np.matmul(d1, d2)
             if t1.shape == ():
                 out = zeros(2) + t1

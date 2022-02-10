@@ -20,7 +20,7 @@ def test_gelu(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         # torch_gelu = torch.nn.functional.gelu
         torch_gelu = poplibs_gelu
@@ -41,7 +41,7 @@ def test_gelu_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         # torch_gelu = torch.nn.functional.gelu
         torch_gelu = poplibs_gelu
@@ -63,7 +63,7 @@ def test_gelu_torch(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         torch_gelu = torch.nn.functional.gelu
         m = torch_gelu(torch_test_data)

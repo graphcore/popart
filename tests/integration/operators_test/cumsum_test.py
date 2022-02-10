@@ -15,7 +15,7 @@ def test_cumsum_1d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.cumsum(tx, axis.item(0))
         return [out]
@@ -35,7 +35,7 @@ def test_cumsum_1d_exclusive(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = torch.tensor(expected)
         return [out]
 
@@ -53,7 +53,7 @@ def test_cumsum_1d_reverse(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         tx = torch.flip(tx, [0])
         out = torch.cumsum(tx, 0)
@@ -75,7 +75,7 @@ def test_cumsum_1d_reverse_exclusive(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = torch.tensor(expected)
         return [out]
 
@@ -93,7 +93,7 @@ def test_cumsum_2d_axis_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.cumsum(tx, axis.item(0))
         return [out]
@@ -112,7 +112,7 @@ def test_cumsum_2d_axis_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.cumsum(tx, axis.item(0))
         return [out]
@@ -131,7 +131,7 @@ def test_cumsum_2d_negative_axis(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.cumsum(tx, axis.item(0))
         return [out]
@@ -180,7 +180,7 @@ def test_cumsum_3d(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             out = torch.tensor(expected[a])
             return [out]
 
@@ -200,7 +200,7 @@ def test_cumsum_3d_v2(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             tx = torch.tensor(x)
             out = torch.cumsum(tx, a)
             return [out]
@@ -249,7 +249,7 @@ def test_cumsum_3d_reverse(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             out = torch.tensor(expected[a])
             return [out]
 
@@ -269,7 +269,7 @@ def test_cumsum_3d_reverse_v2(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             tx = torch.tensor(x)
             tx = torch.flip(tx, [a])
             out = torch.cumsum(tx, a)
@@ -322,7 +322,7 @@ def test_cumsum_3d_exclusive(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             out = torch.tensor(expected[a])
             return [out]
 

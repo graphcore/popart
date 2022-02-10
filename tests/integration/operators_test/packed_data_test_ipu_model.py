@@ -67,7 +67,7 @@ def test_multi_ipu(op_tester):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = unpack(data, sequenceOffsets, sequenceLengths, maxSequenceLength)
 
         # Stage 1

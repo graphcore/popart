@@ -30,7 +30,7 @@ def test_cast(op_tester, npSrcType, npDstType, builderDstType):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d1.astype(npDstType)]
 
     if npSrcType in (np.int8, np.uint8):
@@ -91,7 +91,7 @@ def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
     (np.uint32, "FLOAT16"),
 ])
 def test_cast_no_grad(npSrcType, builderDstType):
-    """Check that CastOp, doesn't return gradient Op when casted-from type is 
+    """Check that CastOp, doesn't return gradient Op when casted-from type is
     not float/half.
     """
     np.random.seed(0)

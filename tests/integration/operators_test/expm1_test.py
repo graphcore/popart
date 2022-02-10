@@ -13,7 +13,7 @@ def test_expm1_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.add(torch.exp(torch_test_data), -1.0)
         return [out]
@@ -30,7 +30,7 @@ def test_expm1_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.add(torch.exp(torch_test_data), -1.0)
         return [out]
@@ -47,7 +47,7 @@ def test_expm1_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.expm1(torch_test_data)
         return [out]
@@ -65,7 +65,7 @@ def test_expm1_inplace_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         out = torch.add(torch.exp(torch_test_data), -1.0)
         return [out]
@@ -101,7 +101,7 @@ def test_expm1_inplace_1(op_tester):
             builder.addOutputTensor(o3)
             return [o3]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             add1(expm1(log(add1(expm1(log))))) (x) = x
             """
@@ -114,7 +114,7 @@ def test_expm1_inplace_1(op_tester):
 def test_expm1_inplace_2(op_tester):
     """
     Test of both
-    1) 1 Expm1Inplace and 2 Expm1 (priority > 0) and 
+    1) 1 Expm1Inplace and 2 Expm1 (priority > 0) and
     2) 3 Expm1 (priority <= 0)
     """
     for inplace_priority in [-100., +100.]:
@@ -138,7 +138,7 @@ def test_expm1_inplace_2(op_tester):
             o4 = builder.aiOnnx.sum([o1, o2, o3])
             return [o4]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             """
             3*expm1(in)
             """

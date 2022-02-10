@@ -58,7 +58,7 @@ def test_tensorremap(op_tester):
             builder.addOutputTensor(y)
             return ([y])
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             wst = [torch.tensor(w, requires_grad=True) for w in ws]
             b = torch.tensor(bs.astype(np.float32), requires_grad=True)
 

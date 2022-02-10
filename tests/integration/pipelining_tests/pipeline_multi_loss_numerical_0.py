@@ -155,7 +155,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
             self.w0 = torch.nn.Parameter(torch.from_numpy(w0vals.copy()))
             self.w1 = torch.nn.Parameter(torch.from_numpy(w1vals.copy()))
 
-        def forward(self, x, i):
+        def forward(self, x, _):  # i is an unused parameter needed in torch
 
             mm0 = torch.matmul(x, self.w0)
             mm1 = torch.matmul(mm0, self.w1)

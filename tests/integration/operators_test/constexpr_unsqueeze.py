@@ -22,7 +22,7 @@ def test_slice_basic(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = data
         for axis in axes:
             result = np.expand_dims(result, axis=axis)

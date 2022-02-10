@@ -44,7 +44,7 @@ def test_scan_zip(op_tester, rev_d0, rev_d1, rev_out, op):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
 
         d0r = d0[::(-1 if rev_d0 else 1)]
         d1r = d1[::(-1 if rev_d1 else 1)]
@@ -114,11 +114,13 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
         builder.addOutputTensor(otd)
         return [ots, otd]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         class BasicRNNModule(torch.nn.Module):
             def __init__(self):
                 super(BasicRNNModule, self).__init__()
 
+            # Torch requires 10 arguments for this function, although not all is used
+            # pylint: disable=unused-argument
             def forward(self, ts_in, td_in, tw_in, tu_in, tv_in, axis_in,
                         axis_out, rev_in, rev_out):
                 ts_out = ts_in

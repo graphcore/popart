@@ -14,7 +14,7 @@ def test_sin(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.sin(a)
         return [b]
@@ -58,7 +58,7 @@ def test_cos(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.cos(a)
         return [b]
@@ -102,7 +102,7 @@ def test_tan(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.tan(a)
         return [b]
@@ -149,7 +149,7 @@ def test_cosh(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.cosh(a)
         return [b]
@@ -194,7 +194,7 @@ def test_tanh(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.tanh(a)
         return [b]

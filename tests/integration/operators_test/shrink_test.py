@@ -13,7 +13,7 @@ def test_hardshrink(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         torch_hardshrink = torch.nn.Hardshrink(lambd=1.5)
         m = torch_hardshrink(torch_test_data)
@@ -31,7 +31,7 @@ def test_softshrink(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_test_data = torch.tensor(input_data, requires_grad=False)
         torch_softshrink = torch.nn.Softshrink(lambd=1.5)
         m = torch_softshrink(torch_test_data)

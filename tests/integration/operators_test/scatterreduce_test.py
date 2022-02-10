@@ -17,7 +17,7 @@ def test_scatterreduce_basic(op_tester):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ref = torch.zeros(axsz)
         ref.scatter_add_(dim=0, index=index, src=src)
         return [ref]
@@ -37,7 +37,7 @@ def test_scatterreduce_full_indices(op_tester):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         ref = torch.zeros(axsz, src.shape[1])
         ref.scatter_add_(dim=0, index=index, src=src)
         return [ref]

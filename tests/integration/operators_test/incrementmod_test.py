@@ -18,7 +18,7 @@ def test_incrementmod(op_tester, dtype, inplace):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.fmod((d1 + np.asarray(increment, dtype)),
                       np.asarray(modulus, dtype))
         return [out]

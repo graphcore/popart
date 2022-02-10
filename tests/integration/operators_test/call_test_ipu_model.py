@@ -18,7 +18,7 @@ import test_util as tu
 # Test that errors are thrown when a user created subgraph has ops
 # without virtual graph ids, or have incorrect virtual graph ids.
 @tu.requires_ipu_model
-def test_call_pipelined_error(op_tester):
+def test_call_pipelined_error():
     def run_test(force_error):
         d0 = np.asarray([2, -1]).astype(np.int32)
         d1 = np.asarray([-4, 3]).astype(np.int32)
@@ -82,7 +82,7 @@ def test_call_pipelined_error(op_tester):
 
 # Check that call ops created using the builder can be used when pipelining.
 @tu.requires_ipu_model
-def test_call_pipelined(op_tester):
+def test_call_pipelined():
     d0 = np.asarray([2, -1]).astype(np.int32)
     d1 = np.asarray([-4, 3]).astype(np.int32)
 

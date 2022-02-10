@@ -42,7 +42,7 @@ def test_rnn_onnx(op_tester):
         builder.addOutputTensor(Y)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         rnn = RNN_Helper(X=d1, W=d2, R=d3)
         Y, Y_h = rnn.step()
 
@@ -73,7 +73,7 @@ def test_rnn_torch(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         rnn = torch.nn.RNN(input_size, hidden_size, 1)
         rnn.weight_ih_l0.data = torch.tensor(d2[0])
         rnn.weight_hh_l0.data = torch.tensor(d3[0])
@@ -174,7 +174,7 @@ def test_rnn_biases_onnx(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         rnn = RNN_Helper(X=d1, W=d2, R=d3, B=d4)
         Y, Y_h = rnn.step()
 
@@ -212,7 +212,7 @@ def test_rnn_biases_torch(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         rnn = torch.nn.RNN(input_size, hidden_size, 1)
         rnn.weight_ih_l0.data = torch.tensor(d2[0])
         rnn.weight_hh_l0.data = torch.tensor(d3[0])
@@ -262,7 +262,7 @@ def test_rnn_initial_h_onnx(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         rnn = RNN_Helper(X=d1, W=d2, R=d3, B=d4, initial_h=initial_h)
         Y, Y_h = rnn.step()
 
@@ -460,7 +460,7 @@ def test_rnn_outlining(op_tester):
         builder.addOutputTensor(Y)
         return [Y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None]
 
     op_tester.device = tu.create_test_device()
@@ -502,7 +502,7 @@ def test_rnn_unsupported_activation(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -535,7 +535,7 @@ def test_rnn_bad_number_of_activations(op_tester):
         builder.addOutputTensor(Y[0])
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -566,7 +566,7 @@ def test_rnn_wrong_hidden_size(op_tester):
         builder.addNodeAttribute("hidden_size", hidden_size + 1, set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -599,7 +599,7 @@ def test_rnn_correct_hidden_size(op_tester):
         builder.addOutputTensor(Y[0])
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # Not checking the output
         return [None]
 
@@ -627,7 +627,7 @@ def test_rnn_activation_alpha_error(op_tester):
         builder.addNodeAttribute("activation_alpha", [1.], set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -659,7 +659,7 @@ def test_rnn_activation_beta_error(op_tester):
         builder.addNodeAttribute("activation_beta", [1.], set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -691,7 +691,7 @@ def test_rnn_clip_error(op_tester):
         builder.addNodeAttribute("clip", 1., set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -723,7 +723,7 @@ def test_rnn_direction_error(op_tester):
         builder.addNodeAttribute("direction", "bidirectional", set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 
@@ -755,7 +755,7 @@ def test_rnn_forward_direction(op_tester):
         builder.addNodeAttribute("direction", "forward", set(Y))
         return Y
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None]
 
     op_tester.device = tu.create_test_device()

@@ -54,8 +54,7 @@ def get_unittest_coverage_json_report(workspace_dir: PosixPath,
     return json.loads(runner.create_report())
 
 
-def set_build_details(workspace_dir: PosixPath,
-                      metrics: CoverageMetrics) -> str:
+def set_build_details(metrics: CoverageMetrics) -> str:
     """ Set is_diff_build, diff_id and commit_id as appropriate. """
 
     is_diff_build = (os.environ.get("GCCI_DIFF_BUILD", "false") == "true")
@@ -112,5 +111,5 @@ if __name__ == "__main__":
     metrics.unittest_line_covered = report['line_covered']
     metrics.unittest_line_total = report['line_total']
     metrics.unittest_line_percent = report['line_percent']
-    set_build_details(workspace_dir, metrics)
+    set_build_details(metrics)
     metrics.save()

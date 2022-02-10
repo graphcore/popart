@@ -42,7 +42,7 @@ def test_randomuniform_stats(op_tester, dtypes):
 
         return [actual_min, actual_max, actual_mean]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [expected_min, expected_max, expected_mean]
 
     op_tester.atol = 1e-02
@@ -106,7 +106,7 @@ def test_randomuniform_multi(op_tester, dtypes):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.array(True)]
 
     op_tester.run(init_builder, reference, seed=42)

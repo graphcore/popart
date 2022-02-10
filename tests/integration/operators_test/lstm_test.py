@@ -122,7 +122,7 @@ def test_lstm(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = LSTM_Helper(X=d1, W=d2, R=d3)
         Y, Y_h, Y_c = lstm.step()
 
@@ -151,7 +151,7 @@ def test_lstm_popart(op_tester):
         builder.addOutputTensor(Y)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = LSTM_Helper(X=d1, W=d2, R=d3)
         Y, Y_h, Y_c = lstm.step()
 
@@ -192,7 +192,7 @@ def test_lstm_outlining(op_tester):
         builder.addOutputTensor(Y)
         return [Y]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None]
 
     op_tester.device = tu.create_test_device()
@@ -574,7 +574,7 @@ def test_lstm_torch(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = torch.nn.LSTM(input_size, hidden_size, 1)
         lstm.weight_ih_l0.data = torch.tensor(d2_torch[0])
         lstm.weight_hh_l0.data = torch.tensor(d3_torch[0])
@@ -695,7 +695,7 @@ def test_lstm_biases(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = LSTM_Helper(X=d1, W=d2, R=d3, B=d4)
         Y, Y_h, Y_c = lstm.step()
 
@@ -738,7 +738,7 @@ def test_lstm_initial_hc(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = LSTM_Helper(X=d1,
                            W=d2,
                            R=d3,
@@ -772,7 +772,7 @@ def test_unsupported_activation(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # The reference should never run, popart should raise an exception before this.
         assert False
 

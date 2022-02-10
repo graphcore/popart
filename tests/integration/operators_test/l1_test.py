@@ -45,7 +45,7 @@ def test_l1(op_tester):
                 [tensor], scale, reduction=popart.ReductionType.NoReduction)
             return [l1]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             return [np.abs(data) * scale]
 
         op_tester.passes = ['PreUniRepl']
@@ -91,7 +91,7 @@ def test_l1_training(op_tester):
                 result.append(popart.reservedGradientPrefix() + tensor)
                 return result
 
-            def reference(ref_data):
+            def reference(_):  # ref_data is an unused argument
                 result = []
 
                 tensor = torch.tensor(data.astype(np.float32),
@@ -110,7 +110,7 @@ def test_l1_training(op_tester):
             op_tester.run(init_builder, reference, 'train')
 
 
-def test_l1_reduction_equiv(op_tester):
+def test_l1_reduction_equiv():
     dshapes = ([2, 3], [2, 4, 4], [5, 1, 3], [1, 1])
     for dshape in dshapes:
         ip_data = np.random.rand(*dshape).astype(np.float32)

@@ -12,7 +12,7 @@ def test_isnan(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         b = np.isnan(d1)
         return [b]
 
@@ -30,7 +30,7 @@ def test_isinf(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         b = np.isinf(d1)
         return [b]
 

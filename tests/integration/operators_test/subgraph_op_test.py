@@ -6,7 +6,7 @@ import popart
 def test_nested_simple(op_tester):
     """
     Creates nested subgraph Ops (Call & Loop):
-    
+
     Call
       Loop
         MatMul
@@ -18,7 +18,7 @@ def test_nested_simple(op_tester):
         Add
         Add
     Add
-    
+
     and tests if using parent scope tensors inside subgraphs works correctly
     """
 
@@ -75,7 +75,7 @@ def test_nested_simple(op_tester):
 
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
         c = i3
@@ -96,7 +96,7 @@ def test_nested_simple(op_tester):
 def test_nested_complex(op_tester):
     """
     Creates nested subgraph Ops (Call & Loop & If):
-    
+
     Loop
       Loop
           If
@@ -112,7 +112,7 @@ def test_nested_complex(op_tester):
           Else
             Add
     Add
-    
+
     and tests if using parent scope tensors inside subgraphs works correctly
     """
 
@@ -212,7 +212,7 @@ def test_nested_complex(op_tester):
 
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
         c = i3

@@ -10,8 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def get_ir(model_file_name='model.onnx',
-           enable_executionphases=True,
+def get_ir(enable_executionphases=True,
            enable_matmul_serialization=False,
            enable_outlining=False,
            activation_tensor_location_settings=None,
@@ -114,7 +113,7 @@ def get_ir(model_file_name='model.onnx',
 
 
 def check_ir(ir, check_onchip, check_offchip):
-    """ We expect check_onchip / check_offchip to be lists of tensor ids that we need to assert were on-chip / off-chip, 
+    """ We expect check_onchip / check_offchip to be lists of tensor ids that we need to assert were on-chip / off-chip,
         respectively. Note that we check this by looking for the presence / absence of tensors 'RemoteArg___<id>' in the IR.
     """
 

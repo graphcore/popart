@@ -86,7 +86,7 @@ the default case and when we specify a different axis.
 '''
 
 
-def test_init(tmpdir):
+def test_init():
     def run(transposed):
         bsize = 8
         dsize = 10
@@ -167,7 +167,7 @@ This test checks that batch serialisation picks up the correct axis and works.
 '''
 
 
-def test_lstm(tmpdir):
+def test_lstm():
     def run():
         bsize = 2
         seq_len = 5

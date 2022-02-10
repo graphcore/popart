@@ -6,7 +6,7 @@ from onnx import mapping
 import test_util as tu
 
 
-def getModelProto(shard=False, pipeline=False):
+def getModelProto():
     """
     Create a simple model:
 
@@ -96,8 +96,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     with auto loss scaling (ALS) enabled are identical to those with ALS
     disabled.
     """
-    loss, proto, t0, t_shape, label, label_shape, specifics = getModelProto(
-        shard=shard, pipeline=pipeline)
+    loss, proto, t0, t_shape, label, label_shape, specifics = getModelProto()
     step_size = bps
     if replicate:
         replicas = 2

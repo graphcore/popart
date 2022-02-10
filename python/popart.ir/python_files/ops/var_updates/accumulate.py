@@ -44,7 +44,7 @@ def accumulate_(t: Tensor, X: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -96,7 +96,7 @@ def accumulate_square_(t: Tensor, X: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -210,7 +210,7 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -261,7 +261,7 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
 
     ins = {0: t.id, 1: X.id}
 
-    ov = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(f, ins, 2)
 
     settings = ctx._get_op_settings('accumulate')
     op = pb_g.createConnectedOp_AccumulateOp(
@@ -309,7 +309,7 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
 
     ins = {0: t.id}
 
-    ov = handle_optimizer_value(g, f, ins, 2)
+    ov = handle_optimizer_value(f, ins, 2)
 
     settings = ctx._get_op_settings('accumulator_scale')
     op = pb_g.createConnectedOp_AccumulatorScaleOp(

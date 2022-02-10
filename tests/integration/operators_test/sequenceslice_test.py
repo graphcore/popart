@@ -32,7 +32,7 @@ def test_sequenceslice(op_tester, inplacing, source_shape, dest_shape, N,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = np.copy(dest)
         for i in range(N.size):
             result[dest_offset[i]:dest_offset[i] +

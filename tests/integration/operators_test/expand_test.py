@@ -11,7 +11,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def grad(dY, X, dt):
+def grad(dY, X):
     axes = []
     offset = dY.ndim - X.ndim
     for i in range(0, dY.ndim):
@@ -64,7 +64,7 @@ def expand(op_tester, inplace, int_type):
         if inplace:
             return [expanded]
         dY = ref_data.getOutputTensorGrad(0)
-        dX = grad(dY, d1, np.float32)
+        dX = grad(dY, d1)
         return [expanded, dY, dX]
 
     if inplace:  #grad is tested only as part of non invariant version to avoid duplication
@@ -93,7 +93,7 @@ def expand_unwind(op_tester, inplace, int_type):
         builder.addOutputTensor(m_identity)
         return [m_identity]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         expanded = d1 * np.ones(d2, dtype=np.float32)
         m = expanded.dot(d3)
         return [m]
@@ -126,7 +126,7 @@ def expand_scalar(op_tester, inplace, int_type):
         if inplace:
             return [expanded]
         dY = ref_data.getOutputTensorGrad(0)
-        dX = grad(dY, d1, np.float32)
+        dX = grad(dY, d1)
         return [expanded, dY, dX]
 
     if inplace:  #grad is tested only as part of non invariant version to avoid duplication
@@ -161,7 +161,7 @@ def expand_smaller_output(op_tester, inplace, int_type):
         if inplace:
             return [expanded]
         dY = ref_data.getOutputTensorGrad(0)
-        dX = grad(dY, d1, np.float32)
+        dX = grad(dY, d1)
         return [expanded, dY, dX]
 
     if inplace:  #grad is tested only as part of non invariant version to avoid duplication

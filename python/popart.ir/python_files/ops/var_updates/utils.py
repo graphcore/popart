@@ -1,11 +1,10 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import Any, Dict
 import popart._internal.ir as _ir
-from popart.ir.graph import Graph
 from popart.ir.tensor import Tensor
 
 
-def handle_optimizer_value(g: Graph, f: Any, ins: Dict[int, str],
+def handle_optimizer_value(f: Any, ins: Dict[int, str],
                            index: int) -> _ir.OptimizerValue:
     if isinstance(f, Tensor):
         ins[index] = f.id

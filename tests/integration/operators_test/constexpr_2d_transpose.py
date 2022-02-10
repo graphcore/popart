@@ -4,7 +4,7 @@ import numpy as np
 
 def test_constexpr_transpose_2D(op_tester):
     """
-    In this test, 25 constexpr 2D transpose cases are run. 
+    In this test, 25 constexpr 2D transpose cases are run.
     They are all run in the same compute graph, to avoid
     repeated graph generation overhead.
     """
@@ -41,7 +41,7 @@ def test_constexpr_transpose_2D(op_tester):
 
         return outputs
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [x[0] + np.transpose(x[1]) for x in zip(D0s, D1s)]
 
     # lowering the tolerance, as there are fp16 comparisons

@@ -785,7 +785,7 @@ def test_poplar_tile_ex(op_tester):
 
         return [out, Y_h, Y_c]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = LSTM_Helper(X=input, W=d2, R=d3)
         Y, Y_h, Y_c = lstm.step()
 
@@ -830,7 +830,7 @@ def test_missing_seq_len(op_tester):
 
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # We are just checking it compiles.
         return [None]
 

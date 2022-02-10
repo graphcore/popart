@@ -15,7 +15,7 @@ def test_gather_id_pattern(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out]
 
@@ -37,7 +37,7 @@ def test_gather_rank2_1(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
@@ -60,7 +60,7 @@ def test_gather_rank2_2(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
@@ -84,7 +84,7 @@ def test_gather_rank3_1(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
@@ -106,7 +106,7 @@ def test_gather_rank1_1(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
@@ -128,7 +128,7 @@ def test_gather_rank1_0(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 
@@ -149,7 +149,7 @@ def test_gather_example1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out]
 
@@ -172,7 +172,7 @@ def test_gather_example2(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.take(d1, d2, axis=axis)
         return [out, d_d1]
 

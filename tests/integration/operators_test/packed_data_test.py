@@ -9,7 +9,7 @@ def gen_packed_sequences(lengths, shape, dtype=np.float32):
     sequences = []
     for length in lengths:
         sequence_shape = [length] + shape
-        sequence = np.random.rand(*sequence_shape).astype(np.float32)
+        sequence = np.random.rand(*sequence_shape).astype(dtype)
         sequences.append(sequence)
     offsets = [0] + list(accumulate(lengths[:-1]))
     return np.concatenate(sequences), offsets
@@ -171,7 +171,7 @@ def test_packeddatablockop(op_tester, callbackBatchSize):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = unpack(data, sequenceOffsets, sequenceLengths, maxSequenceLength)
         dt = np.transpose(d, [0, 2, 1])
         mm = np.matmul(d, dt)
@@ -256,7 +256,7 @@ def test_bertlike_attention(op_tester):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d = unpack(packed_data, offsets, lengths, max_tokens_per_sequence)
 
         # This is the shape of the data going into the bert attention layer

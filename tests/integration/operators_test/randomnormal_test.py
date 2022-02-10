@@ -43,7 +43,7 @@ def test_randomnormal_stats(op_tester, dtypes):
 
         return [actual_mean, actual_stddev]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
 
         return [expected_mean, expected_stddev]
 
@@ -108,7 +108,7 @@ def test_randomnormal_multi(op_tester, dtypes):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.array(True)]
 
     op_tester.run(init_builder, reference, seed=42)

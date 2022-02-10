@@ -48,7 +48,7 @@ def test_simple_for_loop(op_tester):
 
         return init_builder
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         class LoopModule(torch.nn.Module):
             def __init__(self):
                 super(LoopModule, self).__init__()
@@ -104,7 +104,7 @@ def test_loop_matmul(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
 
@@ -151,7 +151,7 @@ def test_loop_stop(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
 
@@ -206,7 +206,7 @@ def test_loop_scanout(op_tester):
         builder.addOutputTensor(co1)
         return [o, co0, co1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = i1
         b = i2
         c = i3

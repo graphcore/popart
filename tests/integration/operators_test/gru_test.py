@@ -116,7 +116,7 @@ def test_gru(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         gru = GRU_Helper(X=d1, W=d2, R=d3)
         Y, Y_h = gru.step()
 
@@ -161,7 +161,7 @@ def test_gru_torch(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         gru = torch.nn.GRU(input_size, hidden_size, 1)
         gru.weight_ih_l0.data = torch.tensor(d2_torch[0])
         gru.weight_hh_l0.data = torch.tensor(d3_torch[0])
@@ -278,7 +278,7 @@ def test_gru_biases(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = GRU_Helper(X=d1, W=d2, R=d3, B=d4)
         Y, Y_h = lstm.step()
 
@@ -339,7 +339,7 @@ def test_gru_biases_torch(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         gru = torch.nn.GRU(input_size, hidden_size, 1)
         gru.weight_ih_l0.data = torch.tensor(d2_torch[0])
         gru.weight_hh_l0.data = torch.tensor(d3_torch[0])
@@ -387,7 +387,7 @@ def test_gru_initial_hc(op_tester):
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         lstm = GRU_Helper(X=d1, W=d2, R=d3, B=d4, initial_h=initial_h)
         Y, Y_h = lstm.step()
 

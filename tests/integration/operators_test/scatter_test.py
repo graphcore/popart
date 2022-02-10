@@ -25,7 +25,7 @@ def test_scatter_0(op_tester):
             popart.reservedGradientPrefix() + i3
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         data_grad = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0],
                               [1.0, 0.0, 0.0]]).astype(np.float32)
         return [output, data_grad, np.ones_like(updates)]
@@ -55,7 +55,7 @@ def test_scatter_1(op_tester):
             popart.reservedGradientPrefix() + i3
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output, d_data, np.ones_like(updates)]
 
     op_tester.lossReduction = popart.ReductionType.Sum
@@ -85,7 +85,7 @@ def test_scatter_2(op_tester):
             popart.reservedGradientPrefix() + i3
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         data_grad = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
                               [1.0, 1.0, 1.0]]).astype(np.float32)
         return [output, data_grad, np.ones_like(updates)]

@@ -23,7 +23,7 @@ def test_dropout_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         return [t1]
 
@@ -46,7 +46,7 @@ def test_dropout_ratio0_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         return [t1]
 
@@ -172,8 +172,7 @@ def test_dropout_training4():
 @tu.requires_ipu
 def test_dropout_training_randomness():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                           use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize)
 
     ip_data = np.random.random_sample(dsize).astype(np.float32)
     stepio = popart.PyStepIO({ip: ip_data}, anchors)
@@ -195,8 +194,7 @@ def test_dropout_training_randomness():
 @tu.requires_ipu
 def test_dropout_training_set_seed():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                           use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize)
 
     ip_data = np.random.random_sample(dsize).astype(np.float32)
     stepio = popart.PyStepIO({ip: ip_data}, anchors)
@@ -220,8 +218,7 @@ def test_dropout_training6():
     dsize = 100
     bps = 2
     session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                           bps=bps,
-                                                           use_ipu=True)
+                                                           bps=bps)
 
     # Same data for each batch
     ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
@@ -280,7 +277,7 @@ def test_dropout_training8(op_tester):
         builder.addOutputTensor(o1)
         return [o1, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         dropout = torch.nn.Dropout()
         out = dropout(torch.tensor(d1))
         return [out]
@@ -426,12 +423,7 @@ def get_replicated_dropout_session(replication_factor=4,
     return session, ip, out, d__ip, anchors
 
 
-def get_dropout_session(dsize=100,
-                        ratio=0.2,
-                        bps=1,
-                        use_ipu=False,
-                        num_layers=1,
-                        seed=0):
+def get_dropout_session(dsize=100, ratio=0.2, bps=1, num_layers=1, seed=0):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip

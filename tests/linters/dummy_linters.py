@@ -1,4 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+
+# As this file includes a lot of vritual functions, we disable the unused argument for all
+# pylint: disable=unused-argument
 from lint.config import LinterConfig
 from lint.linters import ILinter
 

@@ -19,7 +19,7 @@ def test_average_pool_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         avgpool = torch.nn.AvgPool2d(kernel_size=2,
                                      stride=2,
                                      padding=0,
@@ -43,7 +43,7 @@ def test_average_pool_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         avgpool = torch.nn.AvgPool2d(kernel_size=3,
                                      stride=1,
                                      padding=1,
@@ -67,7 +67,7 @@ def test_average_pool_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         avgpool = torch.nn.AvgPool2d(kernel_size=3,
                                      stride=2,
                                      padding=0,
@@ -94,7 +94,7 @@ def test_average_pool_4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d1]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
@@ -114,7 +114,7 @@ def test_average_pool_fp16(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         avgpool = torch.nn.AvgPool2d(kernel_size=3,
                                      stride=2,
                                      padding=0,
@@ -127,7 +127,7 @@ def test_average_pool_fp16(op_tester):
     op_tester.run(init_builder, reference)
 
 
-def test_average_pool_with_count_include_pad(op_tester):
+def test_average_pool_with_count_include_pad():
 
     popart.getLogger().setLevel("TRACE")
 
@@ -163,7 +163,7 @@ def test_average_pool_with_count_include_pad(op_tester):
         "`count_include_pad` is not supported"))
 
 
-def test_average_pool_invalid_params(op_tester):
+def test_average_pool_invalid_params():
     builder = popart.Builder()
     i1 = builder.addInputTensor("FLOAT", [1, 1, 14, 14])
     with pytest.raises(popart.popart_exception) as e_info:
@@ -190,7 +190,7 @@ def test_maxpool_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         out = avgpool(t1)
@@ -213,7 +213,7 @@ def test_maxpool_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
         out = avgpool(t1)
@@ -236,7 +236,7 @@ def test_maxpool_3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=5, stride=2, padding=2)
         out = avgpool(t1)
@@ -259,7 +259,7 @@ def test_maxpool_4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1.astype(np.float32), requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=5, stride=2, padding=2)
         out = avgpool(t1).data.numpy().astype(np.float16)
@@ -285,7 +285,7 @@ def test_maxpool_5(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d1]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
@@ -339,7 +339,7 @@ def test_maxpool10_dilations(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=2,
                                      stride=2,
@@ -369,7 +369,7 @@ def test_maxpool10_ceil_mode(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         avgpool = torch.nn.MaxPool2d(kernel_size=3,
                                      stride=2,
@@ -441,7 +441,7 @@ def test_globalmaxpool_2d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         globalmaxpool = torch.nn.MaxPool2d(6, 6)
         out = globalmaxpool(t1)
@@ -487,7 +487,7 @@ def test_globalmaxpool_3d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         globalmaxpool = torch.nn.MaxPool3d((6, 6, 4))
         out = globalmaxpool(t1)
@@ -506,7 +506,7 @@ def test_globalaveragepool_2d(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=True)
         globalaveragepool = torch.nn.AvgPool2d(6, 6)
         out = globalaveragepool(t1)

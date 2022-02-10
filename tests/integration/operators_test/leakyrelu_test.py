@@ -32,7 +32,7 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
     if (alpha == None):
         alpha = default_alpha
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         if (use_torch):
             torch_test_data = torch.tensor(input_data, requires_grad=False)
             torch_leakyrelu = torch.nn.LeakyReLU(negative_slope=alpha)

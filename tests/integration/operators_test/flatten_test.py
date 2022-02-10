@@ -13,7 +13,7 @@ def test_flatten(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1.flatten().reshape(1, -1)
         return [o]
 
@@ -30,7 +30,7 @@ def test_flatten_negative(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1.reshape(6, 20)
         return [o]
 

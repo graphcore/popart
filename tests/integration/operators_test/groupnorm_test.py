@@ -178,7 +178,7 @@ def test_groupnorm_2(op_tester):
         builder.addOutputTensor(o_var)
         return [o_y, o_mean, o_var]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
 
         _input = torch.tensor(d1, requires_grad=True)
         _weight = torch.tensor(scale, requires_grad=True)
@@ -302,7 +302,7 @@ def test_groupnorm_4(op_tester):
         builder.addOutputTensor(o_y)
         return [o_y, o_mean, o_invstd]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
 
         _y, _mean, _invstd = refGroupNormFwd(d1,
                                              scale,

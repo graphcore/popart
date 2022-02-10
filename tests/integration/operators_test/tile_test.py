@@ -16,7 +16,7 @@ def test_tile(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.tile(d1, d2)
         return [out]
 
@@ -40,7 +40,7 @@ def test_tile_variable_repeats(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.tile(d1, d2)
         return [out]
 
@@ -60,7 +60,7 @@ def test_tile_invalid_repeat_vals(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.tile(d1, d2)
         return [out]
 
@@ -87,7 +87,7 @@ def test_tile_invalid_repeats_size(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.tile(d1, d2)
         return [out]
 

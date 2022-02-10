@@ -15,7 +15,7 @@ def test_atanh(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.arctanh(d1)
         return [out]
 
@@ -36,7 +36,7 @@ def test_atanh_inplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.arctanh(d1)
         return [out]
 

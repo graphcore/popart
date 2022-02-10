@@ -50,7 +50,7 @@ def test_dont_inplace_output_consumers(op_tester):
 
         return init_builder
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.array([72., 72.]).astype(np.float32)]
 
     op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
@@ -72,7 +72,7 @@ def test_dont_inplace_when_aliased_inputs(op_tester):
         result = builder.aiOnnx.add([x, sliced])
         return [result]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         sliced = np.concatenate([data, data], axis=0)[4:9]
         return [data + sliced]
 

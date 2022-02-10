@@ -30,7 +30,7 @@ def test_gemm_basic(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = data_a
         b = data_b
         c = data_c

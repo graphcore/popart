@@ -16,7 +16,7 @@ def test_sub(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.tensor(d2, requires_grad=True)
         out = a - b
@@ -40,7 +40,7 @@ def test_broadcast_sub(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1, requires_grad=True)
         b = torch.tensor(d2, requires_grad=True)
         out = a - b

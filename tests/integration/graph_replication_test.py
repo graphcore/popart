@@ -113,7 +113,7 @@ def test_weight_update_replicated(op_tester):
             "weightDecayScaleFactor0___default___FLOAT"
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         class Module(torch.nn.Module):
             def __init__(self):
                 super(Module, self).__init__()
@@ -209,7 +209,7 @@ def test_replication_infer(op_tester):
 
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         class Module(torch.nn.Module):
             def __init__(self):
                 super(Module, self).__init__()

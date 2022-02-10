@@ -65,7 +65,7 @@ class Module0(torch.nn.Module):
         self.b = torch.nn.Parameter(torch.rand(3, 1, 6, 7))
         self.matmul = torch.matmul
 
-    def forward(self, inputs):
+    def forward(self, _):  # inputs is an unused parameter needed in torch
         return self.matmul(self.a, self.b)
 
 

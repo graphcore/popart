@@ -19,7 +19,7 @@ def test_scaledadd_constant(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=False)
         t2 = torch.tensor(d2, requires_grad=False)
         out = 0.5 * t1 + 0.8 * t2
@@ -45,7 +45,7 @@ def test_scaledadd_tensor(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, requires_grad=False)
         t2 = torch.tensor(d2, requires_grad=False)
         t3 = torch.tensor(d3, requires_grad=False)

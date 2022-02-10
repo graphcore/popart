@@ -39,7 +39,7 @@ def _append_include_dir(args: list, include_dir: str, verbose: bool = True):
         print(f"Include directoy '{shlex.quote(include_dir)}' does not exist!")
 
 
-def _append_definition(args: list, definition: str, verbose: bool = True):
+def _append_definition(args: list, definition: str):
     """
     Add a compiler definition to an argument list.
 
@@ -54,9 +54,6 @@ def _append_definition(args: list, definition: str, verbose: bool = True):
 
     definition: str
         The definition to append.
-
-    verbose: bool
-        Whether to print a warning for invalid definition strings.
     """
 
     try:

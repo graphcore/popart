@@ -44,7 +44,7 @@ def test_reducemedian_values(op_tester, type, keepdims, axes):
         builder.addOutputTensor(out[0])
         return [out[0]]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.median(data, axis=axes, keepdims=keepdims).astype(type)]
 
     op_tester.run(init_builder, reference, 'infer')
@@ -82,7 +82,7 @@ def test_reducemedian_indices_1(op_tester, type, keepdims, axes):
         builder.addOutputTensor(out[1])
         return [out[1]]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tensor = torch.tensor(data)
         out = torch.median(tensor, dim=axes[0], keepdim=keepdims)
         return [out.indices.numpy().astype(np.int32)]
@@ -113,7 +113,7 @@ def test_reducemedian_indices_2(op_tester, type, keepdims, axes):
         builder.addOutputTensor(out[1])
         return [out[1]]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tensor = np.asarray([7], dtype=np.int32).reshape(())
         if keepdims:
             out = tensor.reshape((1, 1))
@@ -162,7 +162,7 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tensor = torch.tensor(data)
         # Torch does not support gradients of integer tensors but in the context
         # of median, where the gradient from the top is simply scattered along
@@ -210,7 +210,7 @@ def test_reducemedian_training_2(op_tester, type, keepdims, axes):
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tensor = np.asarray([7], dtype=type).reshape(())
         grad = np.zeros(data.shape, dtype=type)
         grad[1, 2] = 1

@@ -471,7 +471,7 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_nllloss_reduction_equiv(op_tester):
+def test_nllloss_reduction_equiv():
     dshapes = ([2, 3], [2, 4, 4], [5, 1, 3], [1, 1])
     for dshape in dshapes:
         lshape = dshape[:-1]
@@ -590,7 +590,7 @@ def test_nll_input_is_log_probability(op_tester):
         builder.addOutputTensor(nll)
         return [nll]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         logsoftmax = torch.nn.LogSoftmax(dim=1)
         loss = torch.nn.NLLLoss()
         p = torch.tensor(data)
@@ -633,8 +633,8 @@ def test_nll_input_is_log_probability_training(op_tester):
 
 
 def test_nll_all_ingoreindex(op_tester):
-    """Testing T36441, ignoring all indicies in nll loss. Without the fix, 
-    popart returns NaNs due to a div/0 
+    """Testing T36441, ignoring all indicies in nll loss. Without the fix,
+    popart returns NaNs due to a div/0
     """
     np.random.seed(0)
     data = np.random.random([10, 10]).astype(np.float32)
@@ -657,7 +657,7 @@ def test_nll_all_ingoreindex(op_tester):
         builder.addOutputTensor(out)
         return [out, nll]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         class Model(torch.nn.Module):
             def __init__(self):
                 super().__init__()

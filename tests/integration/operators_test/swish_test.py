@@ -24,7 +24,7 @@ def test_swish(op_tester):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # Note that torch silu on CPU is not implemented for half.
         swish = torch.nn.SiLU()
         return [swish(torch.tensor(data))]

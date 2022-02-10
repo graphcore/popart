@@ -28,7 +28,7 @@ def test_dynamicslice_large(op_tester):
             result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for sliceid in range(batch_size):
             result.append(data[sliceid:(sliceid + 1), :])
@@ -72,7 +72,7 @@ def test_dynamicslice_update_large(op_tester):
         result.append(concat)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for sliceid in range(batch_size):
             result.append(

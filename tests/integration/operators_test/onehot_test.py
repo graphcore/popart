@@ -20,7 +20,7 @@ def test_onehot_2d_with_axis_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
@@ -46,7 +46,7 @@ def test_onehot_2d_without_axis_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
@@ -80,7 +80,7 @@ def test_onehot_2d_with_axis_training(op_tester):
             popart.reservedGradientPrefix() + i3
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
@@ -115,7 +115,7 @@ def test_onehot_2d_without_axis_training(op_tester):
             popart.reservedGradientPrefix() + i3
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
@@ -140,7 +140,7 @@ def test_onehot_3d_without_axis_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
@@ -164,7 +164,7 @@ def test_onehot_3d_with_axis_testing(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [output]
 
     op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)

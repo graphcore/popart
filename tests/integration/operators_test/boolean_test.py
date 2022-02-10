@@ -14,7 +14,7 @@ def test_and(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, dtype=torch.bool)
         t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 & t2
@@ -34,7 +34,7 @@ def test_broadcast_and(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, dtype=torch.bool)
         t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 & t2
@@ -54,7 +54,7 @@ def test_or(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, dtype=torch.bool)
         t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 | t2
@@ -75,7 +75,7 @@ def test_broadcast_or(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1, dtype=torch.bool)
         t2 = torch.tensor(d2, dtype=torch.bool)
         out = t1 | t2
@@ -94,7 +94,7 @@ def test_not(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.logical_not(d1)]
 
     op_tester.run(init_builder, reference, step_type='infer')
@@ -112,7 +112,7 @@ def test_equal(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         t2 = torch.tensor(d2)
         out = torch.eq(t1, t2)
@@ -135,7 +135,7 @@ def test_broadcast_equal(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         t2 = torch.tensor(d2)
         out = torch.eq(t1, t2)

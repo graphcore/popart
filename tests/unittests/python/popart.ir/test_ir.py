@@ -120,7 +120,7 @@ class TestCreateGraph:
     def test_bad_mixed_arguments(self):
         ir = pir.Ir()
 
-        def foo(x):
+        def foo(_):  # x is an unused argument
             pass
 
         with ir.main_graph():
@@ -137,7 +137,7 @@ class TestCreateGraph:
     def test_bad_mixed_var_arguments(self):
         ir = pir.Ir()
 
-        def foo(*x):
+        def foo(*_):  # x is an unused argument
             pass
 
         with ir.main_graph():
@@ -250,13 +250,14 @@ class TestCreateGraph:
     def test_complicated_signature(self):
         ir = pir.Ir()
 
-        def sum_all(a,
-                    b: List[pir.Tensor],
-                    c: bool,
-                    *args: pir.TensorByRef,
-                    e: pir.Tensor,
-                    f: int = 0,
-                    **kwargs: pir.Tensor):
+        def sum_all(
+                a,
+                b: List[pir.Tensor],
+                _: bool,  # c is an unused argument
+                *args: pir.TensorByRef,
+                e: pir.Tensor,
+                f: int = 0,
+                **kwargs: pir.Tensor):
             x = a + f
             for t in b + list(args) + [e] + list(kwargs.values()):
                 x += t

@@ -111,7 +111,7 @@ def test_average_pool_1_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = pool(padded, x_shape, kernel_shape, strides, out_shape, [0],
                    'AVG')
 
@@ -138,7 +138,7 @@ def test_average_pool_2_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = pool(padded, x_shape, kernel_shape, strides, out_shape, [0, 0],
                    'AVG')
 
@@ -167,7 +167,7 @@ def test_average_pool_3_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out_shape = get_output_shape('SAME_UPPER', x_shape[2:], kernel_shape,
                                      strides)
         pad_shape = get_pad_shape('SAME_UPPER', x_shape[2:], kernel_shape,
@@ -209,7 +209,7 @@ def test_average_pool_4_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out_shape = get_output_shape('SAME_LOWER', x_shape[2:], kernel_shape,
                                      strides)
         pad_shape = get_pad_shape('SAME_LOWER', x_shape[2:], kernel_shape,
@@ -259,7 +259,7 @@ def test_max_pool_1_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.array([[[[7, 9, 10], [17, 19, 20], [22, 24,
                                                      25]]]]).astype(np.float32)
 
@@ -289,7 +289,7 @@ def test_max_pool_2_auto_pad(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out_shape = get_output_shape('SAME_UPPER', x_shape[2:], kernel_shape,
                                      strides)
         pad_shape = get_pad_shape('SAME_UPPER', x_shape[2:], kernel_shape,

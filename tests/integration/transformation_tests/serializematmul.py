@@ -188,7 +188,8 @@ def test_matmul_serialization_inference():
 
         return anchors[o]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -335,7 +336,8 @@ def test_matmul_serialization_training_1():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -608,7 +610,8 @@ def test_matmul_serialization_training_2():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -884,7 +887,8 @@ def test_matmul_serialization_training_3():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -1151,7 +1155,8 @@ def test_matmul_serialization_precision():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -1441,7 +1446,8 @@ def test_matmul_serialization_training_with_gradient_accumlation():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
@@ -1726,7 +1732,8 @@ def test_matmul_serialization_training_with_castop():
 
         return anchors[rhs]
 
-    def verify_no_serialisation(session, matmul_serialization_factor):
+    def verify_no_serialisation(
+            session, _):  # matmul_serialization_factor is an unused argument
         ''' Verify the the matmul in the main graphs is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))

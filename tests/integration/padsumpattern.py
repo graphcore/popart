@@ -20,7 +20,7 @@ def test_pad_sum1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         i1 = np.pad(d1, [(0, 0), (2, 0), (0, 0)], 'constant')
         i2 = np.pad(d2, [(0, 0), (0, 2), (0, 0)], 'constant')
         return [i1 + i2]
@@ -43,7 +43,7 @@ def test_pad_sum2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         i1 = np.pad(d1, [(2, 0), (0, 0), (0, 0)], 'constant')
         i2 = np.pad(d2, [(0, 2), (0, 0), (0, 0)], 'constant')
         return [i1 + i2]
@@ -66,7 +66,7 @@ def test_pad_sum3(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         i1 = np.pad(d1, [(0, 0), (0, 0), (2, 0)], 'constant')
         i2 = np.pad(d2, [(0, 0), (0, 0), (0, 2)], 'constant')
         return [i1 + i2]
@@ -89,7 +89,7 @@ def test_pad_sum4(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         i1 = np.pad(d1, [(0, 0), (0, 0), (3, 0)], 'constant')
         i2 = np.pad(d2, [(0, 0), (0, 0), (0, 3)], 'constant')
         return [i1 + i2]
@@ -115,7 +115,7 @@ def test_pad_sum5(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         i1 = np.pad(d1, [(2, 6)], 'constant')
         i2 = np.pad(d2, [(4, 4)], 'constant')
         i3 = np.pad(d3, [(6, 2)], 'constant')
@@ -160,7 +160,7 @@ def test_pad_sum6(op_tester):
 
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         def getPadded(name, start, width):
             return np.pad(name, [(0, 0), (start, 20 - start - width), (0, 0)],
                           'constant')

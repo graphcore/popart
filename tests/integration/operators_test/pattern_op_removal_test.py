@@ -19,7 +19,7 @@ def test_atan2_arg0_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -44,7 +44,7 @@ def test_atan2_arg1_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -66,7 +66,7 @@ def test_convflipweights_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
@@ -93,7 +93,7 @@ def test_cos_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -120,7 +120,7 @@ def test_reciprocal_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -146,7 +146,7 @@ def test_sqrt_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -171,7 +171,7 @@ def test_subtract_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -197,7 +197,7 @@ def test_exp_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -223,7 +223,7 @@ def test_expm1_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -248,7 +248,7 @@ def test_cosh_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
@@ -274,7 +274,7 @@ def test_log1p_grad_error(op_tester):
         builder.addOutputTensor(o)
         return [o, popart.reservedGradientPrefix() + o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:

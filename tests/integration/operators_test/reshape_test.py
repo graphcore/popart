@@ -16,7 +16,7 @@ def test_reshape(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.reshape(d1, d2)
         return [out]
 
@@ -34,7 +34,7 @@ def test_reshape_neg_one(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.reshape(d1, d2)
         return [out]
 
@@ -70,7 +70,7 @@ def test_reshape_zeros(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         s = [i for i in d2]
         for i in range(0, len(s)):
             if s[i] == 0:
@@ -92,7 +92,7 @@ def test_reshape_neg_one_and_zeros(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         s = [i for i in d2]
         for i in range(0, len(s)):
             if s[i] == 0:
@@ -148,7 +148,7 @@ def test_reshape_graphcore(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = np.reshape(d1, d2)
         return [out]
 

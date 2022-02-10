@@ -63,7 +63,7 @@ def test_multiconv_infer(op_tester, dims):
             strides=[stride0 * dims[0], stride1 * dims[1]])
         return [c0, c1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d0 = torch.tensor(data0)
         d1 = torch.tensor(data1)
         conv0 = _torch_convolution(dims[0],
@@ -118,7 +118,7 @@ def test_multiconv_infer_default(op_tester):
         [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d1, f1]])
         return [c0, c1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d0 = torch.tensor(data0)
         d1 = torch.tensor(data1)
         conv0 = torch.nn.Conv2d(chans_in0, chans_out0, kernel_size0)
@@ -184,7 +184,7 @@ def test_multiconv_train_default_parameters_and_conv_options(op_tester, dims):
             popart.reservedGradientPrefix() + b1
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d0 = torch.tensor(data0, requires_grad=True)
         d1 = torch.tensor(data1, requires_grad=True)
         conv0 = _torch_convolution(
@@ -259,7 +259,7 @@ def test_multiconv_train_all_conv_options(op_tester):
             popart.reservedGradientPrefix() + f1
         ]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d0 = torch.tensor(data0, requires_grad=True)
         d1 = torch.tensor(data1, requires_grad=True)
         conv0 = torch.nn.Conv2d(chans_in0, chans_out0, kernel_size0)
@@ -399,7 +399,7 @@ def conv_dithering_harness(op_tester, capfd, dithering):
                                                  enableConvDithering=dithering)
         return [c0, c1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         d0 = torch.tensor(data0)
         d1 = torch.tensor(data1)
         conv0 = torch.nn.Conv2d(chans_in0, chans_out0, kernel_size0)

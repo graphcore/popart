@@ -18,7 +18,7 @@ def test_sum(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         out = d1 + d2 + d3
         return [out]
 
@@ -35,7 +35,7 @@ def test_sum_1_input(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d1]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)

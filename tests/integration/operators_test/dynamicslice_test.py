@@ -41,7 +41,7 @@ def test_dynamicslice(op_tester, slice_input):
             result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for sliceid in range(4):
             result.append(data[:, sliceid * 3:(sliceid + 1) * 3, :])
@@ -79,7 +79,7 @@ def test_dynamicslice_no_leading_slice_dim(op_tester):
             result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for sliceid in range(5):
             result.append(data[sliceid, :, :])
@@ -116,7 +116,7 @@ def test_multi_dim_dynamicslice_create_input_tensor(op_tester):
         result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         result.append(
             data[indices[0]:(indices[0] +
@@ -165,7 +165,7 @@ def test_multi_dim_dynamicslice_unwind_tensor_layout(op_tester):
         result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         dyn_slice = data[indices[0]:(indices[0] +
                                      sizes[0]), :, :, indices[1]:(indices[1] +

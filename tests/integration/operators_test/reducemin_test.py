@@ -33,7 +33,7 @@ def test_reducemin(op_tester):
             result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         for axes, keepdims in itertools.product(axes_list, keepdims_list):
             result.append(

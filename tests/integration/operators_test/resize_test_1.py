@@ -20,7 +20,7 @@ def test_float16_scales(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         x = torch.tensor(data)
         s = [i for i in scales[2:]]
         o = interpolate(x, s)
@@ -43,7 +43,7 @@ def test_resize11_float16_scales(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         x = torch.tensor(data)
         s = [i for i in scales[2:]]
         o = interpolate(x, s)
@@ -66,7 +66,7 @@ def test_odd_scale_factors(op_tester, nearest_mode, scale_factor, data_shape):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         if nearest_mode == "pytorch":
             x = torch.tensor(data)
             s = [i for i in scales[2:]]
@@ -158,7 +158,7 @@ def test_resize_linear(op_tester, data_shape, scales,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = onnx_resize.interpolate_nd(
             data,
             onnx_resize.linear_coeffs,
@@ -197,7 +197,7 @@ def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         # Convert sizes to scales.
         scales = []
         assert len(data.shape) == len(sizes)
@@ -269,7 +269,7 @@ def test_resize_cubic(op_tester, data_shape, scales,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = onnx_resize.interpolate_nd(
             data,
             onnx_resize.cubic_coeffs,

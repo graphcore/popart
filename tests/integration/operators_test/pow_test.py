@@ -15,7 +15,7 @@ def test_pow(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         t2 = torch.tensor(d2)
         out = torch.pow(t1, t2)
@@ -38,7 +38,7 @@ def test_broadcast_pow(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         t1 = torch.tensor(d1)
         t2 = torch.tensor(d2)
         out = torch.pow(t1, t2)

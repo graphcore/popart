@@ -14,7 +14,7 @@ def test_erf_0(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.erf(tx)
         return [out]
@@ -33,7 +33,7 @@ def test_erf_0b(op_tester, dtype):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [expected]
 
     # Lower precision for float16
@@ -51,7 +51,7 @@ def test_erf_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.erf(tx)
         return [out]
@@ -70,7 +70,7 @@ def test_erf_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(x)
         out = torch.erf(tx)
         return [out]

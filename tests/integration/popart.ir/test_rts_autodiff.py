@@ -166,7 +166,7 @@ class TestTensorLocation():
         ir._pb_ir.logIr()
 
         anchors = self.run(
-            ir, data, main,
+            ir, data,
             [y_d2h.tensor_id(),
              w_d2h.tensor_id(),
              grad_shard_d2h.tensor_id()])
@@ -177,7 +177,7 @@ class TestTensorLocation():
         # Check the weight has updated. So w = weight_data + w'
         assert np.allclose(np_loaded_w, weight_data + np_grad_shard)
 
-    def run(self, ir: pir.Ir, data: Mapping[str, np.ndarray], main: pir.Graph,
+    def run(self, ir: pir.Ir, data: Mapping[str, np.ndarray],
             anchor_ids: List[str]):
         dataFlow = popart.DataFlow(
             BPS, {id: popart.AnchorReturnType("All")

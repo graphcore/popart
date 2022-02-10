@@ -17,7 +17,7 @@ def test_slice_opset9(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[1:2, 0:3]
 
         return [o]
@@ -41,7 +41,7 @@ def test_slice_opset10(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[1:2, 0:3]
 
         return [o]
@@ -62,7 +62,7 @@ def test_slice_default_axes(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[1:2, 0:3]
 
         return [o]
@@ -86,7 +86,7 @@ def test_slice_neg(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[-5:-3]
 
         return [o]
@@ -143,7 +143,7 @@ def test_slice_error_start_input(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return []
 
     op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
@@ -193,7 +193,7 @@ def test_slice_start_out_of_bounds(op_tester):
 
         return [o, popart.reservedGradientPrefix() + i1]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[:, 1000:1000]
         i1_grad = np.zeros(d1.shape, dtype=np.float32)
 
@@ -262,7 +262,7 @@ def test_slice_neg_starts_and_ends(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[-4:-1]
 
         return [o]
@@ -289,7 +289,7 @@ def test_slice_flip_1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = d1[3:1:-1]
 
         return [o]
@@ -316,7 +316,7 @@ def test_slice_flip_2(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [np.flip(d1)]
 
     op_tester.run(init_builder, reference, 'infer')

@@ -116,7 +116,7 @@ def test_randomuniformlike_stats(op_tester, dtypes):
 
         return [actual_min, actual_max, actual_mean]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [expected_min, expected_max, expected_mean]
 
     op_tester.atol = 1e-02

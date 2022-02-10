@@ -295,7 +295,7 @@ def run_mm_graph(optimizer,
 
 def check_models(model_init, modelA_fn, modelB_fn):
     """
-    for each weight tensor, check the relative error. That is, 
+    for each weight tensor, check the relative error. That is,
     | model_accl - model_no_accl |_1 / | model_accl - model_initial|_1
     """
     modelA = onnx.load(modelA_fn)
@@ -591,6 +591,12 @@ def test_loading_saved_gradient_accumulationt_tensors(tmpdir, explicit_loops):
 
     def getTrainingSession(fn):
         opts = popart.SessionOptions()
+        if explicit_loops:
+            opts.enableExplicitMainLoops = True
+            opts.aliasZeroCopy = True
+            opts.explicitRecomputation = True
+            opts.useHostCopyOps = True
+
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accum_factor
         opts.disableGradAccumulationTensorStreams = False

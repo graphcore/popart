@@ -16,7 +16,7 @@ def test_atan2_basic(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_input_y = torch.tensor(input_y, requires_grad=False)
         torch_input_x = torch.tensor(input_x, requires_grad=False)
         out = torch.atan2(torch_input_y, torch_input_x)
@@ -37,7 +37,7 @@ def test_atan2_float16(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_input_y = torch.tensor(input_y, requires_grad=False)
         torch_input_x = torch.tensor(input_x, requires_grad=False)
 
@@ -64,7 +64,7 @@ def test_atan2_reshaped(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_input_y = torch.tensor(input_y, requires_grad=False)
         torch_input_x = torch.tensor(input_x, requires_grad=False)
         out = torch.atan2(torch_input_y, torch_input_x)
@@ -84,7 +84,7 @@ def test_atan2_broadcasting_y(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_input_y = torch.tensor(input_y, requires_grad=False)
         torch_input_x = torch.tensor(input_x, requires_grad=False)
         out = torch.atan2(torch_input_y, torch_input_x)
@@ -105,7 +105,7 @@ def test_atan2_outplace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         torch_input_y = torch.tensor(input_y, requires_grad=False)
         torch_input_x = torch.tensor(input_x, requires_grad=False)
         out = torch.atan2(torch_input_y, torch_input_x)

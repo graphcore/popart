@@ -45,7 +45,7 @@ def test_dynamicupdate(op_tester):
         result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         result.append(np.concatenate((data0, data1, data2), axis=1))
         return result
@@ -92,7 +92,7 @@ def test_dynamicupdate_no_leading_slice_dim(op_tester):
         result.append(out)
         return result
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         result = []
         result.append(np.stack((data0, data1, data2), axis=0))
         return result

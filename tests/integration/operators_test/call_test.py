@@ -75,7 +75,7 @@ def test_call(op_tester, subgraphCopyingStrategy):
 
         return init_builder
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d0 + d1 + d2]
 
     op_tester.run(get_init_builder("untyped"), reference, 'infer')
@@ -224,7 +224,7 @@ def test_nested_calls(op_tester, subgraphCopyingStrategy):
         builder.addOutputTensor(out)
         return [out]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         def sg0(in0):
             return 2 * in0
 
@@ -714,7 +714,7 @@ def test_subgraph_partitioning(op_tester):
         builder.addOutputTensor(d)
         return [d]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         def sg1(x1, y1):
             return x1 + y1
 

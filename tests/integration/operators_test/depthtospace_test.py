@@ -17,7 +17,7 @@ def test_depthtospace(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(
@@ -46,7 +46,7 @@ def test_depthtospace1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
@@ -73,7 +73,7 @@ def test_depthtospace_opset1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
@@ -101,7 +101,7 @@ def test_depthtospace_custom_op(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
@@ -198,7 +198,7 @@ def test_spacetodepth0(op_tester):
         builder.addOutputTensor(o2)
         return [o2]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [d1]
 
     op_tester.run(init_builder, reference, 'infer')
@@ -215,7 +215,7 @@ def test_spacetodepth1(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(tx, (d_shape[0], d_shape[1], d_shape[2] // blocks,
@@ -276,7 +276,7 @@ def test_pixelshuffle0(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             tx = torch.tensor(di)
             pixel_shuffle = torch.nn.PixelShuffle(blocki)
             out = pixel_shuffle(tx)
@@ -304,7 +304,7 @@ def test_pixelshuffle_custom(op_tester):
             builder.addOutputTensor(o)
             return [o]
 
-        def reference(ref_data):
+        def reference(_):  # ref_data is an unused argument
             tx = torch.tensor(di)
             pixel_shuffle = torch.nn.PixelShuffle(blocki)
             out = pixel_shuffle(tx)

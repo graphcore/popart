@@ -47,10 +47,10 @@ def create_adamupdater(acc_first_order: Tensor,
     outs = {
         0: g._create_tensor_id('Updater'),
     }
-    wd = handle_optimizer_value(g, weight_decay, ins, 4)
-    b1 = handle_optimizer_value(g, beta1, ins, 5)
-    b2 = handle_optimizer_value(g, beta2, ins, 6)
-    eps = handle_optimizer_value(g, epsilon, ins, 7)
+    wd = handle_optimizer_value(weight_decay, ins, 4)
+    b1 = handle_optimizer_value(beta1, ins, 5)
+    b2 = handle_optimizer_value(beta2, ins, 6)
+    eps = handle_optimizer_value(epsilon, ins, 7)
 
     settings = ctx._get_op_settings('adamupdater')
     op = pb_g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2, eps,

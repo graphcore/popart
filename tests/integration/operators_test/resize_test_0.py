@@ -81,7 +81,7 @@ def test_resize_10(op_tester, data_shape, scales):
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         o = onnx_resize.interpolate_nd(data,
                                        onnx_resize.nearest_coeffs,
                                        scale_factors=scales)
@@ -294,7 +294,7 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode,
         builder.addOutputTensor(o)
         return [o]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         if nearest_mode == 'pytorch':
             x = torch.tensor(data)
             s = [i for i in scales[2:]]

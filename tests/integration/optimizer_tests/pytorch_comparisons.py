@@ -155,7 +155,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
             self.w0 = torch.nn.Parameter(torch.from_numpy(w0vals.copy()))
             self.w1 = torch.nn.Parameter(torch.from_numpy(w1vals.copy()))
 
-        def forward(self, x, i):
+        def forward(self, x, _):  # i is an unused parameter needed in torch
             mm0 = torch.mul(x, self.w0)
             mm1 = torch.add(mm0, self.w1)
             return mm1
@@ -368,30 +368,30 @@ def test_sgd2_against_pytorch():
 @tu.requires_ipu_model
 def test_sgd1_against_pytorch():
     """
-    Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch 
-    to match popart. Note that these differences should have no effect on overall 
-    training measures, and this discussion is just for those interested in exact 
-    reproducility between popart and pytorch 
+    Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch
+    to match popart. Note that these differences should have no effect on overall
+    training measures, and this discussion is just for those interested in exact
+    reproducility between popart and pytorch
 
     The main differences are:
     1)
-    pytorch optimizer, in the very first iteration with a new optimizer: 
+    pytorch optimizer, in the very first iteration with a new optimizer:
     initializes velocity tensor with zeros and does not do damping,
     popart optimizer, in the first iteration with a new optimizer:
-    retains velocity tensor from previous state with previous optimizer, 
+    retains velocity tensor from previous state with previous optimizer,
     or sets it to zero if the first round of training
 
     2)
-    popart and pytorch updates the optimizer at a different "phase" 
+    popart and pytorch updates the optimizer at a different "phase"
     a)    v <- v * mm  + (1 - dp) * wd * w
     b)    v <- v + (1 - dp) * g
     c)    w <- w - lr * v
 
-    pytorch goes (abc)(abc)(abc)(abc) 
+    pytorch goes (abc)(abc)(abc)(abc)
     popart goes  (abca)(bca)(bca)(bca)
 
-    where changes to the optimizer can be done between periods. For this reason, 
-    updates to mm, dp, and wd have different effects. 
+    where changes to the optimizer can be done between periods. For this reason,
+    updates to mm, dp, and wd have different effects.
 
     See also sgd_mixed_mode_test_cpp_1_3.cpp
     """

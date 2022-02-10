@@ -48,24 +48,6 @@ def test_stepio_bufferinput_ipu():
 
     session.run(stepio)
 
-    return
-
-    # confirm that writing device-to-host of a Stream Tensor returns correctly (unchanged)
-    print(i1_data)
-    print(anchors[i1])
-    assert (np.allclose(anchors[i1], i1_data))
-
-    print(i2_data)
-    print(anchors[i2])
-    assert (np.allclose(anchors[i2], i2_data))
-
-    expected_result = i1_data + i2_data
-
-    print(expected_result)
-    print(anchors[o])
-
-    assert (np.allclose(anchors[o], expected_result))
-
 
 @tu.requires_ipu
 def test_stepio_callbackinput_ipu():

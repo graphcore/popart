@@ -117,7 +117,7 @@ def test_randomnormallike_stats(op_tester, dtypes):
 
         return [actual_mean, actual_stddev]
 
-    def reference(ref_data):
+    def reference(_):  # ref_data is an unused argument
         return [expected_mean, expected_stddev]
 
     op_tester.atol = 1e-01
