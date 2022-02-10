@@ -127,7 +127,7 @@ class SubgraphOpInfo:
 
 @debug_context_frame_offset(1)
 def call(subgraph: Graph,
-         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
+         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor], int, float],
          subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
          ) -> Tuple[Tensor, ...]:
     """
@@ -137,7 +137,7 @@ def call(subgraph: Graph,
 
     Args:
         subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs  (Tensor, List[Tensor]):
+        *subgraph_fn_param_inputs  (Tensor, List[Tensor], int, float):
             parent tensors that correspond to the inputs of the callable passed
             to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
@@ -164,7 +164,7 @@ def call(subgraph: Graph,
 @op_debug_context("call")
 def call_with_info(
         subgraph: Graph,
-        *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
+        *subgraph_fn_param_inputs: Union[Tensor, List[Tensor], int, float],
         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
         check_inputs: bool = True) -> SubgraphOpInfo:
     """
@@ -175,7 +175,7 @@ def call_with_info(
 
     Args:
         subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs (Tensor, List[Tensor]):
+        *subgraph_fn_param_inputs (Tensor, List[Tensor], int, float):
             parent tensors that correspond to the inputs of the callable passed
             to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
             The inputs passed MUST be provided here in the EXACT SAME ORDER as
@@ -227,14 +227,20 @@ def call_with_info(
     #    require that the user has passed the parent tensors that correspond to
     #    these inputs in the exact same order, so we can trivially reconstruct
     #    the input indices here.
-    sgInIdx = 0
-    for t in subgraph_fn_param_inputs_flat:
+    for sgInIdx, t in enumerate(subgraph_fn_param_inputs_flat):
+        if not isinstance(t, Tensor):
+            sg_tensor = subgraph.get_input_tensors()[sgInIdx]
+            t = sg_tensor._ensure_tensor(t)
+
         callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
         pb_callop.connectInTensor(callInIdx, t.id)
-        sgInIdx += 1
 
     # 2. Connect internally created inputs.
     for sg_tensor, parent_tensor in subgraph_in_to_parent_in.items():
+        if not isinstance(parent_tensor, Tensor):
+            sg_tensor = subgraph.get_input_tensors()[sgInIdx]
+            parent_tensor = sg_tensor._ensure_tensor(parent_tensor)
+
         try:
             check_in_graph(
                 g,
