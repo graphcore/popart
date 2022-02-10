@@ -93,6 +93,7 @@
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
+#include <snap/CompileGraph.hpp>
 #include <snap/poputil/TileMapping.hpp>
 
 namespace pe = popops::expr;
@@ -3448,12 +3449,13 @@ poplar::Executable IrLowering::getExecutable() {
       logging::devicex::info("Starting compilation");
 
       DebugInfo di{{}, "popart"};
-      auto executable = poplar::compileGraph(
-          graph().getPoplarGraph(),
-          toPoplarProgs(progs_.progs()),
-          engineOptions,
-          std::ref(progressLogger),
-          {{di.getPathName(), di.getId()}, getPoplarGraphDebugName()});
+      auto executable = snap::compileGraph(graph(),
+                                           progs_.progs(),
+                                           engineOptions,
+                                           std::ref(progressLogger),
+                                           {{di.getPathName(), di.getId()},
+                                            getPoplarGraphDebugName()})
+                            .releaseExecutable();
 
       logging::devicex::info("Graph compiled");
       return executable;

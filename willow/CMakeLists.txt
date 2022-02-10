@@ -85,6 +85,7 @@ set(POPART_ONLY_DEPS_LIBS
     pva
     gcl
     snap
+    popir
     gccs
 )
 
