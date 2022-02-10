@@ -48,15 +48,15 @@ class TensorSpec:
                  shape: Tuple[int, ...],
                  dtype: dtypes.dtype,
                  meta_shape: Tuple[int, ...] = ()):
-        """Description of a Tensor.
-            Instances of this class can be used as arguments in
-            ir.create_graph to provide a specification of the input tensors.
+        """Description of a tensor.
+           Instances of this class can be used as arguments in
+           `ir.create_graph()` to provide a specification of the input tensors.
 
         Args:
-            shape (Tuple[int, ...]): shape of a Tensor
-            dtype (dtypes.dtype): data type of a Tensor
+            shape (Tuple[int, ...]): shape of the tensor.
+            dtype (dtypes.dtype): data type of the tensor.
             meta_shape (Tuple[int, ...], optional):
-                Shape of the full Tensor when using replicated tensor sharding. Defaults to ().
+                Shape of the full tensor when using replicated tensor sharding. Defaults to ().
         """
         self.shape = shape
         self.dtype = dtype
@@ -65,7 +65,7 @@ class TensorSpec:
 
 class Tensor:
     def __init__(self):
-        """popart.ir Tensor."""
+        """Representation of a tensor."""
         self._pb_tensor: _ir.Tensor
         raise RuntimeError("pir.Tensor cannot be constructed directly.")
 
@@ -75,8 +75,8 @@ class Tensor:
     def __init_subclass__(cls, tensor_type: Optional[str] = None,
                           **kwargs) -> None:
         """Hook called when creating a Tensor subclass.
-            Argument `tensor_type` is used to allow `_from_pb_tensor` to return
-            the correct subclass for any Tensor retrieved from the internal IR"""
+           Argument `tensor_type` is used to allow `_from_pb_tensor` to return
+           the correct subclass for any Tensor retrieved from the internal IR"""
         super().__init_subclass__(**kwargs)
         if tensor_type is not None:
             Tensor._tensor_types[tensor_type] = cls
@@ -113,25 +113,25 @@ class Tensor:
     @property
     def meta_shape(self) -> Tuple[int, ...]:
         """
-        The meta shape of the tensor, which can for example
-        be used to store the original tensor shape before
+        The meta shape of the tensor, which can
+        be used, for example, to store the original tensor shape before
         replicated tensor sharding was applied.
         """
         return tuple(self._pb_tensor.info.metaShape())
 
     @property
     def tensor_spec(self):
-        """Return a TensorSpec instance using properties of `self`"""
+        """Return a `TensorSpec` instance using the properties of this tensor."""
         return TensorSpec(self.shape, self.dtype, self.meta_shape)
 
     @property
     def rank(self) -> int:
-        """Total number of dimensions."""
+        """The total number of dimensions in this tensor."""
         return self._pb_tensor.info.rank()
 
     @property
     def nelms(self) -> int:
-        """Total number of elements."""
+        """The total number of elements in this tensor."""
         return self._pb_tensor.info.nelms()
 
     @property
@@ -142,20 +142,21 @@ class Tensor:
     @property
     @debug_context_frame_offset(2)
     def T(self) -> 'Tensor':
-        """Returns the Tensor transposed with reversed axes."""
+        """The tensor transposed with reversed axes."""
         return self.transpose()
 
     @property
     @debug_context_frame_offset(2)
     def T_(self) -> 'Tensor':
-        """Returns the Tensor transposed with reversed axes inplace."""
+        """The tensor transposed with reversed axes in-place."""
         return self.transpose_()
 
     @property
     def ipu(self) -> int:
         """
-        Return the IPU the Tensor is assigned to.
-        A `UndefinedValue` is raised if the IPU is undefined.
+        The IPU that the tensor is assigned to.
+        Raises:
+            UndefinedValue: If the IPU is undefined.
         """
         ipu, _ = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
                                             raise_on_undefined_ipu=True)
@@ -164,8 +165,9 @@ class Tensor:
     @property
     def tile_set(self) -> Literal["compute", "io"]:
         """
-        Return the tile set (`compute` or `io`) the Tensor is assigned to.
-        A `UndefinedValue` is raised if the tile set is undefined.
+        The tile set (`compute` or `io`) that the tensor is assigned to.
+        Raises:
+            UndefinedValue: If the tile set is undefined.
         """
         _, tile_set = self._get_ipu_and_tile_set(
             raise_on_undefined_tile_set=True, raise_on_undefined_ipu=False)
@@ -173,21 +175,47 @@ class Tensor:
 
     ## Methods
     def ir(self) -> 'Ir':
-        """Return the `Ir` that the Tensor is a member of."""
+        """Return the `Ir` that the tensor is a member of."""
         from popart.ir import Ir
         return Ir._from_pb(self._pb_tensor.getIr())
 
     @debug_context_frame_offset(1)
     def transpose(self,
                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
-        """Returns `ops.transpose(self, permutation)`."""
+        """
+        Permute the axes of a tensor.
+
+        By default this operation reverses the axes of the tensor.
+
+        Args:
+            permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
+             rank of the tensor. If not provided, the axes will be reversed.
+        Returns:
+            out (Tensor): The transposed tensor.
+        """
         import popart.ir.ops as ops
         return ops.transpose(self, permutation)
 
     @debug_context_frame_offset(1)
     def transpose_(self,
                    permutation: Optional[Iterable[int]] = None) -> 'Tensor':
-        """Returns ops.transpose(self, permutation) inplace."""
+        """
+        Permutes the axes of a tensor in place.
+
+        By default this operation reverses the axes of the tensor.
+
+        This is the in-place version of :func:`~popart.ir.Tensor.transpose`.
+        The behaviour is the same, but it modifies the
+        tensor in place.
+
+        Args:
+            permutation (Optional[Tuple[int, ...]]):
+                Tuple containing the a permutation of [0, N-1] where N is the
+                rank of input `t`. If not provided, the axes will be reversed.
+        Returns:
+            out (Tensor):
+                The transposed tensor.
+        """
         import popart.ir.ops as ops
         return ops.transpose_(self, permutation)
 
@@ -231,15 +259,15 @@ class Tensor:
     def copy_to_ipu(self, destination: int,
                     source: Optional[int] = None) -> 'Tensor':
         """
-        Copies a tensor to a IPU.
+        Copies a tensor to an IPU.
 
         Args:
             destination (int):
-                Ipu for the tensor to be copied to.
+                ID of the IPU to copy the tensor to.
             source (Optional[int]):
-                Ipu for the tensor to be copied from.
+                ID of the IPU to copy the tensor from.
                 By default, the source will be taken from the producer of the tensor.
-                If the tensor does not have a producer a source MUST be provided.
+                If the tensor does not have a producer a source **must** be provided.
         """
         import popart.ir.ops as ops
         return ops.ipu_copy(self, destination, source)
@@ -251,8 +279,10 @@ class Tensor:
             raise_on_undefined_ipu: bool = True,
     ) -> Tuple[int, Literal["compute", "io", "undefined"]]:
         """
-        Determine the IPU and tile set of the Tensor.
-        Raise UndefinedValue if either underfined and flag set to True.
+        Determine the IPU and tile set of the tensor.
+        Raise:
+            UndefinedValue: If either the IPU or the tile are underfined and
+            the corresponding flag is set to True.
         """
         ipu, tile_set = self._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
         tile_set = TILE_SET_MAP[tile_set]
@@ -270,9 +300,8 @@ class Tensor:
     ) -> 'Tensor':
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
-
-        If any they are not, an attempt is made to convert the operands to a
-        `Constant` tensor.
+        If any are not, an attempt is made to convert the operands to a
+        constant tensor.
 
         Returns:
             Tensor:
@@ -285,8 +314,8 @@ class Tensor:
             t = constant(value, dtype)
             if raise_on_empty and t.nelms == 0:
                 raise ValueError(
-                    "The data has 0 elements - this is most likely a mistake. "
-                    "If not initialise the Tensor explicitly before using in an opperation e.g. `pir.variable([])`. "
+                    "The value has 0 elements - this is most likely a mistake. "
+                    "If not, initialise the tensor explicitly before using in an operation. For example: `pir.variable([])`. "
                     f"Type: {type(value)}. Value: {value}")
             return t
 
@@ -417,10 +446,10 @@ class Tensor:
     def __getitem__(self, key: Union[int, slice, Tuple[Union[int, slice], ...],
                                      'Tensor', HostTensor]) -> 'Tensor':
         """
-        Supports slicing, integer and boolean indexing. Tensors or host tensors (Numpy/pytorch arrays and sequences)
+        Supports slicing, integer and boolean indexing. Tensors or host tensors (NumPy/PyTorch arrays and sequences)
         will be converted to a constant Tensor and can be used for integer or boolean indexing.
 
-        Slicing is triggered when the input is an integer, slice (e.g. `0:2`) or a tuple of the two. Slicing
+        Slicing is triggered when the input is an integer, slice (for example, `0:2`) or a tuple of the two. Slicing
         either selects a single index of an axis using an integer or range using a slice. If a single index
         is selected the dimension will be squeezed - this matches numpy slicing rules.
 
@@ -523,7 +552,7 @@ class Tensor:
 
 class Variable(Tensor, tensor_type="Variable"):
     """
-    popart.ir variable tensor.
+    A variable tensor.
     This tensor can be used to represent a model weight or any other
     parameter that can change while running a model.
     """
@@ -538,7 +567,7 @@ class Variable(Tensor, tensor_type="Variable"):
 
 class Constant(Tensor, tensor_type="Const"):
     """
-    popart.ir constant tensor.
+    A constant tensor.
     This tensor cannot change during the runtime of a model.
     """
 
@@ -564,7 +593,7 @@ def variable(
         downcast: bool = True,
 ) -> Variable:
     """
-    A variable tensor that is initialised with data during graph creation.
+    Create a variable tensor that is initialised with data during graph creation.
 
     This tensor can be used to represent a model weight or any other
     parameter that can change while running a model.
@@ -578,15 +607,15 @@ def variable(
             a = pir.variable(0)
 
     Args:
-        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+        data (np.ndarray, or a value NumPy can use to construct an np.ndarray):
             The data used to initialise the tensor.
         dtype (Optional[dtype]):
-            The data type of the tensor to be created, if not specified Numpy will infer the data
-            type and be downcasted to 32 bits if necessary.
+            The data type of the tensor to be created. If not specified NumPy will infer the data
+            type and downcast to 32 bits if necessary.
         name (Optional[str]):
             The name of the tensor. Defaults to `None`.
         downcast (bool):
-            If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
+            If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
     """
     g = gcg()
     pb_g = g._pb_graph
@@ -614,15 +643,16 @@ def variable(
 
 def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
                     offset: int) -> Constant:
-    """Store the tensor off-chip in remote memory.
+    """Store the tensor in a remote buffer in Streaming Memory.
 
     Args:
-        var (Variable): The variable to be stored remotely.
+        var (Variable): The variable to be stored in the remote buffer.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
-        offset (int): The offset to index the tensor in the remote tensor.
+        offset (int): The tensor-size offset to the tensor in the remote tensor.
+
 
     Returns:
-        Constant: The tensor associated with the remote variable. Note: this is not the remote
+        Constant: The tensor associated with the remote variable. Note, this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
     """
     var._pb_tensor.setTensorLocationInfo(
@@ -635,28 +665,28 @@ def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
 
 def remote_replica_sharded_variable(
         var: Variable, remote_buffer: "RemoteBuffer", offset: int) -> Constant:
-    """Scatter a tensor in equal shards across replicas (replicated tensor sharding (RTS)
-        data parallelism) of the same model/graph. Eliminates redundant data storage when the full
-        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote
-        memory (usually DDR memory).
+    """Scatter a tensor in equal shards across replicas (replicated-tensor sharding
+       data parallelism) of the same model/graph. This eliminates redundant data storage when the full
+       (un-sharded) tensor does not need to be present on every IPU. Stores the full tensor in
+       Streaming Memory.
 
-        RTS tensors for which each replica needs a full copy of need to be recombined with a
-        replicated AllGather operation.
+       Replicated tensors for which each replica needs a full copy, need to be recombined with a
+       replicated AllGather operation.
 
-        Fully updated tensors that need to be sharded and/or reduced again require a replicated
-        ReduceScatter operation.
+       Fully updated tensors that need to be sharded and/or reduced again require a replicated
+       ReduceScatter operation.
 
     Args:
         var (Variable): The variable to be sharded remotely.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
-        offset (int): The offset to index the tensor shard in the remote tensor.
+        offset (int): The offset to the tensor shard in the remote tensor.
 
     Raises:
         ValueError: If replication has not been enabled.
         ValueError: If the number of elements of `var` is not divisible by the number of variables.
 
     Returns:
-        Constant: The tensor associated with the remote variable. Note: this is not the remote
+        Constant: The tensor associated with the remote variable. Note, this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
     """
     remote_arg = remote_variable(var, remote_buffer, offset)
@@ -689,19 +719,20 @@ def remote_replica_sharded_variable(
 
 def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
                              offset: int) -> Tuple[Constant, Tensor]:
-    """Scatter a tensor in equal shards across replicas (data parallelism) of the
-        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does
-        not need to be present on each IPU. Does not store the full tensor in remote memory.
+    """Scatter a tensor in equal shards across replicas (replicated-tensor sharding data parallelism) of the
+       same model/graph. This eliminates redundant data storage when the full (un-sharded) tensor does
+       not need to be present on every IPU. Does not store the full tensor in Streaming Memory.
 
     Args:
         var (Variable): The variable to be sharded.
-        remote_buffer (RemoteBuffer): [The handle to the remote buffer.
-        offset (int): The offset to index the tensor shard in the full tensor.
+        remote_buffer (RemoteBuffer): The handle to the remote buffer.
+        offset (int): The offset to the tensor shard in the full tensor.
 
     Returns:
         Tuple[Constant, Tensor]:
             A tuple of tensors:
-            1. The tensor associated with the remote variable. Note: this is not the remote
+
+            1. The tensor associated with the remote variable. Note, this is not the remote
             variable, but a tensor associated with it. In future this tensor will not be required.
             2. The sharded variable.
     """
@@ -750,8 +781,8 @@ def constant(
         data (np.array, or a value numpy can use to construct an np.ndarray):
             The data used to initialise the tensor.
         dtype (Optional[dtype]):
-            The data type of the tensor to be created, if not specified Numpy will infer the data
-            type and be downcasted to 32 bits if necessary.
+            The data type of the tensor to be created. If not specified, NumPy will infer the data
+            type and downcast to 32 bits if necessary.
         name (Optional[str]):
             The name of the tensor. Defaults to `None`.
     """
@@ -798,9 +829,9 @@ def subgraph_input(shape: Iterable[int],
 
     Args:
         shape (Tuple[int, ...])
-            The shape of the Tensor
+            The shape of the tensor.
         dtype (dtype):
-            The data type of the tensor
+            The data type of the tensor.
         name (Optional[str]):
             The name of the tensor.
     """
@@ -854,8 +885,7 @@ def subgraph_output(t: Tensor) -> None:
             The subgraph tensor to mark as an output in the current graph.
 
     Throws:
-        ValueError:
-            If #t is not in the current graph.
+        ValueError: If the tensor is not in the current graph.
     """
     g = gcg()
     pb_g = g._pb_graph
@@ -869,7 +899,7 @@ def subgraph_output(t: Tensor) -> None:
 
 """TensorByRef
 This type alias can be used in function argument annotations to specify that
-a graph input should be flagged as copyModified. Example:
+a graph input should be flagged as copy-modified. Example:
 
 .. code-block:: python
 
