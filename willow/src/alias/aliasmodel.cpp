@@ -139,7 +139,10 @@ void AliasModel::insertUnaryModifier(const Op &op, InIndex inIndex) {
 }
 
 void AliasModel::insertBinaryModifier(const Op &op) {
+  insertNG2aryModifier(op, 2);
+}
 
+void AliasModel::insertNG2aryModifier(const Op &op, unsigned int numInputs) {
   auto outPlace = op.isOutplace();
 
   auto getReshapeIn = [this, &op](InIndex inIndex) {
@@ -153,13 +156,36 @@ void AliasModel::insertBinaryModifier(const Op &op) {
     return id_;
   };
 
-  const auto id0 = getReshapeIn(0);
-  const auto id1 = getReshapeIn(1);
+  std::vector<PoprithmsTensorId> ids;
 
-  const auto gate = outPlace ? g.aliasGate({id0, id1}) :
+  for (unsigned int i = 0; i < numInputs; i++) {
+    ids.push_back(getReshapeIn(i));
+  }
 
-                             (op.doesAlias(0, 0) ? g.aliasGate({id0, id1}, 0)
-                                                 : g.aliasGate({id0, id1}, 1));
+  const int not_set = -1;
+
+  PoprithmsTensorId gate(not_set, not_set);
+
+  if (outPlace) {
+    gate = g.aliasGate(ids);
+  } else {
+    for (unsigned int i = 0; i < numInputs; i++) {
+      if (op.doesAlias(i, 0)) {
+        if (gate.opId() != not_set) {
+          throw error("Gate already set in insertNG2aryModifier. This method "
+                      "assumes just one input aliases the output. This for "
+                      "Op {}",
+                      op.debugName());
+        }
+        gate = g.aliasGate(ids, i);
+      }
+    }
+  }
+
+  if (gate.opId() == not_set) {
+    throw internal_error("Gate not set in insertNG2aryModifier. This for Op {}",
+                         op.debugName());
+  }
 
   const auto rGate = (g.shape(gate) == op.outShape(0))
                          ? gate

@@ -104,6 +104,15 @@ public:
   void insertBinaryModifier(const Op &op);
 
   /**
+   * \param op A PopART Op with 2 or more inputs.
+   * \param numInputs The number of inputs
+   *
+   * The method is the same as insertBinaryModifier except for allowing a
+   * larger number of inputs than 2.
+   * */
+  void insertNG2aryModifier(const Op &op, unsigned int numInputs);
+
+  /**
    * This method performs the following steps:
    *
    * (1) adds an aliasGate whose (unique) unput is viewChangeOut,
