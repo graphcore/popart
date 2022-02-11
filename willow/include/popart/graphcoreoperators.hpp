@@ -286,6 +286,8 @@ const static AiGraphcoreOpIdV1 SwishInplace("SwishInplace");
 const static AiGraphcoreOpIdV1 ThresholdedReluInplace("ThresholdedReluInplace");
 const static AiGraphcoreOpIdV1 TiedGather("PopartTiedGather");
 const static AiGraphcoreOpIdV1 TransposeInplace("TransposeInplace");
+const static AiGraphcoreOpIdV1 WhereLhsInplace("WhereLhsInplace");
+const static AiGraphcoreOpIdV1 WhereRhsInplace("WhereRhsInplace");
 const static AiGraphcoreOpIdV1 Zeros_1("Zeros");
 const static AiGraphcoreOpIdV1 ZerosLike_1("ZerosLike");
 const static AiGraphcoreOpIdV1 Abort("Abort");
