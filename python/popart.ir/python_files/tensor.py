@@ -102,6 +102,10 @@ class Tensor:
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
+    def scope(self) -> str:
+        return self._pb_tensor.getGraph().getScope().str()
+
+    @property
     def dtype(self) -> dtypes.dtype:
         return dtypes.dtype.as_dtype(self._pb_tensor.info.dataType())
 
@@ -321,7 +325,7 @@ class Tensor:
 
     ## Dunders
     def __repr__(self) -> str:
-        return f"Tensor[name={self.name} type={self.dtype} shape={self.shape}]"
+        return f"Tensor[{self.id} {self.dtype} {self.shape}]"
 
     def __hash__(self):
         """Hashes the Tensor, based on Tensor and Ir `id`"""

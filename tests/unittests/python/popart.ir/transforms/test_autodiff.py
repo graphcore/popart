@@ -1,4 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+import re
+
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -87,3 +89,25 @@ def test_subgraph():
         call_info, grads_with_info)
     assert all(t.shape == g.shape for t, g in grad_tensor_map.items())
     assert all('ScaleNShift' not in t.id for t, g in grad_tensor_map.items())
+
+
+def test_grad_graph_info_repr():
+    def subgraph1(a: pir.Tensor):
+        return a + a
+
+    ir = pir.Ir()
+    with ir.main_graph():
+        a = pir.variable([1], name="bob")
+        fwd_graph = ir.create_graph(subgraph1, a.tensor_spec)
+        fwd_call_info = ops.call_with_info(fwd_graph, a)
+
+        y = fwd_call_info.get_output_tensors()[0]
+        d2h = pir.d2h_stream(y.shape, y.dtype)
+        ops.host_store(d2h, y)
+
+        bwd_info = pir.transforms.autodiff(fwd_graph)
+        bwd_info_repr = repr(bwd_info)
+        assert bool(
+            re.match(
+                r"GradGraphInfo\[(.|\n)*?graph\=(.|\n)*?expected_inputs\=(.|\n)*?expected_outputs\=(.|\n)*?\]",
+                bwd_info_repr))

@@ -111,6 +111,20 @@ class GradGraphInfo:
             outputs of the gradient graph"""
         return tuple(self._expected_outputs)
 
+    def __repr__(self) -> str:
+        """Return a string representation for this GradGraphInfo object."""
+        result = "GradGraphInfo[\n"
+        result += f"  graph={self.graph.id}\n"
+        result += f"  expected_inputs=[\n"
+        result += "".join([f"    {repr(ec)}\n" for ec in self.expected_inputs])
+        result += "  ]\n"
+        result += f"  expected_outputs=[\n"
+        result += "".join(
+            [f"    {repr(ec)}\n" for ec in self.expected_outputs])
+        result += "  ]\n"
+        result += "]"
+        return result
+
     def get_input_tensors(self) -> Tuple[Tensor, ...]:
         return tuple(map(lambda ec: ec.fwd_tensor, self._expected_inputs))
 
