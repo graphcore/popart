@@ -5,6 +5,7 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/variablesettings.hpp>
 
 namespace popart {
 
@@ -14,12 +15,14 @@ protected:
                             const TensorId &tensorId,
                             const Shape &shape,
                             const DataType &type,
+                            const VariableSettings &varset,
                             float initValue = 0.0) const;
 
   template <typename T>
   void addStateTensor(Graph &graph,
                       const TensorId &tensorId,
                       const TensorInfo info,
+                      const VariableSettings &varset,
                       float initValue = 0.0) const;
 
   // Add accl Op and updated tensor

@@ -180,6 +180,8 @@ bool AdamDecompose::apply(Op *op) const {
   Tensor *weight    = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
   Tensor *newWeight = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
 
+  VariableSettings varset = weight->getVariableSettings();
+
   TensorId weightGradId    = weightGrad->id;
   TensorId weightId        = weight->id;
   TensorId updatedWeightId = newWeight->id;
@@ -196,7 +198,8 @@ bool AdamDecompose::apply(Op *op) const {
   if (combo->mode == AdamMode::Adam || combo->mode == AdamMode::Lamb ||
       combo->mode == AdamMode::AdaMax) {
     // Step
-    addStateTensor<float>(graph, stepId, TensorInfo(DataType::FLOAT, {}));
+    addStateTensor<float>(
+        graph, stepId, TensorInfo(DataType::FLOAT, {}), varset);
     graph.getIr().addAdditionalModelProtoTensor(stepId);
   }
 
@@ -210,14 +213,15 @@ bool AdamDecompose::apply(Op *op) const {
 
   // Accumulator
   if (combo->withGradAccum) {
-    addStateTensor(graph, accumId, weightShape, combo->accumType);
+    addStateTensor(
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   // 1st momentum (accl1)
-  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
+  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, varset);
 
   // 2nd momentum (accl2)
-  addStateTensor(graph, accl2Id, weightShape, combo->accl2Type);
+  addStateTensor(graph, accl2Id, weightShape, combo->accl2Type, varset);
 
   TensorId gradIntoAcclId  = weightGradId;
   TensorId gradIntoAccumId = weightGradId;

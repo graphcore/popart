@@ -35,6 +35,8 @@ void ReplicatedAllGatherOp::setup() {
       (getGCLCommGroup().type == CommGroupType::Consecutive ||
        getGCLCommGroup().type == CommGroupType::Orthogonal)) {
     replicationFactor = getGCLCommGroup().replicaGroupSize;
+  } else if (getGCLCommGroup().type == CommGroupType::None) {
+    replicationFactor = 1;
   }
 
   DataType type =

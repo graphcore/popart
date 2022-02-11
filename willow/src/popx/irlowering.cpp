@@ -2212,7 +2212,6 @@ void IrLowering::growOpx(PopOpx *opx,
                          end - begin,
                          seqVec.size());
   }
-
   if (aliasZeroCopy->opRequired(opx->op_p)) {
     // Code of an Op can be skipped if the Op is not required,
     // meaning the Op has:

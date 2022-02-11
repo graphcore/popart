@@ -960,6 +960,16 @@ PYBIND11_MODULE(popart_core, m) {
         py::arg("loadTileSet"),
         py::arg("storageTileSet"),
         py::arg("replicatedTensorSharding"));
+    cls.def(py::init<TensorStorage,
+                     TileSet,
+                     TileSet,
+                     ReplicatedTensorSharding,
+                     CommGroup>(),
+            py::arg("storage"),
+            py::arg("loadTileSet"),
+            py::arg("storageTileSet"),
+            py::arg("replicatedTensorSharding"),
+            py::arg("shardingDomain"));
     cls.def_readwrite("storage",
                       &TensorLocation::storage,
                       DOC(popart, TensorLocation, storage));

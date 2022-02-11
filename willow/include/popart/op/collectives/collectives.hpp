@@ -86,6 +86,21 @@ CommGroup extractCommGroupFromVector(const std::vector<int64_t> &vec);
  */
 CommGroup getComplementCommGroup(const Ir &ir, CommGroup group);
 
+/**
+ * Calculates the complementary group such that the input group and the
+ * complement returned spans all replicas within the superSet. If the superSet
+ * is all it derefers to getComplementCommGroup. Will throw error if superSet is
+ * not All or if it is equal to the group.
+ *
+ * \param ir       Handle to get replication factor.
+ * \param group    The CommGroup we want the complement of.
+ * \param superSet The set to find the complement within.
+ * \return         commGroup complement of group within superSet.
+ */
+CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
+                                             CommGroup group,
+                                             CommGroup superSet);
+
 } // namespace popart
 
 #endif

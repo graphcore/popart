@@ -256,7 +256,18 @@ VariableSettings::groups(unsigned replicaCount) const {
   return groups;
 }
 
-std::ostream &operator<<(std::ostream &os, VariableSettings vs) {
+bool VariableSettings::operator==(VariableSettings other) {
+  return other.getRetrievalMode() == retrievalMode &&
+         other.getSharedVariableDomain().type == sharedVariableDomain.type &&
+         other.getSharedVariableDomain().replicaGroupSize ==
+             sharedVariableDomain.replicaGroupSize;
+}
+
+bool VariableSettings::operator!=(VariableSettings other) {
+  return !this->operator==(other);
+}
+
+std::ostream &operator<<(std::ostream &os, const VariableSettings &vs) {
   return os << "VariableSettings: [" << vs.getSharedVariableDomain() << ", "
             << vs.getRetrievalMode() << "]";
 }

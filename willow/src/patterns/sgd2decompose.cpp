@@ -31,6 +31,8 @@ bool SGD2Decompose::apply(Op *op) const {
   Tensor *weight    = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
   Tensor *newWeight = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
 
+  VariableSettings varset = weight->getVariableSettings();
+
   TensorId weightGradId    = weightGrad->id;
   TensorId weightId        = weight->id;
   TensorId updatedWeightId = newWeight->id;
@@ -52,11 +54,12 @@ bool SGD2Decompose::apply(Op *op) const {
 
   // Accumulator
   if (combo->withGradAccum) {
-    addStateTensor(graph, accumId, weightShape, combo->accumType);
+    addStateTensor(
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   // 1st momentum (accl1)
-  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
+  addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, varset);
 
   // If doing gradient accumulation with AccumReduce reduction, the gradients
   // will first go to an op that updates the accumulator, then this accumulator

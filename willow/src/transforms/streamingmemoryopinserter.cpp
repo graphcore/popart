@@ -957,8 +957,11 @@ void StreamingMemoryOpInserter::RTSAllReduceToScatter(
     // replaced, had.
     tensorConfig.settings = replicatedAllReduce->settings;
 
-    CommGroup complementaryGroup = getComplementCommGroup(
-        graph.getIr(), tensorConfig.location.shardingDomain);
+    CommGroup complementaryGroup = getComplementCommGroupWithSuperSet(
+        graph.getIr(),
+        tensorConfig.location.shardingDomain,
+        tensorConfig.rootVarTensor->getVariableSettings()
+            .getSharedVariableDomain());
 
     bool needsAllReduce =
         complementaryGroup.replicaGroupSize > 1 &&
@@ -2428,6 +2431,14 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
         if (isOptimizerState &&
             tooSmallForReplicatedTensorSharding(
                 sessionOptions.optimizerStateTensorLocationSettings, tensor)) {
+          (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
+        }
+        // If the sharding domain is None sharding can not occur.
+        if (tensor->getVariableSettings().getSharedVariableDomain().type ==
+            CommGroupType::None) {
+          logging::transform::debug("[StreamingMemory] Sharding on tensor {} "
+                                    "disabled due to CommGroupType (None)",
+                                    id);
           (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
         }
       }

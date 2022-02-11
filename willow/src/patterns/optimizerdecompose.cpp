@@ -21,14 +21,15 @@ template <typename T>
 void OptimizerDecompose::addStateTensor(Graph &graph,
                                         const TensorId &tensorId,
                                         const TensorInfo info,
+                                        const VariableSettings &varset,
                                         float initValue) const {
   auto &ir = graph.getIr();
   if (ir.tensorExistsInInitialisers(tensorId)) {
     auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
-    graph.getTensors().addVarInit(tensorId, &tp);
+    graph.getTensors().addVarInit(tensorId, &tp, varset);
   } else {
     std::vector<T> d(info.nelms(), static_cast<T>(initValue));
-    graph.getTensors().addVarInit(tensorId, info, d.data());
+    graph.getTensors().addVarInit(tensorId, info, d.data(), varset);
   }
 }
 
@@ -36,26 +37,29 @@ template void
 OptimizerDecompose::addStateTensor<float>(Graph &graph,
                                           const TensorId &tensorId,
                                           const TensorInfo info,
+                                          const VariableSettings &varset,
                                           float initValue) const;
 
 template void
 OptimizerDecompose::addStateTensor<float16_t>(Graph &graph,
                                               const TensorId &tensorId,
                                               const TensorInfo info,
+                                              const VariableSettings &varset,
                                               float initValue) const;
 
 TensorInfo OptimizerDecompose::addStateTensor(Graph &graph,
                                               const TensorId &tensorId,
                                               const Shape &shape,
                                               const DataType &type,
+                                              const VariableSettings &varset,
                                               float initValue) const {
   auto info = TensorInfo(type, shape);
   switch (type) {
   case DataType::FLOAT:
-    addStateTensor<float>(graph, tensorId, info, initValue);
+    addStateTensor<float>(graph, tensorId, info, varset, initValue);
     break;
   case DataType::FLOAT16:
-    addStateTensor<float16_t>(graph, tensorId, info, initValue);
+    addStateTensor<float16_t>(graph, tensorId, info, varset, initValue);
     break;
   default:
     throw error("Unsupported data type for tensor {}, "
@@ -199,7 +203,8 @@ OptimizerDecompose::findOrCreateRunningMeanCounter(Graph &graph,
                            counterId);
     }
   } else {
-    addStateTensor<float>(graph, counterId, TensorInfo(DataType::FLOAT, {}));
+    addStateTensor<float>(
+        graph, counterId, TensorInfo(DataType::FLOAT, {}), VariableSettings());
     graph.getIr().addAdditionalModelProtoTensor(counterId);
 
     auto op_tid        = counterIncrement(graph, combo, counterId);
@@ -290,10 +295,12 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
 
   if (accumReduce) {
     bool runningReplica = runningMeanReduction(graph);
+    Tensor *t           = graph.getTensors().get(accumId);
+    CommGroup cg        = t->getVariableSettings().getSharedVariableDomain();
     auto reduceOpUp     = std::make_unique<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
         runningReplica ? CollectiveOperator::Mean : CollectiveOperator::Add,
-        CommGroup{},
+        cg,
         Op::Settings(
             graph, combo->name() + "_reduce", combo->settings.debugInfoId));
     auto reduceOp = reduceOpUp.get();
@@ -367,11 +374,12 @@ TensorId OptimizerDecompose::gradReduce(Graph &graph,
                                         TensorId weightGradId,
                                         TensorId outputId) const {
   bool runningMean = runningMeanReduction(graph);
-
-  auto reduceOpUp = std::make_unique<ReplicatedAllReduceOp>(
+  Tensor *t        = graph.getTensors().get(weightGradId);
+  CommGroup cg     = t->getVariableSettings().getSharedVariableDomain();
+  auto reduceOpUp  = std::make_unique<ReplicatedAllReduceOp>(
       Onnx::CustomOperators::ReplicatedAllReduce,
       runningMean ? CollectiveOperator::Mean : CollectiveOperator::Add,
-      CommGroup{},
+      cg,
       Op::Settings(
           graph, combo->name() + "_reduce", combo->settings.debugInfoId));
   auto reduceOp = reduceOpUp.get();

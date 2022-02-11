@@ -93,8 +93,12 @@ public:
   unsigned groupCount(unsigned replicaCount) const;
 
   /**
-   * \param replicaCount The replicationFactor of the graph
-   * \return             Accurate size of the graph
+   * Because CommGroup's don't have a defined group-size if
+   * the type is All or None, this function will return a
+   * group-size that is _always_ accurate, based on replicas.
+   * \param replicaCount The replication factor
+   * \return             The actual number of replicas in a group
+   *
    */
   unsigned getRealGroupSize(unsigned replicaCount) const;
 
@@ -133,6 +137,21 @@ public:
    *                      groups and set.at(A).size() is the size of the group.
    */
   std::vector<std::vector<std::int64_t>> groups(unsigned replicaCount) const;
+
+  /**
+   * Compare two variable-settings
+   * \param other VariableSettings to compare these settings to.
+   * \return      True if all internal elements are the same
+   */
+  bool operator==(VariableSettings other);
+
+  /**
+   * Compare two variable-settings
+   * \param other VariableSettings to compare these settings to.
+   * \return      False if all internal elements are the same
+   *
+   */
+  bool operator!=(VariableSettings other);
 };
 
 /**

@@ -41,6 +41,8 @@ bool AdaptiveDecompose::apply(Op *op) const {
   Tensor *weight    = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
   Tensor *newWeight = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
 
+  VariableSettings varset = weight->getVariableSettings();
+
   TensorId weightGradId    = weightGrad->id;
   TensorId weightId        = weight->id;
   TensorId updatedWeightId = newWeight->id;
@@ -63,25 +65,26 @@ bool AdaptiveDecompose::apply(Op *op) const {
 
   // Accumulator
   if (combo->withGradAccum) {
-    addStateTensor(graph, accumId, weightShape, combo->accumType);
+    addStateTensor(
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   if (combo->rmspropTFVariant) {
     // In TF variant of RMSProp, the accumulator buffer is initialized to ones
     // rather than zeros.
-    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, 1.0);
+    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, varset, 1.0);
   } else {
-    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type);
+    addStateTensor(graph, accl1Id, weightShape, combo->accl1Type, varset);
   }
 
   if (combo->mode == AdaptiveMode::CenteredRMSProp ||
       combo->mode == AdaptiveMode::AdaDelta) {
-    addStateTensor(graph, accl2Id, weightShape, combo->accl2Type);
+    addStateTensor(graph, accl2Id, weightShape, combo->accl2Type, varset);
   }
 
   bool useMomentum = !combo->initM.isConst() || combo->initM.val() > 0.0f;
   if (useMomentum) {
-    addStateTensor(graph, accl3Id, weightShape, combo->accl3Type);
+    addStateTensor(graph, accl3Id, weightShape, combo->accl3Type, varset);
   }
 
   TensorId gradIntoAcclId  = weightGradId;

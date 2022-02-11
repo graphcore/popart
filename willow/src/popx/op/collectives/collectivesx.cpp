@@ -119,7 +119,6 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
   auto globalReplicationFactor = dv_p->lowering().getGlobalReplicationFactor();
   auto replicationFactor       = globalReplicationFactor;
   auto group                   = getCollectiveLinkedGroup();
-
   TensorId tensorIdForCBR;
 
   if (!group.collectiveLinkedTensorIds.empty()) {
@@ -194,6 +193,7 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(snap::Tensor tensor) const {
 
 gcl::CommGroup toGCLCommGroup(const popart::CommGroup &group) {
   gcl::CommGroupType type;
+  auto size = group.replicaGroupSize;
   switch (group.type) {
   case popart::CommGroupType::All:
     type = gcl::CommGroupType::ALL;
@@ -204,10 +204,14 @@ gcl::CommGroup toGCLCommGroup(const popart::CommGroup &group) {
   case popart::CommGroupType::Orthogonal:
     type = gcl::CommGroupType::ORTHOGONAL;
     break;
+  case popart::CommGroupType::None:
+    type = gcl::CommGroupType::CONSECUTIVE;
+    size = 1;
+    break;
   default:
     throw error("Cannot convert unknown CommGroup type");
   }
-  return {type, group.replicaGroupSize};
+  return {type, size};
 }
 
 } // namespace popx

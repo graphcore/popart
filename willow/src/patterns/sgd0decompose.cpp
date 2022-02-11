@@ -46,7 +46,8 @@ bool SGD0Decompose::apply(Op *op) const {
   // Accumulator
   TensorId accumId = reservedAccumPrefix() + weightId;
   if (combo->withGradAccum) {
-    addStateTensor(graph, accumId, weightShape, combo->accumType);
+    addStateTensor(
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   TensorId gradIntoAccumId  = weightGradId;

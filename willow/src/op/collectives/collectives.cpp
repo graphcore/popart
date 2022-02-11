@@ -115,4 +115,30 @@ CommGroup getComplementCommGroup(const Ir &ir, CommGroup group) {
   }
 }
 
+CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
+                                             CommGroup group,
+                                             CommGroup superSet) {
+  // make the relationship between this function and its sibling very clear.
+  if (superSet.type == CommGroupType::All) {
+    return getComplementCommGroup(ir, group);
+  }
+
+  // Currently the only complement that works if the super-set is not All, is
+  // None. Only check replicaGroupSize if replicaGroupSize is readable (that is
+  // not the case with CommGroupType::None)
+  if ((superSet.type == CommGroupType::None &&
+       group.type == CommGroupType::None) ||
+      (group.type == superSet.type &&
+       group.replicaGroupSize == superSet.replicaGroupSize)) {
+    return CommGroup(CommGroupType::None, 0);
+  }
+  // While there are legitimate logical complements in all cases where the
+  // super-set is larger than the group, we still throw because they are not
+  // supported in further logic.
+  throw internal_error("Could not return a supported CommGroup complement of "
+                       "{} within the super-set: {}",
+                       group,
+                       superSet);
+}
+
 } // namespace popart
