@@ -9,8 +9,9 @@ if TYPE_CHECKING:
 
 
 class TensorStorage(Enum):
-    OnChip = "OnChip"
-    OffChip = "OffChip"
+    """Enum type to specify whether to store tensors on-chp in tile memory, or in Streaming Memory."""
+    OnChip = "OnChip"   #: Store the tensor in tile memory.
+    OffChip = "OffChip" #: Store the tensor in Streaming Memory.
 
     @classmethod
     def _from_ir(cls, _ir_rts: _ir.TensorStorage):
@@ -26,8 +27,9 @@ class TensorStorage(Enum):
 
 
 class ReplicatedTensorSharding(Enum):
-    On = "On"
-    Off = "Off"
+    """Enum type to specify whether to shard tensors over replicas."""
+    On = "On"   #: Tensors will be sharded over replicas.
+    Off = "Off" #: Tensors will not be sharded over replicas.
 
     @classmethod
     def _from_ir(cls, _ir_rts: _ir.ReplicatedTensorSharding):
@@ -47,6 +49,7 @@ ExecutionContext = _ir.ExecutionContext
 
 
 class TensorLocation():
+    """Class that describes the memory characteristics of one or multiple tensors."""
     def __init__(
             self,
             storage: TensorStorage = TensorStorage.OnChip,
