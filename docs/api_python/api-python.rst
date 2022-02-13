@@ -155,37 +155,3 @@ Adam
     :undoc-members:
     :private-members:
 
-popart.ir (experimental)
-------------------------
-
-.. warning::
-     This Python module is currently experimental and may be subject to change
-     in future releases in ways that are backwards incompatible without
-     deprecation warnings.
-
-The ``popart.ir`` module is an experimental PopART python module through
-which it is possible to create (and to a limited degree manipulate) PopART IRs
-directly.
-
-..
-  ``popart.ir``
-  ^^^^^^^^^^^^^
-
-.. automodule:: popart.ir
-    :members:
-
-..
-  ``popart.ir.ops``
-  ^^^^^^^^^^^^^^^^^
-
-.. _available_ops:
-
-.. automodule:: popart.ir.ops
-    :members:
-
-..
-  ``popart.ir.transforms``
-  ^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. automodule:: popart.ir.transforms
-    :members:
