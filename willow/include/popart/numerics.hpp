@@ -36,8 +36,6 @@ private:
   T ss_dB{0};
   T ss_dAB{0};
 
-  void calculateRelativeError() {}
-
 public:
   void insert(T v_AStarts, T v_AEnds, T v_BStarts, T v_BEnds) {
     T dA = v_AEnds - v_AStarts;

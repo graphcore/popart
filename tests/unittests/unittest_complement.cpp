@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(Complement) {
             }
           } catch (const internal_error &ie) {
             if (!expect_fail) {
-              throw ie;
+              throw;
             }
             BOOST_REQUIRE(expect_fail);
           }
