@@ -96,8 +96,8 @@ class Context:
         if len(self._graphs) == 0:
             raise RuntimeError(
                 "Trying to access a graph, but no graph has been selected. Hint - "
-                "try performing the operations in a context manager (e.g. "
-                "`with graph_instance:`) or inside of a function that's called by "
+                "try performing the operations in a context manager (for example "
+                "`with graph_instance:`) or inside a function that's called by "
                 "`popart.ir.Ir().create_graph()`")
         return self._graphs[-1]
 
@@ -106,8 +106,8 @@ class Context:
         if len(self._graphs) == 0:
             raise RuntimeError(
                 "Trying to access the main_graph, but no graph has been selected. Hint - "
-                "try performing the operations in a context manager (e.g. "
-                "`with graph_instance:`) or inside of a function that's called by "
+                "try performing the operations in a context manager (for example "
+                "`with graph_instance:`) or inside a function that's called by "
                 "`popart.ir.Ir().create_graph()`")
         return self._graphs[0].get_main_graph()
 
@@ -252,8 +252,8 @@ gmg = get_main_graph
 
 @contextmanager
 def ipu(ipu: int):
-    """Set the ipu on ops created in this context.
-    PopART internally uses poplar virtual graphs."""
+    """Set the IPU for ops created in this context."""
+    # PopART internally uses Poplar virtual graphs.
     ctx = get_current_context()
     prev = ctx._ipu_id
     ctx._ipu_id = ipu
@@ -263,7 +263,7 @@ def ipu(ipu: int):
 
 @contextmanager
 def pipeline_stage(stage: int):
-    """Set the pipeline stage on Ops created in this context."""
+    """Set the pipeline stage for ops created in this context."""
     ctx = get_current_context()
     prev = ctx._pipeline_stage
     ctx._pipeline_stage = stage
@@ -273,7 +273,7 @@ def pipeline_stage(stage: int):
 
 @contextmanager
 def in_sequence(enabled: bool = True):
-    """Force Ops created in this context to executing in the order that they are created."""
+    """Force ops created in this context to execute in the order that they are created."""
 
     # We use `None` to specify an empty scope. It must not be passed here:
     if enabled is None:
@@ -289,7 +289,7 @@ def in_sequence(enabled: bool = True):
 
 @contextmanager
 def io_tiles():
-    """Execute Ops created in this context on IO tiles of the current ipu."""
+    """Execute ops created in this context on IO tiles of the current IPU."""
     ctx = get_current_context()
     prev = ctx._io_tile_set
     ctx._io_tile_set = True
@@ -299,7 +299,7 @@ def io_tiles():
 
 @contextmanager
 def name_scope(name: str):
-    """Set the name scope on Ops created in this context."""
+    """Set the name scope for ops created in this context."""
     ctx = get_current_context()
     ctx.push_name_scope(name)
     yield ctx.name_scopes
@@ -373,7 +373,7 @@ def op_debug_context(name):  # type: ignore
         def add(lhs, rhs):
             ...
 
-    or, to specify the context name:
+    Or, to specify the context name:
 
     .. code-block:: python
 

@@ -19,13 +19,10 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     Reshape a tensor.
 
     Args:
-        t: Tensor
-            Tensor to be reshaped.
-        shape: tuple of ints
-            Tuple containing the shape of the output.
+        t (Tensor): The tensor to be reshaped.
+        shape (Tuple[int): Tuple containing the shape of the output.
     Returns:
-        out: Tensor
-            The reshaped tensor
+        out (Tensor): The reshaped tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -56,18 +53,15 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 @op_debug_context
 def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
-    Reshape a tensor (inplace).
+    Reshape a tensor in place.
 
-    This is the inplace version of :func:`~ops.reshape`
+    This is the in-place version of :func:`~ops.reshape`.
 
     Args:
-        t: Tensor
-            Tensor to be reshaped.
-        shape: tuple of ints
-            Tuple containing the shape of the output.
+        t (Tensor): The tensor to be reshaped.
+        shape (Tuple[int): Tuple containing the shape of the output.
     Returns:
-        out: Tensor
-            An alias of the input tensor, reshaped.
+        out (Tensor): An alias of the input tensor, reshaped.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -100,13 +94,13 @@ def flatten(t: Tensor) -> Tensor:
     """
     Flatten a tensor.
 
-    Internally this uses `reshape`.
+    Internally this uses :func:`~ops.reshape`.
 
     Args:
-        t (Tensor): input tensor
+        t (Tensor): The tensor to be flattened.
 
     Returns:
-        Tensor: Tensor with a 1-D shape
+        Tensor: Tensor with 1-D shape.
     """
     return reshape(t, (-1, ))
 
@@ -114,16 +108,16 @@ def flatten(t: Tensor) -> Tensor:
 @debug_context_frame_offset(1)
 def flatten_(t: Tensor) -> Tensor:
     """
-    Flatten a tensor (inplace).
+    Flatten a tensor in place.
 
-    Internally this uses `reshape_` (inplace).
+    Internally this uses :func:`~ops.reshape`.
 
-    This is the inplace version of :func:`~ops.flatten`
+    This is the in-place version of :func:`~ops.flatten`
 
     Args:
-        t (Tensor): input tensor
+        t (Tensor): The tensor to be flattened.
 
     Returns:
-        Tensor: An alias of the Tensor with a 1-D shape
+        Tensor: An alias of the input tensor with a 1-D shape.
     """
     return reshape_(t, (-1, ))

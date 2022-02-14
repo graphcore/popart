@@ -11,18 +11,17 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     """
     Element-wise `lhs if condition else rhs`.
 
-    Chooses either elements `lhs` or `rhs` depending on `condition`.
-    The operator supports multi-directional broadcasting (numpy-style).
+    Chooses either elements from `lhs` or `rhs` depending on the corresponding element in `condition`.
+    The operator supports multi-directional broadcasting (NumPy-style).
 
     Args:
-        condition: Tensor
-            A boolean Tensor where True indicates lhs element and false rhs element.
-            The tensor will be casted to a bool if needed.
-        lhs, rhs: Tensor
-            Tensors choose elements from.
+        condition (Tensor):
+            A boolean tensor where True indicates the lhs element and False the rhs element.
+            The tensor will be cast to a bool if necessary.
+        lhs, rhs (Tensor):
+            Tensors to choose elements from.
     Returns:
-        out: Tensor
-            Element wise `lhs if condition else rhs`.
+        Tensor: The tensor containing elementwise lhs if condition else rhs.
     """
     ctx = get_current_context()
     g = ctx.graph

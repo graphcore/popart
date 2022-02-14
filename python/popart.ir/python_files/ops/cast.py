@@ -14,13 +14,12 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
     This operation casts tensor `t` to data type `data_type`.
 
     Args:
-        t: Tensor
-            Tensors to be casted.
-        data_type: popart.ir.dtypes.dtype
-            Dtype to cast to
+        t (Tensor):
+            The tensor to be cast.
+        data_type (popart.ir.dtypes.dtype):
+            The dtype to cast to.
     Returns:
-        add: Tensor
-            The sum of lhs and rhs
+        Tensor: The tensor cast to the specified type.
     """
     ctx = get_current_context()
     g = ctx.graph

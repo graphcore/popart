@@ -26,7 +26,7 @@ class Ir:
     """
 
     def __init__(self):
-        """Initialises a new `Ir`."""
+        """Initialises a new IR."""
         self._pb_ir = _ir.Ir()
         # Set better defaults for popart.ir programs.
         # Some parts of graph construction use the session options to make decisions,
@@ -90,7 +90,7 @@ class Ir:
             **kwargs: Any,
     ) -> 'Graph':
         """
-        Create a subgraph from a Python callable `fn` or a `Module`'s build method.
+        Create a subgraph from a Python callable `fn` or the build method of a `Module`.
         The graph inputs are determined using the signature of the function `fn`
         and the supplied arguments `args` and `kwargs`. Tensors or TensorSpecs passed via the
         arguments are used to determine the shape and dtype of the graph inputs (the
@@ -98,7 +98,7 @@ class Ir:
         determined using the outputs of the function when called.
 
         The order of inputs in the returned subgraph will be the same as the
-        order of the tensor inputs in the function signature and the provided
+        order of the tensor inputs in the function signature and the
         order of kwargs. This determines the order in which you pass the parent
         tensors as inputs at the callsite.
 
@@ -117,13 +117,13 @@ class Ir:
         Args:
             fn (Callable[..., Any]):
                 The Python function that defines the graph. The signature of
-                `fn` with the provided arguments are used to determine the
+                `fn` with its arguments is used to determine the
                 inputs of the graph.
-            *args (Any):
+            args (Any):
                 Arguments passed to the Python function that defines the graph
                 that can be a mixture of tensors and other types. Tensors are
                 used to determine the tensor info of the inputs.
-            **kwargs (Any):
+            kwargs (Any):
                 Keyword arguments passed to the Python function that defines the
                 graph that can be a mixture of tensors and other types. Tensors
                 are used to determine the tensor info of the inputs.
@@ -246,10 +246,10 @@ class Ir:
         """Create a new graph.
 
         Args:
-            name (Optional[str], optional): Name of the graph. Defaults to "graph".
+            name (Optional[str]): Name of the graph. Defaults to "graph".
 
         Returns:
-            Graph
+            Graph: An empty graph.
         """
         name = self._create_name(name or "graph")
         _pb_subgraph = self._pb_ir.createGraph(
@@ -259,21 +259,21 @@ class Ir:
     def dot_checkpoint(self,
                        check: str,
                        save_dir: Optional[Union[Path, str]] = None) -> None:
-        """Output a graphical representation of the graph in DOT format.
+        """Output a graphical representation of the graph in Graphviz DOT format.
 
-        If the checkpoints are not activated, this function will set them to `ALL`.
-
-        Checkpoints can be activated by either setting the `dotChecks` options in the session options
-        equal to the checks to be activated, or by setting the environmental variable
-        `POPART_DOT_CHECKS` equal to the checks to be activated.
+        Checkpoints can be activated by either setting the `dotChecks` option in session
+        options or the `POPART_DOT_CHECKS` environmental variable. These should be set to
+        the list of the checks to be activated.
         Note that if either `dotChecks` or `POPART_DOT_CHECKS` is set to `ALL`, all checkpoints
         will be activated.
-        See also: https://docs.graphcore.ai/projects/popart-user-guide/en/latest/env_vars.html#generating-dot-files
+        See the `PopART User Guide <https://docs.graphcore.ai/projects/popart-user-guide/en/latest/env_vars.html#generating-dot-files>`__ for more information.
+
+        If no checkpoints are activated, this function will activate them all by setting the `dotChecks` option to `ALL`.
 
         Args:
-            check (str): Name of the check
-            save_dir (Optional[Union[Path, str]]): Directory to store the dot files to
-              NOTE: This will set the save directory for all dot checkpoints in the graph
+            check (str): Name of this checkpoint.
+            save_dir (Optional[Union[Path, str]]): Directory to store the dot files in.
+              Note that this will set the save directory for all dot checkpoints in the graph.
         """
         opts = self._pb_ir.getSessionOptions()
         if save_dir is not None:
@@ -293,7 +293,7 @@ class Ir:
         """Generate a graph name based on the qualified name of the Python
         function that created it.
 
-        NOTE: Occurrences of ".<locals>" in the name are removed.
+        Note: occurrences of ".<locals>" in the name are removed.
 
         Example:
             Suppose a graph function:

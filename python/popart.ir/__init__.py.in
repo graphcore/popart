@@ -3,10 +3,10 @@ import sys
 
 __version__ = "@VERSION@"
 
-# Popart currently distributes binaries for a specific Python version. If the
-# user imports the popart module with a different Python version the import
+# PopART currently distributes binaries for a specific Python version. If the
+# user imports the PopART module with a different Python version the import
 # statements below would fail with an unfriendly error. Hence, we check the
-# python version here and throw a friendlier error when this happens.
+# Python version here and throw a friendlier error when this happens.
 actualVersion = sys.version_info[:2]
 requiredVersion = (@Python3_VERSION_MAJOR@, @Python3_VERSION_MINOR@)
 if (actualVersion != requiredVersion):

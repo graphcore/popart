@@ -118,16 +118,16 @@ class Graph:
             for o in _pb_outs)
 
     def _create_tensor_id(self, name: Optional[str] = None) -> str:
-        """Generate a unique tensor id.
+        """Generate a unique tensor ID.
 
         If the name already exists in the graph it will be modified
-        to be made unique in the graph.
-        The graph scope will then be added to construct the global unique id.
+        to make it unique in the graph.
+        The graph scope will then be added to construct the global unique ID.
 
         Args:
             name (Optional[str]):
-                A name which will be appended with an id to make unique.
-                Defaults to `t`
+                A name which will have an ID appended to make it unique.
+                Defaults to `t`.
 
         Returns:
             str:
@@ -166,18 +166,18 @@ class Graph:
         return Tensor._from_pb_tensor(self._pb_graph.getTensor(tensor_id))
 
     def get_tensors(self) -> Tuple[Tensor, ...]:
-        """Return all Tensors in the Graph"""
+        """Return all tensors in the graph."""
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._pb_graph.getTensors())
 
     def get_variables(self) -> Tuple[Variable, ...]:
-        """Return all Variable Tensors in the Graph"""
+        """Return all variable tensors in the graph."""
         return tuple(
             Variable._from_pb_tensor(t)
             for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Variable))
 
     def get_constants(self) -> Tuple[Constant, ...]:
-        """Return all Constant Tensors in the Graph"""
+        """Return all constant tensors in the graph."""
         return tuple(
             Constant._from_pb_tensor(t)
             for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const))
@@ -191,7 +191,7 @@ class Graph:
         return False
 
     def register_op_created_hook(self, fn: Callable[[_ir.Op], Any]):
-        """Register a function to be called after an Op is created in the graph.
+        """Register a function to be called after an op is created in the graph.
 
         Args:
             fn (Callable[[_ir.Op], Any]): Function to be called.
@@ -208,9 +208,9 @@ class Graph:
         return get_current_context().register_op_created_hook(hook)
 
     def remove_op_created_hook(self, handle: int):
-        """Remove an Op created hook. `handle` should be the result of calling `Graph.register_op_created_hook`.
+        """Remove an op created hook. `handle` should be the result of calling `Graph.register_op_created_hook`.
 
         Args:
-            handle (int): handle to an Op created hook.
+            handle (int): Handle to an op-created hook.
         """
         get_current_context().remove_op_created_hook(handle)

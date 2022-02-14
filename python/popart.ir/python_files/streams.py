@@ -47,13 +47,13 @@ class _Stream:
 
 class HostToDeviceStream(_Stream):
     """
-    A host-to-device stream in the Ir.
+    A host-to-device stream in the IR.
 
-    Can be created in the main graph of the Ir only.
+    This can be created in the main graph of the IR only.
 
-    You can pass a HostToDeviceStream and a Tensor to ops.host_load in any
-    subgraph(s) any number of times, and in all cases PopART will stream the next
-    value into the provided tensor.
+    You can pass a host-to-device stream and a tensor to `ops.host_load()` in
+    any subgraph any number of times, and in all cases PopART will stream the
+    next value into the tensor.
     """
 
     def __str__(self):
@@ -62,13 +62,13 @@ class HostToDeviceStream(_Stream):
 
 class DeviceToHostStream(_Stream):
     """
-    A device-to-host stream in the Ir.
+    A device-to-host stream in the IR.
 
-    Can be created in the main graph of the Ir only.
+    This can be created in the main graph of the IR only.
 
-    You can pass a DeviceToHostStream and a Tensor to ops.host_store in any
-    subgraph(s) any number of times, and in all cases PopART will stream the value
-    of the provided tensor down the provided stream.
+    You can pass a device-to-host stream and a tensor to `ops.host_store()` in
+    any subgraph any number of times, and in all cases PopART will send the
+    tensor to the stream.
     """
 
     def __str__(self):

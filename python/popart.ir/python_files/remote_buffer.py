@@ -8,24 +8,24 @@ from popart.ir.tensor import Tensor
 
 
 class RemoteBuffer:
-    """Handle to store to or load from remote buffers residing in the off-chip streaming memory.
+    """Store to or load from remote buffers residing in Streaming Memory.
     """
 
     def __init__(self, ir: Ir, tensor_shape: Tuple[int, ...],
                  tensor_dtype: dtype, entries: int) -> None:
         """Initialize the RemoteBuffer.
 
-        This constructor will automatically assign a buffer id and store the buffer information in
-        the underlying remoteBufferInfoMap.
+        This constructor will automatically assign a buffer ID and store the buffer information in
+        the underlying `remoteBufferInfoMap`.
 
         Args:
-            ir (Ir): Ir where the remote buffer is to be set
-            tensor_shape (Tuple[int, ...]]): The shape of the tensors stored in the buffer
-            tensor_dtype (dtype) : The type stored in the buffer
-            entries (int): The number of tensors with the same shape and type stored in the buffer
+            ir (Ir): IR where the remote buffer is to be created.
+            tensor_shape (Tuple[int, ...]]): The shape of the tensors to be stored in the buffer.
+            tensor_dtype (dtype) : The type of the tensors to be stored in the buffer.
+            entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type.
 
         Raises:
-            ValueError: If entries < 1
+            ValueError: If `entries` is a not a positive integer.
         """
         if entries < 1:
             raise ValueError(
@@ -58,9 +58,9 @@ class RemoteBuffer:
         """Store the buffer information in the underlying remoteBufferInfoMap.
 
         Args:
-            tensor_shape (Tuple[int, ...]]): The shape of the tensors stored in the buffer
-            tensor_dtype (dtype) : The type stored in the buffer
-            entries (int): The number of tensors with the same shape and type stored in the buffer
+            tensor_shape (Tuple[int, ...]]): The shape of the tensors to be stored in the buffer.
+            tensor_dtype (dtype) : The type of the tensors to be stored in the buffer.
+            entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type.
         """
         # Set the remote buffer info map
         tensor_info = _ir.TensorInfo(tensor_dtype._pb_dtype, tensor_shape)
@@ -69,13 +69,13 @@ class RemoteBuffer:
                                              remote_buffer_info)
 
     def validate_tensor_matches_buffer(self, t: Tensor) -> None:
-        """Validate whether the tensor information matches that of the buffer.
+        """Validate that the tensor information matches that of the buffer.
 
         Args:
-            t (Tensor): Tensor to check
+            t (Tensor): Tensor to check.
 
         Raises:
-            ValueError: If the tensor does not match the buffer
+            ValueError: If the tensor does not match the buffer.
         """
         remote_buffer_info = self._current_ir.getRemoteBufferInfo(
             self.remote_buffer_id)
@@ -95,23 +95,23 @@ class RemoteBuffer:
 
     @property
     def remote_buffer_id(self) -> int:
-        """Return the id to the buffer.
+        """The ID of the buffer.
 
-        Note that the id is read only.
+        Note that the ID is read only.
 
         Returns:
-            int: The id to the buffer
+            int: The ID of the buffer.
         """
         return self._remote_buffer_id
 
     @property
     def tensor_shape(self) -> Tuple[int, ...]:
-        """Return the shape of the tensors stored in the buffer.
+        """The shape of the tensors stored in the buffer.
 
-        Once set, the shape cannot be reset.
+        The shape cannot be changed after the buffer has been created.
 
         Returns:
-            Tuple[int, ...]: The shape of the tensors stored in the buffer
+            Tuple[int, ...]: The shape of the tensors stored in the buffer.
         """
         return tuple(
             self._current_ir.getRemoteBufferInfo(
@@ -119,12 +119,12 @@ class RemoteBuffer:
 
     @property
     def tensor_dtype(self) -> dtype:
-        """Return the type stored in the buffer.
+        """The type of the tensors stored in the buffer.
 
-        Once set, the type cannot be reset.
+        The type cannot be changed after the buffer has been created.
 
         Returns:
-            dtype (dtype) : The type stored in the buffer
+            dtype (dtype): The type of the tensors stored in the buffer.
         """
         return dtype.as_dtype(
             self._current_ir.getRemoteBufferInfo(
@@ -132,15 +132,15 @@ class RemoteBuffer:
 
     @property
     def entries(self) -> int:
-        """Return the number of entries in the buffer.
+        """The number of entries that can be stored in the buffer.
 
-        The setters checks that the value is not a negative value, and resets the buffer.
+        Setting the value of this property will update the size of the buffer.
 
         Returns:
-            int: The number of tensors with the same shape and type stored in the buffer
+            int: The number of tensors with the specified shape and type that can be stored in the buffer.
 
         Raises:
-            ValueError: If the input is a non-positive integer
+            ValueError: If set to a value that is a not a positive integer.
         """
         return self._current_ir.getRemoteBufferInfo(
             self._remote_buffer_id).repeats
@@ -170,14 +170,14 @@ class RemoteBuffer:
 
 def remote_buffer(tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
                   entries: int) -> RemoteBuffer:
-    """Return a remote buffer based on the current ir from the context.
+    """Return a remote buffer based on the current IR from the context.
 
     Args:
-        tensor_shape (Tuple[int, ...]]): The shape of the tensors stored in the buffer
-        tensor_dtype (dtype) : The type stored in the buffer
-        entries (int): The number of tensors with the same shape and type stored in the buffer
+        tensor_shape (Tuple[int, ...]]): The shape of the tensors to be stored in the buffer.
+        tensor_dtype (dtype): The type of the tensors to be stored in the buffer.
+        entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type.
 
     Returns:
-        RemoteBuffer: The remote buffer based on the current ir from the context
+        RemoteBuffer: The remote buffer based on the current IR from the context.
     """
     return RemoteBuffer(gcg().ir(), tensor_shape, tensor_dtype, entries)

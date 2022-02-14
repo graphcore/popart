@@ -15,14 +15,11 @@ def transpose(t: Tensor,
     By default this operation reverses the axes of `t`.
 
     Args:
-        t: Tensor
-            Tensor to be transposed.
-        permutation: tuple of ints (optional)
-            Tuple containing the a permutation of [0, N-1] where N is the
-            rank of input `t`. If not provided, the axes will be reversed.
+        t (Tensor): Tensor to be transposed.
+        permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
+        rank of input `t`. If not provided, the axes will be reversed.
     Returns:
-        out: Tensor
-            The transposed tensor
+        out (Tensor): The transposed tensor.
     """
     permutation = _handle_permuation(t, permutation)
 
@@ -50,22 +47,21 @@ def transpose(t: Tensor,
 def transpose_(t: Tensor,
                permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
-    Permutes the axes of a tensor (inplace).
+    Permutes the axes of a tensor in place.
 
     By default this operation reverses the axes of `t`.
 
-    This is the inplace version of :func:`~ops.transpose`. Behaviour is the same, but modifies the
-        tensor inplace.
+    This is the in-place version of :func:`~ops.transpose`. The behaviour is the same, but it modifies the
+    tensor in place.
 
     Args:
-        t: Tensor
-            Tensor to be transposed.
-        permutation: tuple of ints (optional)
+        t (Tensor): Tensor to be transposed.
+        permutation (Optional[Tuple[int, ...]]):
             Tuple containing the a permutation of [0, N-1] where N is the
             rank of input `t`. If not provided, the axes will be reversed.
     Returns:
-        out: Tensor
-            The transposed tensor
+        out (Tensor):
+            The transposed input tensor.
     """
     permutation = _handle_permuation(t, permutation)
 
