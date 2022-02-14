@@ -124,6 +124,9 @@ DynamicSliceOpx::createInputTensor(InIndex index,
         popType(outInfo),
         outShape,
         debugContext(op.inId(DynamicSliceBaseOp::getInIndex()) + "_slice"));
+
+    dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
+
     return sliceTensor;
   }
 
