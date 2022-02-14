@@ -7,7 +7,7 @@
 
 namespace popart {
 
-std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode vrm) {
+std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode &vrm) {
   switch (vrm) {
   case VariableRetrievalMode::OnePerGroup:
     os << "OnePerGroup";

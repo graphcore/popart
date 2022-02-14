@@ -2086,65 +2086,75 @@ void Ir::registerInputTensors() {
       unusedInitializers.emplace(tenId);
     } else {
 
-      uint32_t debugid = 0;
-      auto key         = std::string(onnxDebugIdInputMetaDataKey) + tenId;
-      for (auto m : onnxModel->metadata_props()) {
-        if (m.key() == key) {
-          debugid = std::stoi(m.value());
-          break;
+      uint32_t debugid                    = 0;
+      CommGroupType type                  = CommGroupType::All;
+      auto size                           = 0;
+      VariableRetrievalMode retrievalMode = VariableRetrievalMode::OnePerGroup;
+      {
+        auto key = std::string(onnxDebugIdInputMetaDataKey) + tenId;
+        for (auto m : onnxModel->metadata_props()) {
+          if (m.key() == key) {
+            debugid = std::stoi(m.value());
+            break;
+          }
+        }
+      }
+      {
+        auto key =
+            std::string(sCommGroupType) + std::string(sNameDelimiter) + tenId;
+        for (auto m : onnxModel->metadata_props()) {
+          if (m.key() == key) {
+            type = static_cast<CommGroupType>(std::stoi(m.value()));
+            break;
+          }
+        }
+      }
+      {
+        auto key =
+            std::string(sCommGroupSize) + std::string(sNameDelimiter) + tenId;
+        for (auto m : onnxModel->metadata_props()) {
+          if (m.key() == key) {
+            size = static_cast<unsigned>(std::stoi(m.value()));
+            break;
+          }
+        }
+      }
+      {
+        auto key = std::string(sVariableSettings) +
+                   std::string(sNameDelimiter) + tenId;
+        for (auto m : onnxModel->metadata_props()) {
+          if (m.key() == key) {
+            retrievalMode =
+                static_cast<VariableRetrievalMode>(std::stoi(m.value()));
+            break;
+          }
         }
       }
 
       DebugNameAndId dnid(debugid);
       DebugContext onnxDc(dnid);
       OnnxVariableDebugInfo onnxDi(onnxDc, initializer);
+      VariableSettings vs(CommGroup(type, size), retrievalMode);
 
       // If inference mode add initializers as constants if option enabled
-      if (getExecutionMode() == ExecutionMode::Inference &&
-          getSessionOptions().constantWeights == true) {
+      bool inference_constants =
+          getExecutionMode() == ExecutionMode::Inference &&
+          getSessionOptions().constantWeights == true;
+      if (inference_constants && vs.numReplicasReturningVariable(
+                                     userOptions.replicatedGraphCount) == 1) {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer, DebugContext(onnxDi));
       } else {
-
-        CommGroupType type = CommGroupType::All;
-        auto size          = 0;
-        VariableRetrievalMode retrievalMode =
-            VariableRetrievalMode::OnePerGroup;
-
-        {
-          auto key =
-              std::string(sCommGroupType) + std::string(sNameDelimiter) + tenId;
-          for (auto m : onnxModel->metadata_props()) {
-            if (m.key() == key) {
-              type = static_cast<CommGroupType>(std::stoi(m.value()));
-              break;
-            }
-          }
-        }
-        {
-          auto key =
-              std::string(sCommGroupSize) + std::string(sNameDelimiter) + tenId;
-          for (auto m : onnxModel->metadata_props()) {
-            if (m.key() == key) {
-              size = static_cast<unsigned>(std::stoi(m.value()));
-              break;
-            }
-          }
-        }
-        {
-          auto key = std::string(sVariableSettings) +
-                     std::string(sNameDelimiter) + tenId;
-          for (auto m : onnxModel->metadata_props()) {
-            if (m.key() == key) {
-              retrievalMode =
-                  static_cast<VariableRetrievalMode>(std::stoi(m.value()));
-              break;
-            }
-          }
-        }
-        VariableSettings vs(CommGroup(type, size), retrievalMode);
-
         logCreationInfo("Variable", tenId);
+        if (inference_constants) {
+          logging::warn("Tensor {} was declined as a target of optimization "
+                        "\"constantWeights\" "
+                        "on the grounds that the tensor's {} do not allow for "
+                        "the VariableTensor "
+                        "to be Initialized as a ConstTensor",
+                        tenId,
+                        vs);
+        }
         getTensors().addVarInit(tenId, &initializer, vs, DebugContext(onnxDi));
       }
       onnxInitializers.emplace(tenId);
@@ -4256,8 +4266,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

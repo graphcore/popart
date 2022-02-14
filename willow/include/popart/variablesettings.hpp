@@ -159,14 +159,14 @@ public:
  * \param vrm VariableRetrievalMode to add to the stream.
  * \return Input stream with vrm appended to the end of it
  */
-std::ostream &operator<<(std::ostream &os, VariableRetrievalMode vrm);
+std::ostream &operator<<(std::ostream &os, const VariableRetrievalMode &vrm);
 
 /**
  * \param os Stream to append VariableSettings vrm to.
  * \param vs VariableSettings to add to the stream.
  * \return Input stream with vs appended to the end of it
  */
-std::ostream &operator<<(std::ostream &os, VariableSettings vs);
+std::ostream &operator<<(std::ostream &os, const VariableSettings &vs);
 
 } // namespace popart
 

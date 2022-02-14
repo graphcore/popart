@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, List, Tuple
+from typing import IO, Dict, List, Tuple
 from tempfile import TemporaryDirectory
 from numpy.core import shape_base
 import numpy as np
@@ -134,10 +134,9 @@ def get_model(repl_config: Dict,
               groups,
               var_settings,
               location,
+              session_type: str,
               initialize=True):
-    """
-    Get a simple test
-    """
+    batches_per_step = BATCHES_PER_STEP if session_type == "training" else 1
     input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
 
     # Create an appropriate underlying weight-array
@@ -176,11 +175,15 @@ def get_model(repl_config: Dict,
                               [O_DIM, CHANNELS * DATA_LEN * DATA_LEN])
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
-    nll = builder.aiGraphcore.nllloss([o, lb])
 
-    #
+    if (session_type == "training"):
+        lb = builder.addInputTensor(lbl_shape, "label_input_456")
+        nll = builder.aiGraphcore.nllloss([o, lb])
+    else:
+        lb = None
+
     art = popart.AnchorReturnType("All")
-    data_flow = popart.DataFlow(BATCHES_PER_STEP, {o: art})
+    data_flow = popart.DataFlow(batches_per_step, {o: art})
 
     #
     opts, device = user_options(repl_config, location)
@@ -204,21 +207,30 @@ def get_model(repl_config: Dict,
                 "As the requirements of this test was 4 ipus and less, this is considered a fail."
             )
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=data_flow,
-                                     loss=nll,
-                                     optimizer=popart.ConstSGD(LEARNING_RATE),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+    if session_type == "training":
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            userOptions=opts,
+            loss=nll,
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(LEARNING_RATE))
+    elif session_type == "inference":
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=data_flow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+    else:
+        pytest.fail("Unsupported session type: ", session_type)
 
     session.prepareDevice()
 
     if int(repl_config["repl"]) > 1:
         input_shape = [int(repl_config["repl"])] + input_shape
         label_shape = [int(repl_config["repl"])] + label_shape
-    if BATCHES_PER_STEP > 1:
-        input_shape = [BATCHES_PER_STEP] + input_shape
-        label_shape = [BATCHES_PER_STEP] + label_shape
+    if batches_per_step > 1:
+        input_shape = [batches_per_step] + input_shape
+        label_shape = [batches_per_step] + label_shape
 
     tensors = [ip, lb, weights_one, weights_two]
     arrays = [arrays_one, arrays_two]
@@ -339,6 +351,7 @@ configs = [
         "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
     }
 ]
+session_types = ["training", "inference"]
 
 remote_config = [{
     "desc": "On-Chip",
@@ -359,14 +372,19 @@ run_config = []  # debug tool, run custom set
 skp_config = []  # debug tool, add to skip
 
 if (len(run_config) == 0):
-    for i in range(len(configs)):
-        run_config += [i]
+    run_config = range(len(configs))
 
 
 @pytest.mark.parametrize("config", configs)
 @pytest.mark.parametrize("location", remote_config)
+@pytest.mark.parametrize("session_type", session_types)
 @tu.requires_ipu
-def test_grouped_initialization(config, location):
+def test_grouped_initialization(config, location, session_type):
+    var_set = get_variable_settings(config)
+    returned = var_set.numReplicasReturningVariable(int(config["repl"]))
+    groups = [] if returned == 1 else get_group_idxs(config, var_set, returned)
+
+    # skip if unimplemented
     if (config["c.idx"] == configs[0]["c.idx"]):
         print()
     # skip if unimplemented
@@ -381,16 +399,17 @@ def test_grouped_initialization(config, location):
         pytest.skip(
             "This config is not supported with the given location/RTS:" +
             location["desc"])
-
-    var_set = get_variable_settings(config)
-    returned = var_set.numReplicasReturningVariable(int(config["repl"]))
-    groups = [] if returned == 1 else get_group_idxs(config, var_set, returned)
+    if (session_type == "inference" and var_set.numReplicasReturningVariable(
+            int(config["repl"])) == 1):
+        pytest.skip()
+    if (session_type == "inference" and location["RTS"]):
+        pytest.skip()
 
     # Get and run session
 
     builder = popart.Builder()
     session, tensors, arrays, input_shape, label_shape = get_model(
-        config, builder, groups, var_set, location)
+        config, builder, groups, var_set, location, session_type)
 
     #input, label, control-variable, test-tensor
     ip, lb, w1, w2 = tensors
@@ -418,7 +437,8 @@ def test_grouped_initialization(config, location):
     session.readWeights(weightsIo)
 
     # read worked correctly between
-    assert np.allclose(arrays_one, buffer_one)
+    if session_type == "training":
+        assert np.allclose(arrays_one, buffer_one)
 
     if (config["retrieval"] != "AllReplicas"):
         sample = range(0, buffer_two.shape[0])
@@ -448,18 +468,22 @@ def test_grouped_initialization(config, location):
 
     for step in range(3):
         in_array = np.random.random_sample(input_shape).astype(np.float32)
-        label_array = np.random.randint(low=0, high=20,
-                                        size=label_shape).astype(np.int32)
+        if (session_type == "training"):
+            label_array = np.random.randint(low=0, high=20,
+                                            size=label_shape).astype(np.int32)
+            io = {ip: in_array, lb: label_array}
+        else:
+            io = {ip: in_array}
 
         anchors = session.initAnchorArrays()
-        stepIo = popart.PyStepIO({ip: in_array, lb: label_array}, anchors)
+        stepIo = popart.PyStepIO(io, anchors)
 
         run_model(session, stepIo)
 
         session.readWeights(weightsIo)
 
         # Only verify this the first time, should be redundant later
-        if (step == 0):
+        if (step == 0 and session_type == "training"):
             # checks that the weights change
             assert not np.allclose(arrays_two, buffer_two[sample])
 
@@ -492,7 +516,13 @@ def test_onnx_checkpointing(config):
         builder = popart.Builder()
         builder.embedReplicationFactor(int(config["repl"]))
         session, tensors, arrays, input_shape, label_shape = get_model(
-            config, builder, groups, var_set, location, initialize=True)
+            config,
+            builder,
+            groups,
+            var_set,
+            location,
+            "training",
+            initialize=True)
 
         ip, lb, w1, w2 = tensors
         array_one, array_two = arrays
@@ -528,7 +558,13 @@ def test_onnx_checkpointing(config):
 
         builder = popart.Builder()
         session, tensors, array, input_shape, label_shape = get_model(
-            config, builder, groups, var_set, location, initialize=True)
+            config,
+            builder,
+            groups,
+            var_set,
+            location,
+            "training",
+            initialize=True)
 
         _, _, w1, w2 = tensors
         session.resetHostWeights(tmpfile, True)
