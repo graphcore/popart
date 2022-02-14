@@ -195,8 +195,6 @@ popef::DataType toPopefDataType(popart::DataType type) {
     return popef::DataType::S64;
   case popart::DataType::UINT64:
     return popef::DataType::U64;
-  case popart::DataType::FLOAT8:
-    return popef::DataType::F8;
   case popart::DataType::FLOAT16:
     return popef::DataType::F16;
   case popart::DataType::FLOAT:
