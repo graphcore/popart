@@ -27,14 +27,13 @@ enum DataType {
   uint64 @7;
   bool @8;
   float @9;
-  float8 @10;
-  float16 @11;
-  bfloat16 @12;
-  double @13;
-  complex64 @14;
-  complex128 @15;
-  string @16;
-  undefined @17;
+  float16 @10;
+  bfloat16 @11;
+  double @12;
+  complex64 @13;
+  complex128 @14;
+  string @15;
+  undefined @16;
 }
 
 struct TensorInfo{

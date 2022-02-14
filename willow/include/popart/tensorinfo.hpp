@@ -30,7 +30,6 @@ enum class DataType {
   BOOL,
   // floating point types
   FLOAT,
-  FLOAT8,
   FLOAT16,
   BFLOAT16,
   DOUBLE,

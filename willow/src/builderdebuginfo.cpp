@@ -147,9 +147,6 @@ BuilderVarDebugInfo::BuilderVarDebugInfo(const DebugContext &debugContext,
   case popart::DataType::FLOAT:
     dataType = "FLOAT";
     break;
-  case popart::DataType::FLOAT8:
-    dataType = "FLOAT8";
-    break;
   case popart::DataType::FLOAT16:
     dataType = "FLOAT16";
     break;
