@@ -43,7 +43,7 @@ public:
   // Grow a collection of gradient ops for a forward op.
   virtual std::vector<Op *>
   growGradOps(Op *forwardOp,
-              const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+              const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) override;
 };
 
 } // namespace popart

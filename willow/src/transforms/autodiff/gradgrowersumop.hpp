@@ -48,7 +48,7 @@ public:
   // Grow a grad sum op, combining a number of gradients into one.
   virtual Op *growGradSumOp(Tensor *target,
                             const std::vector<Tensor *> &toSum,
-                            AliasModel &mainGraphAliasModel);
+                            AliasModel &mainGraphAliasModel) override;
 
   // Prefix for grad sum operations.
   static std::string getGradSumOpNamePrefix();

@@ -44,7 +44,7 @@ public:
       std::unique_ptr<GradGrowerGraphInterface> gradGraphGrower);
 
   // Grow backwards pass.
-  virtual void growGradMainGraph();
+  virtual void growGradMainGraph() override;
 
 private:
   // Helper class to grow grad ops.

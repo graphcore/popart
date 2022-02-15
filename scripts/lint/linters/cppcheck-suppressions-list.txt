@@ -9,7 +9,6 @@ duplicateExpression  // Not addressed
 duplicateValueTernary  // Not addressed
 knownConditionTrueFalse  // Not addressed
 missingInclude  // Not addressed
-missingOverride  // Not addressed
 multiCondition  // Not addressed
 noExplicitConstructor  // Not addressed
 nullPointerRedundantCheck  // Not addressed
