@@ -492,6 +492,8 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
     lowering().engineOptions.set("exchange.streamBufferOverlap",
                                  "hostRearrangeOnly");
     lowering().engineOptions.set("exchange.enablePrefetch", "true");
+  } else {
+    lowering().engineOptions.set("exchange.enablePrefetch", "false");
   }
 
   if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
