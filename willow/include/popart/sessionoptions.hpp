@@ -1018,6 +1018,17 @@ struct SessionOptions {
   /// scaling is enabled.
   bool ensureFp32LossScaleTensor = false;
 
+  /// When `true`, create an \c aliasModel for each graph and run the poprithms
+  /// ambiguity checker on it. This throws an error if the graph has a potential
+  /// inplacing ambiguity and will prompt the user to check the inplacing.
+  ///
+  /// See \c poprithms::memory::inplace::Graph::AmbiguityStatus for more info on
+  /// what constitutes an ambiguity.
+  ///
+  /// No ambiguity checking is performed if this option is set to `false`
+  /// (default). However inplace fallbacks will occur if necessary.
+  bool enableInplaceAmbiguityChecking = false;
+
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the
     // environment variable `POPART_CACHE_DIR` is provided

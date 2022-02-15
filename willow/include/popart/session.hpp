@@ -144,6 +144,16 @@ public:
   void saveExecutableToStream(std::ostream &out);
 
   /**
+   * Create an \c aliasModel for each graph and run the poprithms ambiguity
+   * checker on it. This throws an error if the graph has an inplacing ambiguity
+   * and will prompt the user to check the inplacing.
+   *
+   * See \c poprithms::memory::inplace::Graph::AmbiguityStatus for more info on
+   * what constitutes an ambiguity.
+   */
+  void checkInplacingAmbiguity() const;
+
+  /**
    * Load the \c poplar::Executable and the PopART metadata from the given
    * file. The file must have been created with compileAndExport()
    *

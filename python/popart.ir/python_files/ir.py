@@ -39,6 +39,7 @@ class Ir:
         opts.aliasZeroCopy = True
         opts.enableExplicitMainLoops = True
         opts.explicitRecomputation = True
+        opts.enableInplaceAmbiguityChecking = True
 
         Ir._ir_cache[self.id] = self
         self._graph_cache: Dict[str, Graph] = {}
@@ -61,7 +62,7 @@ class Ir:
 
         Returns:
             Ir:
-                A popart.ir.Ir that reprsents the passed pb_ir.
+                A popart.ir.Ir that represents the passed pb_ir.
         """
         _id = pb_ir.getId()
         if _id not in Ir._ir_cache:

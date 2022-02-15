@@ -5,6 +5,7 @@
 
 #include <filereader.hpp>
 #include <onnxutil.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/dotvisualizer.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -350,11 +351,28 @@ void Session::saveExecutableToStream(std::ostream &out) {
   assertExecutableLoaded();
   device_->serializeExecutable(out);
 }
+void Session::checkInplacingAmbiguity() const {
+  for (auto g : ir->getAllGraphs()) {
+    AliasModel aliasModel;
+    AliasModelGrower aliasModelGrower{aliasModel};
+
+    aliasModelGrower.growFullGraph(*g, DataDependenciesOnly::No);
+
+    if (aliasModel.g.containsAmbiguity().detected()) {
+      throw popart::error(aliasModelGrower.ambiguitySummary(*g, aliasModel));
+    }
+  }
+}
 
 void Session::prepareDevice(bool loadEngine) {
   POPART_TRACEPOINT();
   if (!tryLoadExecutable()) {
     lowering_->prepareGraph();
+  }
+
+  // TODO T49662: Move this into popart.ir session
+  if (ir->getSessionOptions().enableInplaceAmbiguityChecking) {
+    checkInplacingAmbiguity();
   }
 
   logging::session::trace("Session::prepareDevice()");

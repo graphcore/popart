@@ -77,6 +77,67 @@ public:
                         const TensorId &tensorId,
                         DataDependenciesOnly dataDepsOnly);
 
+  /**
+   * Create an \c aliasModel for each graph and run the poprithms
+   * ambiguity checker on it to see if there are any potential inplacing
+   * ambiguities. See \see poprithms::memory::inplace::Graph::AmbiguityStatus
+   * for more info.
+   *
+   * This can only detect if there is a *potential* ambiguity. For example:
+   *
+   * 1.
+   *  \code
+   * a <- init():
+   * c <- init();
+   * b <- a.add_(c);
+   * c <- a.add_(c);
+   * \endcode
+   * if the last operation were a.mul_(c) there would be a genuine ambiguity as
+   * `a + (b * c) != (a + b) * c`, but `a + (b + c) == (a + b) + c`. Poprithms
+   * doesn't know if it's a mul_ or an add_ though (as poprithms will just see
+   * it as a binary inplace modifying op), so it reports a potential ambiguity.
+   *
+   * 2.
+   * \code
+   * a <- init();
+   * b <- a.relu_(); // relu inplace
+   * c <- a.relu_(); // if this were sqrt_, there would be a genuine ambiguity.
+   * \endcode
+   * or more likely to come up in practise:
+   *
+   * 3.
+   * \code
+   * a <- init();
+   * b <- init();
+   * d <- a.add_(5); // a's value changes.
+   * d <- a.copyFrom_(b); // copy from b to a.
+   * e <- d.add(5);
+   * \endcode
+   *
+   * The issue with this last case is that poprithms does not distinguish
+   * between updates based on existing values, and updates to completely new
+   * values.
+   *
+   * The general rule is as follows: If a tensor 'a' is consumed by an op 'm'
+   * which modifies it, and 'a' is aliased to another tensor 'b' which is
+   * consumed by an op 'c' which reads the value of 'b', then unless there
+   * is a constraint between 'm' and 'c', the value of 'b' is ambiguous. By
+   * 'reads' we include all ops which are not simply view-changers, or ops
+   * like 'shape' which don't use the numerical values of the input.
+   *
+   * \returns true If a potential ambiguity is detected.
+   * \returns false Otherwise.
+   */
+  bool containsAmbiguity() const;
+
+  /**
+   * Create an error string for the given AliasModel.
+   *
+   * \returns std::string The error string with info on the ops and tensors in
+   * question.
+   */
+  std::string ambiguitySummary(const Graph &graph, AliasModel &) const;
+
 private:
   /**
    * Data type that dictates whether we check at runtime whether a tensor that

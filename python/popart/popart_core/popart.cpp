@@ -1576,6 +1576,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("dotChecks",
                       &SessionOptions::dotChecks,
                       DOC(popart, SessionOptions, dotChecks));
+
+    cls.def_readwrite("enableInplaceAmbiguityChecking",
+                      &SessionOptions::enableInplaceAmbiguityChecking);
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
@@ -1970,6 +1973,7 @@ PYBIND11_MODULE(popart_core, m) {
           return opts.enableGradientAccumulation ? opts.accumulationFactor : 1;
         },
         py::return_value_policy::reference);
+    cls.def("checkInplacingAmbiguity", &Session::checkInplacingAmbiguity);
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");

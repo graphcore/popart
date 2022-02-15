@@ -323,7 +323,7 @@ void AliasModelGrower::addAliaserOp(const Graph &graph,
     addTensor(graph, t0, allow);
   }
 
-  logging::ir::trace("Growing AliasModel for op\"{}\"", op->str());
+  logging::ir::trace("Growing AliasModel for op \"{}\"", op->str());
   op->growAliasModel(aliasModel.get());
 
   // Check every output has been mapped.
@@ -371,6 +371,34 @@ void AliasModelGrower::addAliaserConstraints(
       }
     }
   }
+}
+
+std::string AliasModelGrower::ambiguitySummary(const Graph &graph,
+                                               AliasModel &aliasModel) const {
+  auto ambiguity = aliasModel.g.containsAmbiguity();
+  std::stringstream oss;
+
+  OpId modifier   = aliasModel.getOpId(ambiguity.modifier());
+  Op *modifierOp  = graph.getOp(modifier);
+  TensorId readIn = aliasModel.getTensorId(ambiguity.readIn());
+  OpId consumer   = aliasModel.getOpId(ambiguity.reader());
+  Op *consumingOp = graph.getOp(consumer);
+
+  oss << "Inplacing ambiguity detected. The tensor " << ambiguity.modified()
+      << " is modified by '" << modifierOp->getName()
+      << "', id: " << modifierOp->id << ", and the tensor '" << readIn
+      << "', which is an alias of '" << ambiguity.modified()
+      << "', is used by the consuming op '" << consumingOp->getName()
+      << "', id: " << consumingOp->id
+      << ". There is no order constraint, explicit or implicit,"
+      << "  between these 2 Ops. Please check the inplacing of these ops, and "
+      << "use outplace versions of them if necessary. Alternatively, adding "
+      << "topological constraints can resolve the ambiguity, e.g. by enforcing "
+      << "X -> Y or Y -> X. (Where X = " << consumingOp->id << "and"
+      << "Y = " << modifierOp->getName() << "). To disable this check, "
+      << "set Sessionoptions.enableInplaceAmbiguityChecking = false";
+
+  return oss.str();
 }
 
 } // namespace popart

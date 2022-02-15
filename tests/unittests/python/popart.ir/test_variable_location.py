@@ -108,6 +108,7 @@ def test_replia_sharded_variable_gather():
     opts = ir._pb_ir.getSessionOptions()
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = 2
+    opts.enableInplaceAmbiguityChecking = False
     main = ir.main_graph()
 
     with main:
@@ -141,6 +142,8 @@ def test_replica_sharded_variable_no_gather():
     opts = ir._pb_ir.getSessionOptions()
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = 2
+    opts.enableInplaceAmbiguityChecking = False
+
     main = ir.main_graph()
 
     with main:
