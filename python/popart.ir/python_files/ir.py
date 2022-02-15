@@ -251,7 +251,7 @@ class Ir:
         Returns:
             Graph
         """
-        name = name or "graph"
+        name = self._create_name(name or "graph")
         _pb_subgraph = self._pb_ir.createGraph(
             name)  # type: ignore GraphId != str
         return Graph._from_pb(_pb_subgraph)

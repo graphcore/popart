@@ -17,6 +17,7 @@
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
@@ -219,6 +220,27 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("b1"),
       py::arg("b2"),
       py::arg("eps"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  // ConcatOp
+  g.def(
+      "createOp_ConcatOp",
+      [](Graph &self,
+         const popart::OperatorIdentifier &opid,
+         int64_t axis,
+         const Op::Settings &settings) {
+        return self.createOp<ConcatOp>(opid, axis, settings);
+      },
+      py::arg("opid"),
+      py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  g.def(
+      "createOp_ConcatInplaceOp",
+      [](Graph &self, int64_t axis, const Op::Settings &settings) {
+        return self.createOp<ConcatInplaceOp>(axis, settings);
+      },
+      py::arg("axis"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }
@@ -513,6 +535,37 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("b1"),
       py::arg("b2"),
       py::arg("eps"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  // ConcatOp
+  g.def(
+      "createConnectedOp_ConcatOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         const popart::OperatorIdentifier &opid,
+         int64_t axis,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<ConcatOp>(in, out, opid, axis, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  g.def(
+      "createConnectedOp_ConcatInplaceOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         int64_t axis,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<ConcatInplaceOp>(in, out, axis, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("axis"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

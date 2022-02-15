@@ -400,6 +400,18 @@ class Tensor:
         return ops.div(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
+    def __mod__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.fmod(self, other)`."""
+        import popart.ir.ops as ops
+        return ops.fmod(self, self._ensure_tensor(other))
+
+    @debug_context_frame_offset(1)
+    def __rmod__(self, other: TensorLike) -> 'Tensor':
+        """Returns `ops.fmod(other, self)`."""
+        import popart.ir.ops as ops
+        return ops.fmod(self._ensure_tensor(other), self)
+
+    @debug_context_frame_offset(1)
     def __neg__(self) -> 'Tensor':
         """Returns `ops.negate(self)`."""
         import popart.ir.ops as ops
@@ -591,7 +603,7 @@ downcast_np_dtypes = {
 
 
 def variable(
-        data: HostTensor,
+        data: Union[HostTensor, float, int],
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
@@ -758,7 +770,7 @@ def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
 
 
 def constant(
-        data: HostTensor,
+        data: Union[HostTensor, float, int],
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,

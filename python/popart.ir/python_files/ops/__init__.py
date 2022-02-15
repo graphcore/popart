@@ -1,14 +1,15 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING
-
 from .add import add, add_
 from .call import call, call_with_info, SubgraphOpInfo
 from .cast import cast
+from .concat import concat, concat_
 from .detach import detach, detach_
 from .div import div
 from .dropout import dropout
 from .dynamic_slice import dynamic_slice
 from .dynamic_update import dynamic_update, dynamic_update_
+from .equal import equal
+from .fmod import fmod
 from .gather import gather, tied_gather
 from .gelu import gelu, gelu_
 from .group_norm import group_norm, layer_norm
@@ -27,6 +28,7 @@ from .mul import mul
 from .negate import negate
 from .negative_log_likelihood import nll_loss_with_softmax_grad
 from .print_tensor import print_tensor
+from .random_seed import split_random_seed
 from .random import random_uniform, random_normal
 from .relu import relu, relu_
 from .repeat import repeat, repeat_with_info
@@ -56,6 +58,9 @@ __all__ = [
     "SubgraphOpInfo",
     # cast.py
     "cast",
+    # concat.py
+    "concat",
+    "concat_",
     # detach.py
     "detach",
     "detach_",
@@ -68,6 +73,10 @@ __all__ = [
     # dynamic_update.py
     "dynamic_update",
     "dynamic_update_",
+    # equal.py
+    "equal",
+    # fmod.py
+    "fmod",
     # gather.py
     "gather",
     "tied_gather",
@@ -79,6 +88,8 @@ __all__ = [
     "layer_norm",
     # host_load.py
     "host_load",
+    # host_store.py
+    "host_store",
     # increment_mod.py
     "increment_mod",
     "increment_mod_",
@@ -113,6 +124,8 @@ __all__ = [
     "negate",
     # print_tensor.py
     "print_tensor",
+    # random_seed.py
+    "split_random_seed",
     # random.py
     "random_uniform",
     "random_normal",
@@ -129,6 +142,8 @@ __all__ = [
     # scaled_add.py
     "scaled_add",
     "scaled_add_",
+    # scatter.py
+    "scatter",
     # slice.py
     "slice",
     "slice_",

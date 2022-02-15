@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Union, Iterable
 
 if TYPE_CHECKING:
-    from popart.ir import Tensor
+    from popart.ir.tensor import Tensor
 
 
 class Module:

@@ -12,6 +12,7 @@ class DropoutOpx : public ElementWiseUnaryOpx {
 public:
   DropoutOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const override;
+  InputCreatorType getInputCreatorType(InIndex) const override;
 };
 
 } // namespace popx

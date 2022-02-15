@@ -43,8 +43,10 @@ list(
   ${popart_op_headers_dir}/collectives/replicatedallreduce.hpp
   ${popart_op_headers_dir}/collectives/replicatedreducescatter.hpp
   ${popart_op_headers_dir}/collectives/allreduce.hpp
+  # ${popart_op_headers_dir}/concat.hpp # Manually bound
   ${popart_op_headers_dir}/copyvarupdate.hpp
   ${popart_op_headers_dir}/tiedgather.hpp
+  ${popart_op_headers_dir}/fmod.hpp
   ${popart_op_headers_dir}/groupnorm.hpp
   ${popart_op_headers_dir}/equal.hpp
   ${popart_op_headers_dir}/exchange/multiexchange.hpp
@@ -71,6 +73,7 @@ list(
   ${popart_op_headers_dir}/randomnormal.hpp
   ${popart_op_headers_dir}/tanh.hpp
   ${popart_op_headers_dir}/where.hpp
+  ${popart_op_headers_dir}/modifyrandomseed.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
@@ -165,6 +168,7 @@ add_popart_python_module(
   bindings/op/loop.cpp
   bindings/op/ipucopy.cpp
   bindings/op/call.cpp
+  bindings/op/concat.cpp
   bindings/op/matmul.cpp
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp

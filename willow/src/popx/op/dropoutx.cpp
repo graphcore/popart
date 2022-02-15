@@ -120,6 +120,13 @@ void DropoutOpx::grow(snap::program::Sequence &prog) const {
   }
 }
 
+InputCreatorType DropoutOpx::getInputCreatorType(InIndex inIndex) const {
+  if (inIndex == DropoutOp::getInIndex()) {
+    return ElementWiseUnaryOpx::getInputCreatorType(inIndex);
+  }
+  return PopOpx::getInputCreatorType(inIndex);
+}
+
 namespace {
 OpxCreator<DropoutOpx> dropoutOpxCreator({Onnx::Operators::Dropout_6,
                                           Onnx::Operators::Dropout_7,

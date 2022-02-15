@@ -1,6 +1,6 @@
-// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_ADAMUPDATER_HPP
-#define POPART__INTERNAL_IR_BINDINGS_ADAMUPDATER_HPP
+// Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#ifndef POPART__INTERNAL_IR_BINDINGS_CONCAT_HPP
+#define POPART__INTERNAL_IR_BINDINGS_CONCAT_HPP
 
 #include "bindings/basicoptionals.hpp"
 #include "bindings/op.hpp"
@@ -10,7 +10,7 @@
 #include <pybind11/stl.h>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/adamupdater.hpp>
+#include <popart/op/concat.hpp>
 
 namespace py = pybind11;
 
@@ -20,13 +20,13 @@ namespace ir {
 namespace op {
 
 /**
- * Add bindings for the adam updater op.
+ * Add bindings for the concat op.
  **/
-void bindAdamUpdater(py::module &m);
+void bindConcat(py::module &m);
 
 } // namespace op
 } // namespace ir
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_ADAMUPDATER_HPP
+#endif // POPART__INTERNAL_IR_BINDINGS_CONCAT_HPP
