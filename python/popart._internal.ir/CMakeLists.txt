@@ -65,6 +65,7 @@ list(
   ${popart_op_headers_dir}/softmax.hpp
   ${popart_op_headers_dir}/nll.hpp
   ${popart_op_headers_dir}/detach.hpp
+  ${popart_op_headers_dir}/adamvarupdate.hpp
   ${popart_op_headers_dir}/lamb.hpp
   ${popart_op_headers_dir}/randomuniform.hpp
   ${popart_op_headers_dir}/randomnormal.hpp

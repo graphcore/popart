@@ -1,5 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 add_popart_py_unit_test(unittest_python_popart.ir_ops_accumulate test_accumulate.py)
+add_popart_py_unit_test(unittest_python_popart.ir_ops_adam_var_update test_adam_var_update.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_adam_updater test_adam_updater.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_add test_add.py)
 add_popart_py_unit_test(unittest_python_popart.ir_ops_call test_call.py)

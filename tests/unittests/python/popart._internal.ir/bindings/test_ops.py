@@ -1031,6 +1031,61 @@ def test_accumulate_zero_op(connected: bool) -> None:
 
 
 @pytest.mark.parametrize("connected", [True, False])
+@pytest.mark.parametrize("const_lr", [True, False])
+@pytest.mark.parametrize("const_mwn", [True, False])
+def test_adam_var_update_op(connected: bool, const_lr: bool,
+                            const_mwn: bool) -> None:
+    """Test the AdamVarUpdate Op.
+
+    Args:
+        connected (bool): Whether to use the createConnected<opname> function or
+            just create<opname>
+        const_lr (bool): Whether to use const learning rate
+        const_mwn (bool): Whether to use const max weight norm.
+
+        See adam_var_update.py for a description of these properties.
+    """
+    _, graphs = create_ir()
+    main = graphs[0]
+    weight = add_random_tensor("weight", _ir.TensorType.Variable, [4], main)
+    lamb_r1_square = add_actgrad_tensor("lamb_r1_square", [4], main)
+    lamb_r2_square = add_actgrad_tensor("lamb_r2_square", [4], main)
+
+    out = add_actgrad_tensor("updated_weight", [4], main)
+
+    settings = _ir.Settings(main, "adam_var_update")
+    ins: Dict[int, str] = {
+        0: weight.id,
+        2: lamb_r1_square.id,
+        3: lamb_r2_square.id
+    }
+    if not const_lr:
+        learning_rate = add_actgrad_tensor("learning_rate", [1], main)
+        ins[4] = learning_rate.id
+    if not const_mwn:
+        max_weight_norm = add_actgrad_tensor("max_weight_norm", [1], main)
+        ins[5] = max_weight_norm.id
+
+    if connected:
+        ins,
+        outs: Dict[int, str] = {0: out.id}
+        op = main.createConnectedOp_AdamVarUpdateOp(ins,
+                                                    outs,
+                                                    _ir.OptimizerValue(0.1),
+                                                    _ir.OptimizerValue(0.5),
+                                                    settings=settings)
+    else:
+        op = main.createOp_AdamVarUpdateOp(_ir.OptimizerValue(0.1),
+                                           _ir.OptimizerValue(0.5),
+                                           settings=settings)
+        for k, v in ins.items():
+            op.connectInTensor(k, v)
+
+        op.connectOutTensor(0, out.id)
+        op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
 def test_adam_updater_op(connected: bool) -> None:
     """Test the AdamUpdater Op.
 
