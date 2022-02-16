@@ -634,30 +634,4 @@ BOOST_AUTO_TEST_CASE(TestExecuteOpNTimesEveryMTimesTypes) {
                           error,
                           checkErrorFn8);
 
-  // Check M and batchesPerStep.
-  std::map<InIndex, OutIndex> identityInToOutIndicies9{{0, 0}};
-  std::map<OutIndex, float> outputIndiciesAndValues9;
-  float t0Value9               = 1;
-  float tcValue9               = 5;
-  std::vector<float> expected9 = {
-      6, 6, 1, 1, 1, 1, 6, 6, 1, 1, 1, 1, 6, 6, 1, 1, 1, 1};
-
-  const auto checkErrorFn9 = checkErrorMsgHasPrefixFn<error>(
-      "[AutomaticLossScaletransform][[executeOpNTimesEveryMTimes]. "
-      "Argument M of executeOpNTimesEveryMTimes has inconsistent value 6. "
-      "M should be a factor of batches per step 10.");
-
-  BOOST_REQUIRE_EXCEPTION(testType<float>(4,
-                                          6,
-                                          identityInToOutIndicies9,
-                                          outputIndiciesAndValues9,
-                                          t0Value9,
-                                          tcValue9,
-                                          Shape{},
-                                          expected9,
-                                          DataType::FLOAT,
-                                          false,
-                                          10),
-                          error,
-                          checkErrorFn9);
 }

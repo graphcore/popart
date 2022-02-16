@@ -336,6 +336,9 @@ MutableVoidData getMutableData(ONNX_NAMESPACE::TensorProto &tp) {
     } else if (tp.data_type() == ONNX_NAMESPACE::TensorProto::FLOAT16) {
       mv_data.data =
           reinterpret_cast<void *>(tp.mutable_int32_data()->Mutable(0));
+    } else if (tp.data_type() == ONNX_NAMESPACE::TensorProto::INT32) {
+      mv_data.data =
+          reinterpret_cast<void *>(tp.mutable_int32_data()->Mutable(0));
     } else if (tp.data_type() == ONNX_NAMESPACE::TensorProto::DOUBLE) {
       mv_data.data =
           reinterpret_cast<void *>(tp.mutable_double_data()->Mutable(0));

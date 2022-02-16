@@ -199,23 +199,6 @@ void Tensors::addVarInit(const TensorId &name,
   logging::debug("Adding VarInit Tensor {}", name);
   popart::TensorDebugInfo di(debugContext, name, TensorType::Variable);
   addInit(name, pt, TensorType::Variable, vs, di);
-
-  // A sanity check: if the tensor is fixed point, it is Const
-  if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
-    if (!constIds.contains(name)) {
-      std::stringstream ss;
-      ss << "Variable Tensor `" << name << "' is fixed-point, but "
-         << "currently only floating-point Tensors can be variable in PopART. "
-         << "If Tensor `" << name
-         << "' should be constant instead of variable, "
-         << "it can be converted by using "
-         << "the GraphTransormer utility method "
-         << "`convertAllFixedPointInitializersToConstants()', which converts "
-         << "all fixed-point initializers in an ONNX ModelProto"
-         << " to be outputs of ONNX Nodes of type Constant. ";
-      throw error(ss.str());
-    }
-  }
 }
 
 void Tensors::addVarInit(const TensorId &name,

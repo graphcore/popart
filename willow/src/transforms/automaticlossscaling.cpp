@@ -401,15 +401,6 @@ void checkNM(unsigned n, unsigned m, Op *op, const Ir &ir) {
           op->str(),
           ir.getSessionOptions().accumulationFactor);
     }
-  } else {
-    if (ir.getDataFlow().batchesPerStep() % m != 0) {
-      throw error(
-          "[AutomaticLossScaletransform][[executeOpNTimesEveryMTimes]. "
-          "Argument M of executeOpNTimesEveryMTimes has inconsistent value {}. "
-          "M should be a factor of batches per step {}.",
-          m,
-          ir.getDataFlow().batchesPerStep());
-    }
   }
 }
 
