@@ -372,3 +372,46 @@ BOOST_AUTO_TEST_CASE(TestFindMatchingOps) {
     BOOST_REQUIRE_EQUAL(matches.size(), 0);
   }
 }
+
+BOOST_AUTO_TEST_CASE(TestTraverseCallSites) {
+  TraverseCallSiteTestModel model;
+  auto &graph                 = model.getIr().getMainGraph();
+  std::vector<Tensor *> start = {graph.getTensor("t0")};
+
+  {
+    bool visited_t2 = false;
+    auto visit      = [&visited_t2](Tensor *t) {
+      if (t->id == "t2") {
+        visited_t2 = true;
+      }
+      return true;
+    };
+    graphutils::traverse(
+        start,
+        visit,
+        [](auto, auto, auto) { return true; },
+        graphutils::TraversalType::DepthFirst,
+        graphutils::VisitType::Pre,
+        graphutils::TraversalDirection::ForwardBackward,
+        graphutils::TraverseCallSites::All);
+    BOOST_REQUIRE(visited_t2);
+  }
+  {
+    bool visited_t2 = false;
+    auto visit      = [&visited_t2](Tensor *t) {
+      if (t->id == "t2") {
+        visited_t2 = true;
+      }
+      return true;
+    };
+    graphutils::traverse(
+        start,
+        visit,
+        [](auto, auto, auto) { return true; },
+        graphutils::TraversalType::DepthFirst,
+        graphutils::VisitType::Pre,
+        graphutils::TraversalDirection::ForwardBackward,
+        graphutils::TraverseCallSites::Current);
+    BOOST_REQUIRE(!visited_t2);
+  }
+}

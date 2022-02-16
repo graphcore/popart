@@ -21,7 +21,8 @@ void traverse(std::vector<Tensor *> tensors,
               std::function<bool(Op *, Tensor *, Tensor *)> filter,
               TraversalType traversalType,
               VisitType visitType,
-              TraversalDirection traversalDirection) {
+              TraversalDirection traversalDirection,
+              TraverseCallSites traverseCallSites) {
   std::vector<TensorAndCallStack> tensorsAndStack;
   tensorsAndStack.reserve(tensors.size());
   for (Tensor *t : tensors) {
@@ -32,7 +33,23 @@ void traverse(std::vector<Tensor *> tensors,
            filter,
            traversalType,
            visitType,
-           traversalDirection);
+           traversalDirection,
+           traverseCallSites);
+}
+
+void traverse(std::vector<Tensor *> tensors,
+              std::function<bool(Tensor *)> visitor,
+              std::function<bool(Op *, Tensor *, Tensor *)> filter,
+              TraversalType traversalType,
+              VisitType visitType,
+              TraversalDirection traversalDirection) {
+  traverse(tensors,
+           visitor,
+           filter,
+           traversalType,
+           visitType,
+           traversalDirection,
+           TraverseCallSites::Current);
 }
 
 void traverse(std::vector<TensorAndCallStack> tensors,
@@ -40,7 +57,8 @@ void traverse(std::vector<TensorAndCallStack> tensors,
               std::function<bool(Op *, Tensor *, Tensor *)> filter,
               TraversalType traversalType,
               VisitType visitType,
-              TraversalDirection traversalDirection) {
+              TraversalDirection traversalDirection,
+              TraverseCallSites traverseCallSites) {
   std::deque<TensorAndCallStack> deque;
   std::map<Tensor *, std::set<CallStack>> visited;
 
@@ -107,7 +125,7 @@ void traverse(std::vector<TensorAndCallStack> tensors,
       }
     };
 
-    auto bwd = [&tq, &addOpBwd, &toEnqueue, &filter]() {
+    auto bwd = [&tq, &addOpBwd, &toEnqueue, &filter, &traverseCallSites]() {
       // Producer Ops
       if (tq.first->hasProducer()) {
         Op *p = tq.first->getProducer();
@@ -115,7 +133,9 @@ void traverse(std::vector<TensorAndCallStack> tensors,
           // Subgraph Op
           auto indices = p->output->indices(tq.first);
           auto stack   = tq.second;
-          stack.push_back(p);
+          if (traverseCallSites == TraverseCallSites::Current) {
+            stack.push_back(p);
+          }
           for (OutIndex opOutIndex : indices) {
             for (auto pgraph : p->getCalledGraphs()) {
               OutIndex sgOutIndex = p->opOutToSubgraphOutIndex(
@@ -150,7 +170,7 @@ void traverse(std::vector<TensorAndCallStack> tensors,
           }
         };
 
-        if (tq.second.empty()) {
+        if (traverseCallSites == TraverseCallSites::All || tq.second.empty()) {
           auto callSites = tq.first->getGraph().getCallSiteOps();
           for (Op *sgOp : callSites) {
             processCallSite(sgOp);
@@ -161,14 +181,16 @@ void traverse(std::vector<TensorAndCallStack> tensors,
       }
     };
 
-    auto fwd = [&tq, &addOpFwd, &toEnqueue, &filter]() {
+    auto fwd = [&tq, &addOpFwd, &toEnqueue, &filter, &traverseCallSites]() {
       // Consumer Ops
       for (Op *c : tq.first->consumers.getOps()) {
         if (!c->getCalledGraphIds().empty()) {
           // Subgraph Op
           auto indices = c->input->indices(tq.first);
           auto stack   = tq.second;
-          stack.push_back(c);
+          if (traverseCallSites == TraverseCallSites::Current) {
+            stack.push_back(c);
+          }
           for (InIndex opInIndex : indices) {
             for (auto cgraph : c->getCalledGraphs()) {
               InIndex sgInIndex = c->opInToSubgraphInIndex(
@@ -202,7 +224,7 @@ void traverse(std::vector<TensorAndCallStack> tensors,
           }
         };
 
-        if (tq.second.empty()) {
+        if (traverseCallSites == TraverseCallSites::All || tq.second.empty()) {
           // Exit through all call sites
           auto callSites = tq.first->getGraph().getCallSiteOps();
           for (Op *sgOp : callSites) {

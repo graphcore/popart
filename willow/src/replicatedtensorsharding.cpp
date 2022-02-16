@@ -435,7 +435,8 @@ void ReplicatedTensorShardingTracer::trace(
                            traceFilterCallback,
                            graphutils::TraversalType::DepthFirst,
                            graphutils::VisitType::Pre,
-                           graphutils::TraversalDirection::ForwardBackward);
+                           graphutils::TraversalDirection::ForwardBackward,
+                           graphutils::TraverseCallSites::All);
     }
 
     registerGroup(helper.group);

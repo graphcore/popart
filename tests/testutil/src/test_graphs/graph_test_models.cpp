@@ -896,3 +896,44 @@ RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
 
   ir.applyTransform(MergeExchange::id(), graph);
 }
+
+TraverseCallSiteTestModel::TraverseCallSiteTestModel() {
+  Graph &graph    = ir.getMainGraph();
+  Graph &subgraph = ir.createGraph({"sub"});
+
+  auto art = AnchorReturnType("All");
+
+  TensorInfo tInfo{DataType::INT32, {4, 4}};
+  float tData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  graph.getTensors().addVarInit("t0", tInfo, static_cast<void *>(&tData));
+  graph.getTensors().addVarInit("t1", tInfo, static_cast<void *>(&tData));
+  graph.getTensors().addVarInit("t2", tInfo, static_cast<void *>(&tData));
+  graph.getTensors().addVarInit("t3", tInfo, static_cast<void *>(&tData));
+
+  Op::Settings gSettings(graph, "op", {});
+  Op::Settings sgSettings(subgraph, "sub/op", subgraph.getScope());
+
+  // Subgraph 0
+  subgraph.addInput(addScope(subgraph, "st0"), tInfo);
+  subgraph.addInput(addScope(subgraph, "st1"), tInfo);
+  subgraph.createConnectedOp<CopyVarUpdateOp>(
+      {{CopyVarUpdateOp::getVarToUpdateInIndex(), addScope(subgraph, "st0")},
+       {CopyVarUpdateOp::getUpdaterInIndex(), addScope(subgraph, "st1")}},
+      {{CopyVarUpdateOp::getUpdatedVarOutIndex(), addScope(subgraph, "st3")}},
+      sgSettings);
+  subgraph.markAsOutput(addScope(subgraph, "st3"));
+
+  graph.createConnectedOp<CallOp>({{0, "t0"}, {1, "t1"}},
+                                  {{0, "t4"}},
+                                  Onnx::CustomOperators::Call_1,
+                                  subgraph,
+                                  gSettings.copy("Call0"));
+
+  graph.createConnectedOp<CallOp>({{0, "t2"}, {1, "t3"}},
+                                  {{0, "t5"}},
+                                  Onnx::CustomOperators::Call_1,
+                                  subgraph,
+                                  gSettings.copy("Call0"));
+
+  ir.updateVertices();
+}

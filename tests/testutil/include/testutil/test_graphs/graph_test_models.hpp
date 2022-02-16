@@ -220,4 +220,23 @@ public:
   std::vector<popart::Op *> varUpdateOps;
 };
 
+/*
+ * Psuedo code:
+ *
+ *     def subgraph(st0, st1):
+ *       return op(st0, st1)
+ *
+ *     t0 = var()
+ *     t1 = var()
+ *     t2 = var()
+ *     t3 = var()
+ *
+ *     call(subgraph, t0, t1)
+ *     call(subgraph, t2, t3)
+ */
+class TraverseCallSiteTestModel : public GraphTestModel {
+public:
+  TraverseCallSiteTestModel();
+};
+
 #endif

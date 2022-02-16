@@ -33,10 +33,10 @@ bool hasDataDependency(Op *const op,
     exchangeOpIds.insert(exchangeOp.second->id);
   }
 
-  std::vector<graphutils::TensorAndCallStack> inputs;
-
+  std::vector<Tensor *> inputs;
+  inputs.reserve(op->input->tensorMap().size());
   for (auto input : op->input->tensorMap()) {
-    inputs.push_back({input.second, {}});
+    inputs.push_back(input.second);
   }
 
   // Walk back from the current exchange Op and ensure we do not encounter
