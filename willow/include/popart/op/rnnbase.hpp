@@ -29,7 +29,7 @@ public:
   bool hasInitialHInput() const;
   bool hasSeqLenInput() const;
 
-  std::set<InIndex> optionalInputs() const;
+  std::set<InIndex> optionalInputs() const override;
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -72,9 +72,9 @@ public:
                     const BaseOnnxRNNOp &fwd_op);
 
   std::unique_ptr<Op> clone() const override = 0;
-  void setup();
-  const std::vector<GradInOutMapper> &gradInputInfo() const;
-  const std::map<int, int> &gradOutToNonGradIn() const;
+  void setup() override;
+  const std::vector<GradInOutMapper> &gradInputInfo() const override;
+  const std::map<int, int> &gradOutToNonGradIn() const override;
 
   bool hasLastHiddenStateGradInput() const;
   bool hasFullHiddenStateGradInput() const;

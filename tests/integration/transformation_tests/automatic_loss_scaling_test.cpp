@@ -4,6 +4,9 @@
 #include <boost/test/unit_test.hpp>
 #include <vector>
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define protected public
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
