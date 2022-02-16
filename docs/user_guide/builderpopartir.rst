@@ -80,17 +80,7 @@ Subgraphs
 .. include:: popartir_subgraph.rst
 
 
-..
-  Applying transforms
-  ^^^^^^^^^^^^^^^^^^^
-
-  - Explain what transforms are available and how you use them.
-
-..
-  Autodiff
-  ^^^^^^^^
-
-  - Specialised section on autodiff.
+.. include:: popartir_transforms.rst
 
 ..
   Running a model created in `popart.ir`

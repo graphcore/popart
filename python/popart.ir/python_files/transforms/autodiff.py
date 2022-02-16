@@ -197,7 +197,7 @@ class GradGraphInfo:
 
         Args:
             grad_call_info (SubgraphOpInfo):
-                Callsite info of a call to a gradient graph. This can be accessed by
+                Callsite info of a call to the graph that was auto-differentiated. This can be accessed by
                 using `ops.call_with_info()`
 
         Returns: `Dict[Tensor, Tensor]`
@@ -219,6 +219,7 @@ class GradGraphInfo:
         Example:
 
         .. code-block:: python
+
             # `module`: subgraph module, `x` graph inputs, `x_dash` grad graph input
             graph = ir.create_graph(module, x, out_features=16) # Forwards graph
             call_info = ops.call_with_info(

@@ -106,7 +106,7 @@ more details please refer to :ref:`Autodiff<autodiff>`.
 Call a subgraph in a loop
 """""""""""""""""""""""""
 
-You can use ``ops.repeat`` to create a loop, see :py:func:`popart-python-api:popart.ir.ops.repeat`.
+You can use ``ops.repeat`` to create a loop, see :py:func:`popart.ir.ops.repeat()`.
 
 .. code-block:: python
 
