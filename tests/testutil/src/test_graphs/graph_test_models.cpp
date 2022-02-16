@@ -786,6 +786,97 @@ OptimizerTestModel::OptimizerTestModel(TestOptimizer opt,
   ir.setDataFlow(df);
 }
 
+class GraphTestModel6::GTM6Op : public Op {
+public:
+  GTM6Op(const Op::Settings &settings)
+      : Op(OperatorIdentifier("TestOps", "GTM6Op", 1), settings) {}
+
+  void setup() override {
+    outInfo(0) = inInfo(0);
+    outInfo(1) = inInfo(1);
+    outInfo(2) = inInfo(2);
+  }
+
+  std::unique_ptr<Op> clone() const override {
+    return std::make_unique<GTM6Op>(*this);
+  }
+
+  std::vector<std::unique_ptr<Op>> getGradOps() override {
+    std::vector<std::unique_ptr<Op>> grads;
+    grads.emplace_back(std::make_unique<GraphTestModel6::GTM6GradOp>(*this));
+    return grads;
+  }
+
+  virtual float getSubgraphValue() const override {
+    return getLowSubgraphValue();
+  }
+};
+
+class GraphTestModel6::GTM6GradOp : public Op {
+public:
+  GTM6GradOp(const GraphTestModel6::GTM6Op &op)
+      : Op(OperatorIdentifier("TestOps", "GTM6GradOp", 1),
+           op.Op::getSettings()) {}
+
+  void setup() override {
+    outInfo(0) = inInfo(1);
+    outInfo(1) = inInfo(0);
+    outInfo(2) = inInfo(2);
+  }
+
+  std::unique_ptr<Op> clone() const override {
+    return std::make_unique<GTM6GradOp>(*this);
+  }
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const override {
+    static const std::vector<GradInOutMapper> inInfo = {
+        {0, 1, GradOpInType::In},
+        {1, 0, GradOpInType::GradOut},
+        {2, 2, GradOpInType::GradOut}};
+    return inInfo;
+  }
+
+  const std::map<int, int> &gradOutToNonGradIn() const override {
+    static const std::map<int, int> outInfo = {{0, 0}, {1, 1}, {2, 2}};
+    return outInfo;
+  }
+
+  virtual float getSubgraphValue() const override {
+    return getLowSubgraphValue();
+  }
+};
+
+GraphTestModel6::GraphTestModel6() {
+
+  // Tensor info for tensors in the IR.
+  TensorInfo tInfo{DataType::INT32, {}};
+
+  // Create the subgraph.
+  auto &subgraphA = ir.createGraph(GraphId("A"));
+
+  // Create subgraph A.
+  auto a_in0  = addScope(subgraphA, "in0");
+  auto a_in1  = addScope(subgraphA, "in1");
+  auto a_in2  = addScope(subgraphA, "in2");
+  auto a_out0 = addScope(subgraphA, "out0");
+  auto a_out1 = addScope(subgraphA, "out1");
+  auto a_out2 = addScope(subgraphA, "out2");
+
+  subgraphA.addInput(a_in0, tInfo);
+  subgraphA.addInput(a_in1, tInfo);
+  subgraphA.addInput(a_in2, tInfo);
+
+  // Add GTM6Op.
+  Op::Settings settingsSubgraphA = Op::Settings{subgraphA, "GTM6Op"};
+  subgraphA.createConnectedOp<GTM6Op>({{0, a_in0}, {1, a_in1}, {2, a_in2}},
+                                      {{0, a_out0}, {1, a_out1}, {2, a_out2}},
+                                      settingsSubgraphA);
+
+  subgraphA.markAsOutput(a_out0);
+  subgraphA.markAsOutput(a_out1);
+  subgraphA.markAsOutput(a_out2);
+}
+
 RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
 
   Graph &graph = ir.getMainGraph();

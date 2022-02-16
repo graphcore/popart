@@ -93,8 +93,11 @@ public:
    *       `(t, ExpectedConnectionType::FwdGrad)` in `expectedInputs`.
    *     - `expectedOutputs` may only contain tuples of the type
    *       `(t, ExpectedConnectionType::FwdGrad)` where `t` is an input tensor
-   *       of the forward graph. If set, each tensor `t` in
-   *       `gradsRequiredForFwdId` must be present in `expectedOutputs`.
+   *       of the forward graph. If `gradsRequiredForFwdId` is set, the
+   *       `expectedOutputs` list matches the size and order of
+   *       `gradsRequiredForFwdId` exactly. If unset, the list is ordered
+   *       in the order of the forward graph inputs, although some gradients
+   *       of forward graph inputs may be missing.
    */
   virtual FwdGraphToBwdGraphInfo
   apply(Ir &ir,
@@ -142,8 +145,11 @@ public:
    *       `(t, ExpectedConnectionType::FwdGrad)` in `expectedInputs`.
    *     - `expectedOutputs` may only contain tuples of the type
    *       `(t, ExpectedConnectionType::FwdGrad)` where `t` is an input tensor
-   *       of the forward graph. If set, each tensor `t` in
-   *       `gradsRequiredForFwdId` must be present in `expectedOutputs`.
+   *       of the forward graph. If `gradsRequiredForFwdId` is set, the
+   *       `expectedOutputs` list matches the size and order of
+   *       `gradsRequiredForFwdId` exactly. If unset, the list is ordered
+   *       in the order of the forward graph inputs, although some gradients
+   *       of forward graph inputs may be missing.
    **/
   virtual BwdGraphInfo
   createBwdGraph(Ir &ir,

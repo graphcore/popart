@@ -186,6 +186,49 @@ public:
 };
 
 /**
+ * IR which contains an autodiffable subgraph "A" as follows (backwards graph
+ * not included):
+ *
+ *                             ............[typical autodiff]...............
+ *                             :                                           :
+ *    [A/in0]                  :             [_k/getGradId(in0)]           :
+ *      | [A/in1]              :               ^ [_k/getGradId(in1)]       :
+ *      |  | [A/in2]           :    [_k/in1]   |   ^ [_k/getGradId(in2)]   :
+ *    #0|  |#1   |#2           :      |        |   |   ^                   :
+ * .----|--|-----|----["A"]-.  : .----|--------|---|---|-----------[_k]--. :
+ * |    |  |     |          |  : |    |        '-. |   |                 | :
+ * |    |  |     |          |  : |    |          | |   |                 | :
+ * |    |  |#1   |          |  : |    |          S S   S  (S=SumOp)      | :
+ * |    |  |  .--'          |  : |    |          | |   |                 | :
+ * | #0 v  v  v #2          |  : |    |       #0 | |#1 | #2              | :
+ * |   [GTM6Op ]            |  : |    |         GTM6GradOp               | :
+ * | #0 |  |  | #2          |  : |    |       #0 ^ ^   ^                 | :
+ * |    |  |  '-.           |  : |    '----------' |   |                 | :
+ * |    |  |#1  |           |  : |              #1 |   | #2              | :
+ * '----|--|----|-----------'  : '-----------------|---|-----------------' :
+ *    #0|  |#1  v#2            :                   |   |                   :
+ *      |  v [A/out2]          :                   | [_k/getGradId(in2)]   :
+ *      v [A/out1]             :                 [_k/getGradId(in0)]       :
+ *    [A/out0]                 :                                           :
+ *                             :...........................................:
+ *
+ * Note:
+ * - While the order of inputs/outputs to GMT6GradOp is fixed, autodiff
+ *   decides the order of the backwards graph inputs/outputs, depending on
+ *   parameters passed to it.
+ * - The GMT6GradOp does not require A/out1 to produce gradients for it's
+ *   inputs. In terms of activations, it only needs A/in1.
+ **/
+class GraphTestModel6 : public GraphTestModel {
+public:
+  GraphTestModel6();
+
+private:
+  class GTM6Op;
+  class GTM6GradOp;
+};
+
+/**
  * Repeated 4 times with varying shapes and remote buffer IDs:
  *
  *  (InitOp)              (InitOp)

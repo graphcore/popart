@@ -1,14 +1,19 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import re
-
+import pytest
 import numpy as np
 
 import popart._internal.ir as _ir
 import popart.ir as pir
 import popart.ir.ops as ops
 
+from popart.ir.transforms.autodiff import ExpectedConnectionType
 
-def test_subgraph():
+
+@pytest.mark.parametrize(
+    "gradsRequiredFun",
+    [lambda fwd: [fwd.W, fwd.b], lambda fwd: [fwd.b, fwd.W]])
+def test_subgraph(gradsRequiredFun):
     class ScaleNShift(pir.Module):
         def __init__(self):
             self.W: pir.Tensor = None
@@ -50,7 +55,16 @@ def test_subgraph():
     assert len(ss_graph.get_input_tensors()) == 3
     assert len(ss_graph.get_output_tensors()) == 1
 
-    ss_bwd_info = pir.transforms.autodiff(ss_graph)
+    grads_required = gradsRequiredFun(ss)
+    ss_bwd_info = pir.transforms.autodiff(ss_graph,
+                                          grads_required=grads_required)
+
+    # Check expected outputs matches gradsRequired and that they are
+    # in the same order.
+    assert len(ss_bwd_info.expected_outputs) == len(grads_required)
+    for exp_out, grad in zip(ss_bwd_info.expected_outputs, grads_required):
+        assert exp_out.connection_type == ExpectedConnectionType.FwdGrad
+        assert exp_out.fwd_tensor == grad
 
     # Check an additional output has been added to the fwd graph.
     assert len(ss_graph.get_output_tensors()) == 2

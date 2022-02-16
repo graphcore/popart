@@ -34,7 +34,7 @@
 # * Please put the c++ unittests for a file
 #   'willow/src/somedir1/somedir2/file.cpp' in a file called
 #   'tests/unittests/willow/somedir1/somedir2/test_file.cpp' and give it a ctest
-#   name of 'unittest_willow_somedir1_somedir2_file'. 
+#   name of 'unittest_willow_somedir1_somedir2_file'.
 # * Please put the python unittests for a file
 #   'python/somedir1/somedir2/file.py' in a file called
 #   'tests/unittests/python/somedir1/somedir2/test_file.py' and give it a ctest
@@ -89,7 +89,7 @@ add_popart_cpp_unit_test(unittest_ir_remove_isolated_graphs ir/remove_isolated_g
 
 add_popart_cpp_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regression_tests.cpp)
 
-add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util)
+add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_overlapio transforms/unittest_overlapio.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_mainloops transforms/unittest_mainloops.cpp VARIANTS Cpu)
 add_popart_cpp_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)

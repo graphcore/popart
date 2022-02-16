@@ -19,6 +19,8 @@
 #include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
+#include <popart/op/sgd0varupdate.hpp>
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
@@ -27,6 +29,7 @@
 #undef private
 
 #include <testutil/irquery/irquery.hpp>
+#include <testutil/test_graphs/graph_test_models.hpp>
 
 using namespace popart;
 using namespace popart::irquery;
@@ -1670,4 +1673,84 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
       ExpectC1::No,
       ExpectC2::No,
       ExpectC3::No);
+}
+
+BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
+
+  /**
+   * Create a GraphTestModel6, autodiff subgraph "A" with specific values
+   * for gradsProvided and gradsRequired, and check that:
+   * - expected outputs of the backwards graph match gradsRequired exactly.
+   **/
+  auto testGtm6 = [](std::vector<OutIndex> gradsProvidedAsFwdGraphOutputIndex,
+                     std::vector<InIndex> gradsRequiredAsFwdGraphInputIndex) {
+    GraphTestModel6 gtm6;
+    auto &ir = gtm6.getIr();
+
+    GraphId fwdGraphId("A");
+
+    // Get tensorIds.
+    auto &subgraphA = ir.getGraph(fwdGraphId);
+
+    // Transform output indices to gradsProvided TensorIds.
+    Autodiff::TensorIds gradsProvided;
+    std::transform(gradsProvidedAsFwdGraphOutputIndex.begin(),
+                   gradsProvidedAsFwdGraphOutputIndex.end(),
+                   std::back_inserter(gradsProvided),
+                   [&subgraphA](OutIndex i) -> TensorId {
+                     return subgraphA.getOutputId(i);
+                   });
+
+    // Transform input indices to gradsRequired TensorIds.
+    Autodiff::TensorIds gradsRequired;
+    std::transform(gradsRequiredAsFwdGraphInputIndex.begin(),
+                   gradsRequiredAsFwdGraphInputIndex.end(),
+                   std::back_inserter(gradsRequired),
+                   [&subgraphA](InIndex i) -> TensorId {
+                     return subgraphA.getInputId(i);
+                   });
+
+    // Instantiate test wrapper for ease of checking.
+    IrTestWrapper tw_ir{ir};
+    auto tw_fwdGraph = tw_ir.hasGraph(fwdGraphId, Require::MustBeTrue);
+
+    // Apply autodiff.
+    Autodiff autodiff;
+    auto result = autodiff.apply(ir,
+                                 fwdGraphId,
+                                 gradsProvided,
+                                 gradsRequired,
+                                 FwdGraphToBwdGraphInfo(),
+                                 AutodiffStitchStrategy::SafeAddFwdOutputs);
+
+    BwdGraphInfo &bwdGraphInfo = result.at(fwdGraphId);
+    auto tw_bwdGraph =
+        tw_ir.hasGraph(bwdGraphInfo.bwdGraphId, Require::MustBeTrue);
+
+    // Check outputs of grad graph match the gradsRequired param.
+    BOOST_REQUIRE(bwdGraphInfo.expectedOutputs.size() == gradsRequired.size());
+    for (size_t i = 0; i < gradsRequired.size(); ++i) {
+      BOOST_REQUIRE(bwdGraphInfo.expectedOutputs[i].type ==
+                    popart::ExpectedConnectionType::FwdGrad);
+      BOOST_REQUIRE(bwdGraphInfo.expectedOutputs[i].fwdId == gradsRequired[i]);
+    }
+  };
+
+  // Convenience index definitions for various GraphTestModel6 inputs.
+  InIndex a_in0 = 0;
+  InIndex a_in1 = 1;
+  InIndex a_in2 = 2;
+
+  // Convenience index definitions for various GraphTestModel6 outputs.
+  OutIndex a_out0 = 0;
+  // OutIndex a_out1 = 1;
+  OutIndex a_out2 = 2;
+
+  // Check that expected outputs follows gradsRequired order.
+  testGtm6({a_out0, a_out2}, {a_in0, a_in1, a_in2});
+  testGtm6({a_out0, a_out2}, {a_in1, a_in2, a_in0});
+  testGtm6({a_out0, a_out2}, {a_in2, a_in1, a_in0});
+
+  // Check that expected outputs follows gradsRequired if a subset.
+  testGtm6({a_out0, a_out2}, {a_in2, a_in0});
 }

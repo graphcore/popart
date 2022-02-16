@@ -270,9 +270,20 @@ def autodiff(graph: Graph,
         Any Tensors in the forward graph that are needed to compute the gradients will be added as outputs
         to the forward graph (if not already an input/output).
 
-        The returned `GradGraphInfo` contains the gradient graph and information regarding all required inputs
-        to the gradient graph. This can include tensors which are outputs of the forward graph `ExpectedConnectionType.Fwd`,
-        or a gradient of an output of the forwards graph `ExpectedConnectionType.FwdGrad`.
+        The returned `GradGraphInfo` contains the gradient graph and information
+        regarding the graph inputs (`expected_inputs`) and (`graph outputs`) of
+        the gradient graph. These are lists of tuples where the first element is
+        either `ExpectedConnectionType.Fwd` or `ExpectedConnectionType.FwdGrad`
+        meaning the input/output is associated with a tensor in the forward
+        graph, or the gradient of a tensor in the forward graph, respectively.
+        The second element is a tensor of the forward graph itself. These
+        tensors are guaranteed to be either inputs or outputs of the forward
+        graph.
+
+        The `expected_outputs` list that describes the gradient graph's outputs
+        is guaranteed to comprise only `ExpectedConnectionType.FwdGrad` entries
+        and has entries that exactly match the size and order of the
+        `grads_required` parameter.
 
         Any graphs called in the forward graph will recursively have `autodiff` called on it. Arg `called_graphs_grad_info` can be
         used to specify the result of `autodiff` on a called graph that has already been differentiated.
