@@ -929,11 +929,11 @@ void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
   int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
                 RngStateLowering::rngStateSizePerWorker *
                 RngStateLowering::numRngStateTensors;
-  if (rngState.size() != rngSize) {
+  if (rngState.size() != rngSize * getReplicationFactor()) {
     throw runtime_error("Devicex::setRngStateValue received rngState of size "
                         "{}; was expecting size {}",
                         rngState.size(),
-                        rngSize);
+                        rngSize * getReplicationFactor());
   }
   const uint32_t *seed_ptr = rngState.data();
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
