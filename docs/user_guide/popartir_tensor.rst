@@ -9,13 +9,14 @@ There are three types of tensors in ``popart.ir``:
 
 An intermediate tensor is the output of an operation.
 Variables and constants are initialised with data.
-For instance, in the example :ref:`Tensor addition example <tensor_addition_code>`, ``a`` is a variable tensor,
+For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable tensor,
 ``b`` is a constant tensor, and ``o`` is an intermediate tensor.
 
 
 .. literalinclude:: files/tensor_addition_popart_ir.py
   :language: python
   :name: tensor_addition_code
+  :caption: Example of tensor addition
   :start-after: Op begin
   :end-before: Op end
 
@@ -24,26 +25,28 @@ For instance, in the example :ref:`Tensor addition example <tensor_addition_code
     :download:`files/tensor_addition_popart_ir.py`
 
 Constant
-""""""""
+........
+
 A constant tensor is initialised with data during graph creation.
 This tensor cannot change during the runtime of a model.
-You can also use python numeric literals in `popart.ir`.
+You can also use Python numeric literals in ``popart.ir``.
 These literals are implicitly converted to constant tensors.
-That is, these lines
+That is, this:
 
 .. code-block:: python
 
   b = pir.constant(1, dtype=pir.int8, name="constant_b")
   o = a + b
 
-can also be writen as
+can also be written as:
 
 .. code-block:: python
 
   o = a + 1
 
 Variable
-""""""""
+........
+
 A variable tensor represents trainable parameters in a model
 or non-trainable optimizer states.
 You create and initialize variable tensors in the main graph scope.
@@ -60,7 +63,8 @@ from the host before running the graph by using ``session.weightsFromHost()``.
 
 
 Intermediate
-""""""""""""
+............
+
 An intermediate tensor is produced by an operation, which means it is not initialised
 with data. It stays live in IPU memory from when it is produced until the last time
 it is consumed.
