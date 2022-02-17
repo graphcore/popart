@@ -42,7 +42,7 @@ class Linear(pir.Module):
             self.b = subgraph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         # TODO: T49312 Add a helper that returns tensors from a subgraph as a mapping
-        return y, self.W, self.b
+        return y
 
 
 class LinearHostLoad(pir.Module):
@@ -62,7 +62,7 @@ class LinearHostLoad(pir.Module):
             self.b = subgraph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         ops.host_store(self.d2h, y)
-        return y, self.W, self.b
+        return y
 
 
 def run_ir(ir: pir.Ir, bps: int, y_id: str,
@@ -128,7 +128,7 @@ class TestRepeat:
             a = pir.variable(1)
 
             id_graph = ir.create_graph(id_fn, a)
-            b = ops.repeat(id_graph, repeat_count, a)
+            b, = ops.repeat(id_graph, repeat_count, a)
 
         # 2 tensors
         assert len(g.get_tensors()) == 2
@@ -156,7 +156,7 @@ class TestRepeat:
 
             def build(self, x):
                 self.w = pir.subgraph_input(x.shape, x.dtype, "w")
-                return self.w + x, self.w
+                return self.w + x
 
         with g:
             w0 = pir.variable(1, name="w0")
@@ -167,19 +167,19 @@ class TestRepeat:
             add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
             # First call site
-            _, w0 = ops.repeat(add_weight_graph0,
-                               repeat_count,
-                               x0,
-                               subgraph_in_to_parent_in={add_weight0.w: w0})
+            ops.repeat(add_weight_graph0,
+                       repeat_count,
+                       x0,
+                       subgraph_in_to_parent_in={add_weight0.w: w0})
 
             # Second call site of same graph
             w1 = pir.variable(1, name="w1")
             x1 = pir.variable(1, name="x1")
 
-            _, w1 = ops.repeat(add_weight_graph0,
-                               repeat_count,
-                               x1,
-                               subgraph_in_to_parent_in={add_weight0.w: w1})
+            ops.repeat(add_weight_graph0,
+                       repeat_count,
+                       x1,
+                       subgraph_in_to_parent_in={add_weight0.w: w1})
 
             # Second graph from new instance of module.
             # ir.create_graph should be able to create a new unique Graph name.
@@ -187,10 +187,10 @@ class TestRepeat:
             add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
-            _, w1 = ops.repeat(add_weight_graph1,
-                               repeat_count,
-                               x0,
-                               subgraph_in_to_parent_in={add_weight1.w: w1})
+            ops.repeat(add_weight_graph1,
+                       repeat_count,
+                       x0,
+                       subgraph_in_to_parent_in={add_weight1.w: w1})
 
             # Third graph that reuses module add_weight1.
             # This calls `build` again, and thus simply overwrites add_weight1.w
@@ -201,15 +201,15 @@ class TestRepeat:
             assert old_w1_id != add_weight1.w.id
 
             # Call third graph. Reuse x1 and w0 as inputs.
-            _, w0 = ops.repeat(add_weight_graph2,
-                               repeat_count,
-                               x1,
-                               subgraph_in_to_parent_in={add_weight1.w: w0})
+            ops.repeat(add_weight_graph2,
+                       repeat_count,
+                       x1,
+                       subgraph_in_to_parent_in={add_weight1.w: w0})
 
         # Test main graph
-        # 4 vars + y0 + y1 + y2 + y3 + 4 * subgraph output weights.
+        # 4 vars + y0 + y1 + y2 + y3.
         # 4 call sites total
-        assert len(g.get_tensors()) == 12
+        assert len(g.get_tensors()) == 8
         assert len(g.get_variables()) == 4
         assert num_op_of_type("Loop", _ir.op.LoopOp, g) == 4
 
@@ -251,10 +251,10 @@ class TestRepeat:
             add_one = AddOne()
             add_one_graph = ir.create_graph(add_one, one)
 
-            y = ops.repeat(add_one_graph,
-                           repeat_count,
-                           one,
-                           subgraph_in_to_parent_in={})
+            y, = ops.repeat(add_one_graph,
+                            repeat_count,
+                            one,
+                            subgraph_in_to_parent_in={})
 
             d2h = pir.d2h_stream(y.shape, pir.dtypes.int32, name="y_stream")
             ops.host_store(d2h, y)
@@ -287,13 +287,13 @@ class TestRepeat:
             linear = Linear()
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
-            y, W, b = ops.repeat(linear_graph,
-                                 repeat_count,
-                                 x,
-                                 subgraph_in_to_parent_in={
-                                     linear.W: W,
-                                     linear.b: b
-                                 })
+            y, = ops.repeat(linear_graph,
+                            repeat_count,
+                            x,
+                            subgraph_in_to_parent_in={
+                                linear.W: W,
+                                linear.b: b
+                            })
             y_d2h = pir.d2h_stream((16, 16), pir.float32, name="y_stream")
             ops.host_store(y_d2h, y)
 
@@ -338,13 +338,13 @@ class TestRepeat:
             linear = LinearHostLoad()
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
-            y, W, b = ops.repeat(linear_graph,
-                                 repeat_count,
-                                 x,
-                                 subgraph_in_to_parent_in={
-                                     linear.W: W,
-                                     linear.b: b
-                                 })
+            y, = ops.repeat(linear_graph,
+                            repeat_count,
+                            x,
+                            subgraph_in_to_parent_in={
+                                linear.W: W,
+                                linear.b: b
+                            })
 
         data = np.random.random((repeat_count, 16, 16)).astype(np.float32)
         r_y = run_ir(ir,
@@ -388,6 +388,22 @@ class TestRepeat:
             assert e_info.value.args[0].startswith(
                 "Repeat trip count for repeat of")
 
+    def test_repeat_io_error(self):
+        """Test an error is thrown when len(inputs) < len(outputs)"""
+        ir = pir.Ir()
+        main = ir.main_graph()
+        with main:
+            x = pir.variable(1)
+
+            def fn(t):
+                return t + 1, t + 2
+
+            graph = ir.create_graph(fn, x)
+
+            with pytest.raises(ValueError) as e_info:
+                y, = ops.repeat(graph, 10, x)
+            assert e_info.value.args[0].startswith("To repeat the subgraph")
+
     def test_not_by_ref(self):
         ir = pir.Ir()
 
@@ -402,16 +418,16 @@ class TestRepeat:
             loop_info = ops.repeat_with_info(g, 10, v1, v2)
 
         assert len(g._by_ref_inputs) == 0
-        print(type(loop_info._op))
         assert not loop_info._op.modifiesIndex(
             2)  # Offset by 1 due to count and keep_going
         assert not loop_info._op.modifiesIndex(3)
 
-    def test_by_ref(self):
+    def test_repeat_by_ref_implicit(self):
         ir = pir.Ir()
 
-        def foo(x: TensorByRef, y: Tensor):
-            return ops.var_updates.accumulate_(x, y), y  # <- modifying op
+        def foo(x: Tensor, y: TensorByRef):
+            ops.var_updates.accumulate_(y, x)  # <- modifying op
+            return x
 
         with ir.main_graph():
             v1 = pir.variable(1)
@@ -421,7 +437,24 @@ class TestRepeat:
             loop_info = ops.repeat_with_info(g, 10, v1, v2)
 
         assert len(g._by_ref_inputs) == 1
-        print(type(loop_info._op))
-        assert loop_info._op.modifiesIndex(
-            2)  # Offset by 1 due to count and keep_going
+        # Offset by 2 due to count and keep_going
+        assert not loop_info._op.modifiesIndex(2)
+        assert loop_info._op.modifiesIndex(3)
+
+    def test_repeat_by_ref_explicit(self):
+        ir = pir.Ir()
+
+        def foo(x: TensorByRef, y: Tensor):
+            return x + y  # <- non-modifying op
+
+        with ir.main_graph():
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1, v2)
+            loop_info = ops.repeat_with_info(g, 10, v1, v2)
+
+        assert len(g._by_ref_inputs) == 1
+        # Offset by 2 due to count and keep_going
+        assert loop_info._op.modifiesIndex(2)
         assert not loop_info._op.modifiesIndex(3)

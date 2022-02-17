@@ -108,20 +108,25 @@ class SubgraphOpInfo:
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
 
-    def set_op_input_modified(self, op_tensor: Tensor):
+    def set_op_input_modified(self,
+                              op_tensor: Tensor,
+                              infer_modified_regions: bool = True):
         """Specify that the input tensor `op_tensor` is modified by the call op.
             this will guarentee that any modification to the graph input during the execution
             of the called graph will also change `op_tensor`.
-            The regions modified by the call op will be specified by the Ops in the called graph.
 
         Args:
             op_tensor (Tensor): Tensor to be modified.
+            infer_modified_regions (bool): Set the modified regions from the Ops in the called graph.
         """
         index = self._op.inIndex(op_tensor._pb_tensor)
         _graph = self._op.getCalledGraph()
         _sg_tensor = _graph.getInputTensor(
             self.op_in_to_subgraph_in_index(index))
-        _regions = _sg_tensor.modifiedRegionsByOps(_graph.getOps())
+        if infer_modified_regions:
+            _regions = _sg_tensor.modifiedRegionsByOps(_graph.getOps())
+        else:
+            _regions = [_ir.view.Region.getFull(op_tensor.shape)]
         self._op.addModified(index, _regions)
 
 

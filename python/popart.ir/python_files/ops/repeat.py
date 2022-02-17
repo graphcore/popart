@@ -11,16 +11,19 @@ from .utils import check_in_graph
 
 
 @op_debug_context
-def repeat(repeat_subgraph: Graph,
+def repeat(subgraph: Graph,
            repeat_count: int,
            *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
            subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
-           ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
+           ) -> Tuple[Tensor, ...]:
     """
     Repeatedly executes a subgraph.
 
     This operation repeatedly executes a subgraph `repeat_trip_count` number of times. The
     provided input tensors are provided as graph inputs for the first iteration.
+
+    Between each execution of the subgraph, the N outputs of subgraph will be copied to the first N inputs.
+    These are called Loop Carried. The number of outputs must be less than or equal to the number of inputs.
 
     Implementation detail: In order to maintain the input / output indices of the subgraph, we must
         call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
@@ -29,17 +32,17 @@ def repeat(repeat_subgraph: Graph,
     .. code-block:: none
 
                     LoopOp         Keep
-                        |          Going     User
+                        |          Going  Loop Carried
                         |  Iterator  |      Inputs
-                        |     |      |      | | |
-                        V     V      V      V V V
-                        .-Wrapper_subgraph--+-+-+----------.
-        Parent graph    |                   | | |          |
-                        |                   | | |          |
-                        |                   | | |          |
-                        |                   V V V          |
-                        | CallOp .-Loop_subgraph---.       |
-                        |    |   | (user provided) |       |
+                        |     |      |      | | |    |- Implicit Inputs
+                        V     V      V      V V V    V
+                        .-Wrapper_subgraph--+-+-+----+-----.
+        Parent graph    |                   | | |    |     |
+                        |                   | | |    |     |
+                        |                   | | |    |     |
+                        |                   V V V    |     |
+                        | CallOp .-Loop_subgraph---. |     |
+                        |    |   | (user provided) |<-     |
                         |    '-->|                 |       |
                         |        |     (Ops)       |       |
                         |        |                 |       |
@@ -51,11 +54,11 @@ def repeat(repeat_subgraph: Graph,
                             |               | | |
                             |               | | |
                             V               V V V
-                            Keep            User outputs
-                        Going
+                            Keep         Loop Carried
+                        Going              Outputs
 
     Args:
-        repeat_subgraph (Graph): User defined graph to repeat `repeat_count` times.
+        subgraph (Graph): User defined graph to repeat `repeat_count` times.
         repeat_count (int): Number of times to repeat the subgraph.
         *subgraph_fn_param_inputs  (Tensor, List[Tensor]):
             parent tensors that correspond to the inputs of the callable passed
@@ -72,18 +75,13 @@ def repeat(repeat_subgraph: Graph,
 
     Throws:
         ValueError: If repeat_count <= 1.
-        ValueError: If the number of explicitly passed inputs + the number of loop created inputs
-            != the number of outputs.
+        ValueError: If the number of subgraph inputs < subgraph outputs.
 
     Returns:
-        None: If `subgraph` has no output tensors.
-        Tensor:
-            The output tensor of the call in the parent graph, if `subgraph` has
-            exactly 1 output.
         Tuple[Tensor, ...]:
-            Tuple of the output tensors of the call in the parent graph, if
-            #subgraph has >1 outputs. The tensors will be in ascending order of
-            the graph output index of the corresponding subgraph tensor.
+            Tuple of the output tensors of the call in the parent graph.
+            The tensors will be in ascending order of the graph output
+            index of the corresponding subgraph tensor.
 
 
     Example:
@@ -97,42 +95,33 @@ def repeat(repeat_subgraph: Graph,
 
         def build(self, x):
             self.w = pir.subgraph_input(x.shape, x.dtype, "w")
-            return self.w + x, w
+            return self.w + x
 
         with g: # a graph
             add_weight0 = AddWeight()
             add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
             # repeat 8 times
-            y0, w0 = ops.repeat(add_weight_graph0,
-                                8,
-                                x0,
-                                subgraph_in_to_parent_in={add_weight0.w: w0})
+            y0, = ops.repeat(add_weight_graph0,
+                             8,
+                             x0,
+                             subgraph_in_to_parent_in={add_weight0.w: w0})
     """
     loop_info = repeat_with_info(
-        repeat_subgraph,
+        subgraph,
         repeat_count,
         *subgraph_fn_param_inputs,
         subgraph_in_to_parent_in=subgraph_in_to_parent_in)
 
-    out_tensors = loop_info.get_output_tensors()
-
-    # Return nothing if no outputs.
-    if len(out_tensors) == 0:
-        return None
-    # Return single tensor if only one output.
-    if len(out_tensors) == 1:
-        return out_tensors[0]
-    # Return tuple of output tensors if multiple outputs.
-    return out_tensors
+    return loop_info.get_output_tensors()
 
 
 def repeat_with_info(
         subgraph: Graph,
         repeat_count: int,
         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
-        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
-        check_inputs: bool = True) -> SubgraphOpInfo:
+        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
+) -> SubgraphOpInfo:
     """
     Repeatedly executes a subgraph and returns information about the callsite.
 
@@ -142,7 +131,7 @@ def repeat_with_info(
     Returns SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
 
     Args:
-        repeat_subgraph (Graph): User defined graph to repeat `repeat_count` times.
+        subgraph (Graph): User defined graph to repeat `repeat_count` times.
         repeat_count (int): Number of times to repeat the subgraph.
         *subgraph_fn_param_inputs (Tensor, List[Tensor]):
             parent tensors that correspond to the inputs of the callable passed
@@ -198,16 +187,12 @@ def repeat_with_info(
             subgraph_fn_param_inputs_flat.append(x)
 
     # The loop op requires the same number of inputs as outputs.
-    if check_inputs and (
-            len(subgraph_fn_param_inputs_flat) + len(subgraph_in_to_parent_in)
-            != len(pb_bottom_graph.getOutputIds())):
+    total_inputs = len(subgraph.get_input_tensors())
+    total_outputs = len(subgraph.get_output_tensors())
+    if total_inputs < total_outputs:
         raise ValueError(
-            f"The number of passed inputs ({len(subgraph_fn_param_inputs_flat)}):"
-            f" {[t.id for t in subgraph_fn_param_inputs_flat]}\n"
-            f" + the number of mapped inputs ({len(subgraph_in_to_parent_in)}):"
-            f" {[t.id for t in subgraph_in_to_parent_in.values()]}\n"
-            f" must equal to the number of outputs ({len(pb_bottom_graph.getOutputIds())}):"
-            f" {pb_bottom_graph.getOutputIds()}")
+            f"To repeat the subgraph ({subgraph.id}) the number of inputs must be greater than or equal to the number of outputs."
+            f" {total_inputs} < {total_outputs}")
 
     # Create the middle graph, call and loop ops
     pb_middle_graph, pb_callop, pb_loop_op = _setup_call_and_repeat(
@@ -239,12 +224,17 @@ def repeat_with_info(
     c_info = SubgraphOpInfo(pb_callop)  # call info
 
     # Modified tensors for the called graph (bottom)
+    loop_carried_inputs = pb_loop_op.getNumExplicitInputs()
     for bottom_t in bottom_graph._by_ref_inputs:
         middle_t = c_info.subgraph_to_op_tensor(bottom_t)
+        loop_carried = pb_middle_graph.getInputIndex(
+            middle_t.id) < loop_carried_inputs
         # If a tensor was set as a by_ref_input, we should also do the same for the looped subgraph.
-        c_info.set_op_input_modified(middle_t)
+        c_info.set_op_input_modified(middle_t,
+                                     infer_modified_regions=not loop_carried)
         top_t = r_info.subgraph_to_op_tensor(middle_t)
-        r_info.set_op_input_modified(top_t)
+        r_info.set_op_input_modified(top_t,
+                                     infer_modified_regions=not loop_carried)
         r_info.called_graph._by_ref_inputs.add(middle_t)
 
     return r_info
@@ -382,16 +372,14 @@ def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
 
     outnames: List[str] = []
 
-    for pb_repeat_subgraph_out_id in pb_bottom_graph.getOutputIds():
+    for pb_subgraph_out_id in pb_bottom_graph.getOutputIds():
         top_tensor_id = _ir.addScope(
-            pb_top_graph,
-            _ir.removeScope(pb_bottom_graph, pb_repeat_subgraph_out_id))
+            pb_top_graph, _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id))
         # Already has scope added
-        middle_tensor_id = _ir.removeScope(pb_bottom_graph,
-                                           pb_repeat_subgraph_out_id)
+        middle_tensor_id = _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id)
         bottom_tensor_id = _ir.addScope(
             pb_bottom_graph,
-            _ir.removeScope(pb_bottom_graph, pb_repeat_subgraph_out_id))
+            _ir.removeScope(pb_bottom_graph, pb_subgraph_out_id))
 
         sgOutIdx = pb_bottom_graph.getOutputIndex(bottom_tensor_id)
         callOutIdx = pb_callop.subgraphOutToOpOutIndex(sgOutIdx)
