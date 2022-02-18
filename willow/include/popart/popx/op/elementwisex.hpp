@@ -124,14 +124,13 @@ public:
                                 const poplar::DebugNameAndId &,
                                 const std::string &) const = 0;
 
-  // Evaluate the operation in-place
-  // Assigns the result to the first tensor input
-  virtual void inplace(snap::program::Sequence &,
-                       snap::Graph &,
-                       const snap::Tensor &,
-                       const snap::Tensor &,
-                       const poplar::DebugNameAndId &,
-                       const std::string &) const = 0;
+  // Evaluate the operation in-place if possible
+  virtual snap::Tensor maybeInplace(snap::program::Sequence &,
+                                    snap::Graph &,
+                                    const snap::Tensor &,
+                                    const snap::Tensor &,
+                                    const poplar::DebugNameAndId &,
+                                    const std::string &) const = 0;
 
 private:
   InplacePolicy inplacePolicy;

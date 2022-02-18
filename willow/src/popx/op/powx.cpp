@@ -5,6 +5,7 @@
 #include <popart/popx/op/powx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 
 namespace popart {
@@ -18,25 +19,17 @@ snap::Tensor PowComputex::outplace(snap::program::Sequence &prog,
                                    const snap::Tensor &b,
                                    const poplar::DebugNameAndId &dnai,
                                    const std::string &debugStr) const {
-  return snap::Tensor{popops::pow(graph.getPoplarGraph(),
-                                  a.getPoplarTensor(),
-                                  b.getPoplarTensor(),
-                                  prog.getPoplarSequence(),
-                                  {dnai, debugStr}),
-                      graph};
+  return snap::popops::pow(graph, a, b, prog, {dnai, debugStr});
 }
 
-void PowComputex::inplace(snap::program::Sequence &prog,
-                          snap::Graph &graph,
-                          const snap::Tensor &tInOut,
-                          const snap::Tensor &tIn,
-                          const poplar::DebugNameAndId &dnai,
-                          const std::string &debugStr) const {
-  popops::powInPlace(graph.getPoplarGraph(),
-                     tInOut.getPoplarTensor(),
-                     tIn.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, debugStr});
+snap::Tensor PowComputex::maybeInplace(snap::program::Sequence &prog,
+                                       snap::Graph &graph,
+                                       const snap::Tensor &tInOut,
+                                       const snap::Tensor &tIn,
+                                       const poplar::DebugNameAndId &dnai,
+                                       const std::string &debugStr) const {
+  return snap::popops::powMaybeInPlace(
+      graph, tInOut, tIn, prog, {dnai, debugStr});
 }
 
 PowOpx::PowOpx(Op *op, Devicex *devicex)
