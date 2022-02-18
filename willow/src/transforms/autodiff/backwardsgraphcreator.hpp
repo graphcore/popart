@@ -46,7 +46,7 @@ public:
   virtual BwdGraphInfo
   createBackwardsGraph(const Graph &fwdGraph,
                        const GraphId &bwdGraphId,
-                       const TensorIds &gradsProvidedForFwdId,
+                       const nonstd::optional<TensorIds> &gradsProvidedForFwdId,
                        const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                        const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 

@@ -280,6 +280,10 @@ def autodiff(graph: Graph,
         tensors are guaranteed to be either inputs or outputs of the forward
         graph.
 
+        The `expected_inputs` list that describes the gradient graph's inputs
+        is guaranteed to start with `ExpectedConnectionType.FwdGrad` entries
+        that exactly match order of the `grads_provided` parameter.
+
         The `expected_outputs` list that describes the gradient graph's outputs
         is guaranteed to comprise only `ExpectedConnectionType.FwdGrad` entries
         and has entries that exactly match the size and order of the

@@ -34,7 +34,7 @@ void guardAllIdsInFwdGraph(const Graph &g,
 BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
     const Graph &fwdGraph,
     const GraphId &bwdGraphId,
-    const TensorIds &gradsProvidedForFwdId,
+    const nonstd::optional<TensorIds> &gradsProvidedForFwdId,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
@@ -56,7 +56,9 @@ BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
                 fwdGraph.id);
   }
 
-  guardAllIdsInFwdGraph(fwdGraph, gradsProvidedForFwdId, "gradsProvided");
+  if (gradsRequiredForFwdId.has_value()) {
+    guardAllIdsInFwdGraph(fwdGraph, *gradsProvidedForFwdId, "gradsRequired");
+  }
   if (gradsRequiredForFwdId.has_value()) {
     guardAllIdsInFwdGraph(fwdGraph, *gradsRequiredForFwdId, "gradsRequired");
   }

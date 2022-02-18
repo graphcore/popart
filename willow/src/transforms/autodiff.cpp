@@ -54,7 +54,7 @@ bool Autodiff::applyToIr(Ir &ir) const {
 FwdGraphToBwdGraphInfo
 Autodiff::apply(Ir &ir,
                 const GraphId &fwdGraphId,
-                const TensorIds &gradsProvidedForTensors,
+                const nonstd::optional<TensorIds> &gradsProvidedForTensors,
                 const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                 const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
                 AutodiffStitchStrategy stitchStrategy) {
@@ -72,7 +72,7 @@ Autodiff::apply(Ir &ir,
 BwdGraphInfo Autodiff::createBwdGraph(
     Ir &ir,
     const GraphId &fwdGraphId,
-    const TensorIds &gradsProvidedForTensors,
+    const nonstd::optional<TensorIds> &gradsProvidedForTensors,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 

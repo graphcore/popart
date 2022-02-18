@@ -1675,15 +1675,20 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
       ExpectC3::No);
 }
 
-BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
+/**
+ * Create a GraphTestModel6, autodiff subgraph "A" with specific values
+ * for gradsProvided and gradsRequired, and check that:
+ * - expected outputs of the backwards graph match gradsRequired exactly.
+ * - expected inputs of the backwards graph start with gradsProvided.
+ **/
+void testGtm6(const std::vector<OutIndex> &gradsProvidedAsFwdGraphOutputIndex,
+              const std::vector<InIndex> &gradsRequiredAsFwdGraphInputIndex) {
 
-  /**
-   * Create a GraphTestModel6, autodiff subgraph "A" with specific values
-   * for gradsProvided and gradsRequired, and check that:
-   * - expected outputs of the backwards graph match gradsRequired exactly.
-   **/
-  auto testGtm6 = [](std::vector<OutIndex> gradsProvidedAsFwdGraphOutputIndex,
-                     std::vector<InIndex> gradsRequiredAsFwdGraphInputIndex) {
+  for (auto stitchStrat : {AutodiffStitchStrategy::AddFwdOutputs,
+                           AutodiffStitchStrategy::SafeAddFwdOutputs,
+                           AutodiffStitchStrategy::RecomputeAllNonInputs,
+                           AutodiffStitchStrategy::RecomputeMinimal}) {
+
     GraphTestModel6 gtm6;
     auto &ir = gtm6.getIr();
 
@@ -1710,6 +1715,11 @@ BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
                      return subgraphA.getInputId(i);
                    });
 
+    // Log what we are testing.
+    BOOST_TEST_MESSAGE("Stitch strategy: " << stitchStrat);
+    BOOST_TEST_MESSAGE("Provided grads:  " << gradsProvided);
+    BOOST_TEST_MESSAGE("Required grads:  " << gradsRequired);
+
     // Instantiate test wrapper for ease of checking.
     IrTestWrapper tw_ir{ir};
     auto tw_fwdGraph = tw_ir.hasGraph(fwdGraphId, Require::MustBeTrue);
@@ -1721,7 +1731,7 @@ BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
                                  gradsProvided,
                                  gradsRequired,
                                  FwdGraphToBwdGraphInfo(),
-                                 AutodiffStitchStrategy::SafeAddFwdOutputs);
+                                 stitchStrat);
 
     BwdGraphInfo &bwdGraphInfo = result.at(fwdGraphId);
     auto tw_bwdGraph =
@@ -1734,7 +1744,18 @@ BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
                     popart::ExpectedConnectionType::FwdGrad);
       BOOST_REQUIRE(bwdGraphInfo.expectedOutputs[i].fwdId == gradsRequired[i]);
     }
-  };
+
+    // Check inputs of grad graph start with gradsProvided param.
+    BOOST_REQUIRE(bwdGraphInfo.expectedInputs.size() >= gradsProvided.size());
+    for (size_t i = 0; i < gradsProvided.size(); ++i) {
+      BOOST_REQUIRE(bwdGraphInfo.expectedInputs[i].type ==
+                    popart::ExpectedConnectionType::FwdGrad);
+      BOOST_REQUIRE(bwdGraphInfo.expectedInputs[i].fwdId == gradsProvided[i]);
+    }
+  }
+}
+
+BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
 
   // Convenience index definitions for various GraphTestModel6 inputs.
   InIndex a_in0 = 0;
@@ -1753,4 +1774,25 @@ BOOST_AUTO_TEST_CASE(autodiff_check_expected_output_guarantee) {
 
   // Check that expected outputs follows gradsRequired if a subset.
   testGtm6({a_out0, a_out2}, {a_in2, a_in0});
+}
+
+BOOST_AUTO_TEST_CASE(autodiff_check_expected_input_guarantee) {
+
+  // Convenience index definitions for various GraphTestModel6 inputs.
+  InIndex a_in0 = 0;
+  InIndex a_in1 = 1;
+  InIndex a_in2 = 2;
+
+  // Convenience index definitions for various GraphTestModel6 outputs.
+  OutIndex a_out0 = 0;
+  OutIndex a_out1 = 1;
+  OutIndex a_out2 = 2;
+
+  // Check that expected inputs follows gradsProvided order.
+  testGtm6({a_out0, a_out2}, {a_in0, a_in1, a_in2});
+  testGtm6({a_out2, a_out0}, {a_in0, a_in1, a_in2});
+
+  // NOTE: a_out1 isn't needed here, but autodiff has to preserve it because
+  // the user provided it. There should be a warning.
+  testGtm6({a_out0, a_out1, a_out2}, {a_in0, a_in1, a_in2});
 }

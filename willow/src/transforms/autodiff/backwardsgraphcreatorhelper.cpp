@@ -27,15 +27,34 @@ BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(const Graph &fwdGraph_,
     : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_) {}
 
 BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
-    const TensorIds &gradsProvidedForFwdId,
+    const nonstd::optional<TensorIds> &gradsProvidedForFwdId,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
-  growGradGraph(
-      gradsProvidedForFwdId, gradsRequiredForFwdId, calledGraphsGradInfo);
+  // Set `gradsProvided` to the list of available gradients of ouputs of the
+  // forward graph. If `gradsProvidedForFwdId` is explicitly provided, use it.
+  // If not, add each output of the forward graph and we will prune
+  // unneeded ones in the `doPrune` call.
+  auto gradsProvided = gradsProvidedForFwdId.has_value()
+                           ? *gradsProvidedForFwdId
+                           : fwdGraph.getOutputIds();
 
-  // Remove fwd ops from bwdGraph that we don't need.
-  doPrune(bwdGraph);
+  growGradGraph(gradsProvided, gradsRequiredForFwdId, calledGraphsGradInfo);
+
+  // Remove fwd ops from bwdGraph that we don't need. Do not allow removing
+  // explicitly provided inputs from gradsProvided.
+  std::vector<InIndex> inputIndices;
+  inputIndices.resize(gradsProvided.size());
+  std::iota(inputIndices.begin(), inputIndices.end(), 0);
+
+  if (gradsProvidedForFwdId.has_value()) {
+    // Do not remove explicitly provided inputs, warn instead.
+    doPrune(
+        bwdGraph, inputIndices, WarnIfProtectedInputCouldHaveBeenRemoved::Yes);
+  } else {
+    // Remove whatever inputs we want, don't warn.
+    doPrune(bwdGraph, {}, WarnIfProtectedInputCouldHaveBeenRemoved::No);
+  }
 
   return makeGradInfo();
 }
@@ -133,27 +152,30 @@ void BackwardsGraphCreatorHelper::growGradGraph(
   }
 
   // Create a gradient input tensor for each output tensor of fwdGraph
-  for (auto &scopedId : fwdGraph.getOutputIds()) {
-    if (std::find(gradsProvidedForFwdId.begin(),
-                  gradsProvidedForFwdId.end(),
-                  scopedId) != gradsProvidedForFwdId.end()) {
-      auto gradId   = fwdIdToBwdGradId(scopedId);
-      auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
-      bwdGraph.addInput(gradId, gradInfo);
-      gradTensorMap.insert({scopedId, gradId});
+  for (auto &gradProvided : gradsProvidedForFwdId) {
+    if (!fwdGraph.hasOutputId(gradProvided)) {
+      logging::warn("[Autodiff] Did not expect the gradient of '{}' to be "
+                    "provided to the backward graph of {} (it is not an "
+                    "output of this graph)",
+                    gradProvided,
+                    ncFwdGraph.getGraphString());
+    }
+    auto gradId   = fwdIdToBwdGradId(gradProvided);
+    auto gradInfo = fwdGraph.getTensors().get(gradProvided)->info;
+    bwdGraph.addInput(gradId, gradInfo);
+    gradTensorMap.insert({gradProvided, gradId});
 
-      gradNonGradTensors.push_back({bwdGraph.getTensors().get(gradId),
-                                    fwdGraph.getTensors().get(scopedId)});
+    gradNonGradTensors.push_back({bwdGraph.getTensors().get(gradId),
+                                  fwdGraph.getTensors().get(gradProvided)});
 
-      // Initialise FromLoss and ToLoss to ::Yes for all "losses"
-      auto t      = ncFwdGraph.getTensors().get(scopedId);
-      t->fromLoss = PathFromLoss::Yes;
-      t->toLoss   = PathToLoss::Yes;
-      if (t->hasProducer()) {
-        auto op      = t->getProducerUnsafe();
-        op->toLoss   = PathToLoss::Yes;
-        op->fromLoss = PathFromLoss::No;
-      }
+    // Initialise FromLoss and ToLoss to ::Yes for all "losses"
+    auto t      = ncFwdGraph.getTensors().get(gradProvided);
+    t->fromLoss = PathFromLoss::Yes;
+    t->toLoss   = PathToLoss::Yes;
+    if (t->hasProducer()) {
+      auto op      = t->getProducerUnsafe();
+      op->toLoss   = PathToLoss::Yes;
+      op->fromLoss = PathFromLoss::No;
     }
   }
 
@@ -315,12 +337,45 @@ TensorId BackwardsGraphCreatorHelper::getInputTensorId(
   }
   }
 }
-void BackwardsGraphCreatorHelper::doPrune(Graph &graph) {
+void BackwardsGraphCreatorHelper::doPrune(
+    Graph &graph,
+    const std::vector<InIndex> &protectedInputIndices,
+    WarnIfProtectedInputCouldHaveBeenRemoved warn) {
   using boost::range::find;
 
+  // Get output ids.
   const auto outputIds = graph.getOutputIds();
   auto isNotOutput     = [&outputIds](const TensorId &tId) {
     return find(outputIds, tId) == outputIds.end();
+  };
+
+  // Get protected input ids from input indices. Put them in a set.
+  std::set<TensorId> protectedInputIds;
+  for (InIndex index : protectedInputIndices) {
+    protectedInputIds.insert(graph.getInputId(index));
+  }
+
+  // Lambda for checking if an id is protected.
+  auto isProtectedInputId = [&](const TensorId &tId) {
+    return protectedInputIds.find(tId) != protectedInputIds.end();
+  };
+
+  // As the below is a fixed point computation, we are at risk of the same code
+  // emitting the same warning more than once. To avoid this, we keep track of
+  // which tensors we've given warnings for already.
+  std::set<TensorId> warningCache;
+  auto processProtectedInputId = [&](const TensorId &id) {
+    if (warn == WarnIfProtectedInputCouldHaveBeenRemoved::Yes) {
+      if (warningCache.find(id) == warningCache.end()) {
+        logging::warn("[Autodiff] Input '{}' of the backwards graph {} is "
+                      "not used but cannot be pruned because it was "
+                      "explicitly provided as an input (and removing it "
+                      "would break an autodiff post-condition).",
+                      id,
+                      graph.getGraphString());
+        warningCache.insert(id);
+      }
+    }
   };
 
   while (true) {
@@ -334,12 +389,16 @@ void BackwardsGraphCreatorHelper::doPrune(Graph &graph) {
     for (auto id : tensorIds) {
       auto tensor = graph.getTensors().get(id);
       if (tensor->consumers.getTotal() == 0 && isNotOutput(id)) {
-        if (tensor->hasProducer()) {
-          auto producer = tensor->getProducer();
-          producer->disconnectOutTensor(tensor);
+        if (isProtectedInputId(id)) {
+          processProtectedInputId(id);
+        } else {
+          if (tensor->hasProducer()) {
+            auto producer = tensor->getProducer();
+            producer->disconnectOutTensor(tensor);
+          }
+          tensors.remove(id);
+          continueLoop = true;
         }
-        tensors.remove(id);
-        continueLoop = true;
       }
     }
 

@@ -27,7 +27,7 @@ public:
   // Grow backwards pass for subgraph and all descendants.
   virtual FwdGraphToBwdGraphInfo
   growBackwardsGraph(const GraphId &fwdGraphId,
-                     const TensorIds &gradsProvidedForTensors,
+                     const nonstd::optional<TensorIds> &gradsProvidedForTensors,
                      const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
                      AutodiffStitchStrategy stitchStrategy) = 0;
@@ -81,7 +81,7 @@ public:
    */
   virtual FwdGraphToBwdGraphInfo
   growBackwardsGraph(const GraphId &fwdGraphId,
-                     const TensorIds &gradsProvidedForTensors,
+                     const nonstd::optional<TensorIds> &gradsProvidedForTensors,
                      const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo,
                      AutodiffStitchStrategy stitchStrategy) override;

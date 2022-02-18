@@ -48,13 +48,27 @@ public:
    * \return Return information about the backwards graph.
    */
   virtual BwdGraphInfo
-  populateBwdGraph(const TensorIds &gradsProvidedForFwdId,
+  populateBwdGraph(const nonstd::optional<TensorIds> &gradsProvidedForFwdId,
                    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
   virtual BwdGraphInfo makeGradInfo();
 
-  static void doPrune(Graph &);
+  /**
+   * Enum type used in `doPrune`.
+   **/
+  enum WarnIfProtectedInputCouldHaveBeenRemoved { No = 0, Yes = 1 };
+
+  /**
+   * Prune a backwards graph.
+   * \param graph The graph to prune.
+   * \param protectedInputIndices Graph input indices that must not be pruned.
+   * \param warn If yes, this function will emit a warning if a graph input
+   *     is not needed, but is listed in `protectedInputIndices`.
+   **/
+  static void doPrune(Graph &graph,
+                      const std::vector<InIndex> &protectedInputIndices,
+                      WarnIfProtectedInputCouldHaveBeenRemoved warn);
 
 private:
   void growGradGraph(const TensorIds &gradsProvidedForFwdId,

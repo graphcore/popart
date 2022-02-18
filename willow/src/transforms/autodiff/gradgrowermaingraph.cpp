@@ -43,9 +43,9 @@ void GradGrowerMainGraph::growGradMainGraph() {
     if (calledGraphGradInfo.find(g->id) == calledGraphGradInfo.end()) {
       calledGraphGradInfo = gradGraphGrower->growBackwardsGraph(
           g->id,
-          // Assume we provide all fwd outputs as gradients.
-          g->getOutputIds(),
-          // Require no fwd inputs as gradients as some won't be possible.
+          // Use whichever fwd outputs gradients we need.
+          nonstd::nullopt,
+          // Produce whatever fwd input gradients we can.
           nonstd::nullopt,
           calledGraphGradInfo,
           dep.get().getSessionOptions().autodiffSettings.stitchStrategy);

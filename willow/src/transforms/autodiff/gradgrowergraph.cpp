@@ -14,7 +14,7 @@ GradGrowerGraph::GradGrowerGraph(AutodiffIrInterface &dep)
 
 FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
     const GraphId &fwdGraphId,
-    const TensorIds &gradsProvidedForTensors,
+    const nonstd::optional<TensorIds> &gradsProvidedForTensors,
     const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_,
     AutodiffStitchStrategy stitchStrategy) {
@@ -45,12 +45,15 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
       // Create the backwards graph.
       logging::trace("[Autodiff] Creating backwards graph '{}'", bwdGraphId);
 
-      // For all but top-level graph, assume we have all grads available.
-      auto providedGrads = (fwdGraph.id == fwdGraphId)
-                               ? gradsProvidedForTensors
-                               : fwdGraph.getOutputIds();
+      // For all but top-level graph, use whichever gradients of forward graph
+      // outputs we need to produce whatever gradients of forward graph inputs
+      // we can. We do this by passing in nullopt.
+      auto providedGrads = (fwdGraph.id == fwdGraphId) ? gradsProvidedForTensors
+                                                       : nonstd::nullopt;
 
-      // We only have required tensors for the top-level graph.
+      // Only specify required tensors for the top-level graph (the user only
+      // provides this information for the top-level graph, and we dont know for
+      // subgraphs so we default to nullopt).
       auto requiredGrads =
           (fwdGraph.id == fwdGraphId) ? gradsRequiredForFwdId : nonstd::nullopt;
 
@@ -63,7 +66,7 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
 
       // Stitch backwards graph inputs.
       logging::trace("[Autodiff] Stitching backwards graph '{}'", bwdGraphId);
-      // Don't set filter, stitch all inputs.
+      // Don't set stitch inputs, rely on default behaviour.
       bwdGraphGradInfo = stitcher->stitch(fwdGraph.id, bwdGraphGradInfo, {});
 
       // Store the result info for parents graphs.

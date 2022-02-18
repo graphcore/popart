@@ -331,6 +331,14 @@ BOOST_AUTO_TEST_CASE(TestNonNullEmptyVectorRequiredGradsRaiseseError) {
                        nonstd::nullopt, // good: undefined vector
                        {},
                        AutodiffStitchStrategy::SafeAddFwdOutputs));
+
+  BOOST_REQUIRE_NO_THROW(
+      Autodiff{}.apply(ir,
+                       mg.id,
+                       nonstd::nullopt, // nullopt here is okay too
+                       nonstd::nullopt, // good: undefined vector
+                       {},
+                       AutodiffStitchStrategy::SafeAddFwdOutputs));
 }
 
 /**
@@ -745,10 +753,8 @@ BOOST_AUTO_TEST_CASE(TestSimpleBinaryOp) {
     // specifically requested, or if null was requested (compute as many as
     // possible). We expect it to be possible to compute these gradients (when
     // requested) based on the definition of SimpleBinaryOp and its grad ops.
-    const bool expectGrad_t0 =
-        requireGrad_t0 || (!requireGrad_t0 && !requireGrad_t1);
-    const bool expectGrad_t1 =
-        requireGrad_t1 || (!requireGrad_t0 && !requireGrad_t1);
+    const bool expectGrad_t0 = requireGrad_t0 || !requireGrad_t1;
+    const bool expectGrad_t1 = requireGrad_t1 || !requireGrad_t0;
 
     // In this case, Autodiff should produce the exact same graph regardless of
     // `specifyRequiredGrad`.

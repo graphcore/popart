@@ -26,6 +26,19 @@ BwdGraphInfo RecomputeStitcher::stitch(
   auto &fwdGraph = ir.getGraph(fwdGraphId);
   auto &bwdGraph = ir.getGraph(bwdGraphInfo.bwdGraphId);
 
+  // Derive a list of inputs that must not be pruned. We have no business
+  // removing inputs that aren't in the stitch parameter list. We need to
+  // compute this ahead of time, because some inputs get removed before
+  // we get to pruning.
+  std::vector<InIndex> protectedInputIndices;
+  const InIndex numIns = bwdGraphInfo.expectedInputs.size();
+  for (InIndex index = 0; index < numIns; ++index) {
+    if (std::find(stitchIndices.begin(), stitchIndices.end(), index) ==
+        stitchIndices.end()) {
+      protectedInputIndices.push_back(index);
+    }
+  }
+
   // Remove bwdGraph inputs that we're going to recompute.
   auto bwdGraphInputs = bwdGraph.getInputIds();
   for (InIndex i : stitchIndices) {
@@ -53,6 +66,12 @@ BwdGraphInfo RecomputeStitcher::stitch(
             fwdId,
             fwdGraph.getGraphString());
         bwdGraph.removeInput(bwdId);
+        // Any protected indices following the input we just removed are now
+        // one index earlier.
+        std::transform(protectedInputIndices.begin(),
+                       protectedInputIndices.end(),
+                       protectedInputIndices.begin(),
+                       [i](InIndex in) { return (in > i) ? (in - 1) : in; });
       } else {
         throw error("[RecomputeStitcher] Unable to stitch input #{} of "
                     "{} ('{}') because it is associated with forward tensor "
@@ -89,7 +108,12 @@ BwdGraphInfo RecomputeStitcher::stitch(
   // Copy everything from fwd to bwd.
   bwdGraph.copyFrom(
       fwdGraph, Graph::CopyInputMarkings::Yes, Graph::CopyOutputMarkings::No);
-  BackwardsGraphCreatorHelper::doPrune(bwdGraph);
+
+  BackwardsGraphCreatorHelper::doPrune(
+      bwdGraph,
+      protectedInputIndices,
+      BackwardsGraphCreatorHelper::WarnIfProtectedInputCouldHaveBeenRemoved::
+          No);
 
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
   return helper.makeGradInfo();
