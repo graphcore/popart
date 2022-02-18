@@ -32,7 +32,7 @@ Try to separate out tests that require parts on different devices. For example `
 
 Python unit tests are run using `pytest`; they can be ran directly with `pytest` via 
 ```
-pytest --forked test/.../<test_name>.py
+pytest test/.../<test_name>.py
 ```
 or via `ctest` and `test.sh` with
 ```
@@ -74,6 +74,6 @@ or whatever.
 
 To run `pytest` and specify a device type, use:
 ```
-TEST_TARGET=<variant> pytest --forked tests/../<test_name>.py
+TEST_TARGET=<variant> pytest tests/../<test_name>.py
 ```
 See existing tests for more info on how to use the `test_util` functions.

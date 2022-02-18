@@ -27,9 +27,9 @@ set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
 # Will enable all tests - note that you need to use '$<SEMICOLON>' not ';'
 set(ENABLED_TEST_VARIANTS "Cpu;IpuModel" CACHE STRING "Default (non-hw) test variants")
 
-# Use of the pytest tmpdir fixture leaves files in /tmp after running the tests. 
+# Use of the pytest tmpdir fixture leaves files in /tmp after running the tests.
 # By setting --basetemp when running pytest, we can set the temp directory to be
-# a subdirectory of the build directory, which will be cleared up with the build. 
+# a subdirectory of the build directory, which will be cleared up with the build.
 set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
 file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
 
@@ -107,7 +107,7 @@ function(link_boost target)
 endfunction()
 
 # Usage: add_test_exectuable(<exe_name> <src1> ... TESTUTILS <util1> ...)
-# 
+#
 # `exe_name`: name of executable.
 #
 # `TESTUTILS`, optional:
@@ -122,7 +122,7 @@ function(add_test_executable name)
   set(argsWithFilesKeyword "FILES;${ARGN}")
 
   cmake_parse_arguments(add_test_exe
-    "${options}" "${oneValueKeywords}" "${multiValueKeywords}" 
+    "${options}" "${oneValueKeywords}" "${multiValueKeywords}"
     "${argsWithFilesKeyword}"
   )
 
@@ -169,7 +169,7 @@ endfunction()
 # The target names of test utils that this test will require. To see the target
 # names of the test utils, look in /tests/testutil/CMakeLists.txt, where they
 # are created.
-# 
+#
 function(add_popart_cpp_unit_test name)
   set(oneValueArgs "VARIANTS;LABELS;TEST_UTILS")
   cmake_parse_arguments(test_args "" "FILES" "${oneValueArgs}" "FILES;${ARGN}")
@@ -239,20 +239,14 @@ function(add_popart_py_unit_test name filename)
     extract_target(VARIANT TEST_TARGET)
     extract_runconfig(VARIANT TEST_CONFIG)
 
-    set(fork_test "")
-    if ("${VARIANT}" STREQUAL "Hw")
-      # Make sure IPUs have detached between each pytest
-      set(fork_test "--forked")
-    endif()
-
     if (NOT DEFINED test_args_MATCHEXPR)
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
       # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
       # parallel, pytest removes the directories of running tests.
-      # This is because by default, pytest removes entries in basetemp older 
+      # This is because by default, pytest removes entries in basetemp older
       # than the newest 3 entries.
       add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} ${fork_test} --basetemp=${PYTEST_BASETEMP}/${test_name}
+            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} --basetemp=${PYTEST_BASETEMP}/${test_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     else()
       # Note, solid brackets and dash can form part of parameterised pytest names.
@@ -262,14 +256,14 @@ function(add_popart_py_unit_test name filename)
 
       # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
       # parallel, pytest removes the directories of running tests.
-      # This is because by default, pytest removes entries in basetemp older 
+      # This is because by default, pytest removes entries in basetemp older
       # than the newest 3 entries.
       add_test(NAME "${test_name}"
-            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" ${fork_test} --basetemp=${PYTEST_BASETEMP}/${test_name}
+            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" --basetemp=${PYTEST_BASETEMP}/${test_name}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     endif()
-    # Setting TMPDIR=${PYTEST_BASETEMP} as `pytest --forked` is somehow 
-    # preventing poplar from cleaning up its temporary files if the test raises 
+    # Setting TMPDIR=${PYTEST_BASETEMP} as `pytest --forked` is somehow
+    # preventing poplar from cleaning up its temporary files if the test raises
     # an exception.
     set(test_env ${TEST_ENVIRONMENT})
     list(APPEND test_env "TEST_TARGET=${TEST_TARGET}")
@@ -288,12 +282,12 @@ endfunction()
 if(${POPART_ENABLE_COVERAGE} AND ${UPLOAD_COVERAGE_REPORT})
   if(RESULTS_SERVER_COOKIE_FILE AND EXISTS ${RESULTS_SERVER_COOKIE_FILE})
     add_test(NAME upload_coverage_report
-      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py" 
-              ${CMAKE_BINARY_DIR} 
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/scripts/upload_coverage.py"
+              ${CMAKE_BINARY_DIR}
               https://elasticsearch.eks.sourcevertex.net
               --cookie-file=${RESULTS_SERVER_COOKIE_FILE}
               )
-    # We want the coverage report generation to run after all other tests to 
+    # We want the coverage report generation to run after all other tests to
     # be able to reliably clean all previously generated coverage output.
     # Otherwise, the unit test coverage reports will contain coverage
     # data from tests that ran before, or alongside, the coverage script.
