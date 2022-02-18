@@ -118,6 +118,12 @@ protected:
   const nonstd::optional<TensorInfo> fwdBiasInInfo;
   // set to none if initialH not provided by user
   const nonstd::optional<TensorInfo> fwdInitialHInInfo;
+  // Return value for initGradInputInfo
+  // Populated in constructor
+  std::vector<GradInOutMapper> inInfoMapping;
+  // Populate inInfo with mappings common to all RNN ops
+  // Called in constructor
+  virtual void populateInInfo();
 };
 
 } // namespace popart

@@ -123,7 +123,9 @@ void GRUOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 GRUGradOp::GRUGradOp(const GRUOp &fwd_op)
     : BaseOnnxRNNGradOp(Onnx::GradOperators::GRUGrad, fwd_op),
-      linear_before_reset_attribute(fwd_op.getLinearBeforeResetAttribute()) {}
+      linear_before_reset_attribute(fwd_op.getLinearBeforeResetAttribute()) {
+  populateInInfo();
+}
 
 std::unique_ptr<Op> GRUGradOp::clone() const {
   return std::make_unique<GRUGradOp>(*this);
@@ -135,28 +137,29 @@ std::set<InIndex> GRUGradOp::optionalInputs() const {
           getFullHiddenStateGradInIndex()};
 }
 
-const std::vector<GradInOutMapper> &GRUGradOp::gradInputInfo() const {
-  // Initialize GRU-specific inputs in addition to BaseOnnxRNNGradOp ones
-  static const std::vector<GradInOutMapper> inInfo =
-      [baseInInfo = BaseOnnxRNNGradOp::gradInputInfo()]() mutable {
-        baseInInfo.push_back({GRUGradOp::getInitialHInIndex(),
-                              GRUOp::getInitialHPassThroughIndex(),
-                              GradOpInType::Out});
-        baseInInfo.push_back({GRUGradOp::getInputWeightsInIndex(),
-                              GRUOp::getInputWeightsPassThroughIndex(),
-                              GradOpInType::Out});
-        baseInInfo.push_back({GRUGradOp::getRecurrenceWeightsInIndex(),
-                              GRUOp::getRecurrenceWeightsPassThroughIndex(),
-                              GradOpInType::Out});
-        baseInInfo.push_back({GRUGradOp::getBiasesInIndex(),
-                              GRUOp::getBiasesPassThroughIndex(),
-                              GradOpInType::Out});
-        baseInInfo.push_back({GRUGradOp::getIntermediatesInIndex(),
-                              GRUOp::getIntermediatesPassThroughIndex(),
-                              GradOpInType::Out});
-        return baseInInfo;
-      }();
-  return inInfo;
+void GRUGradOp::populateInInfo() {
+  BaseOnnxRNNGradOp::populateInInfo();
+  // initial_h, or 0 if not provided by user
+  inInfoMapping.push_back({getInitialHInIndex(),
+                           GRUOp::getInitialHPassThroughIndex(),
+                           GradOpInType::Out});
+  // W, restructured to be used with poplar implementation
+  inInfoMapping.push_back({getInputWeightsInIndex(),
+                           GRUOp::getInputWeightsPassThroughIndex(),
+                           GradOpInType::Out});
+  // R, restructured to be used with poplar implementation
+  inInfoMapping.push_back({getRecurrenceWeightsInIndex(),
+                           GRUOp::getRecurrenceWeightsPassThroughIndex(),
+                           GradOpInType::Out});
+  // b, or 0 if not provided by user, restructured to be used with poplar
+  // implementation
+  inInfoMapping.push_back({getBiasesInIndex(),
+                           GRUOp::getBiasesPassThroughIndex(),
+                           GradOpInType::Out});
+  // intermediate tensors
+  inInfoMapping.push_back({getIntermediatesInIndex(),
+                           GRUOp::getIntermediatesPassThroughIndex(),
+                           GradOpInType::Out});
 }
 
 namespace {

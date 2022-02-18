@@ -197,7 +197,9 @@ LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
       hasInitialCInput(fwd_op.hasInitialCInput()),
       fwd_debug_name(fwd_op.debugName()), activation(fwd_op.getActivation()),
       recurrent_activation(fwd_op.getRecurrentActivation()),
-      fwdInitialCInInfo(getInitialCInInfo(fwd_op)) {}
+      fwdInitialCInInfo(getInitialCInInfo(fwd_op)) {
+  populateInInfo();
+}
 
 nonstd::optional<TensorInfo>
 LSTMGradOp::getInitialCInInfo(const LSTMOp &fwd_op) {
@@ -228,42 +230,36 @@ std::set<InIndex> LSTMGradOp::optionalInputs() const {
           getSequenceLensInIndex()};
 }
 
-const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
-  // Initialize LSTM-specific inputs in addition to BaseOnnxRNNGradOp ones
-  static const std::vector<GradInOutMapper> inInfo =
-      [baseInInfo = BaseOnnxRNNGradOp::gradInputInfo()]() mutable {
-        baseInInfo.push_back(
-            {LSTMGradOp::getInitialHInIndex(), // initial_h, provided by user or
-                                               // 0
-             LSTMOp::getInitialHPassThroughIndex(),
-             GradOpInType::Out});
-        baseInInfo.push_back(
-            {LSTMGradOp::getInputWeightsInIndex(), // W, restructured
-             LSTMOp::getInputWeightsPassThroughIndex(),
-             GradOpInType::Out});
-        baseInInfo.push_back(
-            {LSTMGradOp::getRecurrenceWeightsInIndex(), // R, restructured
-             LSTMOp::getRecurrenceWeightsPassThroughIndex(),
-             GradOpInType::Out});
-        baseInInfo.push_back({LSTMGradOp::getBiasesInIndex(), // b, restructured
-                              LSTMOp::getBiasesPassThroughIndex(),
-                              GradOpInType::Out});
-        baseInInfo.push_back(
-            {LSTMGradOp::getIntermediatesInIndex(), // intermediate tensors
-             LSTMOp::getIntermediatesPassThroughIndex(),
-             GradOpInType::Out});
-        baseInInfo.push_back(
-            {LSTMGradOp::getInitialCInIndex(), // initial_c, provided by user or
-                                               // 0
-             LSTMOp::getInitialCPassThroughIndex(),
-             GradOpInType::Out});
-        baseInInfo.push_back(
-            {LSTMGradOp::getLastCellStateGradInIndex(), // d_cell_last
-             LSTMOp::getLastCellStateOutIndex(),
-             GradOpInType::GradOut});
-        return baseInInfo;
-      }();
-  return inInfo;
+void LSTMGradOp::populateInInfo() {
+  BaseOnnxRNNGradOp::populateInInfo();
+  // initial_h, or 0 if not provided by user
+  inInfoMapping.push_back({getInitialHInIndex(),
+                           LSTMOp::getInitialHPassThroughIndex(),
+                           GradOpInType::Out});
+  // W, restructured to be used with poplar implementation
+  inInfoMapping.push_back({getInputWeightsInIndex(),
+                           LSTMOp::getInputWeightsPassThroughIndex(),
+                           GradOpInType::Out});
+  // R, restructured to be used with poplar implementation
+  inInfoMapping.push_back({getRecurrenceWeightsInIndex(),
+                           LSTMOp::getRecurrenceWeightsPassThroughIndex(),
+                           GradOpInType::Out});
+  // b, restructured to be used with poplar implementation
+  inInfoMapping.push_back({getBiasesInIndex(),
+                           LSTMOp::getBiasesPassThroughIndex(),
+                           GradOpInType::Out});
+  // intermediate tensors
+  inInfoMapping.push_back({getIntermediatesInIndex(),
+                           LSTMOp::getIntermediatesPassThroughIndex(),
+                           GradOpInType::Out});
+  // initial_c
+  inInfoMapping.push_back({getInitialCInIndex(),
+                           LSTMOp::getInitialCPassThroughIndex(),
+                           GradOpInType::Out});
+  // initial_c grad
+  inInfoMapping.push_back({getLastCellStateGradInIndex(),
+                           LSTMOp::getLastCellStateOutIndex(),
+                           GradOpInType::GradOut});
 }
 
 const std::map<int, int> &LSTMGradOp::gradOutToNonGradIn() const {
@@ -428,7 +424,9 @@ PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwd_op)
       forwardCellStateGradId(
           getGradId(fwd_op.outId(PopartLSTMOp::getCellStateOutIndex()))),
       activation(fwd_op.getActivation()),
-      recurrent_activation(fwd_op.getRecurrentActivation()) {}
+      recurrent_activation(fwd_op.getRecurrentActivation()) {
+  populateInInfo();
+}
 
 std::unique_ptr<Op> PopartLSTMGradOp::clone() const {
   return std::make_unique<PopartLSTMGradOp>(*this);
@@ -469,8 +467,8 @@ int64_t PopartLSTMGradOp::getHiddenSize() const {
   return inShape(getWeightsInIndex()).at(2);
 }
 
-const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
-  static std::vector<GradInOutMapper> inInfo = {
+void PopartLSTMGradOp::populateInInfo() {
+  inInfoMapping = {
       {getInitialStateInIndex(),
        PopartLSTMOp::getInitialStateInIndex(),
        GradOpInType::In},
@@ -493,11 +491,14 @@ const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
        GradOpInType::GradOut}};
 
   if (input->hasIndex(getSequenceLensInIndex())) {
-    inInfo.push_back({getSequenceLensInIndex(),
-                      PopartLSTMOp::getSequenceLensInIndex(),
-                      GradOpInType::In});
+    inInfoMapping.push_back({getSequenceLensInIndex(),
+                             PopartLSTMOp::getSequenceLensInIndex(),
+                             GradOpInType::In});
   }
-  return inInfo;
+}
+
+const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
+  return inInfoMapping;
 }
 
 const std::map<int, int> &PopartLSTMGradOp::gradOutToNonGradIn() const {

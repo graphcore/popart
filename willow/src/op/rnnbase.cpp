@@ -111,25 +111,33 @@ void BaseOnnxRNNGradOp::setup() {
   }
 }
 
-const std::vector<GradInOutMapper> &BaseOnnxRNNGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {getInputInIndex(), // X
-       BaseOnnxRNNOp::getInputInIndex(),
-       GradOpInType::In},
-      {getSequenceLensInIndex(), // sequence_lens
-       BaseOnnxRNNOp::getSequenceLensInIndex(),
-       GradOpInType::In},
-      {getFullHiddenStateInIndex(), // hidden_full
+void BaseOnnxRNNGradOp::populateInInfo() {
+  inInfoMapping = {
+      // X
+      {getInputInIndex(), BaseOnnxRNNOp::getInputInIndex(), GradOpInType::In},
+      // full_hidden_state;
+      {getFullHiddenStateInIndex(),
        BaseOnnxRNNOp::getFullHiddenStateOutIndex(),
        GradOpInType::Out},
-      {getLastHiddenStateGradInIndex(), // d_hidden_last
+      // last_hidden_state grad
+      {getLastHiddenStateGradInIndex(),
        BaseOnnxRNNOp::getLastHiddenStateOutIndex(),
        GradOpInType::GradOut},
-      {getFullHiddenStateGradInIndex(), // d_hidden_full
+      // full_hidden_state grad
+      {getFullHiddenStateGradInIndex(),
        BaseOnnxRNNOp::getFullHiddenStateOutIndex(),
        GradOpInType::GradOut}};
 
-  return inInfo;
+  if (input->hasIndex(getSequenceLensInIndex())) {
+    // sequence_lens
+    inInfoMapping.push_back({getSequenceLensInIndex(),
+                             BaseOnnxRNNOp::getSequenceLensInIndex(),
+                             GradOpInType::In});
+  }
+}
+
+const std::vector<GradInOutMapper> &BaseOnnxRNNGradOp::gradInputInfo() const {
+  return inInfoMapping;
 }
 
 const std::map<int, int> &BaseOnnxRNNGradOp::gradOutToNonGradIn() const {

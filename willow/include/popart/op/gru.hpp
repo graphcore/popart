@@ -78,8 +78,6 @@ public:
   GRUGradOp(const GRUOp &);
   std::unique_ptr<Op> clone() const final;
 
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-
   std::set<InIndex> optionalInputs() const final;
 
   // Inputs 0-8 are defined in BaseOnnxRNNGradOp
@@ -88,6 +86,11 @@ public:
   // Outputs 0-4 are defined in BaseOnnxRNNGradOp
 
   const unsigned linear_before_reset_attribute;
+
+private:
+  // Populate inInfo with LSTM-specific mappings
+  // Called in constructor
+  void populateInInfo() override;
 };
 
 } // namespace popart

@@ -99,7 +99,6 @@ public:
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
   bool hasLastCellStateGradInput() const;
@@ -120,6 +119,10 @@ public:
   const ActivationFunction recurrent_activation;
 
 private:
+  // Populate inInfo with LSTM-specific mappings
+  // Called in constructor
+  void populateInInfo() override;
+
   // used to initialize fwdInitialCInInfo
   nonstd::optional<TensorInfo> getInitialCInInfo(const LSTMOp &fwd_op);
 
@@ -257,9 +260,17 @@ public:
   const bool outputFullSequence;
 
 private:
+  // Populate inInfo to be used in initGradInputInfo
+  // Called in constructor
+  void populateInInfo();
+
   const TensorId forwardCellStateGradId;
   const ActivationFunction activation;
   const ActivationFunction recurrent_activation;
+
+  // Return value for initGradInputInfo
+  // Populated in constructor
+  std::vector<GradInOutMapper> inInfoMapping;
 };
 
 } // namespace popart

@@ -87,7 +87,9 @@ int RNNOp::getOutBatchAxis(OutIndex index) const {
 
 RNNGradOp::RNNGradOp(const RNNOp &fwd_op)
     : BaseOnnxRNNGradOp(Onnx::GradOperators::RNNGrad, fwd_op),
-      activation_attribute(fwd_op.activation_attribute) {}
+      activation_attribute(fwd_op.activation_attribute) {
+  populateInInfo();
+}
 
 std::unique_ptr<Op> RNNGradOp::clone() const {
   return std::make_unique<RNNGradOp>(*this);
@@ -101,26 +103,26 @@ std::set<InIndex> RNNGradOp::optionalInputs() const {
           getSequenceLensInIndex()};
 }
 
-const std::vector<GradInOutMapper> &RNNGradOp::gradInputInfo() const {
-  // Initialize RNN-specific inputs in addition to BaseOnnxRNNGradOp ones
-  static const std::vector<GradInOutMapper> inInfo =
-      [baseInInfo = BaseOnnxRNNGradOp::gradInputInfo()]() mutable {
-        baseInInfo.push_back({RNNGradOp::getInitialHInIndex(), // initial_h
-                              RNNOp::getInitialHInIndex(),
-                              GradOpInType::In});
-        baseInInfo.push_back({RNNGradOp::getInputWeightsInIndex(), // W
-                              RNNOp::getInputWeightsInIndex(),
-                              GradOpInType::In});
-        baseInInfo.push_back({RNNGradOp::getRecurrenceWeightsInIndex(), // R
-                              RNNOp::getRecurrenceWeightsInIndex(),
-                              GradOpInType::In});
-        baseInInfo.push_back({RNNGradOp::getBiasesInIndex(), // b
-                              RNNOp::getBiasesInIndex(),
-                              GradOpInType::In});
-        return baseInInfo;
-      }();
-
-  return inInfo;
+void RNNGradOp::populateInInfo() {
+  BaseOnnxRNNGradOp::populateInInfo();
+  // W
+  inInfoMapping.push_back({getInputWeightsInIndex(),
+                           RNNOp::getInputWeightsInIndex(),
+                           GradOpInType::In});
+  // R
+  inInfoMapping.push_back({getRecurrenceWeightsInIndex(),
+                           RNNOp::getRecurrenceWeightsInIndex(),
+                           GradOpInType::In});
+  if (hasInitialHInput) {
+    // initial_h
+    inInfoMapping.push_back(
+        {getInitialHInIndex(), RNNOp::getInitialHInIndex(), GradOpInType::In});
+  }
+  if (hasBiasesInput) {
+    // b
+    inInfoMapping.push_back(
+        {getBiasesInIndex(), RNNOp::getBiasesInIndex(), GradOpInType::In});
+  }
 }
 
 namespace {

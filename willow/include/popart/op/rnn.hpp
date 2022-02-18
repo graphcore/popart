@@ -68,14 +68,17 @@ public:
   RNNGradOp(const RNNOp &);
   std::unique_ptr<Op> clone() const final;
 
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-
   std::set<InIndex> optionalInputs() const final;
 
   // inputs 0-8 defined in BaseOnnxRNNGradOp
   // outputs 0-4 defined in BaseOnnxRNNGradOp
 
   const ActivationFunction activation_attribute;
+
+private:
+  // Populate inInfo with RNN-specific mappings
+  // Called in constructor
+  void populateInInfo() override;
 };
 
 } // namespace popart
