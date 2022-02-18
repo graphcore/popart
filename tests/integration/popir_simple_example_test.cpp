@@ -6,9 +6,6 @@
 // contact a member of the popir team, and we will be able to prioritise adding
 // the required API to snap. If landing your diff is time sensitive, we can
 // always disable this test temporarily.
-//
-// Once the snap API for addCodelets is landed and used in popart, the call to
-// snap::Graph::getPoplarGraph should also be overridden.
 
 #include <boost/test/unit_test.hpp>
 #include <filereader.hpp>
@@ -39,8 +36,25 @@ public:
   using std::runtime_error::runtime_error;
 };
 
+class GetPoplarGraphError : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+class GetConstPoplarGraphError : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
 const char *getPoplarTensorError =
     "There should be no calls to snap::Tensor::getPoplarTensor in the popir "
+    "simple example. Please try and use the snap API if possible. If there is "
+    "no snap API for the functions you require, please contact a member of the "
+    "popir team, and we can prioritise getting the calls you require into the "
+    "snap API.";
+
+const char *getPoplarGraphError =
+    "There should be no calls to snap::Graph::getPoplarGraph in the popir "
     "simple example. Please try and use the snap API if possible. If there is "
     "no snap API for the functions you require, please contact a member of the "
     "popir team, and we can prioritise getting the calls you require into the "
@@ -60,18 +74,41 @@ const poplar::Tensor &Tensor::getPoplarTensor() const {
   throw GetConstPoplarTensorError(getPoplarTensorError);
 }
 
+// This call will override the snap call, allowing us to error and fail the test
+// if it is used.
+poplar::Graph &Graph::getPoplarGraph() {
+  throw GetPoplarGraphError(getPoplarGraphError);
+}
+
+// This call will override the snap call, allowing us to error and fail the test
+// if it is used.
+const poplar::Graph &Graph::getPoplarGraph() const {
+  throw GetConstPoplarGraphError(getPoplarGraphError);
+}
+
 } // namespace snap
 
 BOOST_AUTO_TEST_CASE(PopirSimpleExampleTest) {
-  // Check that snap::Tensor::getPoplarTensor has been successfully overridden
+  // Check that snap::Tensor::getPoplarTensor and snap::Graph::getPoplarGraph
+  // have been successfully overridden
   {
     snap::Tensor snapTensor;
     BOOST_CHECK_THROW(snapTensor.getPoplarTensor(), GetPoplarTensorError);
     const snap::Tensor constSnapTensor;
     BOOST_CHECK_THROW(constSnapTensor.getPoplarTensor(),
                       GetConstPoplarTensorError);
+
+    auto target = poplar::Target::createCPUTarget();
+    snap::Graph snapGraph(target);
+    BOOST_CHECK_THROW(snapGraph.getPoplarGraph(), GetPoplarGraphError);
+    const snap::Graph constSnapGraph(target);
+    BOOST_CHECK_THROW(constSnapGraph.getPoplarGraph(),
+                      GetConstPoplarGraphError);
   }
 
+  // Run the simple example. This just has to run without throwing an error. If
+  // a call to snap::Tensor::getPoplarTensor or snap::Graph::getPoplarGraph is
+  // made in this example, an error will be thrown and the test will fail.
   using namespace popart;
   auto builder     = Builder::create();
   auto aiOnnx      = builder->aiOnnxOpset9();

@@ -20,18 +20,18 @@
 
 #include <filereader.hpp>
 #include <gcl/TileAllocation.hpp>
+#include <snap/poplin/codelets.hpp>
+#include <snap/popnn/codelets.hpp>
+#include <snap/popops/codelets.hpp>
+#include <snap/poprand/codelets.hpp>
 #include <poplar/CSRFunctions.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplar/RandomSeed.hpp>
-#include <poplin/codelets.hpp>
-#include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popops/Zero.hpp>
-#include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
-#include <poprand/codelets.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/exceptions.hpp>
 #include <popart/boollogic.hpp>
@@ -2777,10 +2777,10 @@ void IrLowering::prepareGraph() {
     const auto addCodeletsTimer =
         ir().timePartitionLogger().scopedStopwatch("Adding codelets");
 
-    popops::addCodelets(graph().getPoplarGraph());
-    poplin::addCodelets(graph().getPoplarGraph());
-    popnn::addCodelets(graph().getPoplarGraph());
-    poprand::addCodelets(graph().getPoplarGraph());
+    snap::popops::addCodelets(graph());
+    snap::poplin::addCodelets(graph());
+    snap::popnn::addCodelets(graph());
+    snap::poprand::addCodelets(graph());
 
     // Add custom codelets as per the user provided list of paths. Allow poplar
     // to infer the file type from the extension. Also feed through the compile
