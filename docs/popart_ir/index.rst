@@ -13,6 +13,7 @@ popart.ir User Guide and API (experimental)
     popartir_op
     popartir_graph
     popartir_transforms
+    popartir_context
     api-popart-ir
     genindex
     legal
