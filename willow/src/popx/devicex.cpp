@@ -324,7 +324,7 @@ void Devicex::remoteBufferWeightsToHost() {
           // Iterate over group members, collect the Tensor's Shards
           for (unsigned group_member = 0; group_member < realGroupSize;
                group_member++) {
-            unsigned replica_id = (group_main + group_member) * group_increment;
+            unsigned replica_id = group_main + (group_member * group_increment);
             unsigned addr = group_member * cbr_nelms * elemSize / realGroupSize;
             copyFromRemoteBuffer(&tmp[addr], replica_id);
           }
@@ -353,7 +353,7 @@ void Devicex::remoteBufferWeightsToHost() {
           // always be the same.
           for (unsigned group_member = 1; group_member < returnedPerGroup;
                group_member++) {
-            unsigned replica_id = (group_main + group_member) * group_increment;
+            unsigned replica_id = group_main + (group_member * group_increment);
             unsigned repl_address = replica_id * nelms * elemSize;
             unsigned elements     = elemSize * nelms;
             memcpy(&data0[repl_address], &data0[address], elements);

@@ -17,6 +17,8 @@ BATCH_SIZE = 16
 CHANNELS = 2
 DATA_LEN = 3
 O_DIM = 2
+IPU_MAX = 16
+
 # Learning rate 1 for easy comparison.
 LEARNING_RATE = 1.0
 TEMPFILE = "temporary_file"
@@ -195,16 +197,17 @@ def get_model(repl_config: Dict,
 
     if device is None:
         ipus = (int(repl_config["ipus"]) * int(repl_config["repl"]))
+        fail_ceiling = 4
 
-        if (ipus > 4):
-            pytest.fail(
-                f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
-                "As the requirement of this test was higher than 4 ipus it fails silently."
-            )
-        else:
+        if (ipus > fail_ceiling):
             pytest.skip(
                 f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
-                "As the requirements of this test was 4 ipus and less, this is considered a fail."
+                "As the requirement of this test was higher than {fail_ceiling} ipus it fails silently."
+            )
+        else:
+            pytest.fail(
+                f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
+                "As the requirements of this test was {fail_ceiling} ipus or less, this is considered a fail."
             )
 
     if session_type == "training":
@@ -349,6 +352,15 @@ configs = [
         "commSize": '1',
         "retrieval": "OnePerGroup",
         "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+    },
+    {  # test to verify replica-id is calculated correctly in Devicex.cpp
+        "c.idx": '9',  # Debug Config ID
+        "ipus": '1',  # Number of IPUs to run on
+        "repl": '16',  # Replication Factor
+        "commType": "Orthogonal",
+        "commSize": '4',
+        "retrieval": "AllReplicas",
+        "locations": ["On-Chip"]
     }
 ]
 session_types = ["training", "inference"]
@@ -367,7 +379,6 @@ remote_config = [{
     "RTS": True
 }]
 
-ipu_max = 8
 run_config = []  # debug tool, run custom set
 skp_config = []  # debug tool, add to skip
 
@@ -392,7 +403,7 @@ def test_grouped_initialization(config, location, session_type):
             or int(config["c.idx"]) in skp_config):
         pytest.skip()
     # skip if we are using too many ipus
-    if (ipu_max < int(config["repl"]) * int(config["ipus"])):
+    if (IPU_MAX < int(config["repl"]) * int(config["ipus"])):
         pytest.skip("The test requires more IPU's than recommended.")
     #skip if the config is not supported on the location
     if (location["desc"] not in config["locations"]):
@@ -501,7 +512,7 @@ for test in onnx_tests:
 @pytest.mark.parametrize("config", onnx_configs)
 @tu.requires_ipu
 def test_onnx_checkpointing(config):
-    if onnx_tests[0] == int(config["c.idx"]):
+    if onnx_configs[0]["c.idx"] == int(config["c.idx"]):
         print()
 
     location = remote_config[0]
