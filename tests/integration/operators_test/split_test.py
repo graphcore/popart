@@ -37,6 +37,11 @@ def test_split_custom_lengths(op_tester):
         builder.addOutputTensor(b)
         builder.addOutputTensor(c)
 
+        # Check correct output for the tensors
+        assert builder.getTensorShape(a) == [1]
+        assert builder.getTensorShape(b) == [2]
+        assert builder.getTensorShape(c) == [3]
+
         return [a, b, c]
 
     def reference(_):  # ref_data is an unused argument

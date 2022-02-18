@@ -15,11 +15,37 @@ public:
                         int outputSize);
   const TensorInfo &inInfo(int index) const;
   const Shape &inShape(int index) const;
+  const Shape &outShape(int index) const;
   DataType inType(int index) const;
   TensorInfo &outInfo(int index);
   const std::map<int, TensorInfo> &getOutputInfos();
   const Attributes &getAttributes() const;
+  int getNumInputs() const;
   int getNumOutputs() const;
+  /**
+   * Check if tensor at input index n has an input shape.
+   * Semantically equivalent to the implementation found in the ONNX package
+   *
+   * \param n The input index to check
+   * \return true if tensor at input index n has a shape
+   */
+  bool hasInputShape(size_t n) const;
+  /**
+   * Check if all the tensors in the range [0, n) has an input shape.
+   * Semantically equivalent to the implementation found in the ONNX package
+   *
+   * \param n The input index up to (but not including) to check
+   * \return true if all the tensors has a shape
+   */
+  bool hasNInputShapes(size_t n) const;
+
+  /**
+   * Check if the proto contains an attribute
+   *
+   * \param key The attribute to check for
+   * \return True if the proto contains an attribute
+   */
+  bool hasAttribute(const std::string &key) const;
 
   template <typename T> T getAttribute(const std::string &key) {
     return attributes.getAttribute<T>(key);
@@ -63,7 +89,7 @@ public:
                                  ShapeInferenceFunction);
 };
 
-// Popart equivalents of onnx functions, /onnx/defs/shape_inference.h.
+// Popart equivalents of onnx functions in /onnx/defs/shape_inference.h.
 inline void propagateElemTypeFromInputToOutput(ShapeInferenceContext &ctx,
                                                size_t inputIndex,
                                                size_t outputIndex) {

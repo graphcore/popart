@@ -137,7 +137,7 @@ void Devicex::InputDatastream::read(void *ptr) {
       }
     } else {
       std::stringstream ss;
-      ss << "Type discrepency for tensor " << getTensorId()
+      ss << "Type discrepancy for tensor " << getTensorId()
          << ". User provided : " << srcInfo.data_type()
          << " and expected : " << dstInfo.data_type()
          << ". Consider a custom copy here (as memcpy cannot be used)";
@@ -192,7 +192,7 @@ bool Devicex::InputDatastream::readPrefetch(void *ptr) {
         }
       } else {
         std::stringstream ss;
-        ss << "Type discrepency for tensor " << getTensorId()
+        ss << "Type discrepancy for tensor " << getTensorId()
            << ". User provided : " << srcInfo.data_type()
            << " and expected : " << dstInfo.data_type()
            << ". Consider a custom copy here (as memcpy cannot be used)";
