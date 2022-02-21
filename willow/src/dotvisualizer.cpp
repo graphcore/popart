@@ -126,7 +126,7 @@ void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
   if (tensorsVisited.count(tensor->id) == 0) {
     tensorsVisited.insert(tensor->id);
     ofs << tensorDotId(tensor->id) << " [shape= \"egg\", label=\"" << tensor->id
-        << "\n"
+        << "\\n"
         << tensor->info << "  nc:" << tensor->consumers.getTotal()
         << (tensor->isGraphInput()
                 ? " graph input: " +
@@ -222,36 +222,104 @@ void DotVisualizer::write(const Ir &ir) {
                       << coreNameStream.str();
     strm(gString, ir) << "\", color = " << getOpNodeColor(n) << "];\n";
 
-    for (auto &ind_ten : n->input->tensorMap()) {
-      if (ind_ten.second->hasProducer() == false) {
-        if (tensorsVisited.count(ind_ten.second->id) == 0) {
-          makeNodeIfRequired(ind_ten.second, strm(gString, ir));
-          for (auto &c : ind_ten.second->consumers.getOps()) {
-            strm(gString, ir)
-                << tensorDotId(ind_ten.second->id) << " -> "
-                << generateNodeName(c) << " [color=black, label=\""
-                << ind_ten.second->id << "\"];\n";
+    auto addEdge =
+        [this, &generateNodeName, &ir, &gString](
+            std::string &srcNodeName,
+            std::string &dstNodeName,
+            const std::map<TensorId, view::Regions> &aliasedRegions,
+            const view::Regions &modifiedRegions,
+            const std::pair<const int, Tensor *> &ind_ten) {
+          bool modified = !modifiedRegions.empty();
+          bool aliased  = !aliasedRegions.empty();
+
+          std::string color;
+
+          if (aliased && modified) {
+            color = "violet";
+          } else if (modified) {
+            color = "red";
+          } else if (aliased) {
+            color = "blue";
+          } else {
+            color = "black";
+          }
+
+          strm(gString, ir)
+              << srcNodeName << " -> " << dstNodeName << " [color=" << color
+              << ", label=\"" << ind_ten.second->id << "\\n"
+              << ind_ten.second->info.shape()
+              << (modified
+                      ? logging::format("\\n(modified: {})", modifiedRegions)
+                      : "")
+              << (aliased ? logging::format("\\n(aliased: {})", aliasedRegions)
+                          : "")
+              << "\"];\n";
+        };
+
+    auto addEdgeToConsumer =
+        [this, &addEdge, &generateNodeName, &ir, &gString](
+            std::string srcNodeName,
+            Op *c,
+            const std::map<TensorId, view::Regions> &aliasedRegions,
+            const std::pair<const int, Tensor *> &ind_ten) {
+          view::Regions modifiedRegions;
+          for (auto index : c->input->indices(ind_ten.second)) {
+            if (c->modifiesIndex(index)) {
+              for (auto region : c->modifies(index)) {
+                modifiedRegions.push_back(region);
+              }
+            }
+          }
+
+          auto dstNodeName = generateNodeName(c);
+
+          return addEdge(srcNodeName,
+                         dstNodeName,
+                         aliasedRegions,
+                         modifiedRegions,
+                         ind_ten);
+        };
+
+    // Handle inputs
+    for (auto &ind_ten_in : n->input->tensorMap()) {
+      if (ind_ten_in.second->hasProducer() == false) {
+        if (tensorsVisited.count(ind_ten_in.second->id) == 0) {
+          makeNodeIfRequired(ind_ten_in.second, strm(gString, ir));
+          for (auto &c : ind_ten_in.second->consumers.getOps()) {
+            addEdgeToConsumer(
+                tensorDotId(ind_ten_in.second->id), c, {}, ind_ten_in);
           }
         }
       }
     }
 
-    for (auto &ind_ten : n->output->tensorMap()) {
-      auto &consumers = ind_ten.second->consumers;
-      for (auto &c : consumers.getOps()) {
-        strm(gString, ir) << generateNodeName(n) << " -> "
-                          << generateNodeName(c) << " [color=black, label=\""
-                          << ind_ten.second->id << "\\n"
-                          << ind_ten.second->info.shape() << "\"];\n";
+    // Handle output
+    for (auto &ind_ten_out : n->output->tensorMap()) {
+      std::map<TensorId, view::Regions> aliasedRegions;
+
+      for (auto &ind_ten_in : n->input->tensorMap()) {
+        auto regions = n->aliases(ind_ten_in.first, ind_ten_out.first);
+        for (auto &region : regions) {
+          if (!region.isEmpty()) {
+            aliasedRegions[ind_ten_in.second->id].push_back(region);
+          }
+        }
       }
 
-      if (consumers.getOps().size() == 0) {
+      auto &consumers = ind_ten_out.second->consumers;
+      for (auto &c : consumers.getOps()) {
+        addEdgeToConsumer(generateNodeName(n), c, aliasedRegions, ind_ten_out);
+      }
+
+      if (consumers.getOps().size() == 0 ||
+          ind_ten_out.second->isGraphOutput()) {
         // must be an output
-        makeNodeIfRequired(ind_ten.second, strm(gString, ir));
-        strm(gString, ir) << generateNodeName(n) << " -> "
-                          << tensorDotId(ind_ten.second->id)
-                          << " [color=black, label=\"" << ind_ten.second->id
-                          << "\"];\n";
+        makeNodeIfRequired(ind_ten_out.second, strm(gString, ir));
+
+        auto srcNodeName = generateNodeName(n);
+        auto dstNodeName = tensorDotId(ind_ten_out.second->id);
+
+        addEdge(srcNodeName, dstNodeName, aliasedRegions, {}, ind_ten_out);
       }
     }
 
