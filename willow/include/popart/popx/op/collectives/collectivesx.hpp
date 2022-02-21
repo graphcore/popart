@@ -9,8 +9,6 @@
 #include <popart/popx/viewchangers.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
-#include <popops/CollectiveTypes.hpp>
-
 #include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
 
