@@ -60,5 +60,5 @@ def test_out_of_memory_exception():
     assert e.type == popart.session.OutOfMemoryException
     print(e.value.getSummaryReport())
     assert len(e.value.getProfilePath()) > 0
-    assert e.value.args[0].startswith(
-        "Out of memory: Cannot fit all variable data onto one or more tiles")
+    err = "Out of memory: Cannot fit all variable data onto one or more tiles"
+    assert err in e.value.args[0]
