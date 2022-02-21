@@ -40,6 +40,8 @@ public:
   void adjustModifiedIndices(InIndex fromIn, InIndex toIn);
 
   void addModified(InIndex in, view::Regions regions);
+  void removeModified(InIndex in);
+  void removeAlias(InIndex in, OutIndex out);
 
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
