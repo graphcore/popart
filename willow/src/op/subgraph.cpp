@@ -118,12 +118,6 @@ void SubgraphOp::addModified(InIndex in, view::Regions regions) {
   modifiesMap.insert(std::make_pair(in, regions));
 }
 
-void SubgraphOp::removeModified(InIndex in) { modifiesMap.erase(in); }
-
-void SubgraphOp::removeAlias(InIndex in, OutIndex out) {
-  aliasMap.erase({in, out});
-}
-
 view::RegMap SubgraphOp::fwdRegMap(InIndex inIndex, OutIndex outIndex) const {
   auto emptyRegion = view::Region::getEmpty(outRank(outIndex));
   auto aliasChains = aliasMap.at({inIndex, outIndex}).first;

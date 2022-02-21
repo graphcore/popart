@@ -215,17 +215,11 @@ void LoopOp::addLoopOutput(OutIndex index,
 
 void LoopOp::removeLoopInput(InIndex index) {
   disconnectInTensor(index);
-  removeModified(index);
-  for (auto &out : output->tensorMap()) {
-    removeAlias(index, out.first);
-  }
   int n = input->maxIndex();
   for (InIndex i = index; i <= n; ++i) {
     if (hasInput(i + 1)) {
       connectInTensor(i, input->tensorIdMap().at(i + 1));
       disconnectInTensor(i + 1);
-      adjustModifiedIndices(i + 1, i);
-      adjustAliasInIndices(i + 1, i);
     }
   }
   getCalledGraph().removeInput(opInToSubgraphInIndex(index));
@@ -233,9 +227,6 @@ void LoopOp::removeLoopInput(InIndex index) {
 
 void LoopOp::removeLoopOutput(OutIndex index) {
   disconnectOutTensor(output->tensor(index));
-  for (auto &in : input->tensorMap()) {
-    removeAlias(in.first, index);
-  }
   int n = output->maxIndex();
   for (InIndex i = index; i <= n; ++i) {
     if (output->hasIndex(i + 1)) {
