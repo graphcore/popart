@@ -1,7 +1,7 @@
 .. _popart-ir-api:
 
-PopART IR Python API (experimental)
-===================================
+Python API
+==========
 
 .. warning::
      This Python module is currently experimental and may be subject to change
@@ -49,7 +49,7 @@ Contexts
 Data types
 ----------
 
-.. autoclass:: popart.ir.dtypes
+.. autoclass:: popart.ir.dtype
     :members:
     :undoc-members:
     :special-members:

@@ -29,7 +29,7 @@ An IR is an executable program that can be run using a PopART session and a Pyth
 Graphs
 ......
 
-A graph (:numref:`sec_graphs`) is a computational directed acyclic graph where tensors are edges and ops are nodes. There are two types of graphs: the main graph (:numref:`sec_maingraphs`) and subgraphs (:numref:`sec_subgraphs`. An example is shown in :numref:`fig_popart_ir_calling_a_graph`.
+A graph (:numref:`sec_graphs`) is a computational directed acyclic graph where tensors are edges and ops are nodes. There are two types of graphs: the main graph (:numref:`sec_maingraphs`) and subgraphs (:numref:`sec_subgraphs`). An example is shown in :numref:`fig_popart_ir_calling_a_graph`.
 
 
 .. figure:: images/popart_ir_calling_a_graph.png

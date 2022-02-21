@@ -13,7 +13,7 @@ You need to import the ``popart.ir`` module in order to use it:
 The IR in ``popart.ir`` is represented by the class ``popart.ir.Ir``.
 :numref:`simple_example` contains a basic example of how to construct such an object.
 
-.. literalinclude:: files/simple_addition_popart_ir.py
+.. literalinclude:: ../user_guide/files/simple_addition_popart_ir.py
   :language: python
   :lines: 8-9,11-27
   :name: simple_example
@@ -21,12 +21,13 @@ The IR in ``popart.ir`` is represented by the class ``popart.ir.Ir``.
 
 .. only:: html
 
-    :download:`files/simple_addition_popart_ir.py`
+    :download:`Download simple_addition_popart_ir.py <../user_guide/files/simple_addition_popart_ir.py>`
 
-In ``popart.ir``, the ``Ir`` object is essentially a collection of
-``popart.ir.Graph`` objects. Each such graph contains a number of operations.
-Each IR has a main graph that is constructed by default. The main graph is
-obtained via ``ir.main_graph()`` in :numref:`simple_example`.
+In ``popart.ir`` an IR is essentially a collection of :py:class:`popart.ir.Graph` objects.
+Each such graph contains a number of operations.
+Each IR has a *main graph* that is constructed by default.
+This main graph serves as the entry point for your model.
+A main graph is obtained via :py:func:`popart.ir.main_graph` in the example above.
 
 By adding operations within a ``with main`` context, the operations
 are automatically added to the main graph.

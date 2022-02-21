@@ -1,5 +1,6 @@
-popart.ir Module User Guide (experimental)
-==========================================
+User Guide
+==========
+
 .. warning::
      The ``popart.ir`` Python module is currently experimental and may be subject to change
      in future releases in ways that are backwards incompatible without
@@ -19,7 +20,7 @@ an experimental PopART Python module which you can use to create
 (and, to a limited degree, manipulate) PopART models directly.
 
 PopART models are represented using an intermediate representation (IR).
-The ``popart.ir`` Python package allows you to manipulate these IRs.
+The ``popart.ir`` package allows you to manipulate these IRs.
 
 .. include:: popartir_concepts.rst
 .. include:: builderpopartir.rst

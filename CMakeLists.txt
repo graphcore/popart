@@ -228,6 +228,8 @@ set(PYTHON_API_HTML_NAME popart-python-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(CPP_API_PDF_NAME popart-cpp-api-${VERSION}-${SNAPSHOT}.pdf)
 set(CPP_API_HTML_NAME popart-cpp-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
+set(IR_USER_GUIDE_PDF_NAME popart-ir-user-guide-${VERSION}-${SNAPSHOT}.pdf)
+set(IR_USER_GUIDE_HTML_NAME popart-ir-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
 
 include(CPack)
 
@@ -248,7 +250,9 @@ add_custom_target(package_and_move
   COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${CPP_API_PDF_NAME} ${POPART_PKG_DIR}"
-)
+  COMMAND bash -c "mv ${IR_USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${IR_USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
+  )
 else()
 add_custom_target(package_and_move
   # CMAKE_BINARY_DIR is not the CWD for this command when it is nested in the popart_super repo
@@ -296,6 +300,15 @@ if(BUILD_DOCS)
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime C++ API (HTML)\n"
                              "    file: ${CPP_API_HTML_NAME}\n"
                              "    type: html_zip\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: popar.ir user guide (PDF)\n"
+                             "    file: ${IR_USER_GUIDE_PDF_NAME}\n"
+                             "    type: pdf\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: popar.ir  user guide (HTML)\n"
+                             "    file: ${IR_USER_GUIDE_HTML_NAME}\n"
+                             "    type: html_zip\n")
+
 endif()
 
 execute_process(
