@@ -127,7 +127,10 @@ DynamicSliceOpx::createInputTensor(InIndex index,
 
     dv_p->lowering().getLinearMapper().mapTensor(graph(), sliceTensor);
 
-    return sliceTensor;
+    return sliceTensor.reshape(
+        op.inTensor(DynamicSliceInplaceOp::getSliceInIndex())
+            ->info.shape_szt());
+    ;
   }
 
   throw internal_error(
@@ -174,7 +177,8 @@ snap::Tensor DynamicSliceOpx::unwindTensorLayout(snap::Tensor tensor,
         graph()};
   }
   if (index == DynamicSliceInplaceOp::getSliceInIndex()) {
-    return tensor;
+    return tensor.reshape(op.inTensor(DynamicSliceInplaceOp::getSliceInIndex())
+                              ->info.shape_szt());
   }
 
   throw internal_error(
