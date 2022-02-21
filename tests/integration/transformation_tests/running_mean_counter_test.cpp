@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(Default) {
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2, 2}};
 
-  float dummy[4];
+  float dummy[4]       = {0, 0, 0, 0};
   ConstVoidData t1Data = {dummy, shape};
   auto weight0         = builder->addInitializedInputTensor(t1Data);
   auto weight1         = builder->addInitializedInputTensor(t1Data);
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(VirtualGraph) {
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2, 2}};
 
-  float dummy[4];
+  float dummy[4]       = {0, 0, 0, 0};
   ConstVoidData t1Data = {dummy, shape};
   auto weight0         = builder->addInitializedInputTensor(t1Data);
   auto weight1         = builder->addInitializedInputTensor(t1Data);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(Pipelining) {
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2, 2}};
 
-  float dummy[4];
+  float dummy[4]       = {0, 0, 0, 0};
   ConstVoidData t1Data = {dummy, shape};
   auto weight0         = builder->addInitializedInputTensor(t1Data);
   auto weight1         = builder->addInitializedInputTensor(t1Data);

@@ -20,7 +20,6 @@ redundantAssignment  // Not addressed
 stlFindInsert  // Not addressed
 syntaxError  // Not addressed
 shadowFunction  // Not addressed
-unassignedVariable // Not addressed
 unreadVariable  // Not addressed
 uninitMemberVar  // Not addressed
 unusedStructMember  // Not addressed

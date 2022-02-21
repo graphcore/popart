@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
   TensorInfo shape1{"FLOAT", std::vector<int64_t>{2, 2}};
   TensorInfo shape2{"INT32", std::vector<int64_t>{2}};
 
-  float dummy[4];
+  float dummy[4]       = {0, 0, 0, 0};
   ConstVoidData t1Data = {dummy, shape1};
   auto input1          = builder->addInitializedInputTensor(t1Data);
   auto input2          = builder->addInputTensor(shape2);
