@@ -1,5 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+
 #include "popart/operators.hpp"
+#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -23,18 +25,22 @@ bool HostIOSetup::apply(Graph &graph) const {
   // For each input tensor we need a init + host load combo for each in the
   // main graph
 
+  AliasModel aliasModel;
+  AliasModelGrower aliasModelGrower{aliasModel};
+  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::Yes);
+
   if (pass == 1) {
     for (auto &t : graph.getTensors().getOfType(TensorType::Stream)) {
       // Skip tensors that are not streamed like regular input streams
       if (!t->isOptimizerTensor() && !t->isRandomSeedTensor()) {
-        setupHostLoadOps(t);
+        setupHostLoadOps(t, aliasModel);
       }
     }
   }
 
   if (pass == 2) {
     for (auto &t : ir.getAnchorRemap().leftMap()) {
-      setupHostStoreOps(ir.getTensor(t.first));
+      setupHostStoreOps(ir.getTensor(t.first), aliasModel);
     }
   }
 
@@ -42,7 +48,8 @@ bool HostIOSetup::apply(Graph &graph) const {
   return true;
 }
 
-void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
+void HostIOSetup::setupHostLoadOps(Tensor *inTensor,
+                                   AliasModel &aliasModel) const {
 
   auto &graph             = inTensor->getGraph();
   auto &ir                = graph.getIr();
@@ -68,7 +75,8 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
 
   // Only force priority if batch serialisation or phased execution is not used
   if (sessionOptions.batchSerializationSettings.factor < 2 && num_phases < 2 &&
-      !sessionOptions.explicitRecomputation) {
+      !sessionOptions.explicitRecomputation &&
+      !sessionOptions.enableExplicitMainLoops) {
     settings.schedulePriority = std::numeric_limits<double>::lowest();
   }
 
@@ -101,20 +109,6 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
     ir.remapAnchor(inTensor->id, loadId);
   }
 
-  auto vgID = inTensor->consumers.findLowestVirtualGraphID();
-
-  initOp->setVirtualGraphId(vgID);
-  hostLoadOp->setVirtualGraphId(vgID);
-
-  initOp->settings.tileSet     = inTensor->inputSettings.tileSet();
-  hostLoadOp->settings.tileSet = inTensor->inputSettings.tileSet();
-
-  if (ir.getSessionOptions().enablePipelining) {
-    auto plStage = inTensor->consumers.findLowestPipelineStage();
-    initOp->setPipelineStage(plStage);
-    hostLoadOp->setPipelineStage(plStage);
-  }
-
   initOp->setup();
   hostLoadOp->setup();
 
@@ -124,9 +118,23 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor) const {
       consumer->connectInTensor(index, loadId);
     }
   }
+
+  // Order important
+  hostLoadOp->inheritPlacementAttributes(false, aliasModel);
+  initOp->inheritPlacementAttributes(false, aliasModel);
+
+  auto vgid = graph.getTensor(loadId)->getVirtualGraphIdUnsafe();
+  if (vgid != unusedVGraphId) {
+    initOp->setVirtualGraphId(vgid);
+    hostLoadOp->setVirtualGraphId(vgid);
+  }
+
+  initOp->settings.tileSet     = inTensor->inputSettings.tileSet();
+  hostLoadOp->settings.tileSet = inTensor->inputSettings.tileSet();
 }
 
-void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
+void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor,
+                                    AliasModel &aliasModel) const {
 
   auto &graph          = anchorTensor->getGraph();
   auto &ir             = graph.getIr();
@@ -166,17 +174,11 @@ void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor) const {
   hostStoreOp->connectInTensor(HostStoreOp::getLocalTensorInIndex(),
                                anchorTensor->id);
 
-  if (anchorTensor->hasProducer()) {
-    auto producer = anchorTensor->getProducer();
+  hostStoreOp->inheritPlacementAttributes(false, aliasModel);
 
-    if (producer->hasVirtualGraphId()) {
-      hostStoreOp->setVirtualGraphId(producer->getVirtualGraphId());
-    }
-
-    if (ir.getSessionOptions().enablePipelining &&
-        producer->hasPipelineStage()) {
-      hostStoreOp->setPipelineStage(producer->getPipelineStage());
-    }
+  auto vgid = anchorTensor->getVirtualGraphIdUnsafe();
+  if (vgid != unusedVGraphId) {
+    hostStoreOp->setVirtualGraphId(vgid);
   }
 
   hostStoreOp->settings.tileSet =

@@ -1156,6 +1156,8 @@ bool Op::isOutlineable() const { return true; }
 
 bool Op::hasSideEffect() const { return false; }
 
+bool Op::canRecompute() const { return !hasSideEffect(); }
+
 void Op::getInTensorData(TensorId tensorId,
                          std::vector<int64_t> &data,
                          std::vector<DataType> dataTypes) {

@@ -23,8 +23,8 @@ public:
   }
 
 private:
-  void setupHostLoadOps(Tensor *) const;
-  void setupHostStoreOps(Tensor *) const;
+  void setupHostLoadOps(Tensor *, AliasModel &) const;
+  void setupHostStoreOps(Tensor *, AliasModel &) const;
 
 private:
   int pass;

@@ -774,12 +774,30 @@ public:
   // Get approximation of cost of activations between fwd/bwd graph.
   virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen);
 
-  // Allow an op to exclude itself from caching. If this method returns false
-  // it will mean that any possiable subgraph that this op is part of will
-  // not be cached. The default is enabled (return true)
+  /**
+   * Allow an op to exclude itself from caching. If this method returns false
+   * it will mean that any possible subgraph that this op is part of will
+   * not be cached.
+   * \return If an Op can be outlined. The default is enabled (return true).
+   */
   virtual bool isOutlineable() const;
 
+  /**
+   * If the Op has any effect that is not captured by the (modification of)
+   * input or output tensors, such as modifying the state of the IPU or host
+   * system.
+   * \return If the Op has side effects. The default is false.
+   */
   virtual bool hasSideEffect() const;
+
+  /**
+   * If the Op can be recomputed (cloned to produce the same output twice).
+   * The function checks the safeness of recompute in the context of explicit
+   * recompute. It may still be unsafe for implicit recompute.
+   * \return If the Op can be recomputed.
+   *         The default is to return hasSideEffect().
+   */
+  virtual bool canRecompute() const;
 
   bool inputsUnmodifiable() const;
 

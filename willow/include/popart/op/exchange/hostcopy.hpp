@@ -52,6 +52,8 @@ public:
 
   bool canShard() const final { return false; }
 
+  bool hasSideEffect() const override { return true; }
+
   ExchangeDescriptor getExchangeDescriptor(int index) const final;
 
 private:
