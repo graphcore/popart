@@ -6,8 +6,8 @@
 
 namespace popart {
 
-TensorGradRegistry::TensorGradRegistry(AutodiffIrInterface &ir_)
-    : partial{}, complete{}, failed{}, ir{ir_}, expectedNumEdges{},
+TensorGradRegistry::TensorGradRegistry(Graph &fwdGraph_)
+    : partial{}, complete{}, failed{}, fwdGraph{fwdGraph_}, expectedNumEdges{},
       edgesToLoss{} {}
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
@@ -107,12 +107,12 @@ TensorGradRegistry::popFailed() {
 void TensorGradRegistry::initialize() {
 
   // set all edge counts to zero (we set from scratch in this function)
-  for (TensorId tid : ir.get().getMainGraph().getTensors().getAllTensorIds()) {
-    Tensor *t      = ir.get().getMainGraph().getTensors().get(tid);
+  for (TensorId tid : fwdGraph.get().getTensors().getAllTensorIds()) {
+    Tensor *t      = fwdGraph.get().getTensors().get(tid);
     edgesToLoss[t] = 0;
   }
 
-  for (auto &id_op : ir.get().getMainGraph().getOps()) {
+  for (auto &id_op : fwdGraph.get().getOps()) {
     Op *op = id_op.second.get();
 
     // If Op goes to Loss, then for each of its inputs, +1 path
@@ -124,8 +124,8 @@ void TensorGradRegistry::initialize() {
     }
   }
 
-  for (TensorId tid : ir.get().getMainGraph().getTensors().getAllTensorIds()) {
-    Tensor *t = ir.get().getMainGraph().getTensors().get(tid);
+  for (TensorId tid : fwdGraph.get().getTensors().getAllTensorIds()) {
+    Tensor *t = fwdGraph.get().getTensors().get(tid);
     logging::trace("Edges to loss: {} {}", tid, edgesToLoss[t]);
   }
 }
@@ -134,7 +134,7 @@ void TensorGradRegistry::logDump(logging::Level level) const {
 
   auto logTMap = [&](const TMap &tmap, const char *store) {
     for (const auto &entry : tmap) {
-      Tensor *nonGrad = ir.get().getMainGraph().getTensors().get(entry.first);
+      Tensor *nonGrad = fwdGraph.get().getTensors().get(entry.first);
       logging::log(logging::Module::transform,
                    level,
                    logging::format("[Autodiff]  - {}/{} {} ({})",

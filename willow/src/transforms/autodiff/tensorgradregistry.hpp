@@ -5,8 +5,6 @@
 #include <popart/names.hpp>
 #include <popart/tensor.hpp>
 
-#include <transforms/autodiff/autodiffirinterface.hpp>
-
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -18,7 +16,7 @@ namespace popart {
 class TensorGradRegistry {
 public:
   // Constructor.
-  TensorGradRegistry(AutodiffIrInterface &ir);
+  TensorGradRegistry(Graph &fwdGraph_);
 
   using TMap = std::map<TensorId, std::vector<Tensor *>>;
   // Register tensor "edgeGrad" as being a
@@ -31,15 +29,15 @@ public:
 
   int getNumberExpectedEdges(Tensor *nonGrad) const;
 
-  // Return a non-gradient tensors which has ALL their
+  // Return a non-gradient tensor which has ALL their
   // required gradients registered, and is thus ready to
   // have their edge gradients summed to
   // obtain the final gradient, if available.
   // Note that this is NOT a const pop member function
   nonstd::optional<TMap::value_type> popComplete();
 
-  // Return a non-gradient tensors for which we've failed
-  // to create the requird gradients, if available.
+  // Return a non-gradient tensor for which we've failed
+  // to create the required gradients, if available.
   // Note that this is NOT a const pop member function
   nonstd::optional<TMap::value_type> popFailed();
 
@@ -61,8 +59,8 @@ private:
   // edge gradients.
   TMap failed;
 
-  // Reference to IR.
-  std::reference_wrapper<AutodiffIrInterface> ir;
+  // Reference to forward Graph.
+  std::reference_wrapper<Graph> fwdGraph;
   // the number of edges expected to register gradients for a non-grad tensor.
   std::map<TensorId, int> expectedNumEdges;
 

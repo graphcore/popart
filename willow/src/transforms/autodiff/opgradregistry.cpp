@@ -8,8 +8,8 @@
 
 namespace popart {
 
-OpGradRegistry::OpGradRegistry(AutodiffIrInterface &ir_)
-    : ir{ir_}, partial{}, complete{}, failed{}, completeOrFailed{},
+OpGradRegistry::OpGradRegistry(Graph &fwdGraph_)
+    : fwdGraph{fwdGraph_}, partial{}, complete{}, failed{}, completeOrFailed{},
       edgesToLoss{} {}
 
 void OpGradRegistry::insert(Op *nonGrad, int index) {
@@ -108,12 +108,12 @@ nonstd::optional<Op *> OpGradRegistry::popFailed() {
 void OpGradRegistry::initialize() {
 
   // set all edge counts to zero (we set from scratch in this function)
-  for (auto &id_op : ir.get().getMainGraph().getOps()) {
+  for (auto &id_op : fwdGraph.get().getOps()) {
     Op *op          = id_op.second.get();
     edgesToLoss[op] = 0;
   }
 
-  for (auto &id_op : ir.get().getMainGraph().getOps()) {
+  for (auto &id_op : fwdGraph.get().getOps()) {
     Op *op = id_op.second.get();
 
     // For each Op, how many OutIndices lead to loss?
@@ -131,7 +131,7 @@ void OpGradRegistry::logDump(logging::Level level) const {
   auto logMap = [&](const std::map<OpId, std::set<int>> &map,
                     const char *store) {
     for (const auto &entry : map) {
-      Op *nonGrad = ir.get().getMainGraph().getOp(entry.first);
+      Op *nonGrad = fwdGraph.get().getOp(entry.first);
       logging::log(logging::Module::transform,
                    level,
                    logging::format("[Autodiff]  - {}/{} {} ({})",

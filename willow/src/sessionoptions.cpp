@@ -260,6 +260,29 @@ std::ostream &operator<<(std::ostream &os, const TensorLocationSettings &tls) {
   return os;
 }
 
+std::string toString(const AutodiffStitchStrategy &s) {
+  switch (s) {
+  case AutodiffStitchStrategy::RecomputeMinimal:
+    return "AutodiffStitchStrategy::RecomputeMinimal";
+  case AutodiffStitchStrategy::RecomputeAllNonInputs:
+    return "AutodiffStitchStrategy::RecomputeAllNonInputs";
+  case AutodiffStitchStrategy::AddFwdOutputs:
+    return "AutodiffStitchStrategy::AddFwdOutputs";
+  case AutodiffStitchStrategy::SafeAddFwdOutputs:
+    return "AutodiffStitchStrategy::SafeAddFwdOutputs";
+  case AutodiffStitchStrategy::N:
+  default:
+    throw error("No implementation of toString for AutodiffStitchStrategy "
+                "with int value {}",
+                static_cast<int>(s));
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, const AutodiffStitchStrategy &s) {
+  os << toString(s);
+  return os;
+}
+
 // No implementation required
 
 } // namespace popart

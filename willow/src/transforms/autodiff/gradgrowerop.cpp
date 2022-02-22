@@ -7,23 +7,27 @@
 #include <popart/op.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 
-GradGrowerOp::GradGrowerOp(AutodiffIrInterface &dep)
-    : GradGrowerOpInterface(), AutodiffHelper(dep) {}
+GradGrowerOp::GradGrowerOp(AutodiffIrInterface &dep_)
+    : GradGrowerOpInterface(), AutodiffHelper(dep_) {}
 
 std::vector<Op *>
-GradGrowerOp::growGradOps(Op *nonGradOp,
+GradGrowerOp::growGradOps(Graph &bwdGraph,
+                          Op *nonGradOp,
                           const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
   logging::ir::debug("Growing grad ops for {}", nonGradOp->str());
 
+  auto &ir = dep.get();
+
   PipelineStage maxPipelineStage = 0;
-  if (dep.get().getSessionOptions().enablePipelining) {
+  if (ir.getSessionOptions().enablePipelining) {
     // the last fwd pass pipeline stage is also the first bwd pass pipeline
     // stage.
-    maxPipelineStage = dep.get().getFinalLossPipelineStage() * 2;
+    maxPipelineStage = ir.getFinalLossPipelineStage() * 2;
   }
 
   OpId nonGradOpId  = nonGradOp->id;
@@ -38,7 +42,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
-    OpId gradOpId = dep.get().getMainGraph().moveIntoGraph(std::move(upop));
+    OpId gradOpId = bwdGraph.moveIntoGraph(std::move(upop));
 
     // Reset priority, since fwd priority should not influence bwd priority
     //
@@ -53,13 +57,13 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
     if (gradOp->hasExecutionPhase()) {
       // Remap from forward to backward execution phase
       gradOp->setExecutionPhase(
-          2 * dep.get().getSessionOptions().executionPhaseSettings.phases - 2 -
+          2 * ir.getSessionOptions().executionPhaseSettings.phases - 2 -
           gradOp->getExecutionPhase());
     }
 
     if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
-        dep.get().getSessionOptions().autoRecomputationEnabled() &&
-        dep.get().getSessionOptions().executionPhaseSettings.phases < 2) {
+        ir.getSessionOptions().autoRecomputationEnabled() &&
+        ir.getSessionOptions().executionPhaseSettings.phases < 2) {
       throw error("Grad Ops should be grown before recompute annotation");
     }
 
@@ -70,6 +74,19 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
       gradOp->setPipelineStage(maxPipelineStage -
                                nonGradOp->getPipelineStage());
     }
+
+    // To retrieve the inputs we need to connect to the grad op:
+    //
+    // For inputs that are forward tensors, they will have been cloned into the
+    // backward graph already, regardless of whether we did recompute or
+    // fwdoutput stitching. Therefore, we use `fwdIdToClonedBwdId` to get the id
+    // of the cloned tensor in the bwd graph from the fwd graph. Note, if this
+    // is the main graph, then bwd graph and fwd graph will be the same, so this
+    // is a nop.
+    //
+    // For inputs that are upstream gradient tensors, we expect them to have
+    // already been created, and retrieve them by using `fwdIdToBwdGradId` on
+    // the forward tensor in the fwd graph.
 
     // connect inputs of gradOp
     {
@@ -90,7 +107,10 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::In: {
           if (nonGradOp->input->hasIndex(indexFwd)) {
-            m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
+            const auto &inIdInFwdGraph = nonGradOp->input->tensor(indexFwd)->id;
+            const auto inIdInBwdGraph  = fwdIdToClonedBwdId(
+                nonGradOp->getGraph(), bwdGraph, inIdInFwdGraph);
+            m_inputs[indexGrad] = inIdInBwdGraph;
           } else if (isInputOptional(nonGradOp, indexFwd)) {
             m_inputs[indexGrad] = TensorId();
           } else {
@@ -113,7 +133,10 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
                         nonGradOp->debugName(),
                         indexFwd);
           }
-          m_inputs[indexGrad] = nonGradOp->output->tensor(indexFwd)->id;
+          const auto &outIdInFwdGraph = nonGradOp->output->tensor(indexFwd)->id;
+          const auto outIdInBwdGraph  = fwdIdToClonedBwdId(
+              nonGradOp->getGraph(), bwdGraph, outIdInFwdGraph);
+          m_inputs[indexGrad] = outIdInBwdGraph;
           break;
         }
 
@@ -128,11 +151,16 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
                         indexFwd);
           }
 
-          auto gradTensorId =
-              getGradId(nonGradOp->output->tensor(indexFwd)->id);
-          if (dep.get().getMainGraph().getTensors().contains(
-                  gradTensorId, gradOp->getScope())) {
-            m_inputs[indexGrad] = gradTensorId;
+          const auto &nonGradId = nonGradOp->output->tensor(indexFwd)->id;
+          const auto bwdGraphGradId =
+              fwdIdToBwdGradId(nonGradOp->getGraph(), bwdGraph, nonGradId);
+
+          // Surely this is an error if false (unless optional input)? See
+          // D49736 for when it was changed to not be an error.
+          // Do we need to pass scope to contains?
+          if (bwdGraph.getTensors().contains(bwdGraphGradId,
+                                             gradOp->getScope())) {
+            m_inputs[indexGrad] = bwdGraphGradId;
           } else {
             m_inputs[indexGrad] = TensorId();
           }
@@ -141,8 +169,7 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
         }
       }
 
-      dep.get().getMainGraph().connectInputs(InputMapWrapper(m_inputs),
-                                             gradOpId);
+      bwdGraph.connectInputs(InputMapWrapper(m_inputs), gradOpId);
     }
 
     // connect outputs of gradOp
@@ -156,14 +183,16 @@ GradGrowerOp::growGradOps(Op *nonGradOp,
           v_outputs.resize(gradOut + 1, TensorId());
         }
 
+        // To construct the ids of the output tensors of the grad op, we use
+        // `getEdgeGradId` then add the scope of the bwd graph.
         if (nonGradOp->input->hasIndex(nonGradIn)) {
-          TensorId inId      = nonGradOp->input->tensor(nonGradIn)->id;
-          TensorId outId     = getEdgeGradId(nonGradOpId, nonGradIn);
+          TensorId inId = nonGradOp->input->tensor(nonGradIn)->id;
+          TensorId outId =
+              addScope(bwdGraph, getEdgeGradId(nonGradOpId, nonGradIn));
           v_outputs[gradOut] = outId;
         }
       }
-      dep.get().getMainGraph().connectOutputs(OutputVecWrapper(v_outputs),
-                                              gradOpId);
+      bwdGraph.connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
     }
     gradOp->setup();
 

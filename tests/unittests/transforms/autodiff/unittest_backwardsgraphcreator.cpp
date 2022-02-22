@@ -31,3 +31,36 @@ BOOST_AUTO_TEST_CASE(backwardsgraphcreator_genNewBwdGraphId) {
   BOOST_REQUIRE(id1 != id2);
   BOOST_REQUIRE(id0 != id2);
 }
+
+/**
+ * Calling BackwardsGraphCreator::createBackwardsGraph with a bwd graph id that
+ * already exists should throw.
+ */
+BOOST_AUTO_TEST_CASE(
+    backwardsgraphcreator_createBackwardsGraph_with_bwd_graph_id_that_already_exists_throws) {
+  const auto ti = TensorInfo{DataType::FLOAT, Shape{2}};
+
+  Ir ir;
+
+  Graph &mg     = ir.getMainGraph();
+  TensorId mg_t = "t";
+  std::vector<float> mg_t_data(ti.nelms());
+  mg.getTensors().addVarInit(mg_t, ti, mg_t_data.data());
+
+  AutodiffIrAdapter adapter{ir};
+  BackwardsGraphCreator creator{adapter};
+
+  const GraphId bwdGraphId = creator.genNewBwdGraphId(mg.id);
+
+  auto callCreateBackwardsGraph = [&]() {
+    return creator.createBackwardsGraph(
+        mg,
+        bwdGraphId, // Same bwdGraphId every time
+        BackwardsGraphCreator::TensorIds({mg_t}),
+        nonstd::nullopt,
+        {});
+  };
+
+  BOOST_REQUIRE_NO_THROW(callCreateBackwardsGraph());
+  BOOST_REQUIRE_THROW(callCreateBackwardsGraph(), popart::internal_error);
+}

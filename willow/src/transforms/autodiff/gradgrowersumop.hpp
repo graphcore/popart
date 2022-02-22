@@ -5,15 +5,14 @@
 
 #include <memory>
 
-#include <popart/names.hpp>
-
 #include <transforms/autodiff/autodiffhelper.hpp>
 #include <transforms/autodiff/autodiffirinterface.hpp>
+#include <popart/names.hpp>
 
 namespace popart {
 
 // Forward declarations.
-class Ir;
+class Graph;
 class Op;
 class Tensor;
 class AliasModel;
@@ -25,7 +24,8 @@ class GradGrowerSumOpInterface {
 public:
   virtual ~GradGrowerSumOpInterface() = default;
   // Grow a grad sum op, combining a number of gradients into one.
-  virtual Op *growGradSumOp(Tensor *target,
+  virtual Op *growGradSumOp(Graph &bwdGraph,
+                            Tensor *target,
                             const std::vector<Tensor *> &toSum,
                             AliasModel &mainGraphAliasModel) = 0;
 };
@@ -46,9 +46,10 @@ public:
   virtual ~GradGrowerSumOp() = default;
 
   // Grow a grad sum op, combining a number of gradients into one.
-  virtual Op *growGradSumOp(Tensor *target,
+  virtual Op *growGradSumOp(Graph &bwdGraph,
+                            Tensor *target,
                             const std::vector<Tensor *> &toSum,
-                            AliasModel &mainGraphAliasModel) override;
+                            AliasModel &bwdGraphAliasModel) override;
 
   // Prefix for grad sum operations.
   static std::string getGradSumOpNamePrefix();
