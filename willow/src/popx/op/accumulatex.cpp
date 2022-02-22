@@ -452,12 +452,13 @@ snap::Tensor SparseAccumulateOpx::createInputTensor(
     Otherwise, the usual popops::createGatherInput behaviour occurs.
    */
 
+  auto info = inInfo(SparseAccumulateOp::getVarToUpdateInIndex());
+
   if (hasInput(SparseAccumulateOp::getOriginalVarToUpdateInIndex())) {
     auto w = getInTensor(SparseAccumulateOp::getOriginalVarToUpdateInIndex());
-    return graph().clone(w, dnai);
+    return graph().clone(popx::popType(info), w, dnai);
   }
 
-  auto info        = inInfo(SparseAccumulateOp::getVarToUpdateInIndex());
   const auto shape = info.shape_szt();
 
   const auto &op = getOp<SparseAccumulateOp>();
