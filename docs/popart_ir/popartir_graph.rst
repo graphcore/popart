@@ -1,5 +1,24 @@
-You can create a :numref:`subgraph_concept` in ``popart.ir`` by calling, for example, ``ir.create_graph("graph")``.
-You then connect it with the caller graph using ``ops.call``.
+.. _sec_graphs:
+
+Graphs
+======
+
+.. _sec_maingraphs:
+
+Main graph
+-----------
+
+You can create the main graph of an IR by calling ``popart.ir.main_graph()``.
+The returned main graph can be used as a context to include its operations
+and tensors.
+
+.. _sec_subgraphs:
+
+Subgraphs
+-----------
+
+You can create a :ref:`subgraph <graph_concept>` in ``popart.ir`` by calling, for example, ``ir.create_graph("graph")``.
+You then connect it with the calling graph using ``ops.call``.
 In ``popart.ir``, you have access to ``create_graph`` before you call a graph with
 ``ops.call``, which gives you the flexibility to manipulate the graph.
 
@@ -7,7 +26,7 @@ In ``popart.ir``, you have access to ``create_graph`` before you call a graph wi
 A subgraph is created and called instead of directly calling the Python function
 ``increment_fn``.
 
-.. literalinclude:: files/basic_subgraph_popart_ir.py
+.. literalinclude:: ../user_guide/files/basic_subgraph_popart_ir.py
   :language: python
   :name: code_basic_subgraph_popart_ir
   :caption: Example to create and call subgraphs
@@ -16,17 +35,17 @@ A subgraph is created and called instead of directly calling the Python function
 
 .. only:: html
 
-    :download:`files/basic_subgraph_popart_ir.py`
+    :download:`Download basic_subgraph_popart_ir.py <../user_guide/files/basic_subgraph_popart_ir.py>`
 
-Create a subgraph
-..................
+Creating a subgraph
+-------------------
 
 You can create a subgraph by calling the function ``ir.create_graph``.
 You can use the same function to create multiple subgraphs.
-In the example in :numref:`create_multi_subgraphs_from_same_func_popart_ir`, two different graphs are created
+In the example in :numref:`code_create_multi_subgraphs_from_same_func_popart_ir`, two different graphs are created
 for different input tensors, ``w1`` and ``w2``, which have different shapes.
 
-.. literalinclude:: files/create_multi_subgraphs_from_same_func_popart_ir.py
+.. literalinclude:: ../user_guide/files/create_multi_subgraphs_from_same_func_popart_ir.py
   :language: python
   :name: code_create_multi_subgraphs_from_same_func_popart_ir
   :caption: Example of creating multiple subgraphs with same function
@@ -35,14 +54,15 @@ for different input tensors, ``w1`` and ``w2``, which have different shapes.
 
 .. only:: html
 
-    :download:`files/create_multi_subgraphs_from_same_func_popart_ir.py`
+    :download:`Download create_multi_subgraphs_from_same_func_popart_ir.py
+    <../user_guide/files/create_multi_subgraphs_from_same_func_popart_ir.py>`
 
 You can also create the subgraph with an additional graph input with ``popart.ir.subgraph_input``
 in its Python function. The ``subgraph_input`` creates a new input tensor for the
 subgraph. An example can be found in :numref:`multi_call_subgraph_input_example`.
 
-Call a subgraph
-...............
+Calling a subgraph
+----------------------
 
 After you have created a subgraph, you can invoke it with an op ``call`` with
 the provided input tensors as follows:
@@ -67,7 +87,7 @@ In this example, the subgraph was created with an additional graph input ``value
 When you call this subgraph, you will have to pass a tensor to the subgraph
 for this input as well. You can use it to instantiate the weights of layers internally.
 
-.. literalinclude:: files/multi_call_subgraph_input_popart_ir.py
+.. literalinclude:: ../user_guide/files/multi_call_subgraph_input_popart_ir.py
   :language: python
   :start-after: Op begin
   :end-before: Op end
@@ -76,7 +96,7 @@ for this input as well. You can use it to instantiate the weights of layers inte
 
 .. only:: html
 
-    :download:`files/multi_call_subgraph_input_popart_ir.py`
+    :download:`Download multi_call_subgraph_input_popart_ir.py <../user_guide/files/multi_call_subgraph_input_popart_ir.py>`
 
 
 You can call a graph and get the information about the call site by using the op
@@ -97,7 +117,7 @@ that the input ``subgraph_tensor`` can be modified by this ``call_with_info`` op
 support for in-place variable updates like in :numref:`code_call_with_info_popart_ir`. After calling the subgraph, the value
 of variable tensor ``x`` is changed to 2.
 
-.. literalinclude:: files/call_with_info_popart_ir.py
+.. literalinclude:: ../user_guide/files/call_with_info_popart_ir.py
   :language: python
   :name: code_call_with_info_popart_ir
   :caption: Example of ``call_with_info`` op
@@ -106,13 +126,14 @@ of variable tensor ``x`` is changed to 2.
 
 .. only:: html
 
-    :download:`files/call_with_info_popart_ir.py`
+    :download:`Download call_with_info_popart_ir.py <../user_guide/files/call_with_info_popart_ir.py>`
 
-The op ``call_with_info`` is helpful when building and optimizing the backward graph. More details are given in :numref:`autodiff`.
+The op ``call_with_info`` is helpful when building and optimizing the backward graph.
+More details are given in :numref:`autodiff`.
 
 
-Call a subgraph in a loop
-.........................
+Calling a subgraph in a loop
+---------------------------------
 
 You can use ``ops.repeat`` to create a loop, see :py:func:`popart.ir.ops.repeat()`.
 
@@ -155,7 +176,7 @@ from ``increment_fn`` is called twice. The input ``x`` is incremented twice by
 ``value``. After the first iteration, the outputs ``x + value`` and ``value``
 are copied to the inputs for the second iteration.
 
-.. literalinclude:: files/repeat_subgraph_popart_ir_0.py
+.. literalinclude:: ../user_guide/files/repeat_subgraph_popart_ir_0.py
   :language: python
   :name: code_repeat_subgraph_popart_ir_0
   :caption: Example of ``repeat`` op to increment a tensor by a fixed value
@@ -164,7 +185,7 @@ are copied to the inputs for the second iteration.
 
 .. only:: html
 
-    :download:`files/repeat_subgraph_popart_ir_0.py`
+    :download:`Download repeat_subgraph_popart_ir_0.py <../user_guide/files/repeat_subgraph_popart_ir_0.py>`
 
 
 :numref:`code_repeat_subgraph_popart_ir_1` shows how to use the
@@ -172,7 +193,7 @@ are copied to the inputs for the second iteration.
 layer. The subgraph ``linear_graph`` is created from the module ``build``
 method.
 
-.. literalinclude:: files/repeat_subgraph_popart_ir_1.py
+.. literalinclude:: ../user_guide/files/repeat_subgraph_popart_ir_1.py
   :language: python
   :name: code_repeat_subgraph_popart_ir_1
   :caption: Example of ``repeat`` op using ``subgraph_in_to_parent_in``
@@ -181,4 +202,4 @@ method.
 
 .. only:: html
 
-    :download:`files/repeat_subgraph_popart_ir_1.py`
+    :download:`Download repeat_subgraph_popart_ir_1.py <../user_guide/files/repeat_subgraph_popart_ir_1.py>`

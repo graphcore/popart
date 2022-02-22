@@ -43,9 +43,10 @@ with open(sys.argv[1], "w") as f:
         print(f".. list-table:: Available operations in ``{package_name}``",
               file=f)
         print(f"   :header-rows: 1", file=f)
-        print(f"   :width: 90%", file=f)
-        print(f"   :widths: 50, 50", file=f)
+        print(f"   :width: 100%", file=f)
+        print(f"   :widths: 45, 55", file=f)
         print(f"   :name: {name}_available_ops", file=f)
+        print(f"   :class: longtable", file=f)
         print(f"", file=f)
         print(f"   * - Operation", file=f)
         print(f"     - Description", file=f)

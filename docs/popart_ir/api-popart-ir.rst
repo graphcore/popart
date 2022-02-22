@@ -1,7 +1,7 @@
 .. _popart-ir-api:
 
-PopART IR Python API (experimental)
-===================================
+Python API Reference
+====================
 
 .. warning::
      This Python module is currently experimental and may be subject to change
@@ -15,7 +15,6 @@ of models created with PopART.
 
 This is an experimental PopART Python module that allows you to create (and to a limited degree manipulate) PopART IRs
 directly.
-This provides greater flexibility than is possible using the standard PopART API.
 
 
 .. autoclass:: popart.ir.Ir
@@ -49,7 +48,7 @@ Contexts
 Data types
 ----------
 
-.. autoclass:: popart.ir.dtypes
+.. autoclass:: popart.ir.dtype
     :members:
     :undoc-members:
     :special-members:

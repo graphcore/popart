@@ -1,3 +1,8 @@
+.. _sec_operations:
+
+Operations
+==========
+
 Operations in a graph are connected by input and output tensors.
 Each operation is applied to the input tensors, and optionally produces output tensors.
 The supported operations are listed in :numref:`popart_ir_ops_available_ops`.
@@ -8,7 +13,7 @@ Within the context of the ``main`` graph, ``host_load``, ``add`` and ``host_stor
 are added to the main graph.
 
 Data input and output
-.....................
+---------------------
 
 In ``popart.ir``, you can create a data transfer stream from the host to the device by using:
 
@@ -16,13 +21,13 @@ In ``popart.ir``, you can create a data transfer stream from the host to the dev
 
   h2d_stream(shape: Iterable[int], dtype: dtype, name: Optional[str] = None)
 
-then load data through the host to the device stream by using:
+Then load data through the host to the device stream by using:
 
 .. code-block:: python
 
   host_load(h2d_stream: HostToDeviceStream, name: Optional[str] = None)
 
-where the ``h2d_stream`` handles the stream, and the ``name`` is the
+Where the ``h2d_stream`` handles the stream, and the ``name`` is the
 name of the returned tensor.
 
 Similarly, you can create a data transfer stream from the device to the host by using:
@@ -31,17 +36,17 @@ Similarly, you can create a data transfer stream from the device to the host by 
 
   d2h_stream(shape: Iterable[int], dtype: dtype, name: Optional[str] = None)
 
-then store data from device to host by using:
+Then store data from device to host by using:
 
 .. code-block:: python
 
   host_store(d2h_stream: DeviceToHostStream, t: Tensor)
 
-where the ``t`` is the tensor to be copied to the host.
+Where the ``t`` is the tensor to be copied to the host.
 
 
 List of available operations
-............................
+----------------------------
 
 The operations currently supported in ``popart.ir`` are listed in :numref:`popart_ir_ops_available_ops`, :numref:`popart_ir_ops_collectives_available_ops` and :numref:`popart_ir_ops_var_updates_available_ops`.
 

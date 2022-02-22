@@ -1,3 +1,8 @@
+.. _sec_tensors:
+
+Tensors
+=======
+
 You define a tensor with shape, data type and optional initialisation data.
 A tensor has zero or more consumer operations and up to one producer operation.
 
@@ -13,7 +18,7 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 ``b`` is a constant tensor, and ``o`` is an intermediate tensor.
 
 
-.. literalinclude:: files/tensor_addition_popart_ir.py
+.. literalinclude:: ../user_guide/files/tensor_addition_popart_ir.py
   :language: python
   :name: tensor_addition_code
   :caption: Example of tensor addition
@@ -22,10 +27,10 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 
 .. only:: html
 
-    :download:`files/tensor_addition_popart_ir.py`
+    :download:`Download tensor_addition_popart_ir.py <../user_guide/files/tensor_addition_popart_ir.py>`
 
 Constant
-........
+-----------
 
 A constant tensor is initialised with data during graph creation.
 This tensor cannot change during the runtime of a model.
@@ -45,7 +50,7 @@ can also be written as:
   o = a + 1
 
 Variable
-........
+-----------
 
 A variable tensor represents trainable parameters in a model
 or non-trainable optimizer states.
@@ -63,7 +68,7 @@ from the host before running the graph by using ``session.weightsFromHost()``.
 
 
 Intermediate
-............
+------------
 
 An intermediate tensor is produced by an operation, which means it is not initialised
 with data. It stays live in IPU memory from when it is produced until the last time

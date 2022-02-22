@@ -8,6 +8,5 @@ PopART Python API Reference
 
     intro
     api-python
-    api-popart-ir
     genindex
     legal
