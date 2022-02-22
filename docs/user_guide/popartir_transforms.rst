@@ -24,8 +24,6 @@ Currently, we support the following transforms:
   -  autodiff
   -  merge_exchange
 
-.. _autodiff:
-
 Autodiff
 """"""""
 
@@ -78,11 +76,11 @@ with ``autodiff`` for a ``linear_graph``.
 #. Last, call the gradient graph using ``ops.call``. The argument ``grad_seed`` is the initial value of the partial gradient. Increasing this ``grad_seed`` can serve as loss scaling. The ``activation`` is used to connect the input of the gradient graph with the caller graph.
 
 
-.. literalinclude:: ../user_guide/files/autodiff_popart_ir.py
+.. literalinclude:: files/autodiff_popart_ir.py
   :language: python
   :start-after: Op begin
   :end-before: Op end
 
 .. only:: html
 
-    :download:`Download autodiff_popart_ir.py <../user_guide/files/autodiff_popart_ir.py>`
+    :download:`files/autodiff_popart_ir.py`

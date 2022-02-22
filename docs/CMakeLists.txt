@@ -118,7 +118,7 @@ if (BUILD_DOCS)
   set(SUPPORTED_POPARTIR_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popartir_supported_ops_gen.rst)
   add_custom_command(
     OUTPUT ${SUPPORTED_POPARTIR_OPS_GEN}
-    COMMAND
+    COMMAND 
         bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
         python3 gen_popartir_supported_ops.py ${SUPPORTED_POPARTIR_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -222,7 +222,6 @@ if (BUILD_DOCS)
   build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "user_guide" "PopART User Guide" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "api_cpp" "PopART C++ API" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "api_python" "PopART Python API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popart_ir" "ir_user_guide" "popart.ir User Guide and API" "${DOCS_VERSION}")
 
   add_custom_target(ug_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
@@ -245,13 +244,6 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
   )
 
-  add_custom_target(ir_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_ir_user_guide
-    VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_ir_user_guide
-  )
-
   # Make a copy of the support_ops doc to be uploaded to Artifactory so
   # it can be used to builed the externally published docs. This does not
   # need to be installed as part of the SDK package.
@@ -268,11 +260,9 @@ if (BUILD_DOCS)
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf ${PROJECT_BINARY_DIR}/${CPP_API_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf ${PROJECT_BINARY_DIR}/${PYTHON_API_PDF_NAME}
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_PDF_NAME}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
-            ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf
   )
 
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION docs
@@ -282,7 +272,6 @@ if (BUILD_DOCS)
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
-    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf
     DESTINATION docs/pdf
     COMPONENT popart-docs)
 

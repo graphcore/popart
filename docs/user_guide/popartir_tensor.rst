@@ -13,7 +13,7 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 ``b`` is a constant tensor, and ``o`` is an intermediate tensor.
 
 
-.. literalinclude:: ../user_guide/files/tensor_addition_popart_ir.py
+.. literalinclude:: files/tensor_addition_popart_ir.py
   :language: python
   :name: tensor_addition_code
   :caption: Example of tensor addition
@@ -22,7 +22,7 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 
 .. only:: html
 
-    :download:`Download tensor_addition_popart_ir.py <../user_guide/files/tensor_addition_popart_ir.py>`
+    :download:`files/tensor_addition_popart_ir.py`
 
 Constant
 ........
