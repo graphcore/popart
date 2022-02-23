@@ -35,6 +35,11 @@ bool RemoveUnnecessaryLossGradCast::matches(Op *lossOp) const {
     return false;
   }
 
+  // Check that what appears to be a loss scale tensor only have one element
+  if (lossScaleTensor->info.nelms() != 1) {
+    return false;
+  }
+
   // Check that the loss scale has a producer
   if (!lossScaleTensor->hasProducer()) {
     return false;

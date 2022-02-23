@@ -20,6 +20,9 @@ public:
   int64_t getInputSize() const;
 
   int64_t getHiddenSize() const;
+
+  // Always returns 1, the default number of directions for all RNNs
+  virtual int64_t getNumDirections() const;
   // checks that the ONNX hidden_size attribute matches up with the input tensor
   // shapes
   void checkHiddenSize() const;
@@ -103,6 +106,7 @@ public:
   const unsigned input_size;
   const unsigned max_seq_length;
   const unsigned hidden_size;
+  // Always 1, the default number of directions for all RNNs
   const unsigned num_directions = 1;
 
 protected:

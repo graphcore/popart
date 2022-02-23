@@ -29,7 +29,6 @@ public:
   void setup() final;
 
   unsigned getNumChannels() const;
-  int64_t getNumDirections() const;
 
   nonstd::optional<float> getAvailableMemoryProportion() const;
 

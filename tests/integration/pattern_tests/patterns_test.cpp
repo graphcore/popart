@@ -11,6 +11,7 @@
 #include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/graph.hpp>
 #include <popart/graphcoreoperators.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
@@ -86,54 +87,125 @@ BOOST_AUTO_TEST_CASE(Atan2GradOps) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::ReduceSum).size() == 2);
 }
 
-BOOST_AUTO_TEST_CASE(RemoveUnnecessaryLossGradCastTest) {
-  // clang-format off
-  // {(fp32LossScale)} -> [Cast] -> (fp16LossScale) -> [NllLossGradOp] -> (fp16Grad)
-  // {(fp16Probs)}     --------------------------------------^
-  //
-  // should become
-  //
-  // {(fp32LossScale)} -> [NllLossGradOp] -> (fp16Grad)
-  // {(fp16Probs)}     ---------^
-  // clang-format on
+struct RemoveUnnecessaryLossGradCastSetup {
+  RemoveUnnecessaryLossGradCastSetup() : mainGraph(ir.getMainGraph()) {}
+
+  void createMainGraph() {
+    // Add input tensors to the graph
+    mainGraph.addInput(fp32LossScale, fp32Info);
+    mainGraph.addInput(i16Labels, i16Info);
+    mainGraph.addInput(fp16Probs, fp16Info);
+
+    // Add the CastOp
+    castOp = mainGraph.createConnectedOp<CastOp>(
+        {{CastOp::getInIndex(), fp32LossScale}},
+        {{CastOp::getOutIndex(), fp16LossScale}},
+        Onnx::Operators::Cast_6,
+        DataType::FLOAT16,
+        Op::Settings(mainGraph, ""));
+
+    // Add the NllGradOp
+    nllGradOp = mainGraph.createConnectedOp<NllGradOp>(
+        {{NllGradOp::getProbsInIndex(), fp16Probs},
+         {NllGradOp::getLabelInIndex(), i16Labels},
+         {NllGradOp::getGradInIndex(), fp16LossScale}},
+        {{NllGradOp::getOutIndex(), fp16Grad}},
+        tmpLoss,
+        nonstd::optional<int>(),
+        ReductionType::Mean,
+        false,
+        Op::Settings(mainGraph, ""));
+
+    // Mark fp16Grad as output
+    mainGraph.markAsOutput(fp16Grad);
+  }
 
   Ir ir;
-  auto &mainGraph = ir.getMainGraph();
+  Graph &mainGraph;
+  CastOp *castOp;
+  NllGradOp *nllGradOp;
+
+  // Input to CastOp
+  TensorId fp32LossScale = {"fp32LossScale"};
+  // Output from CastOp
+  TensorId fp16LossScale = {"fp16LossScale"};
+  // Input to NllLossGradOp
+  TensorId fp16Probs = {"fp16Probs"};
+  TensorId i16Labels = {"i16Labels"};
+  // NllLossGradOp placeholder
+  TensorId tmpLoss = {"tmpLoss"};
+  // Output form NllLossGradOp
+  TensorId fp16Grad = {"fp16Grad"};
+
+  // The pattern to check
+  RemoveUnnecessaryLossGradCast pattern = RemoveUnnecessaryLossGradCast();
 
   // Define the TensorInfos and the TensorIds
   TensorInfo fp32Info{DataType::FLOAT, std::vector<int64_t>{1}};
   TensorInfo i16Info{DataType::INT16, std::vector<int64_t>{2}};
   TensorInfo fp16Info{DataType::FLOAT16, std::vector<int64_t>{2, 2}};
-  // Input to CastOp
-  TensorId fp32LossScale("fp32LossScale");
-  // Output from CastOp
-  TensorId fp16LossScale("fp16LossScale");
-  // Input to NllLossGradOp
-  TensorId fp16Probs("fp16Probs");
-  TensorId i16Labels("i16Labels");
-  // NllLossGradOp placeholder
-  TensorId tmpLoss("tmpLoss");
-  // Output form NllLossGradOp
-  TensorId fp16Grad("fp16Grad");
+};
 
-  // Add input tensors to the graph
-  mainGraph.addInput(fp32LossScale, fp32Info);
-  mainGraph.addInput(i16Labels, i16Info);
-  mainGraph.addInput(fp16Probs, fp16Info);
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastMatchCastTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // Test that the match function for RemoveUnnecessaryLossGradCast fails when
+  // there is no CastOp
 
-  // Add the CastOp
-  auto castOp = mainGraph.createConnectedOp<CastOp>(
-      {{CastOp::getInIndex(), fp32LossScale}},
-      {{CastOp::getOutIndex(), fp16LossScale}},
-      Onnx::Operators::Cast_6,
-      DataType::FLOAT16,
+  // Create the main graph
+  createMainGraph();
+
+  // Check that we get a match on the original nllGradOp
+  BOOST_CHECK(pattern.matches(nllGradOp));
+
+  // Replace the CastOp with IdentityOp
+  castOp->disconnectAllInputs();
+  castOp->disconnectAllOutputs();
+  mainGraph.eraseOp(castOp->id);
+  mainGraph.createConnectedOp<IdentityOp>(
+      {{IdentityOp::getInIndex(), fp32LossScale}},
+      {{IdentityOp::getOutIndex(), fp16LossScale}},
+      Onnx::Operators::Identity_1,
       Op::Settings(mainGraph, ""));
 
-  // Add the NllGradOp
-  auto *nllGradOp = mainGraph.createConnectedOp<NllGradOp>(
+  BOOST_CHECK(!pattern.matches(nllGradOp));
+}
+
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastMatchHasProducerTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // Test that the match function for RemoveUnnecessaryLossGradCast fails when
+  // the loss scale tensor has no producer
+
+  // Create the main graph
+  createMainGraph();
+
+  // Check that we get a match on the original nllGradOp
+  BOOST_CHECK(pattern.matches(nllGradOp));
+
+  // Ensure the lossScaleTensor doesn't have a producer
+  castOp->disconnectAllOutputs();
+  BOOST_CHECK(!mainGraph.getTensor(fp16LossScale)->hasProducer());
+  BOOST_CHECK(!pattern.matches(nllGradOp));
+}
+
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastMatchNelmsTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // Test that the match function for RemoveUnnecessaryLossGradCast fails when
+  // the loss scale tensor has more than one element
+
+  // Create a tensor with more than one element
+  TensorInfo fp16Info2Elms{DataType::FLOAT16, std::vector<int64_t>{2}};
+  TensorId fp16LossScaleW2Elements = {"fp16LossScaleW2Elements"};
+
+  // Add tensors to the graph
+  mainGraph.addInput(fp16LossScaleW2Elements, fp16Info2Elms);
+  mainGraph.addInput(i16Labels, i16Info);
+  mainGraph.addInput(fp16Probs, fp16Info2Elms);
+
+  // Setup the new nllGradOp
+  nllGradOp = mainGraph.createConnectedOp<NllGradOp>(
       {{NllGradOp::getProbsInIndex(), fp16Probs},
        {NllGradOp::getLabelInIndex(), i16Labels},
-       {NllGradOp::getGradInIndex(), fp16LossScale}},
+       {NllGradOp::getGradInIndex(), fp16LossScaleW2Elements}},
       {{NllGradOp::getOutIndex(), fp16Grad}},
       tmpLoss,
       nonstd::optional<int>(),
@@ -141,8 +213,71 @@ BOOST_AUTO_TEST_CASE(RemoveUnnecessaryLossGradCastTest) {
       false,
       Op::Settings(mainGraph, ""));
 
-  // Mark fp16Grad as output
-  mainGraph.markAsOutput(fp16Grad);
+  BOOST_CHECK(!pattern.matches(nllGradOp));
+}
+
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastMatchTypeTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // Test that the match function for RemoveUnnecessaryLossGradCast fails when
+  // the loss scale tensor is not of FLOAT16
+
+  // Add tensors to the graph
+  mainGraph.addInput(fp32LossScale, fp32Info);
+  mainGraph.addInput(i16Labels, i16Info);
+  mainGraph.addInput(fp16Probs, fp16Info);
+
+  // Setup the new nllGradOp
+  nllGradOp = mainGraph.createConnectedOp<NllGradOp>(
+      {{NllGradOp::getProbsInIndex(), fp16Probs},
+       {NllGradOp::getLabelInIndex(), i16Labels},
+       {NllGradOp::getGradInIndex(), fp32LossScale}},
+      {{NllGradOp::getOutIndex(), fp16Grad}},
+      tmpLoss,
+      nonstd::optional<int>(),
+      ReductionType::Mean,
+      false,
+      Op::Settings(mainGraph, ""));
+
+  BOOST_CHECK(!pattern.matches(nllGradOp));
+}
+
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastNotMixedPrecisionTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // Test that the match function for RemoveUnnecessaryLossGradCast fails when
+  // it's not a mixed precision loss grad
+
+  // Add tensors to the graph
+  TensorId fp32Probs = {"fp32Probs"};
+  mainGraph.addInput(fp32LossScale, fp32Info);
+  mainGraph.addInput(fp32Probs, fp32Info);
+
+  auto identityOp = mainGraph.createConnectedOp<IdentityOp>(
+      {{IdentityOp::getInIndex(), fp32LossScale}},
+      {{IdentityOp::getOutIndex(), fp16LossScale}},
+      Onnx::Operators::Identity_1,
+      Op::Settings(mainGraph, ""));
+
+  BOOST_CHECK(!pattern.matches(identityOp));
+}
+
+BOOST_FIXTURE_TEST_CASE(RemoveUnnecessaryLossGradCastTest,
+                        RemoveUnnecessaryLossGradCastSetup) {
+  // clang-format off
+  // Check that
+  //
+  // {(fp32LossScale)} -> [Cast] -> (fp16LossScale) -> [NllLossGradOp] -> (fp16Grad)
+  // {(fp16Probs)}     --------------------------------------^
+  //
+  // becomes
+  //
+  // {(fp32LossScale)} -> [NllLossGradOp] -> (fp16Grad)
+  // {(fp16Probs)}     ---------^
+  //
+  // when applying RemoveUnnecessaryLossGradCast
+  // clang-format on
+
+  // Create the main graph
+  createMainGraph();
 
   // Check that the IR contains the CastOp and fp16LossScale
   BOOST_CHECK(castOp->input->tensors().size() == 1);
