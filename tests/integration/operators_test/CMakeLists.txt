@@ -76,6 +76,7 @@ add_popart_py_unit_test(multiconv_test multiconv_test.py)
 add_popart_py_unit_test(onehot_test onehot_test.py)
 # add_popart_py_unit_test(op_tester op_tester.py) Utility
 add_popart_py_unit_test(operators_test operators_test.py)
+add_popart_py_unit_test(operators_test_2 operators_test_2.py)
 add_popart_py_unit_test(pattern_op_removal_test pattern_op_removal_test.py)
 add_popart_py_unit_test(pooling_test pooling_test.py)
 add_popart_py_unit_test(pow_test pow_test.py)
