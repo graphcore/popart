@@ -7,7 +7,6 @@ import popart.ir as pir
 import popart.ir.ops as ops
 from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 from popart.ir.tensor import Tensor, Variable
-import popart
 
 from .pipeline_test_runner import PipelineTestRunner
 
@@ -589,11 +588,9 @@ def test_pipelined_inference():
 
     pipeline_test_runner.set_options()
     weights_and_biases = pipeline_test_runner.get_weights_and_biases()
-    session, t_in_id, t_out_id = pipeline_test_runner.build_popart_ir_model(
+    session, t_in_h2d, t_out_d2h = pipeline_test_runner.build_popart_ir_model(
         weights_and_biases)
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
     # Initialize the result and full_dataset_data
     full_dataset_data = np.empty(
         (pipeline_test_runner.batches["n_step_io_calls"],
@@ -605,9 +602,6 @@ def test_pipelined_inference():
          pipeline_test_runner.batches["compute_batches"],
          pipeline_test_runner.nn_dims["n_outputs"])).astype(np.float32)
 
-    # Copy the weights and biases from the host
-    session.weightsFromHost()
-
     # Run the model
     for run_nr in range(pipeline_test_runner.batches["n_step_io_calls"]):
         # Create the dataset data
@@ -616,11 +610,11 @@ def test_pipelined_inference():
              *pipeline_test_runner.stream_input_shape))
         full_dataset_data[run_nr, ...] = dataset_data
 
-        stepio = popart.PyStepIO({t_in_id: dataset_data}, anchors)
-        session.run(stepio)
+        data = {t_in_h2d: dataset_data}
+        outputs = session.run(data)
 
         # Append the result
-        result[run_nr, ...] = anchors[t_out_id]
+        result[run_nr, ...] = outputs[t_out_d2h]
 
     # Compare outcome from popart.ir with outcome from pytorch
     pipeline_test_runner.compare_with_reference(result, full_dataset_data,

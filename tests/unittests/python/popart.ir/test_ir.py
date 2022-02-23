@@ -332,3 +332,69 @@ class TestCreateGraph:
         x = g.get_input_tensors()[0]
         assert x == g._by_ref_inputs.pop()
         assert x.name == "x"
+
+
+def test_num_host_transfers_property():
+    ir = pir.Ir()
+    di = ir.num_host_transfers
+    dj = di + 10
+    ir.num_host_transfers = dj
+    assert ir.num_host_transfers != di
+    assert ir.num_host_transfers == dj
+
+
+def test_get_all_d2h_streams():
+
+    ir = pir.Ir()
+
+    with ir.main_graph():
+        v = pir.variable(1)
+        d = pir.d2h_stream(v.shape, v.dtype)
+        ops.host_store(d, v)
+        e = pir.d2h_stream(v.shape, v.dtype)
+        ops.host_store(e, v)
+        f = pir.d2h_stream(v.shape, v.dtype)
+        h = pir.h2d_stream(v.shape, v.dtype)
+        w = v + 1
+
+    expected_d2h_ids = [d.tensor_id(), e.tensor_id()]
+    # No ops.host_store along stream f, therefore it is not expected.
+    unexpected_d2h_ids = [f.tensor_id(), w.id, v.id, h.tensor_id()]
+
+    d2hs = ir.get_all_d2h_streams()
+
+    assert len(d2hs) == 2
+    _pb_mg = ir._pb_ir.getMainGraph()
+    for d2h in d2hs:
+        assert d2h.tensor_id() in expected_d2h_ids
+        assert d2h.tensor_id() not in unexpected_d2h_ids
+        assert d2h.tensor_id() in _pb_mg
+
+
+def test_get_all_h2d_streams():
+
+    ir = pir.Ir()
+
+    with ir.main_graph():
+        v = pir.variable(1)
+        d = pir.h2d_stream(v.shape, v.dtype)
+        a = ops.host_load(d)
+        e = pir.h2d_stream(v.shape, v.dtype)
+        b = ops.host_load(e)
+        f = pir.h2d_stream(v.shape, v.dtype)
+        g = pir.d2h_stream(v.shape, v.dtype)
+        w = v + a + b
+        ops.host_store(g, w)
+
+    expected_h2d_ids = [d.tensor_id(), e.tensor_id()]
+    # No ops.host_store along stream f, therefore it is not expected.
+    unexpected_h2d_ids = [w.id, v.id, a.id, b.id, f.tensor_id(), g.tensor_id()]
+
+    h2ds = ir.get_all_h2d_streams()
+
+    assert len(h2ds) == 2
+    _pb_mg = ir._pb_ir.getMainGraph()
+    for h2d in h2ds:
+        assert h2d.tensor_id() not in unexpected_h2d_ids
+        assert h2d.tensor_id() in expected_h2d_ids
+        assert h2d.tensor_id() in _pb_mg

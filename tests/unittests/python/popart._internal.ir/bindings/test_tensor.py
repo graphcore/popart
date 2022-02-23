@@ -121,20 +121,14 @@ def test_tensor_tensor_data():
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        t.tensorData()
-        assert e_info.value.args[0] == "Data not set for t"
-    with pytest.raises(popart.popart_exception) as e_info:
-        t.tensorData_const()
+        t.dataAsFloat32()
         assert e_info.value.args[0] == "Data not set for t"
 
-    buffer = np.random.rand(2, 3, 4)
+    buffer = np.random.rand(2, 3, 4).astype(np.float32)
     tInfo = _ir.TensorInfo(_ir.DataType.FLOAT, buffer.shape)
     t.setTensorData(tInfo, buffer)
 
-    # TODO(T42205): Test that the returned tensor data matches the one that was
-    # set.
-    t.tensorData()
-    t.tensorData_const()
+    assert np.allclose(t.dataAsFloat32(), buffer)
 
 
 def test_tensor_get_graph():

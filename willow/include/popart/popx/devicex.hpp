@@ -99,6 +99,9 @@ public:
   // device ->host stream -> specified host addresses
   void weightsToHost(const std::map<TensorId, MutableVoidData> &);
 
+  /// Copy data from the host buffers to the `tensor.tensorData()` buffers.
+  void weightsToTensorData();
+
   // TODO T8229 : change these names to disambiguate
   // the source and destination
 

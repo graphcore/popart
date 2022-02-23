@@ -235,6 +235,30 @@ public:
     }
     return shape_v[i];
   }
+
+  /**
+   * Get the strides of the tensor, that is the number of bytes to step in each
+   * dimension when traversing an array in memory. See
+   * https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
+   *
+   * \returns std::vector<int> The strides vector.
+   */
+  std::vector<int> strides() {
+    auto shape = this->shape();
+
+    if (shape.size() == 0) {
+      return {};
+    } else if (shape.size() == 1 && shape.at(0) == 0) {
+      return {this->getDataTypeInfo()->nbytes()};
+    }
+    std::vector<int> strides(shape.size(), 0);
+    strides[strides.size() - 1] = this->getDataTypeInfo()->nbytes();
+    for (int i = shape.size() - 2; i >= 0; i--) {
+      strides[i] = strides[i + 1] * shape[i + 1];
+    }
+    return strides;
+  }
+
   DataType dataType() const;
   const std::string &data_type() const;
   const std::string &data_type_lcase() const;

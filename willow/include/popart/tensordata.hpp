@@ -58,8 +58,19 @@ public:
     return result;
   }
 
+  /// Get the IsSyncedWithIPU bool. See isSyncedWithIPU.
+  bool getIsSyncedWithIPU() const { return isSyncedWithIPU; }
+
+  /// Set the IsSyncedWithIPU bool. See isSyncedWithIPU.
+  void setIsSyncedWithIPU(bool val) { isSyncedWithIPU = val; }
+
 private:
   std::vector<char> data_;
+
+  /// Is the data stored in data_ in sync with the data on the IPU? If not a
+  /// call to Devicex::readWeightsToTensorData will be required before reading
+  /// the tensor's data
+  bool isSyncedWithIPU = false;
 };
 
 } // namespace popart

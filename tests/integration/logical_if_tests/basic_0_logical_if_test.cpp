@@ -255,6 +255,13 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
+  // Note: in D56156 it was identified this test was assuming the weight updates
+  // were not happening and comparing "stale" outputs. The test was updated with
+  // learning rate 0 to stop the weight update.
+  // We are only interested in values of gradients and outputs, we don't want a
+  // weight update to happen.
+  runner.optimizer =
+      std::unique_ptr<SGD>(new SGD({{"defaultLearningRate", {0.0f, false}}}));
   runner.patterns.enableInPlace(false);
   runner.isTraining = true;
 
@@ -333,6 +340,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train0) {
   auto resultChecker = [&in0, &in1, &out](std::vector<TestTensor> &results) {
     BOOST_CHECK_EQUAL(results.size(), 3);
     std::map<TensorId, std::vector<float>> expected{
+        // output is the same for both runs
         {out, {3, 5, 7, 9}},
         {getGradId(in0), {0.1, 0.1, 0.1, 0.1}},
         {getGradId(in1), {0.1, 0.1, 0.1, 0.1}}};
@@ -367,6 +375,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train1) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
+  // We are only interested in values of gradients and outputs, we don't want a
+  // weight update to happen.
+  runner.optimizer =
+      std::unique_ptr<SGD>(new SGD({{"defaultLearningRate", {0.0f, false}}}));
   runner.opts.dotChecks.insert("Final");
   runner.opts.separateCallOpPdfs = false;
   runner.patterns.enableInPlace(false);
@@ -518,6 +530,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train2) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
+  // We are only interested in values of gradients and outputs, we don't want a
+  // weight update to happen.
+  runner.optimizer =
+      std::unique_ptr<SGD>(new SGD({{"defaultLearningRate", {0.0f, false}}}));
   runner.patterns.enableInPlace(false);
   runner.patterns.enableMulArgGradOp(true);
   runner.isTraining = true;
@@ -666,6 +682,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_train3) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
+  // We are only interested in values of gradients and outputs, we don't want a
+  // weight update to happen.
+  runner.optimizer =
+      std::unique_ptr<SGD>(new SGD({{"defaultLearningRate", {0.0f, false}}}));
   runner.patterns.enableInPlace(false);
   runner.isTraining = true;
 
@@ -857,6 +877,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_inputs_differ_train0) {
   ConstVoidData in1CVData = {in1Data, info};
 
   TestRunner runner;
+  // We are only interested in values of gradients and outputs, we don't want a
+  // weight update to happen.
+  runner.optimizer =
+      std::unique_ptr<SGD>(new SGD({{"defaultLearningRate", {0.0f, false}}}));
   runner.patterns.enableInPlace(false);
   runner.patterns.enableSubtractArg1GradOp(true);
   runner.isTraining = true;

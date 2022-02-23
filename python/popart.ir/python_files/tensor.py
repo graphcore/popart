@@ -147,6 +147,21 @@ class Tensor:
         return self._pb_tensor.tensorLocationInfo
 
     @property
+    def strides(self) -> Tuple[int]:
+        """ Get the strides of the tensor, that is the number of bytes to step in each
+        dimension when traversing an array in memory. See
+        https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
+
+        Returns:
+            List[int]: The strides of the tensor.
+        """
+        return tuple(self._pb_tensor.info.strides())
+
+    @property
+    def name(self) -> str:
+        return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
+
+    @property
     @debug_context_frame_offset(2)
     def T(self) -> 'Tensor':
         """The tensor transposed with reversed axes."""
@@ -179,6 +194,10 @@ class Tensor:
         _, tile_set = self._get_ipu_and_tile_set(
             raise_on_undefined_tile_set=True, raise_on_undefined_ipu=False)
         return tile_set
+
+    @property
+    def in_sync_with_ipu(self) -> bool:
+        return self._pb_tensor.isInSyncWithIPU()
 
     ## Methods
     def ir(self) -> 'Ir':

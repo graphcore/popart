@@ -253,6 +253,28 @@ void Devicex::weightsToHost() {
   }
 }
 
+void Devicex::weightsToTensorData() {
+  POPART_TRACEPOINT();
+  auto tensors = executable_.getWeightTensors();
+  std::map<TensorId, MutableVoidData> Wdata;
+  std::transform(tensors.begin(),
+                 tensors.end(),
+                 std::inserter(Wdata, Wdata.end()),
+                 [](Tensor *t) {
+                   MutableVoidData tData;
+                   tData.data = t->tensorData()->data();
+                   tData.info = t->info;
+                   return std::make_pair(t->id, tData);
+                 });
+  // Actually do the transfer for these tensors.
+  weightsToHost(Wdata);
+
+  // Host weights now in sync with IPU
+  for (auto t : executable_.getWeightTensors()) {
+    t->tensorData()->setIsSyncedWithIPU(true);
+  }
+}
+
 void Devicex::remoteBufferWeightsToHost() {
   POPART_TRACEPOINT();
   for (auto *tensor : executable_.getWeightTensors()) {
@@ -519,10 +541,10 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
   // behaviour is deterministic on all hardware but comes at the cost of
   // some performance. Note that we expect actual random Ops to be explicitly
   // seeded (so they are not affected) so the only time we actually need this
-  // option is when the user enables stochastic rounding. We set this to "false"
-  // when stochastic rounding is not enabled for a small performance boost. Note
-  // that we avoid setting the option all together if the user sets it
-  // explicitly.
+  // option is when the user enables stochastic rounding. We set this to
+  // "false" when stochastic rounding is not enabled for a small performance
+  // boost. Note that we avoid setting the option all together if the user
+  // sets it explicitly.
   if (ir().getSessionOptions().engineOptions.find(
           "target.deterministicWorkers") ==
       ir().getSessionOptions().engineOptions.end()) {
@@ -782,8 +804,8 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
 
   // Check that the input and output buffers have the correct number of
   // elements. As run(.) is called multiple times during a user's session, the
-  // check is only performed in the first call to run, under the assumption that
-  // the user is unlikely to change the size of buffers between runs.
+  // check is only performed in the first call to run, under the assumption
+  // that the user is unlikely to change the size of buffers between runs.
   if (nCallsToRun == 0 && stepio.runtimeAssertsEnabled()) {
     stepio.assertNumElements(executable_);
   }
@@ -1237,8 +1259,8 @@ void Devicex::loadEngineAndConnectStreams() {
     }
   }
 
-  setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
-                           // no randomness)
+  setRandomSeedFromHost(); // Stream random seed value by default (prog empty
+                           // if no randomness)
   if (ir().canTrain()) {
     executable_.updateOptimizerTensors();
     optimizerFromHost();
@@ -1324,8 +1346,9 @@ void Devicex::prepare() {
       // If the creation of the engine throw an exception due to memory
       // allocation i.e. the program does not fit show graph profile and
       // re-throw the exception In certain cases poplar will throw the error
-      // without a graph profile. The following engine option needs to be set to
-      // enable the graph profile in this case "debug.allowOutOfMemory":"true"
+      // without a graph profile. The following engine option needs to be set
+      // to enable the graph profile in this case
+      // "debug.allowOutOfMemory":"true"
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, lowering().reportOptions);
     }

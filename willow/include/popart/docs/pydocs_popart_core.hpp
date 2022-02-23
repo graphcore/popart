@@ -3382,20 +3382,20 @@ Examples of derived sub-groups:
 - IPU-link domain sub-rack:
   ```
     type == Consecutive && replicaGroupSize == 64/replica-size/N
- 
+
 ```
 
   where N is power of two and replicaGroupSize > 1.
 - Complete IPU-link domain / full rack:
   ```
     type == Consecutive && replicaGroupSize == 64/replica-size
- 
+
 ```
 
 - Using GW-links only:
   ```
     type == Orthogonal && replicaGroupSize == 64/replica-size
- 
+
 ```)doc";
 
 static const char *__singlelinedoc_popart_CommGroup =
@@ -13927,6 +13927,12 @@ static const char *__doc_popart_popx_Devicex_weightsToHost_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_weightsToHost_2 =
     R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_weightsToTensorData =
+    R"doc(Copy data from the host buffers to the :code:`tensor.tensorData()` buffers.)doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_weightsToTensorData =
+    R"doc(Copy data from the host buffers to the :code:`tensor.tensorData()` buffers.)doc";
 
 static const char *__doc_popart_popx_Devicex_writeWeights = R"doc()doc";
 

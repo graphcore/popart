@@ -41,7 +41,7 @@ void bindIr(py::module &m) {
       .def("setIsPrepared", &Ir::setIsPrepared)
       .def("isPrepared", &Ir::isPrepared)
       .def("setDataFlow", &Ir::setDataFlow)
-      .def("getDataFlow", &Ir::getDataFlow)
+      .def("getDataFlow", &Ir::getDataFlow, py::return_value_policy::reference)
       .def("applyTransform", &popart::Ir::applyTransform)
       .def("setDeviceInfo", &Ir::setDeviceInfo)
       .def("logIr", &Ir::logIr)
@@ -69,7 +69,15 @@ void bindIr(py::module &m) {
       .def("dataStreamTensors",
            &Ir::dataStreamTensors,
            py::return_value_policy::reference)
-      .def("dotCheckpoint", &Ir::dotCheckpoint);
+      .def("dotCheckpoint", &Ir::dotCheckpoint)
+      .def("getHostStoreTensors",
+           &Ir::getHostStoreTensors,
+           py::return_value_policy::reference)
+      .def("getHostLoadTensors",
+           &Ir::getHostLoadTensors,
+           py::return_value_policy::reference)
+      .def("getTensor", &Ir::getTensor, py::return_value_policy::reference)
+      .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo);
 }
 
 } // namespace ir

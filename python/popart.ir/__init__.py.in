@@ -39,7 +39,9 @@ __all__ = [
     "TensorByRef", "TensorSpec",
     # tensorlocation.py
     "TensorStorage", "TensorLocation", "ReplicatedTensorSharding", "TileSet",
-    "ExecutionContext"
+    "ExecutionContext",
+    # session.py
+    "Session"
 ]
 
 from .context import (get_current_graph, get_main_graph, gcg, gmg,
@@ -59,6 +61,7 @@ from .tensor import (Tensor, variable, remote_variable,
     subgraph_input, subgraph_output, TensorByRef, TensorSpec)
 from .tensorlocation import (TensorStorage, TensorLocation,
     ReplicatedTensorSharding, TileSet, ExecutionContext)
+from .session import Session
 
 from . import transforms
 

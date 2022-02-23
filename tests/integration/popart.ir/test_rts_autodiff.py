@@ -1,12 +1,10 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import sys
 from pathlib import Path
-from typing import List, Mapping, Tuple
+from typing import Mapping, Tuple
 
 import numpy as np
 
-import popart
-import popart._internal.ir as _ir
 import popart.ir as pir
 import popart.ir.dtypes as dtypes
 import popart.ir.ops as ops
@@ -24,6 +22,7 @@ HIDDEN_SIZE = 4
 NUM_LOCAL_REPLICAS = 4
 REMOTE_BUFFER_ID = 1
 REMOTE_BUFFER_IDX = 0
+BATCH_SIZE = NUM_LOCAL_REPLICAS * ACCL_FACTOR
 
 np.random.seed(0)
 weight_data = np.random.rand(NUM_LOCAL_REPLICAS,
@@ -55,12 +54,9 @@ class TestTensorLocation():
     def test_rts(self):
 
         ir = pir.Ir()
-        data: Mapping[str, np.ndarray] = {}
+        data: Mapping[pir.HostToDeviceStream, np.ndarray] = {}
         main = ir.main_graph()
-        opts = ir._pb_ir.getSessionOptions()
-        opts.enableReplicatedGraphs = True
-        opts.replicatedGraphCount = NUM_LOCAL_REPLICAS
-
+        ir.replication_factor = NUM_LOCAL_REPLICAS
         ### Forward pass ###
         with main:
             d0_h2d = pir.h2d_stream((COMP_BATCH, HIDDEN_SIZE),
@@ -68,12 +64,16 @@ class TestTensorLocation():
                                     name="d0_stream")
             d0 = ops.host_load(d0_h2d, "d")
 
-            data[d0_h2d.tensor_id()] = input_data
+            data[d0_h2d] = input_data.reshape(
+                (BATCH_SIZE, COMP_BATCH, HIDDEN_SIZE))
             l0_h2d = pir.h2d_stream((COMP_BATCH, ),
                                     pir.uint32,
                                     name="l0_stream")
             l0 = ops.host_load(l0_h2d, "d")
-            data[l0_h2d.tensor_id()] = label_data
+            data[l0_h2d] = label_data.reshape((
+                BATCH_SIZE,
+                COMP_BATCH,
+            ))
 
             var_shard_shape: Tuple[int, ...] = (weight_data.size //
                                                 NUM_LOCAL_REPLICAS, )
@@ -165,51 +165,24 @@ class TestTensorLocation():
 
         ir._pb_ir.logIr()
 
-        anchors = self.run(
-            ir, data,
-            [y_d2h.tensor_id(),
-             w_d2h.tensor_id(),
-             grad_shard_d2h.tensor_id()])
+        session, outputs = self.run(ir, data)
 
-        np_loaded_w = anchors[w_d2h.tensor_id()]
-        np_grad_shard = anchors[grad_shard_d2h.tensor_id()]
+        np_loaded_w = outputs[w_d2h]
+        np_grad_shard = outputs[grad_shard_d2h]
 
         # Check the weight has updated. So w = weight_data + w'
-        assert np.allclose(np_loaded_w, weight_data + np_grad_shard)
+        np.testing.assert_allclose(np_loaded_w, weight_data + np_grad_shard)
+        # w now has been updated as we have synced remote buffers with device.
+        np.testing.assert_allclose(session.get_tensor_data(w), np_loaded_w)
 
-    def run(self, ir: pir.Ir, data: Mapping[str, np.ndarray],
-            anchor_ids: List[str]):
-        dataFlow = popart.DataFlow(
-            BPS, {id: popart.AnchorReturnType("All")
-                  for id in anchor_ids})
-        ir._pb_ir.setDataFlow(dataFlow)
+    def run(self, ir: pir.Ir,
+            data: Mapping[pir.HostToDeviceStream, np.ndarray]):
 
-        opts = ir._pb_ir.getSessionOptions()
-        opts.enableReplicatedGraphs = True
-        opts.replicatedGraphCount = 4
-        if ACCL_FACTOR > 1:
-            opts.enableGradientAccumulation = True
-            opts.accumulationFactor = ACCL_FACTOR
+        ir.num_host_transfers = 1
+        ir.replication_factor = NUM_LOCAL_REPLICAS
 
-        ir._pb_ir.updateVertices()
-        p = _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal)
-        ir._pb_ir.setPatterns(p)
-        for _g in ir._pb_ir.getAllGraphs():
-            ir._pb_ir.applyPreAliasPatterns(_g)
+        session = pir.Session(ir, "ipu_model")
 
-        device = tu.create_test_device(opts.replicatedGraphCount)
+        outputs = session.run(data)
 
-        session = popart.InferenceSession.fromIr(ir=ir._pb_ir,
-                                                 deviceInfo=device)
-
-        session.prepareDevice()
-
-        session.weightsFromHost()
-
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO(data, anchors)
-
-        session.run(stepio)
-        session.weightsToHost()
-
-        return anchors
+        return session, outputs

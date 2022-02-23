@@ -1,17 +1,19 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """Definition of a class that represents the PopART IR."""
 import inspect
-from weakref import WeakValueDictionary
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Iterable, Union
+import os
 from collections import OrderedDict
 from pathlib import Path
-import os
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    Optional, Set, Tuple, Union)
+from weakref import WeakValueDictionary
 
 import popart
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.module import Module
-from popart.ir.tensor import Tensor, TensorByRef, subgraph_input, subgraph_output, TensorSpec
+from popart.ir.tensor import (Tensor, TensorByRef, TensorSpec, subgraph_input,
+                              subgraph_output)
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
@@ -43,6 +45,9 @@ class Ir:
 
         Ir._ir_cache[self.id] = self
         self._graph_cache: Dict[str, Graph] = {}
+        # If no num_device_iterations, default to 1
+        if not self._pb_ir.getDataFlow().batchesPerStep():
+            self._pb_ir.getDataFlow().setBatchesPerStep(1)
 
     _ir_cache: 'IrCache' = WeakValueDictionary()
 
@@ -62,7 +67,7 @@ class Ir:
 
         Returns:
             Ir:
-                A popart.ir.Ir that represents the passed pb_ir.
+            A popart.ir.Ir that represents the passed pb_ir.
         """
         _id = pb_ir.getId()
         if _id not in Ir._ir_cache:
@@ -316,6 +321,91 @@ class Ir:
         name = name.replace(".<locals>", "")
         name = self._pb_ir.createUniqueSubgraphId(name)
         return name
+
+    def get_all_d2h_streams(self) -> Set['DeviceToHostStream']:
+        """
+        Returns a List of all ``pir.DeviceToHostStreams`` in the IR which has a host_store op that
+        streams along it
+        """
+        from popart.ir.streams import DeviceToHostStream
+
+        # getHostStoreTensors() returns TensorId -> List[Tensor] map. We get the
+        # Tensor from the TensorId, convert to pir.Tensor, then make a
+        # pir.DeviceToHostStream from that.
+        return {
+            DeviceToHostStream._from_tensor(
+                Tensor._from_pb_tensor(
+                    self._pb_ir.getTensor(stream_tensor_id)))
+            for stream_tensor_id, _host_stored_tensors in
+            self._pb_ir.getHostStoreTensors().items()
+        }
+
+    def get_all_h2d_streams(self) -> Set['HostToDeviceStream']:
+        """
+        Returns a List of all ``pir.HostToDeviceStreams`` in the IR which has a host_load op that
+        streams along it
+        """
+        from popart.ir.streams import HostToDeviceStream
+
+        # getHostLoadTensors() returns TensorId -> List[Tensor] map. We get the
+        # Tensor from the TensorId, convert to pir.Tensor, then make a
+        # pir.HostToDeviceStream from that.
+        return {
+            HostToDeviceStream._from_tensor(
+                Tensor._from_pb_tensor(
+                    self._pb_ir.getTensor(stream_tensor_id)))
+            for stream_tensor_id, _host_load_tensors in
+            self._pb_ir.getHostLoadTensors().items()
+        }
+
+    @property
+    def num_host_transfers(self) -> int:
+        """
+        This represents the number of fwd-bwd iterations of the model that your Ir computes.
+
+        This property MUST be set before creating a `popart.ir.Session`.
+
+        More concretely, if your Ir contains an input tensor `x` with shape
+        (2, 5), and you expect that your Ir will stream this tensor a total of
+        4 times, and therefore you need to pass a buffer with shape (4, 2, 5) to
+        each `session.run()` call; then ir.num_host_transfers should equal 4. Note
+        there will also be a replica dimension if using replication.
+
+        Note there are no separate values for "batches per step" and "gradient
+        accumulation", as they are known in PopART's ONNX API. If your Ir
+        represents a batches per step of `bps` and a gradient accumulation
+        factor of `af`, then you should set num_host_transfers to `bps * af`.
+        There are no separate setters for the two values. There will only be a
+        single "num_host_transfers" dimension in the buffer passed to
+        `session.run`.
+        """
+        return self._pb_ir.getDataFlow().batchesPerStep()
+
+    @num_host_transfers.setter
+    def num_host_transfers(self, value: int) -> None:
+        self._pb_ir.getDataFlow().setBatchesPerStep(value)
+
+    @property
+    def replication_factor(self) -> int:
+        """Set the number of model replications.
+
+        For example, if your model requires 1 IPU, a `replication_factor` of 2 will replicate your
+        model so that 2 IPUs are used. If your model is pipelined across 4 IPUs, a `replication_factor`
+        of 4 will use 16 IPUs total. If the training is done across multiple instances then the
+        `replication_factor` is the number of replicas for this instance.
+        """
+        return self._pb_ir.getSessionOptions().getGlobalReplicationFactor()
+
+    @replication_factor.setter
+    def replication_factor(self, value: int) -> None:
+        if self._pb_ir.isPrepared():
+            raise RuntimeError(
+                f"The `Ir` {self.id} is already prepared, you probably have created a session"
+                " associated with this ir and cannot change the replication_factor after this."
+            )
+        if value > 1:
+            self._pb_ir.getSessionOptions().enableReplicatedGraphs = True
+        self._pb_ir.getSessionOptions().replicatedGraphCount = value
 
     @property
     def id(self) -> int:

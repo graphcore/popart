@@ -9,6 +9,7 @@
 #include <string>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
+#include <popart/half.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/tensor.hpp>
@@ -18,6 +19,28 @@ namespace py = pybind11;
 namespace popart {
 namespace _internal {
 namespace ir {
+
+namespace {
+/**
+ * Get the TensorData from a tensor. See Devicex::remoteBufferWeightsToHost.
+ *
+ * @tparam RESULT_TYPE The data type of the tensor.
+ * \param t The tensor.
+ * \returns py::array A Python array of data.
+ */
+template <typename RESULT_TYPE> py::array getTensorData(Tensor &t) {
+  auto data = reinterpret_cast<RESULT_TYPE *>(t.tensorData()->data());
+  std::vector<int64_t> shape = t.info.shape();
+  auto strides               = t.info.strides();
+  // Note: py::memoryview::from_buffer doesn't malloc, it just provides a view
+  // into some existing memory
+  // See:
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html#memory-view
+  return py::memoryview::from_buffer(data, // buffer pointer
+                                     shape,
+                                     strides);
+}
+} // namespace
 
 void bindTensor(py::module &m) {
   py::enum_<TensorType>(m, "TensorType")
@@ -93,16 +116,12 @@ void bindTensor(py::module &m) {
       .def("isAnchored", &Tensor::isAnchored)
       .def("isRootAnchor", &Tensor::isRootAnchor)
       .def("hasTensorData", &Tensor::hasTensorData)
-      .def("tensorData",
-           py::overload_cast<>(&Tensor::tensorData),
-           py::return_value_policy::reference)
-      .def("tensorData_const",
-           py::overload_cast<>(&Tensor::tensorData, py::const_),
-           py::return_value_policy::reference)
+      // tensorData defined for different data types below
       .def("anyAlias", &Tensor::anyAlias)
       .def("setTensorData",
            [](Tensor &self, const TensorInfo &info, py::array data) {
-             data = makeContiguous(data);
+             data      = makeContiguous(data);
+             self.info = info;
              self.setTensorData(info, data.request().ptr);
            })
       .def("associatedOps", &Tensor::associatedOps)
@@ -154,6 +173,47 @@ void bindTensor(py::module &m) {
       .def_readonly("tensorLocationInfo", &Tensor::tensorLocationInfo)
       .def_readonly("inputSettings", &Tensor::inputSettings)
       .def_readonly("id", &Tensor::id)
+      .def("isInSyncWithIPU",
+           [](Tensor &self) { return self.tensorData()->getIsSyncedWithIPU(); })
+      .def("dataAsFloat64",
+           [](Tensor &self) { return getTensorData<double>(self); })
+      .def("dataAsFloat32",
+           [](Tensor &self) { return getTensorData<float>(self); })
+      .def("dataAsFloat16",
+           // TODO T50782: Handle fp16 conversion in cpp and avoid the .view()
+           // call in python. We use uint16_t as it's how float16_t is stored in
+           // popart.
+           [](Tensor &self) { return getTensorData<uint16_t>(self); })
+      .def("dataAsInt64",
+           [](Tensor &self) { return getTensorData<int64_t>(self); })
+      .def("dataAsInt32",
+           [](Tensor &self) { return getTensorData<int32_t>(self); })
+      .def("dataAsInt16",
+           [](Tensor &self) { return getTensorData<int16_t>(self); })
+      .def("dataAsInt8",
+           [](Tensor &self) { return getTensorData<int8_t>(self); })
+      .def("dataAsUInt64",
+           [](Tensor &self) { return getTensorData<uint64_t>(self); })
+      .def("dataAsUInt32",
+           [](Tensor &self) { return getTensorData<uint32_t>(self); })
+      .def("dataAsUInt16",
+           [](Tensor &self) { return getTensorData<uint16_t>(self); })
+      .def("dataAsBool", [](Tensor &self) { return getTensorData<bool>(self); })
+      .def(
+          "writeTensorData",
+          [](Tensor &self, py::array &npArray) {
+            if (!isContiguous(npArray)) {
+              throw error(
+                  "writeToMemory is unable to use the numpy output array for "
+                  "tensor "
+                  "'{}' as it is not c-contiguous (a data conversion here "
+                  "could have a "
+                  "significant impact on performance and hence is not allowed)",
+                  self.id);
+            }
+            self.tensorData()->resetData(
+                self.info, static_cast<void *>(npArray.request().ptr));
+          })
       .def("setTensorLocationInfo",
            [](Tensor &self, TensorLocation &tLocation, int a, int b) {
              auto pair = std::pair<RemoteBufferId, RemoteBufferIndex>(a, b);

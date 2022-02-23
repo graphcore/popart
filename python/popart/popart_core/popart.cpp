@@ -694,6 +694,7 @@ PYBIND11_MODULE(popart_core, m) {
             pybind11::return_value_policy::copy,
             DOC(popart, DataFlow, anchors));
     cls.def("art", &DataFlow::art);
+    cls.def("setBatchesPerStep", &DataFlow::setBatchesPerStep);
   }
   {
     py::class_<InputSettings> cls(m, "InputSettings");
@@ -1609,7 +1610,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("dotChecks",
                       &SessionOptions::dotChecks,
                       DOC(popart, SessionOptions, dotChecks));
-
+    cls.def("getGlobalReplicationFactor",
+            &SessionOptions::getGlobalReplicationFactor,
+            DOC(popart, SessionOptions, getGlobalReplicationFactor));
     cls.def_readwrite("enableInplaceAmbiguityChecking",
                       &SessionOptions::enableInplaceAmbiguityChecking);
   }
@@ -1878,6 +1881,8 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("deviceInfo"),
             py::arg("name") = "fromIr");
     cls.def(
+        "getIr", &InferenceSession::getIr, py::return_value_policy::reference);
+    cls.def(
         "compileAndExport",
         [](InferenceSession &session,
            const std::string &filename,
@@ -2007,6 +2012,10 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::return_value_policy::reference);
     cls.def("checkInplacingAmbiguity", &Session::checkInplacingAmbiguity);
+    cls.def(
+        "copyToTensorData",
+        [](InferenceSession &self) { self.getDevice().weightsToTensorData(); },
+        DOC(popart, popx, Devicex, weightsToTensorData));
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");

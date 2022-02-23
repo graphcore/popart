@@ -4,19 +4,10 @@
 import popart.ir as pir
 import popart.ir.ops as ops
 
-import popart._internal.ir as _ir
-
-import popart
 from popart.ir.transforms.autodiff import ExpectedConnection, ExpectedConnectionType
 import numpy as np
 
 from typing import Tuple
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 _BATCH_SIZE = 2
 _IN_FEATURES = 8
@@ -48,7 +39,7 @@ class Linear(pir.Module):
 # Also returns the streams for the input and output tensors, and the data of the
 # variables.
 def build_model(
-) -> Tuple[_ir.Ir, pir.HostToDeviceStream, pir.DeviceToHostStream, pir.
+) -> Tuple[pir.Ir, pir.HostToDeviceStream, pir.DeviceToHostStream, pir.
            DeviceToHostStream, pir.DeviceToHostStream, pir.
            DeviceToHostStream, np.ndarray, np.ndarray]:
     ir = pir.Ir()
@@ -150,7 +141,7 @@ def build_model(
     assert W_grad_d2h is not None
     assert b_grad_d2h is not None
 
-    return ir._pb_ir, x_h2d, y_d2h, x_grad_d2h, W_grad_d2h, b_grad_d2h, W_data, b_data
+    return ir, x_h2d, y_d2h, x_grad_d2h, W_grad_d2h, b_grad_d2h, W_data, b_data
 
 
 def test_autodiff():
@@ -168,59 +159,15 @@ def test_autodiff():
     ir, x_h2d, y_d2h, x_grad_d2h, W_grad_d2h, b_grad_d2h, W_data, b_data = build_model(
     )
 
-    x_id = x_h2d.tensor_id()
-    y_id = y_d2h.tensor_id()
-    x_grad_id = x_grad_d2h.tensor_id()
-    W_grad_id = W_grad_d2h.tensor_id()
-    b_grad_id = b_grad_d2h.tensor_id()
+    ir.num_host_transfers = 1
 
-    ids_to_anchor = [
-        y_id,
-        x_grad_id,
-        W_grad_id,
-        b_grad_id,
-    ]
-
-    arts = {}
-
-    art_all = popart.AnchorReturnType("All")
-    for id in ids_to_anchor:
-        arts[id] = art_all
-
-    bps = 1
-    dataFlow = popart.DataFlow(bps, arts)
-    ir.setDataFlow(dataFlow)
-
-    opts = ir.getSessionOptions()
-    opts.useHostCopyOps = True
-    opts.enableExplicitMainLoops = True
-    opts.aliasZeroCopy = True
-    opts.explicitRecomputation = True
-
-    ir.updateVertices()
-
-    ir.setPatterns(_ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal))
-    for g in ir.getAllGraphs():
-        ir.applyPreAliasPatterns(g)
-        ir.applyInplacePattern(g)
-    ir.updateVertices()
-
-    session = popart.InferenceSession.fromIr(
-        ir=ir, deviceInfo=tu.create_test_device())
-
-    session.prepareDevice()
+    session = pir.Session(ir, 'ipu_model')
 
     # Create data for input x
     x_data = np.ones(_IN_SHAPE, dtype=np.float32)
+    inputs = {x_h2d: x_data}
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
-
-    # Run the model
-    stepio = popart.PyStepIO({x_id: x_data}, anchors)
-
-    session.weightsFromHost()
-    session.run(stepio)
+    outputs = session.run(inputs)
 
     def check_tensors(a: np.ndarray, b: np.ndarray):
         assert a.shape == b.shape
@@ -228,15 +175,15 @@ def test_autodiff():
         assert np.allclose(a, b, atol=1e-8)
 
     expected_y = np.matmul(x_data, W_data) + b_data
-    check_tensors(anchors[y_id], expected_y)
+    check_tensors(outputs[y_d2h], expected_y)
 
     expected_y_grad = np.ones(_OUT_SHAPE, dtype=np.float32)
 
     expected_W_grad = x_data.T @ expected_y_grad
-    check_tensors(anchors[W_grad_id], expected_W_grad)
+    check_tensors(outputs[W_grad_d2h], expected_W_grad)
 
     expected_x_grad = expected_y_grad @ W_data.T
-    check_tensors(anchors[x_grad_id], expected_x_grad)
+    check_tensors(outputs[x_grad_d2h], expected_x_grad)
 
     expected_b_grad = expected_y_grad.sum(axis=0)
-    check_tensors(anchors[b_grad_id], expected_b_grad)
+    check_tensors(outputs[b_grad_d2h], expected_b_grad)

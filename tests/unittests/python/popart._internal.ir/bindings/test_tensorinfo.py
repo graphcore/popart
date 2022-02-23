@@ -167,6 +167,29 @@ def test_tensor_info_data_type_lcase(dType, dTypeLowerCase):
     assert tensorInfo.data_type_lcase() == dTypeLowerCase
 
 
+@pytest.mark.parametrize("shape", [[2, 4, 1, 3], [5], [1], [], [1000, 2]])
+@pytest.mark.parametrize("np_dtype,ir_dtype", [
+    (np.float32, _ir.DataType.FLOAT),
+    (np.float16, _ir.DataType.FLOAT16),
+    (np.int32, _ir.DataType.INT32),
+    (np.int16, _ir.DataType.INT16),
+    (np.uint32, _ir.DataType.UINT32),
+    (np.bool_, _ir.DataType.BOOL),
+])
+def test_tensor_strides(shape, np_dtype, ir_dtype):
+    """Test the strides function. See
+     https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
+
+    Args:
+        shape (list[int]): Shape to use
+        np_dtype (np.dtype): Numpy datatype
+        ir_dtype (_ir.DataType): Corresponding PopART datatype
+    """
+    tInfo = _ir.TensorInfo(ir_dtype, shape)
+    arr = np.zeros(shape=shape, dtype=np_dtype)
+    assert tuple(tInfo.strides()) == arr.strides
+
+
 @pytest.mark.parametrize("dType1", [_ir.DataType.FLOAT16, _ir.DataType.FLOAT])
 @pytest.mark.parametrize("shape1, metaShape1", [([2, 3], [6]), ([4, 5], [20])])
 @pytest.mark.parametrize("dType2", [_ir.DataType.FLOAT16, _ir.DataType.FLOAT])

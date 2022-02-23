@@ -7,13 +7,6 @@ import popart.ir as pir
 import popart
 from .reference_models import run_inference_torch_reference_model
 
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-import test_util as tu
-
 
 class PipelineTestRunner:
     """Helper class to run the pipeline tests."""
@@ -115,8 +108,9 @@ class PipelineTestRunner:
 
         return weights_and_biases
 
-    def build_popart_ir_model(self, weights_and_biases: Dict[str, np.array]
-                              ) -> Tuple[popart.InferenceSession, str, str]:
+    def build_popart_ir_model(
+            self, weights_and_biases: Dict[str, np.array]
+    ) -> Tuple[pir.Session, pir.HostToDeviceStream, pir.DeviceToHostStream]:
         """Build the popart.ir model.
 
         Args:
@@ -138,25 +132,12 @@ class PipelineTestRunner:
         t_in_h2d, t_out_d2h = self.model(self.ir, self.stream_input_shape,
                                          weights_and_biases, *self.args)
 
-        # Get the tensor ids
-        t_in_id = t_in_h2d.tensor_id()
-        t_out_id = t_out_d2h.tensor_id()
-
-        # Set the dataflow
-        data_flow = popart.DataFlow(self.batches["micro_batch_size"],
-                                    {t_out_id: popart.AnchorReturnType("All")})
-        self.ir._pb_ir.setDataFlow(data_flow)
-
-        # Prepare graph
-        self.ir._pb_ir.updateVertices()
+        self.ir.num_host_transfers = self.batches["micro_batch_size"]
 
         # Create an IR inference session
-        session = popart.InferenceSession.fromIr(
-            ir=self.ir._pb_ir, deviceInfo=tu.create_test_device(numIpus=4))
+        session = pir.Session(self.ir, "ipu_model")
 
-        session.prepareDevice()
-
-        return session, t_in_id, t_out_id
+        return session, t_in_h2d, t_out_d2h
 
     def compare_with_reference(
             self, results: np.array, dataset_data: np.array,

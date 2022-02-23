@@ -5,16 +5,8 @@
 import popart.ir as pir
 from popart.ir.streams import HostToDeviceStream, DeviceToHostStream
 import popart.ir.ops as ops
-import popart._internal.ir as _ir
-import popart
 import numpy as np
 from typing import Tuple
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 
 class Linear(pir.Module):
@@ -40,7 +32,7 @@ _INPUT_SHAPE = (2, 16)
 # Also returns the streams for the input and output tensors, and the data of the
 # variables.
 def build_model(
-) -> Tuple[_ir.Ir, HostToDeviceStream, DeviceToHostStream, np.array, np.array]:
+) -> Tuple[pir.Ir, HostToDeviceStream, DeviceToHostStream, np.array, np.array]:
     ir = pir.Ir()
 
     main = ir.main_graph()
@@ -70,7 +62,7 @@ def build_model(
         y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="y_stream")
         ops.host_store(y_d2h, y)
 
-    return ir._pb_ir, x_h2d, y_d2h, W_data, b_data
+    return ir, x_h2d, y_d2h, W_data, b_data
 
 
 def test_basic_subgraph():
@@ -86,40 +78,24 @@ def test_basic_subgraph():
     """
     ir, x_h2d, y_d2h, W_data, b_data = build_model()
 
-    x_id = x_h2d.tensor_id()
-    y_id = y_d2h.tensor_id()
+    ir, x_h2d, y_d2h, W_data, b_data = build_model()
 
-    bps = 1
-    dataFlow = popart.DataFlow(bps, {y_id: popart.AnchorReturnType("All")})
-    ir.setDataFlow(dataFlow)
+    ir.num_host_transfers = 1
 
-    opts = ir.getSessionOptions()
-    opts.useHostCopyOps = True
-    opts.enableExplicitMainLoops = True
-    opts.aliasZeroCopy = True
-    opts.explicitRecomputation = True
-
-    ir.updateVertices()
-
-    session = popart.InferenceSession.fromIr(
-        ir=ir, deviceInfo=tu.create_test_device())
-
-    session.prepareDevice()
+    session = pir.Session(ir, 'ipu_model')
+    print(f'expected_inputs = {session.expected_inputs()}')
 
     # Create data for input x
     x_data = np.ones(_INPUT_SHAPE, dtype=np.float32)
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
+    inputs = {x_h2d: x_data}
 
-    # Run the model
-    stepio = popart.PyStepIO({x_id: x_data}, anchors)
-
-    session.weightsFromHost()
-    session.run(stepio)
+    outputs = session.run(inputs)
 
     expected_y = np.matmul(x_data, W_data) + b_data
-    y = anchors[y_id]
+    y = outputs[y_d2h]
+
+    print(f'y = {outputs[y_d2h]}')
 
     assert y.shape == expected_y.shape
     assert y.dtype == expected_y.dtype

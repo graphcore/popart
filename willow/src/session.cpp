@@ -479,6 +479,11 @@ void Session::run(IStepIO &stepio, std::string debugName) {
   device_->run(stepio, debugName);
 
   runCalled = true;
+
+  // Host weights now out of sync with IPU
+  for (auto t : executable_->getWeightTensors()) {
+    t->tensorData()->setIsSyncedWithIPU(false);
+  }
 }
 
 void Session::updateExternallySavedTensorLocations(

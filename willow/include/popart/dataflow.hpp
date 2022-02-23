@@ -244,6 +244,10 @@ public:
     return m_anchors;
   }
 
+  void setBatchesPerStep(const int batchesPerStep) {
+    batchesPerStep_ = batchesPerStep;
+  }
+
 private:
   /// The number of batches processed by the backend in one call to train
   /// or infer.
