@@ -10,6 +10,8 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 
+#include <transforms/autodiff/autodiffirinterface.hpp>
+
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
@@ -20,7 +22,7 @@ class Op;
 class OpGradRegistry {
 public:
   // Constructor.
-  OpGradRegistry(Graph &fwdGraph_);
+  OpGradRegistry(AutodiffIrInterface &ir);
 
   // register that the output of nonGrad Op at OutIndex index
   // has had its gradient tensor computed
@@ -40,7 +42,7 @@ public:
 
 private:
   // Reference to ir.
-  std::reference_wrapper<Graph> fwdGraph;
+  std::reference_wrapper<AutodiffIrInterface> ir;
 
   // For a non-grad-op, which of its outputs (by index)
   // have had a gradient computed

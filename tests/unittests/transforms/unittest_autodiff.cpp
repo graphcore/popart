@@ -927,7 +927,7 @@ BOOST_AUTO_TEST_CASE(autodiff_createBwdGraph_0) {
   auto result = autodiff.createBwdGraph(std::ref(ir),
                                         GraphId("A"),
                                         Autodiff::TensorIds({a_out}),
-                                        nonstd::nullopt,
+                                        Autodiff::TensorIds({}),
                                         FwdGraphToBwdGraphInfo());
 
   // Now it's time to find and check subgraph bwdGraph with id "_k".
@@ -1303,7 +1303,7 @@ BOOST_AUTO_TEST_CASE(autodiff_stitch_0) {
         autodiff.createBwdGraph(std::ref(ir),
                                 irInfo._j,
                                 Autodiff::TensorIds({irInfo.out}),
-                                nonstd::nullopt,
+                                Autodiff::TensorIds({}),
                                 FwdGraphToBwdGraphInfo());
 
     // Do some introspection to get _y.

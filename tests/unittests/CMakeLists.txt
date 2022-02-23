@@ -93,8 +93,8 @@ add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST
 add_popart_cpp_unit_test(unittest_overlapio transforms/unittest_overlapio.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_mainloops transforms/unittest_mainloops.cpp VARIANTS Cpu)
 add_popart_cpp_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)
+add_popart_cpp_unit_test(unittest_backwardsgraphcreatorhelper transforms/autodiff/unittest_backwardsgraphcreatorhelper.cpp)
 add_popart_cpp_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)
-add_popart_cpp_unit_test(unittest_subgraph_autodiff transforms/autodiff/unittest_subgraph_autodiff.cpp TEST_UTILS ir-query-test-util)
 add_popart_cpp_unit_test(unittest_streamingmemory transforms/unittest_streamingmemory.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
 
 add_popart_cpp_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp)

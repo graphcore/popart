@@ -81,8 +81,8 @@ def test_autodiff(
     fwd_bwd["bwd"] = _ir.BwdGraphInfo(g.id, [a], [bwd_info])
 
     # Apply the autodiff
-    result = t.apply(ir, g.id, [out_.id], _ir.OptionalTensors(), fwd_bwd,
-                     stitch_strategy)
+    result = t.apply(ir, g.id, [out_.id], _ir.OptionalTensors([weight.id]),
+                     fwd_bwd, stitch_strategy)
     for gid, bwd_info in result.items():
         assert gid.str() in [
             "",  # main graph

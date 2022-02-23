@@ -1,13 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 
-#include <graphfromlosstolossupdater.hpp>
-#include <transforms/autodiff/autodiffiradapter.hpp>
-#include <transforms/autodiff/gradgrower.hpp>
-#include <transforms/autodiff/gradgrowerop.hpp>
-#include <transforms/autodiff/gradgrowersumop.hpp>
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -18,13 +11,15 @@
 #include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
+#include <transforms/autodiff/gradgrowersumop.hpp>
+
 #include <boost/range/algorithm/find.hpp>
 
 namespace popart {
 
 BackwardsGraphCreatorHelper::BackwardsGraphCreatorHelper(const Graph &fwdGraph_,
                                                          Graph &bwdGraph_)
-    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_) {}
+    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_), gradOpStore() {}
 
 BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
     const TensorIds &gradsProvidedForFwdId,
@@ -71,16 +66,6 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
   ExpectedConnections expectedOutputs;
 
   populateExpConns(expectedInputs, bwdGraph.getInputIds());
-  // IMPORTANT NOTE:
-  // It is a requirement of autodiff that the returned ExpectedConnections for
-  // the outputs of the bwdGraph be in order of gradsRequiredForFwdId (passed to
-  // populateBwdGraph).
-  //
-  // That method will create the bwdGraph outputs in the order of
-  // gradsRequiredForFwdId. This loop then adds the ExpectedConnections in order
-  // of those outputs, thus abiding by our requirement.
-  //
-  // Therefore, THE ORDER OF THE OUTPUT IDS PASSED HERE IS VERY IMPORTANT.
   populateExpConns(expectedOutputs, bwdGraph.getOutputIds());
 
   return BwdGraphInfo{bwdGraph.id, expectedInputs, expectedOutputs};
@@ -109,29 +94,6 @@ void BackwardsGraphCreatorHelper::growGradGraph(
     bwdGraph.getTensors().moveIntoTensors(std::move(bwdTensor));
   }
 
-  std::vector<GradNonGradTensor> gradNonGradTensors;
-  gradNonGradTensors.reserve(gradsProvidedForFwdId.size());
-
-  // TODO(T56304): Remove need to cast away const-ness of fwdGraph. Currently,
-  // we have to set the following state:
-  //   - fromLoss/toLoss, which we unset immediately after anyway.
-  //   - op->setCalledSubgraphGradInfo
-  auto &ncFwdGraph = const_cast<Graph &>(fwdGraph);
-
-  // Initialise FromLoss::No for all forward ops
-  for (auto &id_op : ncFwdGraph.getOps()) {
-    auto op      = id_op.second.get();
-    op->fromLoss = PathFromLoss::No;
-  }
-
-  for (auto t : ncFwdGraph.getTensors().getAll()) {
-    if (t->hasProducer()) {
-      auto op     = t->getProducerUnsafe();
-      t->toLoss   = op->toLoss;
-      t->fromLoss = op->fromLoss;
-    }
-  }
-
   // Create a gradient input tensor for each output tensor of fwdGraph
   for (auto &scopedId : fwdGraph.getOutputIds()) {
     if (std::find(gradsProvidedForFwdId.begin(),
@@ -141,88 +103,81 @@ void BackwardsGraphCreatorHelper::growGradGraph(
       auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
       bwdGraph.addInput(gradId, gradInfo);
       gradTensorMap.insert({scopedId, gradId});
+    }
+  }
 
-      gradNonGradTensors.push_back({bwdGraph.getTensors().get(gradId),
-                                    fwdGraph.getTensors().get(scopedId)});
+  // Add all ops in the fwdGraph to pending ops
+  std::set<Op *> pendingOps;
+  for (auto &id_op : fwdGraph.getOps()) {
+    auto op = id_op.second.get();
+    pendingOps.insert(op);
+  }
 
-      // Initialise FromLoss and ToLoss to ::Yes for all "losses"
-      auto t      = ncFwdGraph.getTensors().get(scopedId);
-      t->fromLoss = PathFromLoss::Yes;
-      t->toLoss   = PathToLoss::Yes;
-      if (t->hasProducer()) {
-        auto op      = t->getProducerUnsafe();
-        op->toLoss   = PathToLoss::Yes;
-        op->fromLoss = PathFromLoss::No;
+  // Get all grad ops now, but don't link them up.
+  for (auto &id_op : fwdGraph.getOps()) {
+    auto op           = id_op.second.get();
+    auto calledGraphs = op->getCalledGraphs();
+    if (!op->getCalledGraphs().empty()) {
+      op->setCalledSubgraphGradInfo(calledGraphsGradInfo);
+    }
+    gradOpStore[op] = op->getGradOps();
+  }
+
+  while (!pendingOps.empty()) {
+    logging::trace("[ ] !pendingOps.empty()");
+    // get all the ops that are ready to grow grad ops
+    std::vector<Op *> readyOps;
+    for (auto op : pendingOps) {
+      if (opIsReadyToCreateGradients(op)) {
+        readyOps.push_back(op);
+      }
+    }
+    if (readyOps.empty()) {
+      // we're stuck.
+      std::stringstream ss;
+      ss << "[Autodiff] Unable to create backwards graph for "
+         << fwdGraph.getGraphString() << " "
+         << "because none of the following ops are ready to grow their grad "
+         << "ops:" << std::endl;
+
+      for (auto op : pendingOps) {
+        ss << " - " << op->str() << " (" << opNotReadyExplanation(op) << ")"
+           << std::endl;
+      }
+      throw error(ss.str());
+    }
+    // remove ready ops from pending
+    for (auto op : readyOps) {
+      pendingOps.erase(pendingOps.find(op));
+    }
+    // grow grad ops for op
+    for (auto fwdOp : readyOps) {
+      auto bwdOps = growGradOps(fwdOp);
+
+      for (auto bwdOp : bwdOps) {
+        registerBwdOp(fwdOp, bwdOp);
       }
     }
   }
 
-  // Needed for GradGrower. We reset all vertices to ::Undefined after, as the
-  // setting is only valid on main graph vertices.
-  graphFromLossToLossUpdater::propagate(ncFwdGraph);
-
-  AliasModel bwdGraphAliasModel;
-  AliasModelGrower aliasModelGrower{bwdGraphAliasModel};
-  aliasModelGrower.growFullGraph(bwdGraph, DataDependenciesOnly::Yes);
-
-  AutodiffIrAdapter adapter{bwdGraph.getIr()};
-  GradGrowerOp gog{adapter};
-  GradGrowerSumOp gsg{adapter};
-
-  GradGrower ad{ncFwdGraph};
-  ad.growGrads(bwdGraph,
-               gradNonGradTensors,
-               {},
-               gog,
-               gsg,
-               const_cast<FwdGraphToBwdGraphInfo &>(calledGraphsGradInfo),
-               bwdGraphAliasModel);
-
-  // Reset all vertices to have from/to loss ::Undefined.
-  graphFromLossToLossUpdater::unsetAll(ncFwdGraph);
-
-  /* Connect up outputs */
-
-  // If null gradsRequiredFor, we output as many input grads as possible.
-  if (!gradsRequiredForFwdId.has_value()) {
-    for (auto &fwdId : fwdGraph.getInputIds()) {
-      // Try to find grad tensor of fwd tensor in bwd graph. If it exists, add
-      // the mapping to `gradTensorMap` and mark the tensor as an output. Note
-      // `gradTensorMap` is a class member used outside this function too, so we
-      // need to preserve that this side-effect has happened by the end of this
-      // function.
-
-      auto gradId = fwdIdToBwdGradId(fwdId);
-      if (bwdGraph.getTensors().contains(gradId)) {
-        gradTensorMap.insert({fwdId, gradId});
-        bwdGraph.markAsOutput(gradId);
-      }
-    }
-    // Else, we try to find all the requested grads and output them. If one is
-    // not found, it is an error. Recall, these can be any grad tensors, not
-    // just grads of the fwd input tensors. It is valid in Popart for a tensor
-    // to be an output and also consumed by further ops in the subgraph.
-  } else {
-    // IMPORTANT NOTE:
-    // It is a requirement of autodiff that the returned ExpectedConnections for
-    // the outputs of the bwdGraph be in order of gradsRequiredForFwdId.
-    //
-    // This loop is adding bwdGraph outputs in the order of
-    // gradsRequiredForFwdId. Then, later, makeGradInfo will generate the
-    // ExpectedConnections in order of the bwdGraph outputs.
-    //
-    // Therefore, THE ORDER OF THIS LOOP IS VERY IMPORTANT.
-    for (const auto &fwdId : *gradsRequiredForFwdId) {
-      auto gradId = fwdIdToBwdGradId(fwdId);
-      if (bwdGraph.getTensors().contains(gradId)) {
-        gradTensorMap.insert({fwdId, gradId});
-        bwdGraph.markAsOutput(gradId);
-      } else {
-        throw error("[Autodiff] Unable to provide required gradient output for "
-                    "fwd id '{}' "
-                    "in bwd graph {}",
-                    fwdId,
-                    bwdGraph.getGraphString());
+  // connect up outputs
+  for (auto &scopedId : fwdGraph.getInputIds()) {
+    if (gradTensorMap.find(scopedId) != gradTensorMap.end()) {
+      auto gradId = fwdIdToBwdGradId(scopedId);
+      bwdGraph.markAsOutput(gradId);
+    } else {
+      // We are unable to provide a gradient output for scopedId, if
+      // `gradsRequiredForFwdId` is set and the scopedId is in it then the
+      // user requires this gradient and being unable to provide it is an error.
+      if (gradsRequiredForFwdId) {
+        if (std::find(gradsRequiredForFwdId->begin(),
+                      gradsRequiredForFwdId->end(),
+                      scopedId) != gradsRequiredForFwdId->end()) {
+          throw error("[Autodiff] Unable to provide gradient output for '{}' "
+                      "in {}",
+                      scopedId,
+                      bwdGraph.getGraphString());
+        }
       }
     }
   }
@@ -246,6 +201,23 @@ void BackwardsGraphCreatorHelper::growGradGraph(
   }
 }
 
+void BackwardsGraphCreatorHelper::registerBwdOp(Op *fwdOp, Op *bwdOp) {
+  for (auto &idx_tensor : bwdOp->output->tensorMap()) {
+    auto bwdOutIndex = idx_tensor.first;
+    auto bwdTensor   = idx_tensor.second;
+    auto fwdInIndex  = bwdOp->getNonGradInIndex(bwdOutIndex);
+    auto fwdTensor   = fwdOp->inTensor(fwdInIndex);
+    gradRegister.insert(fwdTensor, bwdTensor);
+  }
+
+  for (auto &fwdTensor_partials : gradRegister.popComplete()) {
+    auto fwdTensor = fwdTensor_partials.first;
+    auto &partials = fwdTensor_partials.second;
+    auto sumOp     = growGradSumOp(fwdTensor, partials);
+    gradTensorMap.insert({fwdTensor->id, sumOp->outId(0)});
+  }
+}
+
 std::vector<OpId> Graph::getOpIds() const {
   const auto &opMap = getOps();
   std::vector<OpId> opIds;
@@ -256,21 +228,144 @@ std::vector<OpId> Graph::getOpIds() const {
   return opIds;
 }
 
+Op *BackwardsGraphCreatorHelper::growGradSumOp(
+    Tensor *nonGradTensor,
+    const std::vector<Tensor *> &partials) {
+  auto gradId = fwdIdToBwdGradId(nonGradTensor->id);
+  // TODO: T36603 Growing the grad sum with a fixed version may result
+  // in suboptimal outlining (it's included as an outline attribute).
+  auto gradSum = std::make_unique<SumOp>(
+      Onnx::Operators::Sum_8,
+      Op::Settings{bwdGraph,
+                   GradGrowerSumOp::getGradSumOpNamePrefix() + "_" + gradId});
+  OpId opId = bwdGraph.moveIntoGraph(std::move(gradSum));
+
+  std::vector<TensorId> inputs;
+  inputs.reserve(partials.size());
+  for (auto &tensor : partials) {
+    inputs.push_back(tensor->id);
+  }
+
+  std::vector<TensorId> outputs{gradId};
+
+  bwdGraph.connectInputs(InputVecWrapper(inputs), opId);
+  bwdGraph.connectOutputs(OutputVecWrapper(outputs), opId);
+  Op *op = bwdGraph.getOps()[opId].get();
+  op->setup();
+  op->inheritPlacementAttributes(true, gradSumAliases);
+  return op;
+}
+
+bool BackwardsGraphCreatorHelper::bwdIdIsGrad(const TensorId &id) {
+  auto x = removeScope(bwdGraph, id);
+  return popart::isGradId(x);
+}
+
 bool BackwardsGraphCreatorHelper::bwdIdIsNonGrad(const TensorId &id) {
-  auto x = ::popart::removeScope(bwdGraph, id);
-  return !::popart::isGradId(x);
+  auto x = removeScope(bwdGraph, id);
+  return !popart::isGradId(x);
 }
 
 TensorId BackwardsGraphCreatorHelper::fwdIdToBwdGradId(const TensorId &id) {
-  return ::popart::fwdIdToBwdGradId(fwdGraph, bwdGraph, id);
+  auto x = removeScope(fwdGraph, id);
+  x      = popart::getGradId(x);
+  return addScope(bwdGraph, x);
 }
 
 TensorId BackwardsGraphCreatorHelper::bwdGradIdToFwdId(const TensorId &id) {
-  return ::popart::bwdGradIdToFwdId(fwdGraph, bwdGraph, id);
+  auto x = removeScope(bwdGraph, id);
+  x      = popart::getNonGradId(x);
+  return addScope(fwdGraph, x);
 }
 
 TensorId BackwardsGraphCreatorHelper::bwdNonGradIdToFwdId(const TensorId &id) {
-  return ::popart::bwdNonGradIdToFwdId(fwdGraph, bwdGraph, id);
+  auto x = removeScope(bwdGraph, id);
+  return addScope(fwdGraph, x);
+}
+
+bool BackwardsGraphCreatorHelper::opIsReadyToCreateGradients(Op *op) {
+  // Get our grad ops from the grad op store.
+  auto gradOpStoreIt = gradOpStore.find(op);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}", op->debugName());
+  }
+
+  // Check if all of the grad's inputs are available.
+  for (auto &gradOp : gradOpStoreIt->second) {
+    for (auto &inOutMapper : gradOp->gradInputInfo()) {
+      if (!hasInputTensorId(op, inOutMapper)) {
+        return false;
+      }
+      auto inputId = getInputTensorId(op, inOutMapper);
+      if (!bwdGraph.getTensors().contains(inputId)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+std::string BackwardsGraphCreatorHelper::opNotReadyExplanation(Op *op) {
+
+  // Get our grad ops from the grad op store.
+  auto gradOpStoreIt = gradOpStore.find(op);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}", op->debugName());
+  }
+
+  std::stringstream ss;
+  bool isFirst = true;
+
+  // Check if all of the grad's inputs are available.
+  for (auto &gradOp : gradOpStoreIt->second) {
+    for (auto &inOutMapper : gradOp->gradInputInfo()) {
+      if (inOutMapper.type == GradOpInType::GradOut) {
+        auto fwdId = op->outId(inOutMapper.iNonGrad);
+        if (gradTensorMap.find(fwdId) == gradTensorMap.end()) {
+          if (!isFirst) {
+            ss << "and ";
+          }
+          ss << "it needs the gradient tensor for '" << fwdId
+             << "', which has not been produced by any gradient op so far ";
+          isFirst = false;
+        }
+        continue;
+      }
+      auto inputId = getInputTensorId(op, inOutMapper);
+      if (!bwdGraph.getTensors().contains(inputId)) {
+        if (!isFirst) {
+          ss << "and ";
+        }
+        ss << "it needs tensor '" << inputId << "' which is not available yet";
+        isFirst = false;
+      }
+    }
+  }
+
+  return ss.str();
+}
+
+bool BackwardsGraphCreatorHelper::hasInputTensorId(
+    Op *nonGradOp,
+    const GradInOutMapper &inOutMapper) {
+  int indexFwd      = inOutMapper.iNonGrad;
+  GradOpInType type = inOutMapper.type;
+
+  switch (type) {
+  case GradOpInType::In:
+  case GradOpInType::Out: {
+    return true;
+  }
+  case GradOpInType::GradOut: {
+    auto fwdId = nonGradOp->outId(indexFwd);
+    auto found = gradTensorMap.find(fwdId);
+    return (found != gradTensorMap.end());
+  }
+  default: {
+    return false;
+  }
+  }
 }
 
 TensorId BackwardsGraphCreatorHelper::getInputTensorId(
@@ -315,6 +410,87 @@ TensorId BackwardsGraphCreatorHelper::getInputTensorId(
   }
   }
 }
+
+std::vector<Op *> BackwardsGraphCreatorHelper::growGradOps(Op *nonGradOp) {
+  auto nonGradOpId   = nonGradOp->id;
+  auto gradOpStoreIt = gradOpStore.find(nonGradOp);
+  if (gradOpStoreIt == gradOpStore.end()) {
+    throw error("Unexpectedly unable to find grad ops for {}",
+                nonGradOp->debugName());
+  }
+  auto bwdOps = std::move(gradOpStoreIt->second);
+  gradOpStore.erase(gradOpStoreIt);
+
+  std::vector<Op *> result;
+
+  for (auto &uPtrOp : bwdOps) {
+    Op *gradOp    = uPtrOp.get();
+    OpId gradOpId = bwdGraph.moveIntoGraph(std::move(uPtrOp));
+
+    // Reset priority, since fwd priority should not influence bwd priority
+    //
+    // TODO: Uncomment this. This prevented explicit priorities on certain
+    // gradient ops being set which was necessary as a short term fix for
+    // sharded training regressions seen in T17036. This could be replaced
+    // once explicit priorities are no longer needed for this purpose. T17311
+    // should fix this.
+    //
+    // gradOp->settings.schedulePriority = 0.0;
+
+    gradOp->setScope(bwdGraph.getScope());
+
+    if (nonGradOp->settings.recomputeType == RecomputeType::Recompute &&
+        bwdGraph.getIr().autoRecomputationEnabled() &&
+        bwdGraph.getIr().getSessionOptions().executionPhaseSettings.phases <
+            2) {
+      throw error("Grad Ops should be grown before recompute annotation");
+    }
+
+    // connect inputs of gradOp
+    {
+      // inputs to gradOp (to populate in this scope):
+      std::map<int, std::string> m_inputs;
+      for (auto &inOutMapper : gradOp->gradInputInfo()) {
+        int indexGrad       = inOutMapper.iGrad;
+        auto inputId        = getInputTensorId(nonGradOp, inOutMapper);
+        m_inputs[indexGrad] = inputId;
+      }
+
+      bwdGraph.connectInputs(InputMapWrapper(m_inputs), gradOpId);
+    }
+
+    // connect outputs of gradOp
+    {
+      std::vector<TensorId> v_outputs;
+      for (auto out_in : gradOp->gradOutToNonGradIn()) {
+        int gradOut   = out_in.first;
+        int nonGradIn = out_in.second;
+
+        if (!nonGradOp->input->tensor(nonGradIn)) {
+          throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                      "OUTPUT {} is not defined ",
+                      gradOp->debugName(),
+                      nonGradOp->debugName(),
+                      nonGradIn);
+        }
+
+        TensorId inId  = nonGradOp->inId(nonGradIn);
+        TensorId outId = getEdgeGradId(nonGradOpId, nonGradIn);
+        if (v_outputs.size() < gradOut + 1) {
+          v_outputs.resize(gradOut + 1, "");
+        }
+        v_outputs[gradOut] = outId;
+      }
+      bwdGraph.connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
+    }
+    gradOp->setup();
+
+    result.push_back(gradOp);
+  }
+
+  return result;
+}
+
 void BackwardsGraphCreatorHelper::doPrune(Graph &graph) {
   using boost::range::find;
 

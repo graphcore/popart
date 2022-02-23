@@ -60,6 +60,13 @@ private:
   void growGradGraph(const TensorIds &gradsProvidedForFwdId,
                      const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                      const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
+  std::vector<Op *> growGradOps(Op *nonGradOp);
+  bool opIsReadyToCreateGradients(Op *);
+  std::string opNotReadyExplanation(Op *op);
+  void registerBwdOp(Op *fwdOp, Op *bwdOp);
+  Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &partials);
+  // Check if tensor in bwdGraph is a gradient tensor.
+  bool bwdIdIsGrad(const TensorId &);
   // Check if tensor in bwdGraph is a non-gradient tensor.
   bool bwdIdIsNonGrad(const TensorId &);
   // Convert fwdGraph tensor to a gradient tensor in bwdGraph.
@@ -68,14 +75,17 @@ private:
   TensorId bwdGradIdToFwdId(const TensorId &);
   // Convert a bwdGraph gradient tensor into a fwdGraph non-gradient tensor.
   TensorId bwdNonGradIdToFwdId(const TensorId &);
-
+  bool hasInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
   TensorId getInputTensorId(Op *nonGradOp, const GradInOutMapper &inOutMapper);
 
   const Graph &fwdGraph;
   Graph &bwdGraph;
+  AliasModel gradSumAliases;
 
   // A map of fwd tensors to their corresponding gradient tensors
   std::map<TensorId, TensorId> gradTensorMap;
+  TensorGradMapRegister gradRegister;
+  std::map<Op *, std::vector<std::unique_ptr<Op>>> gradOpStore;
 };
 
 } // namespace popart

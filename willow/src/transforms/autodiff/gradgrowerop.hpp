@@ -5,9 +5,10 @@
 
 #include <vector>
 
+#include <popart/bwdgraphinfo.hpp>
+
 #include <transforms/autodiff/autodiffhelper.hpp>
 #include <transforms/autodiff/autodiffirinterface.hpp>
-#include <popart/bwdgraphinfo.hpp>
 
 namespace popart {
 
@@ -22,8 +23,7 @@ public:
   virtual ~GradGrowerOpInterface() = default;
   // Grow a collection of gradient ops for a forward op.
   virtual std::vector<Op *>
-  growGradOps(Graph &bwdGraph,
-              Op *forwardOp,
+  growGradOps(Op *forwardOp,
               const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) = 0;
 };
 
@@ -42,8 +42,7 @@ public:
 
   // Grow a collection of gradient ops for a forward op.
   virtual std::vector<Op *>
-  growGradOps(Graph &bwdGraph,
-              Op *forwardOp,
+  growGradOps(Op *forwardOp,
               const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) override;
 };
 

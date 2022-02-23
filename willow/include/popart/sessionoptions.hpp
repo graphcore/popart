@@ -486,8 +486,6 @@ enum class AutodiffStitchStrategy {
   /// Number of \c AutodiffStitchStrategy values.
   N
 };
-std::string toString(const AutodiffStitchStrategy &);
-std::ostream &operator<<(std::ostream &, const AutodiffStitchStrategy &);
 
 /**
  * Settings for the Autodiff transform.

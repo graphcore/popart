@@ -17,19 +17,18 @@ namespace popart {
 GradGrowerSumOp::GradGrowerSumOp(AutodiffIrInterface &dep)
     : GradGrowerSumOpInterface(), AutodiffHelper(dep) {}
 
-Op *GradGrowerSumOp::growGradSumOp(Graph &bwdGraph,
-                                   Tensor *target,
+Op *GradGrowerSumOp::growGradSumOp(Tensor *target,
                                    const std::vector<Tensor *> &toSum,
-                                   AliasModel &bwdGraphAliases) {
-  TensorId gradientId =
-      fwdIdToBwdGradId(target->getGraph(), bwdGraph, target->id);
+                                   AliasModel &mainGraphAliases) {
+  TensorId gradientId = getGradId(target->id);
+  auto &mainGraph     = dep.get().getMainGraph();
 
   // TODO: T36603 Growing the grad sum with a fixed version may result
   // in suboptimal outlining (it's included as an outline attribute).
   auto uniqOp = std::make_unique<SumOp>(
       Onnx::Operators::Sum_8,
-      Op::Settings{bwdGraph, getGradSumOpNamePrefix() + "_" + gradientId});
-  auto opId = bwdGraph.moveIntoGraph(std::move(uniqOp));
+      Op::Settings{mainGraph, getGradSumOpNamePrefix() + "_" + gradientId});
+  auto opId = mainGraph.moveIntoGraph(std::move(uniqOp));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -37,11 +36,11 @@ Op *GradGrowerSumOp::growGradSumOp(Graph &bwdGraph,
     inputs.push_back(tensor->id);
   }
   std::vector<TensorId> outputs{gradientId};
-  bwdGraph.connectInputs(InputVecWrapper(inputs), opId);
-  bwdGraph.connectOutputs(OutputVecWrapper(outputs), opId);
-  Op *op = bwdGraph.getOps()[opId].get();
+  mainGraph.connectInputs(InputVecWrapper(inputs), opId);
+  mainGraph.connectOutputs(OutputVecWrapper(outputs), opId);
+  Op *op = mainGraph.getOps()[opId].get();
   op->setup();
-  op->inheritPlacementAttributes(true, bwdGraphAliases);
+  op->inheritPlacementAttributes(true, mainGraphAliases);
   return op;
 }
 

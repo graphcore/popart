@@ -35,8 +35,6 @@ bool Autodiff::applyToIr(Ir &ir) const {
   }
 
   AutodiffIrAdapter adapter{ir};
-  // For main graph, the backward graph is the main graph (we grow the grad ops
-  // inside the same main graph).
   auto gradGrowerOp    = std::make_unique<GradGrowerOp>(adapter);
   auto gradGrowerLoss  = std::make_unique<GradGrowerLoss>(adapter);
   auto gradGrowerSumOp = std::make_unique<GradGrowerSumOp>(adapter);

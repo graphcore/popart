@@ -45,20 +45,9 @@ public:
 
   /**
    * Apply `createBwdGraph` and `stitch` recursively, top-down, resulting in
-   * the creation of a backward graph for the graph with ID `fwdGraphId`.
-   *
-   * The forward graph being differentiated can call into more subgraphs. If
-   * autodiff has already been applied to the subgraph and the result stored in
-   * \p calledGraphsGradInfo, then the already created backward graph will be
-   * used. Otherwise, this method will recurse on the subgraph.
-   *
-   * When recursing on a subgraph, this method does not know for which tensors
-   * you require gradients, and thus passes null \p gradsRequiredForFwdId. This
-   * means autodiff will produce all possible gradients of input tensors. If you
-   * would like finer control over which gradients are produced for the
-   * subgraph, manually call autodiff on it first, passing
-   * \p gradsRequiredForFwdId, then store the resultant `BwdGraphInfo` in the
-   * \p FwdGraphToBwdGraphInfo map passed to the autodiff call for this graph.
+   * the creation of a backwards graph for fwdGraphId. This may recursively
+   * create the backwards graphs for any graphs that aren't already autodiff'ed
+   * but for which a backwards graph is required because they are called.
    *
    * NOTE: This method may fail if some required gradient cannot be produced.
    *
@@ -66,18 +55,12 @@ public:
    * \param fwdGraphId The ID of the subgraph to differentiate.
    * \param gradsProvidedForFwdId The tensors (normally outputs of
    *     fwdGraph) for which gradient tensors are available.
-   * \param gradsRequiredForFwdId The tensor IDs of the forward graph tensors
-   *     for which the backward graph should produce gradients.
-   *     If unset, the backward graph will produce as many gradients of the
-   *     forward graph inputs as possible, and mark these all as outputs.
-   *     If set, the backward graph will compute only the gradients of the
-   *     specified tensors and mark them as outputs. If one of these gradients
-   *     cannot be computed, it is an error.
-   *     If set, but an empty vector is passed, this is an error, as you are
-   *     requesting no gradients be computed at all, resulting in an empty
-   *     graph.
-   * \param calledGraphsGradInfo The result from applying autodiff for the
-   *     graphs that are called by subgraph ops in the forward graph. It is a
+   * \param gradsRequiredForFwdId If set, the tensors the users requires
+   *     gradients for (normally inputs of fwdGraph). If autodiff is unable to
+   *     provide the required gradient an error will be raised. If unset,
+   *     autodiff will provide as many gradients as possible.
+   * \param calledGraphsGradInfo The result information from applying autodiff
+   *     for the graphs that are called by subgraph ops in fwdGraph. It is a
    *     precondition of this function that the graphs provided in this map
    *     are stitched.
    * \param stitchStrategy Method by which to stitch any autodiff result for
@@ -105,36 +88,28 @@ public:
         AutodiffStitchStrategy stitchStrategy);
 
   /**
-   * Create a backward graph plus info required for creation of backward graphs
-   * for parent graphs for a specific subgraph only (non-recursive).
-   *
+   * Create a backwards graph plus info required for creation of backwards
+   * graphs for parent graphs for a specific subgraph only (non-recursive).
    * This method returns an "unstitched" result. That is, it is not guaranteed
-   * that all non-gradient inputs to a backward graph are available as inputs
-   * or outputs of the forward graph. This is a precondition for `BwdGraphInfo`
-   * objects used as values in `calledGraphsGradInfo`. So you must call `stitch`
+   * that all non-gradient inputs to a backwards graph are available as inputs
+   * or outputs of the forward graph. This is a precondition for BwdGraphInfo
+   * objects used as values in `calledGraphsGradInfo` so you must call `stitch`
    * to stitch the result before using the result info in another autodiff call.
    *
    * NOTE: This method may fail if some required gradient cannot be produced.
    *
    * \param ir The IR in the context of which this transformation is applied.
    * \param fwdGraphId The ID of the subgraph to differentiate.
-   * \param gradsProvidedForFwdId The tensors (normally outputs of the forward
-   *     graph) for which gradient tensors are available.
-   * \param gradsRequiredForFwdId The tensor IDs of the forward graph tensors
-   *     for which the backward graph should produce gradients.
-   *     If unset, the backward graph will produce as many gradients of the
-   *     forward graph inputs as possible, and mark all these as outputs.
-   *     If set, the backward graph will compute only the gradients of the
-   *     specified tensors and mark them as outputs. If one of these gradients
-   *     cannot be computed, it is an error.
-   *     If set, but an empty vector is passed, this is an error, as you are
-   *     requesting no gradients be computed at all, resulting in an empty
-   *     graph.
-   * \param calledGraphsGradInfo The result from applying autodiff for the
-   *     graphs that are called by subgraph ops in the forward graph. It is a
+   * \param gradsProvidedForFwdId The tensors (normally outputs of
+   *     fwdGraph) for which gradient tensors are available.
+   * \param gradsRequiredForFwdId The tensors (normally inputs of the
+   *     fwdGraph) for which gradient tensors are required (as outputs to the
+   *     returned backwards graph).
+   * \param calledGraphsGradInfo The result information from applying autodiff
+   *     for the graphs that are called by subgraph ops in fwdGraph. It is a
    *     precondition of this function that the graphs provided in this map
    *     are stitched.
-   * \return A `BwdGraphInfo` object with the following properties:
+   * \return An BwdGraphInfo object with the following properties:
    *     - `expectedInputs` may contain arbitrary tuples
    *       `(t, ExpectedConnectionType::Fwd)` where `t` is any tensor in the
    *       forward graph (it need not be an input or output). Only tensors `t`
@@ -154,42 +129,40 @@ public:
 
   /**
    * Stitch a forward/backward graph pair. That is, make it so that the
-   * backward graph no longer has any non-gradient inputs of forward graph
+   * backwards graph no longer has any non-gradient inputs of forward graph
    * tensors that are neither inputs nor outputs of the forward graph.
    *
-   * When applying autodiff to a graph, PopART assumes that all input tensors
-   * to the gradient ops are either 1) a forward op input 2) a forward op output
-   * or 3) the gradient of a forward op output. For this to be true for
-   * gradients ops of subgraphing ops (for example: `CallOp`, `IfOp`) typically
-   * the backward graphs of those called subgraphs must not have inputs that are
-   * associated with non-gradient forward tensors that are neither inputs nor
-   * outputs of the forward graph. This is because the inputs and outputs of a
-   * forward subgraph typically map to the inputs and outputs of the associated
-   * forward op. Similarly, the inputs and outputs of a backward subgraph
-   * typically map to the inputs and outputs of the associated gradient op.
+   * When autodiff'ing a graph it is PopART's assumption that all input tensors
+   * to gradient ops are either 1) an forward op input 2) a forward op output or
+   * 3) the gradient of a forward op output. For this to be true for gradients
+   * ops associated with ops that have called subgraphs (example: CallOp, IfOp)
+   * typically the backwards versions of those called subgraphs must not have
+   * inputs that are associated with non-gradient forward tensors that are
+   * neither inputs nor outputs of the forward graph. This is because inputs
+   * and outputs of forwards (resp. backwards) subgraphs typically map to inputs
+   * and outputs of the associated forward op (resp. grad op).
    *
    * For stitch strategies that affect the forward graph's inputs or outputs,
    * this function should also amend all call sites of the forward graph as
    * appropriate. Conversely, for backwards graphs, it is assumed there are no
-   * call sites as it's anticipated this method is called before parents
+   * call sites as yet as it's anticipated this method is called before parents
    * of the backward graph exist.
    *
-   * NOTE: This function may modify the forward graph, backward graph, or any
-   *    graphs that call these graphs, depending on the method. It also may
-   *    raise a `popart::error` if it is unable to stitch an index.
+   * NOTE: This function may modify the fwdGraph, bwdGraph or any graphs that
+   *    call these graphs, depending on the method. It also may raise an
+   *    exception if it is unable to stitch an index.
    *
    * \param ir The IR in the context of which this transformation is applied.
    * \param fwdGraphId The ID of the subgraph to differentiate.
-   * \param bwdGraphInfo The data structure describing the backward graph.
+   * \param bwdGraphInfo The data structure describing the bwdGraph.
    * \param stitchStrategy Method by which to stitch any autodiff result for
    *     graphs that are directly or indirectly called by the graph.
-   * \param stitchIndices If provided, backward graph input indices not in this
-   *      list must be ignored and backward graph input indices in this list
+   * \param stitchIndices If provided, backwards graph input indices not in this
+   *      list must be ignored and backwards graph input indices in this list
    *      must be stitched (or an exception raised). If not set, it's up to the
-   *      stitcher to decide what indices to stitch.
+   *      stitcher what indices to stitch.
    * \return An updated BwdGraphInfo data structure (with some `expectedInputs`
    *     removed).
-   * \throws `popart::error` if unable to stich an index.
    **/
   virtual BwdGraphInfo
   stitch(Ir &ir,

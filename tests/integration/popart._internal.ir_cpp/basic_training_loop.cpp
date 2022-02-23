@@ -212,6 +212,7 @@ BOOST_AUTO_TEST_CASE(TestBasicTrainingLoop) {
             {bwd.getInputIndex(bwdWeights), loopWeights},
         },
         {
+            {bwd.getOutputIndex(bwdDataGrad), addScope(loopSg, "data_grad")},
             {bwd.getOutputIndex(bwdWeightsGrad), loopWeightsGrad},
         },
         Onnx::AiGraphcore::OpSet1::Call,

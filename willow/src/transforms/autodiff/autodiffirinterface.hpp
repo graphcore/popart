@@ -61,8 +61,6 @@ public:
   virtual PipelineStage getFinalLossPipelineStage() = 0;
   // Create a new tensor id.
   virtual TensorId createIntermediateTensorId(const TensorId &base_id) = 0;
-
-  virtual ~AutodiffIrInterface() = default;
 };
 
 } // namespace popart
