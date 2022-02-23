@@ -57,8 +57,6 @@ void RNNOp::setup() {
   }
 }
 
-int64_t RNNOp::getNumDirections() const { return 1; }
-
 void RNNOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   BaseOnnxRNNOp::appendOutlineAttributes(os);
   os.appendAttribute("activations", activation_attribute);

@@ -147,8 +147,6 @@ void LSTMOp::maybeCreatePassThroughOutput(const TensorId &new_id,
 
 unsigned LSTMOp::getNumChannels() const { return 1; }
 
-int64_t LSTMOp::getNumDirections() const { return 1; }
-
 nonstd::optional<float> LSTMOp::getAvailableMemoryProportion() const {
   return available_memory_proportion;
 }

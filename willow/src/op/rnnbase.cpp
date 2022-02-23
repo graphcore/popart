@@ -40,6 +40,8 @@ int64_t BaseOnnxRNNOp::getHiddenSize() const {
   return inShape(getRecurrenceWeightsInIndex())[hidden_size_index];
 }
 
+int64_t BaseOnnxRNNOp::getNumDirections() const { return 1; }
+
 bool BaseOnnxRNNOp::hasBiasesInput() const {
   return input->hasIndex(getBiasesInIndex());
 }
