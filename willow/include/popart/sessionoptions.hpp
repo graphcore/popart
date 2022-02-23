@@ -19,6 +19,21 @@
 namespace popart {
 
 /**
+ * Enum type to specify the method for selecting gradient tensors whose
+ * statistics are to be tracked for the AutomaticLossScaling transform.
+ */
+enum class GradientTensorTrackingMethod {
+  /// Track all gradients of non-view-changing gradient tensors.
+  AllNonViewChangingGradientTensors = 0,
+  /// Track all gradients of inputs to MatMul and Convolution ops.
+  ConvAndMatmulGradients,
+  /// Track gradients of user-specified tensors.
+  GradientsOfUserSpecifiedTensors,
+  /// The number of \c GradientTensorTrackingMethod values.
+  N
+};
+
+/**
  * A structure containing user configuration for automatic loss scaling
  * settings.
  *
@@ -31,9 +46,10 @@ struct AutomaticLossScalingSettings {
   AutomaticLossScalingSettings(
       bool enabled_,
       const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
-      float binEdgeLocation_               = 0.0625f,
-      float thresholdUpperCountProportion_ = 1e-7,
-      int updatePeriod_                    = 1);
+      float binEdgeLocation_,
+      float thresholdUpperCountProportion_,
+      int updatePeriod_,
+      GradientTensorTrackingMethod gradientTensorTrackingMethod_);
 
   std::size_t hash() const;
   /// If true, keep track of the distribution of gradient tensor elements over
@@ -61,6 +77,11 @@ struct AutomaticLossScalingSettings {
   /// How often loss scale update factor should be updated with respect to
   /// optimizer steps.
   int updatePeriod = 1;
+
+  /// The method for selecting gradient tensors whose statistics are to be
+  /// tracked.
+  GradientTensorTrackingMethod gradientTensorTrackingMethod =
+      GradientTensorTrackingMethod::AllNonViewChangingGradientTensors;
 };
 
 /**

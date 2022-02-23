@@ -10,9 +10,11 @@
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/div.hpp>
+#include <popart/op/gather.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/incrementmod.hpp>
@@ -20,6 +22,7 @@
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
@@ -34,7 +37,36 @@ namespace popart {
 
 namespace {
 
-bool producesToTrackTensors(Op *op) {
+bool producesOutputsOfTypeFp16(const Op *op) {
+  for (Tensor *tensor : op->output->tensors()) {
+    if (tensor->info.dataType() != DataType::FLOAT16) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int numberOfConsumers(const Op *op) {
+  std::set<Op *> consumers;
+  for (Tensor *tensor : op->output->tensors()) {
+    for (Op *op : tensor->consumers.getOps()) {
+      consumers.insert(op);
+    }
+  }
+
+  return consumers.size();
+}
+
+bool consumesVariableInput(const Op *op) {
+  for (Tensor *tensor : op->input->tensors()) {
+    if (tensor->tensorType() == TensorType::Variable) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool producesConvOrMatmulGradient(const Op *op) {
   // conv or matmul operations that produce gradient tensors
   if (op->fromLoss == PathFromLoss::Yes) {
     if (op->isConvertibleTo<MultiConvBaseOp>()) {
@@ -57,6 +89,37 @@ bool producesToTrackTensors(Op *op) {
   }
 
   return false;
+}
+
+bool producesNonViewChangingGradientTensor(const Op *op) {
+  if (op->fromLoss != PathFromLoss::Yes) {
+    return false;
+  }
+  if (op->isInplaceViewChange() || op->isOutplaceViewChange()) {
+    return false;
+  }
+  if (!producesOutputsOfTypeFp16(op)) {
+    return false;
+  }
+  if (op->settings.executionContext != ExecutionContext::Normal) {
+    return false;
+  }
+  // Prevent cycles in the graph
+  if (consumesVariableInput(op)) {
+    return false;
+  }
+  // Doesn't lead to a VarUpdateOp, so we shouldn't care about its statistics
+  if (numberOfConsumers(op) == 0) {
+    return false;
+  }
+  // Non-view-changing ops, but ones that will definitely not cause overflow.
+  if (op->isConvertibleTo<ConcatOp>() || op->isConvertibleTo<ConcatGradOp>() ||
+      op->isConvertibleTo<GatherOp>() || op->isConvertibleTo<GatherGradOp>() ||
+      op->isConvertibleTo<SliceOp>() || op->isConvertibleTo<SliceGradOp>()) {
+    return false;
+  }
+
+  return true;
 }
 
 void removeProxyOps(Graph &graph) {
@@ -142,13 +205,29 @@ std::vector<Tensor *> getToTrackTensorsUser(Graph &graph) {
   return toTrackTensors;
 }
 
-std::vector<Tensor *> getToTrackTensorsDefault(Graph &graph) {
+std::vector<Tensor *> getToTrackTensorsAuto(Graph &graph) {
+  auto settings =
+      graph.getIr().getSessionOptions().automaticLossScalingSettings;
+  auto producesToTrackTensors_ = [&settings](const Op *op) {
+    if (settings.gradientTensorTrackingMethod ==
+        GradientTensorTrackingMethod::ConvAndMatmulGradients) {
+      return producesConvOrMatmulGradient(op);
+    } else if (settings.gradientTensorTrackingMethod ==
+               GradientTensorTrackingMethod::
+                   AllNonViewChangingGradientTensors) {
+      return producesNonViewChangingGradientTensor(op);
+    } else {
+      throw internal_error("[AutomaticLossScale transform] Unknown "
+                           "GradientTensorTrackingMethod.");
+    }
+  };
+
   std::vector<Tensor *> toTrackTensors;
 
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
 
-    if (producesToTrackTensors(op)) {
+    if (producesToTrackTensors_(op)) {
       for (Tensor *tensor : op->output->tensors()) {
         // In the case where gradient tensors of type float32 and float16 are
         // present in the list of candidate 'ToTrackTensors', filter out the
@@ -171,12 +250,29 @@ std::vector<Tensor *> getToTrackTensorsDefault(Graph &graph) {
 }
 
 std::vector<Tensor *> getToTrackTensors(Graph &graph) {
-
-  return graph.getIr()
-                 .getSessionOptions()
-                 .automaticLossScalingSettings.toTrackTensors.has_value()
-             ? getToTrackTensorsUser(graph)
-             : getToTrackTensorsDefault(graph);
+  auto settings =
+      graph.getIr().getSessionOptions().automaticLossScalingSettings;
+  if (settings.toTrackTensors.has_value() &&
+      settings.gradientTensorTrackingMethod !=
+          GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors) {
+    throw error(
+        "[AutomaticLossScale transform] toTrackTensors has been set, but "
+        "gradientTensorTrackingMethod has not been set to "
+        "'GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors'.");
+  }
+  if (settings.gradientTensorTrackingMethod ==
+      GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors) {
+    if (!settings.toTrackTensors.has_value()) {
+      throw error(
+          "[AutomaticLossScale transform] gradientTensorTrackingMethod set to "
+          "'GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors' but "
+          "'toTrackTensors' has not been set");
+    } else {
+      return getToTrackTensorsUser(graph);
+    }
+  } else {
+    return getToTrackTensorsAuto(graph);
+  }
 }
 
 // A tensor has (or is close to having) overflow if some of its elements have

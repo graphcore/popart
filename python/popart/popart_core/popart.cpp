@@ -186,7 +186,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -987,20 +987,33 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, TensorLocation, shardingDomain));
   }
   {
+    py::enum_<GradientTensorTrackingMethod> en(m,
+                                               "GradientTensorTrackingMethod");
+    en.value("ConvAndMatmulGradients",
+             GradientTensorTrackingMethod::ConvAndMatmulGradients);
+    en.value("AllNonViewChangingGradientTensors",
+             GradientTensorTrackingMethod::AllNonViewChangingGradientTensors);
+    en.value("GradientsOfUserSpecifiedTensors",
+             GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors);
+  }
+  {
     py::class_<AutomaticLossScalingSettings> cls(
         m, "AutomaticLossScalingSettings");
     cls.def(py::init<>());
-    cls.def(py::init<bool,
-                     const nonstd::optional<std::vector<TensorId>> &,
-                     float,
-                     float,
-                     int>(),
-            py::arg("enabled"),
-            py::arg("toTrackTensors") =
-                nonstd::optional<std::vector<TensorId>>(),
-            py::arg("binEdgeLocation")               = 0.0625f,
-            py::arg("thresholdUpperCountProportion") = 1e-7,
-            py::arg("updatePeriod")                  = 1);
+    cls.def(
+        py::init<bool,
+                 const nonstd::optional<std::vector<TensorId>> &,
+                 float,
+                 float,
+                 int,
+                 GradientTensorTrackingMethod>(),
+        py::arg("enabled")         = false,
+        py::arg("toTrackTensors")  = nonstd::optional<std::vector<TensorId>>(),
+        py::arg("binEdgeLocation") = 0.0625f,
+        py::arg("thresholdUpperCountProportion") = 1e-7,
+        py::arg("updatePeriod")                  = 1,
+        py::arg("gradientTensorTrackingMethod") =
+            GradientTensorTrackingMethod::AllNonViewChangingGradientTensors);
     cls.def_readwrite("enabled", &AutomaticLossScalingSettings::enabled);
     cls.def_readwrite("binEdgeLocation",
                       &AutomaticLossScalingSettings::binEdgeLocation);
@@ -1011,6 +1024,9 @@ PYBIND11_MODULE(popart_core, m) {
                       &AutomaticLossScalingSettings::toTrackTensors);
     cls.def_readwrite("updatePeriod",
                       &AutomaticLossScalingSettings::updatePeriod);
+    cls.def_readwrite(
+        "gradientTensorTrackingMethod",
+        &AutomaticLossScalingSettings::gradientTensorTrackingMethod);
   }
   {
     py::class_<TensorLocationSettings> cls(m, "TensorLocationSettings");

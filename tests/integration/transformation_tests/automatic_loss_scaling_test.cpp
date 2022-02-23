@@ -97,6 +97,8 @@ BOOST_AUTO_TEST_CASE(AutomaticLossScalingTest0) {
   SessionOptions userOptions;
   userOptions.automaticLossScalingSettings.enabled        = true;
   userOptions.automaticLossScalingSettings.toTrackTensors = {"Mul:0"};
+  userOptions.automaticLossScalingSettings.gradientTensorTrackingMethod =
+      GradientTensorTrackingMethod::GradientsOfUserSpecifiedTensors;
 
   auto optimizer = SGD({{"lossScaling", {0.2f, false}}});
 

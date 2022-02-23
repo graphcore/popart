@@ -16,10 +16,12 @@ AutomaticLossScalingSettings::AutomaticLossScalingSettings(
     const nonstd::optional<std::vector<TensorId>> &toTrackTensors_,
     float binEdgeLocation_,
     float thresholdUpperCountProportion_,
-    int updatePeriod_)
+    int updatePeriod_,
+    GradientTensorTrackingMethod gradientTensorTrackingMethod_)
     : enabled{enabled_}, binEdgeLocation{binEdgeLocation_},
       thresholdUpperCountProportion{thresholdUpperCountProportion_},
-      toTrackTensors{toTrackTensors_}, updatePeriod{updatePeriod_} {}
+      toTrackTensors{toTrackTensors_}, updatePeriod{updatePeriod_},
+      gradientTensorTrackingMethod{gradientTensorTrackingMethod_} {}
 
 std::size_t AutomaticLossScalingSettings::hash() const {
   std::size_t seed = 0;
@@ -30,6 +32,7 @@ std::size_t AutomaticLossScalingSettings::hash() const {
     boost::hash_combine(seed, toTrackTensors.value());
   }
   boost::hash_combine(seed, updatePeriod);
+  boost::hash_combine(seed, gradientTensorTrackingMethod);
   return seed;
 }
 

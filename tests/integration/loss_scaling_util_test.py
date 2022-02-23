@@ -144,6 +144,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
     if toTrackTensors is not None:
         opts.automaticLossScalingSettings.toTrackTensors = toTrackTensors
+        opts.automaticLossScalingSettings.gradientTensorTrackingMethod = popart.GradientTensorTrackingMethod.GradientsOfUserSpecifiedTensors
     if update_period is not None:
         opts.automaticLossScalingSettings.updatePeriod = update_period
 
