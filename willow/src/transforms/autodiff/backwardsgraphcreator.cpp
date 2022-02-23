@@ -12,6 +12,25 @@ namespace popart {
 BackwardsGraphCreator::BackwardsGraphCreator(AutodiffIrInterface &dep)
     : AutodiffHelper(dep) {}
 
+namespace {
+
+void guardAllIdsInFwdGraph(const Graph &g,
+                           const BackwardsGraphCreator::TensorIds &ids,
+                           const std::string &idsDebugName) {
+  for (auto &id : ids) {
+    if (!g.getTensors().contains(id)) {
+      throw error("[Autodiff] In call to Autodiff on forward graph `{}`, you "
+                  "have passed a tensor with id `{}` to parameter `{}`, but "
+                  "this tensor is not in the forward graph",
+                  g.id,
+                  id,
+                  idsDebugName);
+    }
+  }
+}
+
+} // namespace
+
 BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
     const Graph &fwdGraph,
     const GraphId &bwdGraphId,
@@ -20,10 +39,26 @@ BwdGraphInfo BackwardsGraphCreator::createBackwardsGraph(
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo) {
 
   if (dep.get().hasGraph(bwdGraphId)) {
-    throw error("[Autodiff] Unable to create new backwards graph for {} with "
-                "GraphId '{}' because a graph with this ID already exists",
-                fwdGraph.getGraphString(),
-                bwdGraphId);
+    throw internal_error(
+        "[Autodiff] Unable to create new backwards graph for {} with "
+        "GraphId '{}' because a graph with this ID already exists",
+        fwdGraph.getGraphString(),
+        bwdGraphId);
+  }
+
+  // This check is here, not in GradGrowerGraph, as the `createBwdGraph` method,
+  // that also needs this check, calls this function directly; it does not go
+  // through GradGrowerGraph.
+  if (gradsRequiredForFwdId.has_value() && gradsRequiredForFwdId->empty()) {
+    throw error("[Autodiff] Calling Autodiff on Graph {} with defined but "
+                "empty vector `gradsRequiredForFwdId`. You must either specify"
+                "required gradients, or pass null.",
+                fwdGraph.id);
+  }
+
+  guardAllIdsInFwdGraph(fwdGraph, gradsProvidedForFwdId, "gradsProvided");
+  if (gradsRequiredForFwdId.has_value()) {
+    guardAllIdsInFwdGraph(fwdGraph, *gradsRequiredForFwdId, "gradsRequired");
   }
 
   Graph &bwdGraph = dep.get().createGraph(bwdGraphId);

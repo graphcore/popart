@@ -19,8 +19,6 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
     const FwdGraphToBwdGraphInfo &calledGraphsGradInfo_,
     AutodiffStitchStrategy stitchStrategy) {
 
-  nonstd::optional<TensorIds> emptyGradsRequiredForFwdId;
-
   // We need to grow called graphs before we grow the main graph.
   BackwardsGraphCreator bwdGraphCreator{dep};
   FwdGraphToBwdGraphInfo calledGraphGradInfo = calledGraphsGradInfo_;

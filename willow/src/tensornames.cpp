@@ -1,11 +1,38 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <parsedtensorid.hpp>
 #include <sstream>
 #include <popart/logging.hpp>
 #include <popart/tensornames.hpp>
 
 namespace popart {
+TensorId fwdIdToBwdGradId(const Graph &fwdGraph,
+                          const Graph &bwdGraph,
+                          const TensorId &fwdId) {
+  auto x = removeScope(fwdGraph, fwdId);
+  x      = getGradId(x);
+  return addScope(bwdGraph, x);
+}
 
-// Gradient prefixes
+TensorId bwdGradIdToFwdId(const Graph &fwdGraph,
+                          const Graph &bwdGraph,
+                          const TensorId &bwdId) {
+  auto x = removeScope(bwdGraph, bwdId);
+  x      = getNonGradId(x);
+  return addScope(fwdGraph, x);
+}
+
+TensorId fwdIdToClonedBwdId(const Graph &fwdGraph,
+                            const Graph &bwdGraph,
+                            const TensorId &fwdId) {
+  return addScope(bwdGraph, removeScope(fwdGraph, fwdId));
+}
+
+TensorId bwdNonGradIdToFwdId(const Graph &fwdGraph,
+                             const Graph &bwdGraph,
+                             const TensorId &bwdId) {
+  auto x = removeScope(bwdGraph, bwdId);
+  return addScope(fwdGraph, x);
+}
 
 TensorId getGradId(const TensorId &id) { return reservedGradientPrefix() + id; }
 
