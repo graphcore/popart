@@ -19,6 +19,19 @@ std::vector<Op *> ContiguateCollectivesTransform::applyToOps(
     Graph &graph,
     const std::set<OpId> includeOps) const {
 
+  auto &ir   = graph.getIr();
+  auto &opts = ir.getSessionOptions();
+  if (opts.accumulateOuterFragmentSettings.schedule !=
+      AccumulateOuterFragmentSchedule::Scheduler) {
+    throw error(
+        "[ContiguateCollectivesTransform::applyToOps] Incompatible user "
+        "options: AccumulateOuterFragmentSchedule must be set to ::Scheduler "
+        "when using the "
+        "replicatedCollectivesSettings.prepareScheduleForMergingCollectives "
+        "session option. The schedule constraints introduced by the two "
+        "transforms are incompatible.");
+  }
+
   std::set<Op *> opsToProcess;
   std::vector<Op *> schedule =
       graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
@@ -63,35 +76,38 @@ bool ContiguateCollectivesTransform::checkCollectiveOp<ReplicatedAllGatherOp>(
 template <typename BaseType>
 std::vector<BaseType *> ContiguateCollectivesTransform::lookForMatchingOps(
     BaseType *baseOp,
-    const std::vector<Op *> &schedule) {
+    const std::vector<Op *> &schedule,
+    std::set<Op *> &opsToProcess) {
 
   auto &graph = baseOp->getGraph();
   std::vector<BaseType *> allMatches{baseOp};
   std::vector<Op *> allDataDependencies{graph.getOp(baseOp->id)};
   for (Op *op : schedule) {
-    auto candidate = dynamic_cast<BaseType *>(op);
-    if (candidate && candidate->id != baseOp->id) {
-      // There should be no schedule inconsistencies introduced by the merge
-      bool scheduleCheck =
-          !graphutils::hasDataDependency(op, schedule, allDataDependencies);
+    if (opsToProcess.count(op) > 0) {
+      auto candidate = dynamic_cast<BaseType *>(op);
+      if (candidate && candidate->id != baseOp->id) {
+        // There should be no data inconsistencies introduced by the merge
+        bool dataDependencyCheck =
+            !graphutils::hasDataDependency(op, schedule, allDataDependencies);
 
-      // Data types must match
-      auto dtype = baseOp->inTensor(baseOp->getInIndex())->info.data_type();
-      bool dtypeCheck =
-          dtype == op->inTensor(candidate->getInIndex())->info.data_type();
+        // Data types must match
+        auto dtype = baseOp->inTensor(baseOp->getInIndex())->info.data_type();
+        bool dtypeCheck =
+            dtype == op->inTensor(candidate->getInIndex())->info.data_type();
 
-      // Both must have the same collective operation type on the same group
-      bool groupCheck =
-          candidate->getGCLCommGroup() == baseOp->getGCLCommGroup();
-      bool collTypeCheck             = checkCollectiveOp(baseOp, candidate);
-      auto &requiredExecutionContext = baseOp->settings.executionContext;
-      bool executionContextCheck =
-          candidate->settings.executionContext == requiredExecutionContext;
+        // Both must have the same collective operation type on the same group
+        bool groupCheck =
+            candidate->getGCLCommGroup() == baseOp->getGCLCommGroup();
+        bool collTypeCheck             = checkCollectiveOp(baseOp, candidate);
+        auto &requiredExecutionContext = baseOp->settings.executionContext;
+        bool executionContextCheck =
+            candidate->settings.executionContext == requiredExecutionContext;
 
-      if (groupCheck && collTypeCheck && dtypeCheck && scheduleCheck &&
-          executionContextCheck) {
-        allMatches.emplace_back(candidate);
-        allDataDependencies.emplace_back(op);
+        if (groupCheck && collTypeCheck && dtypeCheck && dataDependencyCheck &&
+            executionContextCheck) {
+          allMatches.emplace_back(candidate);
+          allDataDependencies.emplace_back(op);
+        }
       }
     }
   }
@@ -106,7 +122,8 @@ void ContiguateCollectivesTransform::processOp(
   auto &graph = baseOp->getGraph();
 
   // Find matching ops
-  std::vector<BaseType *> allMatches = lookForMatchingOps(baseOp, schedule);
+  std::vector<BaseType *> allMatches =
+      lookForMatchingOps(baseOp, schedule, opsToProcess);
   std::vector<std::string> allMatchNames;
   for (auto op : allMatches) {
     allMatchNames.emplace_back("\t" + op->debugName() + "\n");

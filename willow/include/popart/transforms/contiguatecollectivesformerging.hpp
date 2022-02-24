@@ -53,12 +53,19 @@ public:
   static bool checkCollectiveOp(BaseType *baseOp, BaseType *candidate);
 
   /**
-   * Loop through the ops in the graph and find those matching baseOp
-   * according to opsShouldGroup
+   * Loop through the ops in the schedule and find those matching baseOp
+   * to avoid merging the same op twice, make sure it is still in opsToProcess
+   * \param baseOp the op that should be merged with other collectives
+   * \param schedule the schedule of the (Collective) ops in the graph
+   * \param opsToProcess the (Collective) ops that can still be considered for
+   * merging
+   * \return a vector of collective ops that can be merged with the baseOp
    */
   template <typename BaseType>
   static std::vector<BaseType *>
-  lookForMatchingOps(BaseType *baseOp, const std::vector<Op *> &schedule);
+  lookForMatchingOps(BaseType *baseOp,
+                     const std::vector<Op *> &schedule,
+                     std::set<Op *> &opsToProcess);
 
   /**
    *  Processing baseOp involves finding all other collective ops in the graph

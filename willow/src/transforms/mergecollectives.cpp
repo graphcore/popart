@@ -105,6 +105,7 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
   // Keep iterating through the schedule until the next
   // non-matching op is reached
   std::vector<BaseType *> matchingOps;
+  std::vector<Op *> allDataDependencies{graph.getOp(baseOp->id)};
   while (schedulePos != opSchedule.end()) {
     Op *op = *schedulePos;
     if (BaseType *candidate = dynamic_cast<BaseType *>(op)) {
@@ -116,20 +117,18 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
           candidate->getCollectiveOp() == requiredCollectiveOp;
       bool executionContextCheck =
           candidate->settings.executionContext == requiredExecutionContext;
+      // There should be no data inconsistencies introduced by the merge
+      bool dataDependencyCheck =
+          !graphutils::hasDataDependency(op, opSchedule, allDataDependencies);
 
       // An op must pass all the checks to be a match
       if (dtypeCheck && groupCheck && collectiveCheck &&
-          executionContextCheck) {
+          executionContextCheck && dataDependencyCheck) {
         matchingOps.emplace_back(candidate);
+        allDataDependencies.emplace_back(op);
         ++schedulePos;
         if (schedulePos != opSchedule.end()) {
-          // Make sure the current op and the next op are tied together
-          // in the schedule
-          Op *nextOp               = *schedulePos;
-          std::vector<Op *> afters = graph.topoCons->getTiedAfters(op);
-          if (std::find(afters.begin(), afters.end(), nextOp) != afters.end()) {
-            continue; // continue onto the next op in the schedule
-          }
+          continue;
         }
       }
     }
