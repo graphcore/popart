@@ -44,6 +44,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
+  int64_t getNumDirections() const;
+
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   int getInBatchAxis(InIndex) const override;
   int getOutBatchAxis(OutIndex) const override;

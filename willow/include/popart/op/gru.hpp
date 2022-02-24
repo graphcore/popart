@@ -26,7 +26,7 @@ public:
 
   unsigned getNumChannels() const;
 
-  int64_t getNumDirections() const override;
+  int64_t getNumDirections() const;
 
   bool hasOutput(OutIndex) const;
 
