@@ -98,7 +98,7 @@ def test_grad_graph_info_repr():
     ir = pir.Ir()
     with ir.main_graph():
         a = pir.variable([1], name="bob")
-        fwd_graph = ir.create_graph(subgraph1, a.spec)
+        fwd_graph = ir.create_graph(subgraph1, a.tensor_spec)
         fwd_call_info = ops.call_with_info(fwd_graph, a)
 
         y = fwd_call_info.get_output_tensors()[0]

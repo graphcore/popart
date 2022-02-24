@@ -311,7 +311,7 @@ class TestCreateGraph:
             v1 = pir.variable(1)
             v2 = pir.variable(2)
 
-            g = ir.create_graph(foo, v1.spec, v2.spec, 5)
+            g = ir.create_graph(foo, v1.tensor_spec, v2.tensor_spec, 5)
 
         assert len(g._by_ref_inputs) == 1
         x = g.get_input_tensors()[0]
