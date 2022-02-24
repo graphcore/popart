@@ -35,7 +35,8 @@ private:
   snap::program::Sequence getFwdStepProg(snap::Tensor &bias,
                                          snap::Tensor &initialH,
                                          snap::Tensor &output,
-                                         snap::Tensor &H_prev) const;
+                                         snap::Tensor &H_prev,
+                                         poplar::Tensor &index) const;
 };
 
 class RNNGradOpx : public PopOpx {
@@ -69,7 +70,8 @@ private:
                                          snap::Tensor &dh,
                                          snap::Tensor &forward_output,
                                          snap::Tensor &forward_output_prev,
-                                         snap::Tensor &full_output_grad) const;
+                                         snap::Tensor &full_output_grad,
+                                         poplar::Tensor &index) const;
 };
 
 } // namespace popx

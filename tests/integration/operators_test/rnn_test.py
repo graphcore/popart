@@ -379,15 +379,6 @@ def test_rnn_torch_grad_all_inputs(op_tester):
         Y1 = builder.aiOnnx.add([Ys, Y_h])
 
         builder.addOutputTensor(Y1)
-        print([
-            Y1,
-            popart.reservedGradientPrefix() + Y1,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + i4,
-            popart.reservedGradientPrefix() + i6
-        ])
         return [
             Y1,
             popart.reservedGradientPrefix() + Y1,
@@ -760,3 +751,128 @@ def test_rnn_forward_direction(op_tester):
 
     op_tester.device = tu.create_test_device()
     op_tester.run(init_builder, reference, 'infer')
+
+
+# Catch any improperly initialised tensors by
+# using the same op twice with different inputs
+@tu.requires_ipu_model
+def test_rnn_uninitialised_tensors():
+    seq_length = 3
+    batch_size = 2
+    input_size = 2
+    hidden_size = 2
+    num_directions = 1
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [seq_length, batch_size, input_size]))
+    i2 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [num_directions, hidden_size, input_size]))
+    i3 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [num_directions, hidden_size, hidden_size]))
+    i4 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [num_directions, 2 * hidden_size]))
+    i5 = builder.addInputTensor(popart.TensorInfo("INT32", [batch_size]))
+    i6 = builder.addInputTensor(
+        popart.TensorInfo("FLOAT", [num_directions, batch_size, hidden_size]))
+    Y, Y_h = builder.aiOnnx.rnn([i1, i2, i3, i4, i5, i6], 2)
+    Ys = builder.aiOnnx.squeeze([Y], [])
+    Y1 = builder.aiOnnx.add([Ys, Y_h])
+
+    loss = builder.aiGraphcore.identityloss([Y1])
+
+    proto = builder.getModelProto()
+    outputs = [
+        loss,
+        Y,
+        Y_h,
+        Y1,
+        popart.reservedGradientPrefix() + Y1,
+        popart.reservedGradientPrefix() + i1,  # input
+        popart.reservedGradientPrefix() + i2,  # input/1
+        popart.reservedGradientPrefix() + i3,  # input/2
+        popart.reservedGradientPrefix() + i4,  # input/3
+        popart.reservedGradientPrefix() + i6  # input/4
+    ]
+    outputs = {op: popart.AnchorReturnType("ALL") for op in outputs}
+    dataFlow = popart.DataFlow(1, outputs)
+
+    optimizer = popart.SGD({"defaultLearningRate": (0.1, True)})
+
+    device = popart.DeviceManager().createIpuModelDevice({})
+
+    # dummy set of inputs
+    a1 = np.random.rand(seq_length, batch_size, input_size).astype(np.float32)
+    a2 = np.random.rand(num_directions, hidden_size,
+                        input_size).astype(np.float32)
+    a3 = np.random.rand(num_directions, hidden_size,
+                        hidden_size).astype(np.float32)
+    a4 = np.random.rand(num_directions, 2 * hidden_size).astype(np.float32)
+
+    a5 = np.asarray([seq_length] * batch_size).astype(np.int32)
+
+    a6 = np.random.rand(num_directions, batch_size,
+                        hidden_size).astype(np.float32)
+
+    # set of inputs we are comparing output for
+    b1 = np.random.rand(seq_length, batch_size, input_size).astype(np.float32)
+    b2 = np.random.rand(num_directions, hidden_size,
+                        input_size).astype(np.float32)
+    b3 = np.random.rand(num_directions, hidden_size,
+                        hidden_size).astype(np.float32)
+    b4 = np.random.rand(num_directions, 2 * hidden_size).astype(np.float32)
+
+    b5 = np.asarray([seq_length] * batch_size).astype(np.int32)
+
+    b6 = np.random.rand(num_directions, batch_size,
+                        hidden_size).astype(np.float32)
+
+    def initSession():
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=popart.SessionOptions(),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
+        return session, anchors
+
+    session1, anchors1 = initSession()
+    stepio1 = popart.PyStepIO({
+        i1: a1,
+        i2: a2,
+        i3: a3,
+        i4: a4,
+        i5: a5,
+        i6: a6
+    }, anchors1)
+    stepio2 = popart.PyStepIO({
+        i1: b1,
+        i2: b2,
+        i3: b3,
+        i4: b4,
+        i5: b5,
+        i6: b6
+    }, anchors1)
+
+    # Ignorable step
+    session1.run(stepio1)
+    # Data that we actually care about
+    session1.run(stepio2)
+
+    session2, anchors2 = initSession()
+    stepio2 = popart.PyStepIO({
+        i1: b1,
+        i2: b2,
+        i3: b3,
+        i4: b4,
+        i5: b5,
+        i6: b6
+    }, anchors2)
+    # Run same as above but immediately
+    session2.run(stepio2)
+
+    for i in anchors1:
+        assert np.allclose(anchors1[i], anchors2[i])
