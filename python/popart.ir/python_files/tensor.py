@@ -127,7 +127,7 @@ class Tensor:
         return tuple(self._pb_tensor.info.metaShape())
 
     @property
-    def tensor_spec(self):
+    def spec(self) -> TensorSpec:
         """Return a `TensorSpec` instance using the properties of this tensor."""
         return TensorSpec(self.shape, self.dtype, self.meta_shape)
 

@@ -14,34 +14,42 @@ class _Stream:
             "Cannot construct a popart.ir._Stream directly.")
 
     @classmethod
-    def _from_tensor(cls, tensor: Tensor):
+    def _from_tensor(cls, tensor: Tensor) -> Tensor:
+        """Construct _Stream object from a tensor."""
         self = super().__new__(cls)
         self._stream_tensor = tensor
         return self
 
     @property
     def dtype(self) -> dtype:
+        """Return the type of the stream."""
         return self._stream_tensor.dtype
 
     @property
     def shape(self) -> Tuple[int, ...]:
+        """Return a tuple representing the shape of the stream."""
         return self._stream_tensor.shape
 
     @property
-    def tensor_spec(self) -> TensorSpec:
-        return self._stream_tensor.tensor_spec
+    def spec(self) -> TensorSpec:
+        """Return a TensorSpec instance using properties of the stream."""
+        return self._stream_tensor.spec
 
     def tensor_id(self) -> str:
+        """Return the identifier of the stream."""
         return self._stream_tensor.id
 
-    def __hash__(self):
+    def __hash__(self) -> int:
+        """Calculate a hash."""
         return hash(self._stream_tensor)
 
-    def __eq__(self, other: Any):
+    def __eq__(self, other: Any) -> bool:
+        """Performs an equality check."""
         return isinstance(
             other, _Stream) and self._stream_tensor == other._stream_tensor
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Returns a string representation."""
         return str(self._stream_tensor)
 
 
