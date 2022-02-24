@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Optional
+from typing import Optional, List
 
 import popart._internal.ir as _ir
 from popart.ir.tensor import Tensor
@@ -10,7 +10,7 @@ from popart.ir.errors import UndefinedValue
 __all__ = [
     "cast_if_needed", "check_in_graph", "check_tensor_ipu_and_tile_set",
     "handle_negative_axis", "convert_optional_float", "convert_optional_int",
-    "convert_optional_dtype"
+    "convert_optional_dtype", "convert_optional_int64_list"
 ]
 
 
@@ -106,3 +106,8 @@ def convert_optional_int(v: Optional[int]):
 def convert_optional_dtype(dt: Optional[dtype]):
     return _ir.OptionalDataType(
         dt._pb_dtype) if dt is not None else _ir.OptionalDataType()
+
+
+def convert_optional_int64_list(l: Optional[List[int]]):
+    return _ir.OptionalInt64Vector(
+        l) if l is not None else _ir.OptionalInt64Vector()

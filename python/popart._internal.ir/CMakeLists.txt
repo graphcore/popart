@@ -74,6 +74,17 @@ list(
   ${popart_op_headers_dir}/tanh.hpp
   ${popart_op_headers_dir}/where.hpp
   ${popart_op_headers_dir}/modifyrandomseed.hpp
+  ${popart_op_headers_dir}/reducel1.hpp
+  ${popart_op_headers_dir}/reducel2.hpp
+  ${popart_op_headers_dir}/reducelogsum.hpp
+  ${popart_op_headers_dir}/reducelogsumexp.hpp
+  ${popart_op_headers_dir}/reducemax.hpp
+  ${popart_op_headers_dir}/reducemean.hpp
+  ${popart_op_headers_dir}/reducemedian.hpp
+  ${popart_op_headers_dir}/reducemin.hpp
+  ${popart_op_headers_dir}/reduceprod.hpp
+  ${popart_op_headers_dir}/reducesum.hpp
+  ${popart_op_headers_dir}/reducesumsquare.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

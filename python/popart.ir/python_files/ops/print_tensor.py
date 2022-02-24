@@ -13,8 +13,8 @@ def print_tensor(t: Tensor,
     """
     Print a tensor.
 
-    Print a tensor everytime this op runs in the graph. Note this will print in the context it
-    is placed. E.g. if within a loop op, it will run each loop iteration.
+    You need to use the output tensor of this op, otherwise the `removeIsolatedTensors` pattern
+    will remove this op and it will not print the tensor.
 
     Args:
         t (Tensor): The tensor to print.

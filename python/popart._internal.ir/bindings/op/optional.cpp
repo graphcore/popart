@@ -36,6 +36,12 @@ void bindOptional(py::module &m) {
   py::class_<OptTensors>(m, "OptionalTensors")
       .def(py::init<>())
       .def(py::init<std::vector<TensorId>>());
+
+  using OptIntVector = nonstd::optional<std::vector<int64_t>>;
+
+  py::class_<OptIntVector>(m, "OptionalInt64Vector")
+      .def(py::init<>())
+      .def(py::init<std::vector<int64_t>>());
 }
 } // namespace op
 } // namespace ir

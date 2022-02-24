@@ -19,15 +19,24 @@ from .increment_mod import increment_mod, increment_mod_
 from .init import init
 from .io_tile_copy import io_tile_copy
 from .ipu_copy import ipu_copy
+from .l1 import l1
+from .l2 import l2
 from .lamb import lamb_square
 from .logical_and import logical_and
 from .logical_not import logical_not
 from .logical_or import logical_or
+from .logsum import logsum
+from .logsumexp import logsumexp
 from .matmul import matmul, SerialiseMode
+from .max import max
+from .mean import mean
+from .median import median
+from .min import min
 from .mul import mul
 from .negate import negate
 from .negative_log_likelihood import nll_loss_with_softmax_grad
 from .print_tensor import print_tensor
+from .prod import prod
 from .random_seed import split_random_seed
 from .random import random_uniform, random_normal
 from .relu import relu, relu_
@@ -42,6 +51,8 @@ from .softmax import softmax
 from .split import split
 from .squeeze import squeeze
 from .sub import sub
+from .sum import sum
+from .sumsquare import sumsquare
 from .transpose import transpose, transpose_
 from .where import where
 
@@ -99,6 +110,10 @@ __all__ = [
     "io_tile_copy",
     # ipu_copy.py
     "ipu_copy",
+    # l1.py
+    "l1",
+    # l2.py
+    "l12",
     # lamb.py
     "lamb_square",
     # logical_and.py
@@ -107,15 +122,21 @@ __all__ = [
     "logical_not",
     # logical_or.py
     "logical_or",
-    # relu.py,
-    "relu",
-    "relu_",
-    # repeat.py,
-    "repeat",
-    "repeat_with_info",
+    # logsum.py
+    "logsum",
+    # logsumexp.py
+    "logsumexp",
     # matmul.py
     "matmul",
     "SerialiseMode",
+    # max.py
+    "max",
+    # mean.py
+    "mean",
+    # median.py
+    "median",
+    # min.py
+    "min",
     # mul.py
     "mul",
     # negative_log_likelihood.py
@@ -124,11 +145,16 @@ __all__ = [
     "negate",
     # print_tensor.py
     "print_tensor",
+    # prod.py
+    "prod",
     # random_seed.py
     "split_random_seed",
     # random.py
     "random_uniform",
     "random_normal",
+    # relu.py,
+    "relu",
+    "relu_",
     # reshape.py
     "reshape",
     "reshape_",
@@ -139,6 +165,9 @@ __all__ = [
     "remote_load_",
     # remote_store.py
     "remote_store",
+    # repeat.py,
+    "repeat",
+    "repeat_with_info",
     # scaled_add.py
     "scaled_add",
     "scaled_add_",
@@ -155,6 +184,10 @@ __all__ = [
     "squeeze",
     # sub.py
     "sub",
+    # sum.py
+    "sum",
+    # sumsquare.py
+    "sumsquare",
     # transpose.py
     "transpose",
     "transpose_",

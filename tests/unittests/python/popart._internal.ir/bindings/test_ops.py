@@ -11,6 +11,7 @@ def unary_op_tester(op_name: str,
                     g: _ir.Graph,
                     inplace: bool = False,
                     connected: bool = False,
+                    n_outputs: int = 1,
                     *args,
                     **kwargs):
     """Helper to test unary ops
@@ -21,11 +22,14 @@ def unary_op_tester(op_name: str,
         inplace (bool, optional): Whether to use the inplace variant. Defaults to False.
         connected (bool, optional): Whether to use the createConnected<opname> function or
             just create<opname>. Defaults to False.
+        n_outputs (int): Number of outputs to connect to op
     """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
-    out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0}
-    outs = {0: out0}
+    outs = {
+        i: add_actgrad_tensor(f"out{i}", [1, 2, 3], g)
+        for i in range(n_outputs)
+    }
     op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
                        **kwargs)
     op_assertions(op, ins, outs)
@@ -171,38 +175,49 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 
 @pytest.mark.parametrize("connected", [True, False])
 # yapf: disable, pylint: disable-all
-@pytest.mark.parametrize("op_name,kwargs",
+@pytest.mark.parametrize("op_name,kwargs,n_outputs",
 [
-("HostLoadOp", {"sid_": "streamTensor"}),
-("ReluOp", {}),
-("ReluInplaceOp", {}),
-("GeluOp", {}),
-("GeluInplaceOp", {}),
-("TransposeOp", {"perm_": [0, 2, 1]}),
-("SliceOp", {"starts_":[1], "ends_":[3], "steps_":[1], "axes_":[0]}),
-("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}),
-("NegateOp", {}),
-("TanhOp", {}),
-("NotOp", {}),
-("SoftmaxOp", {"axis_": 0}),
-("SplitOp", {"axis_": 0,"split_": [1]}),
-("CastOp", {"_to": _ir.DataType.FLOAT}),
-("DetachOp", {}),
-("DropoutOp", {"ratio_": 0.7}),
-("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}),
-("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}),
-("VarUpdateOp", {}),
-("VarUpdateWithUpdaterOp", {}),
-("IncrementModOp", {"increment_": 1, "modulus_": 3}),
-("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}),
-("ReplicatedAllReduceOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}),
-("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": False}),
-("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": True}),
-("ReplicatedAllGatherOp", {"group": _ir.CommGroup()}),
+("HostLoadOp", {"sid_": "streamTensor"}, 1),
+("ReluOp", {}, 1),
+("ReluInplaceOp", {}, 1),
+("GeluOp", {}, 1),
+("GeluInplaceOp", {}, 1),
+("TransposeOp", {"perm_": [0, 2, 1]}, 1),
+("SliceOp", {"starts_":[1], "ends_":[3], "steps_":[1], "axes_":[0]}, 1),
+("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}, 1),
+("NegateOp", {}, 1),
+("TanhOp", {}, 1),
+("NotOp", {}, 1),
+("SoftmaxOp", {"axis_": 0}, 1),
+("SplitOp", {"axis_": 0,"split_": [1]}, 1),
+("CastOp", {"_to": _ir.DataType.FLOAT}, 1),
+("DetachOp", {}, 1),
+("DropoutOp", {"ratio_": 0.7}, 1),
+("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}, 1),
+("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}, 1),
+("VarUpdateOp", {}, 1),
+("VarUpdateWithUpdaterOp", {}, 1),
+("IncrementModOp", {"increment_": 1, "modulus_": 3}, 1),
+("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}, 1),
+("ReplicatedAllReduceOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}, 1),
+("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": False}, 1),
+("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": True}, 1),
+("ReduceL1Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceL2Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceLogSumExpOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceMaxOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceMeanOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceMedianOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 2),
+("ReduceMinOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceProdOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+("ReduceSumSquareOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
 ])
 # yapf: enable, pylint: enable-all
-def test_unary_ops(connected: bool, op_name: str,
-                   kwargs: Dict[str, Any]) -> None:
+def test_unary_ops(connected: bool, op_name: str, kwargs: Dict[str, Any],
+                   n_outputs: int) -> None:
     """Test unary (1 in, 1 out) ops
 
     Args:
@@ -210,10 +225,12 @@ def test_unary_ops(connected: bool, op_name: str,
             just create<opname>
         op_name (str): Name of the op e.g. AddOp
         kwargs (Dict[str, Any]): Additional kwargs to pass to the ops
+        n_outputs (int): Number of outputs to connect to op
     """
     _, graphs = create_ir()
     g = graphs[0]
-    unary_op_tester(op_name, g, "Inplace" in op_name, connected, **kwargs)
+    unary_op_tester(op_name, g, "Inplace" in op_name, connected, n_outputs,
+                    **kwargs)
 
 
 @pytest.mark.parametrize("connected", [True, False])
