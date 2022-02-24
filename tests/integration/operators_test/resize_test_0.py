@@ -261,7 +261,7 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode,
 
         # Known PyTorch issue
         # https://github.com/pytorch/pytorch/issues/62237
-        if torch.__version__.startswith("1.9.0"):
+        if torch.__version__.startswith("1.9"):
             if scales[-1] == 1.12:
                 pytest.skip()
 
