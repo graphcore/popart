@@ -73,8 +73,8 @@ def test_session_multi_iteration():
                               linear.b: b
                           })
 
-    session, inputs, outputs = run_session(ir, [linear.h2d.tensor_spec],
-                                           [linear.h2d], bps)
+    session, inputs, outputs = run_session(ir, [linear.h2d.spec], [linear.h2d],
+                                           bps)
 
     input_: np.ndarray = inputs[linear.h2d]
     output: np.ndarray = outputs[linear.d2h]
