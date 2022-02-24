@@ -570,48 +570,6 @@ def test_weight_updates_for_larger_than_max_fp16(tmpdir):
     run_automatic_loss_scaling_comparison_test(tmpdir, [sgd0, sgd1])
 
 
-@pytest.mark.parametrize("optimizer", getOptimizers())
-def test_auto_loss_scaling_identical_weight_updates(tmpdir, optimizer):
-    run_automatic_loss_scaling_comparison_test(tmpdir, optimizer)
-
-
-@tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", getOptimizers())
-def test_auto_loss_scaling_identical_weight_updates_sharded(tmpdir, optimizer):
-    run_automatic_loss_scaling_comparison_test(tmpdir,
-                                               shard=True,
-                                               optimizer=optimizer)
-
-
-@pytest.mark.parametrize("optimizer", getOptimizers())
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation(
-        tmpdir, optimizer):
-    run_automatic_loss_scaling_comparison_test(tmpdir,
-                                               grad_accumulate=True,
-                                               optimizer=optimizer)
-
-
-@tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", getOptimizers())
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_shard(
-        tmpdir, optimizer):
-    run_automatic_loss_scaling_comparison_test(tmpdir,
-                                               grad_accumulate=True,
-                                               shard=True,
-                                               optimizer=optimizer)
-
-
-@tu.requires_ipu_model
-@pytest.mark.parametrize("optimizer", getOptimizers())
-def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline(
-        tmpdir, optimizer):
-    run_automatic_loss_scaling_comparison_test(tmpdir,
-                                               grad_accumulate=True,
-                                               shard=True,
-                                               pipeline=True,
-                                               optimizer=optimizer)
-
-
 def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
     """
     1. get TrainingSession with a.l.s
