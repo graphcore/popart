@@ -16,105 +16,260 @@
 
 namespace popart {
 
-using TensorContext = std::tuple<VGraphId, ExecutionPhase, PipelineStage>;
+namespace {
+
+auto getTensorContextTuple(const ExplicitRecomputeTensorContext ct) {
+  return std::make_tuple(
+      ct.isForwardOp,
+      ct.executionPhase ? *ct.executionPhase : unusedExecutionPhase,
+      ct.pipelineStage ? *ct.pipelineStage : unusedPipelineStage);
+}
+
+} // namespace
+
+ExplicitRecomputeHelper::ExplicitRecomputeHelper(Graph &graph_)
+    : graph(graph_) {
+  relationMap = graphutils::getOpFinalLossRelations(graph_);
+  schedule    = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+
+  for (Op *op : schedule) {
+    if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
+      pipelineStageVraphIdMap[op->getPipelineStage()].insert(
+          op->getVirtualGraphId());
+    }
+  }
+}
+
+ExplicitRecomputeTensorContext::ExplicitRecomputeTensorContext(
+    bool isForwardOp_,
+    OptionalExecutionPhase executionPhase_,
+    OptionalPipelineStage pipelineStage_)
+    : isForwardOp(isForwardOp_), executionPhase(executionPhase_),
+      pipelineStage(pipelineStage_) {}
+
+bool ExplicitRecomputeTensorContext::
+operator<(const ExplicitRecomputeTensorContext &rhs) const {
+  return getTensorContextTuple(*this) < getTensorContextTuple(rhs);
+}
+
+bool ExplicitRecomputeTensorContext::
+operator==(const ExplicitRecomputeTensorContext &rhs) const {
+  return getTensorContextTuple(*this) == getTensorContextTuple(rhs);
+}
+
+bool ExplicitRecomputeTensorContext::
+operator!=(const ExplicitRecomputeTensorContext &rhs) const {
+  return getTensorContextTuple(*this) != getTensorContextTuple(rhs);
+}
 
 std::size_t ExplicitRecompute::id() {
   return typeid(ExplicitRecompute).hash_code();
 }
 
+ExplicitRecomputeTensorContext
+ExplicitRecomputeHelper::getContext(Op *op) const {
+
+  OptionalExecutionPhase executionPhase =
+      (graph.getIr().getSessionOptions().executionPhaseSettings.phases > 1 &&
+       op->hasExecutionPhase())
+          ? op->getOptionalExecutionPhase()
+          : OptionalExecutionPhase();
+  OptionalPipelineStage pipelineStage =
+      (graph.getIr().getSessionOptions().enablePipelining &&
+       op->hasPipelineStage())
+          ? op->getOptionalPipelineStage()
+          : OptionalPipelineStage();
+
+  bool isForwardOp =
+      relationMap.at(op) == graphutils::OpFinalLossRelation::ToLoss ||
+      relationMap.at(op) == graphutils::OpFinalLossRelation::FromToLoss;
+
+  return ExplicitRecomputeTensorContext(
+      isForwardOp, executionPhase, pipelineStage);
+}
+
+std::set<ExplicitRecomputeTensorContext>
+ExplicitRecomputeHelper::getConsumerContexts(Op *op) const {
+  std::set<ExplicitRecomputeTensorContext> contexts;
+
+  for (auto &output : op->output->tensorMap()) {
+    for (auto &consumer : output.second->consumers.getOps()) {
+      contexts.insert(getContext(consumer));
+    }
+  }
+
+  return contexts;
+}
+
+bool ExplicitRecomputeHelper::isForwardContext(
+    ExplicitRecomputeTensorContext context) const {
+  return context.isForwardOp;
+}
+
+void ExplicitRecomputeHelper::registerRecomputedOpRelation(Op *op) {
+  relationMap[op] = graphutils::OpFinalLossRelation::ToFromLoss;
+}
+
+std::set<ExplicitRecomputeTensorContext>
+ExplicitRecomputeHelper::getValidRecomputeContexts(
+    const ExplicitRecomputeTensorContext &producerContext,
+    const std::set<ExplicitRecomputeTensorContext> &consumerContexts) const {
+  std::set<ExplicitRecomputeTensorContext> recomputeContexts;
+  for (auto &consumerContext : consumerContexts) {
+
+    if (producerContext.pipelineStage && consumerContext.pipelineStage) {
+      auto producerVGrapIds =
+          pipelineStageVraphIdMap.at(*producerContext.pipelineStage);
+      auto consumerVGrapIds =
+          pipelineStageVraphIdMap.at(*consumerContext.pipelineStage);
+      std::set<VGraphId> intersection;
+      std::set_intersection(producerVGrapIds.begin(),
+                            producerVGrapIds.end(),
+                            consumerVGrapIds.begin(),
+                            consumerVGrapIds.end(),
+                            std::inserter(intersection, intersection.end()));
+      if (!intersection.empty()) {
+        // Producer and consumer share a virtual graph ID - recomputation in the
+        // context is possible. Multiple recompute is supported.
+        recomputeContexts.insert(consumerContext);
+      }
+    } else if (producerContext.executionPhase &&
+               consumerContext.executionPhase) {
+      // Remap from forward to backward execution phase
+      // Multiple recompute is not supported on phased execution yet.
+      // There are no plans for adding support on this, since balancing
+      // recompute with RemoteLoad/RemoteStore in phased execution would
+      // require difficult heuristics.
+
+      // Compute: backward_phase = 2 * number_of_phases - 2 - forward_phase
+      ExplicitRecomputeTensorContext recomputeContext(
+          false,
+          2 * graph.getIr().getSessionOptions().executionPhaseSettings.phases -
+              2 - *producerContext.executionPhase,
+          OptionalPipelineStage());
+      // Recompute needs to occur before the consumer context
+      if (*recomputeContext.executionPhase <= *consumerContext.executionPhase) {
+        recomputeContexts.insert(recomputeContext);
+      }
+    } else {
+      // No pipelining or phased execution
+      recomputeContexts.insert(consumerContext);
+    }
+  }
+  return recomputeContexts;
+}
+
+void ExplicitRecomputeHelper::cloneRecomputeOps() {
+  auto &schedule = getOpSchedule();
+
+  for (auto opIt = schedule.rbegin(); opIt != schedule.rend(); ++opIt) {
+    Op *op       = *opIt;
+    auto context = getContext(op);
+
+    if (op->settings.recomputeType == RecomputeType::Recompute) {
+
+      auto producerContext  = getContext(op);
+      auto consumerContexts = getConsumerContexts(op);
+
+      // Change every recompute op to checkpoint
+      op->settings.recomputeType = RecomputeType::Checkpoint;
+
+      auto recomputeContexts =
+          getValidRecomputeContexts(producerContext, consumerContexts);
+
+      for (auto &recomputeContext : recomputeContexts) {
+        // Recompute not required for context
+        if (isForwardContext(recomputeContext) || recomputeContext == context) {
+          continue;
+        }
+
+        // Recompute once per non-forward context
+        auto cloneOpUp = op->clone();
+        auto cloneOpId = getGraph().moveIntoGraph(std::move(cloneOpUp));
+
+        Op *cloneOp = getGraph().getOp(cloneOpId);
+
+        if (recomputeContext.executionPhase) {
+          cloneOp->setExecutionPhase(*recomputeContext.executionPhase);
+        }
+
+        if (recomputeContext.pipelineStage) {
+          cloneOp->setPipelineStage(*recomputeContext.pipelineStage);
+        }
+
+        cloneOp->disconnectAllInputs();
+        cloneOp->disconnectAllOutputs();
+        cloneOp->settings.recomputeType = RecomputeType::Recomputed;
+
+        registerRecomputedOpRelation(cloneOp);
+
+        for (auto &in : op->input->tensorMap()) {
+          // Consume forward produced tensor initially
+          cloneOp->connectInTensor(in.first, in.second->id);
+        }
+        for (auto &out : op->output->tensorMap()) {
+          TensorId recomputedId = op->getIr().createIntermediateTensorId(
+              createRecomputedTensorId(out.second->id));
+          recomputedTensorMap[{out.second->id, recomputeContext}] =
+              recomputedId;
+          cloneOp->createAndConnectOutTensor(out.first, recomputedId);
+        }
+        cloneOp->setup();
+
+        logging::transform::trace("[ExplicitRecompute] Cloned op {} -> {}",
+                                  op->debugName(),
+                                  cloneOp->debugName());
+      }
+    }
+  }
+}
+
+void ExplicitRecomputeHelper::remapConsumers() {
+  for (auto recomputedTensor : recomputedTensorMap) {
+    Tensor *originalTensor =
+        graph.getTensors().get(recomputedTensor.first.first);
+    auto producer = originalTensor->getProducer();
+    for (Op *consumer : originalTensor->consumers.getOps()) {
+      auto producerContext = getContext(producer);
+      auto consumerContext = getContext(consumer);
+      auto recomputeContexts =
+          getValidRecomputeContexts(producerContext, {consumerContext});
+      for (auto recomputeContext : recomputeContexts) {
+        if (recomputeContext == recomputedTensor.first.second) {
+          auto indices = consumer->input->indices(originalTensor);
+          for (auto i : indices) {
+            consumer->disconnectInTensor(i, originalTensor);
+            consumer->connectInTensor(i, recomputedTensor.second);
+          }
+          logging::transform::trace(
+              "[ExplicitRecompute] Op {} consumes recomputed tensor {}->{}",
+              consumer->debugName(),
+              originalTensor->id,
+              recomputedTensor.second);
+        } else {
+          logging::transform::trace(
+              "[ExplicitRecompute] Op {} cannot consume recomputed tensor "
+              "{}->{}.",
+              consumer->debugName(),
+              originalTensor->id,
+              recomputedTensor.second);
+        }
+      }
+    }
+  }
+}
+
 bool ExplicitRecompute::apply(Graph &graph) const {
   logging::transform::debug("[ExplicitRecompute] Started.");
 
-  auto &ir      = graph.getIr();
-  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+  ExplicitRecomputeHelper helper(graph);
 
-  auto getContext = [&ir](Op *op) -> TensorContext {
-    VGraphId vgid = op->hasVirtualGraphId() ? op->getVirtualGraphId() : -1;
-    ExecutionPhase executionPhase =
-        (ir.getSessionOptions().executionPhaseSettings.phases > 1 &&
-         op->hasExecutionPhase())
-            ? op->getExecutionPhase()
-            : unusedExecutionPhase;
-    PipelineStage pipelineStage =
-        (ir.getSessionOptions().enablePipelining && op->hasPipelineStage())
-            ? op->getPipelineStage()
-            : unusedPipelineStage;
-    return TensorContext(vgid, executionPhase, pipelineStage);
-  };
+  // Clone every recompute Op
+  helper.cloneRecomputeOps();
 
-  std::map<std::pair<TensorId, TensorContext>, TensorId> recomputedTensorMap;
-
-  for (Op *op : schedule) {
-    if (op->settings.recomputeType == RecomputeType::Recompute) {
-      // Change every recompute op to checkpoint
-      op->settings.recomputeType = RecomputeType::Checkpoint;
-      auto clone                 = op->clone();
-      auto cloneid               = graph.moveIntoGraph(std::move(clone));
-
-      Op *clone_op = graph.getOp(cloneid);
-
-      if (clone_op->hasExecutionPhase()) {
-        // Remap from forward to backward execution phase
-        ExecutionPhase recomputePhase =
-            2 * ir.getSessionOptions().executionPhaseSettings.phases - 2 -
-            clone_op->getExecutionPhase();
-        logging::trace(
-            "[ExplicitRecompute] Remapping {} execution phase {} -> {}",
-            clone_op->debugName(),
-            clone_op->getExecutionPhase(),
-            recomputePhase);
-        clone_op->setExecutionPhase(recomputePhase);
-      }
-
-      // Get context after remapping phases
-      auto context = getContext(clone_op);
-
-      clone_op->disconnectAllInputs();
-      clone_op->disconnectAllOutputs();
-      clone_op->settings.recomputeType = RecomputeType::Recomputed;
-
-      for (auto &in : op->input->tensorMap()) {
-        auto recomputedTensor =
-            recomputedTensorMap.find({in.second->id, context});
-        if (recomputedTensor == recomputedTensorMap.end()) {
-          // Not recomputed, consume forward produced tensor
-          clone_op->connectInTensor(in.first, in.second->id);
-        } else {
-          // Recomputed, use recomputed tensor
-          clone_op->connectInTensor(in.first, recomputedTensor->second);
-        }
-      }
-      for (auto &out : op->output->tensorMap()) {
-        TensorId recomputedId = createRecomputedTensorId(out.second->id);
-        recomputedTensorMap[{out.second->id, context}] = recomputedId;
-        clone_op->createAndConnectOutTensor(out.first, recomputedId);
-      }
-      clone_op->setup();
-
-      logging::transform::trace("[ExplicitRecompute] Cloned op {} {} -> {}",
-                                clone_op->opid,
-                                clone_op->input->getIndexShapeMap(),
-                                clone_op->output->getIndexShapeMap());
-    }
-  }
-
-  // Remap consumer inputs to use recomputed tensor
-  for (auto recomputedTensor : recomputedTensorMap) {
-    Tensor *tensor = graph.getTensors().get(recomputedTensor.first.first);
-    for (Op *consumer : tensor->consumers.getOps()) {
-      auto context = getContext(consumer);
-      if (((consumer->toLoss == PathToLoss::No &&
-            consumer->fromLoss == PathFromLoss::Yes) ||
-           consumer->settings.recomputeType == RecomputeType::Recomputed) &&
-          context == recomputedTensor.first.second) {
-        auto indices = consumer->input->indices(tensor);
-        for (auto i : indices) {
-          consumer->disconnectInTensor(i, tensor);
-          consumer->connectInTensor(i, recomputedTensor.second);
-        }
-      }
-    }
-  }
+  // Remap consumer Op inputs to use recomputed tensors where indicated
+  // by matching contexts
+  helper.remapConsumers();
 
   logging::transform::debug("[ExplicitRecompute] Done.");
   return true;

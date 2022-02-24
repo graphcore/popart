@@ -220,7 +220,34 @@ public:
   std::vector<popart::Op *> varUpdateOps;
 };
 
-/*
+/**
+ * Describes a simple model before the application of explicit recomputation.
+ * The model contains skip-connections between pipeline stages to trigger
+ * multiple recomputation.
+ *
+ * Pseudocode of the core model:
+ *
+ * output = ...
+ * for i in range(numLayers):
+ *   for j in range(numMatMulsPerLayer):
+ *     output = matmul(w_i_j, output);
+ *     if i >= 2:
+ *       output = add(output, output_of_(i-2)_j)
+ *
+ * The first operation of each layer is set to `checkpoint`, while all other
+ * operations are set to `recompute`. Note that isn't a requirement for either
+ * normal or pipelined explicit recompute, but rather to test if user-defined
+ * recomputes work in both cases. For pipelining, by default, the IpuCopyOps
+ * inserted later will always be checkpointed regardless.
+ */
+class ExplicitRecomputeTestModel : public GraphTestModel {
+public:
+  ExplicitRecomputeTestModel(bool pipelining,
+                             int numLayers,
+                             int numMatMulsPerLayer);
+};
+
+/**
  * Psuedo code:
  *
  *     def subgraph(st0, st1):

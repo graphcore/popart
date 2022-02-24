@@ -232,6 +232,51 @@ using Edges   = std::set<Edge>;
 std::vector<std::vector<Op *>>
 findMatchingOps(Graph &graph, OpPreds preds, Edges edges);
 
+/**
+ * Enum categorzing operations by their relation to the final loss.
+ * Can be used to optimize recomputation.
+ *
+ * The operations are classified into four types by their position relative
+ * to the final loss:
+ *
+ * ToLoss
+ * |     \
+ * |      FromToLoss
+ * Loss
+ * |      ToFromLoss
+ * |     /
+ * FromLoss
+ *
+ */
+enum class OpFinalLossRelation {
+  /// The operation leads to the final loss or is the final loss (i.e. is
+  /// upstream as seen from the loss)
+  /// (PathToLoss::Yes && PathFromLoss::{Yes, No, Undefined})
+  ToLoss = 0,
+  /// The operation comes from the final loss (i.e. is downstream as seen from
+  /// the loss)
+  /// (PathToLoss::{No, Undefined} && PathFromLoss::Yes)
+  FromLoss,
+  /// The operation is upstream of a FromLoss consumer (by data), or downstream
+  /// of a FromLoss operation (by topocon)
+  ToFromLoss,
+  /// The operation is downstream of a ToLoss producer (by data), or upstream
+  /// of a ToLoss operation (by topocon)
+  FromToLoss,
+};
+
+std::ostream &operator<<(std::ostream &os, const OpFinalLossRelation &oprel);
+
+/**
+ * Categorizes all operations according to their position with relation
+ * to the final loss, based on toLoss/fromLoss annotations, data dependencies
+ * and schedule constraints.
+ * \param graph Graph with operations to classify
+ * \return      Relation map for each Op in the graph
+ */
+std::map<Op *, OpFinalLossRelation, POpCmp>
+getOpFinalLossRelations(Graph &graph);
+
 } // namespace graphutils
 } // namespace popart
 

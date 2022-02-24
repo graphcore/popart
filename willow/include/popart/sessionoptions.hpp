@@ -783,6 +783,13 @@ struct SessionOptions {
     return enablePipelining && !(useHostCopyOps && enableExplicitMainLoops);
   }
 
+  /// Enable the explicit representations in the IR (code paths)
+  void enableExplicitIR(bool enable) {
+    useHostCopyOps          = enable;
+    enableExplicitMainLoops = enable;
+    explicitRecomputation   = enable;
+  }
+
   /**
    * A wrapper class for the #numIOTiles option that permits any int value and
    * has an 'unassigned' state.

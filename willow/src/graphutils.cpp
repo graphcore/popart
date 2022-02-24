@@ -595,5 +595,109 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
   return matches;
 }
 
+std::ostream &operator<<(std::ostream &os, const OpFinalLossRelation &oprel) {
+  switch (oprel) {
+  case OpFinalLossRelation::ToLoss: {
+    os << "ToLoss";
+    break;
+  }
+  case OpFinalLossRelation::FromLoss: {
+    os << "FromLoss";
+    break;
+  }
+  case OpFinalLossRelation::ToFromLoss: {
+    os << "ToFromLoss";
+    break;
+  }
+  case OpFinalLossRelation::FromToLoss: {
+    os << "FromToLoss";
+    break;
+  }
+  }
+  return os;
+}
+
+std::map<Op *, OpFinalLossRelation, POpCmp>
+getOpFinalLossRelations(Graph &graph) {
+  std::map<Op *, OpFinalLossRelation, POpCmp> opRelationMap;
+
+  auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::No);
+
+  // Initially, we know precisely what is ToLoss and FromLoss, but
+  // FromToLoss and ToFromLoss cannot be estimated yet, because we haven't set
+  // all ToLoss and FromLoss yet.
+  for (auto it = schedule.begin(); it != schedule.end(); ++it) {
+    auto op = *it;
+    if (op->toLoss == PathToLoss::Yes) {
+      // Check to loss
+      opRelationMap[op] = OpFinalLossRelation::ToLoss;
+    } else if (op->fromLoss == PathFromLoss::Yes) {
+      // Check from loss
+      opRelationMap[op] = OpFinalLossRelation::FromLoss;
+    } else {
+      // Default to FromToLoss
+      opRelationMap[op] = OpFinalLossRelation::FromToLoss;
+    }
+  }
+
+  // Adjust for downstream consumers, and if we encounter any `FromLoss` or
+  // `ToFromLoss` downstream (by data path), the operation can change from
+  // `FromToLoss` to `ToFromLoss`.
+  for (auto it = schedule.rbegin(); it != schedule.rend(); ++it) {
+    auto op       = *it;
+    auto relation = opRelationMap.find(op);
+    if (relation == opRelationMap.end() ||
+        relation->second == OpFinalLossRelation::FromToLoss) {
+      for (auto output : op->output->tensorMap()) {
+        for (auto after : output.second->consumers.getOps()) {
+          auto afterRelation = opRelationMap.find(after);
+          if (afterRelation->second == OpFinalLossRelation::FromLoss ||
+              afterRelation->second == OpFinalLossRelation::ToFromLoss) {
+            opRelationMap[op] = OpFinalLossRelation::ToFromLoss;
+          }
+        }
+      }
+    }
+  }
+
+  // Adjust according to topocons, and if we encounter any `FromLoss` or
+  // `ToFromLoss` downstream (by topocon path), the operation can change from
+  // `FromToLoss` to `ToFromLoss`.
+  for (auto it = schedule.begin(); it != schedule.end(); ++it) {
+    auto op       = *it;
+    auto relation = opRelationMap.find(op);
+    if (relation == opRelationMap.end() ||
+        relation->second == OpFinalLossRelation::FromToLoss) {
+      for (auto before : graph.topoCons->getBefores(op)) {
+        auto beforeRelation = opRelationMap.find(before);
+        if (beforeRelation->second == OpFinalLossRelation::FromLoss ||
+            beforeRelation->second == OpFinalLossRelation::ToFromLoss) {
+          opRelationMap[op] = OpFinalLossRelation::ToFromLoss;
+        }
+      }
+    }
+  }
+
+  // Adjust according to topocons, and if we encounter any `ToLoss` or
+  // `FromToLoss` upstream (by topocon path), the operation can change from
+  // `ToFromLoss` to `FromToLoss`.
+  for (auto it = schedule.rbegin(); it != schedule.rend(); ++it) {
+    auto op       = *it;
+    auto relation = opRelationMap.find(op);
+    if (relation == opRelationMap.end() ||
+        relation->second == OpFinalLossRelation::ToFromLoss) {
+      for (auto after : graph.topoCons->getAfters(op)) {
+        auto afterRelation = opRelationMap.find(after);
+        if (afterRelation->second == OpFinalLossRelation::ToLoss ||
+            afterRelation->second == OpFinalLossRelation::FromToLoss) {
+          opRelationMap[op] = OpFinalLossRelation::FromToLoss;
+        }
+      }
+    }
+  }
+
+  return opRelationMap;
+}
+
 } // namespace graphutils
 } // namespace popart

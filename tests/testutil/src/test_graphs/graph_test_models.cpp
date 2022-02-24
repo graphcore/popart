@@ -38,6 +38,7 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/autodiff.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/util.hpp>
 
@@ -895,6 +896,132 @@ RemoteRTSTestModel::RemoteRTSTestModel(popart::SessionOptions options) {
   }
 
   ir.applyTransform(MergeExchange::id(), graph);
+}
+
+ExplicitRecomputeTestModel::ExplicitRecomputeTestModel(bool pipelining,
+                                                       int numLayers,
+                                                       int numMatMulsPerLayer) {
+
+  SessionOptions options;
+
+  options.enablePipelining = pipelining;
+  options.enableExplicitIR(true);
+
+  Graph &graph = ir.getMainGraph();
+  ir.setUserOptions(options);
+
+  std::shared_ptr<Optimizer> optimizer;
+  std::shared_ptr<OptimizerDecompose> decomposer;
+
+  optimizer  = std::make_shared<SGD>(0.1, 0.1, 0.0, 0.0, 0.1, 1.0);
+  decomposer = std::make_shared<SGD0Decompose>();
+
+  ir.setOptimizer(*optimizer);
+
+  TensorInfo tInfo{DataType::FLOAT, {4, 4}};
+  float tData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+
+  std::string input = "I";
+  graph.getTensors().addVarInit("I", tInfo, static_cast<void *>(&tData));
+  std::string output = "";
+
+  std::vector<TensorId> identities;
+
+  for (size_t i = 0; i < numLayers; ++i) {
+    for (size_t j = 0; j < numMatMulsPerLayer; ++j) {
+      // W: Weights
+      std::string w = "Wt_" + std::to_string(i) + "_" + std::to_string(j);
+      // OM: Matmul outputs
+      std::string moutput = "OMt" + std::to_string(i) + "_" + std::to_string(j);
+      // OA: Addition outputs
+      std::string aoutput = "OAt" + std::to_string(i) + "_" + std::to_string(j);
+      // OI: Identity outputs
+      std::string ioutput = "OIt" + std::to_string(i) + "_" + std::to_string(j);
+
+      // Add skip connection to trigger multiple recompute
+      std::string skipoutput = "";
+      if (i >= 2) {
+        skipoutput = "OMt" + std::to_string(i - 2) + "_" + std::to_string(j);
+      }
+
+      graph.getTensors().addVarInit(w, tInfo, static_cast<void *>(&tData));
+
+      auto matMulOp = graph.createConnectedOp<MatMulOp>(
+          {{MatMulOp::getLhsInIndex(), input}, {MatMulOp::getRhsInIndex(), w}},
+          {{MatMulOp::getOutIndex(), moutput}},
+          Onnx::Operators::MatMul_1,
+          Op::Settings{graph,
+                       "MatMul_" + std::to_string(i) + "_" + std::to_string(j)},
+          0.6f,
+          MatMulBaseOp::SerialiseSettings{
+              MatMulBaseOp::SerialiseSettings::Mode::None, 0, false},
+          DataType::FLOAT,
+          MatMulPartialsType::FLOAT);
+
+      if (j == 0) {
+        matMulOp->settings.recomputeType = RecomputeType::Checkpoint;
+      } else {
+        matMulOp->settings.recomputeType = RecomputeType::Recompute;
+      }
+      matMulOp->setPipelineStage(i);
+      matMulOp->setVirtualGraphId(i % 2);
+      output = moutput;
+
+      // Create an identity to anchor, which will result in the
+      // IdentityOp being identified as a `OpFinalLossRelation::FromToLoss`,
+      // so an Op that has no direct path to or from the loss, but comes
+      // from an upstream `OpFinalLossRelation::ToLoss` operation.
+      auto identity = graph.createConnectedOp<IdentityOp>(
+          {{IdentityOp::getInIndex(), moutput}},
+          {{IdentityOp::getOutIndex(), ioutput}},
+          Onnx::Operators::Identity_1,
+          Op::Settings{graph,
+                       "Identity_" + std::to_string(i) + "_" +
+                           std::to_string(j)});
+
+      identities.push_back(ioutput);
+
+      identity->settings.recomputeType = RecomputeType::Checkpoint;
+      identity->setPipelineStage(i);
+      identity->setVirtualGraphId(i % 2);
+
+      if (!skipoutput.empty()) {
+        auto addOp = graph.createConnectedOp<AddOp>(
+            {{AddOp::getArg0InIndex(), moutput},
+             {AddOp::getArg1InIndex(), skipoutput}},
+            {{AddOp::getOutIndex(), aoutput}},
+            Onnx::Operators::Add_7,
+            Op::Settings{graph,
+                         "Add_" + std::to_string(i) + "_" + std::to_string(j)});
+
+        addOp->settings.recomputeType = RecomputeType::Recompute;
+        addOp->setPipelineStage(i);
+        addOp->setVirtualGraphId(i % 2);
+        output = aoutput;
+      }
+
+      input = output;
+    }
+  }
+
+  auto l1Op = graph.createConnectedOp<L1Op>({{L1Op::getInIndex(), output}},
+                                            {{L1Op::getOutIndex(), "loss"}},
+                                            Onnx::CustomOperators::L1,
+                                            0.1f,
+                                            ReductionType::Mean,
+                                            Op::Settings{graph, "L1"});
+  l1Op->setPipelineStage(numLayers - 1);
+  l1Op->setVirtualGraphId((numLayers - 1) % 2);
+
+  // Anchor all identities so we generate some "FromToLoss" operations
+  auto art = AnchorReturnType("All");
+  df       = DataFlow(1, identities, art);
+  ir.setDataFlow(df);
+
+  ir.setFinalLoss("loss");
+  ir.updateVertices();
+  ir.constructBackwards();
+  ir.updateVertices();
 }
 
 TraverseCallSiteTestModel::TraverseCallSiteTestModel() {
