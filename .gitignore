@@ -17,4 +17,6 @@ experimental
 .cache/
 *.code-workspace
 .idea
-
+checkpoints/
+logs/
+results/

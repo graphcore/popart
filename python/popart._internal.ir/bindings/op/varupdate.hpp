@@ -34,10 +34,12 @@ public:
   typedef std::map<InIndex, TensorId> InMap;
 
   InMap optimizerInputs() const override {
-    PYBIND11_OVERRIDE_PURE(InMap,           /* Return type */
-                           BaseOp,          /* Parent class */
-                           optimizerInputs, /* Name of function in C++ (must
-                                                   match Python name) */
+    PYBIND11_OVERRIDE_PURE(
+        InMap,  /* Return type */
+        BaseOp, /* Parent class */
+        // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+        optimizerInputs, /* Name of function in C++ (must
+                                match Python name) */
     );
   }
   bool isOptimizerOp() const override {

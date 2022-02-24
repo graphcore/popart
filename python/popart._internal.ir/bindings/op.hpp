@@ -40,15 +40,16 @@ public:
     PYBIND11_OVERLOAD_PURE(
         Op *,   /* Return type */
         BaseOp, /* Parent class */
-        clone,  /* Name of function in C++ (must match Python name) */
-    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+        // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+        clone, /* Name of function in C++ (must match Python name) */
+    );
   }
   float getSubgraphValue() const override {
     PYBIND11_OVERRIDE_PURE(
         float,            /* Return type */
         BaseOp,           /* Parent class */
         getSubgraphValue, /* Name of function in C++ (must match Python name) */
-    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+    );
   }
 
   std::unique_ptr<Op>

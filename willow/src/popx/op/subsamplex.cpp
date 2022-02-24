@@ -14,7 +14,7 @@
 namespace popart {
 namespace popx {
 
-static snap::Tensor subsample(snap::Tensor &t,
+static snap::Tensor subsample(const snap::Tensor &t,
                               const std::vector<uint32_t> &strides) {
 
   auto result   = t;

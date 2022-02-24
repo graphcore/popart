@@ -237,7 +237,7 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
 
 using SGD1And2TestConfigs = std::tuple<SGD1TestConfig, SGD2TestConfig>;
 
-bool acquisitionFailure(std::array<float, 2> res) {
+bool acquisitionFailure(const std::array<float, 2> res) {
   return res == _detail::acquisitionFailure;
 }
 

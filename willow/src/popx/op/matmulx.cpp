@@ -349,7 +349,7 @@ void MatMulOpx::verifyCacheSizeUnchanged(size_t beforeCacheSize) const {
 
   auto opts = dv_p->lowering().matmulOptions;
   appendPoplarOptionsForOp(getOp<MatMulOp>(), opts);
-  auto hasFlag = [](auto &opts, auto flag) {
+  auto hasFlag = [](const auto &opts, auto flag) {
     for (auto &x : opts) {
       if (x.first == "fullyConnectedPass") {
         return true;

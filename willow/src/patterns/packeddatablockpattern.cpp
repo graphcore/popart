@@ -379,9 +379,9 @@ void sequenceSliceCallbackInputs(
 
 // Add a SequenceSliceOp to insert the result of each loop iteration into the
 // result destination.
-void sequenceSliceCallbackOutput(CallbackIO &inputInfo,
+void sequenceSliceCallbackOutput(const CallbackIO &inputInfo,
                                  PackedDataBlockOp *pdb,
-                                 Op::Settings &settings) {
+                                 const Op::Settings &settings) {
   auto &graph     = pdb->getCalledGraph();
   auto graphOutId = graph.getOutputId(1);
   auto graphOut   = graph.getTensors().get(graphOutId);

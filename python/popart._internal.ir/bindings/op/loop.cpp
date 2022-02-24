@@ -21,6 +21,7 @@ namespace _internal {
 namespace ir {
 namespace op {
 
+// cppcheck-suppress constParameter // False positive for &m
 void bindRepeat(py::module &m) {
 
   auto sm = m;

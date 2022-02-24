@@ -109,7 +109,7 @@ public:
   std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() final {
     return {pathFromInput};
   }
-  void setPathFromInput(std::vector<OpxInAndOutIndex> &value) {
+  void setPathFromInput(const std::vector<OpxInAndOutIndex> &value) {
     pathFromInput = value;
   }
 

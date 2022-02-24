@@ -36,10 +36,12 @@ public:
   using PyOp<BaseOp>::PyOp;
 
   Shape getExpandedLhsShape() const override {
-    PYBIND11_OVERRIDE_PURE(Shape,               /* Return type */
-                           BaseOp,              /* Parent class */
-                           getExpandedLhsShape, /* Name of function in C++ (must
-                                                   match Python name) */
+    PYBIND11_OVERRIDE_PURE(
+        Shape,  /* Return type */
+        BaseOp, /* Parent class */
+        // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+        getExpandedLhsShape, /* Name of function in C++ (must
+                                match Python name) */
     );
   }
   Shape getExpandedRhsShape() const override {

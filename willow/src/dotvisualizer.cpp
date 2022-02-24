@@ -224,8 +224,8 @@ void DotVisualizer::write(const Ir &ir) {
 
     auto addEdge =
         [this, &generateNodeName, &ir, &gString](
-            std::string &srcNodeName,
-            std::string &dstNodeName,
+            const std::string &srcNodeName,
+            const std::string &dstNodeName,
             const std::map<TensorId, view::Regions> &aliasedRegions,
             const view::Regions &modifiedRegions,
             const std::pair<const int, Tensor *> &ind_ten) {

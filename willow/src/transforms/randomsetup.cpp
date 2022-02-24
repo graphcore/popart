@@ -342,7 +342,7 @@ RandomSetup::determineGraphApplyOrder(const Ir &ir) const {
   std::transform(graphs.begin(),
                  graphs.end(),
                  std::back_inserter(todo),
-                 [](auto &graph) { return graph->id; });
+                 [](const auto &graph) { return graph->id; });
 
   // Checks if a graph is in done.
   auto calledGraphInDone = [&](const Graph *calledGraph) {

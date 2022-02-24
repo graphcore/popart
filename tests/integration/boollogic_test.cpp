@@ -5,8 +5,8 @@
 #include <popart/boollogic.hpp>
 #include <popart/logging.hpp>
 
-namespace popart {
-namespace boollogic {
+using namespace popart;
+using namespace boollogic;
 
 BOOST_AUTO_TEST_CASE(Term_Not0) {
   Term term0 = Term::notTerm(Term::notTerm(Term::varTerm("A")));
@@ -142,6 +142,3 @@ BOOST_AUTO_TEST_CASE(Term_DNF0) {
 
   BOOST_CHECK_EQUAL(t1, t2);
 }
-
-} // namespace boollogic
-} // namespace popart

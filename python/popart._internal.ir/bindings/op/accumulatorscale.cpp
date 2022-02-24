@@ -20,6 +20,7 @@ namespace _internal {
 namespace ir {
 namespace op {
 
+// cppcheck-suppress constParameter // False positive for &m
 void bindAccumulatorScale(py::module &m) {
 
   auto sm = m;

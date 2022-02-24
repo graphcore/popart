@@ -1,7 +1,5 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-containerOutOfBounds // Not addressed
 constVariable  // Not addressed
-constParameter  // Not addressed
 clarifyCondition  // Not addressed
 derefInvalidIteratorRedundantCheck  // Not addressed
 duplicateBreak  // Not addressed
@@ -18,7 +16,6 @@ redundantInitialization  // Not addressed
 shadowVariable  // Not addressed
 redundantAssignment  // Not addressed
 stlFindInsert  // Not addressed
-syntaxError  // Not addressed
 shadowFunction  // Not addressed
 unreadVariable  // Not addressed
 uninitMemberVar  // Not addressed

@@ -21,7 +21,7 @@ void bindRegion(py::module &m) {
 
   py::class_<view::Region>(sm, "Region")
       .def("__str__",
-           [](view::Region &self) {
+           [](const view::Region &self) {
              std::stringstream ss;
              ss << self;
              return ss.str();

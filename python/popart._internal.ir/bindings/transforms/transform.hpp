@@ -33,16 +33,18 @@ public:
                            graph);
   }
   std::size_t getId() const override {
-    PYBIND11_OVERRIDE_PURE(std::size_t,   /* Return type */
-                           TransformBase, /* Parent class */
-                           getId,         /* Name of function */
-    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+    PYBIND11_OVERRIDE_PURE(
+        std::size_t,   /* Return type */
+        TransformBase, /* Parent class */
+        // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+        getId, /* Name of function */
+    );
   }
   std::string getName() const override {
     PYBIND11_OVERRIDE_PURE(std::string,   /* Return type */
                            TransformBase, /* Parent class */
                            getName,       /* Name of function */
-    ); // cppcheck-suppress syntaxError // Variadic macro requires >=1 argument
+    );
   }
 };
 

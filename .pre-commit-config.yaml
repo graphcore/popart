@@ -94,6 +94,7 @@ repos:
     #      - id: uncrustify
           - id: cppcheck
             args: [
+                --inline-suppr,
                 --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
             ]
     #      - id: cpplint

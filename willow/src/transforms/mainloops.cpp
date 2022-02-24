@@ -634,7 +634,7 @@ void MainLoops::setupAnchors(Graph &graph,
     }
 
     // Inherit placement attributes.
-    auto configureOps = [&aliasModel](std::vector<Op *> &ops) {
+    auto configureOps = [&aliasModel](const std::vector<Op *> &ops) {
       for (auto op : ops) {
         logging::transform::trace(
             "[MainLoops::setupAnchors] Attempting to inherit "

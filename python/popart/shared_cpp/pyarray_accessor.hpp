@@ -39,17 +39,19 @@ private:
 
 struct PyArrayAccessor {
 
-  static void *getDataPointer(PyArray &array) { return array.ptr; }
+  static void *getDataPointer(const PyArray &array) { return array.ptr; }
 
   static size_t getArraySize(const PyArray &array) { return array.size; }
 
-  static DataType getArrayDataType(PyArray &array) {
+  static DataType getArrayDataType(const PyArray &array) {
     return getDataTypeFromNpType(array.typeString);
   }
 
-  static size_t getArrayRank(PyArray &array) { return array.shape.size(); }
+  static size_t getArrayRank(const PyArray &array) {
+    return array.shape.size();
+  }
 
-  static int64_t getArrayDim(PyArray &array, size_t index) {
+  static int64_t getArrayDim(const PyArray &array, size_t index) {
     return array.shape.at(index);
   }
 };

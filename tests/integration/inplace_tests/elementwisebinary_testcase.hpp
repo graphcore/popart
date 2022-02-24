@@ -217,6 +217,7 @@ private:
       return out;
     };
 
+    // cppcheck-suppress constParameter // False positive for &ir
     auto checkIr = [&](Ir &ir) {
       BOOST_CHECK_MESSAGE(
           (this->*irChecker)(ir),
