@@ -20,7 +20,6 @@ class TestAccumulate:
         assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
-        op.getAccumulationType() == _ir.AccumulationType.Add
 
     def test_dampened_add_float(self):
         ir = pir.Ir()
@@ -34,7 +33,6 @@ class TestAccumulate:
         assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
-        op.getAccumulationType() == _ir.AccumulationType.DampenedAdd
 
     def test_dampened_add_tensor(self):
         ir = pir.Ir()
@@ -47,7 +45,6 @@ class TestAccumulate:
             c = ops.var_updates.accumulate_(a, b, factor)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
-        op.getAccumulationType() == _ir.AccumulationType.DampenedAdd
 
     def test_dampened_add_square(self):
         ir = pir.Ir()
@@ -59,7 +56,6 @@ class TestAccumulate:
             c = ops.var_updates.accumulate_square_(a, b, 0.999)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
-        op.getAccumulationType() == _ir.AccumulationType.DampenedAddSquare
 
     def test_mean(self):
         ir = pir.Ir()
@@ -72,7 +68,6 @@ class TestAccumulate:
             c = ops.var_updates.accumulate_mean_(a, b, step)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
-        op.getAccumulationType() == _ir.AccumulationType.Mean
 
     @pytest.mark.parametrize("constant_", [True, False])
     def test_scale(self, constant_):

@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import pytest
 import numpy as np
 import popart
 import onnx
@@ -11,12 +10,12 @@ from loss_scaling_util_test import getModelProto
 def run_automatic_loss_scaling_infrequent_oversteps_test(
         tmpdir, update_period=1):
     """
-    An integration test: 
+    An integration test:
     We construct two sessions with an updatePeriod > 1.
     We run the first one with batchesPerStep == K * updatePeriod.
-    We run the second one with batchesPerStep == 1, and we call 
+    We run the second one with batchesPerStep == 1, and we call
     session.run K * updatePeriod times.
-    In the middle of this we checkpoint the model and load from the checkpoint 
+    In the middle of this we checkpoint the model and load from the checkpoint
     to confirm the automatic loss scaling counter state is checkpointed.
     """
     loss, proto, t0, t_shape, label, label_shape, _ = getModelProto()

@@ -113,7 +113,7 @@ __all__ = [
     # l1.py
     "l1",
     # l2.py
-    "l12",
+    "l2",
     # lamb.py
     "lamb_square",
     # logical_and.py

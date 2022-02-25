@@ -18,7 +18,6 @@ class TestIpuCopy:
         assert len(g_ops) == 3
         io_copy = g_ops[-1]
         assert isinstance(io_copy, _ir.op.IoTileCopyOp)
-        io_copy.getSettings().tileSet == _ir.TileSet.IO
 
     def test_copy_from(self):
         ir = pir.Ir()
@@ -34,4 +33,3 @@ class TestIpuCopy:
         assert len(g_ops) == 3
         io_copy = g_ops[-1]
         assert isinstance(io_copy, _ir.op.IoTileCopyOp)
-        io_copy.getSettings().tileSet == _ir.TileSet.Compute

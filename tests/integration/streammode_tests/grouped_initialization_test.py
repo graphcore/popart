@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import IO, Dict, List, Tuple
+from typing import Dict, List
 from tempfile import TemporaryDirectory
-from numpy.core import shape_base
 import numpy as np
 import pytest
 import popart
@@ -297,7 +296,7 @@ configs = [
         "retrieval": "AllReplicas",
         "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
     },
-    {  # Two ungrouped replicas, returning one each. 
+    {  # Two ungrouped replicas, returning one each.
         "c.idx": '3',  # Debug Config ID
         "ipus": '1',  # Number of IPUs to run on
         "repl": '2',  # Replication Factor

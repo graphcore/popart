@@ -7,7 +7,7 @@ import test_util as tu
 import torch
 import json
 
-from loss_scaling_util_test import getModelProto, getOptimizers, run_automatic_loss_scaling_comparison_test
+from loss_scaling_util_test import getModelProto, run_automatic_loss_scaling_comparison_test
 
 
 def loss_scaling_test(constLossScaling):

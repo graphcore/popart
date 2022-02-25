@@ -4,7 +4,7 @@ import popart
 import pytest
 import test_util as tu
 
-from loss_scaling_util_test import getModelProto, getOptimizers, run_automatic_loss_scaling_comparison_test
+from loss_scaling_util_test import getModelProto
 
 
 @pytest.mark.parametrize("gradientTensorTrackingMethod", [
