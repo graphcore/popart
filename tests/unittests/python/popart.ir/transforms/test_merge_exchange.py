@@ -7,7 +7,7 @@ import popart.ir.ops as ops
 
 def test_merge_exchange():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         with pir.transforms.merge_exchange():
             x = ops.host_load(pir.h2d_stream((), pir.float32), "x")
@@ -22,7 +22,7 @@ def test_merge_exchange():
 
 def test_merge_exchange_targeted():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         ops.host_store(pir.d2h_stream((), pir.float32), pir.constant(1.0))
 
@@ -40,7 +40,7 @@ def test_merge_exchange_targeted():
 
 def test_merge_exchange_remote():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         with pir.transforms.merge_exchange():
             buffer = pir.remote_buffer((), pir.float32, 1)
@@ -56,7 +56,7 @@ def test_merge_exchange_remote():
 
 def test_io_tile_exchange():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main, pir.in_sequence(True):
         with pir.transforms.io_tile_exchange():
             buffer = pir.remote_buffer((), pir.float32, 1)
@@ -72,7 +72,7 @@ def test_io_tile_exchange():
 
 def test_io_tile_exchange_failed_verify():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main, pir.in_sequence(True):
         with pytest.raises(RuntimeError):
             with pir.transforms.io_tile_exchange():

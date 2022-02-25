@@ -11,7 +11,7 @@ import popart
 
 # Creating a model with popart.ir
 ir = pir.Ir()
-main = ir.main_graph()
+main = ir.main_graph
 with main:
     # host load
     input0 = pir.h2d_stream([1], pir.float32, name="input0_stream")
@@ -28,7 +28,7 @@ with main:
 
 dataFlow = popart.DataFlow(
     batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id(): popart.AnchorReturnType("All")})
+    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
 
 ir = ir._pb_ir
 ir.setDataFlow(dataFlow)
@@ -45,7 +45,7 @@ anchors = session.initAnchorArrays()
 # Generate some random input data
 data_a = np.random.rand(1).astype(np.float32)
 data_b = np.random.rand(1).astype(np.float32)
-inputs = {input0.tensor_id(): data_a, input1.tensor_id(): data_b}
+inputs = {input0.tensor_id: data_a, input1.tensor_id: data_b}
 
 # run the model
 stepio = popart.PyStepIO(inputs, anchors)
@@ -53,4 +53,4 @@ session.run(stepio)
 
 print(f"Input a is {data_a}")
 print(f"Input b is {data_b}")
-print(f"Result is {anchors[o_d2h.tensor_id()]}")
+print(f"Result is {anchors[o_d2h.tensor_id]}")

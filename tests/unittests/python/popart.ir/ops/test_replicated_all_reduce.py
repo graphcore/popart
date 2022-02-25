@@ -10,27 +10,27 @@ from utils import contains_op_of_type
 class TestReplicatedAllReduce:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             t = pir.variable(np.random.rand(3, 5, 7))
             c = ops.collectives.replicated_all_reduce(t)
 
         assert c.shape == t.shape
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("ReplicatedAllReduce",
                                    _ir.op.collectives.ReplicatedAllReduceOp, g)
 
     def test_fn_inplace(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             t = pir.variable(np.random.rand(3, 5, 7))
             c = ops.collectives.replicated_all_reduce_(t)
 
         assert c.shape == t.shape
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type(
             "ReplicatedAllReduceInplace",
             _ir.op.collectives.ReplicatedAllReduceInplaceOp, g)

@@ -24,7 +24,7 @@ def run_ir(ir: pir.Ir, y: pir.Tensor):
     ir_ = ir._pb_ir  # Internal ir
     y_d2h = pir.d2h_stream(y.shape, y.dtype, name="y_stream")
     ops.host_store(y_d2h, y)
-    y_id = y_d2h.tensor_id()
+    y_id = y_d2h.tensor_id
 
     dataFlow = popart.DataFlow(
         batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")})
@@ -60,7 +60,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_fn(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
         with g:
             t = pir.variable(data)
             if inplace:
@@ -73,13 +73,13 @@ class TestSlice:
         else:
             assert contains_op_of_type("SliceInplace", _ir.op.SliceInplaceOp,
                                        g)
-        assert len(g.get_tensors()) == 2
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 2
+        assert len(g.variables) == 1
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_fn_numerically(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
         with g:
             t = pir.variable(data)
             if inplace:
@@ -94,7 +94,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_start_only(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=1)
@@ -108,7 +108,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_start_only_multidim(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=[1, 2])
@@ -122,7 +122,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_stop_only(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, stop=2)
@@ -136,7 +136,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_stop_only_multidim(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, stop=[2, 3])
@@ -150,20 +150,20 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_identity_fn(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, axis=0)  # `axis=0` is redundant
             else:
                 y = ops.slice(t, axis=0)  # `axis=0` is redundant
 
-        assert len(ir.main_graph().get_tensors()) == 1
-        assert len(ir.main_graph().get_variables()) == 1
+        assert len(ir.main_graph.tensors) == 1
+        assert len(ir.main_graph.variables) == 1
 
     @pytest.mark.parametrize("inplace", [True, False])
     def test_identity_numerically(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, axis=0)  # `axis=0` is redundant
@@ -176,7 +176,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_start_and_stop(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=[1, 2], stop=[3, 4])
@@ -190,7 +190,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_step(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=[1, 3], stop=[3, 1], step=[1, -1])
@@ -204,7 +204,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_negative_start(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=-2, step=-1)
@@ -218,7 +218,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_axis(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             if inplace:
                 y = ops.slice_(t, start=[1, 2], stop=[3, 4], axis=[2, 1])
@@ -232,7 +232,7 @@ class TestSlice:
     @pytest.mark.parametrize("inplace", [True, False])
     def test_error_lengths(self, inplace):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             with pytest.raises(ValueError):
                 if inplace:
@@ -242,7 +242,7 @@ class TestSlice:
 
     def test_dunder_scalar(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             y = t[0]
             y_host = run_ir(ir, y)
@@ -252,7 +252,7 @@ class TestSlice:
 
     def test_dunder_slice(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             y = t[0:2]
             y_host = run_ir(ir, y)
@@ -262,7 +262,7 @@ class TestSlice:
 
     def test_dunder_scalar_and_slice(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             t = pir.variable(data)
             y = t[0, 3:0:-1, 2]
             y_host = run_ir(ir, y)

@@ -13,7 +13,7 @@ import popart.ir.transforms as transforms
 
 # Creating a model with popart.ir
 ir = pir.Ir()
-main = ir.main_graph()
+main = ir.main_graph
 
 
 # Op begin
@@ -24,11 +24,10 @@ class Linear(pir.Module):
 
     def build(self, x: pir.Tensor, out_features: int,
               bias: bool = True) -> Tuple[pir.Tensor, ...]:
-        self.W = pir.subgraph_input((x.shape[-1], out_features), pir.float32,
-                                    "W")
+        self.W = pir.graph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
+            self.b = pir.graph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         return y
 
@@ -48,20 +47,19 @@ with main:
 
     fwd_call_info = ops.call_with_info(linear_graph,
                                        x,
-                                       subgraph_in_to_parent_in={
+                                       inputs_dict={
                                            linear.W: W,
                                            linear.b: b
                                        })
-    y = fwd_call_info.get_output_tensors()[0]
+    y = fwd_call_info.outputs[0]
 
     # get the gradients from autodiff
     bwd_graph_info = transforms.autodiff(linear_graph)
     grad_seed = pir.constant(np.ones((2, 2), np.float32))
-    activations = bwd_graph_info.get_inputs_from_forward_call_info(
-        fwd_call_info)
+    activations = bwd_graph_info.inputs_dict(fwd_call_info)
     grads_x, grads_w, grads_b = ops.call(bwd_graph_info.graph,
                                          grad_seed,
-                                         subgraph_in_to_parent_in=activations)
+                                         inputs_dict=activations)
 
     # host store
     o_d2h = pir.d2h_stream(y.shape, y.dtype, name="output_stream")
@@ -71,12 +69,12 @@ with main:
     ops.host_store(grad_d2h, grads_w)
     # Op end
 
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={
-        o_d2h.tensor_id(): popart.AnchorReturnType("All"),
-        grad_d2h.tensor_id(): popart.AnchorReturnType("All")
-    })
+dataFlow = popart.DataFlow(batchesPerStep=1,
+                           anchorTensors={
+                               o_d2h.tensor_id: popart.AnchorReturnType("All"),
+                               grad_d2h.tensor_id:
+                               popart.AnchorReturnType("All")
+                           })
 
 ir = ir._pb_ir
 ir.setDataFlow(dataFlow)
@@ -97,13 +95,13 @@ session.prepareDevice()
 anchors = session.initAnchorArrays()
 
 # Generate some random input data
-inputs = {input.tensor_id(): np.random.rand(2, 2).astype(np.float32)}
+inputs = {input.tensor_id: np.random.rand(2, 2).astype(np.float32)}
 
 # run the model
 stepio = popart.PyStepIO(inputs, anchors)
 session.weightsFromHost()
 session.run(stepio)
 
-print(f"Input is {inputs[input.tensor_id()]}")
-print(f"Output is {anchors[o_d2h.tensor_id()]}")
-print(f"Grads is {anchors[grad_d2h.tensor_id()]}")
+print(f"Input is {inputs[input.tensor_id]}")
+print(f"Output is {anchors[o_d2h.tensor_id]}")
+print(f"Grads is {anchors[grad_d2h.tensor_id]}")

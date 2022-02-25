@@ -11,7 +11,7 @@ import pytest
 class TestDetach:
     def test_fn(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -19,8 +19,8 @@ class TestDetach:
                 c = ops.detach_(a)
             else:
                 c = ops.detach(a)
-        assert len(g.get_tensors()) == 2
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 2
+        assert len(g.variables) == 1
         if inplace:
             assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp,
                                        g)
@@ -29,7 +29,7 @@ class TestDetach:
 
     def test_dunder(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -37,8 +37,8 @@ class TestDetach:
                 c = a.detach_()
             else:
                 c = a.detach()
-        assert len(g.get_tensors()) == 2
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 2
+        assert len(g.variables) == 1
         if inplace:
             assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp,
                                        g)

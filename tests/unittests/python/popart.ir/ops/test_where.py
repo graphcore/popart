@@ -10,7 +10,7 @@ from utils import contains_op_of_type
 class TestWhere:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             b = pir.variable([True, True, False])
@@ -19,12 +19,12 @@ class TestWhere:
             c = ops.where(b, lhs, rhs)
 
         assert c.shape == lhs.shape
-        assert len(g.get_tensors()) == 4
+        assert len(g.tensors) == 4
         assert contains_op_of_type("Where", _ir.op.WhereOp, g)
 
     def test_cast(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             b = pir.variable([1, 1, 0], dtype=pir.int32)
@@ -33,12 +33,12 @@ class TestWhere:
             c = ops.where(b, lhs, rhs)
 
         assert c.shape == lhs.shape
-        assert len(g.get_tensors()) == 5
+        assert len(g.tensors) == 5
         assert contains_op_of_type("Where", _ir.op.WhereOp, g)
 
     def test_dunder(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             x = pir.variable(np.arange(3))
@@ -46,5 +46,5 @@ class TestWhere:
             c = x[mask]
 
         assert c.shape == x.shape
-        assert len(g.get_tensors()) == 4
+        assert len(g.tensors) == 4
         assert contains_op_of_type("Where", _ir.op.WhereOp, g)

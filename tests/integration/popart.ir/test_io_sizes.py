@@ -46,7 +46,7 @@ class TestIOSizes():
 
         ir = pir.Ir()
         data: Mapping[pir.HostToDeviceStream, np.ndarray] = {}
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             repeat_sg = ir.create_empty_graph("repeat")
@@ -90,7 +90,7 @@ class TestIOSizes():
 
         session = pir.Session(ir, "ipu_model")
         for k, v in data.items():
-            print(k, k.tensor_id(), "data shape:", v.shape)
+            print(k, k.tensor_id, "data shape:", v.shape)
 
         outputs = {}
         outputs[out_d2h] = np.zeros(
@@ -118,7 +118,7 @@ class TestIOSizes():
     def test_io_sizes(self, monkeypatch, data_size: Tuple[int],
                       replication_factor: int, num_host_transfers: int):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             repeat_sg = ir.create_empty_graph("repeat")
             d0_h2d = pir.h2d_stream(data_size, pir.float32, name="d0_stream")

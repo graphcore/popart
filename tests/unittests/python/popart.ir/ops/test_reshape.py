@@ -10,29 +10,29 @@ from utils import contains_op_of_type
 class TestReshape:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = ops.reshape(a, (3, 2, 1))
         assert c.shape == (3, 2, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
 
     def test_dunder(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = a.reshape((2, 3, 1))
         assert c.shape == (2, 3, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("Reshape", _ir.op.ReshapeOp, g)
 
     def test_negative(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -43,7 +43,7 @@ class TestReshape:
     @pytest.mark.parametrize("shape", [(-1, 0, 1), (6, -2, 1)])
     def test_invalid_value(self, shape):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -55,7 +55,7 @@ class TestReshape:
 
     def test_double_negative_one(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -67,7 +67,7 @@ class TestReshape:
 
     def test_inplace(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -75,13 +75,13 @@ class TestReshape:
 
         assert a._pb_tensor.isAliased()
         assert c.shape == (3, 2, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
                                    g)
 
     def test_dunder_inplace(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -89,7 +89,7 @@ class TestReshape:
 
         assert a._pb_tensor.isAliased()
         assert c.shape == (3, 2, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("ReshapeInplace", _ir.op.ReshapeInplaceOp,
                                    g)
 
@@ -97,7 +97,7 @@ class TestReshape:
 class TestFlatten:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -107,7 +107,7 @@ class TestFlatten:
 
     def test_fn_inplace(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -120,7 +120,7 @@ class TestFlatten:
 
     def test_dunder_flatten(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -130,7 +130,7 @@ class TestFlatten:
 
     def test_dunder_flatten_inplace(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))

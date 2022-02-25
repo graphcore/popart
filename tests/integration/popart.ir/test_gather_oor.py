@@ -22,7 +22,7 @@ def test_gather_out_of_range(tiedgather, uint):
     np.random.seed(1984)
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main, pir.in_sequence():
         if uint:
             input_data = np.random.randint(weight_size + 1, sample_max,
@@ -54,7 +54,7 @@ def test_gather_out_of_range(tiedgather, uint):
 
     dataFlow = popart.DataFlow(batchesPerStep=1,
                                anchorTensors={
-                                   y_d2h.tensor_id():
+                                   y_d2h.tensor_id:
                                    popart.AnchorReturnType("All")
                                    for y_d2h in d2hs
                                })

@@ -12,7 +12,7 @@ from utils import contains_op_of_type
 class TestScaledAdd:
     def test_scaled_add_c_c(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             X = pir.variable(np.ones((2, 2)), dtype=pir.float32)
@@ -21,8 +21,8 @@ class TestScaledAdd:
                 ops.scaled_add_(X, Y, a=0.9, b=0.1)
             else:
                 ops.scaled_add(X, Y, a=0.9, b=0.1)
-        assert len(g.get_tensors()) == 3
-        assert len(g.get_variables()) == 2
+        assert len(g.tensors) == 3
+        assert len(g.variables) == 2
         if inplace:
             assert contains_op_of_type("ScaledAddLhsInplace",
                                        _ir.op.ScaledAddLhsInplaceOp, g)
@@ -31,7 +31,7 @@ class TestScaledAdd:
 
     def test_scaled_add_t_t(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             X = pir.variable(np.ones((2, 2)), dtype=pir.float32)
@@ -40,8 +40,8 @@ class TestScaledAdd:
                 ops.scaled_add_(X, Y, a=pir.constant(0.9), b=pir.variable(0.1))
             else:
                 ops.scaled_add(X, Y, a=pir.constant(0.9), b=pir.variable(0.1))
-        assert len(g.get_tensors()) == 5
-        assert len(g.get_variables()) == 3
+        assert len(g.tensors) == 5
+        assert len(g.variables) == 3
         if inplace:
             assert contains_op_of_type("ScaledAddLhsInplace",
                                        _ir.op.ScaledAddLhsInplaceOp, g)
@@ -50,7 +50,7 @@ class TestScaledAdd:
 
     def test_scaled_add_1_t(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             X = pir.variable(np.ones((2, 2)), dtype=pir.float32)
@@ -59,8 +59,8 @@ class TestScaledAdd:
                 ops.scaled_add_(X, Y, b=pir.variable(0.1))
             else:
                 ops.scaled_add(X, Y, b=pir.variable(0.1))
-        assert len(g.get_tensors()) == 4
-        assert len(g.get_variables()) == 3
+        assert len(g.tensors) == 4
+        assert len(g.variables) == 3
         if inplace:
             assert contains_op_of_type("ScaledAddLhsInplace",
                                        _ir.op.ScaledAddLhsInplaceOp, g)

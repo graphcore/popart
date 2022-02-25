@@ -13,7 +13,7 @@ from popart.ir import dtypes
 class TestData:
     def test_data_variable(self, shape, np_dtype):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             input_array = get_np_array(shape, np_dtype)
@@ -30,7 +30,7 @@ class TestData:
 
     def test_data_constant(self, shape, np_dtype):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             arr = get_np_array(shape, np_dtype)
@@ -48,7 +48,7 @@ class TestData:
 
     def test_data_actgrad(self, shape, np_dtype):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             arr = get_np_array(shape, np_dtype)
@@ -62,7 +62,7 @@ class TestData:
 
     def test_write_data_constant(self, shape, np_dtype):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             arr = get_np_array(shape, np_dtype)
@@ -86,7 +86,7 @@ class TestData:
         ir = pir.Ir()
         ir_ = ir._pb_ir  # Internal ir
 
-        g = ir.main_graph()
+        g = ir.main_graph
         w_np_data = get_np_array(shape, np_dtype)
         w_np_data_copy = w_np_data.copy(
         )  # make sure the numpy array isn't updated.
@@ -125,7 +125,7 @@ class TestData:
 class TestWriteTensorData:
     def test_write_data_variable(self, shape, np_dtype):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             input_array = get_np_array(shape, np_dtype)

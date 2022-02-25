@@ -10,21 +10,21 @@ from utils import contains_op_of_type
 class TestAdamUpdater:
     def test_adam_updater_no_bias_no_wd(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
             v = pir.variable(2, name='v')
             updater = ops.var_updates.adam_updater(m, v)
 
-        assert len(g.get_tensors()) == 3
+        assert len(g.tensors) == 3
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
         op = g._pb_graph.getOps()[0]
         assert op.isOptimizerOp()
 
     def test_adam_bias_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -38,12 +38,12 @@ class TestAdamUpdater:
                                                    beta1=b1,
                                                    beta2=b2)
 
-        assert len(g.get_tensors()) == 4
+        assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_adam_updater_bias_invalid(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -60,7 +60,7 @@ class TestAdamUpdater:
 
     def test_adam_wd_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             w = pir.variable(1, name='w')
@@ -72,12 +72,12 @@ class TestAdamUpdater:
                                                    v,
                                                    weight=w,
                                                    weight_decay=wd)
-        assert len(g.get_tensors()) == 5
+        assert len(g.tensors) == 5
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_adam_wd_updater_invalid(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -94,7 +94,7 @@ class TestAdamUpdater:
 
     def test_adam_bias_wd_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -106,26 +106,26 @@ class TestAdamUpdater:
             b2 = 0.99
             updater = ops.var_updates.adam_updater(m, v, w, t, wd, b1, b2)
 
-        assert len(g.get_tensors()) == 6
+        assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_lamb_updater_no_bias_no_wd(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
             v = pir.variable(2, name='v')
             updater = ops.var_updates.lamb_updater(m, v)
 
-        assert len(g.get_tensors()) == 3
+        assert len(g.tensors) == 3
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
         op = g._pb_graph.getOps()[0]
         assert op.isOptimizerOp()
 
     def test_lamb_bias_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -139,12 +139,12 @@ class TestAdamUpdater:
                                                    beta1=b1,
                                                    beta2=b2)
 
-        assert len(g.get_tensors()) == 4
+        assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_lamb_updater_bias_invalid(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -161,7 +161,7 @@ class TestAdamUpdater:
 
     def test_lamb_wd_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             w = pir.variable(1, name='w')
@@ -173,12 +173,12 @@ class TestAdamUpdater:
                                                    v,
                                                    weight=w,
                                                    weight_decay=wd)
-        assert len(g.get_tensors()) == 5
+        assert len(g.tensors) == 5
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_lamb_wd_updater_invalid(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -195,7 +195,7 @@ class TestAdamUpdater:
 
     def test_lamb_bias_wd_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -207,12 +207,12 @@ class TestAdamUpdater:
             b2 = 0.99
             updater = ops.var_updates.lamb_updater(m, v, w, t, wd, b1, b2)
 
-        assert len(g.get_tensors()) == 6
+        assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_adamax_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -220,12 +220,12 @@ class TestAdamUpdater:
             t = pir.variable(1, name='t')
 
             updater = ops.var_updates.adamax_updater(m, v, time_step=t)
-        assert len(g.get_tensors()) == 4
+        assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
     def test_adamax_updater_invalid(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             m = pir.variable(1, name='m')
@@ -237,7 +237,7 @@ class TestAdamUpdater:
 
     def test_adamax_wd_updater(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             w = pir.variable(1, name='w')
@@ -251,5 +251,5 @@ class TestAdamUpdater:
                                                      weight=w,
                                                      time_step=t,
                                                      weight_decay=wd)
-        assert len(g.get_tensors()) == 6
+        assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)

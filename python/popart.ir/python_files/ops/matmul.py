@@ -67,7 +67,7 @@ def matmul(lhs: Tensor,
                                   1)
 
     if partials_type is None:
-        partials_type = g.ir()._pb_ir.getSessionOptions().partialsTypeMatMuls
+        partials_type = g.ir._pb_ir.getSessionOptions().partialsTypeMatMuls
         if partials_type == "":
             partials_type = _ir.op.MatMulPartialsType.FLOAT
     else:

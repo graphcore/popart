@@ -133,8 +133,8 @@ Tensors
 .. autofunction:: popart.ir.remote_replica_sharded_variable
 .. autofunction:: popart.ir.remote_variable
 .. autofunction:: popart.ir.replica_sharded_variable
-.. autofunction:: popart.ir.subgraph_input
-.. autofunction:: popart.ir.subgraph_output
+.. autofunction:: popart.ir.graph_input
+.. autofunction:: popart.ir.graph_output
 .. autofunction:: popart.ir.variable
 
 .. autodata:: popart.ir.HostScalarTensor

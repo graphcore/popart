@@ -10,7 +10,7 @@ from utils import contains_op_of_type
 class TestIpuCopy:
     def test_fn_with_producer(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -18,13 +18,13 @@ class TestIpuCopy:
                 a_0 = a + 1
                 ir._pb_ir.logIr()
             a_1 = ops.ipu_copy(a_0, 1)
-        assert len(g.get_variables()) == 1
-        assert len(g.get_tensors()) == 4
+        assert len(g.variables) == 1
+        assert len(g.tensors) == 4
         assert contains_op_of_type("IpuCopy", _ir.op.IpuCopyOp, g)
 
     def test_fn_producer_without_ipu(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -39,18 +39,18 @@ class TestIpuCopy:
 
     def test_fn_with_no_producer(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
             a_1 = ops.ipu_copy(a, 1, 0)
-        assert len(g.get_variables()) == 1
-        assert len(g.get_tensors()) == 2
+        assert len(g.variables) == 1
+        assert len(g.tensors) == 2
         assert contains_op_of_type("IpuCopy", _ir.op.IpuCopyOp, g)
 
     def test_fn_with_no_producer_error(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -62,7 +62,7 @@ class TestIpuCopy:
 
     def test_tensor_fns(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)

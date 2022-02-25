@@ -9,7 +9,7 @@ import popart.ir as pir
 
 def test_in_sequence_with():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         small = pir.variable(1, name='small')
@@ -28,7 +28,7 @@ def test_in_sequence_with():
 
 def test_in_sequence_fn():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     @pir.in_sequence()
     def fn(small, big):
@@ -59,7 +59,7 @@ def is_sequence_of_ops(ops: List[_ir.Op], op_types: List[Type[_ir.Op]]):
 
 def test_nested_in_sequence():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     @pir.in_sequence(False)
     def badly_written_layer(small, big):
@@ -90,7 +90,7 @@ def test_none_not_allowed():
 
 def test_in_sequence_false_first():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         small = pir.variable(1, name='small')

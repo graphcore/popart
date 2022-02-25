@@ -28,7 +28,7 @@ class TestRemoteStore:
             offset_as_int (bool): If true the offset input to the op will be given as an int
         """
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             t = pir.variable(
@@ -50,8 +50,8 @@ class TestRemoteStore:
 
             ops.remote_store(remote_buffer, offset, t)
 
-        assert len(g.get_tensors()) == n_tensors
+        assert len(g.tensors) == n_tensors
         # Only t is a variable
-        assert len(g.get_variables()) == 1
+        assert len(g.variables) == 1
         assert contains_op_of_type("RemoteStore",
                                    _ir.op.exchange.RemoteStoreOp, g)

@@ -62,7 +62,7 @@ def test_all_reduce_op():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         x = []
@@ -72,7 +72,7 @@ def test_all_reduce_op():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         y = ops.collectives.all_reduce(x, ipus=ipus, op='add')
@@ -85,7 +85,7 @@ def test_all_reduce_op():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 
@@ -104,7 +104,7 @@ def test_all_reduce_op_backwards():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         # Inputs for backwards
@@ -115,7 +115,7 @@ def test_all_reduce_op_backwards():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         # Create graph
@@ -141,7 +141,7 @@ def test_all_reduce_op_backwards():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 
@@ -160,7 +160,7 @@ def test_all_reduce_identical_inputs_op():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         x = []
@@ -170,7 +170,7 @@ def test_all_reduce_identical_inputs_op():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         y = ops.collectives.all_reduce_identical_inputs(x, ipus=ipus, op='add')
@@ -183,7 +183,7 @@ def test_all_reduce_identical_inputs_op():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 
@@ -201,7 +201,7 @@ def test_all_reduce_identical_inputs_op_backwards():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         # Inputs for backwards
@@ -212,7 +212,7 @@ def test_all_reduce_identical_inputs_op_backwards():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         # Create graph
@@ -240,7 +240,7 @@ def test_all_reduce_identical_inputs_op_backwards():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 
@@ -259,7 +259,7 @@ def test_all_reduce_identical_grad_inputs_op():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         x = []
@@ -269,7 +269,7 @@ def test_all_reduce_identical_grad_inputs_op():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         y = ops.collectives.all_reduce_identical_grad_inputs(x,
@@ -284,7 +284,7 @@ def test_all_reduce_identical_grad_inputs_op():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 
@@ -303,7 +303,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
 
         # Inputs for backwards
@@ -314,7 +314,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
                                          pir.float32,
                                          name=f'x_{ipu}')
-                h2d_streams[x_h2d_i.tensor_id()] = inputs[ipu]
+                h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
 
         # Create graph
@@ -342,7 +342,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
                                        y_i.dtype,
                                        name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
-                y_d2h_ids += [y_d2h.tensor_id()]
+                y_d2h_ids += [y_d2h.tensor_id]
 
     y_host = run_ir(ir, h2d_streams, y_d2h_ids, n_ipus)
 

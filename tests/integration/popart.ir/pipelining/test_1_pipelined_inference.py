@@ -60,7 +60,7 @@ def pipelined_inference_model(
         t_in_h2d (HostToDeviceStream): The input stream of t_in
         t_out_d2h (DeviceToHostStream): The output stream of t_out
     """
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         # These weights are streamed once to the device
         tensor_variable = {}

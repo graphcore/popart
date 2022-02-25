@@ -51,7 +51,7 @@ def test_inplacing_ambiguity_0():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         w0_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         w0 = pir.variable(w0_data, name="w0")
@@ -85,7 +85,7 @@ def test_inplacing_ambiguity_subgraph():
 
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         w0_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         w0 = pir.variable(w0_data, name="w0")
@@ -115,14 +115,14 @@ def test_inplacing_ambiguity_subgraph_1():
             self.w1: pir.Tensor = None
 
         def build(self, w0: Tensor):
-            self.w1 = pir.subgraph_input(w0.shape, w0.dtype, "w1")
+            self.w1 = pir.graph_input(w0.shape, w0.dtype, "w1")
             m: Tensor = ops.relu_(w0)
             w0 += self.w1
             return m, w0
 
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         w0_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         w0 = pir.variable(w0_data, name="w0")
@@ -132,9 +132,7 @@ def test_inplacing_ambiguity_subgraph_1():
 
         inplace_ = InplaceGraph()
         inplace_graph = ir.create_graph(inplace_, w0)
-        w0, m = ops.call(inplace_graph,
-                         w0,
-                         subgraph_in_to_parent_in={inplace_.w1: w1})
+        w0, m = ops.call(inplace_graph, w0, inputs_dict={inplace_.w1: w1})
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
@@ -154,14 +152,14 @@ def test_inplacing_ambiguity_subgraph_2():
             self.w1: pir.Tensor = None
 
         def build(self, x0: Tensor):
-            self.w1 = pir.subgraph_input(x0.shape, x0.dtype, "w1")
+            self.w1 = pir.graph_input(x0.shape, x0.dtype, "w1")
             m: Tensor = ops.relu_(x0)
             x0 += self.w1
             return m, x0
 
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         input_ = pir.h2d_stream(_IN_SHAPE, pir.float32, name="input_stream")
         x0 = ops.host_load(input_, "x0")
@@ -171,9 +169,7 @@ def test_inplacing_ambiguity_subgraph_2():
 
         inplace_ = InplaceGraph()
         inplace_graph = ir.create_graph(inplace_, x0)
-        x0, m = ops.call(inplace_graph,
-                         x0,
-                         subgraph_in_to_parent_in={inplace_.w1: w1})
+        x0, m = ops.call(inplace_graph, x0, inputs_dict={inplace_.w1: w1})
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
@@ -199,7 +195,7 @@ def test_inplacing_ambiguity_false_positive():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = pir.variable(a_data, name="a")
@@ -233,7 +229,7 @@ def test_inplacing_ambiguity_false_positive_2():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = pir.variable(a_data, name="a")
@@ -263,7 +259,7 @@ def test_inplacing_ambiguity_subgraph_3():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         b_d2h = pir.d2h_stream(_IN_SHAPE, pir.dtypes.float32, name="b_stream")
         c_d2h = pir.d2h_stream(_IN_SHAPE, pir.dtypes.float32, name="c_stream")
@@ -296,7 +292,7 @@ def test_inplacing_ambiguity_subgraph_4():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main, pir.in_sequence():
         b_d2h = pir.d2h_stream(_IN_SHAPE, pir.dtypes.float32, name="b_stream")
@@ -332,7 +328,7 @@ def test_inplacing_ambiguity_subgraph_5():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = pir.variable(a_data, name="a")
@@ -361,7 +357,7 @@ def test_inplacing_ambiguity_subgraph_6():
     """
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = pir.variable(a_data, name="a")
@@ -395,7 +391,7 @@ def setup_ir(ir: pir.Ir, host_stores: List[pir.DeviceToHostStream]
 
     art_all = popart.AnchorReturnType("All")
     for s in host_stores:
-        arts[s.tensor_id()] = art_all
+        arts[s.tensor_id] = art_all
 
     bps = 1
     dataFlow = popart.DataFlow(bps, arts)

@@ -10,7 +10,7 @@ from utils import contains_op_of_type
 class TestHostStore:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1.0, name="a")
@@ -20,6 +20,6 @@ class TestHostStore:
             d2h = pir.d2h_stream((), pir.dtypes.float32)
             ops.host_store(d2h, b)
 
-        assert len(g.get_tensors()) == 3
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 3
+        assert len(g.variables) == 1
         assert contains_op_of_type("HostStore", _ir.op.exchange.HostStoreOp, g)

@@ -89,14 +89,18 @@ class Graph:
     def id(self) -> str:
         return str(self._pb_graph.id.str())
 
+    @property
     def ir(self) -> 'Ir':
         return self._ir
 
-    def get_main_graph(self) -> 'Graph':
-        return self.ir().main_graph()
+    @property
+    def main_graph(self) -> 'Graph':
+        return self.ir.main_graph
 
-    def get_input_tensors(self) -> Tuple[Tensor, ...]:
-        """Get the input tensors to the graph.
+    @property
+    def inputs(self) -> Tuple[Tensor, ...]:
+        """
+        Get the input tensors of the graph.
 
         Returns:
             Tuple[Tensor, ...]: A tuple of all the input tensors.
@@ -106,8 +110,10 @@ class Graph:
             Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
             for o in _pb_ins)
 
-    def get_output_tensors(self) -> Tuple[Tensor, ...]:
-        """Get the output tensors from the graph.
+    @property
+    def outputs(self) -> Tuple[Tensor, ...]:
+        """
+        Get the output tensors of the graph.
 
         Returns:
             Tuple[Tensor, ...]: A tuple of all the output tensors.
@@ -153,30 +159,34 @@ class Graph:
             raise TypeError(
                 f"Value must be of type pir.Graph. Value: {value}. Type: {type(value)}"
             )
-        return self.id == value.id and self.ir() == value.ir()
+        return self.id == value.id and self.ir == value.ir
 
     def __hash__(self):
         """Hashes the Graph, based on graph and Ir `id`"""
-        return hash((self.id, self.ir()))
+        return hash((self.id, self.ir))
 
     def __repr__(self) -> str:
         return f"Graph[id={self.id} name={self.name}]"
 
     def get_tensor(self, tensor_id: str) -> Tensor:
+        """Get tensor using string identifier `tensor_id`"""
         return Tensor._from_pb_tensor(self._pb_graph.getTensor(tensor_id))
 
-    def get_tensors(self) -> Tuple[Tensor, ...]:
+    @property
+    def tensors(self) -> Tuple[Tensor, ...]:
         """Return all tensors in the graph."""
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._pb_graph.getTensors())
 
-    def get_variables(self) -> Tuple[Variable, ...]:
+    @property
+    def variables(self) -> Tuple[Variable, ...]:
         """Return all variable tensors in the graph."""
         return tuple(
             Variable._from_pb_tensor(t)
             for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Variable))
 
-    def get_constants(self) -> Tuple[Constant, ...]:
+    @property
+    def constants(self) -> Tuple[Constant, ...]:
         """Return all constant tensors in the graph."""
         return tuple(
             Constant._from_pb_tensor(t)

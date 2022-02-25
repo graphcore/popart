@@ -9,7 +9,7 @@ from utils import contains_op_of_type
 class TestScatter:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             t = pir.variable([
@@ -28,6 +28,6 @@ class TestScatter:
             ])
             c = ops.scatter(t, indices, values)
 
-        assert len(g.get_tensors()) == 4
-        assert len(g.get_variables()) == 3
+        assert len(g.tensors) == 4
+        assert len(g.variables) == 3
         assert contains_op_of_type("Scatter", _ir.op.ScatterOp, g)

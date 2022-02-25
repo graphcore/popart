@@ -10,35 +10,35 @@ from utils import contains_op_of_type
 class TestAccumulate:
     def test_add(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
             c = ops.var_updates.accumulate_(a, b)
-        assert len(g.get_tensors()) == 3
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 3
+        assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
         op.getAccumulationType() == _ir.AccumulationType.Add
 
     def test_dampened_add_float(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
             c = ops.var_updates.accumulate_(a, b, 0.9)
-        assert len(g.get_tensors()) == 3
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 3
+        assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
         op = g._pb_graph.getOps()[0]
         op.getAccumulationType() == _ir.AccumulationType.DampenedAdd
 
     def test_dampened_add_tensor(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -51,7 +51,7 @@ class TestAccumulate:
 
     def test_dampened_add_square(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -63,7 +63,7 @@ class TestAccumulate:
 
     def test_mean(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -77,7 +77,7 @@ class TestAccumulate:
     @pytest.mark.parametrize("constant_", [True, False])
     def test_scale(self, constant_):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
         f = 0.125
 
         with g:
@@ -92,7 +92,7 @@ class TestAccumulate:
 
     def test_zero(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
@@ -102,7 +102,7 @@ class TestAccumulate:
 
     def test_sparse_accumulate(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable([2, 2])
@@ -118,7 +118,7 @@ class TestAccumulate:
     @pytest.mark.parametrize("constant_", [True, False])
     def test_sparse_accumulate_2(self, constant_):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
         f = 0.125
 
         with g:

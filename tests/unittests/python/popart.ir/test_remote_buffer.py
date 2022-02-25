@@ -145,7 +145,7 @@ class TestRemoteBuffer:
 
         # Make tensor to check against
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t = pir.variable(data=np.zeros(t_shape), dtype=t_dtype)
 
@@ -250,7 +250,7 @@ class TestRemoteBuffer:
                                            tensor_dtype=t_dtype,
                                            entries=entries)
         # Create with context
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             remote_buffer_context = remote_buffer(tensor_shape=t_shape,

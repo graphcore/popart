@@ -81,11 +81,11 @@ class Context:
         return list(self._name_scope)
 
     def push_graph(self, g: 'Graph'):
-        if len(self._graphs) > 0 and self._graphs[0].ir() != g.ir():
+        if len(self._graphs) > 0 and self._graphs[0].ir != g.ir:
             raise RuntimeError(
                 f"Trying to a create a context manager nested in another context, "
                 "when the previous context's Ir is different. "
-                f"{self._graphs[0].ir()} != {g.ir()}")
+                f"{self._graphs[0].ir} != {g.ir}")
         self._graphs.append(g)
 
     def pop_graph(self) -> 'Graph':
@@ -109,7 +109,7 @@ class Context:
                 "try performing the operations in a context manager (for example "
                 "`with graph_instance:`) or inside a function that's called by "
                 "`popart.ir.Ir().create_graph()`")
-        return self._graphs[0].get_main_graph()
+        return self._graphs[0].main_graph
 
     @property
     def in_sequence(self):

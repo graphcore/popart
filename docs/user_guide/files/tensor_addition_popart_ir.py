@@ -10,7 +10,7 @@ import popart
 
 # Creating a model with popart.ir
 ir = pir.Ir()
-main = ir.main_graph()
+main = ir.main_graph
 # Op begin
 with main:
     a = pir.variable(3, dtype=pir.int8, name="variable_a")
@@ -25,7 +25,7 @@ with main:
 
 dataFlow = popart.DataFlow(
     batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id(): popart.AnchorReturnType("All")})
+    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
 
 ir = ir._pb_ir
 ir.setDataFlow(dataFlow)
@@ -44,4 +44,4 @@ stepio = popart.PyStepIO({}, anchors)
 session.weightsFromHost()
 session.run(stepio)
 
-print(f"Result is {anchors[o_d2h.tensor_id()]}")
+print(f"Result is {anchors[o_d2h.tensor_id]}")

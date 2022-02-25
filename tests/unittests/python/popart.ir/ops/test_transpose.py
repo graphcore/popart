@@ -18,7 +18,7 @@ class TestTranspose:
 
     def test_fn(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -27,13 +27,13 @@ class TestTranspose:
             else:
                 c = ops.transpose(a, (0, 2, 1))
         assert c.shape == (1, 3, 2)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         print(g._pb_graph.getOps())
         assert self.check_contains_transpose(g, inplace)
 
     def test_tensor_method(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -42,12 +42,12 @@ class TestTranspose:
             else:
                 c = a.transpose()
         assert c.shape == (3, 2, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert self.check_contains_transpose(g, inplace)
 
     def test_numpy_transpose(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
@@ -56,12 +56,12 @@ class TestTranspose:
             else:
                 c = a.T
         assert c.shape == (3, 2, 1)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert self.check_contains_transpose(g, inplace)
 
     def test_out_of_range(self, inplace):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))

@@ -15,7 +15,7 @@ import test_util as tu
 
 def build_and_run(cache_path):
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         # Test host to device
         x_h2d = pir.h2d_stream((1, ), pir.float32, name='x_stream')
@@ -47,7 +47,7 @@ def build_and_run(cache_path):
 
     dataFlow = popart.DataFlow(
         batchesPerStep=1,
-        anchorTensors={z_d2h.tensor_id(): popart.AnchorReturnType("All")})
+        anchorTensors={z_d2h.tensor_id: popart.AnchorReturnType("All")})
     ir.setDataFlow(dataFlow)
     ir.updateVertices()
 
@@ -70,8 +70,8 @@ def build_and_run(cache_path):
     anchors = session.initAnchorArrays()
 
     inputs = {
-        x_h2d.tensor_id(): np.array(3.0, dtype='float32'),
-        seed_h2d.tensor_id(): seed_tensors,
+        x_h2d.tensor_id: np.array(3.0, dtype='float32'),
+        seed_h2d.tensor_id: seed_tensors,
     }
 
     # Run the model

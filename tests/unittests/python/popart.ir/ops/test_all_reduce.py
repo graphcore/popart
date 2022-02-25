@@ -8,7 +8,7 @@ from utils import contains_op_of_type
 
 def test_all_reduce_func():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         x = pir.variable(7)
@@ -16,13 +16,13 @@ def test_all_reduce_func():
 
     assert x.shape == y.shape
     assert x.dtype == y.dtype
-    assert len(g.get_tensors()) == 2
+    assert len(g.tensors) == 2
     assert contains_op_of_type("AllReduce", _ir.op.collectives.AllReduceOp, g)
 
 
 def test_all_reduce_identical_inputs_func():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         x = pir.variable(7)
@@ -30,13 +30,13 @@ def test_all_reduce_identical_inputs_func():
 
     assert x.shape == y.shape
     assert x.dtype == y.dtype
-    assert len(g.get_tensors()) == 2
+    assert len(g.tensors) == 2
     assert contains_op_of_type("AllReduce", _ir.op.collectives.AllReduceOp, g)
 
 
 def test_all_reduce_identical_grad_inputs_func():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         x = pir.variable(7)
@@ -44,5 +44,5 @@ def test_all_reduce_identical_grad_inputs_func():
 
     assert x.shape == y.shape
     assert x.dtype == y.dtype
-    assert len(g.get_tensors()) == 2
+    assert len(g.tensors) == 2
     assert contains_op_of_type("AllReduce", _ir.op.collectives.AllReduceOp, g)

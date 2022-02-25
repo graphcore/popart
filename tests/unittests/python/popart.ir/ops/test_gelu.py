@@ -9,20 +9,20 @@ from utils import contains_op_of_type
 class TestGelu:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = ops.gelu(a)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("Gelu", _ir.op.GeluOp, g)
 
     def test_inplace_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = ops.gelu_(a)
-        assert len(g.get_tensors()) == 2
+        assert len(g.tensors) == 2
         assert contains_op_of_type("GeluInplace", _ir.op.GeluInplaceOp, g)

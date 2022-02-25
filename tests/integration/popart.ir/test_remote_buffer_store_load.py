@@ -55,7 +55,7 @@ def test_remote_buffer() -> None:
         "load_out_2",
         "load_out_3_inplace",
     )
-    t_ids = {label: d2h_streams[label].tensor_id() for label in labels}
+    t_ids = {label: d2h_streams[label].tensor_id for label in labels}
 
     # Setup the anchors
     anchor_tensors = {
@@ -138,7 +138,7 @@ def build_model(data: Dict[str, np.array]
         d2h_streams (Dict[str, DeviceToHostStream]): The output streams
     """
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         # Placeholder for tensor ids

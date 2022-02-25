@@ -180,4 +180,4 @@ def remote_buffer(tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
     Returns:
         RemoteBuffer: The remote buffer based on the current IR from the context.
     """
-    return RemoteBuffer(gcg().ir(), tensor_shape, tensor_dtype, entries)
+    return RemoteBuffer(gcg().ir, tensor_shape, tensor_dtype, entries)

@@ -26,11 +26,10 @@ class Linear(pir.Module):
 
     def build(self, x: pir.Tensor, out_features: int,
               bias: bool = True) -> pir.Tensor:
-        self.W = pir.subgraph_input((x.shape[-1], out_features), pir.float32,
-                                    "W")
+        self.W = pir.graph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
+            self.b = pir.graph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         return y
 
@@ -44,7 +43,7 @@ def build_model(
            DeviceToHostStream, np.ndarray, np.ndarray]:
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         x_h2d = pir.h2d_stream(_IN_SHAPE, pir.float32, name="x_stream")
         x = ops.host_load(x_h2d, "x")
@@ -60,11 +59,11 @@ def build_model(
 
         lin_call_info = ops.call_with_info(lin_graph,
                                            x,
-                                           subgraph_in_to_parent_in={
+                                           inputs_dict={
                                                lin.W: W,
                                                lin.b: b
                                            })
-        y = lin_call_info.get_output_tensors()[0]
+        y = lin_call_info.outputs[0]
 
         assert y.shape == _OUT_SHAPE
 
@@ -76,21 +75,18 @@ def build_model(
 
     with main:
         grad_seed = pir.constant(np.ones(_OUT_SHAPE, np.float32))
-        tensors_required_for_bwd = lin_bwd_info.get_inputs_from_forward_call_info(
-            lin_call_info)
+        tensors_required_for_bwd = lin_bwd_info.inputs_dict(lin_call_info)
         lin_bwd_call_info = ops.call_with_info(
-            lin_bwd_graph,
-            grad_seed,
-            subgraph_in_to_parent_in=tensors_required_for_bwd)
+            lin_bwd_graph, grad_seed, inputs_dict=tensors_required_for_bwd)
 
     ##### Extract parent graph x_grad, W_grad, b_grad
 
     expected_outputs = lin_bwd_info.expected_outputs
     x_grad, W_grad, b_grad = None, None, None
 
-    sg_x = lin_call_info.op_in_to_subgraph_in_tensor(x)
-    sg_W = lin_call_info.op_in_to_subgraph_in_tensor(W)
-    sg_b = lin_call_info.op_in_to_subgraph_in_tensor(b)
+    sg_x = lin_call_info.parent_to_graph(x)
+    sg_W = lin_call_info.parent_to_graph(W)
+    sg_b = lin_call_info.parent_to_graph(b)
 
     def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
             ec: ExpectedConnection) -> pir.Tensor:
@@ -98,8 +94,8 @@ def build_model(
         # guaranteed that t' (the grad of t) appears at output index i in the
         # grad graph.
         sg_out_idx = expected_outputs.index(ec)
-        op_out_idx = lin_bwd_call_info.subgraph_in_to_op_in_index(sg_out_idx)
-        parent_grad = lin_bwd_call_info.get_op_output_tensor(op_out_idx)
+        op_out_idx = lin_bwd_call_info.graph_to_parent_input_index(sg_out_idx)
+        parent_grad = lin_bwd_call_info.parent_output(op_out_idx)
 
         return parent_grad
 

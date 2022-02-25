@@ -21,43 +21,43 @@ class TestMatMul:
     def test_fn(self, available_memory_proportion, serialise_mode,
                 serialise_factor, output_type, partials_type):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.variable(np.random.rand(4, 4))
             b = pir.variable(np.random.rand(4, 4))
             c = ops.matmul(a, b, available_memory_proportion, serialise_mode,
                            serialise_factor, output_type, partials_type)
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 2
-        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph())
+        assert len(ir.main_graph.tensors) == 3
+        assert len(ir.main_graph.variables) == 2
+        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph)
 
     def test_dunder(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.variable(np.random.rand(4, 4))
             b = pir.variable(np.random.rand(4, 4))
             c = a @ b
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 2
-        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph())
+        assert len(ir.main_graph.tensors) == 3
+        assert len(ir.main_graph.variables) == 2
+        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph)
 
     def test_ensure_tensor(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.variable(np.random.rand(4, 4))
             b = np.random.rand(4, 4)
             c = a @ b
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 1
-        assert len(ir.main_graph().get_constants()) == 1
-        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph())
+        assert len(ir.main_graph.tensors) == 3
+        assert len(ir.main_graph.variables) == 1
+        assert len(ir.main_graph.constants) == 1
+        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph)
 
     def test_ensure_tensor_lhs(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = np.random.rand(4, 4)
             b = pir.variable(np.random.rand(4, 4))
             c = a @ b
-        assert len(ir.main_graph().get_tensors()) == 3
-        assert len(ir.main_graph().get_variables()) == 1
-        assert len(ir.main_graph().get_constants()) == 1
-        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph())
+        assert len(ir.main_graph.tensors) == 3
+        assert len(ir.main_graph.variables) == 1
+        assert len(ir.main_graph.constants) == 1
+        assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph)

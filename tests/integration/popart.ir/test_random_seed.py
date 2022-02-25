@@ -7,7 +7,7 @@ from popart.ir import dtypes
 
 def test_random_seed_setup():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         seed_h2d = pir.h2d_stream(shape=(2, ),
                                   dtype=dtypes.uint32,
@@ -28,7 +28,7 @@ def test_random_seed_setup():
     ## Run the program
     ir = ir._pb_ir  # Internal ir
 
-    y_id = y_d2h.tensor_id()
+    y_id = y_d2h.tensor_id
 
     dataFlow = popart.DataFlow(
         batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")})
@@ -53,7 +53,7 @@ def test_random_seed_setup():
     anchors = session.initAnchorArrays()
 
     # Run the model
-    stepio = popart.PyStepIO(inputs={seed_h2d.tensor_id(): seed_tensors},
+    stepio = popart.PyStepIO(inputs={seed_h2d.tensor_id: seed_tensors},
                              outputs=anchors)
     session.weightsFromHost()
     session.run(stepio)

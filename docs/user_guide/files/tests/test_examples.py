@@ -93,9 +93,9 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "create_multi_subgraphs_from_same_func_popart_ir.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_multi_callsites_subgraph_input(self):
+    def test_documentation_popart_ir_multi_callsites_graph_input(self):
         """Test the popart.ir create multiple callsites for a subgraph input example"""
-        filename = "multi_call_subgraph_input_popart_ir.py"
+        filename = "multi_call_graph_input_popart_ir.py"
         self.run_python(filename, self.base_path)
 
     def test_documentation_popart_ir_call_with_info(self):

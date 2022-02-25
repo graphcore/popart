@@ -46,7 +46,7 @@ class TestTensorLocation():
             self.W: Tensor = None
 
         def build(self, d0: Tensor) -> Tensor:
-            self.W = pir.subgraph_input((4, 4), pir.float32, "w0")
+            self.W = pir.graph_input((4, 4), pir.float32, "w0")
             y = d0 @ self.W
             return y
 
@@ -55,7 +55,7 @@ class TestTensorLocation():
 
         ir = pir.Ir()
         data: Mapping[pir.HostToDeviceStream, np.ndarray] = {}
-        main = ir.main_graph()
+        main = ir.main_graph
         ir.replication_factor = NUM_LOCAL_REPLICAS
         ### Forward pass ###
         with main:
@@ -93,10 +93,11 @@ class TestTensorLocation():
 
             fwd = self.Linear()
             fwd_graph = ir.create_graph(fwd, d0)
-            fwd_call_info = ops.call_with_info(
-                fwd_graph, d0, subgraph_in_to_parent_in={fwd.W: full_w})
+            fwd_call_info = ops.call_with_info(fwd_graph,
+                                               d0,
+                                               inputs_dict={fwd.W: full_w})
 
-            y = fwd_call_info.get_output_tensors()[0]
+            y = fwd_call_info.outputs[0]
 
             y_d2h = pir.d2h_stream(y.shape, pir.float32, name="y_stream")
             ops.host_store(y_d2h, y)
@@ -109,19 +110,16 @@ class TestTensorLocation():
         bwd_graph = bwd_info.graph
 
         with main:
-            tensors_required_for_bwd = bwd_info.get_inputs_from_forward_call_info(
-                fwd_call_info)
+            tensors_required_for_bwd = bwd_info.inputs_dict(fwd_call_info)
             bwd_call_info = ops.call_with_info(
-                bwd_graph,
-                dx,
-                subgraph_in_to_parent_in=tensors_required_for_bwd)
+                bwd_graph, dx, inputs_dict=tensors_required_for_bwd)
 
         expected_outputs = bwd_info.expected_outputs
         d0_grad: Tensor = None
         w0_grad: Tensor = None
 
-        sg_d0 = fwd_call_info.op_in_to_subgraph_in_tensor(d0)
-        sg_w0 = fwd_call_info.op_in_to_subgraph_in_tensor(full_w)
+        sg_d0 = fwd_call_info.parent_to_graph(d0)
+        sg_w0 = fwd_call_info.parent_to_graph(full_w)
 
         def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
                 ec: ExpectedConnection) -> Tensor:
@@ -129,8 +127,8 @@ class TestTensorLocation():
             # guaranteed that t' (the grad of t) appears at output index i in the
             # grad graph.
             sg_out_idx = expected_outputs.index(ec)
-            op_out_idx = bwd_call_info.subgraph_in_to_op_in_index(sg_out_idx)
-            parent_grad = bwd_call_info.get_op_output_tensor(op_out_idx)
+            op_out_idx = bwd_call_info.graph_to_parent_input_index(sg_out_idx)
+            parent_grad = bwd_call_info.parent_output(op_out_idx)
 
             return parent_grad
 

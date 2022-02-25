@@ -5,7 +5,7 @@ import popart.ir as pir
 
 def test_ipu_with():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g:
         x = pir.variable(1)

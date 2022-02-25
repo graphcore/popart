@@ -5,7 +5,7 @@ import popart.ir as pir
 
 def test_context_manager():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with pytest.raises(RuntimeError) as excinfo:
         pir.gcg()
@@ -20,7 +20,7 @@ def test_context_manager():
         with sg:
             assert pir.gcg() == sg
             assert pir.gmg() == main
-            assert sg.get_main_graph() == main
+            assert sg.main_graph == main
 
     with pytest.raises(RuntimeError) as excinfo:
         pir.gcg()
@@ -30,8 +30,8 @@ def test_context_manager():
 
 
 def test_nested_irs():
-    mg1 = pir.Ir().main_graph()
-    mg2 = pir.Ir().main_graph()
+    mg1 = pir.Ir().main_graph
+    mg2 = pir.Ir().main_graph
 
     # You cant test graphs with different irs
     with pytest.raises(RuntimeError):
@@ -42,7 +42,7 @@ def test_nested_irs():
 
 def test_get_main_graph():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         sg = ir.create_empty_graph('sg')

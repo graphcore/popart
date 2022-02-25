@@ -10,11 +10,11 @@ from utils import contains_op_of_type
 class TestInit:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             x = ops.init((), pir.dtypes.float32)
 
-        assert len(g.get_tensors()) == 1
-        assert len(g.get_variables()) == 0
+        assert len(g.tensors) == 1
+        assert len(g.variables) == 0
         assert contains_op_of_type("Init", _ir.op.InitOp, g)

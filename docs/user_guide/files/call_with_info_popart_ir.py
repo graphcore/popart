@@ -10,12 +10,12 @@ import popart
 
 # Creating a model with popart.ir
 ir = pir.Ir()
-main = ir.main_graph()
+main = ir.main_graph
 
 
 # Op begin
 def increment_fn(x: pir.Tensor):
-    value = pir.subgraph_input(x.shape, x.dtype, "value")
+    value = pir.graph_input(x.shape, x.dtype, "value")
     # inplace increment of the input tensor
     ops.var_updates.copy_var_update_(x, x + value)
 
@@ -28,7 +28,7 @@ with main, pir.in_sequence():
     increment_graph = ir.create_graph(increment_fn, x)
     # call graph
     info = ops.call_with_info(increment_graph, x, value1)
-    info.set_op_input_modified(x)
+    info.set_parent_input_modified(x)
     # host store
     o_d2h = pir.d2h_stream(x.shape, x.dtype, name="output_stream")
     ops.host_store(o_d2h, x)
@@ -36,7 +36,7 @@ with main, pir.in_sequence():
 
 dataFlow = popart.DataFlow(
     batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id(): popart.AnchorReturnType("All")})
+    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
 
 ir = ir._pb_ir
 ir.setDataFlow(dataFlow)
@@ -55,4 +55,4 @@ stepio = popart.PyStepIO({}, anchors)
 session.weightsFromHost()
 session.run(stepio)
 
-print(f"Result is {anchors[o_d2h.tensor_id()]}")
+print(f"Result is {anchors[o_d2h.tensor_id]}")

@@ -7,7 +7,7 @@ import popart.ir as pir
 class TestCheckTensorIpuAndTileSet:
     def test_same_ipus_and_tile_set(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t1 = pir.variable(0) + 0
             t2 = pir.variable(0) + 0
@@ -17,7 +17,7 @@ class TestCheckTensorIpuAndTileSet:
 
     def test_different_ipus(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t1 = pir.variable(0) + 0
             with pir.ipu(1):
@@ -32,7 +32,7 @@ class TestCheckTensorIpuAndTileSet:
 
     def test_different_tile_sets(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t1 = pir.variable(0) + 0
             t2 = pir.variable(0) + 0
@@ -47,7 +47,7 @@ class TestCheckTensorIpuAndTileSet:
 
     def test_one_missing_but_ok(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t1 = pir.variable(0) + 0
             t2 = pir.variable(0) + 0
@@ -57,7 +57,7 @@ class TestCheckTensorIpuAndTileSet:
 
     def test_one_missing_but_different_tile_sets(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
         with main:
             t1 = pir.variable(0) + 0
             with pir.io_tiles():

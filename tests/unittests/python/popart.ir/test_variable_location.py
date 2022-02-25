@@ -15,7 +15,7 @@ import test_util as tu
 @tu.requires_ipu_model
 def test_remote_variable():
     ir = pir.Ir()
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable(1, name="x")
@@ -43,7 +43,7 @@ def test_remote_variable_replica_not_sharded():
     ir = pir.Ir()
     ir.replication_factor = 2
     ir.num_host_transfers = 1
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable(1, name="x")
@@ -72,7 +72,7 @@ def test_remote_replia_sharded_variable_gather():
     ir = pir.Ir()
     ir.replication_factor = 2
     ir.num_host_transfers = 1
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable([1, 2], name="x")
@@ -107,7 +107,7 @@ def test_replia_sharded_variable_gather():
     ir.replication_factor = 2
     ir.num_host_transfers = 1
     opts.enableInplaceAmbiguityChecking = False
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable([1, 2], name="x")
@@ -142,7 +142,7 @@ def test_replica_sharded_variable_no_gather():
     ir.num_host_transfers = 1
     opts.enableInplaceAmbiguityChecking = False
 
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable([1, 2], name="x")
@@ -170,7 +170,7 @@ def test_remote_replia_sharded_variable_no_gather():
     ir = pir.Ir()
     ir.replication_factor = 2
     ir.num_host_transfers = 1
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x = pir.variable([1, 2], name="x")
@@ -202,7 +202,7 @@ def test_remote_replia_sharded_reuse_buffer():
     ir = pir.Ir()
     ir.replication_factor = 2
     ir.num_host_transfers = 1
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         x1 = pir.variable([1, 2], name="x1")

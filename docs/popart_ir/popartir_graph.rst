@@ -8,7 +8,7 @@ Graphs
 Main graph
 -----------
 
-You can create the main graph of an IR by calling ``popart.ir.main_graph()``.
+You can create the main graph of an IR by calling ``popart.ir.main_graph``.
 The returned main graph can be used as a context to include its operations
 and tensors.
 
@@ -57,9 +57,9 @@ for different input tensors, ``w1`` and ``w2``, which have different shapes.
     :download:`Download create_multi_subgraphs_from_same_func_popart_ir.py
     <../user_guide/files/create_multi_subgraphs_from_same_func_popart_ir.py>`
 
-You can also create the subgraph with an additional graph input with ``popart.ir.subgraph_input``
-in its Python function. The ``subgraph_input`` creates a new input tensor for the
-subgraph. An example can be found in :numref:`multi_call_subgraph_input_example`.
+You can also create the subgraph with an additional graph input with ``popart.ir.graph_input``
+in its Python function. The ``graph_input`` creates a new input tensor for the
+subgraph. An example can be found in :numref:`multi_call_graph_input_example`.
 
 Calling a subgraph
 ----------------------
@@ -70,49 +70,49 @@ the provided input tensors as follows:
 .. code-block:: python
 
   call(subgraph: Graph,
-      *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
-      subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
+      *inputs: Union[Tensor, List[Tensor]],
+      inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
       ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
 
-``subgraph_fn_param_inputs`` are the inputs the subgraph requires and they must
+``inputs`` are the inputs the subgraph requires and they must
 be in the same order as in ``create_graph``. If you are not sure about the order
 of the subgraph internal tensors that are defined by
-``popart.ir.subgraph_input``, you can use ``subgraph_in_to_parent_in`` to
+``popart.ir.graph_input``, you can use ``inputs_dict`` to
 provide the mapping between the subgraph tensors and the parent graph tensors.
 
 .. :note:: Each subgraph can be called from multiple call sites, but it is compiled only once to avoid redundant code.
 
-:numref:`multi_call_subgraph_input_example` shows an example of a graph being called multiple times with different variables.
+:numref:`multi_call_graph_input_example` shows an example of a graph being called multiple times with different variables.
 In this example, the subgraph was created with an additional graph input ``value``.
 When you call this subgraph, you will have to pass a tensor to the subgraph
 for this input as well. You can use it to instantiate the weights of layers internally.
 
-.. literalinclude:: ../user_guide/files/multi_call_subgraph_input_popart_ir.py
+.. literalinclude:: ../user_guide/files/multi_call_graph_input_popart_ir.py
   :language: python
   :start-after: Op begin
   :end-before: Op end
-  :name: multi_call_subgraph_input_example
+  :name: multi_call_graph_input_example
   :caption: Example of a graph being called multiple times with different variables
 
 .. only:: html
 
-    :download:`Download multi_call_subgraph_input_popart_ir.py <../user_guide/files/multi_call_subgraph_input_popart_ir.py>`
+    :download:`Download multi_call_graph_input_popart_ir.py <../user_guide/files/multi_call_graph_input_popart_ir.py>`
 
 
 You can call a graph and get the information about the call site by using the op
 ``ops.call_with_info`` instead of ``ops.call``. ``ops.call_with_info`` returns a
 ``CallInfo`` object that provides extra information about the call site. For
 instance, you can get the graph being called using ``called_graph``.
-``get_input_tensors()`` and ``get_output_tensors()`` return the input tensors and
+``inputs`` and ``outputs`` return the input tensors and
 output tensors respectively. You can also obtain the input and output tensors at
-a given index using ``get_op_input_tensor(index)`` and
-``get_op_output_tensor(index)`` respectively. You can find the input
+a given index using ``parent_input(index)`` and
+``parent_output(index)`` respectively. You can find the input
 subgraph tensor that corresponds to a parent tensor using
-``op_in_to_subgraph_in_tensor (parent_tensor)``.
-``subgraph_to_op_tensor(subgraph_tensor)`` provides an input or output tensor in
+``parent_to_graph (parent_tensor)``.
+``graph_to_parent(subgraph_tensor)`` provides an input or output tensor in
 ``called_graph`` that associates the input or output tensor in the parent graph.
 
-With the ``CallInfo`` object, you can use ``set_op_input_modified(subgraph_tensor)`` to specify
+With the ``CallInfo`` object, you can use ``set_parent_input_modified(subgraph_tensor)`` to specify
 that the input ``subgraph_tensor`` can be modified by this ``call_with_info`` op. This provides
 support for in-place variable updates like in :numref:`code_call_with_info_popart_ir`. After calling the subgraph, the value
 of variable tensor ``x`` is changed to 2.
@@ -141,17 +141,17 @@ You can use ``ops.repeat`` to create a loop, see :py:func:`popart.ir.ops.repeat(
 
     repeat(repeat_subgraph: Graph,
            repeat_count: int,
-           *subgraph_fn_param_inputs: Union[Tensor, List[Tensor]],
-           subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
+           *inputs: Union[Tensor, List[Tensor]],
+           inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
            ) -> Union[None, Tensor, Tuple[Tensor, ...]]
 
 It calls a subgraph ``repeat_subgraph`` for ``repeat_count`` number of times.
 Its inputs come from two arguments:
 
- - ``subgraph_fn_param_inputs`` that denotes the inputs passed to the subgraph function and,
- - ``subgraph_in_to_parent_in`` that denotes a mapping from internal tensors in the subgraph being called to tensors at the call site in parent graph.
+ - ``inputs`` that denotes the inputs passed to the subgraph function and,
+ - ``inputs_dict`` that denotes a mapping from internal tensors in the subgraph being called to tensors at the call site in parent graph.
 
-Both inputs from ``subgraph_fn_param_inputs`` and ``subgraph_in_to_parent_in``
+Both inputs from ``inputs`` and ``inputs_dict``
 are loop-carried inputs. This means that they are copied into the subgraph as inputs
 before the first iteration run. The outputs of each iteration are copied to the
 inputs of the next iteration as shown in :numref:`fig_repeat_op`. The outputs of the last
@@ -189,14 +189,14 @@ are copied to the inputs for the second iteration.
 
 
 :numref:`code_repeat_subgraph_popart_ir_1` shows how to use the
-``subgraph_in_to_parent_in``. The callable class ``Linear`` defines a linear
+``inputs_dict``. The callable class ``Linear`` defines a linear
 layer. The subgraph ``linear_graph`` is created from the module ``build``
 method.
 
 .. literalinclude:: ../user_guide/files/repeat_subgraph_popart_ir_1.py
   :language: python
   :name: code_repeat_subgraph_popart_ir_1
-  :caption: Example of ``repeat`` op using ``subgraph_in_to_parent_in``
+  :caption: Example of ``repeat`` op using ``inputs_dict``
   :start-after: Op begin
   :end-before: Op end
 

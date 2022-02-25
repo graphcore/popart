@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .add import add, add_
-from .call import call, call_with_info, SubgraphOpInfo
+from .call import call, call_with_info, CallSiteInfo
 from .cast import cast
 from .concat import concat, concat_
 from .detach import detach, detach_
@@ -66,7 +66,7 @@ __all__ = [
     # call.py
     "call",
     "call_with_info",
-    "SubgraphOpInfo",
+    "CallSiteInfo",
     # cast.py
     "cast",
     # concat.py

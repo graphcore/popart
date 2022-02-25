@@ -196,15 +196,23 @@ class Tensor:
         return tile_set
 
     @property
-    def in_sync_with_ipu(self) -> bool:
-        return self._pb_tensor.isInSyncWithIPU()
-
-    ## Methods
     def ir(self) -> 'Ir':
         """Return the `Ir` that the tensor is a member of."""
         from popart.ir import Ir
         return Ir._from_pb(self._pb_tensor.getIr())
 
+    @property
+    def in_sync_with_ipu(self) -> bool:
+        """
+        Is the host side buffer data in sync with the data on the IPU device?
+        This only applies to variable tensors which can become out of sync if
+        `session.weights_from_host` and `session.weights_to_host` are not called.
+        Without a transfer from device to host and visa-versa the buffers and the
+        data on the IPU can fall out of sync after either is updated.
+        """
+        return self._pb_tensor.isInSyncWithIPU()
+
+    ## Methods
     @debug_context_frame_offset(1)
     def transpose(self,
                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
@@ -351,12 +359,12 @@ class Tensor:
 
     def __hash__(self):
         """Hashes the Tensor, based on Tensor and Ir `id`"""
-        return hash((self.id, self.ir()))
+        return hash((self.id, self.ir))
 
     def __eq__(self, other: Any) -> bool:
         """Tensor equality, based on Tensor and Ir `id`"""
         return isinstance(
-            other, Tensor) and self.id == other.id and self.ir() == other.ir()
+            other, Tensor) and self.id == other.id and self.ir == other.ir
 
     def __len__(self) -> int:
         """Size of 0th axis or raises a UndefinedValue."""
@@ -641,7 +649,7 @@ def variable(
     .. code-block:: python
 
         import popart.ir as pir
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             a = pir.variable(0)
 
     Args:
@@ -660,9 +668,9 @@ def variable(
 
     if g != gmg():
         raise ValueError(
-            "You cannot initialise a variable tensor within a subgraph. "
+            "You cannot initialise a variable tensor within a graph. "
             "It can only be initialised within the main graph. "
-            "Please create a subgraph input for this variable (`pir.subgraph_input`) "
+            "Please create a graph input for this variable (`pir.graph_input`) "
             "or use a constant tensor (`pir.constant`). "
             "See popart.ir user guide for more details.")
 
@@ -738,7 +746,7 @@ def remote_replica_sharded_variable(
             f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
         )
 
-    opts = gcg().ir()._pb_ir.getSessionOptions()
+    opts = gcg().ir._pb_ir.getSessionOptions()
     if not opts.enableReplicatedGraphs:
         raise ValueError("Replication has not been enabled on the current IR")
 
@@ -810,7 +818,7 @@ def constant(
 
         import popart.ir as pir
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.constant(0)
             # The `1` will be implicitly converted to a `Constant`.
             b = a + 1
@@ -837,16 +845,17 @@ def constant(
     return Constant._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def subgraph_input(shape: Iterable[int],
-                   dtype: dtypes.dtype,
-                   name: Optional[str] = None,
-                   by_ref: bool = False,
-                   meta_shape: Optional[Iterable[int]] = None) -> Tensor:
-    """Create a new input tensor to the current graph.
+def graph_input(shape: Iterable[int],
+                dtype: dtypes.dtype,
+                name: Optional[str] = None,
+                by_ref: bool = False,
+                meta_shape: Optional[Iterable[int]] = None) -> Tensor:
+    """
+    Create a new input tensor to the current graph.
 
-    You can use this function when defining a subgraph to create a new input
-    tensor. When you call that subgraph, you will have to pass a tensor to the
-    subgraph for this input.
+    You can use this function when defining a graph to create a new input
+    tensor. When you call that graph, you will have to pass a tensor to the
+    graph for this input.
 
     Example:
 
@@ -855,11 +864,11 @@ def subgraph_input(shape: Iterable[int],
         import popart.ir as pir
 
         def add_w(x):
-            w = pir.subgraph_input(x.shape, x.dtype, "w")
+            w = pir.graph_input(x.shape, x.dtype, "w")
             return w + x
 
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             w = pir.variable(1)
             x = pir.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
@@ -893,11 +902,12 @@ def subgraph_input(shape: Iterable[int],
     return t
 
 
-def subgraph_output(t: Tensor) -> None:
-    """Mark a tensor as an output in the current graph.
+def graph_output(t: Tensor) -> None:
+    """
+    Mark a tensor as an output in the current graph.
 
-    You can use this function when defining a subgraph to mark an existing
-    tensor in the subgraph as an output. When you call that subgraph, it will
+    You can use this function when defining a graph to mark an existing
+    tensor in the graph as an output. When you call that graph, it will
     return that tensor in the parent graph.
 
     Example:
@@ -907,12 +917,12 @@ def subgraph_output(t: Tensor) -> None:
         import popart.ir as pir
 
         def add_w(x):
-            w = pir.subgraph_input(x.shape, x.dtype, "w")
+            w = pir.graph_input(x.shape, x.dtype, "w")
             y = w + x
-            pir.subgraph_output(y)
+            pir.graph_output(y)
 
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             w = pir.variable(1)
             x = pir.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
@@ -920,7 +930,7 @@ def subgraph_output(t: Tensor) -> None:
 
     Args:
         t (Tensor):
-            The subgraph tensor to mark as an output in the current graph.
+            The graph tensor to mark as an output in the current graph.
 
     Throws:
         ValueError: If the tensor is not in the current graph.
@@ -946,6 +956,6 @@ a graph input should be flagged as copy-modified. Example:
 
 When converted to a graph and called, the modification to the graph input `a` will be propagated to the
 corresponding input tensor at the callsite.
-This is the same as using `pir.subgraph_input(..., by_ref=True)`.
+This is the same as using `pir.graph_input(..., by_ref=True)`.
 """
 TensorByRef = NewAliasAnnotation("TensorByRef", Tensor)

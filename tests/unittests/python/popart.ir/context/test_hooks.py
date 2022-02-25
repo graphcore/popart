@@ -5,7 +5,7 @@ import popart.ir as pir
 
 def test_hook():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     called = False
 
@@ -36,7 +36,7 @@ def test_hook():
 
 def test_multiple_hooks():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     called_1 = False
     called_2 = False

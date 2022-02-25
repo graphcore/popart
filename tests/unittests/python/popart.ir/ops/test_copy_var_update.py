@@ -9,12 +9,12 @@ from utils import contains_op_of_type
 class TestAccumulate:
     def test_add(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
             b = pir.constant(2)
             c = ops.var_updates.copy_var_update_(a, b)
-        assert len(g.get_tensors()) == 3
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 3
+        assert len(g.variables) == 1
         assert contains_op_of_type("CopyVarUpdate", _ir.op.CopyVarUpdateOp, g)

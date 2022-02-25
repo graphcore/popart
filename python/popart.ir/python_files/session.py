@@ -51,7 +51,7 @@ class Session:
         # would already have done it earlier).
         dataFlow = popart.DataFlow(batchesPerStep=ir.num_host_transfers,
                                    anchorTensors={
-                                       d2h.tensor_id():
+                                       d2h.tensor_id:
                                        popart.AnchorReturnType("All")
                                        for d2h in d2hs
                                    })
@@ -396,7 +396,7 @@ class Session:
             if arr.shape[0] < self.ir.num_host_transfers:
                 raise ValueError(
                     f"Dimension 0 ({arr.shape[0]}) for the array provided for "
-                    f"{stream_type_str} stream {s.tensor_id()} is not large enough.\n"
+                    f"{stream_type_str} stream {s.tensor_id} is not large enough.\n"
                     f"It should be at least of size num_host_transfers = {self.ir.num_host_transfers}"
                 )
         if self.ir.replication_factor > 1:
@@ -404,7 +404,7 @@ class Session:
             if arr.shape[repl_index] != self.ir.replication_factor:
                 raise ValueError(
                     f"Dimension {repl_index} ({arr.shape[1]}) for the array provided for {stream_type_str} "
-                    f"stream {s.tensor_id()} is the wrong size.\n"
+                    f"stream {s.tensor_id} is the wrong size.\n"
                     f"It should be of size replication_factor = {self.ir.replication_factor}"
                 )
         if arr.squeeze().shape[data_index:] == ():
@@ -412,7 +412,7 @@ class Session:
             return
         if arr.shape[data_index:] != s.shape:
             raise ValueError(
-                f"Shape mismatch for {stream_type_str} stream {s.tensor_id()}:\n"
+                f"Shape mismatch for {stream_type_str} stream {s.tensor_id}:\n"
                 f"Stream shape = {s.shape}, therefore expected full global batch shape "
                 f"{full_shape}. Got array shape = {arr.shape}")
 
@@ -454,12 +454,12 @@ class Session:
         self._validate_run_outputs(outputs)
 
         stepio_inputs: Mapping[str, np.ndarray] = {
-            h2d.tensor_id(): arr
+            h2d.tensor_id: arr
             for h2d, arr in inputs.items()
         }
 
         stepio_outputs: Dict[str, np.ndarray] = {
-            d2h.tensor_id(): arr
+            d2h.tensor_id: arr
             for d2h, arr in outputs.items()
         }
 

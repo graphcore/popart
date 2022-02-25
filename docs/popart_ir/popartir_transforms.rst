@@ -65,9 +65,9 @@ The :py:class:`popart.ir.transforms.GradGraphInfo` object contains all the infor
  -  ``forward_graph``: the forward graph that autodiff was applied to
  -  ``expected_inputs``: the tensors from the forward_graph that are required as inputs to the grad ``graph``
  -  ``expected_outputs``: the tensors from the forward_graph that have gradients as outputs of the grad ``graph``.
- -  ``get_inputs_from_forward_call_info(fwd_call_info)``: the inputs to call the gradient graph.
- -  ``get_fwd_subgraph_to_grad_tensor_map(grad_call_info)``: the mapping between forward subgraph tensors and grad call site tensors. Note that the ``grad_call_info`` is the callsite info of the backward gradient graph.
- -  ``get_fwd_inputs_to_grad_tensor_map(fwd_call_info, grad_call_info)``: the mapping between forward call site inputs and grad call site outputs. It can be used to get the gradient with respect to a specific input.
+ -  ``inputs_dict(fwd_call_info)``: the inputs to call the gradient graph.
+ -  ``fwd_graph_ins_to_grad_parent_outs(grad_call_info)``: the mapping between forward subgraph tensors and grad call site tensors. Note that the ``grad_call_info`` is the callsite info of the backward gradient graph.
+ -  ``fwd_parent_ins_to_grad_parent_outs(fwd_call_info, grad_call_info)``: the mapping between forward call site inputs and grad call site outputs. It can be used to get the gradient with respect to a specific input.
 
 You can then call the gradient graph returned by autodiff to calculate the required gradients.
 The partial derivatives of the loss with respect to the graph outputs of the forward graph are
@@ -76,7 +76,7 @@ with ``autodiff`` for a ``linear_graph``.
 
 #. First operation ``call_with_info`` returns ``fwd_call_info`` that contains the callsite info.
 #. Then get the gradient graph ``bwd_graph_info`` by using ``autodiff`` on the ``linear_graph``.
-#. Then get all the activations calculated in the forward pass with the backward graph using ``bwd_graph_info.get_inputs_from_forward_call_info`` with the ``call_info`` of the forward call as an argument.
+#. Then get all the activations calculated in the forward pass with the backward graph using ``bwd_graph_info.inputs_dict`` with the ``call_info`` of the forward call as an argument.
 #. Last, call the gradient graph using ``ops.call``. The argument ``grad_seed`` is the initial value of the partial gradient. Increasing this ``grad_seed`` can serve as loss scaling. The ``activation`` is used to connect the input of the gradient graph with the caller graph.
 
 

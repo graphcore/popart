@@ -15,7 +15,7 @@ def test_basic(tmpdir):
     popart.initializePoplarDebugInfo(filename, "json")
 
     ir = pir.Ir()
-    with ir.main_graph():
+    with ir.main_graph:
         a = pir.variable(0)
         b = pir.variable(1)
         c = a + b
@@ -48,6 +48,6 @@ def test_basic(tmpdir):
 
 def test_namescoping():
     ir = pir.Ir()
-    with ir.main_graph(), pir.name_scope("foo"):
+    with ir.main_graph, pir.name_scope("foo"):
         a = pir.variable(1, name="bar")
     assert a.name == "foo/bar"

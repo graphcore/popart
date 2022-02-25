@@ -30,7 +30,7 @@ class TestRemoteLoad:
             inplace (bool): Whether or not to use the inplace version of the op
         """
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             if offset_as_int:
@@ -59,9 +59,9 @@ class TestRemoteLoad:
                 # t is the only variable
                 n_variables = 1
 
-        assert len(g.get_tensors()) == n_tensors
+        assert len(g.tensors) == n_tensors
         # Only t is a variable
-        assert len(g.get_variables()) == n_variables
+        assert len(g.variables) == n_variables
         type_string = "RemoteLoad" if not inplace else "RemoteLoadInplace"
         pb_type = _ir.op.exchange.RemoteLoadOp if not inplace else _ir.op.exchange.RemoteLoadInplaceOp
         assert contains_op_of_type(type_string, pb_type, g)

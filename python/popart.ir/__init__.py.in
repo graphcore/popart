@@ -35,7 +35,7 @@ __all__ = [
     "HostToDeviceStream", "DeviceToHostStream", "h2d_stream", "d2h_stream",
     # tensor.py
     "Tensor", "variable", "remote_variable", "remote_replica_sharded_variable",
-    "replica_sharded_variable", "constant", "subgraph_input", "subgraph_output",
+    "replica_sharded_variable", "constant", "graph_input", "graph_output",
     "TensorByRef", "TensorSpec",
     # tensorlocation.py
     "TensorStorage", "TensorLocation", "ReplicatedTensorSharding", "TileSet",
@@ -58,7 +58,7 @@ from .streams import (HostToDeviceStream, DeviceToHostStream,
     h2d_stream, d2h_stream)
 from .tensor import (Tensor, variable, remote_variable,
     remote_replica_sharded_variable, replica_sharded_variable, constant,
-    subgraph_input, subgraph_output, TensorByRef, TensorSpec)
+    graph_input, graph_output, TensorByRef, TensorSpec)
 from .tensorlocation import (TensorStorage, TensorLocation,
     ReplicatedTensorSharding, TileSet, ExecutionContext)
 from .session import Session

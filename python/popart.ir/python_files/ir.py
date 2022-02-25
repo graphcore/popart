@@ -12,8 +12,7 @@ import popart
 import popart._internal.ir as _ir
 from popart.ir.graph import Graph
 from popart.ir.module import Module
-from popart.ir.tensor import (Tensor, TensorByRef, TensorSpec, subgraph_input,
-                              subgraph_output)
+from popart.ir.tensor import Tensor, TensorByRef, TensorSpec, graph_input, graph_output
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
@@ -77,8 +76,10 @@ class Ir:
                 "Is a popart.ir class missing a back reference to Ir?")
         return Ir._ir_cache[_id]
 
+    @property
     def main_graph(self) -> 'Graph':
-        """Every IR is initialised with a main graph. This method returns this
+        """
+        Every IR is initialised with a main graph. This method returns this
         graph.
 
         Returns:
@@ -95,16 +96,17 @@ class Ir:
             **kwargs: Any,
     ) -> 'Graph':
         """
-        Create a subgraph from a Python callable `fn` or the build method of a `Module`.
+        Create a graph from a Python callable `fn` or the build method of a `Module`.
         The graph inputs are determined using the signature of the function `fn`
         and the supplied arguments `args` and `kwargs`. Tensors or TensorSpecs passed via the
         arguments are used to determine the shape and dtype of the graph inputs (the
         tensors are not actually passed to the graph). The graph outputs are
         determined using the outputs of the function when called.
 
-        The order of inputs in the returned subgraph will be the same as the
-        order of the tensor inputs in the function signature and the
-        order of kwargs. This determines the order in which you pass the parent
+        The order of inputs in the returned graph will be the same as the
+        order of the tensor inputs in the function signature, the
+        order of the kwargs and the order of called `pir.graph_inputs`.
+        This determines the order in which you pass the parent
         tensors as inputs at the callsite.
 
         The function `fn` can take any arguments. Any Tensor arguments are
@@ -170,11 +172,11 @@ class Ir:
 
                 if isinstance(arg, (Tensor, TensorSpec)):
                     by_ref = type_hint is TensorByRef
-                    arguments[name] = subgraph_input(arg.shape,
-                                                     arg.dtype,
-                                                     name,
-                                                     by_ref=by_ref,
-                                                     meta_shape=arg.meta_shape)
+                    arguments[name] = graph_input(arg.shape,
+                                                  arg.dtype,
+                                                  name,
+                                                  by_ref=by_ref,
+                                                  meta_shape=arg.meta_shape)
 
                 # Supported args:
                 # 1. Argument that is a list `def func(x: List[Tensor])`
@@ -215,7 +217,7 @@ class Ir:
                                 f" {name}. Value: {arg}")
                         if isinstance(subarg, Tensor):
                             contains_tensor = True
-                            in_args_sub[subarg_name] = subgraph_input(
+                            in_args_sub[subarg_name] = graph_input(
                                 subarg.shape,
                                 subarg.dtype,
                                 subarg_name,
@@ -243,7 +245,7 @@ class Ir:
                 outputs = (outputs, )
 
             for out in outputs:
-                subgraph_output(out)
+                graph_output(out)
 
         return subgraph
 

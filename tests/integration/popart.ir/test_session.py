@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 import popart.ir as pir
 import popart.ir.ops as ops
-from popart.ir.tensor import Tensor, subgraph_input
+from popart.ir.tensor import Tensor, graph_input
 
 
 def test_session():
@@ -12,7 +12,7 @@ def test_session():
     c_input = [1.]
 
     ir = pir.Ir()
-    with ir.main_graph(), pir.in_sequence():
+    with ir.main_graph, pir.in_sequence():
         w = pir.variable(w_input, pir.dtypes.float32)
         x_h2d = pir.h2d_stream(w.shape, w.dtype)
         x = ops.host_load(x_h2d)
@@ -45,10 +45,10 @@ class LinearHostLoad(pir.Module):
     def build(self, out_features: int,
               bias: bool = True) -> Tuple[Tensor, ...]:
         x = ops.host_load(self.h2d, "x")
-        self.W = subgraph_input((x.shape[-1], out_features), pir.float32, "W")
+        self.W = graph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = subgraph_input((out_features, ), pir.float32, "b")
+            self.b = graph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         ops.host_store(self.d2h, y)
         return self.W, self.b
@@ -57,7 +57,7 @@ class LinearHostLoad(pir.Module):
 def test_session_multi_iteration():
     ir = pir.Ir()
     bps = 8
-    with ir.main_graph():
+    with ir.main_graph:
         W_data = np.random.normal(0, 0.1, (2, 2)).astype(np.float32)
         W = pir.variable(W_data, name="W")
         b_data = np.random.normal(0, 0.4, (2)).astype(np.float32)
@@ -68,7 +68,7 @@ def test_session_multi_iteration():
 
         W, b = ops.repeat(linear_graph,
                           bps,
-                          subgraph_in_to_parent_in={
+                          inputs_dict={
                               linear.W: W,
                               linear.b: b
                           })

@@ -2,7 +2,7 @@
 '''
 The intention of this example is to show how to call the same
 subgraph with repeat op and connect the inputs of the subgraph
-with the caller graph by using argument `subgraph_in_to_parent_in`.
+with the caller graph by using argument `inputs_dict`.
 '''
 
 import numpy as np
@@ -13,7 +13,7 @@ from typing import Tuple
 
 # Creating a model with popart.ir
 ir = pir.Ir()
-main = ir.main_graph()
+main = ir.main_graph
 
 
 # Op begin
@@ -24,11 +24,10 @@ class Linear(pir.Module):
 
     def build(self, x: pir.Tensor, out_features: int,
               bias: bool = True) -> Tuple[pir.Tensor, ...]:
-        self.W = pir.subgraph_input((x.shape[-1], out_features), pir.float32,
-                                    "W")
+        self.W = pir.graph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
+            self.b = pir.graph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         # self.W and self.b are also returned to match the inputs of the corresponding subgraph
         return y, self.W, self.b
@@ -51,7 +50,7 @@ with main:
     o, _, _ = ops.repeat(linear_graph,
                          2,
                          x,
-                         subgraph_in_to_parent_in={
+                         inputs_dict={
                              linear.W: W,
                              linear.b: b
                          })
@@ -62,7 +61,7 @@ with main:
 
 dataFlow = popart.DataFlow(
     batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id(): popart.AnchorReturnType("All")})
+    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
 
 ir = ir._pb_ir
 ir.setDataFlow(dataFlow)
@@ -82,4 +81,4 @@ stepio = popart.PyStepIO({}, anchors)
 session.weightsFromHost()
 session.run(stepio)
 
-assert (anchors[o_d2h.tensor_id()] == [[7, 7], [7, 7]]).all()
+assert (anchors[o_d2h.tensor_id] == [[7, 7], [7, 7]]).all()

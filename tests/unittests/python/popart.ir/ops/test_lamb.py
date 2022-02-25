@@ -8,11 +8,11 @@ from utils import contains_op_of_type
 class TestLambSquare:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(1)
             b = ops.lamb_square(a)
-        assert len(g.get_tensors()) == 2
-        assert len(g.get_variables()) == 1
+        assert len(g.tensors) == 2
+        assert len(g.variables) == 1
         assert contains_op_of_type("LambSquare", _ir.op.LambSquareOp, g)

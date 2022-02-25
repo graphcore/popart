@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from popart.ir.context import gcg
+from popart.ir.context import gcg, gmg
 from popart.ir.tensor import Tensor, TensorSpec
 from popart.ir.dtypes import dtype
 
@@ -35,6 +35,7 @@ class _Stream:
         """Return a TensorSpec instance using properties of the stream."""
         return self._stream_tensor.spec
 
+    @property
     def tensor_id(self) -> str:
         """Return the identifier of the stream."""
         return self._stream_tensor.id
@@ -86,7 +87,7 @@ class DeviceToHostStream(_Stream):
 def h2d_stream(shape: Iterable[int], dtype: dtype,
                name: Optional[str] = None) -> HostToDeviceStream:
     g = gcg()
-    mg = g.ir().main_graph()
+    mg = gmg()
 
     if g.name != mg.name:
         raise ValueError(
@@ -108,7 +109,7 @@ def h2d_stream(shape: Iterable[int], dtype: dtype,
 def d2h_stream(shape: Iterable[int], dtype: dtype,
                name: Optional[str] = None) -> DeviceToHostStream:
     g = gcg()
-    mg = g.ir().main_graph()
+    mg = gmg()
 
     if g.name != mg.name:
         raise ValueError(

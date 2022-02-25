@@ -40,7 +40,7 @@ def serial_inference_model(ir: pir.Ir, stream_input_shape: Tuple[int],
         t_in_h2d (HostToDeviceStream): The input stream of t_in
         t_out_d2h (DeviceToHostStream): The output stream of t_out
     """
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         # These weights are streamed once to the device
         hidden_weights = pir.variable(weights_and_biases["hidden_weights"],

@@ -9,10 +9,10 @@ from utils import contains_op_of_type
 class TestMeadian:
     def test_fn(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             a = pir.variable(np.ones((1, 2, 3)))
             c = ops.median(a, axis=[0, -1])
-        assert len(g.get_tensors()) == 3
+        assert len(g.tensors) == 3
         assert contains_op_of_type("ReduceMedian", _ir.op.ReduceMedianOp, g)

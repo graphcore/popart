@@ -16,11 +16,10 @@ class Linear(pir.Module):
 
     def build(self, x: pir.Tensor, out_features: int,
               bias: bool = True) -> pir.Tensor:
-        self.W = pir.subgraph_input((x.shape[-1], out_features), pir.float32,
-                                    "W")
+        self.W = pir.graph_input((x.shape[-1], out_features), pir.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = pir.subgraph_input((out_features, ), pir.float32, "b")
+            self.b = pir.graph_input((out_features, ), pir.float32, "b")
             y = y + self.b
         return y
 
@@ -35,7 +34,7 @@ def build_model(
 ) -> Tuple[pir.Ir, HostToDeviceStream, DeviceToHostStream, np.array, np.array]:
     ir = pir.Ir()
 
-    main = ir.main_graph()
+    main = ir.main_graph
     with main:
         x_h2d = pir.h2d_stream(_INPUT_SHAPE, pir.float32, name="x_stream")
         x = ops.host_load(x_h2d, "x")
@@ -52,12 +51,7 @@ def build_model(
         lin = Linear()
         lin_graph = ir.create_graph(lin, x, out_features=out_features)
 
-        y, = ops.call(lin_graph,
-                      x,
-                      subgraph_in_to_parent_in={
-                          lin.W: W,
-                          lin.b: b
-                      })
+        y, = ops.call(lin_graph, x, inputs_dict={lin.W: W, lin.b: b})
 
         y_d2h = pir.d2h_stream(_INPUT_SHAPE, pir.float32, name="y_stream")
         ops.host_store(y_d2h, y)

@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Mapping, Union, Tuple, Optional, List
+from typing import Mapping, Union, Tuple, Optional, List, Iterable
 
 import popart._internal.ir as _ir
 from popart.ir.context import get_current_context, debug_context_frame_offset, op_debug_context
@@ -10,9 +10,10 @@ from .utils import check_in_graph
 
 
 # TODO: Bind subgraph op T53714
-class SubgraphOpInfo:
-    """Info relating to an op that calls into a subgraph, e.g. a call op or repeat op. This is a
-    convenience class for extracting information about the op and it's subgraph.
+class CallSiteInfo:
+    """
+    Info relating to parent graph calling a graph (subgraph) e.g. using a call op or repeat op. This is a
+    convenience class for extracting information about the callsite and it's subgraph.
     """
 
     def __init__(self, subgraph_op: Union[_ir.op.CallOp, _ir.op.LoopOp]):
@@ -22,47 +23,51 @@ class SubgraphOpInfo:
     def called_graph(self):
         return Graph._from_pb(self._op.getCalledGraphs()[0])
 
-    def subgraph_in_to_op_in_index(self, idx: int) -> Tensor:
+    def graph_to_parent_input_index(self, idx: int) -> int:
+        """Get the parent graph input tensor index given the graph input tensor index."""
         return self._op.subgraphInToOpInIndex(idx)
 
-    def op_in_to_subgraph_in_index(self, idx: int) -> Tensor:
+    def parent_to_graph_input_index(self, idx: int) -> int:
+        """Get the graph input tensor index given the parent graph input tensor index."""
         return self._op.opInToSubgraphInIndex(idx)
 
-    def subgraph_out_to_op_out_index(self, idx: int) -> Tensor:
+    def graph_to_parent_output_index(self, idx: int) -> int:
+        """Get the parent graph output tensor index given the graph output tensor index."""
         return self._op.subgraphOutToOpOutIndex(idx)
 
-    def op_out_to_subgraph_out_index(self, idx: int) -> Tensor:
+    def parent_to_graph_output_index(self, idx: int) -> int:
+        """Get the graph output tensor index given the parent graph output tensor index."""
         return self._op.opOutToSubgraphOutIndex(idx)
 
-    def subgraph_to_op_tensor(self, subgraph_tensor: Tensor) -> Tensor:
+    def graph_to_parent(self, graph_tensor: Tensor) -> Tensor:
         """
-        Provided an input or output tensor in the `called_graph`, this method
-        returns the associated input or output tensor on the CallOp.
+        Get the corresponding input or output tensor in the parent graph 
+        using the input or output tensor in the called graph.
 
         Args:
-            subgraph_tensor (Tensor): The tensor in the subgraph.
+            subgraph_tensor (Tensor): The tensor in the called graph.
 
         Raises:
-            ValueError: If `subgraph_tensor` is not an input or output of the called graph.
+            ValueError: If `graph_tensor` is not an input or output of the called graph.
 
         Returns:
             Tensor: The associated input or output tensor on the CallOp
         """
         sgraph = self.called_graph._pb_graph
-        if sgraph.hasInputId(subgraph_tensor.id):
-            idx = sgraph.getInputIndex(subgraph_tensor.id)
+        if sgraph.hasInputId(graph_tensor.id):
+            idx = sgraph.getInputIndex(graph_tensor.id)
             return Tensor._from_pb_tensor(self._op.inTensor(idx))
-        if sgraph.hasOutputId(subgraph_tensor.id):
-            idx = sgraph.getOutputIndex(subgraph_tensor.id)
+        if sgraph.hasOutputId(graph_tensor.id):
+            idx = sgraph.getOutputIndex(graph_tensor.id)
             return Tensor._from_pb_tensor(self._op.outTensor(idx))
         raise ValueError(
-            f"Tensor {subgraph_tensor.name} is not an Input or Output of the called graph {sgraph.id}"
+            f"Tensor {graph_tensor.name} is not an input or output of the called graph {sgraph.id}"
         )
 
-    def op_in_to_subgraph_in_tensor(self, parent_tensor: Tensor) -> Tensor:
+    def parent_to_graph(self, parent_tensor: Tensor) -> Tensor:
         """
-        Provided an input tensor on the CallOp, this method returns the
-        associated input tensor in the `called_graph`.
+        Get the corresponding input tensor in the called graph 
+        using the input tensor in the parent graph.
 
         Args:
             parent_tensor (Tensor): The tensor from the parent graph.
@@ -82,16 +87,20 @@ class SubgraphOpInfo:
 
         return Tensor._from_pb_tensor(pb_sub_tensor)
 
-    def get_op_input_tensor(self, op_in_idx: int) -> Tensor:
-        pb_op_in_tensor = self._op.inTensor(op_in_idx)
+    def parent_input(self, idx: int) -> Tensor:
+        """Get the parent graph input tensor at a given index"""
+        pb_op_in_tensor = self._op.inTensor(idx)
         return Tensor._from_pb_tensor(pb_op_in_tensor)
 
-    def get_op_output_tensor(self, op_out_idx: int) -> Tensor:
-        pb_op_out_tensor = self._op.outTensor(op_out_idx)
+    def parent_output(self, idx: int) -> Tensor:
+        """Get the parent graph output tensor at a given index"""
+        pb_op_out_tensor = self._op.outTensor(idx)
         return Tensor._from_pb_tensor(pb_op_out_tensor)
 
-    def get_input_tensors(self) -> Tuple[Tensor, ...]:
-        """Return inputs to the CallOp in index order.
+    @property
+    def inputs(self) -> Tuple[Tensor, ...]:
+        """
+        Get the parent graph inputs
 
         Returns:
             Tuple[Tensor, ...]
@@ -99,8 +108,10 @@ class SubgraphOpInfo:
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getInputTensors())
 
-    def get_output_tensors(self) -> Tuple[Tensor, ...]:
-        """Return outputs to the CallOp in index order.
+    @property
+    def outputs(self) -> Tuple[Tensor, ...]:
+        """
+        Get the parent graph outputs
 
         Returns:
             Tuple[Tensor, ...]
@@ -108,122 +119,122 @@ class SubgraphOpInfo:
         return tuple(
             Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
 
-    def set_op_input_modified(self,
-                              op_tensor: Tensor,
-                              infer_modified_regions: bool = True):
-        """Specify that the input tensor `op_tensor` is modified by the call op.
-            this will guarentee that any modification to the graph input during the execution
-            of the called graph will also change `op_tensor`.
+    def set_parent_input_modified(self,
+                                  parent_tensor: Tensor,
+                                  infer_modified_regions: bool = True):
+        """
+        Specify that the parent graph input tensor `parent_tensor` is modified by the call op.
+        
+        This will guarantee that any modification to the graph input during the execution
+        of the called graph will also change `parent_tensor`.
+
+        Args:
+            parent_tensor (Tensor): Input tensor in parent graph to be modified.
 
         Args:
             op_tensor (Tensor): Tensor to be modified.
             infer_modified_regions (bool): Set the modified regions from the Ops in the called graph.
         """
-        index = self._op.inIndex(op_tensor._pb_tensor)
+        index = self._op.inIndex(parent_tensor._pb_tensor)
         _graph = self._op.getCalledGraph()
         _sg_tensor = _graph.getInputTensor(
-            self.op_in_to_subgraph_in_index(index))
+            self.parent_to_graph_input_index(index))
         if infer_modified_regions:
             _regions = _sg_tensor.modifiedRegionsByOps(_graph.getOps())
         else:
-            _regions = [_ir.view.Region.getFull(op_tensor.shape)]
+            _regions = [_ir.view.Region.getFull(parent_tensor.shape)]
         self._op.addModified(index, _regions)
 
 
 @debug_context_frame_offset(1)
-def call(subgraph: Graph,
-         *subgraph_fn_param_inputs: Union[Tensor, List[Tensor], int, float],
-         subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None
+def call(graph: Graph,
+         *inputs: Union[Tensor, Iterable[Tensor], int, float],
+         inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
          ) -> Tuple[Tensor, ...]:
     """
-    An op that invokes a subgraph.
+    An op that calls a graph.
 
-    The provided input tensors are passed as graph inputs.
+    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    You can specify an input either positionally using `inputs` or via a tensor
+    map using `inputs_dict`.
+
+    Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
+    The order of inputs in will be the same as the order of the tensor inputs in the
+    function signature and the order of called `pir.graph_inputs`.
+    See documentation on `ir.create_graph` for more information.
 
     Args:
-        subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs  (Tensor, List[Tensor], int, float):
-            parent tensors that correspond to the inputs of the callable passed
-            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
-            The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.create_graph(callable, ...).
-        subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
-            Mapping of `subgraph tensor -> parent tensor` that corresponds to
-            the inputs that the callable defined internally, e.g. by using
-            popart.ir.subgraph_input. Defaults to an empty dictionary.
-            Note that, it is not needed if the inputs can be passed in the right
-            order with `subgraph_fn_param_inputs`.
+        graph (Graph): The graph to call.
+        *inputs (Tensor, List[Tensor], int, float):
+            Provide inputs via position.
+        inputs_dict (Mapping[Tensor, Tensor] = {}):
+            Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.
 
     Returns:
         Tuple[Tensor, ...]:
             Tuple of the output tensors of the call in the parent graph.
-            The tensors will be in ascending order of the graph output
-            index of the corresponding subgraph tensor.
     """
-    info = call_with_info(subgraph,
-                          *subgraph_fn_param_inputs,
-                          subgraph_in_to_parent_in=subgraph_in_to_parent_in)
-    return info.get_output_tensors()
+    info = call_with_info(graph, *inputs, inputs_dict=inputs_dict)
+    return info.outputs
 
 
 @op_debug_context("call")
-def call_with_info(
-        subgraph: Graph,
-        *subgraph_fn_param_inputs: Union[Tensor, List[Tensor], int, float],
-        subgraph_in_to_parent_in: Optional[Mapping[Tensor, Tensor]] = None,
-        check_inputs: bool = True) -> SubgraphOpInfo:
+def call_with_info(graph: Graph,
+                   *inputs: Union[Tensor, Iterable[Tensor], int, float],
+                   inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
+                   check_inputs: bool = True) -> CallSiteInfo:
     """
-    An op that invokes a subgraph and returns information about the callsite.
+    An op that calls a graph and returns information about the callsite.
 
-    The provided input tensors are passed as graph inputs. This op returns
-    SubgraphOpInfo that can be used to inspect callsite inputs/outputs.
+    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    You can specify an input either positionally using `inputs` or via a tensor
+    map using `inputs_dict`. This op returns `CallSiteInfo` that can be used
+    to inspect callsite inputs/outputs.
+
+    Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
+    The order of inputs in will be the same as the order of the tensor inputs in the
+    function signature and the order of called `pir.graph_inputs`.
+    See documentation on `ir.create_graph` for more information.
 
     Args:
-        subgraph (Graph): The called graph.
-        *subgraph_fn_param_inputs (Tensor, List[Tensor], int, float):
-            parent tensors that correspond to the inputs of the callable passed
-            to ir.create_graph(callable, ...) when constructing `subgraph` earlier.
-            The inputs passed MUST be provided here in the EXACT SAME ORDER as
-            to ir.create_graph(callable, ...).
-        subgraph_in_to_parent_in (Mapping[Tensor, Tensor] = {}):
-            Mapping of `subgraph tensor -> parent tensor` that corresponds to
-            the inputs that the callable defined internally, e.g. by using
-            popart.ir.subgraph_input. Defaults to an empty dictionary.
+        graph (Graph): The graph to call.
+        *inputs (Tensor, List[Tensor], int, float):
+            Provide inputs via position.
+        inputs_dict (Mapping[Tensor, Tensor] = {}):
+            Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.
         check_inputs (bool = True):
             Check when called if all inputs have been provided.
     Returns:
-        info: SubgraphOpInfo
+        info: CallSiteInfo
             Information on the created callsite.
     """
-    subgraph_in_to_parent_in = subgraph_in_to_parent_in if subgraph_in_to_parent_in is not None else {}
+    inputs_dict = inputs_dict if inputs_dict is not None else {}
 
-    subgraph_fn_param_inputs_flat = []
-    for x in subgraph_fn_param_inputs:
+    inputs_flat = []
+    for x in inputs:
         if isinstance(x, (list, tuple)):
-            subgraph_fn_param_inputs_flat.extend(x)
+            inputs_flat.extend(x)
         else:
-            subgraph_fn_param_inputs_flat.append(x)
+            inputs_flat.append(x)
 
-    if check_inputs and len(subgraph_fn_param_inputs_flat) + len(
-            subgraph_in_to_parent_in) != len(subgraph.get_input_tensors()):
+    if check_inputs and len(inputs_flat) + len(inputs_dict) != len(
+            graph.inputs):
         raise ValueError(
-            "An incorrect number of inputs have been provided: the number of graph inputs does not equal the number of "
-            "subgraph_fn_param_inputs plus subgraph_in_to_parent_in inputs: {} != {} + {}"
-            .format(len(subgraph.get_input_tensors()),
-                    len(subgraph_fn_param_inputs_flat),
-                    len(subgraph_in_to_parent_in)))
+            "An incorrect number of inputs have been provided: the number of `inputs` plus `inputs_dict` "
+            "does not equal the number of graph inputs: {} + {} != {}".format(
+                len(inputs_flat), len(inputs_dict), len(graph.inputs)))
 
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph
-    pb_sg = subgraph._pb_graph
+    pb_sg = graph._pb_graph
 
-    op_name = g.name + '--call--' + subgraph.name
+    op_name = g.name + '--call--' + graph.name
 
     opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, _ir.NumInputs(),
                                   0)
 
-    pb_callop = pb_g.createOp_CallOp(opid, subgraph._pb_graph,
+    pb_callop = pb_g.createOp_CallOp(opid, graph._pb_graph,
                                      ctx._get_op_settings(op_name))
 
     # 1. Connect explicitly passed inputs. These would have been created first
@@ -232,18 +243,18 @@ def call_with_info(
     #    require that the user has passed the parent tensors that correspond to
     #    these inputs in the exact same order, so we can trivially reconstruct
     #    the input indices here.
-    for sgInIdx, t in enumerate(subgraph_fn_param_inputs_flat):
+    for sgInIdx, t in enumerate(inputs_flat):
         if not isinstance(t, Tensor):
-            sg_tensor = subgraph.get_input_tensors()[sgInIdx]
+            sg_tensor = graph.inputs[sgInIdx]
             t = sg_tensor._ensure_tensor(t)
 
         callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
         pb_callop.connectInTensor(callInIdx, t.id)
 
     # 2. Connect internally created inputs.
-    for sg_tensor, parent_tensor in subgraph_in_to_parent_in.items():
+    for sg_tensor, parent_tensor in inputs_dict.items():
         if not isinstance(parent_tensor, Tensor):
-            sg_tensor = subgraph.get_input_tensors()[sgInIdx]
+            sg_tensor = graph.inputs[sgInIdx]
             parent_tensor = sg_tensor._ensure_tensor(parent_tensor)
 
         try:
@@ -253,12 +264,14 @@ def call_with_info(
             )
         except ValueError:
             raise ValueError(
-                f'The tensor {parent_tensor} is not in the graph {g}.')
+                f'The parent input tensor {parent_tensor} is not in the parent graph {g}.'
+            )
         try:
-            check_in_graph(subgraph, sg_tensor=sg_tensor)
+            check_in_graph(graph, sg_tensor=sg_tensor)
         except ValueError:
             raise ValueError(
-                f'The tensor {sg_tensor} is not in the graph {subgraph}.')
+                f'The graph input tensor {sg_tensor} is not in the called graph {graph}.'
+            )
 
         sgInIdx = pb_sg.getInputIndex(sg_tensor.id)
         callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
@@ -279,9 +292,9 @@ def call_with_info(
 
     pb_callop.setup()
 
-    info = SubgraphOpInfo(pb_callop)
+    info = CallSiteInfo(pb_callop)
 
-    for t in subgraph._by_ref_inputs:
-        info.set_op_input_modified(info.subgraph_to_op_tensor(t))
+    for t in graph._by_ref_inputs:
+        info.set_parent_input_modified(info.graph_to_parent(t))
 
     return info

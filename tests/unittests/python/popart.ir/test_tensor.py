@@ -23,7 +23,7 @@ class TestTensor:
     def test_construction0(self, t_class, data, dtype, name):
         """Test construction of tensors that hold n-d data at graph creation."""
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             kwargs = {}
@@ -67,7 +67,7 @@ class TestTensor:
     def test_construction1(self, t_class):
         """Test construction of tensors that hold 0-d data at graph creation."""
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             t = ctor_map[t_class](1.0)
@@ -78,7 +78,7 @@ class TestTensor:
     def test__ensure_tensor(self):
         """Test the `_ensure_tensor()` method."""
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
@@ -93,7 +93,7 @@ class TestTensor:
     def test_from_pb_type(self):
         """Test the from_pb_tensor returns the correct python type"""
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
@@ -108,15 +108,15 @@ class TestTensor:
 
     def test_get_ir(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
-            assert a.ir() == ir
+            assert a.ir == ir
 
     def test_cmp(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
@@ -126,34 +126,34 @@ class TestTensor:
             str(a)  # test __repr__
 
     def test_iter_dunder(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(0)
             l = []
             with pytest.raises(ValueError):
                 l += x
 
     def test_contains_dunder(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(0)
             with pytest.raises(TypeError):
                 1 in x
 
     def test_len(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable([[
                 1,
             ], [2.]])
             assert len(x) == 2
 
     def test_len_scalar(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(1)
             with pytest.raises(ValueError):
                 len(x)
 
     def test_subgraph_variable_error(self):
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             subgraph = ir.create_empty_graph()
             with subgraph:
                 with pytest.raises(ValueError):
@@ -164,20 +164,20 @@ class TestTensor:
             return a + a
 
         ir = pir.Ir()
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.variable([1], name="bob")
             g = ir.create_graph(subgraph1, a)
 
             assert repr(a) == 'Tensor[bob popart.ir.dtypes.int32 (1,)]'
             assert repr(
-                g.get_input_tensors()[0]
+                g.inputs[0]
             ) == 'Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popart.ir.dtypes.int32 (1,)]'
 
 
 class TestTensorIpuAndTileSet:
     def test_ipu_undefined(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
@@ -187,7 +187,7 @@ class TestTensorIpuAndTileSet:
 
     def test_ipu_defined_default(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1) + 0
@@ -195,7 +195,7 @@ class TestTensorIpuAndTileSet:
 
     def test_ipu_set(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             with pir.ipu(1):
@@ -204,7 +204,7 @@ class TestTensorIpuAndTileSet:
 
     def test_tile_set_undefined(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1)
@@ -214,7 +214,7 @@ class TestTensorIpuAndTileSet:
 
     def test_tile_set_compute(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             a = pir.variable(1) + 0
@@ -222,7 +222,7 @@ class TestTensorIpuAndTileSet:
 
     def test_ipu_defined_default(self):
         ir = pir.Ir()
-        main = ir.main_graph()
+        main = ir.main_graph
 
         with main:
             with pir.io_tiles():
@@ -232,26 +232,26 @@ class TestTensorIpuAndTileSet:
 
 class TestTensorGetItem:
     def test_integer_slicing(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(np.arange(10))
             y = x[1]
             assert y.shape == tuple()  # Empty as dim squeezed
 
     def test_slice_slicing(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(np.random.rand(10, 10))
             y = x[1:3]
             assert y.shape == (2, 10)
 
     def test_both_int_and_slice_slicing(self):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(np.random.rand(10, 10))
             y = x[1:3, 2]
             assert y.shape == (2, )
 
     @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
     def test_integer_indexing_tensor(self, tensorlike):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             indices = [[0, 1], [1, 1]]
             indices = tensorlike(indices)
             x = pir.variable(np.random.rand(10, 10))
@@ -260,7 +260,7 @@ class TestTensorGetItem:
 
     @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
     def test_bool_indexing_tensor(self, tensorlike):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             mask = [[True, False], [True, False], [False, True], [True, True]]
             mask = tensorlike(mask)
             x = pir.variable(np.random.rand(4, 2))
@@ -269,7 +269,7 @@ class TestTensorGetItem:
 
     @pytest.mark.parametrize('tensorlike', [pir.variable, np.array, list])
     def test_bool_indexing_tensor_broadcast(self, tensorlike):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             mask = [[True], [True], [False], [True]]
             mask = tensorlike(mask)
             x = pir.variable(np.random.rand(4, 2))
@@ -278,7 +278,7 @@ class TestTensorGetItem:
 
     @pytest.mark.parametrize("key", ['a', True, 1.1])
     def test_bad_key(self, key):
-        with pir.Ir().main_graph():
+        with pir.Ir().main_graph:
             x = pir.variable(np.arange(2))
             with pytest.raises(TypeError):
                 y = x[key]

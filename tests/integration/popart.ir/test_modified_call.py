@@ -12,7 +12,7 @@ import test_util as tu
 
 def test_modified():
     ir = pir.Ir()
-    g = ir.main_graph()
+    g = ir.main_graph
 
     with g, pir.in_sequence():
         x = pir.variable(1)
@@ -26,16 +26,16 @@ def test_modified():
         ops.host_store(x_non_modify_stream, x)
 
         info = ops.call_with_info(sg, x)
-        info.set_op_input_modified(x)
+        info.set_parent_input_modified(x)
         x_modifiy_stream = pir.d2h_stream(x.shape, x.dtype)
         ops.host_store(x_modifiy_stream, x)
 
     ir = ir._pb_ir
     dataFlow = popart.DataFlow(batchesPerStep=1,
                                anchorTensors={
-                                   x_non_modify_stream.tensor_id():
+                                   x_non_modify_stream.tensor_id:
                                    popart.AnchorReturnType("All"),
-                                   x_modifiy_stream.tensor_id():
+                                   x_modifiy_stream.tensor_id:
                                    popart.AnchorReturnType("All"),
                                })
     ir.setDataFlow(dataFlow)
@@ -62,5 +62,5 @@ def test_modified():
     session.weightsFromHost()
     session.run(stepio)
 
-    assert anchors[x_non_modify_stream.tensor_id()] == 1
-    assert anchors[x_modifiy_stream.tensor_id()] == 2
+    assert anchors[x_non_modify_stream.tensor_id] == 1
+    assert anchors[x_modifiy_stream.tensor_id] == 2

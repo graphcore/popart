@@ -7,7 +7,7 @@ import popart.ir.ops as ops
 class TestIpuCopy:
     def test_copy_to(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             h2d = pir.h2d_stream((), pir.dtypes.float32)
@@ -22,7 +22,7 @@ class TestIpuCopy:
 
     def test_copy_from(self):
         ir = pir.Ir()
-        g = ir.main_graph()
+        g = ir.main_graph
 
         with g:
             with pir.io_tiles():

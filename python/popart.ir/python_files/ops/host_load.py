@@ -2,7 +2,7 @@
 from typing import Optional
 
 import popart._internal.ir as _ir
-from popart.ir.context import get_current_context, op_debug_context
+from popart.ir.context import get_current_context, op_debug_context, gmg
 from popart.ir.tensor import Tensor
 from popart.ir.streams import HostToDeviceStream
 from .init import init
@@ -35,10 +35,10 @@ def host_load(h2d_stream: HostToDeviceStream,
 
     shape = h2d_stream.shape
     dtype = h2d_stream.dtype
-    stream_tensor_id = h2d_stream.tensor_id()
+    stream_tensor_id = h2d_stream.tensor_id
 
     if name is None:
-        pb_main = g.ir().main_graph()._pb_graph
+        pb_main = gmg()._pb_graph
         name = _ir.removeScope(pb_main, stream_tensor_id)
 
     init_tensor = init(shape, dtype, name + '_init')

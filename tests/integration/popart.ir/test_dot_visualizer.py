@@ -123,7 +123,7 @@ def build_model_with_dot_checkpoints(ir: pir.Ir,
         a_h2d (HostToDeviceStream): The host to device stream
         f_d2h (DeviceToHostStream): The device to host stream
     """
-    main = ir.main_graph()
+    main = ir.main_graph
 
     with main:
         a_h2d = pir.h2d_stream(_TENSOR_SHAPE, pir.float32, name="a_stream")

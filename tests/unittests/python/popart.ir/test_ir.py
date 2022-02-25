@@ -20,7 +20,7 @@ def test_constructor():
     # The low-level IR should have only one graph - the main graph.
     assert len(ir._pb_ir.getAllGraphs()) == 1
 
-    main_graph = ir.main_graph()
+    main_graph = ir.main_graph
     assert isinstance(main_graph, pir.Graph)
 
 
@@ -61,7 +61,7 @@ class TestCreateGraph:
         def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
             return (x * c) + y
 
-        with ir.main_graph():
+        with ir.main_graph:
             v1 = pir.variable(1)
             v2 = pir.variable(2)
 
@@ -70,7 +70,7 @@ class TestCreateGraph:
             z, = ops.call(g, v1, v2)
 
         assert len(g._by_ref_inputs) == 1
-        x = g.get_input_tensors()[0]
+        x = g.inputs[0]
         assert x == g._by_ref_inputs.pop()
         assert x.name == "x"
 
@@ -82,10 +82,10 @@ class TestCreateGraph:
                 self.y: pir.Tensor = None
 
             def build(self, a, b):
-                self.y = pir.subgraph_input((1, ), pir.int32, "y")
+                self.y = pir.graph_input((1, ), pir.int32, "y")
                 return a + b + self.y
 
-        with ir.main_graph():
+        with ir.main_graph:
             a = pir.variable([1])
             b = pir.variable([2])
             y = pir.variable([3])
@@ -93,10 +93,10 @@ class TestCreateGraph:
             bar = Bar()
             g = ir.create_graph(bar, a, b)
 
-            y1, = ops.call(g, a, b, subgraph_in_to_parent_in={bar.y: y})
+            y1, = ops.call(g, a, b, inputs_dict={bar.y: y})
 
-        assert len(g.get_input_tensors()) == 3
-        assert len(g.get_output_tensors()) == 1
+        assert len(g.inputs) == 3
+        assert len(g.outputs) == 1
 
     def test_bad_num_arguments(self):
         ir = pir.Ir()
@@ -104,7 +104,7 @@ class TestCreateGraph:
         def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
             return (x * c) + y
 
-        with ir.main_graph():
+        with ir.main_graph:
             v1 = pir.variable(1)
             v2 = pir.variable(2)
             v3 = pir.variable(2)
@@ -123,7 +123,7 @@ class TestCreateGraph:
         def foo(_):  # x is an unused argument
             pass
 
-        with ir.main_graph():
+        with ir.main_graph:
             v1 = pir.variable(1)
 
             # Mixed args: Tensor + non-Tensor
@@ -140,7 +140,7 @@ class TestCreateGraph:
         def foo(*_):  # x is an unused argument
             pass
 
-        with ir.main_graph():
+        with ir.main_graph:
             v1 = pir.variable(1)
 
             # Mixed args: Tensor + non-Tensor
@@ -154,7 +154,7 @@ class TestCreateGraph:
     def test_default_args(self):
         ir = pir.Ir()
 
-        with ir.main_graph():
+        with ir.main_graph:
             x = pir.variable(1)
 
             def sum_xab(x, a=3):
@@ -164,9 +164,9 @@ class TestCreateGraph:
 
             y, = ops.call(g, x)
 
-        assert len(g.get_input_tensors()) == 1
-        assert len(g.get_output_tensors()) == 1
-        assert len(g.get_constants()) == 1
+        assert len(g.inputs) == 1
+        assert len(g.outputs) == 1
+        assert len(g.constants) == 1
 
     @pytest.mark.parametrize("type_", [pir.Tensor, pir.TensorByRef])
     def test_variable_args_and_outputs(self, type_):
@@ -181,7 +181,7 @@ class TestCreateGraph:
                     outputs += [x]
             return outputs
 
-        with ir.main_graph():
+        with ir.main_graph:
             x1 = pir.variable(1)
             x2 = pir.variable(2)
 
@@ -189,8 +189,8 @@ class TestCreateGraph:
 
             y1, y2 = ops.call(g, x1, x2)
 
-        assert len(g.get_input_tensors()) == 2
-        assert len(g.get_output_tensors()) == 2
+        assert len(g.inputs) == 2
+        assert len(g.outputs) == 2
         if type_ is pir.TensorByRef:
             assert len(g._by_ref_inputs) == 2
 
@@ -207,7 +207,7 @@ class TestCreateGraph:
                     outputs += [x]
             return outputs
 
-        with ir.main_graph():
+        with ir.main_graph:
             x1 = pir.variable(1)
             x2 = pir.variable(2)
 
@@ -215,8 +215,8 @@ class TestCreateGraph:
 
             y1, y2 = ops.call(g, [x1, x2])
 
-        assert len(g.get_input_tensors()) == 2
-        assert len(g.get_output_tensors()) == 2
+        assert len(g.inputs) == 2
+        assert len(g.outputs) == 2
         if type_ is pir.TensorByRef:
             assert len(g._by_ref_inputs) == 2
 
@@ -234,7 +234,7 @@ class TestCreateGraph:
                     outputs += [x]
             return outputs
 
-        with ir.main_graph():
+        with ir.main_graph:
             x1 = pir.variable(1)
             x2 = pir.variable(2)
 
@@ -242,8 +242,8 @@ class TestCreateGraph:
 
             y1, y2 = ops.call(g, x1, x2)
 
-        assert len(g.get_input_tensors()) == 2
-        assert len(g.get_output_tensors()) == 2
+        assert len(g.inputs) == 2
+        assert len(g.outputs) == 2
         if type_ is pir.TensorByRef:
             assert len(g._by_ref_inputs) == 2
 
@@ -263,7 +263,7 @@ class TestCreateGraph:
                 x += t
             return x
 
-        with ir.main_graph():
+        with ir.main_graph:
             x = [pir.variable(1) for i in range(8)]
 
             g = ir.create_graph(sum_all,
@@ -277,8 +277,8 @@ class TestCreateGraph:
 
             y, = ops.call(g, *x)
 
-        assert len(g.get_input_tensors()) == len(x)
-        assert len(g.get_output_tensors()) == 1
+        assert len(g.inputs) == len(x)
+        assert len(g.outputs) == 1
         assert len(g._by_ref_inputs) == 2
 
     def test_bad_output(self):
@@ -287,7 +287,7 @@ class TestCreateGraph:
         def fun():
             return True
 
-        with ir.main_graph():
+        with ir.main_graph:
             with pytest.raises(ValueError):
                 g = ir.create_graph(fun)
 
@@ -297,7 +297,7 @@ class TestCreateGraph:
         def fun():
             return [True, True]
 
-        with ir.main_graph():
+        with ir.main_graph:
             with pytest.raises(ValueError):
                 g = ir.create_graph(fun)
 
@@ -307,14 +307,14 @@ class TestCreateGraph:
         def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
             return (x * c) + y
 
-        with ir.main_graph():
+        with ir.main_graph:
             v1 = pir.variable(1)
             v2 = pir.variable(2)
 
             g = ir.create_graph(foo, v1.spec, v2.spec, 5)
 
         assert len(g._by_ref_inputs) == 1
-        x = g.get_input_tensors()[0]
+        x = g.inputs[0]
         assert x == g._by_ref_inputs.pop()
         assert x.name == "x"
 
@@ -324,12 +324,12 @@ class TestCreateGraph:
         def foo(x: pir.TensorByRef, y: pir.Tensor, c: int):
             return (x * c) + y
 
-        with ir.main_graph():
+        with ir.main_graph:
             g = ir.create_graph(foo, pir.TensorSpec((), pir.int32),
                                 pir.TensorSpec((), pir.int32), 5)
 
         assert len(g._by_ref_inputs) == 1
-        x = g.get_input_tensors()[0]
+        x = g.inputs[0]
         assert x == g._by_ref_inputs.pop()
         assert x.name == "x"
 
@@ -347,7 +347,7 @@ def test_get_all_d2h_streams():
 
     ir = pir.Ir()
 
-    with ir.main_graph():
+    with ir.main_graph:
         v = pir.variable(1)
         d = pir.d2h_stream(v.shape, v.dtype)
         ops.host_store(d, v)
@@ -357,25 +357,25 @@ def test_get_all_d2h_streams():
         h = pir.h2d_stream(v.shape, v.dtype)
         w = v + 1
 
-    expected_d2h_ids = [d.tensor_id(), e.tensor_id()]
+    expected_d2h_ids = [d.tensor_id, e.tensor_id]
     # No ops.host_store along stream f, therefore it is not expected.
-    unexpected_d2h_ids = [f.tensor_id(), w.id, v.id, h.tensor_id()]
+    unexpected_d2h_ids = [f.tensor_id, w.id, v.id, h.tensor_id]
 
     d2hs = ir.get_all_d2h_streams()
 
     assert len(d2hs) == 2
     _pb_mg = ir._pb_ir.getMainGraph()
     for d2h in d2hs:
-        assert d2h.tensor_id() in expected_d2h_ids
-        assert d2h.tensor_id() not in unexpected_d2h_ids
-        assert d2h.tensor_id() in _pb_mg
+        assert d2h.tensor_id in expected_d2h_ids
+        assert d2h.tensor_id not in unexpected_d2h_ids
+        assert d2h.tensor_id in _pb_mg
 
 
 def test_get_all_h2d_streams():
 
     ir = pir.Ir()
 
-    with ir.main_graph():
+    with ir.main_graph:
         v = pir.variable(1)
         d = pir.h2d_stream(v.shape, v.dtype)
         a = ops.host_load(d)
@@ -386,15 +386,15 @@ def test_get_all_h2d_streams():
         w = v + a + b
         ops.host_store(g, w)
 
-    expected_h2d_ids = [d.tensor_id(), e.tensor_id()]
+    expected_h2d_ids = [d.tensor_id, e.tensor_id]
     # No ops.host_store along stream f, therefore it is not expected.
-    unexpected_h2d_ids = [w.id, v.id, a.id, b.id, f.tensor_id(), g.tensor_id()]
+    unexpected_h2d_ids = [w.id, v.id, a.id, b.id, f.tensor_id, g.tensor_id]
 
     h2ds = ir.get_all_h2d_streams()
 
     assert len(h2ds) == 2
     _pb_mg = ir._pb_ir.getMainGraph()
     for h2d in h2ds:
-        assert h2d.tensor_id() not in unexpected_h2d_ids
-        assert h2d.tensor_id() in expected_h2d_ids
-        assert h2d.tensor_id() in _pb_mg
+        assert h2d.tensor_id not in unexpected_h2d_ids
+        assert h2d.tensor_id in expected_h2d_ids
+        assert h2d.tensor_id in _pb_mg
