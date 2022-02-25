@@ -111,38 +111,34 @@ snap::program::Sequence RNNOpx::getFwdStepProg(snap::Tensor &bias,
                                       graph());
 
   // Input value to be worked on in this iteration
-  poplar::Tensor X_slice =
-      popops::dynamicSlice(graph().getPoplarGraph(),
-                           X,
-                           index,
-                           {0},
-                           {1},
-                           fwdStepProg.getPoplarSequence(),
-                           debugContext("rnn_fwd_dynamic_slice"))[0];
+  poplar::Tensor X_slice = popops::dynamicSlice(graph().getPoplarGraph(),
+                                                X,
+                                                index,
+                                                {0},
+                                                {1},
+                                                fwdStepProg.getPoplarSequence(),
+                                                debugContext("rnn/X_slice"))[0];
+  // batch_size x input_size, batch_size x hidden_size -> batch_size x
+  // (input_size + hidden_size)
+  auto XH = poplar::concat(X_slice, H_prev[0].getPoplarTensor(), 1);
+  // hidden_size x input_size, hidden_size x hidden_size -> hidden_size x
+  // (input_size + hidden_size)
+  auto WR = poplar::concat(W[0], R[0], 1);
+  // X[i]*W + h[i]*R
+  poplar::Tensor XW_HR = poplin::matMul(graph().getPoplarGraph(),
+                                        XH,
+                                        WR.transpose(),
+                                        fwdStepProg.getPoplarSequence(),
+                                        debugContext("rnn/XW+HR"),
+                                        {},
+                                        cache);
 
-  // Wx = W * x
-  auto Wx = poplin::matMul(graph().getPoplarGraph(),
-                           X_slice,
-                           W[0].transpose(),
-                           fwdStepProg.getPoplarSequence(),
-                           debugContext("rnn/Wx"),
-                           {},
-                           cache);
-  // Rh = R * h
-  auto Rh = poplin::matMul(graph().getPoplarGraph(),
-                           H_prev[0].getPoplarTensor(),
-                           R[0].transpose(),
-                           fwdStepProg.getPoplarSequence(),
-                           debugContext("rnn/Rh"),
-                           {},
-                           cache);
-  // output[i][0] = Rh + Wx + b
-  auto H_next_expression = pe::Add(pe::Add(pe::_1, pe::_2), pe::_3);
-  auto H_next            = popops::map(graph().getPoplarGraph(),
-                            H_next_expression,
-                            {Rh, Wx, bias.getPoplarTensor()},
+  // H_next = XH + WR + b
+  auto H_next = popops::add(graph().getPoplarGraph(),
+                            XW_HR,
+                            bias.getPoplarTensor(),
                             fwdStepProg.getPoplarSequence(),
-                            debugContext("rnn/Wx+Rh+b"))
+                            debugContext("rnn/XW+HR+b"))
                     .expand({0});
   // Apply nonlinearity
   popnn::nonLinearityInPlace(graph().getPoplarGraph(),
@@ -152,10 +148,11 @@ snap::program::Sequence RNNOpx::getFwdStepProg(snap::Tensor &bias,
                              debugContext("rnn/activation"));
 
   // Copy H_next to H_prev for next iteration
-  fwdStepProg.add(snap::program::Copy(snap::Tensor{H_next, graph()},
-                                      H_prev,
-                                      false,
-                                      debugContext("initialH_copy_to_Hprev")));
+  fwdStepProg.add(
+      snap::program::Copy(snap::Tensor{H_next, graph()},
+                          H_prev,
+                          false,
+                          debugContext("rnn/H_next_copy_to_H_prev")));
 
   // Copy current hidden_state slice to output tensor
   popops::dynamicUpdate(graph().getPoplarGraph(),
@@ -512,6 +509,8 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &input_grad,
   auto &rnn_grad_op            = getOp<RNNGradOp>();
   auto activation              = convert(rnn_grad_op.activation_attribute);
   auto cache                   = &dv_p->matmulCache;
+  auto input_size              = rnn_grad_op.input_size;
+  auto hidden_size             = rnn_grad_op.hidden_size;
   const poplar::Type elem_type = getTensorType();
   // get input tensors of forward op
   poplar::Tensor forward_input =
@@ -552,6 +551,7 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &input_grad,
                                        dh_prev[0].getPoplarTensor(),
                                        bwdStepProg.getPoplarSequence(),
                                        debugContext("rnngrad/da"));
+
   // dh_next = full_output_grad[i]
   poplar::Tensor dh_next =
       popops::dynamicSlice(graph().getPoplarGraph(),
@@ -562,31 +562,31 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &input_grad,
                            bwdStepProg.getPoplarSequence(),
                            debugContext("rnngrad/dh_next"))[0];
 
-  // Add recursive part of the hidden gradient
-  // dh_next += da * R[0]
-  poplin::matMulAcc(graph().getPoplarGraph(),
-                    dh_next[0], // batch_size x hidden_size
-                    1,          // number to multiply matmul by
-                    da,         // batch_size x hidden_size
-                    R[0],       // hidden_size x hidden_size
-                    bwdStepProg.getPoplarSequence(),
-                    debugContext("rnngrad/dh_next+=da*R"),
-                    {},
-                    cache);
+  auto WR = poplar::concat(W[0], R[0], 1);
 
-  // input_grad_next = da * W[0]
-  auto input_grad_next = poplin::matMul(graph().getPoplarGraph(),
-                                        da,   // batch_size, hidden_size
-                                        W[0], // hidden_size, input_size
-                                        bwdStepProg.getPoplarSequence(),
-                                        debugContext("rnngrad/da*W"),
-                                        {},
-                                        cache);
+  // Combine multiplications dX = da * W and dh_recursive = da * R into a single
+  // multiplication
+  auto dX_dh = poplin::matMul(graph().getPoplarGraph(),
+                              da,
+                              WR,
+                              bwdStepProg.getPoplarSequence(),
+                              debugContext("rnngrad/dX_dh=da*WR"));
 
-  // input_grad[i] = input_grad_next
+  // Retrieve the individual parts of the multiplication above
+  auto dX           = dX_dh.slice(0, input_size, 1);
+  auto dh_recursive = dX_dh.slice(input_size, input_size + hidden_size, 1);
+
+  // dh_next += dh_recursive
+  popops::addInPlace(graph().getPoplarGraph(),
+                     dh_next,
+                     dh_recursive,
+                     bwdStepProg.getPoplarSequence(),
+                     debugContext("rnngrad/dh_next+=dh_recursive"));
+
+  // input_grad[i] = dX
   popops::dynamicUpdate(graph().getPoplarGraph(),
                         input_grad.getPoplarTensor(),
-                        input_grad_next.expand({0}),
+                        dX.expand({0}),
                         index,
                         {0},
                         {1},
@@ -604,18 +604,6 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &input_grad,
                            debugContext("rnngrad/forward_input_next"))[0],
       graph()};
 
-  // dW += da.transpose() * X[i]
-  poplin::matMulAcc(
-      graph().getPoplarGraph(),
-      input_weights_grad[0].getPoplarTensor(), // hidden_size x input_size
-      1,                                       // number to multiply matmul by
-      da.transpose(),                          // hidden_size x batch_size
-      forward_input_next.getPoplarTensor(),    // batch_size x hidden_size
-      bwdStepProg.getPoplarSequence(),
-      debugContext("rnngrad/da*forward_input"),
-      {},
-      cache);
-
   // forward_output_next = forward_output[i]
   snap::Tensor forward_output_next = snap::Tensor{
       popops::dynamicSlice(graph().getPoplarGraph(),
@@ -626,18 +614,27 @@ RNNGradOpx::getBwdStepProg(snap::Tensor &input_grad,
                            bwdStepProg.getPoplarSequence(),
                            debugContext("rnngrad/forward_output_next"))[0],
       graph()};
-
-  // dR += da.transpose() * h[i]
-  poplin::matMulAcc(
-      graph().getPoplarGraph(),
-      recurrence_weights_grad[0].getPoplarTensor(), // hidden_size x hidden_size
-      1,                                        // number to multiply matmul by
-      da.transpose(),                           // hidden_size x batch_size
-      forward_output_next[0].getPoplarTensor(), // batch_size x hidden_size
-      bwdStepProg.getPoplarSequence(),
-      debugContext("rnngrad/da*forward_output"),
-      {},
-      cache);
+  // hidden_size x input_size, hidden_size x hidden_size -> hidden_size x
+  // (input_size + hidden_size)
+  auto dW_dR = poplar::concat(input_weights_grad[0].getPoplarTensor(),
+                              recurrence_weights_grad[0].getPoplarTensor(),
+                              1);
+  // batch_size x input_size, batch_size x hidden_size -> batch_size x
+  // (input_size + hidden_size)
+  auto X_H = poplar::concat(forward_input_next.getPoplarTensor(),
+                            forward_output_next[0].getPoplarTensor(),
+                            1);
+  // Combine operations dW += da.transpose() * X[i] and dR += da.transpose() *
+  // h[i] into a single operation
+  poplin::matMulAcc(graph().getPoplarGraph(),
+                    dW_dR,          // hidden_size x (input_size + hidden_size)
+                    1,              // number to multiply matmul by
+                    da.transpose(), // hidden_size x batch_size
+                    X_H,            // batch_size x (input_size + hidden_size)
+                    bwdStepProg.getPoplarSequence(),
+                    debugContext("rnngrad/dW_dR+=da*X_H"),
+                    {},
+                    cache);
 
   if (rnn_grad_op.hasBiasesInput) {
     // bias_grad[0] += da
