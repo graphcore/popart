@@ -284,11 +284,10 @@ def call_with_info(graph: Graph,
     def id_like_subgraph_tensor(tensor_id: str) -> str:
         return g._create_tensor_id(_ir.removeScope(pb_sg, tensor_id))
 
-    for pb_sg_out_id in pb_sg.getOutputIds():
-        sgOutIdx = pb_sg.getOutputIndex(pb_sg_out_id)
-        callOutIdx = pb_callop.subgraphOutToOpOutIndex(sgOutIdx)
+    for sg_out_idx, pb_sg_out_id in enumerate(pb_sg.getOutputIds()):
+        call_out_idx = pb_callop.subgraphOutToOpOutIndex(sg_out_idx)
         parent_tensor_id = id_like_subgraph_tensor(pb_sg_out_id)
-        pb_callop.createAndConnectOutTensor(callOutIdx, parent_tensor_id)
+        pb_callop.createAndConnectOutTensor(call_out_idx, parent_tensor_id)
 
     pb_callop.setup()
 
