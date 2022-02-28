@@ -235,7 +235,7 @@ class TestRepeat:
         test_subgraph(add_weight_graph1)
         test_subgraph(add_weight_graph2)
 
-    @pytest.mark.parametrize("repeat_count", [4, 10])
+    @pytest.mark.parametrize("repeat_count", [0, 1, 4, 10])
     def test_repeat_simple_addition(self, repeat_count: int):
         """Test that a simple x = x + 1 repeated `repeat_count` times will
         produce x = `repeat_count`
@@ -355,7 +355,7 @@ class TestRepeat:
             assert out.shape == r_y[i, :, :].shape
             assert np.allclose(r_y[i, :, :], out, rtol=1e-07, atol=1e-06)
 
-    @pytest.mark.parametrize("repeat_count", [-10, 0, 1])
+    @pytest.mark.parametrize("repeat_count", [-10, -1])
     def test_repeat_error(self, repeat_count: int):
         """Test an error is thrown with incorrect repeat_count
 
@@ -382,8 +382,7 @@ class TestRepeat:
                                     linear.W: W,
                                     linear.b: b
                                 })
-            assert e_info.value.args[0].startswith(
-                "Repeat trip count for repeat of")
+            assert e_info.value.args[0].startswith("Repeat count must be >= 0")
 
     def test_repeat_io_error(self):
         """Test an error is thrown when len(inputs) < len(outputs)"""

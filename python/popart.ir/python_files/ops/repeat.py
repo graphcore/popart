@@ -68,7 +68,7 @@ def repeat(graph: Graph,
             Check when called if all inputs have been provided.
 
     Throws:
-        ValueError: If repeat_count <= 1.
+        ValueError: If repeat_count < 0.
         ValueError: If the number of subgraph inputs < subgraph outputs.
 
     Returns:
@@ -184,9 +184,10 @@ def repeat_with_info(
         the repeat op.
     """
 
-    if repeat_count <= 1:
-        raise ValueError(f"Repeat trip count for repeat of {graph.name} "
-                         f"of {repeat_count} must be > 1.")
+    if repeat_count < 0:
+        raise ValueError(
+            f"Repeat count must be >= 0. Repeat count: {repeat_count}. Graph: {graph}"
+        )
 
     inputs_dict = inputs_dict if (inputs_dict is not None) else {}
 
