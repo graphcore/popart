@@ -10,11 +10,9 @@
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
-#include <popart/op/concat.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/div.hpp>
-#include <popart/op/gather.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/incrementmod.hpp>
@@ -22,7 +20,6 @@
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/tensorindex.hpp>
@@ -49,8 +46,8 @@ bool producesOutputsOfTypeFp16(const Op *op) {
 int numberOfConsumers(const Op *op) {
   std::set<Op *> consumers;
   for (Tensor *tensor : op->output->tensors()) {
-    for (Op *op : tensor->consumers.getOps()) {
-      consumers.insert(op);
+    for (Op *consumer : tensor->consumers.getOps()) {
+      consumers.insert(consumer);
     }
   }
 
@@ -110,12 +107,6 @@ bool producesNonViewChangingGradientTensor(const Op *op) {
   }
   // Doesn't lead to a VarUpdateOp, so we shouldn't care about its statistics
   if (numberOfConsumers(op) == 0) {
-    return false;
-  }
-  // Non-view-changing ops, but ones that will definitely not cause overflow.
-  if (op->isConvertibleTo<ConcatOp>() || op->isConvertibleTo<ConcatGradOp>() ||
-      op->isConvertibleTo<GatherOp>() || op->isConvertibleTo<GatherGradOp>() ||
-      op->isConvertibleTo<SliceOp>() || op->isConvertibleTo<SliceGradOp>()) {
     return false;
   }
 
