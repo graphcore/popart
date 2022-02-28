@@ -8,14 +8,15 @@ import popart._internal.ir as _ir
 from typing import Any, Iterable, Optional, Tuple
 
 
-class _Stream:
+class Stream:
     def __init__(self):
         raise NotImplementedError(
-            "Cannot construct a popart.ir._Stream directly.")
+            "Cannot construct a popart.ir.Stream directly. Use `h2d_stream` or `d2h_stream`."
+        )
 
     @classmethod
     def _from_tensor(cls, tensor: Tensor) -> Tensor:
-        """Construct _Stream object from a tensor."""
+        """Construct Stream object from a tensor."""
         self = super().__new__(cls)
         self._stream_tensor = tensor
         return self
@@ -47,14 +48,14 @@ class _Stream:
     def __eq__(self, other: Any) -> bool:
         """Performs an equality check."""
         return isinstance(
-            other, _Stream) and self._stream_tensor == other._stream_tensor
+            other, Stream) and self._stream_tensor == other._stream_tensor
 
     def __str__(self) -> str:
         """Returns a string representation."""
         return str(self._stream_tensor)
 
 
-class HostToDeviceStream(_Stream):
+class HostToDeviceStream(Stream):
     """
     A host-to-device stream in the IR.
 
@@ -69,7 +70,7 @@ class HostToDeviceStream(_Stream):
         return f"HostToDeviceStream {super().__str__()}"
 
 
-class DeviceToHostStream(_Stream):
+class DeviceToHostStream(Stream):
     """
     A device-to-host stream in the IR.
 
