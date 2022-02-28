@@ -131,6 +131,7 @@ disable=abstract-method,
         no-name-in-module,
         no-self-use,
         no-value-for-parameter,
+        not-context-manager,  # Added due to false positives for `with ir.main`
         pointless-statement,
         pointless-string-statement,
         protected-access,
