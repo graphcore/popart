@@ -54,7 +54,7 @@ with open(sys.argv[1], "w") as f:
         package = importlib.import_module(package_name)
         for name, obj in inspect.getmembers(package, inspect.isfunction):
             print(
-                f"   * - :py:func:`{obj.__name__}<popart-python-api:{package_name}.{obj.__name__}>`",
+                f"   * - :py:func:`~{package_name}.{obj.__name__}`",
                 file=f)
             print(f"     - {get_docstring_summary(obj)}", file=f)
             print(f"   ", file=f)
