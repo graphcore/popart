@@ -228,8 +228,8 @@ set(PYTHON_API_HTML_NAME popart-python-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(CPP_API_PDF_NAME popart-cpp-api-${VERSION}-${SNAPSHOT}.pdf)
 set(CPP_API_HTML_NAME popart-cpp-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
-set(IR_USER_GUIDE_PDF_NAME popart-ir-user-guide-${VERSION}-${SNAPSHOT}.pdf)
-set(IR_USER_GUIDE_HTML_NAME popart-ir-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
+set(IR_USER_GUIDE_PDF_NAME popxl-user-guide-${VERSION}-${SNAPSHOT}.pdf)
+set(IR_USER_GUIDE_HTML_NAME popxl-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
 
 include(CPack)
 
@@ -301,11 +301,11 @@ if(BUILD_DOCS)
                              "    file: ${CPP_API_HTML_NAME}\n"
                              "    type: html_zip\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: popart.ir user guide (PDF)\n"
+  string(APPEND PKG_ELEMENTS "  - name: PopXL user guide (PDF)\n"
                              "    file: ${IR_USER_GUIDE_PDF_NAME}\n"
                              "    type: pdf\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: popart.ir user guide (HTML)\n"
+  string(APPEND PKG_ELEMENTS "  - name: PopXL user guide (HTML)\n"
                              "    file: ${IR_USER_GUIDE_HTML_NAME}\n"
                              "    type: html_zip\n")
 

@@ -1,5 +1,5 @@
-popart.ir User Guide and API (experimental)
-===========================================
+PopXL User Guide and API (experimental)
+=======================================
 
 .. toctree::
     :maxdepth: 4

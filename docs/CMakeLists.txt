@@ -180,8 +180,8 @@ if (BUILD_DOCS)
   # Helper function to build html and pdf docs.
   function(build_popart_doc DOC_SOURCE_DIR DOC_TARGET DOC_TITLE DOC_VERSION)
     # Use sphinx-build to build a documentation item.
-    set(DOC_TARGET_HTML "${CMAKE_CURRENT_BINARY_DIR}/html/popart_${DOC_TARGET}")
-    set(DOC_TARGET_PDF "${CMAKE_CURRENT_BINARY_DIR}/latex/popart_${DOC_TARGET}.pdf")
+    set(DOC_TARGET_HTML "${CMAKE_CURRENT_BINARY_DIR}/html/${DOC_TARGET}")
+    set(DOC_TARGET_PDF "${CMAKE_CURRENT_BINARY_DIR}/latex/${DOC_TARGET}.pdf")
 
     # These dependencies are evaluated at build time. Adding these files as
     # dependencies will ensure the docs are rebuilt when they change.
@@ -219,10 +219,10 @@ if (BUILD_DOCS)
       VERBATIM)
   endfunction()
 
-  build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "user_guide" "PopART User Guide" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "api_cpp" "PopART C++ API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "api_python" "PopART Python API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popart_ir" "ir_user_guide" "popart.ir User Guide and API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "popart_user_guide" "PopART User Guide" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "popart_api_cpp" "PopART C++ API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "popart_api_python" "PopART Python API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popart_ir" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
 
   add_custom_target(ug_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
@@ -247,9 +247,9 @@ if (BUILD_DOCS)
 
   add_custom_target(ir_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_ir_user_guide
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popxl_user_guide
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_ir_user_guide
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popxl_user_guide
   )
 
   # Make a copy of the support_ops doc to be uploaded to Artifactory so
@@ -268,11 +268,11 @@ if (BUILD_DOCS)
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf ${PROJECT_BINARY_DIR}/${CPP_API_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf ${PROJECT_BINARY_DIR}/${PYTHON_API_PDF_NAME}
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_PDF_NAME}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
-            ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf
+            ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf
   )
 
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION docs
@@ -282,7 +282,7 @@ if (BUILD_DOCS)
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
-    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_ir_user_guide.pdf
+    ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf
     DESTINATION docs/pdf
     COMPONENT popart-docs)
 
