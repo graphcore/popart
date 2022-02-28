@@ -50,4 +50,9 @@ def replicated_all_gather(t: Tensor,
         ins, {0: g._create_tensor_id(t.name + "_all_gathered")}, opid, group,
         settings)
 
-    return Tensor._from_pb_tensor(op.outTensor(0))
+    out = Tensor._from_pb_tensor(op.outTensor(0))
+
+    if t.meta_shape:
+        out = out.reshape_(t.meta_shape)
+
+    return out

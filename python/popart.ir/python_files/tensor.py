@@ -307,13 +307,13 @@ class Tensor:
 
     @debug_context_frame_offset(1)
     def detach(self) -> 'Tensor':
-        """Return detached tensor."""
+        """Returns the detached tensor."""
         import popart.ir.ops as ops
         return ops.detach(self)
 
     @debug_context_frame_offset(1)
     def detach_(self) -> 'Tensor':
-        """Return detached tensor inplace."""
+        """Returns this tensor detached inplace."""
         import popart.ir.ops as ops
         return ops.detach_(self)
 
@@ -715,34 +715,60 @@ def variable(
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def remote_variable(var: Variable, remote_buffer: "RemoteBuffer",
-                    offset: int) -> Constant:
-    """Store the tensor in a remote buffer in Streaming Memory.
+def remote_variable(data: Union[HostTensor, float, int],
+                    remote_buffer: "RemoteBuffer",
+                    offset: int = 0,
+                    dtype: Optional[dtypes.dtype] = None,
+                    name: Optional[str] = None,
+                    downcast: bool = True,
+                    num_shards: int = 1) -> Variable:
+    """Create a variable Tensor that is stored in remote memory.
 
     Args:
-        var (Variable): The variable to be stored in the remote buffer.
-        remote_buffer (RemoteBuffer): The handle to the remote buffer.
-        offset (int): The tensor-size offset to the tensor in the remote tensor.
-
-
+        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
+        remote_buffer (RemoteBuffer):
+            The remote buffer to store the variable.
+        offset (int):
+            The offset into the entries of the remote buffer to store the variable. Defaults to 0
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created, if not specified Numpy will infer the data
+            type and be downcasted to 32 bits if necessary.
+        name (Optional[str]):
+            The name of the tensor. Defaults to `None`.
+        downcast (bool):
+            If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
+        shards (int):
+            Number of shards for this variable.
     Returns:
-        Constant: The tensor associated with the remote variable. Note, this is not the remote
-            variable, but a tensor associated with it. In future this tensor will not be required.
+        Variable: The remote variable.
+
+    Raises:
+        ValueError: if the variable shape or dtype does not match remote buffer's
     """
+
+    var = variable(data, dtype, name, downcast)
+    # Check if the var matches the remote buffer in shape and dtype
+    remote_buffer.validate_tensor_matches_buffer(var, num_shards)
+
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
                            _ir.ReplicatedTensorSharding.Off),
         remote_buffer.remote_buffer_id, offset)
+    return var
 
-    return constant(offset, name=f"RemoteArg___{var.id}")
 
-
-def remote_replica_sharded_variable(
-        var: Variable, remote_buffer: "RemoteBuffer", offset: int) -> Constant:
-    """Scatter a tensor in equal shards across replicas (replicated-tensor sharding
-       data parallelism) of the same model/graph. This eliminates redundant data storage when the full
-       (un-sharded) tensor does not need to be present on every IPU. Stores the full tensor in
-       Streaming Memory.
+def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
+                                    remote_buffer: "RemoteBuffer",
+                                    offset: int = 0,
+                                    dtype: Optional[dtypes.dtype] = None,
+                                    name: Optional[str] = None,
+                                    downcast: bool = True) -> Variable:
+    """Create a variable Tensor that is stored in remote memory.
+        The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
+        data parallelism) of the same model/graph. Eliminates redundant data storage when the full
+        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote
+        memory (usually DDR memory).
 
        Replicated tensors for which each replica needs a full copy, need to be recombined with a
        replicated AllGather operation.
@@ -751,80 +777,107 @@ def remote_replica_sharded_variable(
        ReduceScatter operation.
 
     Args:
-        var (Variable): The variable to be sharded remotely.
+        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
-        offset (int): The offset to the tensor shard in the remote tensor.
+        offset (int): The offset to index the tensor shard in the remote tensor.
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created, if not specified Numpy will infer the data
+            type and be downcasted to 32 bits if necessary.
+        name (Optional[str]):
+            The name of the tensor. Defaults to `None`.
+        downcast (bool):
+            If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
 
     Raises:
         ValueError: If replication has not been enabled.
-        ValueError: If the number of elements of `var` is not divisible by the number of variables.
+        ValueError: If the number of elements of `var` is not divisible by the number of replicas.
+        ValueError: if the variable shape or dtype does not match remote buffer's
 
     Returns:
-        Constant: The tensor associated with the remote variable. Note, this is not the remote
-            variable, but a tensor associated with it. In future this tensor will not be required.
+        Variable: The remote sharded variable.
     """
-    remote_arg = remote_variable(var, remote_buffer, offset)
+    opts = gcg().ir._pb_ir.getSessionOptions()
+    num_replicas: int = opts.replicatedGraphCount
 
     # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
+    np_dtype = dtype.as_numpy() if dtype is not None else None
+    np_data: np.ndarray = np.array(data, dtype=np_dtype)
+
     if remote_buffer.meta_shape == ():
-        remote_buffer.meta_shape = var.shape
-    elif remote_buffer.meta_shape != var.shape:
+        remote_buffer.meta_shape = np_data.shape
+    elif remote_buffer.meta_shape != np_data.shape:
         raise ValueError(
             f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {var.shape}. "
             f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
         )
 
-    opts = gcg().ir._pb_ir.getSessionOptions()
+    var = remote_variable(data, remote_buffer, offset, dtype, name, downcast,
+                          num_replicas)
+
     if not opts.enableReplicatedGraphs:
         raise ValueError("Replication has not been enabled on the current IR")
 
-    replicas: int = opts.replicatedGraphCount
-    if (var.nelms % replicas) != 0:
+    if (var.nelms % num_replicas) != 0:
         raise ValueError(
-            f"Variable {var} is not divisible by the number of replicas {replicas}."
+            f"Variable {var} is not divisible by the number of replicas {num_replicas}."
         )
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
                            _ir.ReplicatedTensorSharding.On),
         remote_buffer.remote_buffer_id, offset)
-    return remote_arg
+    return var
 
 
-def replica_sharded_variable(var: Variable, remote_buffer: "RemoteBuffer",
-                             offset: int) -> Tuple[Constant, Tensor]:
-    """Scatter a tensor in equal shards across replicas (replicated-tensor sharding data parallelism) of the
-       same model/graph. This eliminates redundant data storage when the full (un-sharded) tensor does
-       not need to be present on every IPU. Does not store the full tensor in Streaming Memory.
+def replica_sharded_variable(data: Union[HostTensor, float, int],
+                             dtype: Optional[dtypes.dtype] = None,
+                             name: Optional[str] = None,
+                             downcast: bool = True) -> Tuple[Variable, Tensor]:
+    """Scatter a tensor in equal shards across replicas (data parallelism) of the
+        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does
+        not need to be present on each IPU. Does not store the full tensor in remote memory.
 
     Args:
-        var (Variable): The variable to be sharded.
-        remote_buffer (RemoteBuffer): The handle to the remote buffer.
-        offset (int): The offset to the tensor shard in the full tensor.
+        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created, if not specified Numpy will infer the data
+            type and be downcasted to 32 bits if necessary.
+        name (Optional[str]):
+            The name of the tensor. Defaults to `None`.
+        downcast (bool):
+            If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
 
     Returns:
-        Tuple[Constant, Tensor]:
+        Tuple[Variable, Tensor]:
             A tuple of tensors:
-
-            1. The tensor associated with the remote variable. Note, this is not the remote
-            variable, but a tensor associated with it. In future this tensor will not be required.
+            1. The full variable. This should NOT be used directly. It can be used to interact with Session's get/set data methods
             2. The sharded variable.
     """
     import popart.ir.ops as ops
+    from popart.ir.remote_buffer import remote_buffer
+
+    _dtype = dtype or dtypes.dtype.as_dtype(dtype)
+
+    opts = gcg().ir._pb_ir.getSessionOptions()
+    replicas: int = opts.replicatedGraphCount
+    shard_shape: Tuple[int, ...] = (data.size // replicas, )
+    buffer = remote_buffer(shard_shape, _dtype, 1)
 
     # Create a remote RTS variable
-    remote_arg = remote_replica_sharded_variable(var, remote_buffer, offset)
+    var = remote_replica_sharded_variable(data, buffer, 0, dtype, name,
+                                          downcast)
 
     # Load/Store the variable in the WeightsFromHost/WeightsToHost programs.
     with get_main_graph():
         with _execution_context(_ir.ExecutionContext.WeightsFromHostFragment):
-            var_shard = ops.remote_load(remote_buffer, offset,
-                                        var.name + "_rts")
+            var_shard = ops.remote_load(buffer, 0, var.name + "_rts")
 
         with _execution_context(_ir.ExecutionContext.WeightsToHostFragment):
-            ops.remote_store(remote_buffer, offset, var_shard)
+            ops.remote_store(buffer, 0, var_shard)
 
-    return remote_arg, var_shard
+    return var, var_shard
 
 
 def constant(

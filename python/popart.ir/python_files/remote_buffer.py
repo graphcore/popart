@@ -68,8 +68,9 @@ class RemoteBuffer:
         self._current_ir.setRemoteBufferInfo(self._remote_buffer_id,
                                              remote_buffer_info)
 
-    def validate_tensor_matches_buffer(self, t: Tensor) -> None:
-        """Validate that the tensor information matches that of the buffer.
+    def validate_tensor_matches_buffer(self, t: Tensor,
+                                       num_shards: int = 1) -> None:
+        """Validate whether the tensor information matches that of the buffer.
 
         Args:
             t (Tensor): Tensor to check.
@@ -79,8 +80,13 @@ class RemoteBuffer:
         """
         remote_buffer_info = self._current_ir.getRemoteBufferInfo(
             self.remote_buffer_id)
-        existing_shape = tuple(remote_buffer_info.TensorInfo.shape())
+
+        if num_shards == 1:
+            existing_shape = tuple(remote_buffer_info.TensorInfo.shape())
+        else:
+            existing_shape = self.meta_shape
         existing_dtype = remote_buffer_info.TensorInfo.dataType()
+
         tensor_shape = t.shape
         tensor_dtype = t.dtype._pb_dtype
         if (tensor_shape != existing_shape) or (tensor_dtype !=
