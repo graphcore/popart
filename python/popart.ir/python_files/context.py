@@ -263,7 +263,7 @@ def ipu(ipu: int):
 
 @contextmanager
 def pipeline_stage(stage: int):
-    """Set the pipeline stage on Ops created in this context."""
+    """Set the pipeline stage for ops created in this context."""
     ctx = get_current_context()
     prev = ctx._pipeline_stage
     ctx._pipeline_stage = stage
