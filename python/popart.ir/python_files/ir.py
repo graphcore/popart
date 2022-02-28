@@ -215,7 +215,7 @@ class Ir:
                                 f"A {type(arg)} argument can't contain a "
                                 f"mixture of Tensors and other types. Arg name:"
                                 f" {name}. Value: {arg}")
-                        if isinstance(subarg, Tensor):
+                        if isinstance(subarg, (Tensor, TensorSpec)):
                             contains_tensor = True
                             in_args_sub[subarg_name] = graph_input(
                                 subarg.shape,
@@ -242,7 +242,7 @@ class Ir:
                 outputs = []
 
             if isinstance(outputs, Tensor):
-                outputs = (outputs, )
+                outputs = [outputs]
 
             for out in outputs:
                 graph_output(out)

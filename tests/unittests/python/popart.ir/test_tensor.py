@@ -282,3 +282,15 @@ class TestTensorGetItem:
             x = pir.variable(np.arange(2))
             with pytest.raises(TypeError):
                 y = x[key]
+
+
+class TestTensorSpec:
+    def test_init(self):
+        spec = pir.TensorSpec((1, 2), pir.int32)
+        assert spec.shape == (1, 2)
+        assert spec.dtype == pir.int32
+
+    def test_dict_unpacking(self):
+        with pir.Ir().main_graph:
+            spec = pir.TensorSpec((1, 2), pir.int32)
+            pir.graph_input(**spec, name="w")

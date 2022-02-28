@@ -3,6 +3,7 @@
 # pylint: disable=unused-import
 from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union, TYPE_CHECKING
 from typing_extensions import Literal
+from collections.abc import Mapping
 import numpy as np
 
 import popart._internal.ir as _ir
@@ -43,14 +44,16 @@ TILE_SET_MAP = {
 }
 
 
-class TensorSpec:
+class TensorSpec(Mapping):
     def __init__(self,
                  shape: Tuple[int, ...],
                  dtype: dtypes.dtype,
                  meta_shape: Tuple[int, ...] = ()):
-        """Description of a tensor.
-           Instances of this class can be used as arguments in
-           `ir.create_graph()` to provide a specification of the input tensors.
+        """
+        Description of a tensor.
+
+        Instances of this class can be used as arguments in `ir.create_graph()` to provide
+        a specification of the input tensors.
 
         Args:
             shape (Tuple[int, ...]): shape of the tensor.
@@ -61,6 +64,31 @@ class TensorSpec:
         self.shape = shape
         self.dtype = dtype
         self.meta_shape = meta_shape
+
+    def to_dict(self):
+        return {
+            'shape': self.shape,
+            'dtype': self.dtype,
+            'meta_shape': self.meta_shape
+        }
+
+    def to_tuple(self):
+        return self.shape, self.dtype, self.meta_shape
+
+    def __iter__(self):
+        return iter(self.to_dict())
+
+    def __len__(self):
+        return len(self.to_dict())
+
+    def __getitem__(self, key):
+        return self.to_dict()[key]
+
+    def __hash__(self) -> int:
+        return hash(self.to_tuple())
+
+    def __repr__(self) -> str:
+        return f"TensorSpec(shape={self.shape}, dtype={self.dtype}, meta_shape={self.meta_shape})"
 
 
 class Tensor:

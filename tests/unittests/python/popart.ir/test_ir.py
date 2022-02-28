@@ -333,6 +333,22 @@ class TestCreateGraph:
         assert x == g._by_ref_inputs.pop()
         assert x.name == "x"
 
+    def test_create_graph_tensor_spec_list(self):
+        ir = pir.Ir()
+
+        def foo(x: pir.TensorByRef, ys: List[pir.Tensor], c: int):
+            return [(x * c) + y for y in ys]
+
+        with ir.main_graph:
+            v1 = pir.variable(1)
+            v2 = pir.variable(2)
+
+            g = ir.create_graph(foo, v1.spec, [v2.spec, v2.spec], 5)
+
+        assert len(g.inputs) == 3
+        assert len(g.outputs) == 2
+        assert len(g._by_ref_inputs) == 1
+
 
 def test_num_host_transfers_property():
     ir = pir.Ir()
