@@ -6,15 +6,15 @@ popart.ir User Guide and API (experimental)
     :numbered: 3
 
     introduction
-    popartir_concepts
+    concepts
     simple_example
-    popartir_datatype
-    popartir_tensor
-    popartir_op
-    popartir_graph
-    popartir_transforms
-    popartir_context
-    api-popart-ir
+    datatype
+    tensor
+    op
+    graph
+    transforms
+    api
+    context
     genindex
     legal
 
