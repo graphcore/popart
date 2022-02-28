@@ -77,13 +77,17 @@ class TestTensorLocation():
 
             var_shard_shape: Tuple[int, ...] = (weight_data.size //
                                                 NUM_LOCAL_REPLICAS, )
+
+            w = pir.variable(weight_data, name="w_full")
             remote_buffer = RemoteBuffer(ir,
                                          var_shard_shape,
                                          dtypes.float32,
                                          entries=NUM_LOCAL_REPLICAS)
-            w = pir.remote_replica_sharded_variable(weight_data, remote_buffer,
-                                                    0)
-            loaded_w = ops.remote_load(remote_buffer, 0)
+
+            remote_arg = pir.remote_replica_sharded_variable(
+                w, remote_buffer, 0)
+            loaded_w = ops.remote_load(remote_buffer, remote_arg)
+
             full_w = ops.collectives.replicated_all_gather(loaded_w).reshape_(
                 (4, 4))
 
@@ -149,7 +153,7 @@ class TestTensorLocation():
                 op='add',
                 configure_output_for_replicated_tensor_sharding=True)
             ops.var_updates.accumulate_(loaded_w, grad_shard)
-            ops.remote_store(remote_buffer, 0, loaded_w)
+            ops.remote_store(remote_buffer, remote_arg, loaded_w)
 
             w_d2h = pir.d2h_stream(loaded_w.shape, loaded_w.dtype)
             ops.host_store(w_d2h, loaded_w)
