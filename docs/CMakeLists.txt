@@ -156,8 +156,22 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
-            ${SUPPORTED_POPXL_OPS_GEN}
             ${USER_GUIDE_SOURCE_FILES}
+  )
+
+  set(POPXL_SOURCE_FILES "")
+  get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/popxl POPXL_SOURCE_FILES)
+
+  # Log the document sources.
+  message("POPXL_SOURCE_FILES: ${POPXL_SOURCE_FILES}")
+
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/popxl
+    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popxl ${CMAKE_CURRENT_BINARY_DIR}/popxl
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Copying PopXL sources to ${CMAKE_CURRENT_BINARY_DIR}/popxl"
+    DEPENDS ${SUPPORTED_POPXL_OPS_GEN}
+            ${POPXL_SOURCE_FILES}
   )
 
   # Create Doxyfile file.
@@ -222,7 +236,7 @@ if (BUILD_DOCS)
   build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "popart_user_guide" "PopART User Guide" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "popart_api_cpp" "PopART C++ API" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "popart_api_python" "PopART Python API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popxl" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/popxl" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
 
   add_custom_target(ug_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
