@@ -5,6 +5,7 @@ set -e
 # Set python path and library path so we can use automodule.
 export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart:$PYTHONPATH
 export PYTHONPATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$PYTHONPATH
+export PYTHONPATH=@PROJECT_BINARY_DIR@/python/:$PYTHONPATH
 export PYTHONPATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$PYTHONPATH
 export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python/popart._internal.ir:$LIBRARY_PATH
 export LIBRARY_PATH=$(ls -d @PROJECT_BINARY_DIR@/python/popart/popart_*/ | tr '\n' ':' | tr ' ' ':')$LIBRARY_PATH

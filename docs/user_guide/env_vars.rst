@@ -73,7 +73,7 @@ The following ``check`` values are already present when preparing the IR with th
 - PREALIAS
 - FINAL
 
-If using the ``popart.ir`` API, only FINAL will be present.
+If using the PopXL API, only FINAL will be present.
 However, the user can add a ``dot_checkpoint`` using any ``check`` name anywhere during the creation of the model.
 The following example shows how the user can add checkpoints after ops:
 

@@ -66,7 +66,7 @@ on the PopART IR:
 
 > **NOTE:** This assumption is verified by
 > `StochasticRoundingAssumptionVerifier` at the end of `Ir::prepareIr` (but not
-> currently checked for `popart.ir` IRs).
+> currently checked for PopXL IRs).
 
 ## Associated transformations
 

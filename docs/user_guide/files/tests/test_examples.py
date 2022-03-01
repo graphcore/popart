@@ -73,44 +73,44 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "weights.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_addition(self):
-        """Test the popart.ir simple addition example"""
-        filename = "simple_addition_popart_ir.py"
+    def test_documentation_popxl_addition(self):
+        """Test the popxl simple addition example"""
+        filename = "simple_addition_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_addition_variable(self):
-        """Test the popart.ir simple addition example"""
-        filename = "tensor_addition_popart_ir.py"
+    def test_documentation_popxl_addition_variable(self):
+        """Test the popxl simple addition example"""
+        filename = "tensor_addition_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_basic_subgraph(self):
-        """Test the popart.ir basic subgraph example"""
-        filename = "basic_subgraph_popart_ir.py"
+    def test_documentation_popxl_basic_subgraph(self):
+        """Test the popxl basic subgraph example"""
+        filename = "basic_subgraph_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_create_multi_subgraph(self):
-        """Test the popart.ir create multiple subgraph example"""
-        filename = "create_multi_subgraphs_from_same_func_popart_ir.py"
+    def test_documentation_popxl_create_multi_subgraph(self):
+        """Test the popxl create multiple subgraph example"""
+        filename = "create_multi_subgraphs_from_same_func_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_multi_callsites_graph_input(self):
-        """Test the popart.ir create multiple callsites for a subgraph input example"""
-        filename = "multi_call_graph_input_popart_ir.py"
+    def test_documentation_popxl_multi_callsites_graph_input(self):
+        """Test the popxl create multiple callsites for a subgraph input example"""
+        filename = "multi_call_graph_input_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_call_with_info(self):
-        """Test the popart.ir call_with_info example"""
-        filename = "call_with_info_popart_ir.py"
+    def test_documentation_popxl_call_with_info(self):
+        """Test the popxl call_with_info example"""
+        filename = "call_with_info_popxl.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_repeat_0(self):
-        """Test the popart.ir basic repeat example"""
-        filename = "repeat_subgraph_popart_ir_0.py"
+    def test_documentation_popxl_repeat_0(self):
+        """Test the popxl basic repeat example"""
+        filename = "repeat_subgraph_popxl_0.py"
         self.run_python(filename, self.base_path)
 
-    def test_documentation_popart_ir_repeat_1(self):
-        """Test the popart.ir subgraph in parent in repeat example"""
-        filename = "repeat_subgraph_popart_ir_1.py"
+    def test_documentation_popxl_repeat_1(self):
+        """Test the popxl subgraph in parent in repeat example"""
+        filename = "repeat_subgraph_popxl_1.py"
         self.run_python(filename, self.base_path)
 
 

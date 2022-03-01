@@ -34,7 +34,7 @@ def create_model_pipelined(bufferStreams: bool = False,
     Args:
         bufferStreams (bool, optional): Whether bufferStreamCopiesToDevice is on or off.
             Defaults to False.
-        pipelining (bool, optional): Whether to pipeline the model in 2 parts. 
+        pipelining (bool, optional): Whether to pipeline the model in 2 parts.
             Defaults to False.
 
     Returns:

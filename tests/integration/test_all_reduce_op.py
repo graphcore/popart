@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart
-import popart.ir as pir
-import popart.ir.ops as ops
+import popxl
+import popxl.ops as ops
 import numpy as np
 
 import test_util as tu
@@ -49,8 +49,8 @@ def run_ir(ir, h2d_streams, d2h_ids, n_ipus):
     return y_host
 
 
-def host_load(shape, dtype: pir.dtype, name: str):
-    x_h2d = pir.h2d_stream(shape, dtype, name=f"{name}_stream")
+def host_load(shape, dtype: popxl.dtype, name: str):
+    x_h2d = popxl.h2d_stream(shape, dtype, name=f"{name}_stream")
     return x_h2d, ops.host_load(x_h2d, name)
 
 
@@ -61,16 +61,16 @@ def test_all_reduce_op():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -79,11 +79,11 @@ def test_all_reduce_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 
@@ -103,7 +103,7 @@ def test_all_reduce_op_backwards():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
@@ -111,9 +111,9 @@ def test_all_reduce_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -125,7 +125,7 @@ def test_all_reduce_op_backwards():
         all_reduce_graph = ir.create_graph(all_reduce_graph_func, *x)
 
     # Auto diff
-    all_reduce_graph_grad_info = pir.transforms.autodiff(all_reduce_graph)
+    all_reduce_graph_grad_info = popxl.transforms.autodiff(all_reduce_graph)
     all_reduce_graph_grad = all_reduce_graph_grad_info.graph
 
     with main:
@@ -135,11 +135,11 @@ def test_all_reduce_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 
@@ -159,16 +159,16 @@ def test_all_reduce_identical_inputs_op():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -177,11 +177,11 @@ def test_all_reduce_identical_inputs_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 
@@ -200,7 +200,7 @@ def test_all_reduce_identical_inputs_op_backwards():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
@@ -208,9 +208,9 @@ def test_all_reduce_identical_inputs_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -224,7 +224,8 @@ def test_all_reduce_identical_inputs_op_backwards():
         all_reduce_ifi_graph = ir.create_graph(all_reduce_ifi_graph_func, *x)
 
     # Auto diff
-    all_reduce_graph_grad_info = pir.transforms.autodiff(all_reduce_ifi_graph)
+    all_reduce_graph_grad_info = popxl.transforms.autodiff(
+        all_reduce_ifi_graph)
     all_reduce_graph_grad = all_reduce_graph_grad_info.graph
 
     with main:
@@ -234,11 +235,11 @@ def test_all_reduce_identical_inputs_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 
@@ -258,16 +259,16 @@ def test_all_reduce_identical_grad_inputs_op():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -278,11 +279,11 @@ def test_all_reduce_identical_grad_inputs_op():
 
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 
@@ -302,7 +303,7 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
 
     inputs = np.arange(n_ipus * 2 * 3, dtype='float32').reshape((n_ipus, 2, 3))
 
-    ir = pir.Ir()
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
 
@@ -310,9 +311,9 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
         x = []
         h2d_streams = {}
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 x_h2d_i, x_i = host_load(inputs[ipu].shape,
-                                         pir.float32,
+                                         popxl.float32,
                                          name=f'x_{ipu}')
                 h2d_streams[x_h2d_i.tensor_id] = inputs[ipu]
                 x += [x_i]
@@ -326,7 +327,8 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
         all_reduce_ibi_graph = ir.create_graph(all_reduce_ibi_graph_func, *x)
 
     # Auto diff
-    all_reduce_graph_grad_info = pir.transforms.autodiff(all_reduce_ibi_graph)
+    all_reduce_graph_grad_info = popxl.transforms.autodiff(
+        all_reduce_ibi_graph)
     all_reduce_graph_grad = all_reduce_graph_grad_info.graph
 
     with main:
@@ -336,11 +338,11 @@ def test_all_reduce_identical_grad_inputs_op_backwards():
         # host store results
         y_d2h_ids = []
         for ipu in ipus:
-            with pir.ipu(ipu):
+            with popxl.ipu(ipu):
                 y_i = y[ipu]
-                y_d2h = pir.d2h_stream(y_i.shape,
-                                       y_i.dtype,
-                                       name=f"y_{ipu}_stream")
+                y_d2h = popxl.d2h_stream(y_i.shape,
+                                         y_i.dtype,
+                                         name=f"y_{ipu}_stream")
                 ops.host_store(y_d2h, y_i)
                 y_d2h_ids += [y_d2h.tensor_id]
 

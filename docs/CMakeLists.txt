@@ -114,15 +114,15 @@ if (BUILD_DOCS)
             ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
   )
 
-  # Generate supported popart.ir ops rst doc.
-  set(SUPPORTED_POPARTIR_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popartir_supported_ops_gen.rst)
+  # Generate supported PopXL ops rst doc.
+  set(SUPPORTED_POPXL_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popxl_supported_ops_gen.rst)
   add_custom_command(
-    OUTPUT ${SUPPORTED_POPARTIR_OPS_GEN}
+    OUTPUT ${SUPPORTED_POPXL_OPS_GEN}
     COMMAND
         bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
-        python3 gen_popartir_supported_ops.py ${SUPPORTED_POPARTIR_OPS_GEN}
+        python3 gen_popxl_supported_ops.py ${SUPPORTED_POPXL_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Creating popart.ir supported ops in ${SUPPORTED_POPARTIR_OPS_GEN}"
+    COMMENT "Creating PopXL supported ops in ${SUPPORTED_POPXL_OPS_GEN}"
     DEPENDS popart-py
             ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
   )
@@ -156,7 +156,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
-            ${SUPPORTED_POPARTIR_OPS_GEN}
+            ${SUPPORTED_POPXL_OPS_GEN}
             ${USER_GUIDE_SOURCE_FILES}
   )
 
@@ -206,7 +206,7 @@ if (BUILD_DOCS)
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       DEPENDS SphinxRequirements
               ${SUPPORTED_POPART_OPS_GEN}
-              ${SUPPORTED_POPARTIR_OPS_GEN}
+              ${SUPPORTED_POPXL_OPS_GEN}
               ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
               ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
               ${PROJECT_BINARY_DIR}/enable.sh
@@ -222,7 +222,7 @@ if (BUILD_DOCS)
   build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "popart_user_guide" "PopART User Guide" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "popart_api_cpp" "PopART C++ API" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "popart_api_python" "PopART Python API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popart_ir" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/popxl" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
 
   add_custom_target(ug_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
@@ -246,7 +246,7 @@ if (BUILD_DOCS)
   )
 
   add_custom_target(ir_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_HTML_NAME} . -i *
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${POPXL_USER_GUIDE_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popxl_user_guide
     VERBATIM
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popxl_user_guide
@@ -259,16 +259,16 @@ if (BUILD_DOCS)
     COMMAND cp ${SUPPORTED_POPART_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_POPART_OPS_GEN_FILE_NAME}
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
   )
-  add_custom_target(supported_popartir_ops_copy ALL
-    COMMAND cp ${SUPPORTED_POPARTIR_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_POPARTIR_OPS_GEN_FILE_NAME}
-    DEPENDS ${SUPPORTED_POPARTIR_OPS_GEN}
+  add_custom_target(supported_popxl_ops_copy ALL
+    COMMAND cp ${SUPPORTED_POPXL_OPS_GEN} ${PROJECT_BINARY_DIR}/${SUPPORTED_POPXL_OPS_GEN_FILE_NAME}
+    DEPENDS ${SUPPORTED_POPXL_OPS_GEN}
   )
 
   add_custom_target(pdf_copy ALL
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf ${PROJECT_BINARY_DIR}/${CPP_API_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf ${PROJECT_BINARY_DIR}/${PYTHON_API_PDF_NAME}
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf ${PROJECT_BINARY_DIR}/${IR_USER_GUIDE_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf ${PROJECT_BINARY_DIR}/${POPXL_USER_GUIDE_PDF_NAME}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf

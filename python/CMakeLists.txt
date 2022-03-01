@@ -4,7 +4,7 @@
 # other directories when add_popart_python_module is called.
 cmake_policy(SET CMP0079 NEW)
 
-# expansion of pybind macro, impossible to declare name 
+# expansion of pybind macro, impossible to declare name
 # of certain classes in headers
 
 # pybind11 will use the Python targets found by the find_package(Python3 ...)
@@ -35,7 +35,7 @@ function(add_popart_python_module module_name)
   target_compile_features(${module_name} PUBLIC cxx_std_14)
 
   add_coverage_flags_if_enabled(${module_name})
-  
+
   target_link_libraries(${module_name} PRIVATE popart)
 
   # For some unknown reason, you need the latter command to get
@@ -43,12 +43,12 @@ function(add_popart_python_module module_name)
   target_link_libraries(popart-py INTERFACE ${module_name})
   add_dependencies(popart-py ${module_name})
 
-  # This was useful on OS/X for a while, see 
+  # This was useful on OS/X for a while, see
   # https://stackoverflow.com/questions/47697761 and
   # https://stackoverflow.com/questions/40079424/prepend-to-rpath
   # set_target_properties(popart_core PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
   #
-  # but then it stopped working, and this seems to work, 
+  # but then it stopped working, and this seems to work,
   # see https://gist.github.com/robertmaynard/5750737
   if (APPLE)
     set_target_properties(${module_name} PROPERTIES INSTALL_RPATH "@loader_path/.")
@@ -70,4 +70,4 @@ endfunction()
 # Add various python package directories.
 add_subdirectory("popart")
 add_subdirectory("popart._internal.ir")
-add_subdirectory("popart.ir")
+add_subdirectory("popxl")

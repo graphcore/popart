@@ -370,7 +370,7 @@ void Session::prepareDevice(bool loadEngine) {
     lowering_->prepareGraph();
   }
 
-  // TODO T49662: Move this into popart.ir session
+  // TODO T49662: Move this into PopXL session
   if (ir->getSessionOptions().enableInplaceAmbiguityChecking) {
     checkInplacingAmbiguity();
   }

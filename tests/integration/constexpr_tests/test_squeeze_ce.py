@@ -1,7 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
-import popart
 import json
+import popart
 import pprint
 
 # importing test_session requires adding to sys.path
