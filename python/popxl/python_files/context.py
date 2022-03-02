@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Iterable, List, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Iterable, List, Optional, Tuple, TypeVar, Union, overload
 import inspect
 import os
 from collections import defaultdict
@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from popxl.graph import Graph
     from popxl.tensor import Tensor
 
+InSequenceKey = Tuple[_ir.GraphId, _ir.ExecutionContext]
+
 
 class Context:
     def __init__(self):
@@ -23,8 +25,8 @@ class Context:
         self._ipu_id: int = 0
         self._pipeline_stage: Optional[int] = None
         self._in_sequence: Optional[bool] = None
-        self._previous_ops: DefaultDict[_ir.GraphId, List[int]] = defaultdict(
-            list)
+        self._previous_ops: DefaultDict[InSequenceKey,
+                                        List[int]] = defaultdict(list)
         self._debug_info: Optional[_ir.DebugInfo] = None
         self._debug_context_frame_offset: int = 0
         self._name_scope: List[str] = []
@@ -162,7 +164,7 @@ class Context:
         for fn in self._op_created_hooks.values():
             fn(op)
 
-    def _add_in_sequence_topocons(self, op):
+    def _add_in_sequence_topocons(self, op: _ir.Op):
         """Adds topocons to ensure operations are executed in sequence.
             If #op is added in an `in_sequence(True)` context then
                 add a topocon from the Ops in the previous ops.
@@ -194,17 +196,19 @@ class Context:
                 g.topoCons().insert(g.getOp(before_id), op, False)
 
         if self._in_sequence is not None:
+            previous_ops = self._previous_ops[(
+                g.id, op.getSettings().executionContext)]
             if self._in_sequence:
-                for prev_op in self._previous_ops[g.id]:
+                for prev_op in previous_ops:
                     insert_topocon(prev_op)
-                self._previous_ops[g.id].clear()
+                previous_ops.clear()
             else:
-                prev_ops = self._previous_ops[g.id]
+                prev_ops = previous_ops
                 if len(prev_ops) > 0:
                     insert_topocon(prev_ops[0])
                 else:
                     prev_ops.append(-1)
-            self._previous_ops[g.id].append(op.id)
+            previous_ops.append(op.id)
 
 
 _CURRENT_CONTEXT = Context()

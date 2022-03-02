@@ -5,6 +5,7 @@ import pytest
 
 import popart._internal.ir as _ir
 import popxl
+from popxl.context import _execution_context
 
 
 def test_in_sequence_with():
@@ -105,3 +106,20 @@ def test_in_sequence_false_first():
     ops = g._pb_graph.getOpSchedule()
     assert isinstance(ops[0], _ir.op.MulOp)
     assert isinstance(ops[1], _ir.op.AddOp)
+
+
+def test_in_sequence_execution_context():
+    ir = popxl.Ir()
+    g = ir.main_graph
+
+    with g:
+        x = popxl.variable(np.ones((2, 2), np.float32), name='big')
+
+        with popxl.in_sequence(True):
+            y = x + 1
+            with _execution_context(
+                    _ir.ExecutionContext.WeightsFromHostFragment):
+                z = x - 1
+
+    # If a topocon is created between (x+1) and (x-1) then a scheduling error will occur
+    g._pb_graph.getOpSchedule()
