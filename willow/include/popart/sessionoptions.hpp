@@ -828,7 +828,7 @@ struct SessionOptions {
   AutodiffSettings autodiffSettings;
 
   /// Options to delay variable updates as much as possible.
-  /// TODO: Remove with T19212
+  // TODO: Remove with T19212
   bool delayVarUpdates = true;
 
   /// When #shouldDelayVarUpdates is true, the other ops in the proximity of the
@@ -841,7 +841,7 @@ struct SessionOptions {
   ///
   /// If true, if #shouldDelayVarUpdates is true, this option will cause the
   /// schedule priority of the above described ops to be re-overriden to +inf.
-  /// TODO: Remove with T19212.
+  // TODO: Remove with T19212.
   bool scheduleNonWeightUpdateGradientConsumersEarly = false;
 
   // TODO: Remove with T19212
