@@ -138,13 +138,9 @@ def test_resize_nearest_grad_1d(op_tester, scale_factor):
 
 
 @pytest.mark.parametrize("factor1, factor2", [
-    (2, 2),
     (2, 3),
-    (3, 2),
-    (0.5, 0.5),
     (0.5, 0.25),
     (2, 0.5),
-    (0.5, 2),
 ])
 def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
 
@@ -198,14 +194,9 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
     "data_shape, scales",
     [
         # upsample
-        ([2, 2], [2.0, 3.0]),
-        ([2, 2], [2.5, 2.5]),
-        ([3, 2], [2.5, 2.5]),
         ([5, 3], [2.3, 2.5]),
         # downsample
-        ([2, 4], [0.5, 0.5]),
         ([2, 8], [1.0, 3 / 8]),
-        ([5, 4], [0.5, 0.5]),
         ([5, 3], [0.3, 0.5]),
     ])
 def test_nearest_grad(op_tester, data_shape, scales):
@@ -251,14 +242,9 @@ def test_nearest_grad(op_tester, data_shape, scales):
         ([8], [1.12]),
         # upsample
         ([2], [8.0]),
-        ([2, 2], [2.0, 3.0]),
-        ([2, 2], [2.5, 2.5]),
-        ([3, 2], [2.5, 2.5]),
         ([5, 3], [2.3, 2.5]),
         # downsample
-        ([2, 4], [0.5, 0.5]),
         ([2, 8], [1.0, 3 / 8]),
-        ([5, 4], [0.5, 0.5]),
         ([5, 3], [0.3, 0.5]),
     ])
 @pytest.mark.parametrize(
