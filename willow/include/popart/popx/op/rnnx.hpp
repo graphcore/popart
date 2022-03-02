@@ -63,14 +63,11 @@ private:
   // Return full_output_grad, or 0 if the input does not exist
   snap::Tensor getFullOutputGrad() const;
   // Return program for a single step of the backwards pass
-  snap::program::Sequence getBwdStepProg(snap::Tensor &input_grad,
-                                         snap::Tensor &input_weights_grad,
-                                         snap::Tensor &recurrence_weights_grad,
-                                         snap::Tensor &bias_grad,
-                                         snap::Tensor &dh,
-                                         snap::Tensor &forward_output,
-                                         snap::Tensor &forward_output_prev,
+  snap::program::Sequence getBwdStepProg(snap::Tensor &dh_prev,
                                          snap::Tensor &full_output_grad,
+                                         snap::Tensor &forward_output_prev,
+                                         snap::Tensor &forward_output,
+                                         snap::Tensor &da,
                                          poplar::Tensor &index) const;
 };
 
