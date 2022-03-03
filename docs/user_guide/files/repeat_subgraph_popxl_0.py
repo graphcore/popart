@@ -15,8 +15,7 @@ main = ir.main_graph
 
 # Op begin
 def increment_fn(x: popxl.Tensor, value: popxl.Tensor):
-    # value is also returned to match the inputs and outputs for repeat op
-    return x + value, value
+    return x + value
 
 
 with main:
@@ -28,7 +27,7 @@ with main:
     increment_graph = ir.create_graph(increment_fn, x, value)
 
     # call graph in a loop
-    o, _ = ops.repeat(increment_graph, 2, x, value)
+    o, = ops.repeat(increment_graph, 2, x, value)
     # Op end
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
@@ -44,7 +43,6 @@ opts = ir.getSessionOptions()
 opts.useHostCopyOps = True
 opts.enableExplicitMainLoops = True
 ir.updateVertices()
-ir.setIsPrepared()
 
 device = popart.DeviceManager().createCpuDevice()
 session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)

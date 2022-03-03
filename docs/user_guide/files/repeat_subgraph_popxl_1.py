@@ -30,8 +30,7 @@ class Linear(popxl.Module):
         if bias:
             self.b = popxl.graph_input((out_features, ), popxl.float32, "b")
             y = y + self.b
-        # self.W and self.b are also returned to match the inputs of the corresponding subgraph
-        return y, self.W, self.b
+        return y
 
 
 with main:
@@ -48,13 +47,7 @@ with main:
     # the x, W, b will be copied to the input of the `linear_graph` before the first iteration
     # the outputs of each iteration will be copied to the inputs of the next iteration
     # The outputs of the last iteration serve as the output of the `repeat` op
-    o, _, _ = ops.repeat(linear_graph,
-                         2,
-                         x,
-                         inputs_dict={
-                             linear.W: W,
-                             linear.b: b
-                         })
+    o, = ops.repeat(linear_graph, 2, x, inputs_dict={linear.W: W, linear.b: b})
     # Op end
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
@@ -70,7 +63,6 @@ opts = ir.getSessionOptions()
 opts.useHostCopyOps = True
 opts.enableExplicitMainLoops = True
 ir.updateVertices()
-ir.setIsPrepared()
 
 device = popart.DeviceManager().createCpuDevice()
 session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)

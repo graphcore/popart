@@ -85,7 +85,6 @@ opts = ir.getSessionOptions()
 opts.useHostCopyOps = True
 opts.enableExplicitMainLoops = True
 ir.updateVertices()
-ir.setIsPrepared()
 
 for g in ir.getAllGraphs():
     ir.applyPreAliasPatterns(g)

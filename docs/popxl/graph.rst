@@ -139,13 +139,13 @@ You can use ``ops.repeat`` to create a loop, see :py:func:`popxl.ops.repeat()`.
 
 .. code-block:: python
 
-    repeat(repeat_subgraph: Graph,
+    repeat(graph: Graph,
            repeat_count: int,
-           *inputs: Union[Tensor, List[Tensor]],
+           *inputs: Union[Tensor, Iterable[Tensor]],
            inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
-           ) -> Union[None, Tensor, Tuple[Tensor, ...]]
+           ) -> Tuple[Tensor, ...]:
 
-It calls a subgraph ``repeat_subgraph`` for ``repeat_count`` number of times.
+It calls a subgraph ``graph`` for ``repeat_count`` number of times.
 Its inputs come from two arguments:
 
  - ``inputs`` that denotes the inputs passed to the subgraph function and,
@@ -164,12 +164,10 @@ iteration serve as the outputs of this ``repeat`` op.
 
   Repeat op subgraph
 
-The ``repeat`` op requires the subgraph to have:
+The ``repeat`` op requires the number of the subgraph inputs including the ``inputs`` and
+the ``inputs_dict`` to be at least the number of outputs.
 
- - Equal numbers of inputs and outputs;
- - One-to-one mapping of data type and shape between inputs and outputs.
-
-.. note:: This operation requires the repeat count to be greater than 1.
+.. note:: This operation requires the repeat count to be greater than 0.
 
 In :numref:`code_repeat_subgraph_popxl_0`, the subgraph ``increment_graph``
 from ``increment_fn`` is called twice. The input ``x`` is incremented twice by

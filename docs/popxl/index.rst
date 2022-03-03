@@ -13,8 +13,8 @@ PopXL User Guide and API (experimental)
     op
     graph
     transforms
-    api
     context
+    api
     genindex
     legal
 
