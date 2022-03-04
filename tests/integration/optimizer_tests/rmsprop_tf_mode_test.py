@@ -18,7 +18,13 @@ weight_decay_modes = [
     popart.WeightDecayMode.Decay,
 ]
 
+dtypes = [
+    "np.float32",
+    "np.float16",
+]
 
+
+@pytest.mark.parametrize("dtype", dtypes)
 @pytest.mark.parametrize("use_tf_variant", [True, False])
 @pytest.mark.parametrize("const_lr", [True, False])
 @pytest.mark.parametrize("adaptive_mode", adaptive_modes)
@@ -26,8 +32,10 @@ weight_decay_modes = [
 @pytest.mark.parametrize("weight_decay", [0.0, 1e-2])
 @pytest.mark.parametrize("const_weight_decay", [True, False])
 @pytest.mark.parametrize("weight_decay_mode", weight_decay_modes)
-def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
-                         weight_decay, weight_decay_mode, const_weight_decay):
+def test_rmsprop_tf_mode(dtype, use_tf_variant, const_lr, adaptive_mode,
+                         momentum, weight_decay, weight_decay_mode,
+                         const_weight_decay):
+    dtype = np.float32 if dtype == "np.float32" else np.float16
     np.random.seed(0)
     input_dim = 3
     num_steps = 15
@@ -40,15 +48,15 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
     eps = 0.001
 
     # Initial weights and inputs.
-    w0_data = np.random.randn(input_dim, input_dim).astype(np.float32)
-    w1_data = np.random.randn(input_dim, input_dim).astype(np.float32)
+    w0_data = np.random.randn(input_dim, input_dim).astype(dtype)
+    w1_data = np.random.randn(input_dim, input_dim).astype(dtype)
     input_data = [
         np.random.randn(
             batches_per_step,
             samples_per_batch,
             input_dim,
             input_dim,
-        ).astype(np.float32) for _ in range(num_steps)
+        ).astype(dtype) for _ in range(num_steps)
     ]
 
     # Build the model.
@@ -57,8 +65,10 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
     #     \  |      |
     #      mul  -  add - L1 loss
     builder = popart.Builder()
+    dtype_str = "FLOAT" if dtype == np.float32 else "FLOAT16"
     input = builder.addInputTensor(
-        popart.TensorInfo("FLOAT", [samples_per_batch, input_dim, input_dim]))
+        popart.TensorInfo(dtype_str,
+                          [samples_per_batch, input_dim, input_dim]))
     w0 = builder.addInitializedInputTensor(w0_data)
     w1 = builder.addInitializedInputTensor(w1_data)
     mm0 = builder.aiOnnx.mul([input, w0])
@@ -120,8 +130,8 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
                         ))
 
         session.weightsToHost()
-        w0_popart = np.zeros((input_dim, input_dim), dtype=np.float32)
-        w1_popart = np.zeros((input_dim, input_dim), dtype=np.float32)
+        w0_popart = np.zeros((input_dim, input_dim), dtype=dtype)
+        w1_popart = np.zeros((input_dim, input_dim), dtype=dtype)
         weights_read = popart.PyWeightsIO({w0: w0_popart, w1: w1_popart})
         session.readWeights(weights_read)
 
@@ -133,12 +143,18 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
             wd_mode = 'decay'
         w0_np = w0_data.copy()
         w1_np = w1_data.copy()
-        mg0 = np.zeros(w0_np.shape, dtype=w0_np.dtype)
-        mg1 = np.zeros(w1_np.shape, dtype=w1_np.dtype)
-        rms0 = np.ones(w0_np.shape, dtype=w0_np.dtype)
-        rms1 = np.ones(w1_np.shape, dtype=w1_np.dtype)
-        mom0 = np.zeros(w0_np.shape, dtype=w0_np.dtype)
-        mom1 = np.zeros(w1_np.shape, dtype=w1_np.dtype)
+        mg0 = np.zeros(w0_np.shape,
+                       dtype=np.float32)  #Accl2 is type float32 by default
+        mg1 = np.zeros(w1_np.shape,
+                       dtype=np.float32)  #Accl2 is type float32 by default
+        rms0 = np.ones(w0_np.shape,
+                       dtype=np.float32)  #Accl1 is type float32 by default
+        rms1 = np.ones(w1_np.shape,
+                       dtype=np.float32)  #Accl1 is type float32 by default
+        mom0 = np.zeros(w0_np.shape, dtype=w0_np.dtype
+                        )  #Accl3 takes the same type as the weights by default
+        mom1 = np.zeros(w1_np.shape, dtype=w1_np.dtype
+                        )  #Accl3 takes the same type as the weights by default
 
         for step in range(num_steps):
             lr = learning_rates[0] if const_lr else learning_rates[step]
@@ -185,14 +201,13 @@ def test_rmsprop_tf_mode(use_tf_variant, const_lr, adaptive_mode, momentum,
 
         # Compare the resulting paramaters.
         if use_tf_variant:
-            np.testing.assert_allclose(w0_popart,
-                                       w0_np,
-                                       rtol=1e-02,
-                                       atol=1e-05)
-            np.testing.assert_allclose(w1_popart,
-                                       w1_np,
-                                       rtol=1e-02,
-                                       atol=1e-05)
+            # We are accumulating the values over multiple samples, batches and steps
+            # before performing the comparison. For fp16, we can
+            # see differences of 1e-3 between Popart and numpy after an optimizer step (for a single sample).
+            # So we increase the atol proportionally to the number of samples being processed.
+            atol = 1e-05 if dtype == np.float32 else 1e-3 * num_steps * batches_per_step * samples_per_batch
+            np.testing.assert_allclose(w0_popart, w0_np, rtol=1e-02, atol=atol)
+            np.testing.assert_allclose(w1_popart, w1_np, rtol=1e-02, atol=atol)
         else:
             assert not np.allclose(w0_popart, w0_np, rtol=1e-02, atol=1e-05)
             assert not np.allclose(w1_popart, w1_np, rtol=1e-02, atol=1e-05)
@@ -219,6 +234,6 @@ def model_grad(w0, w1, x):
     fwd_act = x * w0 + w1
     w0_grad = x.copy() / num_elems
     w0_grad[fwd_act < 0] *= -1
-    w1_grad = np.ones(w1.shape) / num_elems
+    w1_grad = np.ones(w1.shape, dtype=w0_grad.dtype) / num_elems
     w1_grad[fwd_act < 0] *= -1
     return w0_grad, w1_grad

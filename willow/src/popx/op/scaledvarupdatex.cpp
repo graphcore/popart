@@ -1,5 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
@@ -96,11 +97,20 @@ void ScaledVarUpdateOpx::growWithLrAsInput(snap::program::Sequence &prog,
                                            const ScaledVarUpdateOp &op,
                                            const snap::Tensor &var,
                                            const snap::Tensor &updater) const {
+  auto updater_t = updater.getPoplarTensor();
+  if (var.getPoplarTensor().elementType() != updater_t.elementType()) {
+    updater_t = popops::cast(graph().getPoplarGraph(),
+                             updater.getPoplarTensor(),
+                             var.getPoplarTensor().elementType(),
+                             prog.getPoplarSequence(),
+                             debugContext("_castupdater"));
+  }
+
   if (op.initLr.isConst() && op.initWd.isConst()) {
     if (op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
-                          updater.getPoplarTensor(),
+                          updater_t,
                           -op.initLr.val(),
                           prog.getPoplarSequence(),
                           debugContext("_c_0"));
@@ -108,7 +118,7 @@ void ScaledVarUpdateOpx::growWithLrAsInput(snap::program::Sequence &prog,
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
                           1.0f - op.initLr.val() * op.initWd.val(),
-                          updater.getPoplarTensor(),
+                          updater_t,
                           -op.initLr.val(),
                           prog.getPoplarSequence(),
                           debugContext("_c_c"));
@@ -125,7 +135,7 @@ void ScaledVarUpdateOpx::growWithLrAsInput(snap::program::Sequence &prog,
     if (op.initWd.isConst() && op.initWd.val() == 0.0f) {
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
-                          updater.getPoplarTensor(),
+                          updater_t,
                           lrt,
                           prog.getPoplarSequence(),
                           debugContext("_t_0"));
@@ -142,7 +152,7 @@ void ScaledVarUpdateOpx::growWithLrAsInput(snap::program::Sequence &prog,
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
                           wdt,
-                          updater.getPoplarTensor(),
+                          updater_t,
                           lrt,
                           prog.getPoplarSequence(),
                           debugContext("_t_t"));
@@ -155,12 +165,20 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
     const ScaledVarUpdateOp &op,
     const snap::Tensor &var,
     const snap::Tensor &updater) const {
+  auto updater_t = updater.getPoplarTensor();
+  if (var.getPoplarTensor().elementType() != updater_t.elementType()) {
+    updater_t = popops::cast(graph().getPoplarGraph(),
+                             updater.getPoplarTensor(),
+                             var.getPoplarTensor().elementType(),
+                             prog.getPoplarSequence(),
+                             debugContext("_castupdater"));
+  }
   if (op.initWd.isConst()) {
     if (op.initWd.val() == 0.0f) {
       // var = var - updater
       popops::mapInPlace(graph().getPoplarGraph(),
                          pe::Sub(pe::_1, pe::_2),
-                         {var.getPoplarTensor(), updater.getPoplarTensor()},
+                         {var.getPoplarTensor(), updater_t},
                          prog.getPoplarSequence(),
                          debugContext("__0"));
     } else {
@@ -169,7 +187,7 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
       popops::scaledAddTo(graph().getPoplarGraph(),
                           var.getPoplarTensor(),
                           1.0f - op.initWd.val(),
-                          updater.getPoplarTensor(),
+                          updater_t,
                           -1.0f,
                           prog.getPoplarSequence(),
                           debugContext("__c"));
@@ -179,8 +197,12 @@ void ScaledVarUpdateOpx::growWithLrInUpdater(
     // var = var * (1.0 - wd) - updater
     popops::mapInPlace(
         graph().getPoplarGraph(),
-        pe::Sub(pe::Mul(pe::_1, pe::Sub(pe::Const(1.0f), pe::_3)), pe::_2),
-        {var.getPoplarTensor(), updater.getPoplarTensor(), wdt},
+        pe::Sub(pe::Mul(pe::_1,
+                        pe::Sub(pe::Const(1.0f),
+                                pe::Cast(pe::_3,
+                                         var.getPoplarTensor().elementType()))),
+                pe::_2),
+        {var.getPoplarTensor(), updater_t, wdt},
         prog.getPoplarSequence(),
         debugContext("__t"));
   }

@@ -16,7 +16,6 @@ add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_comp
 add_popart_py_unit_test(adam_mixed_mode_test_py_0 adam_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(adaptive_mixed_mode_test_py_0 adaptive_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(pytorch_comparisons pytorch_comparisons.py VARIANTS IpuModel)
-add_popart_py_unit_test(rmsprop_tf_mode_test rmsprop_tf_mode_test.py)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_1 sgd_mixed_mode_test_py_1.py)
 add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
@@ -36,4 +35,10 @@ add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANT
       endforeach()
     endforeach()
   endforeach()
+endforeach()
+
+# rmsprop_tf_mode_test starts here
+set(dtypes "np.float32" "np.float16")
+foreach(dtype ${dtypes})
+add_popart_py_unit_test(rmsprop_tf_mode_test rmsprop_tf_mode_test.py MATCHEXPR "${dtype}")
 endforeach()

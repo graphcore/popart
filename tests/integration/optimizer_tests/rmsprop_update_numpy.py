@@ -44,6 +44,8 @@ def rmsprop_update_numpy(
     else:
         mg_t = mg
     mom_t = momentum * mom + lr * g / np.sqrt(denom_t, dtype=denom_t.dtype)
+    mom_t = mom_t.astype(
+        var.dtype)  #Accl3 has the same type as the weights (var) by default
     if weight_decay > 0.0 and weight_decay_mode == 'decay':
         if momentum > 0.0:
             var_t = var - (weight_decay * var + mom_t)
