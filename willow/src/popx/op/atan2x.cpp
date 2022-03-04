@@ -5,7 +5,6 @@
 #include <popart/popx/op/atan2x.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 
 namespace popart {
@@ -19,17 +18,25 @@ snap::Tensor Atan2Computex::outplace(snap::program::Sequence &prog,
                                      const snap::Tensor &b,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &debugStr) const {
-  return snap::popops::atan2(graph, a, b, prog, {dnai, debugStr});
+  return snap::Tensor{popops::atan2(graph.getPoplarGraph(),
+                                    a.getPoplarTensor(),
+                                    b.getPoplarTensor(),
+                                    prog.getPoplarSequence(),
+                                    {dnai, debugStr}),
+                      graph};
 }
 
-snap::Tensor Atan2Computex::maybeInplace(snap::program::Sequence &prog,
-                                         snap::Graph &graph,
-                                         const snap::Tensor &tInOut,
-                                         const snap::Tensor &tIn,
-                                         const poplar::DebugNameAndId &dnai,
-                                         const std::string &debugStr) const {
-  return snap::popops::atan2MaybeInPlace(
-      graph, tInOut, tIn, prog, {dnai, debugStr});
+void Atan2Computex::inplace(snap::program::Sequence &prog,
+                            snap::Graph &graph,
+                            const snap::Tensor &tInOut,
+                            const snap::Tensor &tIn,
+                            const poplar::DebugNameAndId &dnai,
+                            const std::string &debugStr) const {
+  popops::atan2InPlace(graph.getPoplarGraph(),
+                       tInOut.getPoplarTensor(),
+                       tIn.getPoplarTensor(),
+                       prog.getPoplarSequence(),
+                       {dnai, debugStr});
 }
 
 Atan2Opx::Atan2Opx(Op *op, Devicex *devicex)

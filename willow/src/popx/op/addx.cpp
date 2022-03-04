@@ -23,16 +23,21 @@ snap::Tensor AddComputex::outplace(snap::program::Sequence &prog,
                                    const snap::Tensor &b,
                                    const poplar::DebugNameAndId &dnai,
                                    const std::string &name) const {
-  return snap::popops::add(graph, a, b, prog, {dnai, name});
+  return snap::Tensor{popops::add(graph.getPoplarGraph(),
+                                  a.getPoplarTensor(),
+                                  b.getPoplarTensor(),
+                                  prog.getPoplarSequence(),
+                                  {dnai, name}),
+                      graph};
 }
 
-snap::Tensor AddComputex::maybeInplace(snap::program::Sequence &prog,
-                                       snap::Graph &graph,
-                                       const snap::Tensor &tInOut,
-                                       const snap::Tensor &tIn,
-                                       const poplar::DebugNameAndId &dnai,
-                                       const std::string &name) const {
-  return snap::popops::addMaybeInPlace(graph, tInOut, tIn, prog, {dnai, name});
+void AddComputex::inplace(snap::program::Sequence &prog,
+                          snap::Graph &graph,
+                          const snap::Tensor &tInOut,
+                          const snap::Tensor &tIn,
+                          const poplar::DebugNameAndId &dnai,
+                          const std::string &name) const {
+  snap::popops::addInPlace(graph, tInOut, tIn, prog, {dnai, name});
 }
 
 AddOpx::AddOpx(Op *op, Devicex *devicex)

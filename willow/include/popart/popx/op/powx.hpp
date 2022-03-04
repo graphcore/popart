@@ -20,12 +20,12 @@ public:
                         const poplar::DebugNameAndId &,
                         const std::string &) const final;
 
-  snap::Tensor maybeInplace(snap::program::Sequence &,
-                            snap::Graph &,
-                            const snap::Tensor &,
-                            const snap::Tensor &,
-                            const poplar::DebugNameAndId &,
-                            const std::string &) const final;
+  void inplace(snap::program::Sequence &,
+               snap::Graph &,
+               const snap::Tensor &,
+               const snap::Tensor &,
+               const poplar::DebugNameAndId &,
+               const std::string &) const final;
 };
 
 class PowOpx : public ElementWiseBinaryOutplaceOpx {

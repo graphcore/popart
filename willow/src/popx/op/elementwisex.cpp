@@ -280,21 +280,44 @@ void ElementWiseBinaryInplaceOpx::grow(snap::program::Sequence &prog) const {
                 debugContext().getPathName());
   }
 
+  constexpr unsigned maxTileImbalance = 150000;
+  bool canComputeInplace              = true;
+
   auto tInOut    = getInTensor(cx->getInplaceArgInIndex());
   const auto tIn = getInTensor(cx->getOutplaceArgInIndex());
+  auto &g        = graph();
 
-  if (tInOut.isParallelWriteable()) {
-    tInOut =
-        cx->maybeInplace(prog, graph(), tInOut, tIn, getDebugNameAndId(), "");
+  if (!tInOut.isParallelWriteable()) {
+    logging::debug(
+        "Unable to inplace operation {}, tensor is not parallel writeable",
+        debugContext().getPathName());
+    canComputeInplace = false;
+  } else if (snap::poputil::getTileImbalance(g, tInOut) > maxTileImbalance) {
+    logging::debug("Unable to inplace operation {}, tensor tile imbalance ({}) "
+                   "is too high",
+                   debugContext().getPathName(),
+                   snap::poputil::getTileImbalance(g, tInOut));
+    canComputeInplace = false;
+  }
+
+  const auto outIdx = ElementWiseBinaryBaseOp::getOutIndex();
+
+  if (canComputeInplace) {
+    cx->inplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
+    if (outInfo(outIdx).nelms() == tInOut.numElements()) {
+      // Only attempt reshape if the number of elements agree between IR and
+      // Poplar (e.g. not RTS)
+      tInOut = tInOut.reshape(outInfo(outIdx).shape_szt());
+    }
   } else {
-    tInOut = cx->outplace(prog, graph(), tInOut, tIn, getDebugNameAndId(), "");
+    tInOut = cx->outplace(prog, g, tInOut, tIn, getDebugNameAndId(), "");
   }
 
   if (hasInViewChangers(cx->getInplaceArgInIndex())) {
     setOutViewChangers(ElementWiseBinaryOp::getOutIndex(),
                        getInViewChangers(cx->getInplaceArgInIndex()));
   }
-  setOutTensor(ElementWiseBinaryBaseOp::getOutIndex(), tInOut);
+  setOutTensor(outIdx, tInOut);
 }
 
 BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
