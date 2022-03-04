@@ -23,22 +23,23 @@ def test_stream_on_off():
             o: popart.AnchorReturnType("All")
         })
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array([1., 3.], dtype=np.float16),
-        i2: np.array([7., 8.], dtype=np.float16)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1., 3.], dtype=np.float16),
+            i2: np.array([7., 8.], dtype=np.float16)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
-    # confirm that writing device-to-host of a Stream Tensor returns correctly (unchanged)
-    assert (np.allclose(anchors[i1], np.array([1., 3.], dtype=np.float16)))
-    assert (np.allclose(anchors[i2], np.array([7., 8.], dtype=np.float16)))
+        # confirm that writing device-to-host of a Stream Tensor returns correctly (unchanged)
+        assert (np.allclose(anchors[i1], np.array([1., 3.], dtype=np.float16)))
+        assert (np.allclose(anchors[i2], np.array([7., 8.], dtype=np.float16)))

@@ -161,51 +161,53 @@ def get_model_anchors_model1(doSharding,
     else:
         numIPUs = 3
 
-    if doTraining is True:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            loss=output,
-            optimizer=popart.ConstSGD(0.01),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs))
-    else:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs))
+    with tu.create_test_device(numIpus=numIPUs) as device:
+        if doTraining is True:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 batchesPerStep, anchor_map),
+                                             loss=output,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             userOptions=opts,
+                                             deviceInfo=device)
+        else:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  batchesPerStep, anchor_map),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
-    if doDevicex is False:
-        return None
+        if doDevicex is False:
+            return None
 
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
 
-    outer_dim = 1
-    if batchesPerStep > 1:
-        # Add an outer dimension of batchesPerStep. We repeat the labels
-        # as we want consistency if we have different shape inputs between examples.
-        outer_dim *= batchesPerStep
-        labelArray = np.repeat(labelArray[np.newaxis], batchesPerStep, 0)
-    if gradAcclFactor > 1:
-        # Divide up the batches per step batches into gradAcclFactor * batchesPerStep
-        # samples.
-        outer_dim *= gradAcclFactor
-        labelArray = labelArray.reshape([gradAcclFactor * batchesPerStep, -1])
-    if outer_dim > 1:
-        # Add the gradAcclFactor * batchesPerStep dimension into the input.
-        input_shape = [outer_dim] + input_shape
+        outer_dim = 1
+        if batchesPerStep > 1:
+            # Add an outer dimension of batchesPerStep. We repeat the labels
+            # as we want consistency if we have different shape inputs between examples.
+            outer_dim *= batchesPerStep
+            labelArray = np.repeat(labelArray[np.newaxis], batchesPerStep, 0)
+        if gradAcclFactor > 1:
+            # Divide up the batches per step batches into gradAcclFactor * batchesPerStep
+            # samples.
+            outer_dim *= gradAcclFactor
+            labelArray = labelArray.reshape(
+                [gradAcclFactor * batchesPerStep, -1])
+        if outer_dim > 1:
+            # Add the gradAcclFactor * batchesPerStep dimension into the input.
+            input_shape = [outer_dim] + input_shape
 
-    stepio = popart.PyStepIO(
-        {
-            input_: np.ones(input_shape, np.float32),
-            label: labelArray.astype(np.int32)
-        }, anchors)
+        stepio = popart.PyStepIO(
+            {
+                input_: np.ones(input_shape, np.float32),
+                label: labelArray.astype(np.int32)
+            }, anchors)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    session.run(stepio)
+        session.run(stepio)
 
     return anchors
 
@@ -273,56 +275,57 @@ def get_model_anchors_model2(doSharding,
         builder.virtualGraph(out, 2)
         builder.virtualGraph(nll, 2)
 
-    if doTraining is True:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            loss=nll,
-            optimizer=popart.ConstSGD(0.01),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs))
-    else:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs))
+    with tu.create_test_device(numIpus=numIPUs) as device:
+        if doTraining is True:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 batchesPerStep, anchor_map),
+                                             loss=nll,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             userOptions=opts,
+                                             deviceInfo=device)
+        else:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  batchesPerStep, anchor_map),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
-    if doDevicex is False:
-        return None
+        if doDevicex is False:
+            return None
 
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
 
-    classes = np.prod(shape_d0) / (micro_batch_size * batchesPerStep)
-    label = np.random.randint(low=0, high=classes,
-                              size=shape_l0).astype(np.int32)
+        classes = np.prod(shape_d0) / (micro_batch_size * batchesPerStep)
+        label = np.random.randint(low=0, high=classes,
+                                  size=shape_l0).astype(np.int32)
 
-    outer_dim = 1
-    if batchesPerStep > 1:
-        # Add an outer dimension of batchesPerStep. We repeat the labels
-        # as we want consistency if we have different shape inputs between examples.
-        outer_dim *= batchesPerStep
-        label = np.repeat(label[np.newaxis], batchesPerStep, 0)
-    if gradAcclFactor > 1:
-        # Divide up the batches per step batches into gradAcclFactor * batchesPerStep
-        # samples.
-        outer_dim *= gradAcclFactor
-        label = label.reshape([gradAcclFactor * batchesPerStep, -1])
-    if outer_dim > 1:
-        # Add the gradAcclFactor * batchesPerStep dimension into the input.
-        shape_d0.insert(0, outer_dim)
-    data = np.ones(shape=shape_d0).astype(np.float32)
+        outer_dim = 1
+        if batchesPerStep > 1:
+            # Add an outer dimension of batchesPerStep. We repeat the labels
+            # as we want consistency if we have different shape inputs between examples.
+            outer_dim *= batchesPerStep
+            label = np.repeat(label[np.newaxis], batchesPerStep, 0)
+        if gradAcclFactor > 1:
+            # Divide up the batches per step batches into gradAcclFactor * batchesPerStep
+            # samples.
+            outer_dim *= gradAcclFactor
+            label = label.reshape([gradAcclFactor * batchesPerStep, -1])
+        if outer_dim > 1:
+            # Add the gradAcclFactor * batchesPerStep dimension into the input.
+            shape_d0.insert(0, outer_dim)
+        data = np.ones(shape=shape_d0).astype(np.float32)
 
-    inputs = {d0: data, l0: label}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {d0: data, l0: label}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    for i in range(6):
-        session.run(stepio)
+        for i in range(6):
+            session.run(stepio)
 
-    if returnRawInput is True:
-        anchors["input_raw"] = data
+        if returnRawInput is True:
+            anchors["input_raw"] = data
 
     return anchors

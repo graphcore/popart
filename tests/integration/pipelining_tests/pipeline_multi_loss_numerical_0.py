@@ -114,39 +114,39 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
     def getWeights(withPipelining):
 
-        device = tu.create_test_device(numIpus=nIPUs, tilesPerIPU=1216)
-        userOptions = popart.SessionOptions()
-        userOptions.enableOutlining = False
-        userOptions.enablePipelining = withPipelining
-        userOptions.enableGradientAccumulation = True
-        userOptions.accumulationFactor = accumulationFactor
-        userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
+        with tu.create_test_device(numIpus=nIPUs, tilesPerIPU=1216) as device:
+            userOptions = popart.SessionOptions()
+            userOptions.enableOutlining = False
+            userOptions.enablePipelining = withPipelining
+            userOptions.enableGradientAccumulation = True
+            userOptions.accumulationFactor = accumulationFactor
+            userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=dataFlow,
-            optimizer=popart.SGD({
-                "defaultLearningRate": (defaultLearningRate0, False),
-                "defaultMomentum": (defaultMomentum0, False),
-                "defaultDampening": (defaultDampening0, False)
-            }),
-            loss=finalLoss,
-            userOptions=userOptions,
-            deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=dataFlow,
+                optimizer=popart.SGD({
+                    "defaultLearningRate": (defaultLearningRate0, False),
+                    "defaultMomentum": (defaultMomentum0, False),
+                    "defaultDampening": (defaultDampening0, False)
+                }),
+                loss=finalLoss,
+                userOptions=userOptions,
+                deviceInfo=device)
 
-        anchorArrays = session.initAnchorArrays()
+            anchorArrays = session.initAnchorArrays()
 
-        session.prepareDevice()
-        session.weightsFromHost()
+            session.prepareDevice()
+            session.weightsFromHost()
 
-        stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
-        session.run(stepio)
-        session.weightsToHost()
-        w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-        w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-        weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R})
-        session.readWeights(weightsRead)
-        return w0R, w1R
+            stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
+            session.run(stepio)
+            session.weightsToHost()
+            w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+            w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+            weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R})
+            session.readWeights(weightsRead)
+            return w0R, w1R
 
     # pytorch verification model:
     class Net(nn.Module):

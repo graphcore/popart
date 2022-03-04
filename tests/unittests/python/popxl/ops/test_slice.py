@@ -38,19 +38,19 @@ def run_ir(ir: popxl.Ir, y: popxl.Tensor):
 
     ir_.updateVertices()
 
-    session = popart.InferenceSession.fromIr(
-        ir=ir_, deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession.fromIr(ir=ir_, deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
+        # Create buffers for anchors
+        anchors = session.initAnchorArrays()
 
-    # Run the model
-    stepio = popart.PyStepIO(inputs={}, outputs=anchors)
+        # Run the model
+        stepio = popart.PyStepIO(inputs={}, outputs=anchors)
 
-    session.weightsFromHost()
-    session.run(stepio)
+        session.weightsFromHost()
+        session.run(stepio)
 
     y_ = anchors[y_id]
     return y_

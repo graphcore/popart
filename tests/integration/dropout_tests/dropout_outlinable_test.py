@@ -62,7 +62,6 @@ def test_dropout_outlinable():
                 op for op in ir['maingraph'] if op['type'] == 'Dropout'
             ]
             assert (len(dropouts) <= 2)
-            device.detach()
             return anchors[x]
 
     outputs_run1 = run_test()

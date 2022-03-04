@@ -30,12 +30,13 @@ def test_ipu_copy_bca1():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 # Will fail due to an invalid virtual graph
@@ -64,13 +65,14 @@ def test_ipu_copy_aca1():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        s.prepareDevice()
+        with pytest.raises(popart.popart_exception) as e_info:
+            s.prepareDevice()
 
     assert (("inputs=[{}, {}], outputs=[{}]) " +
              "has been assigned to an invalid virtual graph 10").format(
@@ -107,12 +109,13 @@ def test_ipu_copy_bca4():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 # Test to ensure that same tensor it not copied multiple times to the same IPU
@@ -148,12 +151,13 @@ def test_ipu_copy_bca2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 # Test to make sure that if a single op has multiple it mapped to multiple inputs then the copy does
@@ -181,12 +185,13 @@ def test_ipu_copy_bca3():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=2))
+    with tu.create_test_device(numIpus=2) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 @tu.requires_ipu_model
@@ -219,12 +224,13 @@ def test_ipu_copy_bca5():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 #     IPU 0      *        IPU 1
@@ -264,9 +270,10 @@ def test_copy_to_op_with_duplicate_inputs():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=3))
+    with tu.create_test_device(numIpus=3) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()

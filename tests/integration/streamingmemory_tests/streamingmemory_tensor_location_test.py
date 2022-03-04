@@ -54,62 +54,64 @@ def get_ir(enable_executionphases=True,
 
     builder.addOutputTensor(out)
 
-    device = tu.create_test_device(
-        num_replicas * (2 if enable_executionphases else 1),
-        pattern=popart.SyncPattern.Full)
+    with tu.create_test_device(
+            num_replicas * (2 if enable_executionphases else 1),
+            pattern=popart.SyncPattern.Full) as device:
 
-    dfAnchors = {}
-    for anchorId in anchorIds:
-        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
+        dfAnchors = {}
+        for anchorId in anchorIds:
+            dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
-    opts = popart.SessionOptions()
-    opts.enableOutlining = enable_outlining
-    opts.enableReplicatedGraphs = True if num_replicas > 1 else False
-    opts.replicatedGraphCount = num_replicas
-    if accumulation_factor > 1:
-        opts.enableGradientAccumulation = True
-        opts.accumulationFactor = accumulation_factor
+        opts = popart.SessionOptions()
+        opts.enableOutlining = enable_outlining
+        opts.enableReplicatedGraphs = True if num_replicas > 1 else False
+        opts.replicatedGraphCount = num_replicas
+        if accumulation_factor > 1:
+            opts.enableGradientAccumulation = True
+            opts.accumulationFactor = accumulation_factor
 
-    if activation_tensor_location_settings is not None:
-        opts.activationTensorLocationSettings = activation_tensor_location_settings
-    if weight_tensor_location_settings is not None:
-        opts.weightTensorLocationSettings = weight_tensor_location_settings
-    if optimizer_state_tensor_location_settings is not None:
-        opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
-    if accumulator_tensor_location_settings is not None:
-        opts.accumulatorTensorLocationSettings = accumulator_tensor_location_settings
+        if activation_tensor_location_settings is not None:
+            opts.activationTensorLocationSettings = activation_tensor_location_settings
+        if weight_tensor_location_settings is not None:
+            opts.weightTensorLocationSettings = weight_tensor_location_settings
+        if optimizer_state_tensor_location_settings is not None:
+            opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
+        if accumulator_tensor_location_settings is not None:
+            opts.accumulatorTensorLocationSettings = accumulator_tensor_location_settings
 
-    opts.tensorLocationSettingsOverride = tensor_location_setting_override
+        opts.tensorLocationSettingsOverride = tensor_location_setting_override
 
-    if (enable_executionphases):
-        opts.executionPhaseSettings.phases = num_layers
-        opts.autoRecomputation = popart.RecomputationType.NoRecompute
-        opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
-        opts.explicitRecomputation = False
+        if (enable_executionphases):
+            opts.executionPhaseSettings.phases = num_layers
+            opts.autoRecomputation = popart.RecomputationType.NoRecompute
+            opts.virtualGraphMode = popart.VirtualGraphMode.ExecutionPhases
+            opts.explicitRecomputation = False
 
-    proto = builder.getModelProto()
+        proto = builder.getModelProto()
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=popart.DataFlow(1, dfAnchors),
-                                     optimizer=optimizer,
-                                     loss=l1,
-                                     patterns=popart.Patterns(
-                                         popart.PatternsLevel.All),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1, dfAnchors),
+            optimizer=optimizer,
+            loss=l1,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            userOptions=opts,
+            deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
 
-    for i in range(num_iterations):
-        ip_data = np.random.rand(num_replicas, accumulation_factor, batch_size,
-                                 dsize, dsize).astype(np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
-        session.run(stepio)
+        for i in range(num_iterations):
+            ip_data = np.random.rand(num_replicas, accumulation_factor,
+                                     batch_size, dsize, dsize).astype(
+                                         np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            session.run(stepio)
 
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    return ir
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+        return ir
 
 
 def check_ir(ir, check_onchip, check_offchip):

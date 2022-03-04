@@ -28,7 +28,8 @@ bias_init = np.random.rand(2).astype(np.float16)
 
 
 def create_model_pipelined(bufferStreams: bool = False,
-                           pipelining: bool = False) -> Dict:
+                           pipelining: bool = False,
+                           device=None) -> Dict:
     """Create a simple model with optional pipeliing to test buffering streams
 
     Args:
@@ -65,8 +66,6 @@ def create_model_pipelined(bufferStreams: bool = False,
     opts.enableOutlining = True
     opts.useHostCopyOps = bufferStreams
 
-    numIPUs = 1
-
     if pipelining:
         opts.enablePipelining = True
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -78,9 +77,6 @@ def create_model_pipelined(bufferStreams: bool = False,
         builder.virtualGraph(sm, 1)
         builder.pipelineStage(nll, 1)
         builder.virtualGraph(nll, 1)
-        numIPUs = 2
-
-    device = tu.create_test_device(numIPUs)
 
     session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                      dataFlow=dataFlow,
@@ -144,26 +140,34 @@ def test_basic_host_load_output(enable_pipelining: bool):
         enable_pipelining (bool): Whether to split the model in two and pipeline it.
         Parameterized on and off.
     """
-    bundle_false = create_model_pipelined(bufferStreams=False,
-                                          pipelining=enable_pipelining)
-    bundle_true = create_model_pipelined(bufferStreams=True,
-                                         pipelining=enable_pipelining)
+    numIPUs = 1
+    if enable_pipelining:
+        numIPUs = 2
 
-    for step in range(5):
-        print(f"Running step {step}")
-        for bundle in (bundle_false, bundle_true):
-            bundle["session"].weightsFromHost()
-            bundle["session"].run(bundle["stepio"])
-            bundle["session"].weightsToHost()
-        print(f"\tChecking", bundle_false["out"], "vs", bundle_true["out"])
-        assert np.allclose(bundle_false["anchors"][bundle_false["out"]],
-                           bundle_true["anchors"][bundle_true["out"]])
+    with tu.create_test_device(numIPUs) as d1, tu.create_test_device(
+            numIPUs) as d2:
+        bundle_false = create_model_pipelined(bufferStreams=False,
+                                              pipelining=enable_pipelining,
+                                              device=d1)
+        bundle_true = create_model_pipelined(bufferStreams=True,
+                                             pipelining=enable_pipelining,
+                                             device=d2)
+
+        for step in range(5):
+            print(f"Running step {step}")
+            for bundle in (bundle_false, bundle_true):
+                bundle["session"].weightsFromHost()
+                bundle["session"].run(bundle["stepio"])
+                bundle["session"].weightsToHost()
+            print(f"\tChecking", bundle_false["out"], "vs", bundle_true["out"])
+            assert np.allclose(bundle_false["anchors"][bundle_false["out"]],
+                               bundle_true["anchors"][bundle_true["out"]])
 
 
 def get_model(input_shape: List[int], weight_array: np.array,
               batches_per_step: int, replication_factor: int, batch_size: int,
               channels: int, data_len: int, synthetic_data: bool,
-              buffer_streams: bool) -> Tuple:
+              buffer_streams: bool, device) -> Tuple:
     """Get a simple model for comparison with buffer streams on and off.
     Adapted from prefetch_test.py as we require to test the validity of streams
     here as well.
@@ -225,7 +229,6 @@ def get_model(input_shape: List[int], weight_array: np.array,
         opts.replicatedGraphCount = replication_factor
         opts.enableReplicatedGraphs = True
         ipus *= replication_factor
-    device = tu.create_test_device(ipus)
 
     assert device
 
@@ -306,55 +309,64 @@ def run_test(batches_per_step: int, replication_factor: int, batch_size: int,
     input_shape = [micro_batch_size, channels, data_len, data_len]
     weight_array = np.random.random_sample(input_shape).astype(np.float32)
 
-    sesstion_true, anchors_true, label_shape_true = get_model(
-        input_shape=input_shape,
-        weight_array=weight_array,
-        batches_per_step=batches_per_step,
-        replication_factor=replication_factor,
-        batch_size=batch_size,
-        channels=channels,
-        data_len=data_len,
-        synthetic_data=False,
-        buffer_streams=True)  # <-- Testing this
+    ipus = 1
+    if replication_factor > 1:
+        ipus *= replication_factor
 
-    # check_ops(sesstion_true, True, 2)
+    with tu.create_test_device(ipus) as d1, tu.create_test_device(ipus) as d2:
+        sesstion_true, anchors_true, label_shape_true = get_model(
+            input_shape=input_shape,
+            weight_array=weight_array,
+            batches_per_step=batches_per_step,
+            replication_factor=replication_factor,
+            batch_size=batch_size,
+            channels=channels,
+            data_len=data_len,
+            synthetic_data=False,
+            buffer_streams=True,  # <-- Testing this
+            device=d1)
 
-    session_false, anchors_false, label_shape_false = get_model(
-        input_shape=input_shape,
-        weight_array=weight_array,
-        batches_per_step=batches_per_step,
-        replication_factor=replication_factor,
-        batch_size=batch_size,
-        channels=channels,
-        data_len=data_len,
-        synthetic_data=False,
-        buffer_streams=False)  # <-- Testing this
+        # check_ops(sesstion_true, True, 2)
 
-    for step in range(steps):
-        print("Step:", step + 1)
-        in_array = (np.random.random_sample([
-            batch_size * batches_per_step, channels, data_len, data_len
-        ]).astype(np.float32) + 1) * 10
+        session_false, anchors_false, label_shape_false = get_model(
+            input_shape=input_shape,
+            weight_array=weight_array,
+            batches_per_step=batches_per_step,
+            replication_factor=replication_factor,
+            batch_size=batch_size,
+            channels=channels,
+            data_len=data_len,
+            synthetic_data=False,
+            buffer_streams=False,  # <-- Testing this
+            device=d2)
 
-        label_array = np.random.randint(low=0,
-                                        high=(channels * data_len * data_len),
-                                        size=label_shape_true).astype(np.int32)
-        # Only provide one session.run's worth of data.
-        tuple_1 = run_model(sesstion_true, anchors_true, in_array, label_array)
+        for step in range(steps):
+            print("Step:", step + 1)
+            in_array = (np.random.random_sample([
+                batch_size * batches_per_step, channels, data_len, data_len
+            ]).astype(np.float32) + 1) * 10
 
-        tuple_2 = run_model(session_false, anchors_false, in_array,
-                            label_array)
+            label_array = np.random.randint(
+                low=0,
+                high=(channels * data_len * data_len),
+                size=label_shape_true).astype(np.int32)
+            # Only provide one session.run's worth of data.
+            tuple_1 = run_model(sesstion_true, anchors_true, in_array,
+                                label_array)
 
-        for i in range(batches_per_step):
-            if batches_per_step == 1:
-                i = None
-            else:
-                print("  Batch:", i)
+            tuple_2 = run_model(session_false, anchors_false, in_array,
+                                label_array)
 
-            for anchor_1, anchor_2 in zip(tuple_1, tuple_2):
-                print("Host IO ops:", np.mean(anchor_1[i]))
-                print("No Host IO ops:", np.mean(anchor_2[i]))
-                assert np.allclose(anchor_1[i], anchor_2[i])
+            for i in range(batches_per_step):
+                if batches_per_step == 1:
+                    i = None
+                else:
+                    print("  Batch:", i)
+
+                for anchor_1, anchor_2 in zip(tuple_1, tuple_2):
+                    print("Host IO ops:", np.mean(anchor_1[i]))
+                    print("No Host IO ops:", np.mean(anchor_2[i]))
+                    assert np.allclose(anchor_1[i], anchor_2[i])
 
 
 @tu.requires_ipu_model

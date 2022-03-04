@@ -54,36 +54,37 @@ def test_sgd_mixed_mode(tmpdir):
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,\
-            userOptions=opts,
-            loss=l1,
-            optimizer=opt0,
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,\
+                userOptions=opts,
+                loss=l1,
+                optimizer=opt0,
+                patterns=pat,
+                deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        input0Data = np.array([3.1415], dtype=np.float32)
+            input0Data = np.array([3.1415], dtype=np.float32)
 
-        stepio = popart.PyStepIO({input0: input0Data}, anchors)
+            stepio = popart.PyStepIO({input0: input0Data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        session.updateOptimizerFromHost(opt1)
+            session.updateOptimizerFromHost(opt1)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        session.weightsToHost()
+            session.weightsToHost()
 
-        weightsRead = popart.PyWeightsIO({w0Id: w0R, w1Id: w1R, w2Id: w2R})
+            weightsRead = popart.PyWeightsIO({w0Id: w0R, w1Id: w1R, w2Id: w2R})
 
-        session.readWeights(weightsRead)
+            session.readWeights(weightsRead)
 
         assert (np.isclose(e0['initalValue'], w0R))
         assert (np.isclose(e1['initalValue'], w1R))

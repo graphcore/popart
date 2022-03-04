@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 
 def test_various_casts():
@@ -46,8 +47,9 @@ def test_various_casts():
         session = PopartTestSession()
 
         # test a pipeline stage appearing on multiple virtual graphs
-        session.prepare(init_builder)
-        anchors = session.run()
+        with tu.create_test_device() as device:
+            session.prepare(init_builder, device=device)
+            anchors = session.run()
         # print(anchors)
         cast_output = anchors[cast_id]
         numpy_cast = const_data.astype(input_data.dtype)

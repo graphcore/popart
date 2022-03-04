@@ -128,8 +128,9 @@ def test_lstm(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.device = tu.create_test_device()
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.run(init_builder, reference, 'infer')
 
 
 # Check the conversion from onnx lstm to popart lstm works.
@@ -157,10 +158,11 @@ def test_lstm_popart(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.device = tu.create_test_device()
-    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
-                          enableRuntimeAsserts=False)
-    session = op_tester.run(init_builder, reference, 'train')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
+                              enableRuntimeAsserts=False)
+        session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     graph = ir['maingraph']
@@ -195,10 +197,11 @@ def test_lstm_outlining(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [None]
 
-    op_tester.device = tu.create_test_device()
-    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
-                          enableRuntimeAsserts=False)
-    session = op_tester.run(init_builder, reference, 'train')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
+                              enableRuntimeAsserts=False)
+        session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     main_graph = ir['maingraph']
@@ -241,7 +244,8 @@ def test_lstm_onnx_vs_popart():
             return [output_ids[0]]
 
         session = PopartTestSession()
-        anchors = session.prepare_and_run(init_builder)
+        with tu.create_test_device() as device:
+            anchors = session.prepare_and_run(init_builder, device=device)
 
         assert len(anchors) == 1
         anchors = [v for v in anchors.values()]
@@ -315,7 +319,8 @@ def test_lstm_onnx_vs_popart_2():
             return [Y]
 
         session = PopartTestSession()
-        anchors = session.prepare_and_run(init_builder)
+        with tu.create_test_device() as device:
+            anchors = session.prepare_and_run(init_builder, device=device)
 
         assert len(anchors) == 1
         anchors = [v for v in anchors.values()]
@@ -362,7 +367,8 @@ def test_lstm_onnx_vs_popart_2():
             return [output_ids[0]]
 
         session = PopartTestSession()
-        anchors = session.prepare_and_run(init_builder)
+        with tu.create_test_device() as device:
+            anchors = session.prepare_and_run(init_builder, device=device)
 
         assert len(anchors) == 1
         anchors = [v for v in anchors.values()]
@@ -453,7 +459,8 @@ def test_lstm_training_onnx_vs_popart():
 
         session = PopartTestSession()
         session.mode = 'train'
-        anchors = session.prepare_and_run(init_builder)
+        with tu.create_test_device() as device:
+            anchors = session.prepare_and_run(init_builder, device=device)
 
         return anchors
 
@@ -508,7 +515,8 @@ def test_lstm_training_onnx_vs_popart():
 
         session = PopartTestSession()
         session.mode = 'train'
-        anchors = session.prepare_and_run(init_builder)
+        with tu.create_test_device() as device:
+            anchors = session.prepare_and_run(init_builder, device=device)
         return anchors
 
     num_directions = 1
@@ -776,9 +784,10 @@ def test_unsupported_activation(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'Affine' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
@@ -809,23 +818,24 @@ def test_lstm_explicit_recompute():
 
     builder.addOutputTensor(loss)
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    opts = popart.SessionOptions()
-    opts.explicitRecomputation = True
+        opts = popart.SessionOptions()
+        opts.explicitRecomputation = True
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        deviceInfo=device,
-        optimizer=popart.ConstSGD(0.1),
-        userOptions=opts,
-        loss=loss)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(0.1),
+            userOptions=opts,
+            loss=loss)
 
-    # Now the test is passing we can add a check to make sure there
-    # are 2 lstm ops. This is to check that the lstm is being cloned
-    # and we are actually testing what we intended.
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    maingraph = ir['maingraph']
-    lstms = [i for i in maingraph if i['type'] == 'LSTM']
-    assert len(lstms) == 2
+        # Now the test is passing we can add a check to make sure there
+        # are 2 lstm ops. This is to check that the lstm is being cloned
+        # and we are actually testing what we intended.
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+        maingraph = ir['maingraph']
+        lstms = [i for i in maingraph if i['type'] == 'LSTM']
+        assert len(lstms) == 2

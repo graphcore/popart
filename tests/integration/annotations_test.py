@@ -38,28 +38,28 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
     if virtualgraph_enabled:
         builder.virtualGraph(out, 3)
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
+        dfAnchors = {}
+        for anchorId in anchorIds:
+            dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
-    dfAnchors = {}
-    for anchorId in anchorIds:
-        dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
+        opts = popart.SessionOptions()
+        # disable outlining to make the ir easier to parse
+        opts.enableOutlining = False
 
-    opts = popart.SessionOptions()
-    # disable outlining to make the ir easier to parse
-    opts.enableOutlining = False
+        proto = builder.getModelProto()
 
-    proto = builder.getModelProto()
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1, dfAnchors),
+            optimizer=popart.ConstSGD(0.1),
+            loss=out,
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            userOptions=opts,
+            deviceInfo=device)
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=popart.DataFlow(1, dfAnchors),
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=out,
-                                     patterns=popart.Patterns(
-                                         popart.PatternsLevel.All),
-                                     userOptions=opts,
-                                     deviceInfo=device)
-
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
     return ir
 
 

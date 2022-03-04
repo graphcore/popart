@@ -37,38 +37,38 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device()
+        with tu.create_test_device() as device:
 
-        dfAnchors = {}
-        for anchorId in anchorIds:
-            dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
+            dfAnchors = {}
+            for anchorId in anchorIds:
+                dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
-        opts = popart.SessionOptions()
-        opts.enableOutlining = enableOutlining
-        opts.separateCallOpPdfs = False
-        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
+            opts = popart.SessionOptions()
+            opts.enableOutlining = enableOutlining
+            opts.separateCallOpPdfs = False
+            opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dfAnchors),
-            optimizer=popart.ConstSGD(0.1),
-            loss=out,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, dfAnchors),
+                optimizer=popart.ConstSGD(0.1),
+                loss=out,
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((dsize, dsize), dtype=np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            ip_data = np.ones((dsize, dsize), dtype=np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        session.modelToHost(str(tmpdir / model_file_name))
+            session.modelToHost(str(tmpdir / model_file_name))
 
     run('without_outlining.onnx', False)
     run('with_outlining.onnx', True)
@@ -116,33 +116,34 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device()
+        with tu.create_test_device() as device:
 
-        dfAnchors = {}
-        for anchorId in anchorIds:
-            dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
+            dfAnchors = {}
+            for anchorId in anchorIds:
+                dfAnchors.update({anchorId: popart.AnchorReturnType("All")})
 
-        opts = popart.SessionOptions()
-        opts.enableOutlining = enableOutlining
-        opts.subgraphCopyingStrategy = subgraphCopyingStrategy
+            opts = popart.SessionOptions()
+            opts.enableOutlining = enableOutlining
+            opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batches_per_step, dfAnchors),
-            optimizer=popart.ConstSGD(0.1),
-            loss=out,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batches_per_step, dfAnchors),
+                optimizer=popart.ConstSGD(0.1),
+                loss=out,
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((batches_per_step, dsize, dsize), dtype=np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            ip_data = np.ones((batches_per_step, dsize, dsize),
+                              dtype=np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
         return anchors
 
@@ -196,18 +197,19 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
         opts = popart.SessionOptions()
         opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
-        sess = popart.InferenceSession(fnModel=proto,
-                                       deviceInfo=tu.create_test_device(),
-                                       dataFlow=popart.DataFlow(1, [o]),
-                                       userOptions=opts)
-        sess.prepareDevice()
+        with tu.create_test_device() as device:
+            sess = popart.InferenceSession(fnModel=proto,
+                                           deviceInfo=device,
+                                           dataFlow=popart.DataFlow(1, [o]),
+                                           userOptions=opts)
+            sess.prepareDevice()
 
-        anchors = sess.initAnchorArrays()
+            anchors = sess.initAnchorArrays()
 
-        stepio = popart.PyStepIO({i0: data[0], i1: data[1]}, anchors)
-        sess.weightsFromHost()
+            stepio = popart.PyStepIO({i0: data[0], i1: data[1]}, anchors)
+            sess.weightsFromHost()
 
-        sess.run(stepio)
+            sess.run(stepio)
         return anchors[o], json.loads(
             sess._serializeIr(popart.IrSerializationFormat.JSON))
 

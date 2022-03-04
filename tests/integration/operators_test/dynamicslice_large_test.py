@@ -35,9 +35,11 @@ def test_dynamicslice_large(op_tester):
         return result
 
     #op_tester.numIPUs = 1
-    op_tester.device = tu.create_test_device(numIpus=1)
-    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device(numIpus=1) as device:
+        op_tester.device = device
+        op_tester.setPatterns(popart.PatternsLevel.All,
+                              enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, 'infer')
 
 
 @tu.requires_ipu
@@ -86,6 +88,8 @@ def test_dynamicslice_update_large(op_tester):
     op_tester.options.outlineThreshold = 0.0
     op_tester.options.enableOutliningCopyCostPruning = False
     #op_tester.options.aliasZeroCopy = True
-    op_tester.device = tu.create_test_device(numIpus=1)
-    op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device(numIpus=1) as device:
+        op_tester.device = device
+        op_tester.setPatterns(popart.PatternsLevel.All,
+                              enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, 'infer')

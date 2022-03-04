@@ -59,33 +59,34 @@ def test_accumulators_names_dont_clash(optType):
         },
         accumulatorAndMomentum=sgdAccMm)
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=l1,
-        optimizer=opt,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=l1,
+                                         optimizer=opt,
+                                         deviceInfo=device)
 
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    ops = ir["maingraph"]
+        ops = ir["maingraph"]
 
-    tensors = set()
-    for op in ops:
-        for i in op["inputs"]:
-            tensors.add(i["name"])
-        for o in op["outputs"]:
-            tensors.add(o["name"])
+        tensors = set()
+        for op in ops:
+            for i in op["inputs"]:
+                tensors.add(i["name"])
+            for o in op["outputs"]:
+                tensors.add(o["name"])
 
-    if optType == "SGD1":
-        prefixes = [
-            popart.reservedAcclPrefix(),
-            popart.reservedAcclToUpdatePrefix(),
-            popart.reservedAcclFinalOutPrefix()
-        ]
-    else:
-        # For SGD2, all accl1s have the same prefix.
-        prefixes = [popart.reservedAccl1Prefix()]
+        if optType == "SGD1":
+            prefixes = [
+                popart.reservedAcclPrefix(),
+                popart.reservedAcclToUpdatePrefix(),
+                popart.reservedAcclFinalOutPrefix()
+            ]
+        else:
+            # For SGD2, all accl1s have the same prefix.
+            prefixes = [popart.reservedAccl1Prefix()]
 
-    for prefix, weight in itertools.product(prefixes, weights):
-        assert prefix + weight in tensors
+        for prefix, weight in itertools.product(prefixes, weights):
+            assert prefix + weight in tensors

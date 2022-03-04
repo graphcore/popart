@@ -770,14 +770,15 @@ def test_type_cast_INT64ToINT32_clip():
     graph_transformer.convertINT64ToINT32(clip=True)
     int32_proto = graph_transformer.getModelProto()
 
-    session = popart.InferenceSession(fnModel=int32_proto,
-                                      dataFlow=popart.DataFlow(1, [o]),
-                                      deviceInfo=tu.create_test_device())
-    session.prepareDevice()
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=int32_proto,
+                                          dataFlow=popart.DataFlow(1, [o]),
+                                          deviceInfo=device)
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
+        session.run(stepio)
 
-    reference = 2 * np.take(d1, d2, axis=axis)
-    assert np.allclose(anchors[o], reference)
+        reference = 2 * np.take(d1, d2, axis=axis)
+        assert np.allclose(anchors[o], reference)

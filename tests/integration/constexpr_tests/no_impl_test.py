@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 
 def test_for_warning(capfd):
@@ -24,7 +25,8 @@ def test_for_warning(capfd):
     popart.getLogger().setLevel("TRACE")
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     _, err = capfd.readouterr()
     print(err)

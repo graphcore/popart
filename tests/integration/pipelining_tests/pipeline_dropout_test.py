@@ -74,66 +74,66 @@ def test_pipelined_dropout():
         builder.virtualGraph(loss, layers - 1)
         builder.addOutputTensor(loss)
 
-        device = tu.create_test_device(numIpus=ipus)
+        with tu.create_test_device(numIpus=ipus) as device:
 
-        dfAnchors = {}
-        for x in dropouts + dropoutGrads + dropoutInputs:
-            dfAnchors[x] = popart.AnchorReturnType("All")
+            dfAnchors = {}
+            for x in dropouts + dropoutGrads + dropoutInputs:
+                dfAnchors[x] = popart.AnchorReturnType("All")
 
-        dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
+            dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-        userOptions = popart.SessionOptions()
-        if do_sharding:
-            userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
-        userOptions.enablePipelining = do_pipelining
+            userOptions = popart.SessionOptions()
+            if do_sharding:
+                userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
+            userOptions.enablePipelining = do_pipelining
 
-        # Inplacing can differ between pipelining & non-pipelining,
-        # which can cause the random behaviour to change
-        # TODO: T32086
-        patterns = popart.Patterns(popart.PatternsLevel.Default)
-        patterns.InPlace = False
+            # Inplacing can differ between pipelining & non-pipelining,
+            # which can cause the random behaviour to change
+            # TODO: T32086
+            patterns = popart.Patterns(popart.PatternsLevel.Default)
+            patterns.InPlace = False
 
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=dataFlow,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=loss,
-                                         userOptions=userOptions,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=dataFlow,
+                                             optimizer=popart.ConstSGD(0.1),
+                                             loss=loss,
+                                             userOptions=userOptions,
+                                             patterns=patterns,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
-        session.setRandomSeed(0)
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
+            session.setRandomSeed(0)
 
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        print(anchors.keys())
+            print(anchors.keys())
 
-        # Check that none of the elements of the dropout inputs are zero
-        for tid in dropoutInputs:
-            x = anchors[tid]
-            print(f'{tid}: {x}')
-            zero = np.zeros(x.shape)
-            assert not np.any(np.equal(x, zero)), \
-                   f'Some elements of dropout input {tid} are zero'
+            # Check that none of the elements of the dropout inputs are zero
+            for tid in dropoutInputs:
+                x = anchors[tid]
+                print(f'{tid}: {x}')
+                zero = np.zeros(x.shape)
+                assert not np.any(np.equal(x, zero)), \
+                       f'Some elements of dropout input {tid} are zero'
 
-        print()
-
-        # For each dropout, check that the masked out elements are the same
-        # in the forward and backward passes.
-        for fwdId, bwdId in zip(dropouts, dropoutGrads):
-            print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-            print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
-            lhs = np.sign(anchors[fwdId])
-            rhs = np.sign(anchors[bwdId])
-            assert np.array_equal(lhs, rhs), \
-                   f'{fwdId} and {bwdId} did not use the same dropout mask'
             print()
 
-        return anchors
+            # For each dropout, check that the masked out elements are the same
+            # in the forward and backward passes.
+            for fwdId, bwdId in zip(dropouts, dropoutGrads):
+                print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
+                print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
+                lhs = np.sign(anchors[fwdId])
+                rhs = np.sign(anchors[bwdId])
+                assert np.array_equal(lhs, rhs), \
+                       f'{fwdId} and {bwdId} did not use the same dropout mask'
+                print()
+
+            return anchors
 
 
 @tu.requires_ipu
@@ -193,64 +193,64 @@ def test_pipelined_recomputed_dropout():
         next_layer_in = add_layer(next_layer_in, vgraph)
     out = next_layer_in
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    dfAnchors = {}
-    for x in dropouts + dropoutGrads + dropoutInputs:
-        dfAnchors[x] = popart.AnchorReturnType("All")
+        dfAnchors = {}
+        for x in dropouts + dropoutGrads + dropoutInputs:
+            dfAnchors[x] = popart.AnchorReturnType("All")
 
-    dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
+        dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
-    loss = builder.aiGraphcore.identityloss([out])
-    builder.virtualGraph(loss, layers - 1)
+        loss = builder.aiGraphcore.identityloss([out])
+        builder.virtualGraph(loss, layers - 1)
 
-    userOptions = popart.SessionOptions()
-    userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
-    userOptions.enablePipelining = True
-    userOptions.autoRecomputation = popart.RecomputationType.Pipeline
+        userOptions = popart.SessionOptions()
+        userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
+        userOptions.enablePipelining = True
+        userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 
-    # Inplacing can differ between pipelining & non-pipelining,
-    # which can cause the random behaviour to change
-    # TODO: T32086
-    patterns = popart.Patterns(popart.PatternsLevel.Default)
-    patterns.InPlace = False
+        # Inplacing can differ between pipelining & non-pipelining,
+        # which can cause the random behaviour to change
+        # TODO: T32086
+        patterns = popart.Patterns(popart.PatternsLevel.Default)
+        patterns.InPlace = False
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=dataFlow,
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=loss,
-                                     userOptions=userOptions,
-                                     patterns=patterns,
-                                     deviceInfo=device)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=dataFlow,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=loss,
+                                         userOptions=userOptions,
+                                         patterns=patterns,
+                                         deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
-    session.setRandomSeed(0)
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
+        session.setRandomSeed(0)
 
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
-    print(anchors.keys())
+        print(anchors.keys())
 
-    # Check that none of the elements of the dropout inputs are zero
-    for tid in dropoutInputs:
-        x = anchors[tid]
-        print(f'{tid}: {x}')
-        zero = np.zeros(x.shape)
-        assert not np.any(np.equal(x, zero)), \
-               f'Some elements of dropout input {tid} are zero'
+        # Check that none of the elements of the dropout inputs are zero
+        for tid in dropoutInputs:
+            x = anchors[tid]
+            print(f'{tid}: {x}')
+            zero = np.zeros(x.shape)
+            assert not np.any(np.equal(x, zero)), \
+                   f'Some elements of dropout input {tid} are zero'
 
-    print()
-
-    # For each dropout, check that the masked out elements are the same
-    # in the forward and backward passes.
-    for fwdId, bwdId in zip(dropouts, dropoutGrads):
-        print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-        print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
-        lhs = np.sign(anchors[fwdId])
-        rhs = np.sign(anchors[bwdId])
-        assert np.array_equal(lhs, rhs), \
-               f'{fwdId} and {bwdId} did not use the same dropout mask'
         print()
+
+        # For each dropout, check that the masked out elements are the same
+        # in the forward and backward passes.
+        for fwdId, bwdId in zip(dropouts, dropoutGrads):
+            print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
+            print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
+            lhs = np.sign(anchors[fwdId])
+            rhs = np.sign(anchors[bwdId])
+            assert np.array_equal(lhs, rhs), \
+                   f'{fwdId} and {bwdId} did not use the same dropout mask'
+            print()

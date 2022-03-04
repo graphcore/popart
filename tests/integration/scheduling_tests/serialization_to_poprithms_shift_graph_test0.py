@@ -25,12 +25,13 @@ def test_add_serialization(tmpdir):
     opts = popart.SessionOptions()
     opts.serializedPoprithmsShiftGraphsDir = str(tmpdir)
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    jsons = [os.path.join(tmpdir, x) for x in os.listdir(tmpdir)]
-    assert (len(jsons) > 0)
+        jsons = [os.path.join(tmpdir, x) for x in os.listdir(tmpdir)]
+        assert (len(jsons) > 0)

@@ -40,19 +40,20 @@ def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(
     out = builder.aiOnnx.cast([t2], cast_type.builder_type)
 
     ### Create session and run program ###
-    s = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                dataFlow=popart.DataFlow(1, [out]),
-                                deviceInfo=tu.create_test_device())
-    s.prepareDevice()
+    with tu.create_test_device() as device:
+        s = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                    dataFlow=popart.DataFlow(1, [out]),
+                                    deviceInfo=device)
+        s.prepareDevice()
 
-    anchors = s.initAnchorArrays()
+        anchors = s.initAnchorArrays()
 
-    inputs = {
-        in0: in0_host,
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            in0: in0_host,
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    s.run(stepio)
+        s.run(stepio)
 
     ### Numerically compare scaled tensor to expected value ###
 
@@ -87,12 +88,13 @@ def test_fail_stream_int8_no_cast_then_op(cast_type):
             i2: popart.AnchorReturnType("Final"),
             o: popart.AnchorReturnType("Final")
         })
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    with pytest.raises(popart.poplar_exception):
-        session.prepareDevice()
+        with pytest.raises(popart.poplar_exception):
+            session.prepareDevice()
 
 
 @pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
@@ -149,19 +151,19 @@ def test_pipelining_recomp(cast_type):
     opts.explicitRecomputation = False
 
     ### Create session and run program ###
+    with tu.create_test_device(numIpus=2) as device:
+        session = popart.TrainingSession(deviceInfo=device,
+                                         dataFlow=popart.DataFlow(
+                                             1, [loss, w],
+                                             popart.AnchorReturnType("Final")),
+                                         fnModel=builder.getModelProto(),
+                                         loss=loss,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         userOptions=opts)
 
-    session = popart.TrainingSession(
-        deviceInfo=tu.create_test_device(numIpus=2),
-        dataFlow=popart.DataFlow(1, [loss, w],
-                                 popart.AnchorReturnType("Final")),
-        fnModel=builder.getModelProto(),
-        loss=loss,
-        optimizer=popart.ConstSGD(0.1),
-        userOptions=opts)
+        session.prepareDevice()
 
-    session.prepareDevice()
-
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({x_i8: x_i8_data}, anchors)
-    session.run(stepio)
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({x_i8: x_i8_data}, anchors)
+        session.run(stepio)

@@ -102,18 +102,19 @@ def _run_comparison_test(data, result, proto, expected_activations, lstm_op_patt
     dataFlow = popart.DataFlow(1, {{outId: popart.AnchorReturnType("All")}})
     patterns = popart.Patterns(popart.PatternsLevel.Default)
     patterns.enablePattern('LSTMOp', lstm_op_pattern)
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device(),
-                                      patterns=patterns)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device,
+                                          patterns=patterns)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({{inId: data}}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({{inId: data}}, anchors)
+        session.run(stepio)
 
-    assert np.allclose(anchors[outId], result)
+        assert np.allclose(anchors[outId], result)
 
 
 """

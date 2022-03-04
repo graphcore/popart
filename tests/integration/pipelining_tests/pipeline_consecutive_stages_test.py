@@ -62,17 +62,18 @@ def test_pipeline_stage_merging():
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     loss=l1,
-                                     optimizer=popart.ConstSGD(1e-9),
-                                     deviceInfo=tu.create_test_device(
-                                         numIpus=2,
-                                         opts={"compileIPUCode": False}))
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
+                                                False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(1e-9),
+                                         deviceInfo=device)
 
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
-    stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+        stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
+        stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
 
-    assert {'x_in'} == set(stashedTensors)
+        assert {'x_in'} == set(stashedTensors)

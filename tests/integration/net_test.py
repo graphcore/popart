@@ -18,9 +18,10 @@ def test_net_from_string():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    popart.InferenceSession(fnModel=proto,
-                            dataFlow=dataFlow,
-                            deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        popart.InferenceSession(fnModel=proto,
+                                dataFlow=dataFlow,
+                                deviceInfo=device)
 
 
 def test_net_from_file():
@@ -39,9 +40,10 @@ def test_net_from_file():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    popart.InferenceSession(fnModel="test.onnx",
-                            dataFlow=dataFlow,
-                            deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        popart.InferenceSession(fnModel="test.onnx",
+                                dataFlow=dataFlow,
+                                deviceInfo=device)
 
 
 def test_net_failure1():
@@ -58,10 +60,11 @@ def test_net_failure1():
 
     dataFlow = popart.DataFlow(1, {})
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    deviceInfo=device)
 
     assert (e_info.type == popart.popart_exception)
     assert (e_info.value.args[0] ==
@@ -72,10 +75,11 @@ def test_net_failure2():
 
     dataFlow = popart.DataFlow(1, {})
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        popart.InferenceSession(fnModel="nothing",
-                                dataFlow=dataFlow,
-                                deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.InferenceSession(fnModel="nothing",
+                                    dataFlow=dataFlow,
+                                    deviceInfo=device)
 
     assert (e_info.type == popart.popart_exception)
     assert (e_info.value.args[0].startswith(

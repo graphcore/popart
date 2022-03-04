@@ -105,50 +105,52 @@ def return_anchors(anchorDict, label_array):
 
     data_flow = popart.DataFlow(BATCHES_PER_STEP, anchors)
 
-    opts, device = return_options(anchorDict)
+    opts, deviceContext = return_options(anchorDict)
 
-    if device is None:
-        return None
+    with deviceContext as device:
+        if device is None:
+            return None
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=data_flow,
-                                     loss=nll,
-                                     optimizer=popart.SGD({
-                                         "defaultLearningRate":
-                                         (LEARNING_RATE, True),
-                                         "defaultMomentum": (0.0, True),
-                                         "defaultWeightDecay": (0.0, False),
-                                         "defaultDampening": (0.0, True)
-                                     }),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            loss=nll,
+            optimizer=popart.SGD({
+                "defaultLearningRate": (LEARNING_RATE, True),
+                "defaultMomentum": (0.0, True),
+                "defaultWeightDecay": (0.0, False),
+                "defaultDampening": (0.0, True)
+            }),
+            userOptions=opts,
+            deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    if anchorDict["ReplicationFactor"] > 1:
-        input_shape = [anchorDict["ReplicationFactor"]] + input_shape
-        label_array = label_array.reshape(
-            [anchorDict["ReplicationFactor"], -1])
-    if anchorDict["AccumulationFactor"] > 1:
-        input_shape = [anchorDict["AccumulationFactor"]] + input_shape
-        label_array = label_array.reshape(
-            [anchorDict["AccumulationFactor"], -1])
-    if BATCHES_PER_STEP > 1:
-        input_shape = [BATCHES_PER_STEP] + input_shape
-        label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP, 0)
+        if anchorDict["ReplicationFactor"] > 1:
+            input_shape = [anchorDict["ReplicationFactor"]] + input_shape
+            label_array = label_array.reshape(
+                [anchorDict["ReplicationFactor"], -1])
+        if anchorDict["AccumulationFactor"] > 1:
+            input_shape = [anchorDict["AccumulationFactor"]] + input_shape
+            label_array = label_array.reshape(
+                [anchorDict["AccumulationFactor"], -1])
+        if BATCHES_PER_STEP > 1:
+            input_shape = [BATCHES_PER_STEP] + input_shape
+            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP,
+                                    0)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inference_stepio = popart.PyStepIO(
-        {
-            ip: np.ones(input_shape, np.float32),
-            lb: label_array
-        }, anchors)
-    session.weightsFromHost()
+        inference_stepio = popart.PyStepIO(
+            {
+                ip: np.ones(input_shape, np.float32),
+                lb: label_array
+            }, anchors)
+        session.weightsFromHost()
 
-    session.run(inference_stepio)
+        session.run(inference_stepio)
 
-    return anchors
+        return anchors
 
 
 @tu.requires_ipu

@@ -3,6 +3,7 @@ import numpy as np
 import json
 import popart
 from test_session import PopartTestSession
+import test_util as tu
 
 
 def test_subgraph_ir_name():
@@ -37,7 +38,8 @@ def test_subgraph_ir_name():
         return [o]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -59,7 +61,8 @@ def test_main_graph_ir_name():
         return [o]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -78,7 +81,8 @@ def test_empty_graph_ir_name():
         return [o]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))

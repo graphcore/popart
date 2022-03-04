@@ -133,30 +133,30 @@ def test_full_recompute_pipelining():
 
         pat = popart.Patterns(popart.PatternsLevel.Default)
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(1e-9),
-                                         patterns=pat,
-                                         deviceInfo=tu.create_test_device(
-                                             numIpus=3,
-                                             opts={"compileIPUCode": False}))
+        with tu.create_test_device(numIpus=3, opts={"compileIPUCode":
+                                                    False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=l1,
+                                             optimizer=popart.ConstSGD(1e-9),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {x_in: input_data, mask: mask_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {x_in: input_data, mask: mask_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        for _ in range(10):
-            session.run(stepio)
+            for _ in range(10):
+                session.run(stepio)
 
-        if verify is not None:
-            verify(session)
+            if verify is not None:
+                verify(session)
 
         return anchors
 

@@ -97,62 +97,65 @@ def test_anchor_output():
         ACCL: art
     })
 
-    opts, device = return_options(anchorDict)
+    opts, deviceContext = return_options(anchorDict)
+    with deviceContext as device:
+        if device is None:
+            pytest.skip("Test needs to run on IPU, but none are available")
 
-    if device is None:
-        pytest.skip("Test needs to run on IPU, but none are available")
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            loss=nll,
+            optimizer=popart.ConstSGD(LEARNING_RATE),
+            userOptions=opts,
+            deviceInfo=device)
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=data_flow,
-                                     loss=nll,
-                                     optimizer=popart.ConstSGD(LEARNING_RATE),
-                                     userOptions=opts,
-                                     deviceInfo=device)
+        session.prepareDevice()
 
-    session.prepareDevice()
+        if anchorDict["ReplicationFactor"] > 1:
+            input_shape = [anchorDict["ReplicationFactor"]] + input_shape
+            label_array = label_array.reshape(
+                [anchorDict["ReplicationFactor"], -1])
+        if anchorDict["AccumulationFactor"] > 1:
+            input_shape = [anchorDict["AccumulationFactor"]] + input_shape
+            label_array = label_array.reshape(
+                [anchorDict["AccumulationFactor"], -1])
+        if BATCHES_PER_STEP > 1:
+            input_shape = [BATCHES_PER_STEP] + input_shape
+            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP,
+                                    0)
 
-    if anchorDict["ReplicationFactor"] > 1:
-        input_shape = [anchorDict["ReplicationFactor"]] + input_shape
-        label_array = label_array.reshape(
-            [anchorDict["ReplicationFactor"], -1])
-    if anchorDict["AccumulationFactor"] > 1:
-        input_shape = [anchorDict["AccumulationFactor"]] + input_shape
-        label_array = label_array.reshape(
-            [anchorDict["AccumulationFactor"], -1])
-    if BATCHES_PER_STEP > 1:
-        input_shape = [BATCHES_PER_STEP] + input_shape
-        label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP, 0)
+        anchors = session.initAnchorArrays()
+        in_array = np.random.random_sample(input_shape).astype(np.float32)
 
-    anchors = session.initAnchorArrays()
-    in_array = np.random.random_sample(input_shape).astype(np.float32)
+        stepio = popart.PyStepIO({ip: in_array, lb: label_array}, anchors)
+        session.weightsFromHost()
 
-    stepio = popart.PyStepIO({ip: in_array, lb: label_array}, anchors)
-    session.weightsFromHost()
+        session.run(stepio)
 
-    session.run(stepio)
+        # Returned anchors will be of shape
+        # [bps, grad_accl_factor, repl_factor, micro_batch_size, channels, data_len, data_len]
+        for batch in range(anchors[w].shape[0]):
+            for replica in range(anchors[w].shape[1]):
+                # Weights should not change over the gradient accumulation
+                # dimension - only after gradAccl steps.
+                assert np.allclose(anchors[w][batch, 0, :, :, :, :, :],
+                                   anchors[w][batch, replica, :, :, :, :, :])
 
-    # Returned anchors will be of shape
-    # [bps, grad_accl_factor, repl_factor, micro_batch_size, channels, data_len, data_len]
-    for batch in range(anchors[w].shape[0]):
-        for replica in range(anchors[w].shape[1]):
-            # Weights should not change over the gradient accumulation
-            # dimension - only after gradAccl steps.
-            assert np.allclose(anchors[w][batch, 0, :, :, :, :, :],
-                               anchors[w][batch, replica, :, :, :, :, :])
-
-    # Check that the accumulated gradient plus the weights for the current batch
-    # equals the weights for the next batch.
-    # Batch loop
-    for batch in range(anchors[w].shape[0] - 1):
-        calc_weight = {}
-        # Replica loop.
-        for replica in range(anchors[w].shape[2]):
-            # For each replica in each batch, take the relevant replica's
-            #  last weight tensor in the accumulation loop minus
-            # the sum of the accumulated gradients across replicas
-            calc_weight[replica] = anchors[w][batch, -1, replica, :, :, :, :] - \
-                np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
-            # Then compare against the last weight tensor of the next batch,
-            # for the relevant replica. These should match.
-            assert np.allclose(calc_weight[replica],
-                               anchors[w][batch + 1, -1, replica, :, :, :, :])
+        # Check that the accumulated gradient plus the weights for the current batch
+        # equals the weights for the next batch.
+        # Batch loop
+        for batch in range(anchors[w].shape[0] - 1):
+            calc_weight = {}
+            # Replica loop.
+            for replica in range(anchors[w].shape[2]):
+                # For each replica in each batch, take the relevant replica's
+                #  last weight tensor in the accumulation loop minus
+                # the sum of the accumulated gradients across replicas
+                calc_weight[replica] = anchors[w][batch, -1, replica, :, :, :, :] - \
+                    np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
+                # Then compare against the last weight tensor of the next batch,
+                # for the relevant replica. These should match.
+                assert np.allclose(
+                    calc_weight[replica],
+                    anchors[w][batch + 1, -1, replica, :, :, :, :])

@@ -62,22 +62,20 @@ def test_gather_out_of_range(tiedgather, uint):
 
     ir.updateVertices()
 
-    device = tu.create_test_device()
-    session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
+        # Create buffers for anchors
+        anchors = session.initAnchorArrays()
 
-    # Run the model
-    stepio = popart.PyStepIO(inputs={}, outputs=anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    y_zero_false_np = anchors['y_zero_false_stream']
-    y_zero_true_np = anchors['y_zero_true_stream']
+        # Run the model
+        stepio = popart.PyStepIO(inputs={}, outputs=anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        y_zero_false_np = anchors['y_zero_false_stream']
+        y_zero_true_np = anchors['y_zero_true_stream']
 
-    device.detach()
-
-    ## Test
-    assert (y_zero_true_np == 0).all()
+        ## Test
+        assert (y_zero_true_np == 0).all()

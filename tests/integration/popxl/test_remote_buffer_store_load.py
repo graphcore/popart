@@ -77,18 +77,18 @@ def test_remote_buffer() -> None:
     ir.setIsPrepared()
 
     # Create an IR inference session
-    session = popart.InferenceSession.fromIr(
-        ir=ir, deviceInfo=tu.create_test_device(numIpus=1))
+    with tu.create_test_device(numIpus=1) as device:
+        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
+        # Create buffers for anchors
+        anchors = session.initAnchorArrays()
 
-    # Run the model
-    step_io = popart.PyStepIO({}, anchors)
-    session.weightsFromHost()
-    session.run(step_io)
+        # Run the model
+        step_io = popart.PyStepIO({}, anchors)
+        session.weightsFromHost()
+        session.run(step_io)
 
     # Assert that the tensors are correct
     remote_load_scenarios = (

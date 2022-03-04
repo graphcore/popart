@@ -42,18 +42,19 @@ def test_loss_grad_scaling_with_replication():
         opts.replicatedGraphCount = repl_factor
         opts.accumulationAndReplicationReductionType = reduction
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            deviceInfo=tu.create_test_device(repl_factor),
-            dataFlow=popart.DataFlow(1, [anchor_id]),
-            loss=loss_id,
-            optimizer=popart.ConstSGD(0.1),
-            userOptions=opts)
+        with tu.create_test_device(repl_factor) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             deviceInfo=device,
+                                             dataFlow=popart.DataFlow(
+                                                 1, [anchor_id]),
+                                             loss=loss_id,
+                                             optimizer=popart.ConstSGD(0.1),
+                                             userOptions=opts)
 
-        session.prepareDevice()
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO({t0: t0_data}, anchors)
-        session.run(stepio)
+            session.prepareDevice()
+            anchors = session.initAnchorArrays()
+            stepio = popart.PyStepIO({t0: t0_data}, anchors)
+            session.run(stepio)
         return anchors[anchor_id]
 
     result0 = run_session(p0, t1)

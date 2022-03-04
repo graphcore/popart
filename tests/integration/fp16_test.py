@@ -19,21 +19,22 @@ def test_add_fp16():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array([1., 3.], dtype=np.float16),
-        i2: np.array([7., 8.], dtype=np.float16)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1., 3.], dtype=np.float16),
+            i2: np.array([7., 8.], dtype=np.float16)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([8., 11.], dtype=np.float16)))
 
@@ -54,19 +55,20 @@ def test_add_variable_fp16():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: np.array([1., 3.], dtype=np.float16)}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: np.array([1., 3.], dtype=np.float16)}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np.float16)))
 
@@ -101,15 +103,16 @@ def test_fp16transpose():
 
     proto = builder.getModelProto()
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
-    anchors = session.initAnchorArrays()
-    inputs = {d0: d0_data}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.run(stepio)
+        session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        inputs = {d0: d0_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.run(stepio)
 
     # numpy reference
     npout = np.transpose(c0_data) + np.transpose(d0_data)

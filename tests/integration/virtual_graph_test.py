@@ -32,12 +32,13 @@ def test_virtual_graph():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=2))
+    with tu.create_test_device(numIpus=2) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 @tu.requires_ipu_model
@@ -69,12 +70,13 @@ def test_virtual_graph_multi_output(container):
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=2))
+    with tu.create_test_device(numIpus=2) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 @tu.requires_ipu_model
@@ -105,12 +107,13 @@ def test_virtual_graph2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=tu.create_test_device(numIpus=2))
+    with tu.create_test_device(numIpus=2) as device:
+        s = popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
 
 @tu.requires_ipu_model
@@ -155,27 +158,28 @@ def test_virtual_graph3():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.TrainingSession(fnModel=proto,
-                               dataFlow=dataFlow,
-                               loss=o,
-                               optimizer=optimizer,
-                               userOptions=opts,
-                               deviceInfo=tu.create_test_device(numIpus=4))
+    with tu.create_test_device(numIpus=4) as device:
+        s = popart.TrainingSession(fnModel=proto,
+                                   dataFlow=dataFlow,
+                                   loss=o,
+                                   optimizer=optimizer,
+                                   userOptions=opts,
+                                   deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
-    anchors = s.initAnchorArrays()
+        anchors = s.initAnchorArrays()
 
-    data1 = np.ones([1], dtype=np.float32)
-    data2 = np.ones([1], dtype=np.float32)
-    data3 = np.ones([1], dtype=np.float32)
-    data4 = np.ones([1], dtype=np.float32)
+        data1 = np.ones([1], dtype=np.float32)
+        data2 = np.ones([1], dtype=np.float32)
+        data3 = np.ones([1], dtype=np.float32)
+        data4 = np.ones([1], dtype=np.float32)
 
-    inputs = {i1: data1, i2: data2, i3: data3, i4: data4}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: data1, i2: data2, i3: data3, i4: data4}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    s.run(stepio)
-    s.weightsFromHost()
+        s.run(stepio)
+        s.weightsFromHost()
 
 
 @tu.requires_ipu_model
@@ -221,26 +225,27 @@ def test_virtual_graph4():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.TrainingSession(fnModel=proto,
-                               dataFlow=dataFlow,
-                               loss=loss,
-                               optimizer=optimizer,
-                               userOptions=opts,
-                               deviceInfo=tu.create_test_device(numIpus=4))
+    with tu.create_test_device(numIpus=4) as device:
+        s = popart.TrainingSession(fnModel=proto,
+                                   dataFlow=dataFlow,
+                                   loss=loss,
+                                   optimizer=optimizer,
+                                   userOptions=opts,
+                                   deviceInfo=device)
 
-    s.prepareDevice()
+        s.prepareDevice()
 
-    anchors = s.initAnchorArrays()
+        anchors = s.initAnchorArrays()
 
-    data1 = np.ones([1], dtype=np.float32)
-    data2 = np.ones([1], dtype=np.float32)
-    data3 = np.ones([1], dtype=np.float32)
+        data1 = np.ones([1], dtype=np.float32)
+        data2 = np.ones([1], dtype=np.float32)
+        data3 = np.ones([1], dtype=np.float32)
 
-    inputs = {i1: data1, i2: data2, i3: data3}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: data1, i2: data2, i3: data3}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    s.run(stepio)
-    s.weightsFromHost()
+        s.run(stepio)
+        s.weightsFromHost()
 
 
 @tu.requires_ipu_model
@@ -327,33 +332,33 @@ def test_streaming_optimizer_tensors():
         if enablePipelining:
             numIPUs = 3
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            loss=o2l1,
-            optimizer=optimizer,
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs))
+        with tu.create_test_device(numIpus=numIPUs) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             loss=o2l1,
+                                             optimizer=optimizer,
+                                             userOptions=opts,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {i1: input_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {i1: input_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        # run 2 steps, changing the optimizer halfway through
-        result = []
-        session.run(stepio)
-        result.append(np.copy(anchors[anchorId]))
+            # run 2 steps, changing the optimizer halfway through
+            result = []
+            session.run(stepio)
+            result.append(np.copy(anchors[anchorId]))
 
-        session.updateOptimizerFromHost(
-            popart.SGD({"defaultLearningRate": (0.5, False)}))
+            session.updateOptimizerFromHost(
+                popart.SGD({"defaultLearningRate": (0.5, False)}))
 
-        session.run(stepio)
-        result.append(np.copy(anchors[anchorId]))
+            session.run(stepio)
+            result.append(np.copy(anchors[anchorId]))
 
         return result
 

@@ -26,13 +26,14 @@ def test_disabled_virtual_graphs():
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              10, anchor_map),
-                                          userOptions=opts,
-                                          deviceInfo=tu.create_test_device())
-    assert e_info.value.args[0].startswith("Pipelining requires more than")
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  10, anchor_map),
+                                              userOptions=opts,
+                                              deviceInfo=device)
+        assert e_info.value.args[0].startswith("Pipelining requires more than")
 
 
 @tu.requires_ipu_model
@@ -60,14 +61,15 @@ def test_one_ipu():
     builder.pipelineStage(op2_out, 1)
     builder.virtualGraph(op2_out, 0)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              10, [op2_out, "loss"]),
-                                          userOptions=opts,
-                                          deviceInfo=tu.create_test_device())
-        session.prepareDevice()
-    assert e_info.value.args[0].startswith("Pipelining requires more than")
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  10, [op2_out, "loss"]),
+                                              userOptions=opts,
+                                              deviceInfo=device)
+            session.prepareDevice()
+        assert e_info.value.args[0].startswith("Pipelining requires more than")
 
 
 @tu.requires_ipu_model
@@ -89,11 +91,12 @@ def test_enabled_recomputation():
     builder.virtualGraph(op2_out, 1)
     builder.virtualGraph(op3_out, 1)
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(10, anchor_map),
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device(
-                                          numIpus=2, tilesPerIPU=20))
+    with tu.create_test_device(numIpus=2, tilesPerIPU=20) as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(
+                                              10, anchor_map),
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -118,11 +121,12 @@ def test_stream_tensors_to_multiple_ipus():
     builder.virtualGraph(op2_out, 1)
     builder.virtualGraph(op3_out, 1)
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(10, anchor_map),
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device(
-                                          numIpus=2, tilesPerIPU=20))
+    with tu.create_test_device(numIpus=2, tilesPerIPU=20) as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(
+                                              10, anchor_map),
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -155,11 +159,12 @@ def test_sharding_multi_source():
     builder.virtualGraph(op2_out, 2)
     builder.virtualGraph(nll, 2)
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(10, [op2_out]),
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device(
-                                          numIpus=3, tilesPerIPU=20))
+    with tu.create_test_device(numIpus=3, tilesPerIPU=20) as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(
+                                              10, [op2_out]),
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -411,52 +416,53 @@ def get_model_anchors(doSharding,
         builder.virtualGraph(out, 2)
         builder.virtualGraph(nll, 2)
 
-    if doTraining is True:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            loss=nll,
-            optimizer=popart.ConstSGD(0.01),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIPU=20))
-    else:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
-            userOptions=opts,
-            deviceInfo=tu.create_test_device(numIpus=numIPUs, tilesPerIPU=20))
+    with tu.create_test_device(numIpus=numIPUs, tilesPerIPU=20) as device:
+        if doTraining is True:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 batchesPerStep, anchor_map),
+                                             loss=nll,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             userOptions=opts,
+                                             deviceInfo=device)
+        else:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  batchesPerStep, anchor_map),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
-    if doDevicex is False:
-        return None
+        if doDevicex is False:
+            return None
 
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
 
-    if batchesPerStep > 1:
-        shape_d0.insert(0, batchesPerStep)
-        shape_l0.insert(0, batchesPerStep)
-    d0_host_type = inputType.np_type if inputType is not None else np.float32
-    data = np.random.uniform(low=-10.0, high=10.0,
-                             size=shape_d0).astype(d0_host_type)
-    classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
-    label = np.random.randint(low=0, high=classes,
-                              size=shape_l0).astype(np.int32)
+        if batchesPerStep > 1:
+            shape_d0.insert(0, batchesPerStep)
+            shape_l0.insert(0, batchesPerStep)
+        d0_host_type = inputType.np_type if inputType is not None else np.float32
+        data = np.random.uniform(low=-10.0, high=10.0,
+                                 size=shape_d0).astype(d0_host_type)
+        classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
+        label = np.random.randint(low=0, high=classes,
+                                  size=shape_l0).astype(np.int32)
 
-    inputs = {d0: data, l0: label}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {d0: data, l0: label}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    session.run(stepio)
+        session.run(stepio)
 
-    if doProfiling is True:
-        from gcprofile import save_popart_report
-        save_popart_report(session)
+        if doProfiling is True:
+            from gcprofile import save_popart_report
+            save_popart_report(session)
 
-    if returnRawInput is True:
-        anchors["input_raw"] = data
+        if returnRawInput is True:
+            anchors["input_raw"] = data
 
-    return anchors
+        return anchors
 
 
 def get_simple_linear_model(streamInputToOp1AndOp2=False):
@@ -517,15 +523,14 @@ def test_pipeline_stage_errors():
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
-    session.device = 'ipu_model'
-    session.numIPUs = 2
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
     vgraph_ids = [0, 0, 0, 1, 1]
     ps_ids = [0, 0, 1, 1, 1]
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.prepare(init_builder)
+    with tu.create_test_device(numIpus=2) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.prepare(init_builder, device=device)
 
     emsg = e_info.value.args[0]
     assert re.match('Ops .* have the same pipeline stage 1,.*',
@@ -534,8 +539,9 @@ def test_pipeline_stage_errors():
     # test not all ops having a pipeline stage set
     vgraph_ids = [0, 0, 1, 1, 1]
     ps_ids = [0, 0, None, 1, 1]
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.prepare(init_builder)
+    with tu.create_test_device(numIpus=2) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.prepare(init_builder, device=device)
 
     emsg = e_info.value.args[0]
     assert emsg.startswith('Only some ops have had their pipeline stage set.')
@@ -586,13 +592,12 @@ def test_pipeline_stages_backwards_through_ipus():
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
-    session.device = 'ipu_model'
-    session.numIPUs = 2
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
-    session.prepare(init_builder)
-    pipelineAnchors = session.run()
+    with tu.create_test_device(numIpus=2) as device:
+        session.prepare(init_builder, device=device)
+        pipelineAnchors = session.run()
 
     assert len(pipelineAnchors) == 1
     pipelineAnchors = [v for k, v in pipelineAnchors.items()]
@@ -646,13 +651,12 @@ def test_multiple_stages_per_virtual_graph_inference():
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
-    session.device = 'ipu_model'
-    session.numIPUs = 2
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
-    session.prepare(init_builder)
-    sessionAnchors = session.run({'data0': data})
+    with tu.create_test_device(numIpus=2) as device:
+        session.prepare(init_builder, device=device)
+        sessionAnchors = session.run({'data0': data})
     assert len(sessionAnchors) == 1
     sessionAnchors = [v for k, v in sessionAnchors.items()][0]
     print(sessionAnchors)
@@ -716,27 +720,28 @@ def test_multiple_stages_per_virtual_graph_training(inputType):
         session = PopartTestSession()
         session.mode = 'train'
         session.options.enablePipelining = set_pipeline_stages
-        session.device = 'ipu_model'
+        numIpus = 1
         if set_pipeline_stages:
-            session.numIPUs = 2
+            numIpus = 2
             session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
         session.batchesPerStep = bps
         session.options.enableGradientAccumulation = True
         session.options.accumulationFactor = accumulation_factor
 
         # test a pipeline stage appearing on multiple virtual graphs
-        session.prepare(init_builder)
+        with tu.create_test_device(numIpus=numIpus) as device:
+            session.prepare(init_builder, device=device)
 
-        sessionAnchors = session.run({'data0': data})
-        assert len(sessionAnchors) == 1
-        sessionAnchor = [v for k, v in sessionAnchors.items()][0]
+            sessionAnchors = session.run({'data0': data})
+            assert len(sessionAnchors) == 1
+            sessionAnchor = [v for k, v in sessionAnchors.items()][0]
 
-        session._session.weightsToHost()
-        weightsIo = popart.PyWeightsIO(weights)
-        session._session.readWeights(weightsIo)
-        assert len(weights) == 1
-        weights = [v for k, v in weights.items()]
-        return weights[0], sessionAnchor
+            session._session.weightsToHost()
+            weightsIo = popart.PyWeightsIO(weights)
+            session._session.readWeights(weightsIo)
+            assert len(weights) == 1
+            weights = [v for k, v in weights.items()]
+            return weights[0], sessionAnchor
 
     w0, r0 = run_test(False)
     w1, r1 = run_test(True)
@@ -804,8 +809,6 @@ def test_recomputation(inputType):
             return [loss]
 
         session = PopartTestSession()
-        session.device = 'ipu_model'
-        session.numIPUs = 2
         session.mode = 'train'
         session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
         session.options.enablePipelining = True
@@ -814,17 +817,18 @@ def test_recomputation(inputType):
         session.options.accumulationFactor = accumulationFactor
         session.options.enableGradientAccumulation = True
 
-        session.prepare(init_builder)
+        with tu.create_test_device(numIpus=2) as device:
+            session.prepare(init_builder, device=device)
 
-        anchors = session.run({'data0': data})
+            anchors = session.run({'data0': data})
 
-        # return the weights
-        session._session.weightsToHost()
-        weightsIo = popart.PyWeightsIO(weights)
-        session._session.readWeights(weightsIo)
-        assert len(weights) == 1
-        weights = [v for k, v in weights.items()]
-        return weights[0]
+            # return the weights
+            session._session.weightsToHost()
+            weightsIo = popart.PyWeightsIO(weights)
+            session._session.readWeights(weightsIo)
+            assert len(weights) == 1
+            weights = [v for k, v in weights.items()]
+            return weights[0]
 
     w0 = run_test(False)
     w1 = run_test(True)
@@ -858,17 +862,19 @@ def test_internal_alias_ipucopy():
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(2, {result: popart.AnchorReturnType("All")}),
-        deviceInfo=tu.create_test_device(numIpus=2),
-        userOptions=opts)
+    with tu.create_test_device(numIpus=2) as device:
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(2,
+                                     {result: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+            userOptions=opts)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    feed_dict = {model_input: np.zeros([2, 2, 1], dtype=np.float32)}
-    stepio = popart.PyStepIO(feed_dict, session.initAnchorArrays())
-    session.run(stepio)
+        feed_dict = {model_input: np.zeros([2, 2, 1], dtype=np.float32)}
+        stepio = popart.PyStepIO(feed_dict, session.initAnchorArrays())
+        session.run(stepio)
 
 
 @tu.requires_ipu_model
@@ -906,13 +912,12 @@ def test_bad_auto_staging():
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
-    session.device = 'ipu_model'
-    session.numIPUs = 2
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.prepare(init_builder)
+    with tu.create_test_device(numIpus=2) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.prepare(init_builder, device=device)
 
     assert e_info.value.args[0].startswith(
         'Tensor Sin:0/1 is consumed in an earlier pipeline stage than it is produced'

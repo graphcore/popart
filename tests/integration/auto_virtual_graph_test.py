@@ -41,13 +41,14 @@ def test_auto_virtual_graph_subgraphs_1():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         print(op)
         assert (int(op["attributes"]["__ipu_number"]) == 0)
@@ -97,13 +98,14 @@ def test_auto_virtual_graph_subgraphs_2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         ipu = op["attributes"]["__ipu_number"]
         for input in op["inputs"]:
@@ -161,13 +163,14 @@ def test_auto_virtual_graph_subgraphs_4():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         ipu = op["attributes"]["__ipu_number"]
         for input in op["inputs"]:
@@ -206,12 +209,12 @@ def test_auto_virtual_graph_inf_2():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    popart.InferenceSession(fnModel=proto,
-                            dataFlow=dataFlow,
-                            userOptions=opts,
-                            deviceInfo=device)
+        popart.InferenceSession(fnModel=proto,
+                                dataFlow=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_many():
@@ -239,12 +242,12 @@ def test_auto_virtual_graph_inf_many():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    popart.InferenceSession(fnModel=proto,
-                            dataFlow=dataFlow,
-                            userOptions=opts,
-                            deviceInfo=device)
+        popart.InferenceSession(fnModel=proto,
+                                dataFlow=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=device)
 
 
 def test_auto_virtual_graph_train():
@@ -274,15 +277,15 @@ def test_auto_virtual_graph_train():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    popart.TrainingSession(fnModel=proto,
-                           dataFlow=dataFlow,
-                           userOptions=opts,
-                           loss=loss,
-                           optimizer=popart.SGD(
-                               {"defaultLearningRate": (0.01, True)}),
-                           deviceInfo=device)
+        popart.TrainingSession(fnModel=proto,
+                               dataFlow=dataFlow,
+                               userOptions=opts,
+                               loss=loss,
+                               optimizer=popart.SGD(
+                                   {"defaultLearningRate": (0.01, True)}),
+                               deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -310,13 +313,13 @@ def test_auto_virtual_graph_not_enough_splits():
     opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    device = tu.create_test_device(numIpus=ipus)
+    with tu.create_test_device(numIpus=ipus) as device:
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=device)
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.InferenceSession(fnModel=proto,
+                                    dataFlow=dataFlow,
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "[AutoVirtualGraph] Couldn't find enough splits"))

@@ -58,29 +58,30 @@ def test_randomuniform_repeatable(dtypes):
     out = builder.aiOnnx.randomuniform(shape=[10, 1], dtype=dtypes[1])
     builder.addOutputTensor(out)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            deviceInfo=device)
 
-    session.prepareDevice()
-    session.setRandomSeed(seed)
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.setRandomSeed(seed)
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({}, anchors)
+        session.run(stepio)
 
-    # need to copy the anchor as the next call to run will overwrite the data
-    run1_out = np.copy(anchors[out])
+        # need to copy the anchor as the next call to run will overwrite the data
+        run1_out = np.copy(anchors[out])
 
-    # Reset the seed to the same value and run the session again
-    session.setRandomSeed(seed)
-    session.run(stepio)
-    run2_out = np.copy(anchors[out])
+        # Reset the seed to the same value and run the session again
+        session.setRandomSeed(seed)
+        session.run(stepio)
+        run2_out = np.copy(anchors[out])
 
-    assert np.array_equal(run1_out, run2_out)
+        assert np.array_equal(run1_out, run2_out)
 
 
 # IPU test: check that having multiple randomuniform ops will sample from independent PRNG streams
@@ -127,32 +128,32 @@ def test_randomuniform_repeatable_replica(dtypes):
     opts.enableReplicatedGraphs = True
     opts.replicatedGraphCount = replication_factor
 
-    device = tu.create_test_device(replication_factor)
+    with tu.create_test_device(replication_factor) as device:
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=device,
-        userOptions=opts,
-        optimizer=popart.ConstSGD(0.1),
-        loss=loss)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            deviceInfo=device,
+            userOptions=opts,
+            optimizer=popart.ConstSGD(0.1),
+            loss=loss)
 
-    session.prepareDevice()
-    session.setRandomSeed(seed)
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.setRandomSeed(seed)
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({}, anchors)
+        session.run(stepio)
 
-    o = anchors[out]
-    for ai, bi in itertools.combinations(
-        [i for i in range(replication_factor)], 2):
-        print(f'Checking o[{ai}] is not equal to o[{bi}]')
-        a = o[ai]
-        b = o[bi]
-        assert not np.allclose(a, b)
+        o = anchors[out]
+        for ai, bi in itertools.combinations(
+            [i for i in range(replication_factor)], 2):
+            print(f'Checking o[{ai}] is not equal to o[{bi}]')
+            a = o[ai]
+            b = o[bi]
+            assert not np.allclose(a, b)
 
 
 # CPU test: check error when setting the optional seed

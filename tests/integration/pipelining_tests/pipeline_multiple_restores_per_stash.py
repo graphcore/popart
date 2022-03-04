@@ -54,21 +54,22 @@ def test_2_restores_for_1_stash():
         if recompute == True:
             opts.autoRecomputation = popart.RecomputationType.Pipeline
 
-        session = popart.TrainingSession(
-            deviceInfo=tu.create_test_device(numIpus=2),
-            dataFlow=popart.DataFlow(1, [loss, w0],
-                                     popart.AnchorReturnType("Final")),
-            fnModel=builder.getModelProto(),
-            loss=loss,
-            optimizer=popart.ConstSGD(0.1),
-            userOptions=opts)
+        with tu.create_test_device(numIpus=2) as device:
+            session = popart.TrainingSession(
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss, w0],
+                                         popart.AnchorReturnType("Final")),
+                fnModel=builder.getModelProto(),
+                loss=loss,
+                optimizer=popart.ConstSGD(0.1),
+                userOptions=opts)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
-        stepio = popart.PyStepIO({in0: in0_data}, anchors)
-        session.run(stepio)
-        return anchors[w0]
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
+            stepio = popart.PyStepIO({in0: in0_data}, anchors)
+            session.run(stepio)
+            return anchors[w0]
 
     ref_weights = runModel(pipeline=False, recompute=False)
     pipelined_weights = runModel(pipeline=True, recompute=False)
@@ -127,16 +128,17 @@ def test_2_restores_for_1_stash_not_supported_with_recomp():
     opts.enablePipelining = True
     opts.autoRecomputation = popart.RecomputationType.Pipeline
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(
-            deviceInfo=tu.create_test_device(numIpus=2),
-            dataFlow=popart.DataFlow(bps, [loss, w0],
-                                     popart.AnchorReturnType("Final")),
-            fnModel=builder.getModelProto(),
-            loss=loss,
-            optimizer=popart.ConstSGD(0.1),
-            userOptions=opts)
-    assert e_info.value.args[0].find(
-        "To-stash Tensor '" + in0 +
-        "' must be restored for recomputation of a descendent that is not a direct consumer on more than 1 PipelineStage, but this is currently not supported"
-    )
+    with tu.create_test_device(numIpus=2) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.TrainingSession(
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(bps, [loss, w0],
+                                         popart.AnchorReturnType("Final")),
+                fnModel=builder.getModelProto(),
+                loss=loss,
+                optimizer=popart.ConstSGD(0.1),
+                userOptions=opts)
+        assert e_info.value.args[0].find(
+            "To-stash Tensor '" + in0 +
+            "' must be restored for recomputation of a descendent that is not a direct consumer on more than 1 PipelineStage, but this is currently not supported"
+        )

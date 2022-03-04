@@ -190,11 +190,12 @@ def op_tester(tmpdir):
 
             if self.tilesPerIPU is not None:
                 self.device = tu.create_test_device(
-                    numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU)
+                    numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU).device
                 print(f"Created device {self.device} with {self.numIPUs}"
                       f" IPUs and {self.tilesPerIPU} tiles per IPU")
             else:
-                self.device = tu.create_test_device(numIpus=self.numIPUs)
+                self.device = tu.create_test_device(
+                    numIpus=self.numIPUs).device
                 print(f"Created device {self.device} with {self.numIPUs} IPUs")
 
             self.patterns.InPlace = self.inplacing

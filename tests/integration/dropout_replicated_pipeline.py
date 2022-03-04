@@ -148,66 +148,66 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
 
     dataFlow = popart.DataFlow(batchesPerStep, anchors)
 
-    device = tu.create_test_device(numIpus=nIPUs)
-    assert device
+    with tu.create_test_device(numIpus=nIPUs) as device:
+        assert device
 
-    userOptions = popart.SessionOptions()
-    # This requires T12562 to be solved before enabling (TODO)
-    userOptions.enableOutlining = False
-    userOptions.enablePipelining = True
-    userOptions.enableGradientAccumulation = True
-    userOptions.accumulationFactor = accumulationFactor
+        userOptions = popart.SessionOptions()
+        # This requires T12562 to be solved before enabling (TODO)
+        userOptions.enableOutlining = False
+        userOptions.enablePipelining = True
+        userOptions.enableGradientAccumulation = True
+        userOptions.accumulationFactor = accumulationFactor
 
-    if pipelineRecomputation:
-        userOptions.autoRecomputation = popart.RecomputationType.Pipeline
+        if pipelineRecomputation:
+            userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 
-    if (replicationFactor > 1):
-        userOptions.enableReplicatedGraphs = True
-        userOptions.replicatedGraphCount = replicationFactor
-    userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
+        if (replicationFactor > 1):
+            userOptions.enableReplicatedGraphs = True
+            userOptions.replicatedGraphCount = replicationFactor
+        userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    # Test "hostRearrangeOnly" switches because of T14035
-    userOptions.enablePrefetchDatastreams = False
-    if hostRearrangeOnly:
-        userOptions.engineOptions = {
-            "exchange.streamBufferOverlap": "hostRearrangeOnly"
-        }
-    else:
-        userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
+        # Test "hostRearrangeOnly" switches because of T14035
+        userOptions.enablePrefetchDatastreams = False
+        if hostRearrangeOnly:
+            userOptions.engineOptions = {
+                "exchange.streamBufferOverlap": "hostRearrangeOnly"
+            }
+        else:
+            userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
 
-    patterns = popart.Patterns()
-    patterns.InPlace = True
+        patterns = popart.Patterns()
+        patterns.InPlace = True
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=dataFlow,
-        optimizer=popart.SGD({
-            "defaultLearningRate": (defaultLearningRate0, False),
-            "defaultMomentum": (defaultMomentum0, False),
-            "defaultDampening": (defaultDampening0, False),
-            "defaultVelocityScaling": (defaultVelocityScaling0, False),
-            "lossScaling": (lossScaling0, True),
-            "defaultWeightDecay": (defaultWeightDecay0, True)
-        }),
-        loss=l1,
-        patterns=patterns,
-        userOptions=userOptions,
-        deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            optimizer=popart.SGD({
+                "defaultLearningRate": (defaultLearningRate0, False),
+                "defaultMomentum": (defaultMomentum0, False),
+                "defaultDampening": (defaultDampening0, False),
+                "defaultVelocityScaling": (defaultVelocityScaling0, False),
+                "lossScaling": (lossScaling0, True),
+                "defaultWeightDecay": (defaultWeightDecay0, True)
+            }),
+            loss=l1,
+            patterns=patterns,
+            userOptions=userOptions,
+            deviceInfo=device)
 
-    anchorArrays = session.initAnchorArrays()
+        anchorArrays = session.initAnchorArrays()
 
-    session.prepareDevice()
-    session.setRandomSeed(7)
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.setRandomSeed(7)
+        session.weightsFromHost()
 
-    stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
-    session.run(stepio)
-    session.weightsToHost()
-    w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-    w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-    w2R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-    weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R, w2: w2R})
-    session.readWeights(weightsRead)
+        stepio = popart.PyStepIO({input0: inputVals}, anchorArrays)
+        session.run(stepio)
+        session.weightsToHost()
+        w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+        w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+        w2R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+        weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R, w2: w2R})
+        session.readWeights(weightsRead)
 
     class Net(nn.Module):
         def __init__(self):

@@ -18,18 +18,19 @@ def inference_add_to_variable(np_type):
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: np.array([1., 3.], dtype=np_type)}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: np.array([1., 3.], dtype=np_type)}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np_type)))
 

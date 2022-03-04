@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 
 def test_basic_squeeze():
@@ -46,9 +47,10 @@ def test_basic_squeeze():
     session = PopartTestSession()
 
     # test a pipeline stage appearing on multiple virtual graphs
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
-    anchors = session.run()
+        anchors = session.run()
 
     # Check the squeeze op was removed
     ir = json.loads(

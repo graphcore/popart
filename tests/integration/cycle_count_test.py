@@ -28,23 +28,25 @@ def get_simple_model_cycle_count(bps):
     patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
     patterns.enableRuntimeAsserts(False)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(),
-        patterns=patterns)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(bps,
+                                     {out: popart.AnchorReturnType("All")}),
+            userOptions=opts,
+            deviceInfo=device,
+            patterns=patterns)
 
-    session.prepareDevice()
-    anchors = session.initAnchorArrays()
-    if bps > 1:
-        d_shape.insert(0, bps)
-    stepio = popart.PyStepIO({d0: np.random.rand(*d_shape).astype(np.float32)},
-                             anchors)
-    session.run(stepio)
+        session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        if bps > 1:
+            d_shape.insert(0, bps)
+        stepio = popart.PyStepIO(
+            {d0: np.random.rand(*d_shape).astype(np.float32)}, anchors)
+        session.run(stepio)
 
-    cycles = session.getCycleCount()
-    cycles_ = session.getCycleCount()
+        cycles = session.getCycleCount()
+        cycles_ = session.getCycleCount()
     print("BPS: ", bps, " Cycles: ", cycles)
     # Verify that the tensor is not overwritten when streaming off device
     assert (cycles == cycles_)
@@ -79,18 +81,17 @@ def test_get_cycle_count_requires_run():
     opts = popart.SessionOptions()
     opts.instrumentWithHardwareCycleCounter = True
 
-    d = tu.create_test_device()
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(1, [p]),
-                                      userOptions=opts,
-                                      deviceInfo=d)
-    session.prepareDevice()
+    with tu.create_test_device() as d:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(1, [p]),
+                                          userOptions=opts,
+                                          deviceInfo=d)
+        session.prepareDevice()
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        cycles = session.getCycleCount()
-    assert e_info.value.args[0].startswith(
-        "Must call run before getCycleCount")
-    d.detach()
+        with pytest.raises(popart.popart_exception) as e_info:
+            cycles = session.getCycleCount()
+        assert e_info.value.args[0].startswith(
+            "Must call run before getCycleCount")
 
 
 @tu.requires_ipu
@@ -100,20 +101,19 @@ def test_get_cycle_count_requires_instrumentation_option():
     p = builder.aiOnnx.exp([d0])
 
     # Default SessionOptions - cycle count instrumentation off
-    d = tu.create_test_device()
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(1, [p]),
-                                      deviceInfo=d)
-    session.prepareDevice()
-    stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
-                             session.initAnchorArrays())
-    session.run(stepio)
+    with tu.create_test_device() as d:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(1, [p]),
+                                          deviceInfo=d)
+        session.prepareDevice()
+        stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
+                                 session.initAnchorArrays())
+        session.run(stepio)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        cycles = session.getCycleCount()
-    assert e_info.value.args[0].startswith(
-        "SessionOption 'instrumentWithHardwareCycleCounter' must be")
-    d.detach()
+        with pytest.raises(popart.popart_exception) as e_info:
+            cycles = session.getCycleCount()
+        assert e_info.value.args[0].startswith(
+            "SessionOption 'instrumentWithHardwareCycleCounter' must be")
 
 
 @tu.requires_ipu
@@ -122,8 +122,7 @@ def test_get_cycle_count_bad_id():
     d0 = builder.addInputTensor("FLOAT", [1])
     p = builder.aiOnnx.exp([d0])
 
-    def getInstrumentedSession(instrumentation):
-        device = tu.create_test_device()
+    def getInstrumentedSession(instrumentation, device):
         opts = popart.SessionOptions()
         opts.instrumentWithHardwareCycleCounter = True
         opts.hardwareInstrumentations = instrumentation
@@ -135,19 +134,19 @@ def test_get_cycle_count_bad_id():
         stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
                                  session.initAnchorArrays())
         session.run(stepio)
-        return session, device
+        return session
 
-    s, d = getInstrumentedSession({popart.Instrumentation.Outer})
-    with pytest.raises(popart.popart_exception) as e_info:
+    with tu.create_test_device() as d:
+        s = getInstrumentedSession({popart.Instrumentation.Outer}, d)
+        with pytest.raises(popart.popart_exception) as e_info:
+            cycles = s.getCycleCount("inner_ipu_0")
+        assert e_info.value.args[0].endswith(
+            "Make sure you have set SessionOption::hardwareInstrumentations correctly."
+        )
+
+    with tu.create_test_device() as d:
+        s = getInstrumentedSession({popart.Instrumentation.Inner}, d)
         cycles = s.getCycleCount("inner_ipu_0")
-    assert e_info.value.args[0].endswith(
-        "Make sure you have set SessionOption::hardwareInstrumentations correctly."
-    )
-    d.detach()
-
-    s, d = getInstrumentedSession({popart.Instrumentation.Inner})
-    cycles = s.getCycleCount("inner_ipu_0")
-    d.detach()
 
 
 @tu.requires_ipu
@@ -160,7 +159,7 @@ def test_get_cycle_count_replication(useIOTiles):
     with builder.virtualGraph(1):
         act = builder.aiOnnx.sin([act])
 
-    def getInstrumentedSession(instrumentation):
+    def getInstrumentedSession(instrumentation, device):
         opts = popart.SessionOptions()
         opts.instrumentWithHardwareCycleCounter = True
         opts.hardwareInstrumentations = instrumentation
@@ -169,15 +168,6 @@ def test_get_cycle_count_replication(useIOTiles):
         opts.enableReplicatedGraphs = True
         if useIOTiles is True:
             opts.numIOTiles = 32
-            # Trying to use less than all the tiles throw an error like
-            #   popart_core.poplar_exception: Trying to access tile 72 on IPU
-            #   0 but the virtual graph only covers the following tiles on
-            #   that IPU: 0-63
-            # The error happens in a call to poplar made by gcl::perIPUTiles.
-            device = tu.create_test_device(numIpus=4,
-                                           tilesPerIPU=tu.USE_ALL_TILES)
-        else:
-            device = tu.create_test_device(numIpus=4, tilesPerIPU=4)
         session = popart.InferenceSession(fnModel=builder.getModelProto(),
                                           dataFlow=popart.DataFlow(20, [act]),
                                           userOptions=opts,
@@ -188,8 +178,19 @@ def test_get_cycle_count_replication(useIOTiles):
         session.run(stepio)
         return session
 
-    s = getInstrumentedSession(
-        {popart.Instrumentation.Outer, popart.Instrumentation.Inner})
-    print(s.getCycleCount())
-    print(s.getCycleCount("inner_ipu_0"))
-    print(s.getCycleCount("inner_ipu_1"))
+    if useIOTiles is True:
+        # Trying to use less than all the tiles throw an error like
+        #   popart_core.poplar_exception: Trying to access tile 72 on IPU
+        #   0 but the virtual graph only covers the following tiles on
+        #   that IPU: 0-63
+        # The error happens in a call to poplar made by gcl::perIPUTiles.
+        tilesPerIPU = tu.USE_ALL_TILES
+    else:
+        tilesPerIPU = 4
+    with tu.create_test_device(numIpus=4, tilesPerIPU=tilesPerIPU) as device:
+        s = getInstrumentedSession(
+            {popart.Instrumentation.Outer, popart.Instrumentation.Inner},
+            device)
+        print(s.getCycleCount())
+        print(s.getCycleCount("inner_ipu_0"))
+        print(s.getCycleCount("inner_ipu_1"))

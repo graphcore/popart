@@ -15,47 +15,47 @@ import test_util as tu
 # when it run's out of memory
 @tu.requires_ipu
 def test_out_of_memory_exception():
-    deviceInfo = tu.create_test_device(1, tilesPerIPU=4)
+    with tu.create_test_device(1, tilesPerIPU=4) as deviceInfo:
 
-    builder = popart.Builder()
+        builder = popart.Builder()
 
-    inputs = [
-        builder.addInputTensor(popart.TensorInfo("FLOAT", [100, 100]))
-        for i in range(8)
-    ]
+        inputs = [
+            builder.addInputTensor(popart.TensorInfo("FLOAT", [100, 100]))
+            for i in range(8)
+        ]
 
-    # Matmul every input against every other input
-    activations = []
-    for a in inputs:
-        for b in inputs:
-            c = builder.aiOnnx.matmul([a, b])
-            activations.append(c)
+        # Matmul every input against every other input
+        activations = []
+        for a in inputs:
+            for b in inputs:
+                c = builder.aiOnnx.matmul([a, b])
+                activations.append(c)
 
-    # Sum all the activations together
-    out = builder.aiOnnx.sum(activations)
+        # Sum all the activations together
+        out = builder.aiOnnx.sum(activations)
 
-    builder.addOutputTensor(out)
+        builder.addOutputTensor(out)
 
-    options = popart.SessionOptions()
-    options.defaultBufferingDepth = 1
-    tempDir = tempfile.TemporaryDirectory()
-    options.engineOptions = {
-        "debug.allowOutOfMemory": "true",
-        "autoReport.outputGraphProfile": "true",
-        "autoReport.directory": tempDir.name
-    }
-    patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
-    patterns.enableRuntimeAsserts(False)
+        options = popart.SessionOptions()
+        options.defaultBufferingDepth = 1
+        tempDir = tempfile.TemporaryDirectory()
+        options.engineOptions = {
+            "debug.allowOutOfMemory": "true",
+            "autoReport.outputGraphProfile": "true",
+            "autoReport.directory": tempDir.name
+        }
+        patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
+        patterns.enableRuntimeAsserts(False)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        userOptions=options,
-        patterns=patterns,
-        deviceInfo=deviceInfo)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            userOptions=options,
+            patterns=patterns,
+            deviceInfo=deviceInfo)
 
-    with pytest.raises(popart.popart_exception) as e:
-        session.prepareDevice()
+        with pytest.raises(popart.popart_exception) as e:
+            session.prepareDevice()
 
     assert e.type == popart.session.OutOfMemoryException
     print(e.value.getSummaryReport())

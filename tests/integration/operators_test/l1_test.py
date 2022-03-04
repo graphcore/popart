@@ -129,21 +129,22 @@ def test_l1_reduction_equiv():
 
             anchors = [loss, popart.reservedGradientPrefix() + ip]
 
-            session = popart.TrainingSession(
-                fnModel=builder.getModelProto(),
-                loss=loss,
-                dataFlow=popart.DataFlow(1, anchors),
-                optimizer=popart.ConstSGD(0.1),
-                deviceInfo=tu.create_test_device(),
-                patterns=popart.Patterns(
-                    popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
-                        False))
-            session.prepareDevice()
-            session.weightsFromHost()
-            anchors = session.initAnchorArrays()
-            stepio = popart.PyStepIO({}, anchors)
-            session.run(stepio)
-            return anchors
+            with tu.create_test_device() as device:
+                session = popart.TrainingSession(
+                    fnModel=builder.getModelProto(),
+                    loss=loss,
+                    dataFlow=popart.DataFlow(1, anchors),
+                    optimizer=popart.ConstSGD(0.1),
+                    deviceInfo=device,
+                    patterns=popart.Patterns(
+                        popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
+                            False))
+                session.prepareDevice()
+                session.weightsFromHost()
+                anchors = session.initAnchorArrays()
+                stepio = popart.PyStepIO({}, anchors)
+                session.run(stepio)
+                return anchors
 
         # perform sum reduction of individual losses inside l1 op
         lr_anchors = getAnchors(False)

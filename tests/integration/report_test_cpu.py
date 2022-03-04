@@ -17,18 +17,19 @@ def test_summary_report_with_cpu_device():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
-    session.initAnchorArrays()
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
+        session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getSummaryReport()
+        with pytest.raises(popart.poplar_exception) as e_info:
+            session.getSummaryReport()
 
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
+        assert (e_info.value.args[0].endswith(
+            "Profiling is disabled for current device type."))
 
 
 def test_graph_report_with_cpu_device():
@@ -44,19 +45,20 @@ def test_graph_report_with_cpu_device():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.initAnchorArrays()
+        session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getSummaryReport()
+        with pytest.raises(popart.poplar_exception) as e_info:
+            session.getSummaryReport()
 
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
+        assert (e_info.value.args[0].endswith(
+            "Profiling is disabled for current device type."))
 
 
 def test_execution_report_with_cpu_device():
@@ -74,16 +76,17 @@ def test_execution_report_with_cpu_device():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    session.initAnchorArrays()
+        session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.getSummaryReport()
+        with pytest.raises(popart.poplar_exception) as e_info:
+            session.getSummaryReport()
 
-    assert (e_info.value.args[0].endswith(
-        "Profiling is disabled for current device type."))
+        assert (e_info.value.args[0].endswith(
+            "Profiling is disabled for current device type."))

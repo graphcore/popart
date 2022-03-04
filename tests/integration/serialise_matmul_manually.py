@@ -89,32 +89,32 @@ def test_manual_serialization():
 
     l1 = builder.aiGraphcore.l1loss([Z], 0.2)
     dataFlow = popart.DataFlow(1, {})
-    device = tu.create_test_device()
-    userOptions = popart.SessionOptions()
+    with tu.create_test_device() as device:
+        userOptions = popart.SessionOptions()
 
-    # To obtain the final dot graph, uncomment this:
-    # userOptions.dotChecks = {"Final"};
+        # To obtain the final dot graph, uncomment this:
+        # userOptions.dotChecks = {"Final"};
 
-    patterns = popart.Patterns()
+        patterns = popart.Patterns()
 
-    session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                     dataFlow=dataFlow,
-                                     optimizer=popart.SGD(
-                                         {"defaultLearningRate": (0.1, True)}),
-                                     loss=l1,
-                                     patterns=patterns,
-                                     userOptions=userOptions,
-                                     deviceInfo=device)
-    session.prepareDevice()
-    session.weightsFromHost()
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            optimizer=popart.SGD({"defaultLearningRate": (0.1, True)}),
+            loss=l1,
+            patterns=patterns,
+            userOptions=userOptions,
+            deviceInfo=device)
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    inputVals = np.array(npr.randn(1 * N * C0), dtype=np.float32)
-    stepio = popart.PyStepIO({X: inputVals}, {})
-    session.run(stepio)
-    session.weightsToHost()
-    w0R = np.array(-777.0 * np.ones(C0 * C1), dtype=np.float32)
-    weightsRead = popart.PyWeightsIO({W: w0R})
-    session.readWeights(weightsRead)
+        inputVals = np.array(npr.randn(1 * N * C0), dtype=np.float32)
+        stepio = popart.PyStepIO({X: inputVals}, {})
+        session.run(stepio)
+        session.weightsToHost()
+        w0R = np.array(-777.0 * np.ones(C0 * C1), dtype=np.float32)
+        weightsRead = popart.PyWeightsIO({W: w0R})
+        session.readWeights(weightsRead)
 
     # A pytorch version to confirm numerical correctness:
     class Net(nn.Module):

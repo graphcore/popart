@@ -100,8 +100,8 @@ def run_test(ir: popxl.Ir, save_dir: Optional[str],
         build_model_with_dot_checkpoints(ir, str(check_dir))
 
         # NOTE: This InferenceSession sets the FINAL check
-        _ = popart.InferenceSession.fromIr(ir=ir_pb,
-                                           deviceInfo=tu.create_test_device())
+        with tu.create_test_device() as device:
+            _ = popart.InferenceSession.fromIr(ir=ir_pb, deviceInfo=device)
 
         dot_files = list(check_dir.glob('*.dot'))
         assert len(dot_files) == expected_dot_file_count

@@ -65,10 +65,10 @@ def test_aquire_device_by_id_2():
     """
     deviceManager = popart.DeviceManager()
     deviceId = 0
-    device = deviceManager.acquireDeviceById(deviceId)
-    with pytest.raises(popart.popart_exception,
-                       match="Failed to acquire device with id '0'") as e:
-        deviceManager.acquireDeviceById(deviceId)
+    with deviceManager.acquireDeviceById(deviceId) as device:
+        with pytest.raises(popart.popart_exception,
+                           match="Failed to acquire device with id '0'") as e:
+            deviceManager.acquireDeviceById(deviceId)
 
 
 @tu.requires_ipu
@@ -116,13 +116,13 @@ def test_default_connection_type_2():
     """
     deviceManager = popart.DeviceManager()
     availableIpus = len(deviceManager.enumerateDevices())
-    d0 = deviceManager.acquireAvailableDevice(availableIpus)
-    with pytest.raises(
-            popart.popart_exception,
-            match=
-            f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available"
-    ) as e:
-        deviceManager.acquireAvailableDevice(1)
+    with deviceManager.acquireAvailableDevice(availableIpus) as d0:
+        with pytest.raises(
+                popart.popart_exception,
+                match=
+                f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available"
+        ) as e:
+            deviceManager.acquireAvailableDevice(1)
 
 
 @tu.requires_ipu
@@ -169,73 +169,74 @@ def test_check_default_ipu_model_0():
 
 @pytest.mark.parametrize("loadEngine", {True, False, None})
 def test_prepareDevice_inference(loadEngine, capfd):
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    # Create a builder and construct a graph
-    builder = popart.Builder()
+        # Create a builder and construct a graph
+        builder = popart.Builder()
 
-    data_shape = [3]
-    data_info = popart.TensorInfo("FLOAT", data_shape)
+        data_shape = [3]
+        data_info = popart.TensorInfo("FLOAT", data_shape)
 
-    a = builder.addInputTensor(data_info)
-    b = builder.addInputTensor(data_info)
+        a = builder.addInputTensor(data_info)
+        b = builder.addInputTensor(data_info)
 
-    o = builder.aiOnnx.add([a, b])
+        o = builder.aiOnnx.add([a, b])
 
-    builder.addOutputTensor(o)
+        builder.addOutputTensor(o)
 
-    proto = builder.getModelProto()
+        proto = builder.getModelProto()
 
-    # Describe how to run the model
-    dataFlow = popart.DataFlow(2, {o: popart.AnchorReturnType("All")})
+        # Describe how to run the model
+        dataFlow = popart.DataFlow(2, {o: popart.AnchorReturnType("All")})
 
-    opts = popart.SessionOptions()
+        opts = popart.SessionOptions()
 
-    # Create a session to compile and execute the graph
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+        # Create a session to compile and execute the graph
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    def assertLogContains(expectedCompilation, expectedEngineLoad):
-        _, stderr = capfd.readouterr()
-        graphCompiled = False
-        engineLoaded = False
-        for line in stderr.splitlines():
-            if 'Graph compiled' in line:
-                graphCompiled = True
-            elif 'Engine loaded' in line:
-                engineLoaded = True
+        def assertLogContains(expectedCompilation, expectedEngineLoad):
+            _, stderr = capfd.readouterr()
+            graphCompiled = False
+            engineLoaded = False
+            for line in stderr.splitlines():
+                if 'Graph compiled' in line:
+                    graphCompiled = True
+                elif 'Engine loaded' in line:
+                    engineLoaded = True
 
-        assert expectedCompilation == graphCompiled
-        assert engineLoaded == expectedEngineLoad
+            assert expectedCompilation == graphCompiled
+            assert engineLoaded == expectedEngineLoad
 
-    popart.getLogger().setLevel('INFO')
-    with pytest.raises(popart.popart_exception,
-                       match="no compiled engine") as e:
-        session.loadEngineAndConnectStreams()
+        popart.getLogger().setLevel('INFO')
+        with pytest.raises(popart.popart_exception,
+                           match="no compiled engine") as e:
+            session.loadEngineAndConnectStreams()
 
-    # Compile graph
-    if loadEngine is None:
-        session.prepareDevice()
-        # We expect the engine to be loaded by default
-        loadEngine = True
-    else:
-        session.prepareDevice(loadEngine)
-    assertLogContains(expectedCompilation=True, expectedEngineLoad=loadEngine)
+        # Compile graph
+        if loadEngine is None:
+            session.prepareDevice()
+            # We expect the engine to be loaded by default
+            loadEngine = True
+        else:
+            session.prepareDevice(loadEngine)
+        assertLogContains(expectedCompilation=True,
+                          expectedEngineLoad=loadEngine)
 
-    # Create buffers to receive results from the execution
-    anchors = session.initAnchorArrays()
+        # Create buffers to receive results from the execution
+        anchors = session.initAnchorArrays()
 
-    # Generate some random input data
-    data_shape.insert(0, 2)
-    data_a = np.random.random_sample(data_shape).astype(np.float32)
-    data_b = np.random.random_sample(data_shape).astype(np.float32)
+        # Generate some random input data
+        data_shape.insert(0, 2)
+        data_a = np.random.random_sample(data_shape).astype(np.float32)
+        data_b = np.random.random_sample(data_shape).astype(np.float32)
 
-    stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-    session.run(stepio)
-    assertLogContains(expectedCompilation=False,
-                      expectedEngineLoad=not loadEngine)
+        stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
+        session.run(stepio)
+        assertLogContains(expectedCompilation=False,
+                          expectedEngineLoad=not loadEngine)
 
     assert np.allclose(anchors[o], data_a + data_b)
 
@@ -271,44 +272,46 @@ def test_prepareDevice_training(loadEngine, capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=l1,
-                                     deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=l1,
+                                         deviceInfo=device)
 
-    def assertLogContains(expectedCompilation, expectedEngineLoad):
-        _, stderr = capfd.readouterr()
-        graphCompiled = False
-        engineLoaded = False
-        for line in stderr.splitlines():
-            if 'Graph compiled' in line:
-                graphCompiled = True
-            elif 'Engine loaded' in line:
-                engineLoaded = True
+        def assertLogContains(expectedCompilation, expectedEngineLoad):
+            _, stderr = capfd.readouterr()
+            graphCompiled = False
+            engineLoaded = False
+            for line in stderr.splitlines():
+                if 'Graph compiled' in line:
+                    graphCompiled = True
+                elif 'Engine loaded' in line:
+                    engineLoaded = True
 
-        assert expectedCompilation == graphCompiled
-        assert engineLoaded == expectedEngineLoad
+            assert expectedCompilation == graphCompiled
+            assert engineLoaded == expectedEngineLoad
 
-    popart.getLogger().setLevel('INFO')
-    # Compile graph
-    if loadEngine is None:
-        session.prepareDevice()
-        # We expect the engine to be loaded by default
-        loadEngine = True
-    else:
-        session.prepareDevice(loadEngine)
-    assertLogContains(expectedCompilation=True, expectedEngineLoad=loadEngine)
+        popart.getLogger().setLevel('INFO')
+        # Compile graph
+        if loadEngine is None:
+            session.prepareDevice()
+            # We expect the engine to be loaded by default
+            loadEngine = True
+        else:
+            session.prepareDevice(loadEngine)
+        assertLogContains(expectedCompilation=True,
+                          expectedEngineLoad=loadEngine)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: input_data}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assertLogContains(expectedCompilation=False,
                       expectedEngineLoad=not loadEngine)

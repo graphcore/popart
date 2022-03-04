@@ -19,21 +19,21 @@ def test_abort_unconditional():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
 
-    device = tu.create_test_device()
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
-    with pytest.raises(popart.poplar_runtime_error) as e_info:
-        session.run(stepio)
-        assert (e_info.value.args[0].startswith("Abort Program"))
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
+        with pytest.raises(popart.poplar_runtime_error) as e_info:
+            session.run(stepio)
+            assert (e_info.value.args[0].startswith("Abort Program"))
 
 
 @tu.requires_ipu
@@ -50,20 +50,20 @@ def test_abort_conditional():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
 
-    device = tu.create_test_device()
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
 
 @tu.requires_ipu
@@ -80,17 +80,17 @@ def test_abort_conditional_exception():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
     opts = popart.SessionOptions()
 
-    device = tu.create_test_device()
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
-    with pytest.raises(popart.poplar_runtime_error) as e_info:
-        session.run(stepio)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
+        with pytest.raises(popart.poplar_runtime_error) as e_info:
+            session.run(stepio)

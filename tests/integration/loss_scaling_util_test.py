@@ -128,71 +128,74 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
         init_optimizer.insertSpecific(specific, {"weightDecay": (0.01, False)})
         new_optimizer.insertSpecific(specific, {"weightDecay": (0.01, False)})
 
-    ref_session = popart.TrainingSession(
-        fnModel=proto,
-        deviceInfo=tu.create_test_device(num_ipus),
-        dataFlow=popart.DataFlow(bps, []),
-        loss=loss,
-        optimizer=init_optimizer,
-        userOptions=opts)
-    ref_session.prepareDevice()
-    ref_session.weightsFromHost()
-    ref_anchors = ref_session.initAnchorArrays()
+    with tu.create_test_device(num_ipus) as ref_device:
+        with tu.create_test_device(num_ipus) as als_device:
+            ref_session = popart.TrainingSession(fnModel=proto,
+                                                 deviceInfo=ref_device,
+                                                 dataFlow=popart.DataFlow(
+                                                     bps, []),
+                                                 loss=loss,
+                                                 optimizer=init_optimizer,
+                                                 userOptions=opts)
+            ref_session.prepareDevice()
+            ref_session.weightsFromHost()
+            ref_anchors = ref_session.initAnchorArrays()
 
-    opts.automaticLossScalingSettings.enabled = True
-    opts.automaticLossScalingSettings.binEdgeLocation = 0.5
-    opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
-    if toTrackTensors is not None:
-        opts.automaticLossScalingSettings.toTrackTensors = toTrackTensors
-        opts.automaticLossScalingSettings.gradientTensorTrackingMethod = popart.GradientTensorTrackingMethod.GradientsOfUserSpecifiedTensors
-    if update_period is not None:
-        opts.automaticLossScalingSettings.updatePeriod = update_period
+            opts.automaticLossScalingSettings.enabled = True
+            opts.automaticLossScalingSettings.binEdgeLocation = 0.5
+            opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
+            if toTrackTensors is not None:
+                opts.automaticLossScalingSettings.toTrackTensors = toTrackTensors
+                opts.automaticLossScalingSettings.gradientTensorTrackingMethod = popart.GradientTensorTrackingMethod.GradientsOfUserSpecifiedTensors
+            if update_period is not None:
+                opts.automaticLossScalingSettings.updatePeriod = update_period
 
-    ls_id = "finalLossScale"
+            ls_id = "finalLossScale"
 
-    als_session = popart.TrainingSession(
-        fnModel=proto,
-        deviceInfo=tu.create_test_device(num_ipus),
-        dataFlow=popart.DataFlow(bps, [ls_id]),
-        loss=loss,
-        optimizer=init_optimizer,
-        userOptions=opts)
-    als_session.prepareDevice()
-    als_session.weightsFromHost()
-    als_anchors = als_session.initAnchorArrays()
+            als_session = popart.TrainingSession(fnModel=proto,
+                                                 deviceInfo=als_device,
+                                                 dataFlow=popart.DataFlow(
+                                                     bps, [ls_id]),
+                                                 loss=loss,
+                                                 optimizer=init_optimizer,
+                                                 userOptions=opts)
+            als_session.prepareDevice()
+            als_session.weightsFromHost()
+            als_anchors = als_session.initAnchorArrays()
 
-    t0_data = np.random.rand(step_size, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0],
-                                   step_size * label_shape[0]).astype(np.int32)
-    inputs = {t0: t0_data, label: label_data}
+            t0_data = np.random.rand(step_size, *t_shape).astype(np.float16)
+            label_data = np.random.randint(
+                0, label_shape[0], step_size * label_shape[0]).astype(np.int32)
+            inputs = {t0: t0_data, label: label_data}
 
-    # Run once
-    ref_session.run(popart.PyStepIO(inputs, ref_anchors))
-    als_session.run(popart.PyStepIO(inputs, als_anchors))
+            # Run once
+            ref_session.run(popart.PyStepIO(inputs, ref_anchors))
+            als_session.run(popart.PyStepIO(inputs, als_anchors))
 
-    # Verify that the loss scale has changed from its initial value
-    print("Loss Scale:", als_anchors[ls_id].flatten())
-    if update_period is not None:
-        assert np.allclose(expected_loss_scale, als_anchors[ls_id].flatten())
+            # Verify that the loss scale has changed from its initial value
+            print("Loss Scale:", als_anchors[ls_id].flatten())
+            if update_period is not None:
+                assert np.allclose(expected_loss_scale,
+                                   als_anchors[ls_id].flatten())
 
-    if grad_accumulate:
-        updated_loss_scales = [als_anchors[ls_id].flatten()[-1]][1:-1]
-    else:
-        updated_loss_scales = als_anchors[ls_id].flatten()[1:-1]
-    for ls in updated_loss_scales:
-        assert ls != init_ls
+            if grad_accumulate:
+                updated_loss_scales = [als_anchors[ls_id].flatten()[-1]][1:-1]
+            else:
+                updated_loss_scales = als_anchors[ls_id].flatten()[1:-1]
+            for ls in updated_loss_scales:
+                assert ls != init_ls
 
-    # Update the optimizer
-    ref_session.updateOptimizerFromHost(new_optimizer)
-    als_session.updateOptimizerFromHost(new_optimizer)
+            # Update the optimizer
+            ref_session.updateOptimizerFromHost(new_optimizer)
+            als_session.updateOptimizerFromHost(new_optimizer)
 
-    # Run a second time
-    ref_session.run(popart.PyStepIO(inputs, ref_anchors))
-    als_session.run(popart.PyStepIO(inputs, als_anchors))
+            # Run a second time
+            ref_session.run(popart.PyStepIO(inputs, ref_anchors))
+            als_session.run(popart.PyStepIO(inputs, als_anchors))
 
-    # Verify that the weight updates are identitcal for a.l.s vs a reference
-    # session
-    compare_weights(ref_session, als_session, tmpdir)
+            # Verify that the weight updates are identitcal for a.l.s vs a reference
+            # session
+            compare_weights(ref_session, als_session, tmpdir)
 
 
 def getOptimizers():

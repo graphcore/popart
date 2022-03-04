@@ -96,20 +96,20 @@ def test_distributed_replicated_allreduce():
 
     numIpus = 1
 
-    device = tu.create_test_device(numIpus=numIpus)
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+    with tu.create_test_device(numIpus=numIpus) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     ground_truth = 2.0 * np.array(range(10), dtype=np.float32)
     assert np.allclose(anchors[o], ground_truth)
@@ -192,24 +192,24 @@ def test_distributed_replicated_weight_update():
 
     numIpus = 1
 
-    device = tu.create_test_device(numIpus=numIpus)
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     deviceInfo=device,
-                                     userOptions=opts)
+    with tu.create_test_device(numIpus=numIpus) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device,
+                                         userOptions=opts)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    session.run(stepio)
+        session.run(stepio)
 
     torch_ground_truth = ground_truth()
     keys = ["A", "B", "C", "D"]
@@ -302,24 +302,24 @@ def test_distributed_hierarchical_replicated_weight_update():
 
     numIpus = 2
 
-    device = tu.create_test_device(numIpus=numIpus)
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     deviceInfo=device,
-                                     userOptions=opts)
+    with tu.create_test_device(numIpus=numIpus) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device,
+                                         userOptions=opts)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    session.run(stepio)
+        session.run(stepio)
 
     torch_ground_truth = ground_truth()
     keys = ["A", "B", "C", "D"]

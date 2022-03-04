@@ -119,13 +119,13 @@ def test_matmul_serialization_invalid_factor():
     pat = popart.Patterns(['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
     pat.enableRuntimeAsserts(False)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              userOptions=opts,
+                                              patterns=pat,
+                                              deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "Invalid serialisation factor 3 for output channels dim 4. output_channels dim should be a multple of the serialisation factor"
@@ -168,23 +168,23 @@ def test_matmul_serialization_inference():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              userOptions=opts,
+                                              patterns=pat,
+                                              deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data, rhs: rhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data, rhs: rhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[o]
 
@@ -311,28 +311,28 @@ def test_matmul_serialization_training_1():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
+            session.run(stepio)
+            session.weightsToHost()
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 
@@ -585,28 +585,28 @@ def test_matmul_serialization_training_2():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        session.weightsToHost()
-        verify(session, matmul_serialization_factor)
+            session.weightsToHost()
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 
@@ -862,28 +862,28 @@ def test_matmul_serialization_training_3():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
+            session.run(stepio)
+            session.weightsToHost()
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 
@@ -1130,28 +1130,28 @@ def test_matmul_serialization_precision():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
+            session.run(stepio)
+            session.weightsToHost()
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 
@@ -1418,31 +1418,31 @@ def test_matmul_serialization_training_with_gradient_accumlation():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        #TODO (T15448, understand why shapes are incorrect)
-        stepio.enableRuntimeAsserts(False)
+            #TODO (T15448, understand why shapes are incorrect)
+            stepio.enableRuntimeAsserts(False)
 
-        session.run(stepio)
-        session.weightsToHost()
+            session.run(stepio)
+            session.weightsToHost()
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 
@@ -1707,28 +1707,28 @@ def test_matmul_serialization_training_with_castop():
             ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
         pat.enableRuntimeAsserts(False)
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=popart.ConstSGD(0.01),
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
+            session.run(stepio)
+            session.weightsToHost()
 
-        verify(session, matmul_serialization_factor)
+            verify(session, matmul_serialization_factor)
 
         return anchors[rhs]
 

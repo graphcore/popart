@@ -19,24 +19,26 @@ def test_replace_with_identity():
     o = builder.aiOnnx.transpose([d])
     o = builder.aiOnnx.transpose([o])
 
-    sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                   deviceInfo=tu.create_test_device(),
-                                   dataFlow=popart.DataFlow(1, [o]))
-    sess.prepareDevice()
+    with tu.create_test_device() as device:
+        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [o]))
+        sess.prepareDevice()
 
-    anchors = sess.initAnchorArrays()
+        anchors = sess.initAnchorArrays()
 
-    stepio = popart.PyStepIO({d: d1}, anchors)
-    sess.weightsFromHost()
+        stepio = popart.PyStepIO({d: d1}, anchors)
+        sess.weightsFromHost()
 
-    sess.run(stepio)
-    ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-    assert len(
-        list(filter(lambda op: "Identity" in op["type"], ir["maingraph"]))) > 0
-    assert len(
-        list(filter(lambda op: "Transpose" in op["type"],
-                    ir["maingraph"]))) < 1
-    assert np.allclose(anchors[o], d1)
+        sess.run(stepio)
+        ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
+        assert len(
+            list(filter(lambda op: "Identity" in op["type"],
+                        ir["maingraph"]))) > 0
+        assert len(
+            list(filter(lambda op: "Transpose" in op["type"],
+                        ir["maingraph"]))) < 1
+        assert np.allclose(anchors[o], d1)
 
 
 A = 10
@@ -60,24 +62,26 @@ def test_replace_with_reshape(reshape):
     perm[indexB] = indexA
     o = builder.aiOnnx.transpose([o], perm=perm)
 
-    sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                   deviceInfo=tu.create_test_device(),
-                                   dataFlow=popart.DataFlow(1, [o]))
-    sess.prepareDevice()
+    with tu.create_test_device() as device:
+        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [o]))
+        sess.prepareDevice()
 
-    anchors = sess.initAnchorArrays()
+        anchors = sess.initAnchorArrays()
 
-    stepio = popart.PyStepIO({d: d1}, anchors)
-    sess.weightsFromHost()
+        stepio = popart.PyStepIO({d: d1}, anchors)
+        sess.weightsFromHost()
 
-    sess.run(stepio)
-    ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-    assert len(
-        list(filter(lambda op: "Reshape" in op["type"], ir["maingraph"]))) > 0
-    assert len(
-        list(filter(lambda op: "Transpose" in op["type"],
-                    ir["maingraph"]))) < 1
-    assert np.allclose(anchors[o].flatten(), d1.flatten())
+        sess.run(stepio)
+        ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
+        assert len(
+            list(filter(lambda op: "Reshape" in op["type"],
+                        ir["maingraph"]))) > 0
+        assert len(
+            list(filter(lambda op: "Transpose" in op["type"],
+                        ir["maingraph"]))) < 1
+        assert np.allclose(anchors[o].flatten(), d1.flatten())
 
 
 def test_fail_due_to_non_trivial_reshape():
@@ -89,23 +93,25 @@ def test_fail_due_to_non_trivial_reshape():
     o = builder.reshape_const(builder.aiOnnx, [o], (1, 5, 40))
     o = builder.aiOnnx.transpose([o], perm=(0, 2, 1))
 
-    sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                   deviceInfo=tu.create_test_device(),
-                                   dataFlow=popart.DataFlow(1, [o]))
-    sess.prepareDevice()
+    with tu.create_test_device() as device:
+        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [o]))
+        sess.prepareDevice()
 
-    anchors = sess.initAnchorArrays()
+        anchors = sess.initAnchorArrays()
 
-    stepio = popart.PyStepIO({d: d1}, anchors)
-    sess.weightsFromHost()
+        stepio = popart.PyStepIO({d: d1}, anchors)
+        sess.weightsFromHost()
 
-    sess.run(stepio)
-    ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-    assert len(
-        list(filter(lambda op: "Reshape" in op["type"], ir["maingraph"]))) == 1
-    assert len(
-        list(filter(lambda op: "Transpose" in op["type"],
-                    ir["maingraph"]))) == 2
+        sess.run(stepio)
+        ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
+        assert len(
+            list(filter(lambda op: "Reshape" in op["type"],
+                        ir["maingraph"]))) == 1
+        assert len(
+            list(filter(lambda op: "Transpose" in op["type"],
+                        ir["maingraph"]))) == 2
 
 
 def test_fail_due_to_mismatch_permutation():
@@ -116,18 +122,19 @@ def test_fail_due_to_mismatch_permutation():
     o = builder.aiOnnx.transpose([d], perm=(0, 2, 1))
     o = builder.aiOnnx.transpose([o], perm=(1, 2, 0))
 
-    sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                   deviceInfo=tu.create_test_device(),
-                                   dataFlow=popart.DataFlow(1, [o]))
-    sess.prepareDevice()
+    with tu.create_test_device() as device:
+        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [o]))
+        sess.prepareDevice()
 
-    anchors = sess.initAnchorArrays()
+        anchors = sess.initAnchorArrays()
 
-    stepio = popart.PyStepIO({d: d1}, anchors)
-    sess.weightsFromHost()
+        stepio = popart.PyStepIO({d: d1}, anchors)
+        sess.weightsFromHost()
 
-    sess.run(stepio)
-    ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-    assert len(
-        list(filter(lambda op: "Transpose" in op["type"],
-                    ir["maingraph"]))) == 2
+        sess.run(stepio)
+        ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
+        assert len(
+            list(filter(lambda op: "Transpose" in op["type"],
+                        ir["maingraph"]))) == 2

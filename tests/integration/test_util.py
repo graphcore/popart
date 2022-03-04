@@ -27,6 +27,19 @@ def filter_dict(dict_to_filter, fun):
 USE_ALL_TILES = 0
 
 
+class DeviceContext:
+    """This is a wrapper around DeviceInfo which forces DeviceInfo to be used as a context manager."""
+
+    def __init__(self, device):
+        self.device = device
+
+    def __enter__(self):
+        return self.device.__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        return self.device.__exit__(*args, **kwargs)
+
+
 def create_test_device(
         numIpus: int = 1,
         opts: Dict = None,
@@ -85,7 +98,7 @@ def create_test_device(
             f"Tried to acquire device {testDeviceType} : {numIpus} IPUs, {tilesPerIPU} tiles,"
             f" {pattern} pattern, {connectionType} connection, but none were availaible"
         )
-    return device
+    return DeviceContext(device)
 
 
 def get_compute_sets_from_report(report):

@@ -64,7 +64,8 @@ def test_inplacing_ambiguity_0():
 
     m_d2h = host_store_and_return_d2h_stream(main, m)
 
-    session = setup_ir(ir, [m_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [m_d2h], device=device)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session.checkInplacingAmbiguity()
@@ -99,7 +100,8 @@ def test_inplacing_ambiguity_subgraph():
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
-        session = setup_ir(ir, [m_d2h])
+        with tu.create_test_device() as device:
+            session = setup_ir(ir, [m_d2h], device=device)
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.checkInplacingAmbiguity()
@@ -136,7 +138,8 @@ def test_inplacing_ambiguity_subgraph_1():
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
-        session = setup_ir(ir, [m_d2h])
+        with tu.create_test_device() as device:
+            session = setup_ir(ir, [m_d2h], device=device)
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.checkInplacingAmbiguity()
@@ -175,7 +178,8 @@ def test_inplacing_ambiguity_subgraph_2():
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
-        session = setup_ir(ir, [m_d2h])
+        with tu.create_test_device() as device:
+            session = setup_ir(ir, [m_d2h], device=device)
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.checkInplacingAmbiguity()
@@ -212,7 +216,8 @@ def test_inplacing_ambiguity_false_positive():
     d_d2h = host_store_and_return_d2h_stream(main, e)
     e_d2h = host_store_and_return_d2h_stream(main, e)
 
-    session = setup_ir(ir, [d_d2h, e_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [d_d2h, e_d2h], device=device)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session.checkInplacingAmbiguity()
@@ -243,7 +248,8 @@ def test_inplacing_ambiguity_false_positive_2():
     b_d2h = host_store_and_return_d2h_stream(main, b)
     c_d2h = host_store_and_return_d2h_stream(main, c)
 
-    session = setup_ir(ir, [b_d2h, c_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session.checkInplacingAmbiguity()
@@ -279,7 +285,8 @@ def test_inplacing_ambiguity_subgraph_3():
         ops.host_store(b_d2h, b)
         ops.host_store(c_d2h, c)
 
-    session = setup_ir(ir, [b_d2h, c_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session.checkInplacingAmbiguity()
@@ -317,7 +324,8 @@ def test_inplacing_ambiguity_subgraph_4():
         ops.host_store(b_d2h, b)
         ops.host_store(c_d2h, c)
 
-    session = setup_ir(ir, [b_d2h, c_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
 
     try:
         session.checkInplacingAmbiguity()
@@ -349,7 +357,8 @@ def test_inplacing_ambiguity_subgraph_5():
 
     d_d2h = host_store_and_return_d2h_stream(main, d)
 
-    session = setup_ir(ir, [d_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [d_d2h], device=device)
 
     with pytest.raises(popart.popart_exception) as e_info:
         session.checkInplacingAmbiguity()
@@ -378,7 +387,8 @@ def test_inplacing_ambiguity_subgraph_6():
 
     d_d2h = host_store_and_return_d2h_stream(main, d)
 
-    session = setup_ir(ir, [d_d2h])
+    with tu.create_test_device() as device:
+        session = setup_ir(ir, [d_d2h], device=device)
 
     try:
         session.checkInplacingAmbiguity()
@@ -386,8 +396,8 @@ def test_inplacing_ambiguity_subgraph_6():
         pytest.fail(f"Unexpected popart failure {e_info}")
 
 
-def setup_ir(ir: popxl.Ir, host_stores: List[popxl.DeviceToHostStream]
-             ) -> popart.InferenceSession:
+def setup_ir(ir: popxl.Ir, host_stores: List[popxl.DeviceToHostStream],
+             device) -> popart.InferenceSession:
     """Simple function to take an ir and create a session for.
 
     Args:
@@ -415,8 +425,7 @@ def setup_ir(ir: popxl.Ir, host_stores: List[popxl.DeviceToHostStream]
     # The option here should be set when creating a popxl.Ir but we add them here to be explicit.
     opts.enableInplaceAmbiguityChecking = True
 
-    session = popart.InferenceSession.fromIr(
-        ir=ir._pb_ir, deviceInfo=tu.create_test_device())
+    session = popart.InferenceSession.fromIr(ir=ir._pb_ir, deviceInfo=device)
     ir._pb_ir.logIr()
 
     return session

@@ -94,33 +94,31 @@ def test_streamingmemory_momentum(tmpdir):
 
         request_ipus = 2
 
-        device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)
+        with tu.create_test_device(2,
+                                   pattern=popart.SyncPattern.Full) as device:
+            dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
 
-        dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=patterns,
+                                             deviceInfo=device)
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+            session.prepareDevice()
 
-        session.prepareDevice()
+            session.weightsFromHost()
 
-        session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        anchors = session.initAnchorArrays()
+            stepio = popart.PyStepIO(data, anchors)
 
-        stepio = popart.PyStepIO(data, anchors)
+            session.run(stepio)
 
-        session.run(stepio)
-
-        file_path = str(tmpdir / f"aliaszerocopy_model_test.onnx")
-        session.modelToHost(file_path)
-        post_proto = onnx.load(file_path)
-
-        device.detach()
+            file_path = str(tmpdir / f"aliaszerocopy_model_test.onnx")
+            session.modelToHost(file_path)
+            post_proto = onnx.load(file_path)
 
         report = session.getReport()
         max_tile_memory = max([

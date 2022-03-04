@@ -29,32 +29,32 @@ def test_no_min_max_values_at_model_build():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    device = tu.create_test_device()
-    anchor_desc = {o: popart.AnchorReturnType("ALL")}
-    dataFlow = popart.DataFlow(5, anchor_desc)
-    userOpts = popart.SessionOptions()
+    with tu.create_test_device() as device:
+        anchor_desc = {o: popart.AnchorReturnType("ALL")}
+        dataFlow = popart.DataFlow(5, anchor_desc)
+        userOpts = popart.SessionOptions()
 
-    with pytest.raises(Exception) as exceptionInfo:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device,
-                                          userOptions=userOpts)
+        with pytest.raises(Exception) as exceptionInfo:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              deviceInfo=device,
+                                              userOptions=userOpts)
 
-        # Test currently raises exception on the above line, but below lines
-        # may be useful when actually implementing dynamic thresholds
+            # Test currently raises exception on the above line, but below lines
+            # may be useful when actually implementing dynamic thresholds
 
-        session.prepareDevice()
-        session.setRandomSeed(1)
+            session.prepareDevice()
+            session.setRandomSeed(1)
 
-        # Create buffers to receive results from the execution
-        anchors = session.initAnchorArrays()
-        boxes_npy = np.random.rand(1, 10, 7).astype(np.float32)
-        min_npy = np.array([0.5], dtype=np.float32)
-        max_npy = np.array([1.0], dtype=np.float32)
+            # Create buffers to receive results from the execution
+            anchors = session.initAnchorArrays()
+            boxes_npy = np.random.rand(1, 10, 7).astype(np.float32)
+            min_npy = np.array([0.5], dtype=np.float32)
+            max_npy = np.array([1.0], dtype=np.float32)
 
-        inputs_dict = {'d1': boxes_npy, 'tmin': min_npy, 'tmax': max_npy}
-        stepio = popart.PyStepIO(inputs_dict, anchors)
-        session.run(stepio)
+            inputs_dict = {'d1': boxes_npy, 'tmin': min_npy, 'tmax': max_npy}
+            stepio = popart.PyStepIO(inputs_dict, anchors)
+            session.run(stepio)
 
     assert str(exceptionInfo.value) == \
         "Op MyClip11(ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'min' (tmin) has no data."
@@ -76,19 +76,19 @@ def test_no_min_value_at_model_build():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    device = tu.create_test_device()
-    anchor_desc = {o: popart.AnchorReturnType("ALL")}
-    dataFlow = popart.DataFlow(5, anchor_desc)
-    userOpts = popart.SessionOptions()
+    with tu.create_test_device() as device:
+        anchor_desc = {o: popart.AnchorReturnType("ALL")}
+        dataFlow = popart.DataFlow(5, anchor_desc)
+        userOpts = popart.SessionOptions()
 
-    with pytest.raises(Exception) as exceptionInfo:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device,
-                                          userOptions=userOpts)
+        with pytest.raises(Exception) as exceptionInfo:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              deviceInfo=device,
+                                              userOptions=userOpts)
 
-    assert str(exceptionInfo.value) == \
-        "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'min' (tmin) has no data."
+        assert str(exceptionInfo.value) == \
+            "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'min' (tmin) has no data."
 
 
 def test_no_max_value_at_model_build():
@@ -107,16 +107,16 @@ def test_no_max_value_at_model_build():
     builder.addOutputTensor(o)
     proto = builder.getModelProto()
 
-    device = tu.create_test_device()
-    anchor_desc = {o: popart.AnchorReturnType("ALL")}
-    dataFlow = popart.DataFlow(5, anchor_desc)
-    userOpts = popart.SessionOptions()
+    with tu.create_test_device() as device:
+        anchor_desc = {o: popart.AnchorReturnType("ALL")}
+        dataFlow = popart.DataFlow(5, anchor_desc)
+        userOpts = popart.SessionOptions()
 
-    with pytest.raises(Exception) as exceptionInfo:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device,
-                                          userOptions=userOpts)
+        with pytest.raises(Exception) as exceptionInfo:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              deviceInfo=device,
+                                              userOptions=userOpts)
 
-    assert str(exceptionInfo.value) == \
-        "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'max' (tmax) has no data."
+        assert str(exceptionInfo.value) == \
+            "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'max' (tmax) has no data."

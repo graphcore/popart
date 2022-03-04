@@ -1077,31 +1077,31 @@ def test_batchnorm_repeated():
 
     dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=device,
-                                      userOptions=options)
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device,
+                                          userOptions=options)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {i1: d1}
-    stepio = popart.PyStepIO(inputs, anchors)
-
-    session.run(stepio)
-    first_result = np.copy(anchors[o_y])
-
-    for i in range(0, 10):
+        inputs = {i1: d1}
         stepio = popart.PyStepIO(inputs, anchors)
-        session.run(stepio)
 
-        assert np.allclose(first_result, np.copy(anchors[o_y])) == True
+        session.run(stepio)
+        first_result = np.copy(anchors[o_y])
+
+        for i in range(0, 10):
+            stepio = popart.PyStepIO(inputs, anchors)
+            session.run(stepio)
+
+            assert np.allclose(first_result, np.copy(anchors[o_y])) == True
 
 
 def test_batchnorm_train_half_fp32var():
@@ -1128,28 +1128,28 @@ def test_batchnorm_train_half_fp32var():
 
     dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     loss=lossId,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=device,
-                                     optimizer=popart.ConstSGD(0.01),
-                                     userOptions=options)
+        session = popart.TrainingSession(fnModel=proto,
+                                         loss=lossId,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=device,
+                                         optimizer=popart.ConstSGD(0.01),
+                                         userOptions=options)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {i1: d1}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.run(stepio)
+        inputs = {i1: d1}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.run(stepio)
 
 
 def test_batchnorm_inference_half_fp32var():
@@ -1175,25 +1175,25 @@ def test_batchnorm_inference_half_fp32var():
 
     dataFlow = popart.DataFlow(1, {o_y: popart.AnchorReturnType("All")})
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=device,
-                                      userOptions=options)
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device,
+                                          userOptions=options)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {i1: d1}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.run(stepio)
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.run(stepio)
+        inputs = {i1: d1}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.run(stepio)
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.run(stepio)
 
 
 def test_batchnorm_shapeinference():
@@ -1223,27 +1223,27 @@ def test_batchnorm_shapeinference():
     anchors = [o_y, o_mean, o_var, o_smean, o_svar]
     art = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(1, {a: art for a in anchors})
-    device = tu.create_test_device()
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
-    # store the shapes here to make sure we are checking shapes
-    #  before the IR is complete (i.e. testing onnx shape inference)
-    shapes = []
-    for a in anchors:
-        shapes.append(tuple(builder.getTensorShape(a)))
-    session = popart.TrainingSession(fnModel=proto,
-                                     loss=lossId,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=device,
-                                     optimizer=popart.ConstSGD(0.01),
-                                     userOptions=options)
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
-    inputs = {i1: d1}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    stepio = popart.PyStepIO(inputs, anchors)
-    # This tests the shape inference has run
-    for a, b in zip([o_y, o_mean, o_var, o_smean, o_svar], shapes):
-        assert anchors[a].shape == b
+    with tu.create_test_device() as device:
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
+        # store the shapes here to make sure we are checking shapes
+        #  before the IR is complete (i.e. testing onnx shape inference)
+        shapes = []
+        for a in anchors:
+            shapes.append(tuple(builder.getTensorShape(a)))
+        session = popart.TrainingSession(fnModel=proto,
+                                         loss=lossId,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=device,
+                                         optimizer=popart.ConstSGD(0.01),
+                                         userOptions=options)
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
+        inputs = {i1: d1}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        stepio = popart.PyStepIO(inputs, anchors)
+        # This tests the shape inference has run
+        for a, b in zip([o_y, o_mean, o_var, o_smean, o_svar], shapes):
+            assert anchors[a].shape == b

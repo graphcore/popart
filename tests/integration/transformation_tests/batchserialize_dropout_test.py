@@ -49,31 +49,31 @@ def test_batchserialisation_dropout():
         options.explicitRecomputation = True
         options.batchSerializationSettings.factor = 4
 
-        device = tu.create_test_device(1, pattern=popart.SyncPattern.Full)
+        with tu.create_test_device(1,
+                                   pattern=popart.SyncPattern.Full) as device:
 
-        dataFlow = popart.DataFlow(
-            1, {x: popart.AnchorReturnType("ALL")
-                for x in xs})
+            dataFlow = popart.DataFlow(
+                1, {x: popart.AnchorReturnType("ALL")
+                    for x in xs})
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=patterns,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        stepio = popart.PyStepIO(data, anchors)
+            stepio = popart.PyStepIO(data, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        device.detach()
         return [anchors[x] for x in xs]
 
     for enableOutlining in [False, True]:

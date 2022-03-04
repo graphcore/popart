@@ -151,13 +151,14 @@ def test_average_pool_with_count_include_pad():
 
     opts = popart.SessionOptions()
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        popart.TrainingSession(fnModel=proto,
-                               dataFlow=dataFlow,
-                               loss=loss,
-                               optimizer=optimizer,
-                               userOptions=opts,
-                               deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.TrainingSession(fnModel=proto,
+                                   dataFlow=dataFlow,
+                                   loss=loss,
+                                   optimizer=optimizer,
+                                   userOptions=opts,
+                                   deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))

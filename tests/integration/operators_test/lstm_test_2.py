@@ -199,22 +199,22 @@ def test_import_torch_lstm(tmpdir):
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
         dataFlow = popart.DataFlow(1, outputs)
-        device = tu.create_test_device(1)
-        s = popart.InferenceSession(fnModel=onnx_file_name,
-                                    dataFlow=dataFlow,
-                                    deviceInfo=device)
+        with tu.create_test_device(1) as device:
+            s = popart.InferenceSession(fnModel=onnx_file_name,
+                                        dataFlow=dataFlow,
+                                        deviceInfo=device)
 
-        anchor_map = s.initAnchorArrays()
-        s.prepareDevice()
+            anchor_map = s.initAnchorArrays()
+            s.prepareDevice()
 
-        # run the popart session
-        input_map = {
-            'X': inputs[0],
-            'initial_h': inputs[1],
-            'initial_c': inputs[2]
-        }
-        stepio = popart.PyStepIO(input_map, anchor_map)
-        s.run(stepio)
+            # run the popart session
+            input_map = {
+                'X': inputs[0],
+                'initial_h': inputs[1],
+                'initial_c': inputs[2]
+            }
+            stepio = popart.PyStepIO(input_map, anchor_map)
+            s.run(stepio)
 
         return (anchor_map['Y'], anchor_map['Y_h'], anchor_map['Y_c'])
 
@@ -344,44 +344,44 @@ def test_import_torch_lstm_train(tmpdir):
         ]
         dataFlow = popart.DataFlow(1, anchors)
         optimizer = popart.ConstSGD(0.1)
-        device = tu.create_test_device(1)
-        print('Creating session')
-        s = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=dataFlow,
-            optimizer=optimizer,
-            loss=loss,
-            patterns=popart.Patterns(
-                ['PreUniRepl']).enableRuntimeAsserts(False),
-            deviceInfo=device)
-        print('setting device')
+        with tu.create_test_device(1) as device:
+            print('Creating session')
+            s = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=dataFlow,
+                optimizer=optimizer,
+                loss=loss,
+                patterns=popart.Patterns(
+                    ['PreUniRepl']).enableRuntimeAsserts(False),
+                deviceInfo=device)
+            print('setting device')
 
-        anchor_map = s.initAnchorArrays()
-        s.prepareDevice()
+            anchor_map = s.initAnchorArrays()
+            s.prepareDevice()
 
-        # run the popart session
-        input_map = {
-            'X': inputs[0],
-            'initial_h': inputs[1],
-            'initial_c': inputs[2]
-        }
-        stepio = popart.PyStepIO(input_map, anchor_map)
-        s.weightsFromHost()
-        s.run(stepio)
-        s.modelToHost(get_popart_fname(onnx_file_name))
+            # run the popart session
+            input_map = {
+                'X': inputs[0],
+                'initial_h': inputs[1],
+                'initial_c': inputs[2]
+            }
+            stepio = popart.PyStepIO(input_map, anchor_map)
+            s.weightsFromHost()
+            s.run(stepio)
+            s.modelToHost(get_popart_fname(onnx_file_name))
 
-        anchor_map[popart.reservedGradientPrefix() +
-                   'W'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                         'lstm.weight_ih_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'R'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                         'lstm.weight_hh_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'WB'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                          'lstm.bias_ih_l0')
-        anchor_map[popart.reservedGradientPrefix() +
-                   'RB'] = anchor_map.pop(popart.reservedGradientPrefix() +
-                                          'lstm.bias_hh_l0')
+            anchor_map[popart.reservedGradientPrefix() +
+                       'W'] = anchor_map.pop(popart.reservedGradientPrefix() +
+                                             'lstm.weight_ih_l0')
+            anchor_map[popart.reservedGradientPrefix() +
+                       'R'] = anchor_map.pop(popart.reservedGradientPrefix() +
+                                             'lstm.weight_hh_l0')
+            anchor_map[popart.reservedGradientPrefix() +
+                       'WB'] = anchor_map.pop(popart.reservedGradientPrefix() +
+                                              'lstm.bias_ih_l0')
+            anchor_map[popart.reservedGradientPrefix() +
+                       'RB'] = anchor_map.pop(popart.reservedGradientPrefix() +
+                                              'lstm.bias_hh_l0')
         return anchor_map
 
     input_size = 2
@@ -499,30 +499,30 @@ def test_import_torch_lstm_multi_run(tmpdir):
         builder = popart.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
         dataFlow = popart.DataFlow(1, outputs)
-        device = tu.create_test_device(1)
-        s = popart.InferenceSession(fnModel=onnx_file_name,
-                                    dataFlow=dataFlow,
-                                    deviceInfo=device)
+        with tu.create_test_device(1) as device:
+            s = popart.InferenceSession(fnModel=onnx_file_name,
+                                        dataFlow=dataFlow,
+                                        deviceInfo=device)
 
-        anchor_map = s.initAnchorArrays()
-        s.prepareDevice()
+            anchor_map = s.initAnchorArrays()
+            s.prepareDevice()
 
-        h0 = inputs[1]
-        c0 = inputs[2]
+            h0 = inputs[1]
+            c0 = inputs[2]
 
-        outs = []
-        for i in range(inputs[0].shape[0]):
-            input_data = inputs[0][i]
-            input_data = input_data.reshape(1, *input_data.shape)
-            input_map = {'X': input_data, 'initial_h': h0, 'initial_c': c0}
-            stepio = popart.PyStepIO(input_map, anchor_map)
-            s.run(stepio)
+            outs = []
+            for i in range(inputs[0].shape[0]):
+                input_data = inputs[0][i]
+                input_data = input_data.reshape(1, *input_data.shape)
+                input_map = {'X': input_data, 'initial_h': h0, 'initial_c': c0}
+                stepio = popart.PyStepIO(input_map, anchor_map)
+                s.run(stepio)
 
-            h0 = anchor_map['Y_h']
-            c0 = anchor_map['Y_c']
-            outs.append(np.copy(anchor_map['Y']))
+                h0 = anchor_map['Y_h']
+                c0 = anchor_map['Y_c']
+                outs.append(np.copy(anchor_map['Y']))
 
-        outs = np.concatenate(outs)
+            outs = np.concatenate(outs)
 
         return (outs, anchor_map['Y_h'], anchor_map['Y_c'])
 
@@ -592,22 +592,22 @@ def test_lstm_export_with_constantofshape(tmpdir):
 
     anchors = {"tag": popart.AnchorReturnType("All")}
     dataFlow = popart.DataFlow(1, anchors)
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    session = popart.InferenceSession(export_name,
-                                      dataFlow,
-                                      device,
-                                      inputShapeInfo=inputShapeInfo)
+        session = popart.InferenceSession(export_name,
+                                          dataFlow,
+                                          device,
+                                          inputShapeInfo=inputShapeInfo)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inferenceAnchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({"data": np_data}, inferenceAnchors)
-    session.run(stepio)
-    popartOutput = inferenceAnchors['tag']
+        inferenceAnchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({"data": np_data}, inferenceAnchors)
+        session.run(stepio)
+        popartOutput = inferenceAnchors['tag']
 
-    assert torchOutput.shape == popartOutput.shape
-    assert np.allclose(torchOutput, popartOutput, atol=1e-07)
+        assert torchOutput.shape == popartOutput.shape
+        assert np.allclose(torchOutput, popartOutput, atol=1e-07)
 
 
 @tu.requires_ipu_model
@@ -733,32 +733,32 @@ def test_lstm_extra_inputs(enable_pattern):
     conf["batch_size"] = 10
     conf["sequence_length"] = 100
     session_options = get_session_options()
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    # building model and dataflow
-    builder = popart.Builder()
-    lstm_model_inputs = create_inputs_for_training(builder, conf)
+        # building model and dataflow
+        builder = popart.Builder()
+        lstm_model_inputs = create_inputs_for_training(builder, conf)
 
-    proto, l1_loss, dataflow = create_model_and_dataflow_for_training(
-        builder, conf, lstm_model_inputs)
+        proto, l1_loss, dataflow = create_model_and_dataflow_for_training(
+            builder, conf, lstm_model_inputs)
 
-    # create optimizer
-    optimizer = popart.SGD({
-        "defaultLearningRate": (0.001, False),
-        "defaultWeightDecay": (0, True)
-    })
+        # create optimizer
+        optimizer = popart.SGD({
+            "defaultLearningRate": (0.001, False),
+            "defaultWeightDecay": (0, True)
+        })
 
-    # create training session
-    print("Creating the training session")
+        # create training session
+        print("Creating the training session")
 
-    training_session, anchors = create_session_anchors(proto,
-                                                       l1_loss,
-                                                       device,
-                                                       dataflow,
-                                                       session_options,
-                                                       training=True,
-                                                       optimizer=optimizer)
-    training_session.weightsFromHost()
+        training_session, anchors = create_session_anchors(proto,
+                                                           l1_loss,
+                                                           device,
+                                                           dataflow,
+                                                           session_options,
+                                                           training=True,
+                                                           optimizer=optimizer)
+        training_session.weightsFromHost()
 
 
 def test_poplar_tile_ex(op_tester):
@@ -792,10 +792,11 @@ def test_poplar_tile_ex(op_tester):
         return [Y, Y_h, Y_c]
 
     op_tester.atol = 1e-07
-    op_tester.device = tu.create_test_device()
-    op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
+                              enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, 'train')
 
 
 def test_missing_seq_len(op_tester):

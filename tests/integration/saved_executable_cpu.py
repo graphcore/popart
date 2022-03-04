@@ -34,22 +34,23 @@ def test_cpu_device(tmp_path):
     opts.cachePath = str(tmp_path / 'saved_graph')
 
     # Create a session to compile and execute the graph
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    # Compile graph
-    session.prepareDevice()
+        # Compile graph
+        session.prepareDevice()
 
-    # Create buffers to receive results from the execution
-    anchors = session.initAnchorArrays()
+        # Create buffers to receive results from the execution
+        anchors = session.initAnchorArrays()
 
-    # Generate some random input data
-    data_a = np.random.rand(1).astype(np.float32)
-    data_b = np.random.rand(1).astype(np.float32)
+        # Generate some random input data
+        data_a = np.random.rand(1).astype(np.float32)
+        data_b = np.random.rand(1).astype(np.float32)
 
-    stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-    session.run(stepio)
+        stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
+        session.run(stepio)
 
-    assert anchors[o] == data_a + data_b
+        assert anchors[o] == data_a + data_b

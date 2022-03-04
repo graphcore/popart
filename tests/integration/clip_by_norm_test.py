@@ -435,27 +435,27 @@ def test_serialized_matmul(optimizerType):
         optimizer = _get_popart_optimizer(
             optimizerType, [popart.ClipNormSettings([lhs, rhs], 0.01)])
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=dataFlow,
-            userOptions=opts,
-            loss=loss,
-            optimizer=optimizer,
-            patterns=pat,
-            deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=pat,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {lhs: lhs_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
-        print(f'weights should be called {lhs} and {rhs}')
+            session.run(stepio)
+            session.weightsToHost()
+            print(f'weights should be called {lhs} and {rhs}')
 
         return anchors
 
@@ -513,19 +513,20 @@ def test_clipping_all_weights(optimizerType):
     optimizer = _get_popart_optimizer(
         optimizerType, [popart.ClipNormSettings.clipAllWeights(0.1)])
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        loss=loss,
-        optimizer=optimizer,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    # There should be two ReduceSumSquare ops in the graph if gradient clipping
-    # was applied to all the weights.
-    reduceSumSquareOps = [
-        op for op in ir['maingraph'] if op['type'] == 'ReduceSumSquare'
-    ]
-    assert (len(reduceSumSquareOps) == 2)
+        # There should be two ReduceSumSquare ops in the graph if gradient clipping
+        # was applied to all the weights.
+        reduceSumSquareOps = [
+            op for op in ir['maingraph'] if op['type'] == 'ReduceSumSquare'
+        ]
+        assert (len(reduceSumSquareOps) == 2)

@@ -243,30 +243,30 @@ def test_reducemedian_values_shape_infer(keepdims, axes):
     anchors = [out[0], out[1]]
     art = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(1, {a: art for a in anchors})
-    device = tu.create_test_device()
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
-    # store the shapes here to make sure we are checking shapes
-    # before the IR is complete (i.e. testing onnx shape inference)
-    shapes = []
-    for a in anchors:
-        shapes.append(tuple(builder.getTensorShape(a)))
-    session = popart.TrainingSession(fnModel=proto,
-                                     loss=lossId,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=device,
-                                     optimizer=popart.ConstSGD(0.01),
-                                     userOptions=options)
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
-    inputs = {tensor: data}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    stepio = popart.PyStepIO(inputs, anchors)
-    # This tests the shape inference has run
-    for a, b in zip([out[0], out[1]], shapes):
-        assert anchors[a].shape == b
+    with tu.create_test_device() as device:
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
+        # store the shapes here to make sure we are checking shapes
+        # before the IR is complete (i.e. testing onnx shape inference)
+        shapes = []
+        for a in anchors:
+            shapes.append(tuple(builder.getTensorShape(a)))
+        session = popart.TrainingSession(fnModel=proto,
+                                         loss=lossId,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=device,
+                                         optimizer=popart.ConstSGD(0.01),
+                                         userOptions=options)
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
+        inputs = {tensor: data}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        stepio = popart.PyStepIO(inputs, anchors)
+        # This tests the shape inference has run
+        for a, b in zip([out[0], out[1]], shapes):
+            assert anchors[a].shape == b
 
 
 @pytest.mark.parametrize("keepdims", keepdims_list)
@@ -289,30 +289,30 @@ def test_reducemedian_indices_1_shape_infer(keepdims, axes):
     anchors = [out[0], out[1]]
     art = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(1, {a: art for a in anchors})
-    device = tu.create_test_device()
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
-    # store the shapes here to make sure we are checking shapes
-    # before the IR is complete (i.e. testing onnx shape inference)
-    shapes = []
-    for a in anchors:
-        shapes.append(tuple(builder.getTensorShape(a)))
-    session = popart.TrainingSession(fnModel=proto,
-                                     loss=lossId,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=device,
-                                     optimizer=popart.ConstSGD(0.01),
-                                     userOptions=options)
-    anchors = session.initAnchorArrays()
-    session.prepareDevice()
-    inputs = {tensor: data}
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    stepio = popart.PyStepIO(inputs, anchors)
-    # This tests the shape inference has run
-    for a, b in zip([out[0], out[1]], shapes):
-        assert anchors[a].shape == b
+    with tu.create_test_device() as device:
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
+        # store the shapes here to make sure we are checking shapes
+        # before the IR is complete (i.e. testing onnx shape inference)
+        shapes = []
+        for a in anchors:
+            shapes.append(tuple(builder.getTensorShape(a)))
+        session = popart.TrainingSession(fnModel=proto,
+                                         loss=lossId,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=device,
+                                         optimizer=popart.ConstSGD(0.01),
+                                         userOptions=options)
+        anchors = session.initAnchorArrays()
+        session.prepareDevice()
+        inputs = {tensor: data}
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        stepio = popart.PyStepIO(inputs, anchors)
+        # This tests the shape inference has run
+        for a, b in zip([out[0], out[1]], shapes):
+            assert anchors[a].shape == b
 
 
 def test_reducemedian_shape_infer():

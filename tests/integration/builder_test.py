@@ -859,21 +859,22 @@ def test_set_weights_from_host():
 
     optimizer = popart.ConstSGD(0.01)
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     deviceInfo=getDevice())
+    with getDevice() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {i1: np.array([1, 2], dtype=np.float32)}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: np.array([1, 2], dtype=np.float32)}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.run(stepio)
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.run(stepio)
 
     assert (e_info.value.args[0].startswith(
         "Must call weightsFromHost before run as the"))
@@ -1267,21 +1268,22 @@ def test_load_onnx_model_from_other_builder():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=getDevice())
+    with getDevice() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {
-        i1: np.array([1, 2], dtype=np.float32),
-        i2: np.array([3, 4], dtype=np.float32)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1, 2], dtype=np.float32),
+            i2: np.array([3, 4], dtype=np.float32)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
     assert (np.array_equal(anchors[o], [4, 6]))
 
     # Run a builder that imports the model of the other builder and check the
@@ -1291,21 +1293,22 @@ def test_load_onnx_model_from_other_builder():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     proto2 = builder.getModelProto()
-    session = popart.InferenceSession(fnModel=proto2,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=getDevice())
+    with getDevice() as device:
+        session = popart.InferenceSession(fnModel=proto2,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {
-        i1: np.array([1, 2], dtype=np.float32),
-        i2: np.array([3, 4], dtype=np.float32)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1, 2], dtype=np.float32),
+            i2: np.array([3, 4], dtype=np.float32)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.array_equal(anchors[o], [4, 6]))
 
@@ -1333,21 +1336,22 @@ def test_load_onnx_model_from_file(tmpdir):
 
     proto = builder2.getModelProto()
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=getDevice())
+    with getDevice() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {
-        i1: np.array([1, 2], dtype=np.float32),
-        i2: np.array([3, 4], dtype=np.float32)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1, 2], dtype=np.float32),
+            i2: np.array([3, 4], dtype=np.float32)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.array_equal(anchors[o], [4, 6]))
 

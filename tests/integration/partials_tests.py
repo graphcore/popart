@@ -59,31 +59,36 @@ def test_per_op_partials():
         return [o]
 
     session = PopartTestSession()
-    session.device = 'ipu_model'
 
     # check both convs are using half partials
     partials_type[0] = 'HALF'
     partials_type[1] = 'HALF'
-    session.prepare_and_run(init_builder0)
-    _check_for_conv_partials(session, ['half'], ['float'])
-    session.prepare_and_run(init_builder1)
-    _check_for_conv_partials(session, ['half'], ['float'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder0, device=device)
+        _check_for_conv_partials(session, ['half'], ['float'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder1, device=device)
+        _check_for_conv_partials(session, ['half'], ['float'])
 
     # check both convs are using float partials
     partials_type[0] = 'FLOAT'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder0)
-    _check_for_conv_partials(session, ['float'], ['half'])
-    session.prepare_and_run(init_builder1)
-    _check_for_conv_partials(session, ['float'], ['half'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder0, device=device)
+        _check_for_conv_partials(session, ['float'], ['half'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder1, device=device)
+        _check_for_conv_partials(session, ['float'], ['half'])
 
     # check both float and half partials are used
     partials_type[0] = 'HALF'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder0)
-    _check_for_conv_partials(session, ['half', 'float'], [])
-    session.prepare_and_run(init_builder1)
-    _check_for_conv_partials(session, ['half', 'float'], [])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder0, device=device)
+        _check_for_conv_partials(session, ['half', 'float'], [])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder1, device=device)
+        _check_for_conv_partials(session, ['half', 'float'], [])
 
 
 @tu.requires_ipu_model
@@ -130,25 +135,27 @@ def test_per_op_partials_train():
 
     session = PopartTestSession()
     session.mode = 'train'
-    session.device = 'ipu_model'
 
     # check both convs are using half partials
     partials_type[0] = 'HALF'
     partials_type[1] = 'HALF'
-    session.prepare_and_run(init_builder)
-    _check_for_conv_partials(session, ['half'], ['float'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder, device=device)
+        _check_for_conv_partials(session, ['half'], ['float'])
 
     # check both convs are using float partials
     partials_type[0] = 'FLOAT'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder)
-    _check_for_conv_partials(session, ['float'], ['half'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder, device=device)
+        _check_for_conv_partials(session, ['float'], ['half'])
 
     # check both float and half partials are used
     partials_type[0] = 'HALF'
     partials_type[1] = 'FLOAT'
-    session.prepare_and_run(init_builder)
-    _check_for_conv_partials(session, ['half', 'float'], [])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder, device=device)
+        _check_for_conv_partials(session, ['half', 'float'], [])
 
 
 @tu.requires_ipu_model
@@ -188,21 +195,24 @@ def test_global_partials():
         return [o]
 
     session = PopartTestSession()
-    session.device = 'ipu_model'
 
     # check convs are using half partials
     session.options.convolutionOptions = {'partialsType': 'half'}
-    session.prepare_and_run(init_builder0)
-    _check_for_conv_partials(session, ['half'], ['float'])
-    session.prepare_and_run(init_builder1)
-    _check_for_conv_partials(session, ['half'], ['float'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder0, device=device)
+        _check_for_conv_partials(session, ['half'], ['float'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder1, device=device)
+        _check_for_conv_partials(session, ['half'], ['float'])
 
     # check convs are using float partials
     session.options.convolutionOptions = {'partialsType': 'float'}
-    session.prepare_and_run(init_builder0)
-    _check_for_conv_partials(session, ['float'], ['half'])
-    session.prepare_and_run(init_builder1)
-    _check_for_conv_partials(session, ['float'], ['half'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder0, device=device)
+        _check_for_conv_partials(session, ['float'], ['half'])
+    with tu.create_test_device() as device:
+        session.prepare_and_run(init_builder1, device=device)
+        _check_for_conv_partials(session, ['float'], ['half'])
 
 
 # check the summary report to see which conv partials are being used

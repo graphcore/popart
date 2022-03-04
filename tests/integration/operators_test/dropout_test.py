@@ -75,13 +75,14 @@ def test_dropout_training1():
     builder.addOutputTensor(o1)
     builder.addOutputTensor(o2)
 
-    session, anchors = get_session(anchorIds=[o1, o2, ip, d__ip],
-                                   proto=builder.getModelProto(),
-                                   device=tu.create_test_device(),
-                                   loss=out)
+    with tu.create_test_device() as device:
+        session, anchors = get_session(anchorIds=[o1, o2, ip, d__ip],
+                                       proto=builder.getModelProto(),
+                                       device=device,
+                                       loss=out)
 
-    stepio = popart.PyStepIO({ip: d1}, anchors)
-    session.run(stepio)
+        stepio = popart.PyStepIO({ip: d1}, anchors)
+        session.run(stepio)
 
     # d1 * mask * (1/(1-ratio)) should give the same answer as popart implementation
     reference = d1 * anchors[o2] * (1 / (1 - ratio))
@@ -102,14 +103,16 @@ def test_dropout_training1():
 def test_dropout_training3():
     dsize = 10000  # large input size to make statistical assumptions accurate
     ratio = 0.2
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                           ratio=ratio)
+    with tu.create_test_device() as device:
+        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                               ratio=ratio,
+                                                               device=device)
 
-    # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
-    ip_data = np.random.random_sample(dsize).astype(np.float32) + 1
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
+        ip_data = np.random.random_sample(dsize).astype(np.float32) + 1
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     t1 = torch.tensor(ip_data)
     dropout = torch.nn.Dropout(p=ratio)
@@ -147,18 +150,19 @@ def test_dropout_training4():
     out = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(out)
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    session, anchors = get_session(anchorIds=[d1, d__ip],
-                                   proto=builder.getModelProto(),
-                                   device=device,
-                                   loss=out)
+        session, anchors = get_session(anchorIds=[d1, d__ip],
+                                       proto=builder.getModelProto(),
+                                       device=device,
+                                       loss=out)
 
-    # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
-    ip_data = np.random.random_sample((dsize, dsize)).astype(np.float32) + 1
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
+        ip_data = np.random.random_sample(
+            (dsize, dsize)).astype(np.float32) + 1
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     for fwdEl, bwdEl in zip(np.ndarray.flatten(anchors[d1]),
                             np.ndarray.flatten(anchors[d__ip])):
@@ -172,21 +176,23 @@ def test_dropout_training4():
 @tu.requires_ipu
 def test_dropout_training_randomness():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize)
+    with tu.create_test_device() as device:
+        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                               device=device)
 
-    ip_data = np.random.random_sample(dsize).astype(np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        ip_data = np.random.random_sample(dsize).astype(np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.setRandomSeed(0)
+        session.setRandomSeed(0)
 
-    session.run(stepio)
-    # need to copy the anchor as the next call to run will overwrite the data
-    run1_out = np.copy(anchors[out])
+        session.run(stepio)
+        # need to copy the anchor as the next call to run will overwrite the data
+        run1_out = np.copy(anchors[out])
 
-    session.run(stepio)
-    run2_out = np.copy(anchors[out])
+        session.run(stepio)
+        run2_out = np.copy(anchors[out])
 
-    assert not np.array_equal(run1_out, run2_out)
+        assert not np.array_equal(run1_out, run2_out)
 
 
 # Test for repeatable randomness (i.e. if you run the same training session
@@ -194,21 +200,23 @@ def test_dropout_training_randomness():
 @tu.requires_ipu
 def test_dropout_training_set_seed():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize)
+    with tu.create_test_device() as device:
+        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                               device=device)
 
-    ip_data = np.random.random_sample(dsize).astype(np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        ip_data = np.random.random_sample(dsize).astype(np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.setRandomSeed(7)
-    session.run(stepio)
-    # need to copy the anchor as the next call to run will overwrite the data
-    run1_out = np.copy(anchors[out])
+        session.setRandomSeed(7)
+        session.run(stepio)
+        # need to copy the anchor as the next call to run will overwrite the data
+        run1_out = np.copy(anchors[out])
 
-    session.setRandomSeed(7)
-    session.run(stepio)
-    run2_out = np.copy(anchors[out])
+        session.setRandomSeed(7)
+        session.run(stepio)
+        run2_out = np.copy(anchors[out])
 
-    assert (np.array_equal(run1_out, run2_out))
+        assert (np.array_equal(run1_out, run2_out))
 
 
 # Test that the dropout mask is different round each repeat loop
@@ -217,19 +225,21 @@ def test_dropout_training_set_seed():
 def test_dropout_training6():
     dsize = 100
     bps = 2
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                           bps=bps)
+    with tu.create_test_device() as device:
+        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                               bps=bps,
+                                                               device=device)
 
-    # Same data for each batch
-    ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
-    ip_data = np.array([
-        ip_data_bps1,
-    ] * bps)
+        # Same data for each batch
+        ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
+        ip_data = np.array([
+            ip_data_bps1,
+        ] * bps)
 
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
-    assert (np.array_equal(anchors[out][0], anchors[out][1]) is not True)
+        session.run(stepio)
+        assert (np.array_equal(anchors[out][0], anchors[out][1]) is not True)
 
 
 # Test that two dropout ops with the same input, in the same graph,
@@ -247,22 +257,22 @@ def test_dropout_training7():
     out = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(out)
 
-    if tu.ipu_available():
-        device = tu.create_test_device()
-    else:
+    if not tu.ipu_available():
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    session, anchors = get_session(anchorIds=[d1, d2],
-                                   proto=builder.getModelProto(),
-                                   device=device,
-                                   loss=out)
+    with tu.create_test_device() as device:
 
-    # Same data for each batch
-    ip_data = np.random.random_sample(dsize).astype(np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        session, anchors = get_session(anchorIds=[d1, d2],
+                                       proto=builder.getModelProto(),
+                                       device=device,
+                                       loss=out)
 
-    session.run(stepio)
-    assert (np.array_equal(anchors[d1], anchors[d2]) is not True)
+        # Same data for each batch
+        ip_data = np.random.random_sample(dsize).astype(np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+
+        session.run(stepio)
+        assert (np.array_equal(anchors[d1], anchors[d2]) is not True)
 
 
 # Verify that popart errors out properly when ratio is not in (0,1)
@@ -295,23 +305,25 @@ def test_dropout_training8(op_tester):
 def test_dropout_training_replicated():
     replication_factor = 4
     dsize = 10
-    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
-        dsize=dsize,
-        num_layers=1,
-        ratio=0.3,
-        replication_factor=replication_factor)
+    with tu.create_test_device(replication_factor) as device:
+        session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+            dsize=dsize,
+            num_layers=1,
+            ratio=0.3,
+            replication_factor=replication_factor,
+            device=device)
 
-    ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
-    o = anchors[out]
-    for ai, bi in itertools.combinations(
-        [i for i in range(replication_factor)], 2):
-        a = o[ai]
-        b = o[bi]
-        assert not np.allclose(a, b)
+        o = anchors[out]
+        for ai, bi in itertools.combinations(
+            [i for i in range(replication_factor)], 2):
+            a = o[ai]
+            b = o[bi]
+            assert not np.allclose(a, b)
 
 
 # Check set seed when using replicated graphs
@@ -319,30 +331,32 @@ def test_dropout_training_replicated():
 def test_dropout_training_replicated_repeatable():
     replication_factor = 4
     dsize = 10
-    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
-        dsize=dsize,
-        num_layers=1,
-        ratio=0.3,
-        replication_factor=replication_factor)
+    with tu.create_test_device(replication_factor) as device:
+        session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+            dsize=dsize,
+            num_layers=1,
+            ratio=0.3,
+            replication_factor=replication_factor,
+            device=device)
 
-    ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.setRandomSeed(7)
-    session.run(stepio)
-    ref_out = np.copy(anchors[out])
-    ref_d__ip = np.copy(anchors[d__ip])
+        session.setRandomSeed(7)
+        session.run(stepio)
+        ref_out = np.copy(anchors[out])
+        ref_d__ip = np.copy(anchors[d__ip])
 
-    # Another call should produce different results
-    session.run(stepio)
-    assert not np.array_equal(ref_out, anchors[out])
-    assert not np.array_equal(ref_d__ip, anchors[d__ip])
+        # Another call should produce different results
+        session.run(stepio)
+        assert not np.array_equal(ref_out, anchors[out])
+        assert not np.array_equal(ref_d__ip, anchors[d__ip])
 
-    # Resetting the seed should give the same results as the first run
-    session.setRandomSeed(7)
-    session.run(stepio)
-    assert np.array_equal(ref_out, anchors[out])
-    assert np.array_equal(ref_d__ip, anchors[d__ip])
+        # Resetting the seed should give the same results as the first run
+        session.setRandomSeed(7)
+        session.run(stepio)
+        assert np.array_equal(ref_out, anchors[out])
+        assert np.array_equal(ref_d__ip, anchors[d__ip])
 
 
 # Check that all micro batches use different seeds when using multiple
@@ -352,22 +366,24 @@ def test_replicated_with_multiple_batches_per_step():
     replication_factor = 4
     dsize = 100
     batches_per_step = 2
-    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
-        dsize=dsize,
-        num_layers=1,
-        ratio=0.3,
-        replication_factor=replication_factor,
-        batches_per_step=batches_per_step)
+    with tu.create_test_device(replication_factor) as device:
+        session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+            dsize=dsize,
+            num_layers=1,
+            ratio=0.3,
+            replication_factor=replication_factor,
+            batches_per_step=batches_per_step,
+            device=device)
 
-    ip_data = np.ones([batches_per_step, replication_factor, dsize],
-                      dtype=np.float32)
-    stepio = popart.PyStepIO({ip: ip_data}, anchors)
+        ip_data = np.ones([batches_per_step, replication_factor, dsize],
+                          dtype=np.float32)
+        stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
-    ref_out = np.copy(anchors[out])
+        session.run(stepio)
+        ref_out = np.copy(anchors[out])
 
-    # Another call should produce different results
-    session.run(stepio)
+        # Another call should produce different results
+        session.run(stepio)
 
     o = anchors[out]
     micro_batches = []
@@ -389,7 +405,9 @@ def get_replicated_dropout_session(replication_factor=4,
                                    num_layers=1,
                                    ratio=0.3,
                                    batches_per_step=1,
-                                   seed=0):
+                                   seed=0,
+                                   device=None):
+    assert device
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
@@ -398,8 +416,6 @@ def get_replicated_dropout_session(replication_factor=4,
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     loss = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(loss)
-
-    device = tu.create_test_device(replication_factor)
 
     dfAnchors = [out, ip, d__ip]
     dfAnchors = {i: popart.AnchorReturnType("All") for i in dfAnchors}
@@ -423,7 +439,12 @@ def get_replicated_dropout_session(replication_factor=4,
     return session, ip, out, d__ip, anchors
 
 
-def get_dropout_session(dsize=100, ratio=0.2, bps=1, num_layers=1, seed=0):
+def get_dropout_session(dsize=100,
+                        ratio=0.2,
+                        bps=1,
+                        num_layers=1,
+                        seed=0,
+                        device=None):
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
@@ -432,8 +453,6 @@ def get_dropout_session(dsize=100, ratio=0.2, bps=1, num_layers=1, seed=0):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     loss = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(loss)
-
-    device = tu.create_test_device()
 
     session, anchors = get_session(anchorIds=[out, ip, d__ip],
                                    proto=builder.getModelProto(),

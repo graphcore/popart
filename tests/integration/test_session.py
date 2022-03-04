@@ -7,17 +7,17 @@ import test_util as tu
 class PopartTestSession:
     def __init__(self):
         self.options = popart.SessionOptions()
-        self.device = 'cpu'
+        self.device = None
         self.numIPUs = 1
         self.mode = 'inference'
         self.patterns = None
         self.batchesPerStep = 1
 
-    def prepare_and_run(self, init_builder, ins=None):
-        self.prepare(init_builder)
+    def prepare_and_run(self, init_builder, ins=None, device=None):
+        self.prepare(init_builder, device=device)
         return self.run(ins)
 
-    def prepare(self, init_builder):
+    def prepare(self, init_builder, device=None):
         self._builder = _Builder()
         anchorIds = init_builder(self._builder)
         self._builder._check_inputs()
@@ -26,7 +26,6 @@ class PopartTestSession:
         dataFlow = popart.DataFlow(self.batchesPerStep, anchors)
         proto = self._builder.getModelProto()
         loss = self._get_loss(anchorIds)
-        device = self._get_device()
 
         optimizer = popart.ConstSGD(0.01)
 
@@ -75,9 +74,6 @@ class PopartTestSession:
             return create_session(('fnModel', 'dataFlow', 'loss', 'optimizer',
                                    'deviceInfo', 'patterns', 'userOptions'),
                                   popart.TrainingSession)
-
-    def _get_device(self):
-        return tu.create_test_device(numIpus=self.numIPUs)
 
     def _get_inputs(self, ins):
         inputs = {}

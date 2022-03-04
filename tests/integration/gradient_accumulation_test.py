@@ -167,61 +167,71 @@ def run_graph(optimizer, input_shape, initial_onnx_model, input_tensor_name,
         opts.useHostCopyOps = True
 
     if enable_multi_ipu:
-        device = tu.create_test_device(numIpus=num_ipus,
-                                       tilesPerIPU=testTilesPerIPU,
-                                       opts={"compileIPUCode": False})
+        deviceKwArgs = {
+            "numIpus": num_ipus,
+            "tilesPerIPU": testTilesPerIPU,
+            "opts": {
+                "compileIPUCode": False
+            }
+        }
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     else:
-        device = tu.create_test_device(tilesPerIPU=testTilesPerIPU,
-                                       opts={"compileIPUCode": False})
+        deviceKwArgs = {
+            "tilesPerIPU": testTilesPerIPU,
+            "opts": {
+                "compileIPUCode": False
+            }
+        }
         opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
-    # only for test purposes, inference with gradient_accumulation should never work
-    if inference_mode:
-        popart.InferenceSession(fnModel=initial_onnx_model,
-                                dataFlow=popart.DataFlow(
-                                    batches_per_step, anchorNames),
-                                userOptions=opts,
-                                deviceInfo=device)
+    with tu.create_test_device(**deviceKwArgs) as device:
+        # only for test purposes, inference with gradient_accumulation should never work
+        if inference_mode:
+            popart.InferenceSession(fnModel=initial_onnx_model,
+                                    dataFlow=popart.DataFlow(
+                                        batches_per_step, anchorNames),
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
-    session = popart.TrainingSession(fnModel=initial_onnx_model,
-                                     dataFlow=popart.DataFlow(
-                                         batches_per_step, anchorNames),
-                                     deviceInfo=device,
-                                     loss=output_tensor_name,
-                                     optimizer=optimizer,
-                                     userOptions=opts)
+        session = popart.TrainingSession(fnModel=initial_onnx_model,
+                                         dataFlow=popart.DataFlow(
+                                             batches_per_step, anchorNames),
+                                         deviceInfo=device,
+                                         loss=output_tensor_name,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchor_arrays = session.initAnchorArrays()
+        anchor_arrays = session.initAnchorArrays()
 
-    outer_dim = 1
-    if batches_per_step > 1:
-        outer_dim *= batches_per_step
-        label_array = np.repeat(label_array[np.newaxis], batches_per_step, 0)
-    if accum_factor > 1:
-        outer_dim *= accum_factor
-        label_array = label_array.reshape(
-            [accum_factor * batches_per_step, -1])
-    if outer_dim > 1:
-        input_shape = [outer_dim] + input_shape
+        outer_dim = 1
+        if batches_per_step > 1:
+            outer_dim *= batches_per_step
+            label_array = np.repeat(label_array[np.newaxis], batches_per_step,
+                                    0)
+        if accum_factor > 1:
+            outer_dim *= accum_factor
+            label_array = label_array.reshape(
+                [accum_factor * batches_per_step, -1])
+        if outer_dim > 1:
+            input_shape = [outer_dim] + input_shape
 
-    stepio = popart.PyStepIO(
-        {
-            input_tensor_name:
-            (1.0 - xi * npr.rand(*input_shape)).astype(np.float32),
-            label_tensor_name:
-            label_array.astype(np.int32)
-        }, anchor_arrays)
+        stepio = popart.PyStepIO(
+            {
+                input_tensor_name:
+                (1.0 - xi * npr.rand(*input_shape)).astype(np.float32),
+                label_tensor_name:
+                label_array.astype(np.int32)
+            }, anchor_arrays)
 
-    for i in range(number_of_steps):
-        session.run(stepio)
+        for i in range(number_of_steps):
+            session.run(stepio)
 
-    final_proto_file = "{}.onnx".format(final_proto_filename)
-    session.modelToHost(final_proto_filename)
+        final_proto_file = "{}.onnx".format(final_proto_filename)
+        session.modelToHost(final_proto_filename)
 
     return final_proto_filename, anchor_arrays
 
@@ -589,7 +599,7 @@ def test_loading_saved_gradient_accumulationt_tensors(tmpdir, explicit_loops):
     for name in names:
         assert grad_accl_prefix not in name
 
-    def getTrainingSession(fn):
+    def getTrainingSession(fn, device):
         opts = popart.SessionOptions()
         if explicit_loops:
             opts.enableExplicitMainLoops = True
@@ -603,7 +613,7 @@ def test_loading_saved_gradient_accumulationt_tensors(tmpdir, explicit_loops):
         sess = popart.TrainingSession(
             fnModel=fn,
             dataFlow=popart.DataFlow(1, {}),
-            deviceInfo=tu.create_test_device(tilesPerIPU=testTilesPerIPU),
+            deviceInfo=device,
             loss=output_name,
             # Using momentum to create accl tensors
             optimizer=popart.SGD({
@@ -617,47 +627,50 @@ def test_loading_saved_gradient_accumulationt_tensors(tmpdir, explicit_loops):
         return sess
 
     # 3.
-    sess = getTrainingSession(onnx_model)
-    fn = os.path.join(tmpdir, "withInitZeroAcclTensors.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    weights = {}
-    accls = {}
-    for t in model.graph.initializer:
-        if grad_accl_prefix in t.name:
-            accls[t.name] = t.float_data
-        else:
-            weights[t.name] = t.float_data
-    for name in weights:
-        t_weight = np.asarray(weights[name])
-        t_accl = np.asarray(accls[grad_accl_prefix + name])
+    with tu.create_test_device(tilesPerIPU=testTilesPerIPU) as device:
+        sess = getTrainingSession(onnx_model, device)
+        fn = os.path.join(tmpdir, "withInitZeroAcclTensors.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        weights = {}
+        accls = {}
+        for t in model.graph.initializer:
+            if grad_accl_prefix in t.name:
+                accls[t.name] = t.float_data
+            else:
+                weights[t.name] = t.float_data
+        for name in weights:
+            t_weight = np.asarray(weights[name])
+            t_accl = np.asarray(accls[grad_accl_prefix + name])
 
-    # 4.
-    input_shape = [accum_factor] + sess.getInfo(input_name).shape()
-    stepio = popart.PyStepIO(
-        {
-            input_name: npr.rand(*input_shape).astype(np.float32),
-            lb_name: np.ones(batch_size).astype(np.int32),
-        }, sess.initAnchorArrays())
-    sess.run(stepio)
-    fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    up_accls = {}
-    for t in model.graph.initializer:
-        if grad_accl_prefix in t.name:
-            up_accls[t.name] = np.asarray(t.float_data)
-            assert np.allclose(np.asarray(t.float_data),
-                               np.asarray(accls[t.name])) is False
+        # 4.
+        input_shape = [accum_factor] + sess.getInfo(input_name).shape()
+        stepio = popart.PyStepIO(
+            {
+                input_name: npr.rand(*input_shape).astype(np.float32),
+                lb_name: np.ones(batch_size).astype(np.int32),
+            }, sess.initAnchorArrays())
+        sess.run(stepio)
+        fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        up_accls = {}
+        for t in model.graph.initializer:
+            if grad_accl_prefix in t.name:
+                up_accls[t.name] = np.asarray(t.float_data)
+                assert np.allclose(np.asarray(t.float_data),
+                                   np.asarray(accls[t.name])) is False
 
     # 5.
-    sess = getTrainingSession(fn)
-    fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    for t in model.graph.initializer:
-        if grad_accl_prefix in t.name:
-            assert np.array_equal(up_accls[t.name], np.asarray(t.float_data))
+    with tu.create_test_device(tilesPerIPU=testTilesPerIPU) as device:
+        sess = getTrainingSession(fn, device)
+        fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        for t in model.graph.initializer:
+            if grad_accl_prefix in t.name:
+                assert np.array_equal(up_accls[t.name],
+                                      np.asarray(t.float_data))
 
 
 @tu.requires_ipu_model
@@ -869,7 +882,7 @@ def test_adam_loading_saved_gradient_accumulationt_tensors(
     for name in names:
         assert popart.reservedAccumPrefix() not in name
 
-    def getTrainingSession(fn):
+    def getTrainingSession(fn, device):
         opts = popart.SessionOptions()
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = accum_factor
@@ -881,68 +894,70 @@ def test_adam_loading_saved_gradient_accumulationt_tensors(
             opts.explicitRecomputation = True
             opts.useHostCopyOps = True
 
-        sess = popart.TrainingSession(
-            fnModel=fn,
-            dataFlow=popart.DataFlow(1, {}),
-            deviceInfo=tu.create_test_device(tilesPerIPU=testTilesPerIPU),
-            loss=output_name,
-            optimizer=adam_optimizer,
-            userOptions=opts)
+        sess = popart.TrainingSession(fnModel=fn,
+                                      dataFlow=popart.DataFlow(1, {}),
+                                      deviceInfo=device,
+                                      loss=output_name,
+                                      optimizer=adam_optimizer,
+                                      userOptions=opts)
         sess.prepareDevice()
 
         sess.weightsFromHost()
         return sess
 
     # 3.
-    sess = getTrainingSession(onnx_model)
-    fn = os.path.join(tmpdir, "withInitZeroAccumTensors.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    weights = {}
-    optstates = {}
-    for t in model.graph.initializer:
-        if (popart.reservedAccumPrefix() in t.name
-                or popart.reservedAccl1Prefix() in t.name
-                or popart.reservedAccl2Prefix() in t.name
-                or popart.reservedStepPrefix() in t.name):
-            optstates[t.name] = t.float_data
-            assert np.allclose(np.asarray(t.float_data), 0.0)
-        else:
-            weights[t.name] = t.float_data
+    with tu.create_test_device(tilesPerIPU=testTilesPerIPU) as device:
+        sess = getTrainingSession(onnx_model, device)
+        fn = os.path.join(tmpdir, "withInitZeroAccumTensors.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        weights = {}
+        optstates = {}
+        for t in model.graph.initializer:
+            if (popart.reservedAccumPrefix() in t.name
+                    or popart.reservedAccl1Prefix() in t.name
+                    or popart.reservedAccl2Prefix() in t.name
+                    or popart.reservedStepPrefix() in t.name):
+                optstates[t.name] = t.float_data
+                assert np.allclose(np.asarray(t.float_data), 0.0)
+            else:
+                weights[t.name] = t.float_data
 
-    # 4.
-    input_shape = [accum_factor] + sess.getInfo(input_name).shape()
-    stepio = popart.PyStepIO(
-        {
-            input_name: npr.rand(*input_shape).astype(np.float32),
-            lb_name: np.ones(batch_size).astype(np.int32),
-        }, sess.initAnchorArrays())
-    sess.run(stepio)
-    fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    for t in model.graph.initializer:
-        if (popart.reservedAccl1Prefix() in t.name
-                or popart.reservedAccl2Prefix() in t.name
-                or popart.reservedStepPrefix() in t.name):
-            # Nonzero, updated accl1, accl2 and step tensors
-            assert np.allclose(np.asarray(t.float_data),
-                               optstates[t.name]) is False
-            optstates[t.name] = np.asarray(t.float_data)
-        elif popart.reservedAccumPrefix() in t.name:
-            # Because the accumulator is always set to zero after being applied
-            # to accl1 and accl2
-            assert np.allclose(np.asarray(t.float_data), 0.0)
-            optstates[t.name] = np.asarray(t.float_data)
+        # 4.
+        input_shape = [accum_factor] + sess.getInfo(input_name).shape()
+        stepio = popart.PyStepIO(
+            {
+                input_name: npr.rand(*input_shape).astype(np.float32),
+                lb_name: np.ones(batch_size).astype(np.int32),
+            }, sess.initAnchorArrays())
+        sess.run(stepio)
+        fn = os.path.join(tmpdir, "withUpdatedAcclTensors.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        for t in model.graph.initializer:
+            if (popart.reservedAccl1Prefix() in t.name
+                    or popart.reservedAccl2Prefix() in t.name
+                    or popart.reservedStepPrefix() in t.name):
+                # Nonzero, updated accl1, accl2 and step tensors
+                assert np.allclose(np.asarray(t.float_data),
+                                   optstates[t.name]) is False
+                optstates[t.name] = np.asarray(t.float_data)
+            elif popart.reservedAccumPrefix() in t.name:
+                # Because the accumulator is always set to zero after being applied
+                # to accl1 and accl2
+                assert np.allclose(np.asarray(t.float_data), 0.0)
+                optstates[t.name] = np.asarray(t.float_data)
 
     # 5.
-    sess = getTrainingSession(fn)
-    fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
-    sess.modelToHost(fn)
-    model = onnx.load(fn)
-    for t in model.graph.initializer:
-        if (popart.reservedAccumPrefix() in t.name
-                or popart.reservedAccl1Prefix() in t.name
-                or popart.reservedAccl2Prefix() in t.name
-                or popart.reservedStepPrefix() in t.name):
-            assert np.array_equal(optstates[t.name], np.asarray(t.float_data))
+    with tu.create_test_device(tilesPerIPU=testTilesPerIPU) as device:
+        sess = getTrainingSession(fn, device)
+        fn = os.path.join(tmpdir, "withUpdatedAcclTensors_check.onnx")
+        sess.modelToHost(fn)
+        model = onnx.load(fn)
+        for t in model.graph.initializer:
+            if (popart.reservedAccumPrefix() in t.name
+                    or popart.reservedAccl1Prefix() in t.name
+                    or popart.reservedAccl2Prefix() in t.name
+                    or popart.reservedStepPrefix() in t.name):
+                assert np.array_equal(optstates[t.name],
+                                      np.asarray(t.float_data))

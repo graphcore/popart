@@ -45,35 +45,36 @@ def test_explicit_recomputation(tmpdir):
         out = builder.aiGraphcore.identityloss([m3])
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device()
+        with tu.create_test_device() as device:
 
-        dataflow_anchors = {}
-        for anchorId in anchorIds:
-            dataflow_anchors.update({anchorId: popart.AnchorReturnType("All")})
+            dataflow_anchors = {}
+            for anchorId in anchorIds:
+                dataflow_anchors.update(
+                    {anchorId: popart.AnchorReturnType("All")})
 
-        opts = popart.SessionOptions()
-        opts.explicitRecomputation = explicit_recompute
+            opts = popart.SessionOptions()
+            opts.explicitRecomputation = explicit_recompute
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dataflow_anchors),
-            optimizer=popart.ConstSGD(0.01),
-            loss=out,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, dataflow_anchors),
+                optimizer=popart.ConstSGD(0.01),
+                loss=out,
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((dsize, dsize), dtype=np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            ip_data = np.ones((dsize, dsize), dtype=np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
-        session.modelToHost(str(tmpdir / model_file_name))
+            session.run(stepio)
+            session.modelToHost(str(tmpdir / model_file_name))
 
     run("explicit_recomputation_disabled.onnx", False)
     run("explicit_recomputation_enabled.onnx", True)

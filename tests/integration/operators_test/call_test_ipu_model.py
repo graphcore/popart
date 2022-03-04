@@ -55,12 +55,13 @@ def test_call_pipelined_error():
         opts.enablePipelining = True
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(
-                fnModel=builder.getModelProto(),
-                dataFlow=popart.DataFlow(10, [out]),
-                userOptions=opts,
-                deviceInfo=tu.create_test_device(numIpus=4, tilesPerIPU=20))
+        with tu.create_test_device(numIpus=4, tilesPerIPU=20) as device:
+            with pytest.raises(popart.popart_exception) as e_info:
+                session = popart.InferenceSession(
+                    fnModel=builder.getModelProto(),
+                    dataFlow=popart.DataFlow(10, [out]),
+                    userOptions=opts,
+                    deviceInfo=device)
 
         print(e_info.value.args[0])
 
@@ -114,13 +115,13 @@ def test_call_pipelined():
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(10, [out]),
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device(
-                                          numIpus=4, tilesPerIPU=20))
+    with tu.create_test_device(numIpus=4, tilesPerIPU=20) as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(10, [out]),
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
 
 # Check that call ops created using the builder can be used when pipelining.

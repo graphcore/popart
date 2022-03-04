@@ -50,7 +50,7 @@ def test_inplace_weight_add(constantWeights):
     data = np.random.rand(input_size).astype(np.float32)
     weight = np.random.rand(input_size).astype(np.float32)
 
-    def create_session(inplacing):
+    def create_session(inplacing, device):
         builder = popart.Builder()
 
         input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
@@ -79,7 +79,7 @@ def test_inplace_weight_add(constantWeights):
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, [loss]),
-            deviceInfo=tu.create_test_device(),
+            deviceInfo=device,
             userOptions=opts,
             patterns=patterns,
         )
@@ -94,25 +94,26 @@ def test_inplace_weight_add(constantWeights):
         session.weightsFromHost()
         return session, stepio, anchorRets
 
-    session1, stepio1, anchors1 = create_session(True)
-    session2, stepio2, anchors2 = create_session(False)
+    with tu.create_test_device() as d1, tu.create_test_device() as d2:
+        session1, stepio1, anchors1 = create_session(True, device=d1)
+        session2, stepio2, anchors2 = create_session(False, device=d2)
 
-    def verify_inplacing(session, count):
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
-        inplaceAdds = [
-            op for op in ir['maingraph'] if op['type'] == 'AddLhsInplace'
-        ]
-        assert (len(inplaceAdds) == count)
+        def verify_inplacing(session, count):
+            ir = json.loads(
+                session._serializeIr(popart.IrSerializationFormat.JSON))
+            inplaceAdds = [
+                op for op in ir['maingraph'] if op['type'] == 'AddLhsInplace'
+            ]
+            assert (len(inplaceAdds) == count)
 
-    verify_inplacing(session1, 1)
+        verify_inplacing(session1, 1)
 
-    for i in range(5):
-        session1.run(stepio1)
-        session2.run(stepio2)
-        for key in anchors1:
-            print("Step", i, "Testing:", key)
-            assert np.allclose(anchors1[key], anchors2[key])
+        for i in range(5):
+            session1.run(stepio1)
+            session2.run(stepio2)
+            for key in anchors1:
+                print("Step", i, "Testing:", key)
+                assert np.allclose(anchors1[key], anchors2[key])
 
 
 @pytest.mark.parametrize("constantWeights", [True, False])
@@ -132,7 +133,7 @@ def test_non_modifying_inplace(constantWeights):
     data = np.random.rand(*input_size).astype(np.float32)
     weight = np.random.rand(7, 3, 5).astype(np.float32)
 
-    def create_session(inplacing):
+    def create_session(inplacing, device):
         builder = popart.Builder()
 
         input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
@@ -162,7 +163,7 @@ def test_non_modifying_inplace(constantWeights):
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, [loss]),
-            deviceInfo=tu.create_test_device(),
+            deviceInfo=device,
             userOptions=opts,
             patterns=patterns,
         )
@@ -177,29 +178,30 @@ def test_non_modifying_inplace(constantWeights):
         session.weightsFromHost()
         return session, stepio, anchorRets
 
-    session1, stepio1, anchors1 = create_session(True)
-    session2, stepio2, anchors2 = create_session(False)
+    with tu.create_test_device() as d1, tu.create_test_device() as d2:
+        session1, stepio1, anchors1 = create_session(True, device=d1)
+        session2, stepio2, anchors2 = create_session(False, device=d2)
 
-    def verify_inplacing(session, count, type_):
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
-        inplaces = [op for op in ir['maingraph'] if op['type'] == type_]
+        def verify_inplacing(session, count, type_):
+            ir = json.loads(
+                session._serializeIr(popart.IrSerializationFormat.JSON))
+            inplaces = [op for op in ir['maingraph'] if op['type'] == type_]
 
-        assert len(inplaces) == count
+            assert len(inplaces) == count
 
-    if constantWeights:
-        # Transpose gets optimised out with constant weights.
-        verify_inplacing(session1, 1, "AddLhsInplace")
-    else:
-        verify_inplacing(session1, 1, "TransposeInplace")
-        verify_inplacing(session1, 1, "AddLhsInplace")
+        if constantWeights:
+            # Transpose gets optimised out with constant weights.
+            verify_inplacing(session1, 1, "AddLhsInplace")
+        else:
+            verify_inplacing(session1, 1, "TransposeInplace")
+            verify_inplacing(session1, 1, "AddLhsInplace")
 
-    for i in range(5):
-        session1.run(stepio1)
-        session2.run(stepio2)
-        for key in anchors1:
-            print("Step", i, "Testing:", key)
-            assert np.allclose(anchors1[key], anchors2[key])
+        for i in range(5):
+            session1.run(stepio1)
+            session2.run(stepio2)
+            for key in anchors1:
+                print("Step", i, "Testing:", key)
+                assert np.allclose(anchors1[key], anchors2[key])
 
 
 @pytest.mark.parametrize("constantWeights", [True, False])
@@ -235,7 +237,7 @@ def test_non_modifying_inplace_2(constantWeights):
     data = np.random.rand(*input_size).astype(np.float32)
     weight = np.random.rand(2, 3, 2, 2).astype(np.float32)
 
-    def create_session(inplacing):
+    def create_session(inplacing, device):
         builder = popart.Builder()
 
         input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
@@ -266,7 +268,7 @@ def test_non_modifying_inplace_2(constantWeights):
 
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(1, [loss]),
-                                         deviceInfo=tu.create_test_device(),
+                                         deviceInfo=device,
                                          userOptions=opts,
                                          patterns=patterns,
                                          loss=loss,
@@ -282,30 +284,31 @@ def test_non_modifying_inplace_2(constantWeights):
         session.weightsFromHost()
         return session, stepio, anchorRets
 
-    session1, stepio1, anchors1 = create_session(True)
-    session2, stepio2, anchors2 = create_session(False)
+    with tu.create_test_device() as d1, tu.create_test_device() as d2:
+        session1, stepio1, anchors1 = create_session(True, device=d1)
+        session2, stepio2, anchors2 = create_session(False, device=d2)
 
-    def verify_inplacing(session, count, type_):
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        def verify_inplacing(session, count, type_):
+            ir = json.loads(
+                session._serializeIr(popart.IrSerializationFormat.JSON))
 
-        # Hacky way to remove backwards ops.
-        ir = [
-            op for op in ir['maingraph']
-            if not op['outputs'][0]['name'].startswith("Gradient___")
-        ]
+            # Hacky way to remove backwards ops.
+            ir = [
+                op for op in ir['maingraph']
+                if not op['outputs'][0]['name'].startswith("Gradient___")
+            ]
 
-        inplaces = [op for op in ir if op['type'] == type_]
-        assert len(inplaces) == count
+            inplaces = [op for op in ir if op['type'] == type_]
+            assert len(inplaces) == count
 
-    verify_inplacing(session1, 1, "TransposeInplace")
-    verify_inplacing(session1, 0, "ReshapeInplace")
-    verify_inplacing(session1, 1, "Reshape")
-    verify_inplacing(session1, 1, "AddRhsInplace")
+        verify_inplacing(session1, 1, "TransposeInplace")
+        verify_inplacing(session1, 0, "ReshapeInplace")
+        verify_inplacing(session1, 1, "Reshape")
+        verify_inplacing(session1, 1, "AddRhsInplace")
 
-    for i in range(5):
-        session1.run(stepio1)
-        session2.run(stepio2)
-        for key in anchors1:
-            print("Step", i, "Testing:", key)
-            assert np.allclose(anchors1[key], anchors2[key])
+        for i in range(5):
+            session1.run(stepio1)
+            session2.run(stepio2)
+            for key in anchors1:
+                print("Step", i, "Testing:", key)
+                assert np.allclose(anchors1[key], anchors2[key])

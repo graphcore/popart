@@ -12,7 +12,7 @@ import test_util as tu
 # Replication 1, in some tests, but still requires an IPU as prefetching is only
 # enabled on IPUs.
 def get_model(batches_per_step, replication_factor, batch_size, channels,
-              data_len, synthetic_data):
+              data_len, synthetic_data, device):
 
     micro_batch_size = batch_size // (replication_factor)
 
@@ -45,7 +45,6 @@ def get_model(batches_per_step, replication_factor, batch_size, channels,
         opts.enableReplicatedGraphs = True
         ipus *= replication_factor
 
-    device = tu.create_test_device(ipus)
     assert device
 
     if synthetic_data:
@@ -90,37 +89,39 @@ def run_test(batches_per_step, replication_factor, batch_size, channels,
              data_len, steps):
     micro_batch_size = batch_size // replication_factor
 
-    session, anchors, input_shape, label_shape = get_model(
-        batches_per_step=batches_per_step,
-        replication_factor=replication_factor,
-        batch_size=batch_size,
-        channels=channels,
-        data_len=data_len,
-        synthetic_data=False)
+    with tu.create_test_device(replication_factor) as device:
+        session, anchors, input_shape, label_shape = get_model(
+            batches_per_step=batches_per_step,
+            replication_factor=replication_factor,
+            batch_size=batch_size,
+            channels=channels,
+            data_len=data_len,
+            synthetic_data=False,
+            device=device)
 
-    for step in range(steps):
-        print("Step:", step)
-        in_array = np.random.random_sample(input_shape).astype(np.float32)
-        label_array = np.random.randint(low=0, high=20,
-                                        size=label_shape).astype(np.int32)
-        # Only provide one session.run's worth of data.
-        in_anchor, label_anchor = run_model(session, anchors, in_array,
-                                            label_array)
+        for step in range(steps):
+            print("Step:", step)
+            in_array = np.random.random_sample(input_shape).astype(np.float32)
+            label_array = np.random.randint(low=0, high=20,
+                                            size=label_shape).astype(np.int32)
+            # Only provide one session.run's worth of data.
+            in_anchor, label_anchor = run_model(session, anchors, in_array,
+                                                label_array)
 
-        # Returned anchors will be of shape
-        # [bps, micro_batch_size, channels, data_len, data_len]
-        for batch in range(batches_per_step):
-            print("Batch:", batch)
-            # If bps == 1, the dimension doesn't exist, so we pass none to ignore
-            # that dimension.
-            if batches_per_step == 1: batch = None
-            for mini_batch in range(micro_batch_size):
-                # Inputs check:
-                assert np.allclose(in_array[batch, mini_batch, :, :, :],
-                                   in_anchor[batch, mini_batch, :, :, :])
-                # Labels check
-                assert np.allclose(label_array[batch, mini_batch],
-                                   label_anchor[batch, mini_batch])
+            # Returned anchors will be of shape
+            # [bps, micro_batch_size, channels, data_len, data_len]
+            for batch in range(batches_per_step):
+                print("Batch:", batch)
+                # If bps == 1, the dimension doesn't exist, so we pass none to ignore
+                # that dimension.
+                if batches_per_step == 1: batch = None
+                for mini_batch in range(micro_batch_size):
+                    # Inputs check:
+                    assert np.allclose(in_array[batch, mini_batch, :, :, :],
+                                       in_anchor[batch, mini_batch, :, :, :])
+                    # Labels check
+                    assert np.allclose(label_array[batch, mini_batch],
+                                       label_anchor[batch, mini_batch])
 
 
 # Batch size > 1
@@ -166,37 +167,40 @@ def run_synthetic_test(batches_per_step, replication_factor, batch_size,
                        channels, data_len, steps):
     micro_batch_size = batch_size // replication_factor
 
-    session, anchors, input_shape, label_shape = get_model(
-        batches_per_step=batches_per_step,
-        replication_factor=replication_factor,
-        batch_size=batch_size,
-        channels=channels,
-        data_len=data_len,
-        synthetic_data=True)
+    with tu.create_test_device(replication_factor) as device:
+        session, anchors, input_shape, label_shape = get_model(
+            batches_per_step=batches_per_step,
+            replication_factor=replication_factor,
+            batch_size=batch_size,
+            channels=channels,
+            data_len=data_len,
+            synthetic_data=True,
+            device=device)
 
-    for step in range(steps):
-        print("Step:", step)
-        in_array = np.random.random_sample(input_shape).astype(np.float32)
-        label_array = np.random.randint(low=0, high=20,
-                                        size=label_shape).astype(np.int32)
-        # Only provide one session.run's worth of data.
-        in_anchor, label_anchor = run_model(session, anchors, in_array,
-                                            label_array)
+        for step in range(steps):
+            print("Step:", step)
+            in_array = np.random.random_sample(input_shape).astype(np.float32)
+            label_array = np.random.randint(low=0, high=20,
+                                            size=label_shape).astype(np.int32)
+            # Only provide one session.run's worth of data.
+            in_anchor, label_anchor = run_model(session, anchors, in_array,
+                                                label_array)
 
-        # Returned anchors will be of shape
-        # [bps, micro_batch_size, channels, data_len, data_len]
-        for batch in range(batches_per_step):
-            print("Batch:", batch)
-            # If bps == 1, the dimension doesn't exist, so we pass none to ignore
-            # that dimension.
-            if batches_per_step == 1: batch = None
-            for mini_batch in range(micro_batch_size):
-                # Inputs check:
-                assert not np.allclose(in_array[batch, mini_batch, :, :, :],
-                                       in_anchor[batch, mini_batch, :, :, :])
-            # Labels check. Comparing individual mini batches you occasionally
-            # get a single mini batch matching. So we just check the entire batch.
-            assert not np.allclose(label_array[batch], label_anchor[batch])
+            # Returned anchors will be of shape
+            # [bps, micro_batch_size, channels, data_len, data_len]
+            for batch in range(batches_per_step):
+                print("Batch:", batch)
+                # If bps == 1, the dimension doesn't exist, so we pass none to ignore
+                # that dimension.
+                if batches_per_step == 1: batch = None
+                for mini_batch in range(micro_batch_size):
+                    # Inputs check:
+                    assert not np.allclose(
+                        in_array[batch, mini_batch, :, :, :],
+                        in_anchor[batch, mini_batch, :, :, :])
+                # Labels check. Comparing individual mini batches you occasionally
+                # get a single mini batch matching. So we just check the entire batch.
+                assert not np.allclose(label_array[batch], label_anchor[batch])
 
 
 # BPS > 1, Batch size > 1, synthetic data.

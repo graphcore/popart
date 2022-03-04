@@ -23,6 +23,23 @@ LEARNING_RATE = 1.0
 TEMPFILE = "temporary_file"
 
 
+def check_device(device, repl_config):
+    if device is None:
+        ipus = (int(repl_config["ipus"]) * int(repl_config["repl"]))
+        fail_ceiling = 4
+
+        if (ipus > fail_ceiling):
+            pytest.skip(
+                f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
+                "As the requirement of this test was higher than {fail_ceiling} ipus it fails silently."
+            )
+        else:
+            pytest.fail(
+                f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
+                "As the requirements of this test was {fail_ceiling} ipus or less, this is considered a fail."
+            )
+
+
 def getOffChipLocation(commGroup, RTS=False):
     rts = popart.ReplicatedTensorSharding.On \
           if RTS else \
@@ -136,7 +153,9 @@ def get_model(repl_config: Dict,
               var_settings,
               location,
               session_type: str,
-              initialize=True):
+              initialize=True,
+              opts=None,
+              device=None):
     batches_per_step = BATCHES_PER_STEP if session_type == "training" else 1
     input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
 
@@ -187,7 +206,6 @@ def get_model(repl_config: Dict,
     data_flow = popart.DataFlow(batches_per_step, {o: art})
 
     #
-    opts, device = user_options(repl_config, location)
     if (location["remote"] and location["RTS"]
             and int(repl_config["c.idx"]) > 1):
         loc = getOffChipLocation(popart.CommGroup(popart.CommGroupType.All, 0),
@@ -418,88 +436,100 @@ def test_grouped_initialization(config, location, session_type):
     # Get and run session
 
     builder = popart.Builder()
-    session, tensors, arrays, input_shape, label_shape = get_model(
-        config, builder, groups, var_set, location, session_type)
+    opts, deviceContext = user_options(config, location)
+    check_device(deviceContext, config)
+    with deviceContext as device:
+        session, tensors, arrays, input_shape, label_shape = get_model(
+            config,
+            builder,
+            groups,
+            var_set,
+            location,
+            session_type,
+            device=device,
+            opts=opts)
 
-    #input, label, control-variable, test-tensor
-    ip, lb, w1, w2 = tensors
-    arrays_one, arrays_two = arrays
-    buffer_one = np.zeros(arrays_one.shape).astype(np.float32)
-    buffer_two = np.zeros(arrays_two.shape).astype(np.float32)
+        #input, label, control-variable, test-tensor
+        ip, lb, w1, w2 = tensors
+        arrays_one, arrays_two = arrays
+        buffer_one = np.zeros(arrays_one.shape).astype(np.float32)
+        buffer_two = np.zeros(arrays_two.shape).astype(np.float32)
 
-    if (config["retrieval"] == "AllReplicas"):
-        shape = buffer_one.shape
-        reshape = buffer_two.shape
-        buffer_two = np.repeat(buffer_two.reshape((1, ) + reshape),
-                               len(groups[0]), 0)
-        reshape = (len(groups) * len(groups[0]), ) + shape
-        buffer_two = buffer_two.reshape(reshape)
+        if (config["retrieval"] == "AllReplicas"):
+            shape = buffer_one.shape
+            reshape = buffer_two.shape
+            buffer_two = np.repeat(buffer_two.reshape((1, ) + reshape),
+                                   len(groups[0]), 0)
+            reshape = (len(groups) * len(groups[0]), ) + shape
+            buffer_two = buffer_two.reshape(reshape)
 
-    weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
+        weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
 
-    session.weightsFromHost()
-    session.weightsToHost()
+        session.weightsFromHost()
+        session.weightsToHost()
 
-    # By overwriting the arrays_two before reading from device
-    # we can verify that the read-write works accuratly. Not a
-    # random opp.
-
-    session.readWeights(weightsIo)
-
-    # read worked correctly between
-    if session_type == "training":
-        assert np.allclose(arrays_one, buffer_one)
-
-    if (config["retrieval"] != "AllReplicas"):
-        sample = range(0, buffer_two.shape[0])
-        assert np.allclose(arrays_two, buffer_two[sample])
-    else:
-        sample = range(0, buffer_two.shape[0], len(groups[0]))
-        if (config["commType"] == "Orthogonal"):
-            sample = range(0, len(groups[0]))
-        arr_flat = arrays_two.flatten()
-        buf_flat = buffer_two[sample].flatten()
-        verify(config, var_set, buffer_two, groups)
-        assert np.allclose(arr_flat, buf_flat)
-
-    # Verify loading and unloading is correct
-    # assert np.allclose(arrays_two, buffer_two)
-
-    # In the cases where returned != 1, w1 and w2 will have different shapes
-    # w2.shape = [returned, ...] <- where ... = w1.shape
-    #
-    # Here we assert that these shapes are correct after read
-    if returned == 1:
-        assert arrays_one.shape == buffer_two.shape
-        assert builder.getTensorShape(w1) == builder.getTensorShape(w2)
-    else:
-        assert returned == buffer_two.shape[0]
-        assert arrays_one.shape == buffer_two.shape[1:]
-
-    for step in range(3):
-        in_array = np.random.random_sample(input_shape).astype(np.float32)
-        if (session_type == "training"):
-            label_array = np.random.randint(low=0, high=20,
-                                            size=label_shape).astype(np.int32)
-            io = {ip: in_array, lb: label_array}
-        else:
-            io = {ip: in_array}
-
-        anchors = session.initAnchorArrays()
-        stepIo = popart.PyStepIO(io, anchors)
-
-        run_model(session, stepIo)
+        # By overwriting the arrays_two before reading from device
+        # we can verify that the read-write works accuratly. Not a
+        # random opp.
 
         session.readWeights(weightsIo)
 
-        # Only verify this the first time, should be redundant later
-        if (step == 0 and session_type == "training"):
-            # checks that the weights change
-            assert not np.allclose(arrays_two, buffer_two[sample])
+        # read worked correctly between
+        if session_type == "training":
+            assert np.allclose(arrays_one, buffer_one)
 
-            # checks that the gradient is different from different groups
+        if (config["retrieval"] != "AllReplicas"):
+            sample = range(0, buffer_two.shape[0])
+            assert np.allclose(arrays_two, buffer_two[sample])
+        else:
+            sample = range(0, buffer_two.shape[0], len(groups[0]))
+            if (config["commType"] == "Orthogonal"):
+                sample = range(0, len(groups[0]))
+            arr_flat = arrays_two.flatten()
+            buf_flat = buffer_two[sample].flatten()
+            verify(config, var_set, buffer_two, groups)
+            assert np.allclose(arr_flat, buf_flat)
 
-        verify(config, var_set, buffer_two, groups)
+        # Verify loading and unloading is correct
+        # assert np.allclose(arrays_two, buffer_two)
+
+        # In the cases where returned != 1, w1 and w2 will have different shapes
+        # w2.shape = [returned, ...] <- where ... = w1.shape
+        #
+        # Here we assert that these shapes are correct after read
+        if returned == 1:
+            assert arrays_one.shape == buffer_two.shape
+            assert builder.getTensorShape(w1) == builder.getTensorShape(w2)
+        else:
+            assert returned == buffer_two.shape[0]
+            assert arrays_one.shape == buffer_two.shape[1:]
+
+        for step in range(3):
+            in_array = np.random.random_sample(input_shape).astype(np.float32)
+            if (session_type == "training"):
+                label_array = np.random.randint(low=0,
+                                                high=20,
+                                                size=label_shape).astype(
+                                                    np.int32)
+                io = {ip: in_array, lb: label_array}
+            else:
+                io = {ip: in_array}
+
+            anchors = session.initAnchorArrays()
+            stepIo = popart.PyStepIO(io, anchors)
+
+            run_model(session, stepIo)
+
+            session.readWeights(weightsIo)
+
+            # Only verify this the first time, should be redundant later
+            if (step == 0 and session_type == "training"):
+                # checks that the weights change
+                assert not np.allclose(arrays_two, buffer_two[sample])
+
+                # checks that the gradient is different from different groups
+
+            verify(config, var_set, buffer_two, groups)
 
 
 onnx_tests = [1, 2, 3, 4, 5]
@@ -525,73 +555,83 @@ def test_onnx_checkpointing(config):
 
         builder = popart.Builder()
         builder.embedReplicationFactor(int(config["repl"]))
-        session, tensors, arrays, input_shape, label_shape = get_model(
-            config,
-            builder,
-            groups,
-            var_set,
-            location,
-            "training",
-            initialize=True)
+        opts, deviceContext = user_options(config, location)
+        check_device(deviceContext, config)
+        with deviceContext as device:
+            session, tensors, arrays, input_shape, label_shape = get_model(
+                config,
+                builder,
+                groups,
+                var_set,
+                location,
+                "training",
+                initialize=True,
+                device=device,
+                opts=opts)
 
-        ip, lb, w1, w2 = tensors
-        array_one, array_two = arrays
+            ip, lb, w1, w2 = tensors
+            array_one, array_two = arrays
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        buffer_one = np.ones(array_one.shape).astype(np.float32)
-        buffer_two = np.ones(array_two.shape).astype(np.float32)
-        if (config["retrieval"] == "AllReplicas"):
-            old_shape = buffer_two.shape
-            buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
-                                   returned, 0)
-            reshape = (returned, ) + old_shape
-            buffer_two = buffer_two.reshape(reshape)
-        weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
+            buffer_one = np.ones(array_one.shape).astype(np.float32)
+            buffer_two = np.ones(array_two.shape).astype(np.float32)
+            if (config["retrieval"] == "AllReplicas"):
+                old_shape = buffer_two.shape
+                buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
+                                       returned, 0)
+                reshape = (returned, ) + old_shape
+                buffer_two = buffer_two.reshape(reshape)
+            weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
 
-        session.weightsToHost()
-        session.readWeights(weightsIo)
+            session.weightsToHost()
+            session.readWeights(weightsIo)
 
-        if returned == 1:
-            assert array_one.shape == buffer_two.shape
-            assert builder.getTensorShape(w1) == builder.getTensorShape(w2)
-        else:
-            assert returned == buffer_two.shape[0]
-            assert array_one.shape == buffer_two.shape[1:]
+            if returned == 1:
+                assert array_one.shape == buffer_two.shape
+                assert builder.getTensorShape(w1) == builder.getTensorShape(w2)
+            else:
+                assert returned == buffer_two.shape[0]
+                assert array_one.shape == buffer_two.shape[1:]
 
-        # write to file
-        session.modelToHost(tmpfile)
+            # write to file
+            session.modelToHost(tmpfile)
 
         # Clean Cut
         del session
         del builder
 
         builder = popart.Builder()
-        session, tensors, array, input_shape, label_shape = get_model(
-            config,
-            builder,
-            groups,
-            var_set,
-            location,
-            "training",
-            initialize=True)
+        opts, deviceContext = user_options(config, location)
+        check_device(deviceContext, config)
+        with deviceContext as device:
+            session, tensors, array, input_shape, label_shape = get_model(
+                config,
+                builder,
+                groups,
+                var_set,
+                location,
+                "training",
+                initialize=True,
+                device=device,
+                opts=opts)
 
-        _, _, w1, w2 = tensors
-        session.resetHostWeights(tmpfile, True)
-        session.weightsFromHost()
+            _, _, w1, w2 = tensors
+            session.resetHostWeights(tmpfile, True)
+            session.weightsFromHost()
 
-        buffer_one = np.ones(array_one.shape).astype(np.float32)
-        buffer_two = np.ones(array_two.shape).astype(np.float32)
-        if (config["retrieval"] == "AllReplicas"):
-            old_shape = buffer_two.shape
-            buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
-                                   returned, 0)
-            reshape = (returned, ) + old_shape
-            buffer_two = buffer_two.reshape(reshape)
-        weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
+            buffer_one = np.ones(array_one.shape).astype(np.float32)
+            buffer_two = np.ones(array_two.shape).astype(np.float32)
+            if (config["retrieval"] == "AllReplicas"):
+                old_shape = buffer_two.shape
+                buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
+                                       returned, 0)
+                reshape = (returned, ) + old_shape
+                buffer_two = buffer_two.reshape(reshape)
+            weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
 
-        session.weightsToHost()
-        session.readWeights(weightsIo)
+            session.weightsToHost()
+            session.readWeights(weightsIo)
 
         assert np.allclose(array_one, buffer_one)
         assert np.allclose(array_two, buffer_two)

@@ -98,17 +98,20 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
             popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
-        with pytest.raises(popart.popart_exception) as e_info:
-            popart.TrainingSession(fnModel=builder.getModelProto(),
-                                   dataFlow=popart.DataFlow(1, [nll0, out]),
-                                   optimizer=popart.ConstSGD(
-                                       LEARNING_RATE, WEIGHT_DECAY),
-                                   loss=nll0,
-                                   patterns=patterns,
-                                   deviceInfo=tu.create_test_device())
+        with tu.create_test_device() as device:
+            with pytest.raises(popart.popart_exception) as e_info:
+                popart.TrainingSession(fnModel=builder.getModelProto(),
+                                       dataFlow=popart.DataFlow(
+                                           1, [nll0, out]),
+                                       optimizer=popart.ConstSGD(
+                                           LEARNING_RATE, WEIGHT_DECAY),
+                                       loss=nll0,
+                                       patterns=patterns,
+                                       deviceInfo=device)
         assert (e_info.value.args[0].endswith("must be a scalar tensor"))
         return
-    else:
+
+    with tu.create_test_device() as device:
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(
                                              1, [nll0, out]),
@@ -116,13 +119,13 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
                                              LEARNING_RATE, WEIGHT_DECAY),
                                          loss=nll0,
                                          patterns=patterns,
-                                         deviceInfo=tu.create_test_device())
-    session.prepareDevice()
-    session.weightsFromHost()
+                                         deviceInfo=device)
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
+        session.run(stepio)
 
     ###
     # Pytorch
@@ -187,31 +190,33 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
             popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
-        with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(
-                fnModel=builder.getModelProto(),
-                dataFlow=popart.DataFlow(1, [nll]),
-                optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-                loss=nll,
-                patterns=patterns,
-                deviceInfo=tu.create_test_device())
+        with tu.create_test_device() as device:
+            with pytest.raises(popart.popart_exception) as e_info:
+                session = popart.TrainingSession(
+                    fnModel=builder.getModelProto(),
+                    dataFlow=popart.DataFlow(1, [nll]),
+                    optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+                    loss=nll,
+                    patterns=patterns,
+                    deviceInfo=device)
         assert (e_info.value.args[0].endswith("must be a scalar tensor"))
         return
-    else:
+
+    with tu.create_test_device() as device:
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(1, [nll]),
                                          optimizer=popart.ConstSGD(
                                              LEARNING_RATE, WEIGHT_DECAY),
                                          loss=nll,
                                          patterns=patterns,
-                                         deviceInfo=tu.create_test_device())
+                                         deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
+        session.run(stepio)
 
     ###
     # Pytorch
@@ -266,7 +271,7 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
                                       reduction=popart_reduction_type)
 
     ## 2 sessions: one with "SoftmaxGradDirect" pattern, one without
-    def getPreparesSession(patterns):
+    def getPreparesSession(patterns, device):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1,
@@ -274,7 +279,7 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             loss=nll,
             patterns=patterns,
-            deviceInfo=tu.create_test_device())
+            deviceInfo=device)
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -284,19 +289,23 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     inputs = {lb: lb_data.astype(np.int32)}
 
     # 1)
-    session_SMD = getPreparesSession(
-        popart.Patterns(["PreUniRepl",
-                         "SoftmaxGradDirect"]).enableRuntimeAsserts(False))
-    anchors_SMD = session_SMD.initAnchorArrays()
-    stepio_SMD = popart.PyStepIO(inputs, anchors_SMD)
-    session_SMD.run(stepio_SMD)
+    with tu.create_test_device() as device:
+        session_SMD = getPreparesSession(
+            popart.Patterns(["PreUniRepl",
+                             "SoftmaxGradDirect"]).enableRuntimeAsserts(False),
+            device)
+        anchors_SMD = session_SMD.initAnchorArrays()
+        stepio_SMD = popart.PyStepIO(inputs, anchors_SMD)
+        session_SMD.run(stepio_SMD)
 
     # 2)
-    session_NoSMD = getPreparesSession(
-        popart.Patterns(["PreUniRepl"]).enableRuntimeAsserts(False))
-    anchors_NoSMD = session_NoSMD.initAnchorArrays()
-    stepio_NoSMD = popart.PyStepIO(inputs, anchors_NoSMD)
-    session_NoSMD.run(stepio_NoSMD)
+    with tu.create_test_device() as device:
+        session_NoSMD = getPreparesSession(
+            popart.Patterns(["PreUniRepl"]).enableRuntimeAsserts(False),
+            device)
+        anchors_NoSMD = session_NoSMD.initAnchorArrays()
+        stepio_NoSMD = popart.PyStepIO(inputs, anchors_NoSMD)
+        session_NoSMD.run(stepio_NoSMD)
 
     ###
     # Pytorch
@@ -361,14 +370,15 @@ def test_nll_loss_input_with_invalid_input():
 
     patterns = popart.PatternsLevel.NoPatterns
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(1, [nll0]),
-            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
-            loss=nll0,
-            patterns=popart.Patterns(patterns).enableRuntimeAsserts(False),
-            deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(1, [nll0]),
+                optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+                loss=nll0,
+                patterns=popart.Patterns(patterns).enableRuntimeAsserts(False),
+                deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "The label tensor (INT32   [2 5]) must have shape [2 4] to match all but the final dimension of the probabilities tensor (FLOAT   [2 4 3])"
@@ -501,20 +511,21 @@ def test_nllloss_reduction_equiv():
                 if 'SoftmaxGradDirect' not in patternsList or 'NlllWithSoftmaxGradDirect' in patternsList:
                     anchors.append(loss)
 
-                session = popart.TrainingSession(
-                    fnModel=builder.getModelProto(),
-                    loss=loss,
-                    dataFlow=popart.DataFlow(1, anchors),
-                    optimizer=popart.ConstSGD(0.1),
-                    deviceInfo=tu.create_test_device(),
-                    patterns=popart.Patterns(
-                        patternsList).enableRuntimeAsserts(False))
-                session.prepareDevice()
-                session.weightsFromHost()
-                anchors = session.initAnchorArrays()
-                stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)},
-                                         anchors)
-                session.run(stepio)
+                with tu.create_test_device() as device:
+                    session = popart.TrainingSession(
+                        fnModel=builder.getModelProto(),
+                        loss=loss,
+                        dataFlow=popart.DataFlow(1, anchors),
+                        optimizer=popart.ConstSGD(0.1),
+                        deviceInfo=device,
+                        patterns=popart.Patterns(
+                            patternsList).enableRuntimeAsserts(False))
+                    session.prepareDevice()
+                    session.weightsFromHost()
+                    anchors = session.initAnchorArrays()
+                    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)},
+                                             anchors)
+                    session.run(stepio)
                 return anchors
 
             # perform sum reduction of individual losses inside nllloss op

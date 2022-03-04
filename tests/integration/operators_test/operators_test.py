@@ -1273,14 +1273,15 @@ def test_topk_2d_sorted():
 
         bld.addOutputTensor(vals)
 
-        sess = popart.InferenceSession(bld.getModelProto(),
-                                       deviceInfo=tu.create_test_device(),
-                                       dataFlow=popart.DataFlow(1, [vals]))
+        with tu.create_test_device() as device:
+            sess = popart.InferenceSession(bld.getModelProto(),
+                                           deviceInfo=device,
+                                           dataFlow=popart.DataFlow(1, [vals]))
 
-        sess.prepareDevice()
-        anchors = sess.initAnchorArrays()
-        stepio = popart.PyStepIO({i0: d1}, anchors)
-        sess.run(stepio)
+            sess.prepareDevice()
+            anchors = sess.initAnchorArrays()
+            stepio = popart.PyStepIO({i0: d1}, anchors)
+            sess.run(stepio)
         return anchors[vals]
 
     sorted_output = run_test(True)

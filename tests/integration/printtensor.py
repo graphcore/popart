@@ -28,24 +28,25 @@ def test_basic(capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array([1., 2., 3.], dtype=np.float32),
-        i2: np.array([4., 5., 6.], dtype=np.float32)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1., 2., 3.], dtype=np.float32),
+            i2: np.array([4., 5., 6.], dtype=np.float32)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    capfd.readouterr()
+        capfd.readouterr()
 
-    session.run(stepio)
+        session.run(stepio)
 
     captured = capfd.readouterr()
     output = captured.err
@@ -100,25 +101,26 @@ def test_train(capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=l1,
-                                     deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=l1,
+                                         deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: input_data}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    capfd.readouterr()
+        capfd.readouterr()
 
-    session.run(stepio)
+        session.run(stepio)
 
     captured = capfd.readouterr()
     output = captured.err
@@ -184,25 +186,26 @@ def test_custom_title(capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     optimizer=popart.ConstSGD(0.1),
-                                     loss=l1,
-                                     deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         loss=l1,
+                                         deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: input_data}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    capfd.readouterr()
+        capfd.readouterr()
 
-    session.run(stepio)
+        session.run(stepio)
 
     captured = capfd.readouterr()
     output = captured.err

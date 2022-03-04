@@ -48,19 +48,20 @@ def test_basic(tmpdir):
         opts.enableOutlining = enableOutlining
         opts.enableOutliningCopyCostPruning = False
 
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=tu.create_test_device())
+        with tu.create_test_device() as device:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {i1: input_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {i1: input_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
         return anchors[o]
 

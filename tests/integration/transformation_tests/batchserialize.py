@@ -33,35 +33,35 @@ def test_weight_update(tmpdir):
         out = builder.aiGraphcore.l1loss([m3], 0.1)
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device(1)
+        with tu.create_test_device(1) as device:
 
-        dfAnchors = {}
+            dfAnchors = {}
 
-        opts = popart.SessionOptions()
-        opts.enableOutlining = True
-        opts.batchSerializationSettings.factor = batchSerializationFactor
+            opts = popart.SessionOptions()
+            opts.enableOutlining = True
+            opts.batchSerializationSettings.factor = batchSerializationFactor
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.TrainingSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dfAnchors),
-            optimizer=popart.ConstSGD(0.1),
-            loss=out,
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, dfAnchors),
+                optimizer=popart.ConstSGD(0.1),
+                loss=out,
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((bsize, dsize, dsize), dtype=np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            ip_data = np.ones((bsize, dsize, dsize), dtype=np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        session.modelToHost(str(tmpdir / model_file_name))
+            session.modelToHost(str(tmpdir / model_file_name))
 
     run('without_batchserial.onnx', 0)
     run('with_batchserial.onnx', 4)
@@ -127,31 +127,31 @@ def test_init():
         out = builder.aiGraphcore.l1loss([init], 0.1)
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device(1)
+        with tu.create_test_device(1) as device:
 
-        dfAnchors = {out: popart.AnchorReturnType("All")}
+            dfAnchors = {out: popart.AnchorReturnType("All")}
 
-        opts = popart.SessionOptions()
-        opts.enableOutlining = True
-        opts.batchSerializationSettings.factor = 4
+            opts = popart.SessionOptions()
+            opts.enableOutlining = True
+            opts.batchSerializationSettings.factor = 4
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dfAnchors),
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, dfAnchors),
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((bsize, dsize, dsize), dtype=np.float32)
-        stepio = popart.PyStepIO({ip: ip_data}, anchors)
+            ip_data = np.ones((bsize, dsize, dsize), dtype=np.float32)
+            stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
     # Run with batch axis 0
     run(False)
@@ -189,33 +189,33 @@ def test_lstm():
         out = builder.aiGraphcore.l1loss([Y], 0.1)
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device(1)
+        with tu.create_test_device(1) as device:
 
-        dfAnchors = {out: popart.AnchorReturnType("All")}
+            dfAnchors = {out: popart.AnchorReturnType("All")}
 
-        opts = popart.SessionOptions()
-        opts.batchSerializationSettings.factor = 2
+            opts = popart.SessionOptions()
+            opts.batchSerializationSettings.factor = 2
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1, dfAnchors),
-            patterns=popart.Patterns(popart.PatternsLevel.All),
-            userOptions=opts,
-            deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, dfAnchors),
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
-        anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            session.weightsFromHost()
+            anchors = session.initAnchorArrays()
 
-        ip_data = np.ones((seq_len, bsize, input_size), dtype=np.float32)
-        initial_data = np.ones((2, bsize, hidden_size), dtype=np.float32)
-        stepio = popart.PyStepIO({
-            ip: ip_data,
-            initial_state: initial_data
-        }, anchors)
+            ip_data = np.ones((seq_len, bsize, input_size), dtype=np.float32)
+            initial_data = np.ones((2, bsize, hidden_size), dtype=np.float32)
+            stepio = popart.PyStepIO({
+                ip: ip_data,
+                initial_state: initial_data
+            }, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
     run()

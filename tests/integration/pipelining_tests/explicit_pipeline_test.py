@@ -45,19 +45,20 @@ def test_explicit_pipelining_0():
             opts.enableExplicitMainLoops = True
             opts.useHostCopyOps = True
 
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(bps, [t4]),
-            deviceInfo=tu.create_test_device(numIpus=3),
-            userOptions=opts)
+        with tu.create_test_device(numIpus=3) as device:
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  bps, [t4]),
+                                              deviceInfo=device,
+                                              userOptions=opts)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        t0_data = np.random.rand(bps, 2, 2).astype(np.float32)
-        stepio = popart.PyStepIO({t0: t0_data}, anchors)
-        session.run(stepio)
+            t0_data = np.random.rand(bps, 2, 2).astype(np.float32)
+            stepio = popart.PyStepIO({t0: t0_data}, anchors)
+            session.run(stepio)
 
         return anchors
 

@@ -36,11 +36,12 @@ def test_implicit_recompute_op_scheduled_pre_loss_no():
 
     builder.recomputeOutputInBackwardPass(t2)
 
-    session = popart.TrainingSession(deviceInfo=tu.create_test_device(),
-                                     fnModel=builder.getModelProto(),
-                                     dataFlow=popart.DataFlow(1, []),
-                                     loss=t6,
-                                     optimizer=popart.SGD(
-                                         {"lossScaling": (2.0, False)}))
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(deviceInfo=device,
+                                         fnModel=builder.getModelProto(),
+                                         dataFlow=popart.DataFlow(1, []),
+                                         loss=t6,
+                                         optimizer=popart.SGD(
+                                             {"lossScaling": (2.0, False)}))
 
-    session.prepareDevice()
+        session.prepareDevice()

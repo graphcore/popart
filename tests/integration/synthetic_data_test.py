@@ -32,15 +32,16 @@ def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
     opts = popart.SessionOptions()
     opts.syntheticDataMode = syntheticDataMode
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=popart.DataFlow(1, [p]),
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=popart.DataFlow(1, [p]),
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({in_name: np.ones(d_shape)}, anchors)
-    session.run(stepio)
+        session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({in_name: np.ones(d_shape)}, anchors)
+        session.run(stepio)
 
 
 def numpy_array_from_printtensor_string(string):

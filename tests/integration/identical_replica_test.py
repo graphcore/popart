@@ -41,34 +41,33 @@ def test_replica_bitwise_identical_update():
 
         data = {k: np.repeat(v[np.newaxis], 2, 0) for k, v in data.items()}
 
-        device = tu.create_test_device(2, pattern=popart.SyncPattern.Full)
+        with tu.create_test_device(2,
+                                   pattern=popart.SyncPattern.Full) as device:
 
-        w_updated = popart.reservedUpdatedVarPrefix() + w
+            w_updated = popart.reservedUpdatedVarPrefix() + w
 
-        dataFlow = popart.DataFlow(
-            1, {
-                loss: popart.AnchorReturnType("ALL"),
-                w_updated: popart.AnchorReturnType("FINAL")
-            })
+            dataFlow = popart.DataFlow(
+                1, {
+                    loss: popart.AnchorReturnType("ALL"),
+                    w_updated: popart.AnchorReturnType("FINAL")
+                })
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         deviceInfo=device)
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        stepio = popart.PyStepIO(data, anchors)
+            stepio = popart.PyStepIO(data, anchors)
 
-        session.run(stepio)
-
-        device.detach()
+            session.run(stepio)
 
         return anchors[w_updated]
 

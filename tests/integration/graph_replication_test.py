@@ -282,20 +282,21 @@ def test_identity_loss_grad_replication():
         patterns = popart.Patterns()
         patterns.OpToIdentity = opToIdentityPattern
 
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            deviceInfo=tu.create_test_device(numIpus=2),
-            dataFlow=popart.DataFlow(
-                1, [t3, popart.reservedGradientPrefix() + t0]),
-            loss=t3,
-            optimizer=popart.ConstSGD(0.1),
-            userOptions=opts,
-            patterns=patterns)
+        with tu.create_test_device(numIpus=2) as device:
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(
+                    1, [t3, popart.reservedGradientPrefix() + t0]),
+                loss=t3,
+                optimizer=popart.ConstSGD(0.1),
+                userOptions=opts,
+                patterns=patterns)
 
-        anchors = session.initAnchorArrays()
-        session.prepareDevice()
-        stepio = popart.PyStepIO({t0: t_data, t1: t_data}, anchors)
-        session.run(stepio)
+            anchors = session.initAnchorArrays()
+            session.prepareDevice()
+            stepio = popart.PyStepIO({t0: t_data, t1: t_data}, anchors)
+            session.run(stepio)
         return anchors[popart.reservedGradientPrefix() + t0]
 
     t2_grad = getIdentityLossGradTensor(True)

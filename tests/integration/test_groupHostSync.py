@@ -33,20 +33,21 @@ def test_groupHostSync():
     }
     patterns = popart.Patterns(popart.PatternsLevel.Minimal)
 
-    session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                      dataFlow=dataFlow,
-                                      deviceInfo=tu.create_test_device(),
-                                      userOptions=options,
-                                      patterns=patterns)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device,
+                                          userOptions=options,
+                                          patterns=patterns)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    input_a = np.array([1.4], dtype=np.float16)
-    stepio = popart.PyStepIO({a: input_a}, anchors)
-    session.run(stepio)
-    summaryReport = session.getSummaryReport()
+        anchors = session.initAnchorArrays()
+        input_a = np.array([1.4], dtype=np.float16)
+        stepio = popart.PyStepIO({a: input_a}, anchors)
+        session.run(stepio)
+        summaryReport = session.getSummaryReport()
     lines = summaryReport.split('\n')
     order = []
     pastSwitch = False

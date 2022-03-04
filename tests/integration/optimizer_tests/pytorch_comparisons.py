@@ -117,37 +117,38 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
     art = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(batchesPerStep, {})
-    device = tu.create_test_device(numIpus=nIPUs)
-    userOptions = popart.SessionOptions()
-    userOptions.enableGradientAccumulation = False
-    userOptions.enablePrefetchDatastreams = False
+    with tu.create_test_device(numIpus=nIPUs, opts={"compileIPUCode":
+                                                    False}) as device:
+        userOptions = popart.SessionOptions()
+        userOptions.enableGradientAccumulation = False
+        userOptions.enablePrefetchDatastreams = False
 
-    session = popart.TrainingSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=dataFlow,
-        userOptions=userOptions,
-        loss=l1,
-        optimizer=popartOpt(optMaps[0], **optkwargs),
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFlow=dataFlow,
+                                         userOptions=userOptions,
+                                         loss=l1,
+                                         optimizer=popartOpt(
+                                             optMaps[0], **optkwargs),
+                                         deviceInfo=device)
 
-    anchorArrays = session.initAnchorArrays()
+        anchorArrays = session.initAnchorArrays()
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    for step in range(numberOfSteps):
-        stepio = popart.PyStepIO({input0: inputVals[step]}, anchorArrays)
-        session.run(stepio)
+        for step in range(numberOfSteps):
+            stepio = popart.PyStepIO({input0: inputVals[step]}, anchorArrays)
+            session.run(stepio)
 
-        if (step < numberOfSteps - 1):
-            session.updateOptimizerFromHost(
-                popartOpt(optMaps[step + 1], **optkwargs))
+            if (step < numberOfSteps - 1):
+                session.updateOptimizerFromHost(
+                    popartOpt(optMaps[step + 1], **optkwargs))
 
-    session.weightsToHost()
-    w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-    w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
-    weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R})
-    session.readWeights(weightsRead)
+        session.weightsToHost()
+        w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+        w1R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
+        weightsRead = popart.PyWeightsIO({w0: w0R, w1: w1R})
+        session.readWeights(weightsRead)
 
     class Net(nn.Module):
         def __init__(self):

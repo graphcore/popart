@@ -77,22 +77,23 @@ def test_codelet():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array([1., 3.], dtype=np.float16),
-        i2: np.array([7., 8.], dtype=np.float16)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1., 3.], dtype=np.float16),
+            i2: np.array([7., 8.], dtype=np.float16)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     try:
         os.remove("test_vertex.cpp")

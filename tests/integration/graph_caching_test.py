@@ -43,26 +43,26 @@ def test_convolution_cached_by_default():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    data = np.ones(data_shape.shape(), dtype=np.float32)
-    filt = np.ones(filt_shape.shape(), dtype=np.float32)
+        data = np.ones(data_shape.shape(), dtype=np.float32)
+        filt = np.ones(filt_shape.shape(), dtype=np.float32)
 
-    inputs = {i1: data, i2: filt}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: data, i2: filt}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
-    session.weightsFromHost()
+        session.run(stepio)
+        session.weightsFromHost()
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -120,26 +120,26 @@ def test_convolution_disable_all():
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableOutlining = False
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    data = np.ones(data_shape.shape(), dtype=np.float32)
-    filt = np.ones(filt_shape.shape(), dtype=np.float32)
+        data = np.ones(data_shape.shape(), dtype=np.float32)
+        filt = np.ones(filt_shape.shape(), dtype=np.float32)
 
-    inputs = {i1: data, i2: filt}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: data, i2: filt}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
-    session.weightsFromHost()
+        session.run(stepio)
+        session.weightsFromHost()
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -196,31 +196,31 @@ def test_matmul_infer_cached_by_default():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -288,33 +288,33 @@ def test_matmul_train_cached_by_default():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul1_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul1_rhs_shape.shape(), dtype=np.float32)
-    matmul2_lhs = np.ones(matmul2_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul2_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul1_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul1_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul2_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul2_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
-    session.weightsFromHost()
+        session.run(stepio)
+        session.weightsFromHost()
 
     # Check that there are only 3 matmul convs in computation set.
     summaryReport = session.getSummaryReport()
@@ -380,38 +380,38 @@ def test_gemm_train_cached_by_default():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    gemm1_A = np.ones(gemmA_shape.shape(), dtype=np.float32)
-    gemm1_B = np.ones(gemmB_shape.shape(), dtype=np.float32)
-    gemm1_C = np.ones(gemmC_shape.shape(), dtype=np.float32)
+        gemm1_A = np.ones(gemmA_shape.shape(), dtype=np.float32)
+        gemm1_B = np.ones(gemmB_shape.shape(), dtype=np.float32)
+        gemm1_C = np.ones(gemmC_shape.shape(), dtype=np.float32)
 
-    gemm2_A = np.ones(gemmA_shape.shape(), dtype=np.float32)
-    gemm2_B = np.ones(gemmB_shape.shape(), dtype=np.float32)
-    gemm2_C = np.ones(gemmC_shape.shape(), dtype=np.float32)
+        gemm2_A = np.ones(gemmA_shape.shape(), dtype=np.float32)
+        gemm2_B = np.ones(gemmB_shape.shape(), dtype=np.float32)
+        gemm2_C = np.ones(gemmC_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: gemm1_A,
-        i2: gemm1_B,
-        i3: gemm1_C,
-        i4: gemm2_A,
-        i5: gemm2_B,
-        i6: gemm2_C
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: gemm1_A,
+            i2: gemm1_B,
+            i3: gemm1_C,
+            i4: gemm2_A,
+            i5: gemm2_B,
+            i6: gemm2_C
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
-    session.weightsFromHost()
+        session.run(stepio)
+        session.weightsFromHost()
 
     # Check that there is only 2 matmul conv's computation set.
     summaryReport = session.getSummaryReport()
@@ -464,31 +464,31 @@ def test_outlining_bca1():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -547,31 +547,31 @@ def test_outlining_bca2():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -637,33 +637,33 @@ def test_outlining_bca3():
 
     optimizer = popart.ConstSGD(0.01)
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -732,35 +732,36 @@ def test_outlining_bca4():
 
     optimizer = popart.ConstSGD(0.01)
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        loss=loss,
-        optimizer=optimizer,
-        userOptions=opts,
-        # Enable the matmul patterns
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            # Enable the matmul patterns
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
-    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+        matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+        matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-    inputs = {
-        i1: matmul1_lhs,
-        i2: matmul1_rhs,
-        i3: matmul2_lhs,
-        i4: matmul2_rhs
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: matmul1_lhs,
+            i2: matmul1_rhs,
+            i3: matmul2_lhs,
+            i4: matmul2_rhs
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()

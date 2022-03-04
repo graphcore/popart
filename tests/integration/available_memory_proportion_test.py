@@ -45,33 +45,35 @@ def available_memory_proportion_harness(capfd, insert_operator,
     opts.constantWeights = False  # Allow the weights to be updated
 
     # Create the device
-    device = tu.create_test_device(1, opts={"compileIPUCode": True})
-    device.attach()
+    with tu.create_test_device(1, opts={"compileIPUCode": True}) as device:
+        device.attach()
 
-    # Prepare the input data
-    input_data = np.random.random_sample(input_shape.shape()).astype(
-        np.float32)
+        # Prepare the input data
+        input_data = np.random.random_sample(input_shape.shape()).astype(
+            np.float32)
 
-    # Prepare the Training session
-    training_session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                              dataFlow=training_dataFlow,
-                                              loss=loss,
-                                              optimizer=popart.ConstSGD(0.01),
-                                              userOptions=opts,
-                                              deviceInfo=device)
+        # Prepare the Training session
+        training_session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=training_dataFlow,
+            loss=loss,
+            optimizer=popart.ConstSGD(0.01),
+            userOptions=opts,
+            deviceInfo=device)
 
-    # Compile the training graph
-    training_session.prepareDevice()
+        # Compile the training graph
+        training_session.prepareDevice()
 
-    # Run the training session
-    training_session.weightsFromHost()
+        # Run the training session
+        training_session.weightsFromHost()
 
-    training_anchors = training_session.initAnchorArrays()
-    training_inputs = {input_: input_data}
+        training_anchors = training_session.initAnchorArrays()
+        training_inputs = {input_: input_data}
 
-    training_session.run(popart.PyStepIO(training_inputs, training_anchors))
+        training_session.run(popart.PyStepIO(training_inputs,
+                                             training_anchors))
 
-    captured = capfd.readouterr()
+        captured = capfd.readouterr()
 
     return captured.err
 

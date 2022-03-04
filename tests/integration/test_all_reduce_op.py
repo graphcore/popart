@@ -31,20 +31,19 @@ def run_ir(ir, h2d_streams, d2h_ids, n_ipus):
 
     ir_.updateVertices()
 
-    device = tu.create_test_device(numIpus=n_ipus)
-    session = popart.InferenceSession.fromIr(ir=ir_, deviceInfo=device)
+    with tu.create_test_device(numIpus=n_ipus) as device:
+        session = popart.InferenceSession.fromIr(ir=ir_, deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    stepio = popart.PyStepIO(inputs=h2d_streams, outputs=anchors)
+        stepio = popart.PyStepIO(inputs=h2d_streams, outputs=anchors)
 
-    session.weightsFromHost()
-    session.run(stepio)
+        session.weightsFromHost()
+        session.run(stepio)
 
-    y_host = [anchors[d2h_id] for d2h_id in d2h_ids]
-    device.detach()
+        y_host = [anchors[d2h_id] for d2h_id in d2h_ids]
 
     return y_host
 

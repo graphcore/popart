@@ -40,25 +40,26 @@ def test_constants_preserved():
 
     opts = popart.SessionOptions()
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    anchorArrays = session.initAnchorArrays()
+        anchorArrays = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    inputs = {
-        i1: np.array([[2, 2], [2, 2]]).astype(np.float32),
-        i2: np.array([[4, 4], [4, 4]]).astype(np.float32),
-    }
-    pystepio = popart.PyStepIO(inputs, anchorArrays)
-    session.run(pystepio)
+        inputs = {
+            i1: np.array([[2, 2], [2, 2]]).astype(np.float32),
+            i2: np.array([[4, 4], [4, 4]]).astype(np.float32),
+        }
+        pystepio = popart.PyStepIO(inputs, anchorArrays)
+        session.run(pystepio)
 
-    session.modelToHost('session_proto.onnx')
+        session.modelToHost('session_proto.onnx')
 
     # models should be the same after training
     # as there are no trainable parameters
@@ -95,17 +96,18 @@ def test_no_prepare_device():
 
     opts = popart.SessionOptions()
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    # No session.prepareDevice()
+        # No session.prepareDevice()
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.modelToHost('session_proto.onnx')
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.modelToHost('session_proto.onnx')
 
-    assert (e_info.value.args[0].startswith(
-        "Devicex::prepare() must be called before Devicex::weightsToHost"))
+        assert (e_info.value.args[0].startswith(
+            "Devicex::prepare() must be called before Devicex::weightsToHost"))

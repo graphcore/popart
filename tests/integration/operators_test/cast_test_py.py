@@ -114,25 +114,25 @@ def test_cast_no_grad(npSrcType, builderDstType):
             popart.AnchorReturnType("All"),
         })
 
-    device = tu.create_test_device()
+    with tu.create_test_device() as device:
 
-    patterns = popart.Patterns(['PreUniRepl', 'PostNRepl',
-                                'SqrtGradOp']).enableRuntimeAsserts(False)
-    options = popart.SessionOptions()
-    options.enableStochasticRounding = False
+        patterns = popart.Patterns(['PreUniRepl', 'PostNRepl',
+                                    'SqrtGradOp']).enableRuntimeAsserts(False)
+        options = popart.SessionOptions()
+        options.enableStochasticRounding = False
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        popart.TrainingSession(fnModel=proto,
-                               loss=lossId,
-                               dataFlow=dataFlow,
-                               deviceInfo=device,
-                               optimizer=popart.ConstSGD(0.01),
-                               patterns=patterns,
-                               userOptions=options)
+        with pytest.raises(popart.popart_exception) as e_info:
+            popart.TrainingSession(fnModel=proto,
+                                   loss=lossId,
+                                   dataFlow=dataFlow,
+                                   deviceInfo=device,
+                                   optimizer=popart.ConstSGD(0.01),
+                                   patterns=patterns,
+                                   userOptions=options)
 
-    assert (e_info.value.args[0].startswith(
-        f"Anchor tensor `{popart.reservedGradientPrefix() + input_}' not in Ir Tensors."
-    ))
+        assert (e_info.value.args[0].startswith(
+            f"Anchor tensor `{popart.reservedGradientPrefix() + input_}' not in Ir Tensors."
+        ))
 
 
 def test_cast_no_grad_branch(op_tester):

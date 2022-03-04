@@ -27,22 +27,23 @@ def test_basic():
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        i1: np.array([1., 2., 3.], dtype=np.float32),
-        i2: np.array([4., 5., 6.], dtype=np.float32)
-    }
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {
+            i1: np.array([1., 2., 3.], dtype=np.float32),
+            i2: np.array([4., 5., 6.], dtype=np.float32)
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert np.array_equal(anchors[o], np.array([6., 9., 12.],
                                                dtype=np.float32))

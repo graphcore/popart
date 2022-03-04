@@ -36,24 +36,26 @@ def test_loss_scale_updates_with_grad_accumulation_correctness(
 
     accl_stats_id = "Accum___autoLossScaleStats"
     ls_id = "finalLossScale"
-    session = popart.TrainingSession(fnModel=proto,
-                                     deviceInfo=tu.create_test_device(),
-                                     dataFlow=popart.DataFlow(
-                                         bps, [accl_stats_id, ls_id]),
-                                     loss=loss,
-                                     optimizer=optimizer,
-                                     userOptions=opts)
-    session.prepareDevice()
-    session.weightsFromHost()
-    anchors = session.initAnchorArrays()
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         deviceInfo=device,
+                                         dataFlow=popart.DataFlow(
+                                             bps, [accl_stats_id, ls_id]),
+                                         loss=loss,
+                                         optimizer=optimizer,
+                                         userOptions=opts)
+        session.prepareDevice()
+        session.weightsFromHost()
+        anchors = session.initAnchorArrays()
 
-    step_size = bps * accumulation_factor
-    t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(np.float16)
-    label_data = np.random.randint(0, label_shape[0],
-                                   step_size * label_shape[0]).astype(np.int32)
-    inputs = {t0: t0_data, label: label_data}
+        step_size = bps * accumulation_factor
+        t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(
+            np.float16)
+        label_data = np.random.randint(
+            0, label_shape[0], step_size * label_shape[0]).astype(np.int32)
+        inputs = {t0: t0_data, label: label_data}
 
-    session.run(popart.PyStepIO(inputs, anchors))
+        session.run(popart.PyStepIO(inputs, anchors))
 
     # 1.
     prev_ls0 = init_ls

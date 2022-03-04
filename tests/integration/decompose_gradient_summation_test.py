@@ -51,23 +51,24 @@ def test_decompose_gradient_sum():
             else:
                 numIpus = 1
 
-            device = tu.create_test_device(numIpus=numIpus)
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(1, [w0]),
-                                             deviceInfo=device,
-                                             optimizer=popart.ConstSGD(0.1),
-                                             loss=loss,
-                                             userOptions=opts)
+            with tu.create_test_device(numIpus=numIpus) as device:
+                session = popart.TrainingSession(
+                    fnModel=builder.getModelProto(),
+                    dataFlow=popart.DataFlow(1, [w0]),
+                    deviceInfo=device,
+                    optimizer=popart.ConstSGD(0.1),
+                    loss=loss,
+                    userOptions=opts)
 
-            anchors = session.initAnchorArrays()
-            np.random.seed(1)  # ensure same input vals between sessions
-            inputs = {in0: np.random.rand(*shape).astype('float32')}
-            stepio = popart.PyStepIO(inputs, anchors)
+                anchors = session.initAnchorArrays()
+                np.random.seed(1)  # ensure same input vals between sessions
+                inputs = {in0: np.random.rand(*shape).astype('float32')}
+                stepio = popart.PyStepIO(inputs, anchors)
 
-            session.prepareDevice()
-            session.weightsFromHost()
+                session.prepareDevice()
+                session.weightsFromHost()
 
-            session.run(stepio)
+                session.run(stepio)
             return anchors[w0]
 
         w1_decomp = getUpdatedWeights(decomposeGradSum=True)

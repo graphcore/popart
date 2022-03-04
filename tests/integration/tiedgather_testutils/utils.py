@@ -62,64 +62,65 @@ def run_py(proto: onnx.ModelProto,
 
     replicas = user_options.get("replicatedGraphCount", 1)
     request_ipus = pow(2, math.ceil(math.log2(replicas)))
-    device = tu.create_test_device(numIpus=request_ipus)
+    with tu.create_test_device(numIpus=request_ipus) as device:
 
-    print("Compiling graph")
-    if optimizer is not None:
-        session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=device,
-                                         dataFlow=data_flow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         patterns=patterns)
-    else:
-        session = popart.InferenceSession(fnModel=proto,
-                                          deviceInfo=device,
-                                          dataFlow=data_flow,
-                                          userOptions=options,
-                                          patterns=patterns)
+        print("Compiling graph")
+        if optimizer is not None:
+            session = popart.TrainingSession(fnModel=proto,
+                                             deviceInfo=device,
+                                             dataFlow=data_flow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=patterns)
+        else:
+            session = popart.InferenceSession(fnModel=proto,
+                                              deviceInfo=device,
+                                              dataFlow=data_flow,
+                                              userOptions=options,
+                                              patterns=patterns)
 
-    if skip_execution:
-        device.detach()
-        return session
+        if skip_execution:
+            return session
 
-    # Compile the Poplar Graph. If it fails, return the memory stats
-    try:
-        session.prepareDevice()
-    except popart.session.OutOfMemoryException as e:
-        device.detach()
-        raise e
-    print("Compilation complete")
+        # Compile the Poplar Graph. If it fails, return the memory stats
+        try:
+            session.prepareDevice()
+        except popart.session.OutOfMemoryException as e:
+            raise e
+        print("Compilation complete")
 
-    session.weightsFromHost()
-    # NOTE: If we ever use a model with random ops, we would need to call this
-    # here, using the same seed given to numpy.
-    # session.setRandomSeed(1984)
+        session.weightsFromHost()
+        # NOTE: If we ever use a model with random ops, we would need to call this
+        # here, using the same seed given to numpy.
+        # session.setRandomSeed(1984)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    rf = user_options.get("replicatedGraphCount")
-    if rf is not None and rf > 1:
-        data = {k: np.repeat(v[np.newaxis], rf, 0) for k, v in data.items()}
+        rf = user_options.get("replicatedGraphCount")
+        if rf is not None and rf > 1:
+            data = {
+                k: np.repeat(v[np.newaxis], rf, 0)
+                for k, v in data.items()
+            }
 
-    # Add a gradient accumulation factor dimension if needed
-    af = user_options.get("accumulationFactor")
-    if af is not None and af > 1:
-        data = {k: np.repeat(v[np.newaxis], af, 0) for k, v in data.items()}
+        # Add a gradient accumulation factor dimension if needed
+        af = user_options.get("accumulationFactor")
+        if af is not None and af > 1:
+            data = {
+                k: np.repeat(v[np.newaxis], af, 0)
+                for k, v in data.items()
+            }
 
-    stepio = popart.PyStepIO(data, anchors)
-    session.run(stepio)
+        stepio = popart.PyStepIO(data, anchors)
+        session.run(stepio)
 
-    with tempfile.TemporaryDirectory() as tmp:
-        file_path = os.path.join(tmp, "model.onnx")
-        session.modelToHost(file_path)
-        post_proto = onnx.load(file_path)
+        with tempfile.TemporaryDirectory() as tmp:
+            file_path = os.path.join(tmp, "model.onnx")
+            session.modelToHost(file_path)
+            post_proto = onnx.load(file_path)
 
-    # Release device
-    device.detach()
-
-    return (anchors[output] for output in outputs), post_proto, outputs
+        return (anchors[output] for output in outputs), post_proto, outputs
 
 
 class TestFailureError(Exception):

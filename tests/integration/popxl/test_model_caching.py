@@ -61,26 +61,24 @@ def build_and_run(cache_path):
     opts.enableEngineCaching = True
     opts.cachePath = cache_path
 
-    device = tu.create_test_device()
-    session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
+        # Create buffers for anchors
+        anchors = session.initAnchorArrays()
 
-    inputs = {
-        x_h2d.tensor_id: np.array(3.0, dtype='float32'),
-        seed_h2d.tensor_id: seed_tensors,
-    }
+        inputs = {
+            x_h2d.tensor_id: np.array(3.0, dtype='float32'),
+            seed_h2d.tensor_id: seed_tensors,
+        }
 
-    # Run the model
-    stepio = popart.PyStepIO(inputs=inputs, outputs=anchors)
-    session.weightsFromHost()
-    session.run(stepio)
-    output = anchors['z_stream']
-
-    device.detach()
+        # Run the model
+        stepio = popart.PyStepIO(inputs=inputs, outputs=anchors)
+        session.weightsFromHost()
+        session.run(stepio)
+        output = anchors['z_stream']
 
     return output
 

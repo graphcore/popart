@@ -89,76 +89,76 @@ def get_model_anchors(doSharding,
         opts.replicatedGraphCount = replicated_graph_count
         opts.enableReplicatedGraphs = True
 
-    device = tu.create_test_device(numIpus=numIpus)
+    with tu.create_test_device(numIpus=numIpus) as device:
 
-    if doTraining is True:
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(
-                                             batchesPerStep, anchor_map),
-                                         loss=nll,
-                                         optimizer=popart.ConstSGD(0.01),
-                                         userOptions=opts,
-                                         deviceInfo=device)
-    else:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              batchesPerStep, anchor_map),
-                                          userOptions=opts,
-                                          deviceInfo=device)
-
-    if doDevicex is False:
-        return None
-
-    session.prepareDevice()
-    anchors = session.initAnchorArrays()
-    session.setRandomSeed(0)
-
-    classes = np.prod(shape_d0) // (batchSize * batchesPerStep)
-
-    label = np.random.randint(low=0, high=classes,
-                              size=shape_l0).astype(np.int32)
-
-    # With all options enabled return anchors are of the shape:
-    # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
-    if acclSteps > 1:
-        shape_d0.insert(0, acclSteps)
-        label = label.reshape([acclSteps, -1])
-    if batchesPerStep > 1:
-        shape_d0.insert(0, batchesPerStep)
-        label = np.repeat(label[np.newaxis], batchesPerStep, 0)
-
-    data = np.random.random_sample(shape_d0).astype(np.float32)
-
-    # This is a slightly odd case - we want the same data to be input for both
-    # replicated graphs, but the dimension we need to repeat on is either the
-    # first or second (the replication dimension) depending on whether we
-    # have gradient accumulation enabled.
-    # If we are not testing, this is a lot simpler as we can split samples however
-    # we want.
-    if replicated_graph_count > 1:
-        if acclSteps > 1:
-            data = np.repeat(data[np.newaxis], replicated_graph_count, 2)
-            label = label.reshape([replicated_graph_count, -1])
+        if doTraining is True:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 batchesPerStep, anchor_map),
+                                             loss=nll,
+                                             optimizer=popart.ConstSGD(0.01),
+                                             userOptions=opts,
+                                             deviceInfo=device)
         else:
-            data = np.repeat(data[np.newaxis], replicated_graph_count, 1)
-            label = label.reshape([replicated_graph_count, -1])
+            session = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                              dataFlow=popart.DataFlow(
+                                                  batchesPerStep, anchor_map),
+                                              userOptions=opts,
+                                              deviceInfo=device)
 
-    inputs = {d0: data, l0: label}
-    stepio = popart.PyStepIO(inputs, anchors)
-    stepio.enableRuntimeAsserts(False)
+        if doDevicex is False:
+            return None
 
-    session.weightsFromHost()
+        session.prepareDevice()
+        anchors = session.initAnchorArrays()
+        session.setRandomSeed(0)
 
-    session.run(stepio)
+        classes = np.prod(shape_d0) // (batchSize * batchesPerStep)
 
-    if doProfiling is True:
-        from gcprofile import save_popart_report
-        save_popart_report(session)
+        label = np.random.randint(low=0, high=classes,
+                                  size=shape_l0).astype(np.int32)
 
-    if returnRawInput is True:
-        anchors["input_raw"] = data
+        # With all options enabled return anchors are of the shape:
+        # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
+        if acclSteps > 1:
+            shape_d0.insert(0, acclSteps)
+            label = label.reshape([acclSteps, -1])
+        if batchesPerStep > 1:
+            shape_d0.insert(0, batchesPerStep)
+            label = np.repeat(label[np.newaxis], batchesPerStep, 0)
 
-    return anchors
+        data = np.random.random_sample(shape_d0).astype(np.float32)
+
+        # This is a slightly odd case - we want the same data to be input for both
+        # replicated graphs, but the dimension we need to repeat on is either the
+        # first or second (the replication dimension) depending on whether we
+        # have gradient accumulation enabled.
+        # If we are not testing, this is a lot simpler as we can split samples however
+        # we want.
+        if replicated_graph_count > 1:
+            if acclSteps > 1:
+                data = np.repeat(data[np.newaxis], replicated_graph_count, 2)
+                label = label.reshape([replicated_graph_count, -1])
+            else:
+                data = np.repeat(data[np.newaxis], replicated_graph_count, 1)
+                label = label.reshape([replicated_graph_count, -1])
+
+        inputs = {d0: data, l0: label}
+        stepio = popart.PyStepIO(inputs, anchors)
+        stepio.enableRuntimeAsserts(False)
+
+        session.weightsFromHost()
+
+        session.run(stepio)
+
+        if doProfiling is True:
+            from gcprofile import save_popart_report
+            save_popart_report(session)
+
+        if returnRawInput is True:
+            anchors["input_raw"] = data
+
+        return anchors
 
 
 def compare_anchors_repl(no_repl_anchors, repl_anchors):

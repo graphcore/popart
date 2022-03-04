@@ -275,7 +275,7 @@ def test_expand_mul(int_type):
     w = np.random.random_sample([3, 3]).astype(np.float32)
     const = np.array([2, 1, 6]).astype(int_type)
 
-    def get_session(expand_op=True):
+    def get_session(expand_op=True, device=None):
         builder = popart.Builder()
 
         i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", in_.shape))
@@ -304,7 +304,7 @@ def test_expand_mul(int_type):
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
                                          dataFlow=popart.DataFlow(
                                              1, anchor_returns),
-                                         deviceInfo=tu.create_test_device(),
+                                         deviceInfo=device,
                                          optimizer=popart.ConstSGD(0.1),
                                          loss=loss,
                                          userOptions=opts)
@@ -317,12 +317,13 @@ def test_expand_mul(int_type):
         session.weightsFromHost()
         return session, stepio, anchors, anchor_returns
 
-    sess1, stepio1, anch1, arts1 = get_session(True)
-    sess2, stepio2, anch2, arts2 = get_session(False)
+    with tu.create_test_device() as d1, tu.create_test_device() as d2:
+        sess1, stepio1, anch1, arts1 = get_session(True, d1)
+        sess2, stepio2, anch2, arts2 = get_session(False, d2)
 
-    for i in range(5):
-        print(f"Step {i}")
-        sess1.run(stepio1)
-        sess2.run(stepio2)
-        for (k1, k2) in zip(arts1, arts2):
-            assert np.allclose(anch1[k1], anch2[k2])
+        for i in range(5):
+            print(f"Step {i}")
+            sess1.run(stepio1)
+            sess2.run(stepio2)
+            for (k1, k2) in zip(arts1, arts2):
+                assert np.allclose(anch1[k1], anch2[k2])

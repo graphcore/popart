@@ -36,59 +36,58 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
 
     num_ipus = 1
 
-    # The first session
-    K = 1
-    a_bps = K * update_period
-    a_session = popart.TrainingSession(
-        fnModel=proto,
-        deviceInfo=tu.create_test_device(num_ipus),
-        dataFlow=popart.DataFlow(a_bps, {}),
-        loss=loss,
-        optimizer=init_optimizer,
-        userOptions=opts)
-    a_session.prepareDevice()
-    a_session.weightsFromHost()
-    a_anchors = a_session.initAnchorArrays()
-
     # The second session
-    def getSession(modelPath=""):
+    def getSession(device, modelPath=""):
         if modelPath == "":
             fnProto = proto
         else:
             fnProto = modelPath
 
         b_bps = 1
-        b_session = popart.TrainingSession(
-            fnModel=fnProto,
-            deviceInfo=tu.create_test_device(num_ipus),
-            dataFlow=popart.DataFlow(b_bps, {}),
-            loss=loss,
-            optimizer=init_optimizer,
-            userOptions=opts)
+        b_session = popart.TrainingSession(fnModel=fnProto,
+                                           deviceInfo=device,
+                                           dataFlow=popart.DataFlow(b_bps, {}),
+                                           loss=loss,
+                                           optimizer=init_optimizer,
+                                           userOptions=opts)
         b_session.prepareDevice()
         b_session.weightsFromHost()
         b_anchors = b_session.initAnchorArrays()
         return b_session, b_anchors
 
-    # Data
-    a_data = np.random.rand(a_bps, *t_shape).astype(np.float16)
-    a_label_data = np.random.randint(0, label_shape[0],
-                                     a_bps * label_shape[0]).astype(np.int32)
-    inputs = {t0: a_data, label: a_label_data}
-    b_inputs = []
-    for i in range(int(K * update_period)):
-        b_inputs.append({
-            t0:
-            a_data[i],
-            label:
-            a_label_data[i * label_shape[0]:i * label_shape[0] +
-                         label_shape[0]]
-        })
+    # The first session
+    with tu.create_test_device(num_ipus) as device:
+        K = 1
+        a_bps = K * update_period
+        a_session = popart.TrainingSession(fnModel=proto,
+                                           deviceInfo=device,
+                                           dataFlow=popart.DataFlow(a_bps, {}),
+                                           loss=loss,
+                                           optimizer=init_optimizer,
+                                           userOptions=opts)
+        a_session.prepareDevice()
+        a_session.weightsFromHost()
+        a_anchors = a_session.initAnchorArrays()
 
-    # Run and test.
-    a_session.run(popart.PyStepIO(inputs, a_anchors))
-    a_modelPath = str(tmpdir / "_a")
-    a_session.modelToHost(a_modelPath)
+        # Data
+        a_data = np.random.rand(a_bps, *t_shape).astype(np.float16)
+        a_label_data = np.random.randint(
+            0, label_shape[0], a_bps * label_shape[0]).astype(np.int32)
+        inputs = {t0: a_data, label: a_label_data}
+        b_inputs = []
+        for i in range(int(K * update_period)):
+            b_inputs.append({
+                t0:
+                a_data[i],
+                label:
+                a_label_data[i * label_shape[0]:i * label_shape[0] +
+                             label_shape[0]]
+            })
+
+        # Run and test.
+        a_session.run(popart.PyStepIO(inputs, a_anchors))
+        a_modelPath = str(tmpdir / "_a")
+        a_session.modelToHost(a_modelPath)
     a_onnx = onnx.load(a_modelPath)
     a_counter_value = np.nan
     for _, weight in enumerate(a_onnx.graph.initializer):
@@ -98,11 +97,12 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
     b_modelPath = ""
     b_last_counter_value = np.nan
     for i in range(K * update_period):
-        b_session, b_anchors = getSession(modelPath=b_modelPath)
-        b_session.run(popart.PyStepIO(b_inputs[i], b_anchors))
-        model_file_name = str(i)
-        b_modelPath = str(tmpdir / model_file_name)
-        b_session.modelToHost(b_modelPath)
+        with tu.create_test_device(num_ipus) as device:
+            b_session, b_anchors = getSession(device, modelPath=b_modelPath)
+            b_session.run(popart.PyStepIO(b_inputs[i], b_anchors))
+            model_file_name = str(i)
+            b_modelPath = str(tmpdir / model_file_name)
+            b_session.modelToHost(b_modelPath)
         b_onnx = onnx.load(b_modelPath)
         for _, weight in enumerate(b_onnx.graph.initializer):
             if "Histogram" in weight.name and "_counter" in weight.name:

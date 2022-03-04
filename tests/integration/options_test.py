@@ -89,15 +89,16 @@ def test_engine_options_passed_to_engine():
     opts = popart.SessionOptions()
     opts.engineOptions = {'option': 'value'}
 
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.initAnchorArrays()
+        session.initAnchorArrays()
 
-    with pytest.raises(popart.poplar_exception) as e_info:
-        session.prepareDevice()
+        with pytest.raises(popart.poplar_exception) as e_info:
+            session.prepareDevice()
 
     assert (e_info.value.args[0].endswith("Unrecognised option 'option'"))
 

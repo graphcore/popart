@@ -69,33 +69,31 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
         options.engineOptions["autoReport.directory"] = tempDir.name
         options.engineOptions["autoReport.outputGraphProfile"] = "true"
 
-        device = tu.create_test_device(4)
+        with tu.create_test_device(4) as device:
 
-        dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
+            dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=patterns,
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        stepio = popart.PyStepIO(data, anchors)
+            stepio = popart.PyStepIO(data, anchors)
 
-        session.run(stepio)
+            session.run(stepio)
 
-        file_path = str(tmpdir / f"outlining_execution_context_model.onnx")
-        session.modelToHost(file_path)
-        post_proto = onnx.load(file_path)
-
-        device.detach()
+            file_path = str(tmpdir / f"outlining_execution_context_model.onnx")
+            session.modelToHost(file_path)
+            post_proto = onnx.load(file_path)
 
         report = session.getReport()
         max_tile_memory = max([

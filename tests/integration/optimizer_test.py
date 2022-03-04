@@ -31,21 +31,22 @@ def trainSession(anchors, optimizer, stepSize):
 
     opts = popart.SessionOptions()
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=popart.DataFlow(stepSize, anchors),
-        loss=o,
-        optimizer=optimizer,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=popart.DataFlow(
+                                             stepSize, anchors),
+                                         loss=o,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    # add step dimension to infeed
-    infeedShape = dataShape.shape()
-    infeedShape.insert(0, stepSize)
-    data = np.ones(infeedShape, dtype=np.float32)
-    inputs = {i1: data}
+        # add step dimension to infeed
+        infeedShape = dataShape.shape()
+        infeedShape.insert(0, stepSize)
+        data = np.ones(infeedShape, dtype=np.float32)
+        inputs = {i1: data}
 
     return session, inputs
 
@@ -216,20 +217,21 @@ def test_sgd_with_float16_model():
 
     opts = popart.SessionOptions()
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=popart.DataFlow(1, anchorNames),
-        loss=out,
-        optimizer=optimizer,
-        deviceInfo=tu.create_test_device(opts={"compileIPUCode": False}))
+    with tu.create_test_device(opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=popart.DataFlow(
+                                             1, anchorNames),
+                                         loss=out,
+                                         optimizer=optimizer,
+                                         deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchorArrays = session.initAnchorArrays()
+        anchorArrays = session.initAnchorArrays()
 
-    stepio = popart.PyStepIO({inid1: input1}, anchorArrays)
-    session.run(stepio)
+        stepio = popart.PyStepIO({inid1: input1}, anchorArrays)
+        session.run(stepio)
 
 
 def test_sgd_with_zero_learning_rate():

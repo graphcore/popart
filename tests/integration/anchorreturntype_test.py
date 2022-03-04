@@ -92,20 +92,20 @@ def test_identity_inference_session(inputShape, inputArray, BPS, art, R,
     opts.enableExplicitMainLoops = explicit
     opts.useHostCopyOps = explicit
 
-    device = tu.create_test_device(numIpus=R)
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=device,
-                                      userOptions=opts)
+    with tu.create_test_device(numIpus=R) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          deviceInfo=device,
+                                          userOptions=opts)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: np.array(inputArray, dtype=np.float32)}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: np.array(inputArray, dtype=np.float32)}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.array_equal(anchors[o], expected))
 
@@ -176,22 +176,23 @@ def test_simple_training_session(inputShape, inputArray, BPS, art, GA,
     opts.enableExplicitMainLoops = explicit
     opts.useHostCopyOps = explicit
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=tu.create_test_device(),
-                                     userOptions=opts,
-                                     loss=l1,
-                                     optimizer=popart.ConstSGD(0.01))
+    with tu.create_test_device() as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         deviceInfo=device,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(0.01))
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {i1: np.array(inputArray, dtype=np.float32)}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {i1: np.array(inputArray, dtype=np.float32)}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     assert (np.array_equal(anchors[o], expected))
 

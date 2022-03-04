@@ -46,24 +46,25 @@ def test_pipeline_boundary():
         patterns = popart.Patterns(popart.PatternsLevel.Default)
         patterns.InPlace = True
 
-        device = tu.create_test_device(numIpus=numIpus)
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(4, [actIn]),
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=loss,
-                                         userOptions=opts,
-                                         patterns=patterns)
+        with tu.create_test_device(numIpus=numIpus) as device:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 4, [actIn]),
+                                             deviceInfo=device,
+                                             optimizer=popart.ConstSGD(0.1),
+                                             loss=loss,
+                                             userOptions=opts,
+                                             patterns=patterns)
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {in0: input_}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {in0: input_}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.prepareDevice()
-        session.weightsFromHost()
+            session.prepareDevice()
+            session.weightsFromHost()
 
-        session.run(stepio)
+            session.run(stepio)
 
         return np.copy(anchors[actIn])
 

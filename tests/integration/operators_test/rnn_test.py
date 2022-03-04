@@ -454,8 +454,9 @@ def test_rnn_outlining(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [None]
 
-    op_tester.device = tu.create_test_device()
-    session = op_tester.run(init_builder, reference, 'train')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        session = op_tester.run(init_builder, reference, 'train')
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     main_graph = ir['maingraph']
@@ -497,9 +498,10 @@ def test_rnn_unsupported_activation(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'Affine' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
@@ -530,9 +532,10 @@ def test_rnn_bad_number_of_activations(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'only supports 1 activation' in e_info.value.args[0]
 
@@ -561,9 +564,10 @@ def test_rnn_wrong_hidden_size(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'hidden_size' in e_info.value.args[0]
     assert 'does not match' in e_info.value.args[0]
@@ -594,8 +598,9 @@ def test_rnn_correct_hidden_size(op_tester):
         # Not checking the output
         return [None]
 
-    op_tester.device = tu.create_test_device()
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.run(init_builder, reference, 'infer')
 
 
 # Test activation_alpha attribute throws error
@@ -622,9 +627,10 @@ def test_rnn_activation_alpha_error(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'activation_alpha' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
@@ -654,9 +660,10 @@ def test_rnn_activation_beta_error(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'activation_beta' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
@@ -686,9 +693,10 @@ def test_rnn_clip_error(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'clip' in e_info.value.args[0]
     assert 'not supported' in e_info.value.args[0]
@@ -718,9 +726,10 @@ def test_rnn_direction_error(op_tester):
         # The reference should never run, popart should raise an exception before this.
         assert False
 
-    op_tester.device = tu.create_test_device()
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        with pytest.raises(popart.popart_exception) as e_info:
+            op_tester.run(init_builder, reference, 'infer')
 
     assert 'only supports' in e_info.value.args[0]
     assert 'forward' in e_info.value.args[0]
@@ -749,8 +758,9 @@ def test_rnn_forward_direction(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [None]
 
-    op_tester.device = tu.create_test_device()
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.run(init_builder, reference, 'infer')
 
 
 # Catch any improperly initialised tensors by

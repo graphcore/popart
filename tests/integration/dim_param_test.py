@@ -61,12 +61,13 @@ def get_model_with_neg_dim_value(tmpdir):
 def test_model_with_unspecified_dim_params(tmpdir):
     proto, outId = get_model_with_dim_param(tmpdir)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1,
-                                     {outId: popart.AnchorReturnType("All")}),
-            deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.InferenceSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(
+                    1, {outId: popart.AnchorReturnType("All")}),
+                deviceInfo=device)
 
     assert e_info.value.args[0] == (
         "Input tensor 'input_0' must be specified in InputShapeInfo, as it has shape [fubar, 2, 32, 32], which uses an unknown value 'fubar'."
@@ -76,12 +77,13 @@ def test_model_with_unspecified_dim_params(tmpdir):
 def test_model_with_negative_dim_values(tmpdir):
     proto, outId = get_model_with_neg_dim_value(tmpdir)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=proto,
-            dataFlow=popart.DataFlow(1,
-                                     {outId: popart.AnchorReturnType("All")}),
-            deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.InferenceSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(
+                    1, {outId: popart.AnchorReturnType("All")}),
+                deviceInfo=device)
 
     assert e_info.value.args[0] == (
         "Input tensor 'input_0' must be specified in InputShapeInfo, as it has shape [-1, 2, 32, 32], which uses an unknown value '-1'."
@@ -94,8 +96,10 @@ def test_model_with_specified_dim_params(tmpdir):
     inputShapeInfo = popart.InputShapeInfo()
     inputShapeInfo.add("input_0", popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
-    session = popart.InferenceSession(
-        fnModel=proto,
-        dataFlow=popart.DataFlow(1, {outId: popart.AnchorReturnType("All")}),
-        deviceInfo=tu.create_test_device(),
-        inputShapeInfo=inputShapeInfo)
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1,
+                                     {outId: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+            inputShapeInfo=inputShapeInfo)

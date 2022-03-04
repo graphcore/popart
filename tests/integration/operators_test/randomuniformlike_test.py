@@ -29,18 +29,19 @@ def test_randomuniformlike(dtypes):
     out = builder.aiOnnx.randomuniformlike([T])
     builder.addOutputTensor(out)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            deviceInfo=device)
 
-    session.prepareDevice()
-    session.setRandomSeed(seed)
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.setRandomSeed(seed)
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({}, anchors)
+        session.run(stepio)
 
     # Check that the output has the correct shape and dtype
     assert anchors[out].shape == data.shape

@@ -38,24 +38,25 @@ def test_view_simplify(a, b, target):
     # This makes it easier to parse the IR.
     opts.outlineThreshold = 100000
 
-    sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                   deviceInfo=tu.create_test_device(),
-                                   dataFlow=popart.DataFlow(1, [o]))
-    sess.prepareDevice()
+    with tu.create_test_device() as device:
+        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [o]))
+        sess.prepareDevice()
 
-    anchors = sess.initAnchorArrays()
+        anchors = sess.initAnchorArrays()
 
-    stepio = popart.PyStepIO({d: d1}, anchors)
-    sess.weightsFromHost()
+        stepio = popart.PyStepIO({d: d1}, anchors)
+        sess.weightsFromHost()
 
-    sess.run(stepio)
-    ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
+        sess.run(stepio)
+        ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
 
-    def outputs_o(op):
-        return o in map(lambda t: t["name"], op["outputs"])
+        def outputs_o(op):
+            return o in map(lambda t: t["name"], op["outputs"])
 
-    def matches_target(op):
-        return target in op["type"] and outputs_o(op)
+        def matches_target(op):
+            return target in op["type"] and outputs_o(op)
 
-    assert len(list(filter(matches_target, ir["maingraph"]))) == 1
-    assert np.allclose(anchors[o].flatten(), d1.flatten())
+        assert len(list(filter(matches_target, ir["maingraph"]))) == 1
+        assert np.allclose(anchors[o].flatten(), d1.flatten())

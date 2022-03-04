@@ -52,37 +52,37 @@ def run_adaptive_mixed_mode(steps,
         out = builder.aiGraphcore.identityloss([m4])
         builder.addOutputTensor(out)
 
-        device = tu.create_test_device()
+        with tu.create_test_device() as device:
 
-        anchors = {}
+            anchors = {}
 
-        opts = popart.SessionOptions()
-        opts.enableOutliningCopyCostPruning = False
-        opts.outlineThreshold = -np.inf
-        opts.enableOutlining = enable_outlining
+            opts = popart.SessionOptions()
+            opts.enableOutliningCopyCostPruning = False
+            opts.outlineThreshold = -np.inf
+            opts.enableOutlining = enable_outlining
 
-        proto = builder.getModelProto()
+            proto = builder.getModelProto()
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=popart.DataFlow(1, anchors),
-                                         optimizer=opt_dict[0],
-                                         loss=out,
-                                         patterns=popart.Patterns(
-                                             popart.PatternsLevel.All),
-                                         userOptions=opts,
-                                         deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=popart.DataFlow(1, anchors),
+                optimizer=opt_dict[0],
+                loss=out,
+                patterns=popart.Patterns(popart.PatternsLevel.All),
+                userOptions=opts,
+                deviceInfo=device)
 
-        session.prepareDevice()
-        session.weightsFromHost()
+            session.prepareDevice()
+            session.weightsFromHost()
 
-        for i in range(steps):
-            if i in opt_dict:
-                session.updateOptimizerFromHost(opt_dict[i])
-            ip_data = np.ones((dsize, dsize), dtype=dtype)
-            stepio = popart.PyStepIO({ip: ip_data}, anchors)
-            session.run(stepio)
+            for i in range(steps):
+                if i in opt_dict:
+                    session.updateOptimizerFromHost(opt_dict[i])
+                ip_data = np.ones((dsize, dsize), dtype=dtype)
+                stepio = popart.PyStepIO({ip: ip_data}, anchors)
+                session.run(stepio)
 
-        session.modelToHost(str(tmpdir / model_file_name))
+            session.modelToHost(str(tmpdir / model_file_name))
 
     for i, opt_dict in enumerate(opt_dicts):
         print(f"Running adaptive_mixed_mode_{i}")

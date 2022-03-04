@@ -86,31 +86,31 @@ def test_full_recompute_pipelining():
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.Adam({}),
-                                         deviceInfo=tu.create_test_device(
-                                             numIpus=2,
-                                             opts={"compileIPUCode": False}))
+        with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
+                                                    False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=l1,
+                                             optimizer=popart.Adam({}),
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {x_in: input_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {x_in: input_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        for _ in range(10):
-            session.run(stepio)
+            for _ in range(10):
+                session.run(stepio)
 
-        if verify is not None:
-            verify(session, x_0)
+            if verify is not None:
+                verify(session, x_0)
 
-        return anchors
+            return anchors
 
     def verify(session, mid_stash):
         ''' Verify the the matmul in the main graphs is correct'''
@@ -197,31 +197,31 @@ def test_delayed_restore_operations():
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.Adam({}),
-                                         deviceInfo=tu.create_test_device(
-                                             numIpus=2,
-                                             opts={"compileIPUCode": False}))
+        with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
+                                                    False}) as device:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=opts,
+                                             loss=l1,
+                                             optimizer=popart.Adam({}),
+                                             deviceInfo=device)
 
-        session.prepareDevice()
+            session.prepareDevice()
 
-        session.weightsFromHost()
+            session.weightsFromHost()
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {x_in: input_data}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {x_in: input_data}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        for _ in range(10):
-            session.run(stepio)
+            for _ in range(10):
+                session.run(stepio)
 
-        if verify is not None:
-            verify(session)
+            if verify is not None:
+                verify(session)
 
-        return anchors
+            return anchors
 
     def verify(session):
         ''' Verify the the matmul in the main graphs is correct'''
@@ -293,22 +293,23 @@ def test_final_stage_recompute_0():
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     userOptions=opts,
-                                     loss=l1,
-                                     optimizer=popart.Adam({}),
-                                     deviceInfo=tu.create_test_device(
-                                         numIpus=2,
-                                         opts={"compileIPUCode": False}))
-    ''' Verify the the matmul in the main graphs is correct'''
-    ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
+                                                False}) as device:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.Adam({}),
+                                         deviceInfo=device)
+        ''' Verify the the matmul in the main graphs is correct'''
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    for op in ir["maingraph"]:
-        if x_recomp in map(lambda out: out["name"], op["outputs"]):
-            assert op["attributes"]["recompute"] == "YES"
-        elif x_no_recomp in map(lambda out: out["name"], op["outputs"]):
-            assert op["attributes"]["recompute"] == "NO"
+        for op in ir["maingraph"]:
+            if x_recomp in map(lambda out: out["name"], op["outputs"]):
+                assert op["attributes"]["recompute"] == "YES"
+            elif x_no_recomp in map(lambda out: out["name"], op["outputs"]):
+                assert op["attributes"]["recompute"] == "NO"
 
 
 @tu.requires_ipu_model
@@ -353,20 +354,21 @@ def test_final_stage_recompute_1():
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    s = popart.TrainingSession(fnModel=builder.getModelProto(),
-                               userOptions=opts,
-                               loss=loss,
-                               optimizer=popart.ConstSGD(0.1),
-                               deviceInfo=tu.create_test_device(
-                                   numIpus=2, opts={"compileIPUCode": False}),
-                               dataFlow=popart.DataFlow(3, [loss]))
-    ir = json.loads(s._serializeIr(popart.IrSerializationFormat.JSON))
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
+                                                False}) as device:
+        s = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                   userOptions=opts,
+                                   loss=loss,
+                                   optimizer=popart.ConstSGD(0.1),
+                                   deviceInfo=device,
+                                   dataFlow=popart.DataFlow(3, [loss]))
+        ir = json.loads(s._serializeIr(popart.IrSerializationFormat.JSON))
 
-    recomputed_ops = []
-    for op in ir["maingraph"]:
-        finalFwdPipelineStage = "1"
-        if op["attributes"]["__pipeline_stage"] == finalFwdPipelineStage:
-            if op["attributes"]["recompute"] == "YES":
-                recomputed_ops.append(op)
+        recomputed_ops = []
+        for op in ir["maingraph"]:
+            finalFwdPipelineStage = "1"
+            if op["attributes"]["__pipeline_stage"] == finalFwdPipelineStage:
+                if op["attributes"]["recompute"] == "YES":
+                    recomputed_ops.append(op)
 
-    assert len(recomputed_ops) == 0
+        assert len(recomputed_ops) == 0

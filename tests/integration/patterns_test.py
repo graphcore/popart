@@ -2,6 +2,7 @@
 # Test for basic importing
 
 from test_session import PopartTestSession
+import test_util as tu
 import numpy as np
 
 
@@ -98,4 +99,5 @@ def test_loss_inputs_untouched():
     session = PopartTestSession()
     session.mode = 'train'
     session.patterns = popart.Patterns(popart.PatternsLevel.Default)
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)

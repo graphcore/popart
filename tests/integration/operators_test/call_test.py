@@ -424,35 +424,36 @@ def test_call_grad_3(subgraphCopyingStrategy):
 
         trainingOptions = popart.SessionOptions()
         trainingOptions.subgraphCopyingStrategy = subgraphCopyingStrategy
-        trainingSession = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFlow=dataFlow,
-            loss=nll,
-            optimizer=popart.ConstSGD(0.001),
-            userOptions=trainingOptions,
-            deviceInfo=tu.create_test_device(),
-            patterns=popart.Patterns(popart.PatternsLevel.Default))
+        with tu.create_test_device() as device:
+            trainingSession = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=dataFlow,
+                loss=nll,
+                optimizer=popart.ConstSGD(0.001),
+                userOptions=trainingOptions,
+                deviceInfo=device,
+                patterns=popart.Patterns(popart.PatternsLevel.Default))
 
-        # Compile graph
-        trainingSession.prepareDevice()
+            # Compile graph
+            trainingSession.prepareDevice()
 
-        # Execute the training graph
-        # Create buffers to receive results from the execution
-        trainingAnchors = trainingSession.initAnchorArrays()
-        trainingStepio = popart.PyStepIO(
-            {
-                ip: trainingData,
-                lb: trainingDataLables
-            }, trainingAnchors)
+            # Execute the training graph
+            # Create buffers to receive results from the execution
+            trainingAnchors = trainingSession.initAnchorArrays()
+            trainingStepio = popart.PyStepIO(
+                {
+                    ip: trainingData,
+                    lb: trainingDataLables
+                }, trainingAnchors)
 
-        # Copy the weights to the device from the host
-        trainingSession.weightsFromHost()
+            # Copy the weights to the device from the host
+            trainingSession.weightsFromHost()
 
-        # Run the training graph
-        trainingSession.run(trainingStepio)
+            # Run the training graph
+            trainingSession.run(trainingStepio)
 
-        # Copy the weights to the host from the device
-        trainingSession.weightsToHost()
+            # Copy the weights to the host from the device
+            trainingSession.weightsToHost()
         return trainingAnchors
 
     sg_true = run_simple_model(True)
@@ -642,24 +643,25 @@ def test_stacked_subgraphs_2(subgraphCopyingStrategy):
         }
         opts = popart.SessionOptions()
         opts.subgraphCopyingStrategy = subgraphCopyingStrategy
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(
-                                             1, anchor_returns),
-                                         deviceInfo=tu.create_test_device(),
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=actIn,
-                                         userOptions=opts)
+        with tu.create_test_device() as device:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 1, anchor_returns),
+                                             deviceInfo=device,
+                                             optimizer=popart.ConstSGD(0.1),
+                                             loss=actIn,
+                                             userOptions=opts)
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        inputs = {in0: input_}
-        stepio = popart.PyStepIO(inputs, anchors)
+            inputs = {in0: input_}
+            stepio = popart.PyStepIO(inputs, anchors)
 
-        session.prepareDevice()
-        session.weightsFromHost()
+            session.prepareDevice()
+            session.weightsFromHost()
 
-        for _ in range(steps):
-            session.run(stepio)
+            for _ in range(steps):
+                session.run(stepio)
         return anchors
 
     sg_true = get_model(True, 5)

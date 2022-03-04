@@ -124,8 +124,9 @@ def test_gru(op_tester):
 
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03
-    op_tester.device = tu.create_test_device()
-    op_tester.run(init_builder, reference, 'infer')
+    with tu.create_test_device() as device:
+        op_tester.device = device
+        op_tester.run(init_builder, reference, 'infer')
 
 
 def test_gru_torch(op_tester):

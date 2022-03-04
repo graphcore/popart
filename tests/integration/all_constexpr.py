@@ -23,18 +23,19 @@ def test_all_constexpr():
     out = a3
     builder.addOutputTensor(out)
 
-    session = popart.InferenceSession(
-        fnModel=builder.getModelProto(),
-        dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-        patterns=popart.Patterns(popart.PatternsLevel.All),
-        deviceInfo=tu.create_test_device())
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
+            patterns=popart.Patterns(popart.PatternsLevel.All),
+            deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
+        session.prepareDevice()
+        session.weightsFromHost()
 
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO({}, anchors)
-    session.run(stepio)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO({}, anchors)
+        session.run(stepio)
 
     # check the result is correct
     assert (anchors[a3].shape == sum(datas).shape)

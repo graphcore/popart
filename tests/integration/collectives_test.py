@@ -20,20 +20,20 @@ def test_replicated_allreduce():
     opts.replicatedGraphCount = replicatedGraphCount
     numIpus = 2
 
-    device = tu.create_test_device(numIpus=numIpus)
-    session = popart.InferenceSession(fnModel=proto,
-                                      dataFlow=dataFlow,
-                                      userOptions=opts,
-                                      deviceInfo=device)
+    with tu.create_test_device(numIpus=numIpus) as device:
+        session = popart.InferenceSession(fnModel=proto,
+                                          dataFlow=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    inputs = {}
-    stepio = popart.PyStepIO(inputs, anchors)
+        inputs = {}
+        stepio = popart.PyStepIO(inputs, anchors)
 
-    session.run(stepio)
+        session.run(stepio)
 
     ground_truth = 2.0 * np.array(range(10), dtype=np.float32)
     for i in range(replicatedGraphCount):

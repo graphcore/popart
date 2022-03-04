@@ -513,29 +513,29 @@ def run_model(builder_fn,
     optimizer = popart.SGD({"defaultLearningRate": (0.1, True)})
     patterns = popart.Patterns()
 
-    device = tu.create_test_device(1, pattern=popart.SyncPattern.Full)
+    with tu.create_test_device(1, pattern=popart.SyncPattern.Full) as device:
 
-    if training:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         patterns=patterns,
-                                         deviceInfo=device)
-    else:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=options,
-                                          patterns=patterns,
-                                          deviceInfo=device)
+        if training:
+            session = popart.TrainingSession(fnModel=proto,
+                                             dataFlow=dataFlow,
+                                             userOptions=options,
+                                             loss=loss,
+                                             optimizer=optimizer,
+                                             patterns=patterns,
+                                             deviceInfo=device)
+        else:
+            session = popart.InferenceSession(fnModel=proto,
+                                              dataFlow=dataFlow,
+                                              userOptions=options,
+                                              patterns=patterns,
+                                              deviceInfo=device)
 
-    session.prepareDevice()
-    session.weightsFromHost()
-    session.setRandomSeed(seed)
-    anchors = session.initAnchorArrays()
-    stepio = popart.PyStepIO(inputs, anchors)
-    session.run(stepio)
+        session.prepareDevice()
+        session.weightsFromHost()
+        session.setRandomSeed(seed)
+        anchors = session.initAnchorArrays()
+        stepio = popart.PyStepIO(inputs, anchors)
+        session.run(stepio)
 
     return Run(anchors=anchors,
                seed=seed,

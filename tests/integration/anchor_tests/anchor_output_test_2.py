@@ -87,7 +87,7 @@ def test_anchor_output():
                 popart.reservedGradientPrefix() + w: art,
             })
 
-        opts, device = return_options({
+        opts, deviceContext = return_options({
             "ReplicationFactor": REPL_FACTOR,
             "Pipelining": False,
             "ReturnType": "ALL"
@@ -95,31 +95,32 @@ def test_anchor_output():
         opts.enablePrefetchDatastreams = prefetch
         opts.enableStochasticRounding = False
 
-        if device is None:
-            pytest.skip("Test needs to run on IPU, but none are available")
-        nlll = builder.aiGraphcore.nllloss([o, lb])
-        session = popart.TrainingSession(
-            builder.getModelProto(),
-            deviceInfo=device,
-            dataFlow=data_flow,
-            loss=nlll,
-            optimizer=popart.ConstSGD(LEARNING_RATE),
-            userOptions=opts)
+        with deviceContext as device:
+            if device is None:
+                pytest.skip("Test needs to run on IPU, but none are available")
+            nlll = builder.aiGraphcore.nllloss([o, lb])
+            session = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=data_flow,
+                loss=nlll,
+                optimizer=popart.ConstSGD(LEARNING_RATE),
+                userOptions=opts)
 
-        session.prepareDevice()
-        session.setRandomSeed(0)
+            session.prepareDevice()
+            session.setRandomSeed(0)
 
-        anchors = session.initAnchorArrays()
+            anchors = session.initAnchorArrays()
 
-        stepio = popart.PyStepIO({ip: in_array, lb: label_array}, anchors)
-        session.weightsFromHost()
+            stepio = popart.PyStepIO({ip: in_array, lb: label_array}, anchors)
+            session.weightsFromHost()
 
-        session.run(stepio)
-        return anchors
+            session.run(stepio)
+            return anchors
 
-    in1 = return_anchors(True)
-    in2 = return_anchors(False)
-    for key in in1:
-        print(key)
-        print(np.max(np.abs(in1[key] - in2[key])))
-        assert np.allclose(in1[key], in2[key], equal_nan=False)
+        in1 = return_anchors(True)
+        in2 = return_anchors(False)
+        for key in in1:
+            print(key)
+            print(np.max(np.abs(in1[key] - in2[key])))
+            assert np.allclose(in1[key], in2[key], equal_nan=False)

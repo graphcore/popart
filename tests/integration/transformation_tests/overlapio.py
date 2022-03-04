@@ -175,59 +175,60 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
     pat = popart.Patterns(popart.PatternsLevel.Default)
 
-    session = popart.TrainingSession(
-        fnModel=proto,
-        dataFlow=dataFlow,
-        userOptions=opts,
-        loss=loss,
-        optimizer=popart.ConstSGD(1e-6),
-        patterns=pat,
-        # Trying to use less than all the tiles throw an error like
-        #   popart_core.poplar_exception: Trying to access tile 72 on IPU
-        #   0 but the virtual graph only covers the following tiles on
-        #   that IPU: 0-63
-        # The error happens in a call to poplar made by gcl::perIPUTiles.
-        deviceInfo=tu.create_test_device(numIpus=replicas,
-                                         tilesPerIPU=tu.USE_ALL_TILES))
+    with tu.create_test_device(numIpus=replicas,
+                               tilesPerIPU=tu.USE_ALL_TILES) as device:
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=loss,
+            optimizer=popart.ConstSGD(1e-6),
+            patterns=pat,
+            # Trying to use less than all the tiles throw an error like
+            #   popart_core.poplar_exception: Trying to access tile 72 on IPU
+            #   0 but the virtual graph only covers the following tiles on
+            #   that IPU: 0-63
+            # The error happens in a call to poplar made by gcl::perIPUTiles.
+            deviceInfo=device)
 
-    anchors = session.initAnchorArrays()
+        anchors = session.initAnchorArrays()
 
-    session.prepareDevice()
+        session.prepareDevice()
 
-    np.random.seed(224488)
+        np.random.seed(224488)
 
-    session.weightsFromHost()
+        session.weightsFromHost()
 
-    warmup_iterations = 1
-    calc_iterations = 1
+        warmup_iterations = 1
+        calc_iterations = 1
 
-    for i in range(warmup_iterations + calc_iterations):
-        datainputs = {
-            input: (np.random.normal(
-                0, 0.05, (replicas * batches_per_step * accum_factor, 1, size,
-                          size)).astype(np.float32))
-            for input in inputs
+        for i in range(warmup_iterations + calc_iterations):
+            datainputs = {
+                input: (np.random.normal(
+                    0, 0.05, (replicas * batches_per_step * accum_factor, 1,
+                              size, size)).astype(np.float32))
+                for input in inputs
+            }
+            datainputs[labels] = np.random.randint(
+                0, size, (replicas * batches_per_step * accum_factor, 1, size))
+            stepio = popart.PyStepIO(datainputs, anchors)
+            session.run(stepio)
+
+        session.weightsToHost()
+        weights_data = {
+            w: np.zeros((1, size, size), dtype=np.float32)
+            for w in weights
         }
-        datainputs[labels] = np.random.randint(
-            0, size, (replicas * batches_per_step * accum_factor, 1, size))
-        stepio = popart.PyStepIO(datainputs, anchors)
-        session.run(stepio)
+        weights_read = popart.PyWeightsIO(weights_data)
+        session.readWeights(weights_read)
 
-    session.weightsToHost()
-    weights_data = {
-        w: np.zeros((1, size, size), dtype=np.float32)
-        for w in weights
-    }
-    weights_read = popart.PyWeightsIO(weights_data)
-    session.readWeights(weights_read)
+        for w in weights_data:
+            assert np.count_nonzero(np.isnan(weights_data[w])) == 0
 
-    for w in weights_data:
-        assert np.count_nonzero(np.isnan(weights_data[w])) == 0
+        report = session.getReport()
 
-    report = session.getReport()
-
-    overlapPercentage = get_compute_io_overlap_percentage(
-        report, warmup_iterations)
+        overlapPercentage = get_compute_io_overlap_percentage(
+            report, warmup_iterations)
 
     return overlapPercentage, weights_data
 

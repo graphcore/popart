@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
+import test_util as tu
 
 
 # Check that an error is thrown when adding an invalid name to excludePatterns
@@ -28,8 +29,9 @@ def test_name_checking():
 
     session = PopartTestSession()
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session.prepare(init_builder, device=device)
 
     assert e_info.value.args[0].startswith(
         "Invalid pattern name 'ThisPatternDoesNotExist'")
@@ -58,7 +60,8 @@ def test_basic_exclusion():
         return [x]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -95,7 +98,8 @@ def test_remove_one_identity():
         return [x]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))
@@ -139,7 +143,8 @@ def test_inplace_exclude():
         return [x]
 
     session = PopartTestSession()
-    session.prepare(init_builder)
+    with tu.create_test_device() as device:
+        session.prepare(init_builder, device=device)
 
     ir = json.loads(
         session._session._serializeIr(popart.IrSerializationFormat.JSON))

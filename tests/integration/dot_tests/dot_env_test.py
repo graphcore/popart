@@ -28,14 +28,14 @@ def test_basic():
         with tempfile.TemporaryDirectory() as tmpdir:
             opts.logDir = tmpdir
 
-            session = popart.InferenceSession(
-                fnModel=proto,
-                dataFlow=dataFlow,
-                userOptions=opts,
-                deviceInfo=tu.create_test_device())
+            with tu.create_test_device() as device:
+                session = popart.InferenceSession(fnModel=proto,
+                                                  dataFlow=dataFlow,
+                                                  userOptions=opts,
+                                                  deviceInfo=device)
 
-            dotFiles = list(Path(tmpdir).glob('*.dot'))
-            assert len(dotFiles) == expected_dot_file_count
+                dotFiles = list(Path(tmpdir).glob('*.dot'))
+                assert len(dotFiles) == expected_dot_file_count
 
     os.environ['POPART_DOT_CHECKS'] = ''
     run_test(0)
