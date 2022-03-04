@@ -9,22 +9,6 @@
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
-namespace {
-nonstd::optional<float> default_memory_proportion() {
-  nonstd::optional<float> default_value;
-  auto env_value = std::getenv("POPART_GATHER_MEMORY");
-
-  if (env_value != nullptr) {
-    default_value = std::strtof(env_value, 0);
-    popart::logging::debug("using POPART_GATHER_MEMORY={} for available memory "
-                           "proportion for GatherOp",
-                           *default_value);
-  }
-
-  return default_value;
-}
-} // namespace
-
 namespace popart {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
@@ -151,11 +135,9 @@ static OpCreator<GatherOp> gatherOpCreator(
     [](const OpCreatorInfo &info) {
       int64_t axis = info.attributes.getAttribute<Attributes::Int>("axis", 0);
 
-      nonstd::optional<float> available_memory_proportion =
-          default_memory_proportion();
+      nonstd::optional<float> available_memory_proportion;
 
-      if (info.attributes.hasAttribute(sAvailMemAttribute) &&
-          !available_memory_proportion.has_value()) {
+      if (info.attributes.hasAttribute(sAvailMemAttribute)) {
         available_memory_proportion =
             info.attributes.getAttribute<Attributes::Float>(sAvailMemAttribute);
       }
