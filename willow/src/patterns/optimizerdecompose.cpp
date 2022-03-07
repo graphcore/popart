@@ -28,12 +28,7 @@ void OptimizerDecompose::addStateTensor(Graph &graph,
     auto tp = onnxutil::getTensorProto(ir.getModel(), tensorId);
     graph.getTensors().addVarInit(tensorId, &tp, varset);
   } else {
-    // adjust number of elements w.r.t. initialization count
-    auto nelms_base = info.nelms();
-    auto nelms_repl =
-        varset.groupCount(ir.getSessionOptions().replicatedGraphCount);
-
-    std::vector<T> d(nelms_base * nelms_repl, static_cast<T>(initValue));
+    std::vector<T> d(info.nelms(), static_cast<T>(initValue));
     graph.getTensors().addVarInit(tensorId, info, d.data(), varset);
   }
 }
