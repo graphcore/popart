@@ -188,13 +188,30 @@ bool hasDataDependency(Op *const op,
                        const std::vector<Op *> &opSchedule,
                        const std::vector<Op *> &potentialDependencyOps);
 
+/**
+ * Enum type that specifies the type of edge between operations
+ */
+enum class EdgeType {
+  /// Expect a tensor edge between the operations
+  Tensor = 0,
+  /// Expect a topological constraint edge between operations
+  TopoCon
+};
+
 class Edge {
 public:
-  Edge() : fromIndex(-1), toIndex(-1), out(-1), in(-1) {}
+  Edge()
+      : fromIndex(-1), toIndex(-1), out(-1), in(-1),
+        edgeType(EdgeType::Tensor) {}
   Edge(int fromIndex_, int toIndex_)
-      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1) {}
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1),
+        edgeType(EdgeType::Tensor) {}
   Edge(int fromIndex_, int toIndex_, OutIndex out_, InIndex in_)
-      : fromIndex(fromIndex_), toIndex(toIndex_), out(out_), in(in_) {}
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(out_), in(in_),
+        edgeType(EdgeType::Tensor) {}
+  Edge(int fromIndex_, int toIndex_, EdgeType edgeType_)
+      : fromIndex(fromIndex_), toIndex(toIndex_), out(-1), in(-1),
+        edgeType(edgeType_) {}
 
   int getFrom() const { return fromIndex; }
   int getTo() const { return toIndex; }
@@ -202,6 +219,8 @@ public:
   OutIndex getOut() const { return out; }
 
   InIndex getIn() const { return in; }
+
+  EdgeType getEdgeType() const { return edgeType; }
 
 private:
   // The predicate vector index
@@ -214,6 +233,8 @@ private:
   // The input index on the to-Op to check (optional, defaults to -1 (check all
   // indices))
   InIndex in;
+  // If the edge is a topological constraint rather than a data path
+  EdgeType edgeType;
 };
 
 bool operator<(const Edge &a, const Edge &b);

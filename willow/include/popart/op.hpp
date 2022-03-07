@@ -352,7 +352,31 @@ public:
   // updates consumers of tensor with id TensorId
   void defaultConnectInTensor(InIndex, TensorId);
 
-  virtual void connectInTensor(InIndex, TensorId);
+  /**
+   * Connect existing tensor at index.
+   * \param index    Input index at which to connect the tensor.
+   * \param tensorId The ID of the existing tensor.
+   */
+  virtual void connectInTensor(InIndex index, TensorId tensorId);
+
+  /**
+   * Connect existing tensor at index with source virtual graph.
+   * \param index    Input index at which to connect the tensor.
+   * \param tensorId The ID of the existing tensor.
+   * \param vgid     Virtual graph on which the existing tensor resides.
+   */
+  virtual void
+  connectInTensor(InIndex inIndex, TensorId tensorId, VGraphId vgid);
+
+  /**
+   * Dispatcher to resolve issues with templated inheritance overloads.
+   * Will automatically derive the virtual graph ID of the input when required.
+   *
+   * Connect existing tensor at index with source virtual graph.
+   * \param index    Input index at which to connect the tensor.
+   * \param tensorId The ID of the existing tensor.
+   */
+  void connectInTensorDispatch(InIndex inIndex, TensorId tensorId);
 
   /**
    * Connects the input tensor analogously to the other Op, which is useful
@@ -918,6 +942,12 @@ public:
     }
     return result;
   }
+
+  /**
+   * Check if an Op is an IpuCopyOp that copies between pipeline stages
+   * \return true if it is an IpuCopyOp that copies between pipeline stages
+   */
+  bool isPipelineIpuCopyOp() const;
 
 protected:
   // Attempt to get the data of an input tensor. This method will throw an

@@ -248,10 +248,19 @@ public:
 
   bool consumersAllPreLoss() const;
 
-  // Any of the consumers modify this tensor
-  bool isModified() const;
+  /**
+   * Check if any of the consumers modify this tensor
+   * \param considerLoopInput If explicit loop inputs should be considered
+   *                          as being modified. If false, only operations
+   *                          modifying the tensor inplace will be considered.
+   * \return                  True if the tensor is modified, otherwise false.
+   */
+  bool isModified(bool considerLoopInput = true) const;
 
-  // Any of the consumers alias this tensor
+  /**
+   * Check if any of the consumers alias this tensor
+   * \return       True if the tensor is aliased to any output, otherwise false.
+   */
   bool isAliased() const;
 
   // All regions modified by any of the Ops specified.

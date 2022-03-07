@@ -80,6 +80,8 @@ std::ostream &operator<<(std::ostream &, AnchorReturnTypeId);
  */
 class AnchorReturnType {
 public:
+  /// Default constructor
+  AnchorReturnType();
   /// Constructor.
   /// \param artString - the string to convert to an #AnchorReturnTypeId value.
   /// The following values are acceptable (case insensitive):

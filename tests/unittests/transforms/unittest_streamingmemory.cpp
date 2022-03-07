@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE(BasicReplicatedTensorShardingTest) {
                               {2, 6},
                               {2, 4},
                               {2, 8},
-                              {3, 6, 0, 1},
+                              {3, 6, 0, 0},
                               {5, 7},
                               {6, 7},
                               {7, 8}};
@@ -484,7 +484,7 @@ BOOST_AUTO_TEST_CASE(DistributedReplicatedTensorShardingTest) {
                               {2, 7},
                               {2, 4},
                               {2, 9},
-                              {3, 7, 0, 1},
+                              {3, 7, 0, 0},
                               {5, 6},
                               {6, 8},
                               {7, 8},

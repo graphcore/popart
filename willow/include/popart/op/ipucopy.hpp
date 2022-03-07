@@ -8,24 +8,24 @@
 
 namespace popart {
 
-using SourceIpuMap    = std::map<TensorId, uint64_t>;
-using SourceTensorMap = std::map<uint64_t, std::vector<TensorId>>;
+using SourceIpuMap    = std::map<TensorId, VGraphId>;
+using SourceTensorMap = std::map<VGraphId, std::vector<TensorId>>;
 
 class IpuCopyOp : public Op {
 public:
   IpuCopyOp(const OperatorIdentifier &_opid,
-            uint64_t _destIpu,
+            VGraphId _destIpu,
             const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 
-  uint64_t getDestIpu() const { return destIpu; }
+  VGraphId getDestIpu() const { return destIpu; }
   const SourceIpuMap &getSourceIpus() const;
   const SourceTensorMap &getSourceTensors() const;
-  uint64_t getSourceIpu(const TensorId &tenId) const;
-  uint64_t getSourceIpu() const;
-  uint64_t getMinSourceIpu() const;
-  uint64_t getMaxSourceIpu() const;
+  VGraphId getSourceIpu(const TensorId &tenId) const;
+  VGraphId getSourceIpu() const;
+  VGraphId getMinSourceIpu() const;
+  VGraphId getMaxSourceIpu() const;
 
   void setSourceIpus(const SourceIpuMap sourceIpus);
   void setSourceTensors(const SourceTensorMap sourceTensors);
@@ -43,7 +43,7 @@ public:
 
   bool copiesOptimizerTensors() const final;
 
-  void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
+  void connectInTensor(InIndex, TensorId, VGraphId sourceIpu) override;
 
   // A string of the form "[ sourceIpus ] --> [ destIpu ]"
   std::string getFromToStr() const;
@@ -74,8 +74,9 @@ private:
 
   SourceIpuMap sourceIpus;
   SourceTensorMap sourceTensors;
-  uint64_t destIpu;
+  VGraphId destIpu;
 };
+
 } // namespace popart
 
 #endif

@@ -34,7 +34,7 @@ void bindIpuCopy(py::module &m) {
            py::arg("destIpu"),
            py::arg("settings"))
       .def("connectInTensor",
-           py::overload_cast<InIndex, TensorId, uint64_t>(
+           py::overload_cast<InIndex, TensorId, VGraphId>(
                &IpuCopyOp::connectInTensor))
       .def("getDestIpu", &IpuCopyOp::getDestIpu)
       .def("getSourceIpu",

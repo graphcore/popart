@@ -17,7 +17,9 @@
 
 namespace popart {
 
+// Forward declare
 class BackwardsGraphCreatorHelper;
+class IpuCopyOp;
 
 namespace onnxpasses {
 class IOnnxToOnnx;
@@ -370,7 +372,7 @@ OP *Graph::createConnectedOp(const std::map<InIndex, TensorId> &in,
   OP *op = createOp<OP>(std::forward<Args>(args)...);
 
   for (auto &input : in) {
-    op->connectInTensor(input.first, input.second);
+    op->connectInTensorDispatch(input.first, input.second);
   }
 
   for (auto &output : out) {

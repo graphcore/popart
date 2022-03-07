@@ -468,12 +468,94 @@ public:
     return opVec;
   }
 
+  bool contains(Op *op) {
+    for (auto indexAndOp : ops) {
+      if (indexAndOp.second == op) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Ops that match the structure and predicate at index
   std::map<int, Op *> ops;
 
   // Number of Ops before the current predicate index can be processed
   std::map<int, int> befores;
 };
+
+// No incoming edges; search candidates among all operations
+void processInitialMatch(PartialMatch &match,
+                         Graph &graph,
+                         const OpPreds &preds,
+                         int index,
+                         std::set<Op *, POpCmp> &candidates) {
+  auto &gOps = graph.getOps();
+  // Test all operations against the predicate
+  for (auto &gOp : gOps) {
+    if (preds.at(index)(gOp.second.get()) &&
+        !match.contains(gOp.second.get())) {
+      candidates.insert(gOp.second.get());
+    }
+  }
+}
+
+// Incoming edges; search candidates starting from accepted operations
+void processEdgeMatch(PartialMatch &match,
+                      Edges inEdges,
+                      const OpPreds &preds,
+                      int index,
+                      std::set<Op *, POpCmp> &candidates) {
+  bool first = true;
+  for (auto &inEdge : inEdges) {
+    auto fromOp = match.ops.at(inEdge.getFrom());
+    std::set<Tensor *> tensors;
+    if (inEdge.getEdgeType() == EdgeType::Tensor) {
+      if (inEdge.getOut() == -1) {
+        auto fromTensors = fromOp->output->tensors();
+        tensors.insert(fromTensors.begin(), fromTensors.end());
+      } else {
+        if (fromOp->hasOutput(inEdge.getOut())) {
+          tensors.insert(fromOp->output->tensor(inEdge.getOut()));
+        }
+      }
+    }
+    std::set<Op *, POpCmp> localCandidates;
+    if (inEdge.getEdgeType() == EdgeType::TopoCon) {
+      for (auto c : fromOp->getGraph().topoCons->getAfters(fromOp)) {
+        if (preds.at(index)(c) && !match.contains(c)) {
+          localCandidates.insert(c);
+        }
+      }
+    } else {
+      for (auto t : tensors) {
+        for (auto c : t->consumers.getOps()) {
+          if (((inEdge.getIn() == -1) ||
+               ((c->input->hasIndex(inEdge.getIn())) &&
+                (c->input->tensor(inEdge.getIn()) == t))) &&
+              preds.at(index)(c) && !match.contains(c)) {
+            localCandidates.insert(c);
+          }
+        }
+      }
+    }
+    if (first) {
+      candidates = localCandidates;
+    } else {
+      std::set<Op *, POpCmp> intersectCandidates;
+      std::set_intersection(
+          candidates.begin(),
+          candidates.end(),
+          localCandidates.begin(),
+          localCandidates.end(),
+          std::inserter(intersectCandidates, intersectCandidates.begin()),
+          [](const Op *a, const Op *b) { return a->id < b->id; });
+      candidates = intersectCandidates;
+    }
+    first = false;
+  }
+}
+
 } // namespace
 
 bool operator<(const Edge &a, const Edge &b) {
@@ -499,6 +581,7 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
   }
 
   for (auto &edge : edges) {
+    // Add all predicates occuring before the current predicate
     befores[edge.getTo()] += 1;
   }
 
@@ -514,6 +597,7 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
     partialMatches.pop_back();
 
     int index = -1;
+    // Find index with no "before" dependencies
     for (auto &before : match.befores) {
       if (before.second == 0 &&
           match.ops.find(before.first) == match.ops.end()) {
@@ -524,54 +608,13 @@ findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
     if (index != -1) {
       std::set<Op *, POpCmp> candidates;
 
+      // All edges to the current predicate
       auto inEdges = inEdgeMap.find(index);
 
       if (inEdges == inEdgeMap.end() || inEdges->second.size() == 0) {
-        auto &gOps = graph.getOps();
-        for (auto &gOp : gOps) {
-          if (preds.at(index)(gOp.second.get())) {
-            candidates.insert(gOp.second.get());
-          }
-        }
+        processInitialMatch(match, graph, preds, index, candidates);
       } else {
-        bool first = true;
-        for (auto &inEdge : inEdges->second) {
-          auto fromOp = match.ops.at(inEdge.getFrom());
-          std::set<Tensor *> tensors;
-          if (inEdge.getOut() == -1) {
-            auto fromTensors = fromOp->output->tensors();
-            tensors.insert(fromTensors.begin(), fromTensors.end());
-          } else {
-            if (fromOp->hasOutput(inEdge.getOut())) {
-              tensors.insert(fromOp->output->tensor(inEdge.getOut()));
-            }
-          }
-          std::set<Op *, POpCmp> localCandidates;
-          for (auto t : tensors) {
-            for (auto c : t->consumers.getOps()) {
-              if (((inEdge.getIn() == -1) ||
-                   ((c->input->hasIndex(inEdge.getIn())) &&
-                    (c->input->tensor(inEdge.getIn()) == t))) &&
-                  preds.at(index)(c)) {
-                localCandidates.insert(c);
-              }
-            }
-          }
-          if (first) {
-            candidates = localCandidates;
-          } else {
-            std::set<Op *, POpCmp> intersectCandidates;
-            std::set_intersection(
-                candidates.begin(),
-                candidates.end(),
-                localCandidates.begin(),
-                localCandidates.end(),
-                std::inserter(intersectCandidates, intersectCandidates.begin()),
-                [](const Op *a, const Op *b) { return a->id < b->id; });
-            candidates = intersectCandidates;
-          }
-          first = false;
-        }
+        processEdgeMatch(match, inEdges->second, preds, index, candidates);
       }
 
       for (auto candidate : candidates) {

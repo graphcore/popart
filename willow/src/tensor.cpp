@@ -68,7 +68,7 @@ bool Tensor::isAliased() const {
   return false;
 }
 
-bool Tensor::isModified() const {
+bool Tensor::isModified(bool considerLoopInput) const {
 
   constexpr const char *const ctxt{"Tensor::isModified"};
   logging::ir::trace("{} for Tensor {},", ctxt, str());
@@ -87,7 +87,7 @@ bool Tensor::isModified() const {
     }
   }
   // All explicit loop inputs will be modified within the subgraph
-  if (isExplicitLoopInput()) {
+  if (considerLoopInput && isExplicitLoopInput()) {
     return true;
   }
   return false;

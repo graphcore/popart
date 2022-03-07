@@ -173,6 +173,10 @@ void LoopOp::addLoopInput(InIndex index,
   }
   if (hasInput(index)) {
     disconnectInTensor(index);
+    removeModified(index);
+    for (auto &out : output->tensorMap()) {
+      removeAlias(index, out.first);
+    }
   }
   connectInTensor(index, tensorId);
   getCalledGraph().addInput(opInToSubgraphInIndex(index),
@@ -199,6 +203,9 @@ void LoopOp::addLoopOutput(OutIndex index,
   if (output->hasIndex(index)) {
     Tensor *t = output->tensorMap().at(index);
     disconnectOutTensor(t);
+    for (auto &in : input->tensorMap()) {
+      removeAlias(in.first, index);
+    }
   }
   if (getIr().containsTensor(tensorId)) {
     Tensor *t = getIr().getTensor(tensorId);

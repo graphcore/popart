@@ -113,8 +113,10 @@ void bindOp(py::module &m) {
       // TODO: T41718 op specific tests
       .def("optionalInputs", &Op::optionalInputs)
       .def("defaultConnectInTensor", &Op::defaultConnectInTensor)
-      .def("connectInTensor", &Op::connectInTensor)   // virtual
-      .def("connectOutTensor", &Op::connectOutTensor) // virtual
+      .def(
+          "connectInTensor",
+          py::overload_cast<InIndex, TensorId>(&Op::connectInTensor)) // virtual
+      .def("connectOutTensor", &Op::connectOutTensor)                 // virtual
       .def("disconnectInTensor",
            py::overload_cast<Tensor *>(&Op::disconnectInTensor))
       .def("disconnectInTensor",

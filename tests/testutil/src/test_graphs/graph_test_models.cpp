@@ -2,6 +2,7 @@
 #include <testutil/test_graphs/graph_test_models.hpp>
 
 #include <popart/adam.hpp>
+#include <popart/aliasesmap.hpp>
 #include <popart/clipnormsettings.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
@@ -21,6 +22,7 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
@@ -1152,6 +1154,272 @@ TraverseCallSiteTestModel::TraverseCallSiteTestModel() {
                                   Onnx::CustomOperators::Call_1,
                                   subgraph,
                                   gSettings.copy("Call0"));
+
+  ir.updateVertices();
+}
+
+ExplicitPipelineTestModel0::ExplicitPipelineTestModel0(
+    int numPipelineStages,
+    int numParallelPaths,
+    std::map<int, InputSettings> inputExStrategy,
+    std::map<int, AnchorReturnType> outputExStrategy) {
+
+  SessionOptions options;
+
+  // Enable pipelining, IO tiles, explicit IR
+  options.enablePipelining = true;
+  options.numIOTiles       = 32;
+  options.enableExplicitIR(true);
+
+  ir.setUserOptions(options);
+
+  // Main graph
+  graphPt = &ir.getMainGraph();
+
+  // Loop body graph
+  subgraphPt = &ir.createGraph({"sub"});
+
+  auto &graph    = *graphPt;
+  auto &subgraph = *subgraphPt;
+
+  // Settings for operations in the main graph
+  Op::Settings gSettings(graph, "op", {});
+
+  // Settings for operations in the loop body graph
+  Op::Settings sgSettings(subgraph, "sub/op", subgraph.getScope());
+
+  // For setting HostStore exchange strategies
+  AnchorReturnTypeMap artm;
+
+  // Add mandatory loop iterator tensor to subgraph (is not an output)
+  TensorId loopItScopedId = addScope(subgraph, reservedLoopIteratorPrefix());
+  subgraph.addInput(loopItScopedId, TensorInfo(DataType::INT32, {}));
+
+  // Add mandatory loop condition tensor to subgraph (is also an output)
+  TensorId loopCondScopedId = addScope(subgraph, reservedLoopCondPrefix());
+  subgraph.addInput(loopCondScopedId, TensorInfo(DataType::BOOL, {}));
+  subgraph.markAsOutput(loopCondScopedId);
+
+  // Create the LoopOp
+  loopOp = graph.createOp<LoopOp>(
+      Onnx::Operators::Loop_11, gSettings.copy("loop"), subgraph);
+
+  // Reuse same shape and data for all tensors
+  TensorInfo tInfo{DataType::FLOAT, {4, 4}};
+  float tData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+
+  for (size_t i = 0; i < numParallelPaths; ++i) {
+    // Process settings, set defaults
+    if (inputExStrategy.find(i) == inputExStrategy.end()) {
+      inputExStrategy[i] =
+          InputSettings{TileSet::Compute, ExchangeStrategy::JustInTime};
+    }
+    if (outputExStrategy.find(i) == outputExStrategy.end()) {
+      outputExStrategy[i] = AnchorReturnType{
+          "all", TileSet::Compute, ExchangeStrategy::JustInTime};
+    }
+
+    // Declare tensor names
+
+    // AI: Accumulator in tensor
+    TensorId accin = "AIt_" + std::to_string(i);
+
+    // AO: Accumulator out tensor
+    TensorId accout = "AOt_" + std::to_string(i);
+
+    // ISt: HostLoad input stream
+    TensorId instream = "ISt_" + std::to_string(i);
+
+    // OSt: HostStore output stream
+    TensorId outstream = "OSt_" + std::to_string(i);
+
+    // IIt: Init
+    TensorId init = "IIt_" + std::to_string(i);
+
+    // ILt: Input
+    TensorId input = "ILt_" + std::to_string(i);
+
+    // ILIOCt_: Input
+    TensorId iocinput = "ILIOCt_" + std::to_string(i);
+
+    // Add accumulator
+    graph.getTensors().addVarInit(accin, tInfo, static_cast<void *>(&tData));
+    loopOp->addLoopInput(LoopOp::getFirstInputInIndex() + i,
+                         accin,
+                         addScope(subgraph, accin),
+                         false);
+
+    // Mark loop input (accumulator) as modified
+    loopOp->addModified(
+        LoopOp::getFirstInputInIndex() + i,
+        {view::Region::getFull(tInfo.shape(), view::AccessType::ReadWrite)});
+
+    // Add input stream
+    graph.getTensors().addStream(instream, tInfo, inputExStrategy.at(i));
+
+    // InitOp + HostLoadOp: Load one input for one loop iteration
+    auto initOp = subgraph.createConnectedOp<InitOp>(
+        {},
+        {{InitOp::getOutIndex(), addScope(subgraph, init)}},
+        Onnx::CustomOperators::Init_1,
+        tInfo,
+        TensorType::ActGrad,
+        InitType::Zero,
+        sgSettings.copy("Init_" + std::to_string(i)));
+
+    initOp->settings.tileSet = inputExStrategy.at(i).tileSet();
+    initOp->setPipelineStage(0);
+    initOp->setVirtualGraphId(0);
+
+    auto hostLoadOp = subgraph.createConnectedOp<HostLoadOp>(
+        {{HostLoadOp::getLocalTensorInIndex(), addScope(subgraph, init)}},
+        {{HostLoadOp::getLocalTensorOutIndex(), addScope(subgraph, input)}},
+        Onnx::CustomOperators::HostLoad,
+        sgSettings.copy("HostLoad_" + std::to_string(i)),
+        instream);
+
+    hostLoadOp->settings.tileSet = inputExStrategy.at(i).tileSet();
+    hostLoadOp->setPipelineStage(0);
+    hostLoadOp->setVirtualGraphId(0);
+
+    // Insert copy betweeen IO and compute tiles
+    if (inputExStrategy.at(i).tileSet() == TileSet::IO) {
+      auto ioTileCopyOp = subgraph.createConnectedOp<IoTileCopyOp>(
+          {{IoTileCopyOp::getInIndex(), addScope(subgraph, input)}},
+          {{IoTileCopyOp::getOutIndex(), addScope(subgraph, iocinput)}},
+          Onnx::CustomOperators::IoTileCopy,
+          gSettings.copy("IpuCopyToIo_" + std::to_string(i)));
+      ioTileCopyOp->settings.tileSet = TileSet::Compute;
+      ioTileCopyOp->setPipelineStage(0);
+      ioTileCopyOp->setVirtualGraphId(0);
+      input = iocinput;
+    }
+
+    // Final output
+    TensorId output;
+
+    // Add one matmul per pipeline stage
+    for (size_t p = 0; p < numPipelineStages; ++p) {
+      // Wt: Weight tensor for the matmul
+      TensorId w = "Wt_" + std::to_string(i) + "_" + std::to_string(p);
+      // Mt: Matmul output tensor
+      TensorId moutput = "Mt" + std::to_string(i) + "_" + std::to_string(p);
+      // Ct: IpuCopy output tensor
+      TensorId coutput = "Ct" + std::to_string(i) + "_" + std::to_string(p);
+
+      graph.getTensors().addVarInit(w, tInfo, static_cast<void *>(&tData));
+      loopOp->addLoopInput(LoopOp::getFirstInputInIndex() + loopOp->input->n(),
+                           w,
+                           addScope(subgraph, w),
+                           false);
+
+      auto matMulOp = subgraph.createConnectedOp<MatMulOp>(
+          {{MatMulOp::getLhsInIndex(), addScope(subgraph, input)},
+           {MatMulOp::getRhsInIndex(), addScope(subgraph, w)}},
+          {{MatMulOp::getOutIndex(), addScope(subgraph, moutput)}},
+          Onnx::Operators::MatMul_1,
+          sgSettings.copy("MatMul_" + std::to_string(i) + "_" +
+                          std::to_string(p)),
+          0.6f,
+          MatMulBaseOp::SerialiseSettings{
+              MatMulBaseOp::SerialiseSettings::Mode::None, 0, false},
+          DataType::FLOAT,
+          MatMulPartialsType::FLOAT);
+
+      matMulOp->setPipelineStage(p);
+      matMulOp->setVirtualGraphId(p);
+
+      // If not switching pipeline stages, the next input is the matmul output
+      input = moutput;
+
+      if (p < numPipelineStages - 1) {
+        auto ipuCopyOp = subgraph.createConnectedOp<IpuCopyOp>(
+            {{0, addScope(subgraph, moutput)}},
+            {{0, addScope(subgraph, coutput)}},
+            Onnx::CustomOperators::IpuCopy,
+            static_cast<VGraphId>(p + 1),
+            sgSettings.copy("IpuCopy_" + std::to_string(i)));
+
+        ipuCopyOp->setPipelineStage(p);
+        ipuCopyOp->setVirtualGraphId(p);
+
+        // If switching pipeline stages, the next input is the copy output
+        input = coutput;
+      }
+
+      output = moutput;
+    }
+
+    // Update the accumulator
+    auto accumulateOp = subgraph.createConnectedOp<AccumulateOp>(
+        {{AccumulateOp::getVarToUpdateInIndex(), addScope(subgraph, accin)},
+         {AccumulateOp::getUpdaterInIndex(), addScope(subgraph, output)}},
+        {{AccumulateOp::getUpdatedVarOutIndex(), addScope(subgraph, accout)}},
+        AccumulationType::Add,
+        OptimizerValue{},
+        sgSettings.copy("Accum_" + std::to_string(i)));
+
+    accumulateOp->setPipelineStage(numPipelineStages - 1);
+    accumulateOp->setVirtualGraphId(numPipelineStages - 1);
+
+    // Output the updated accumulator (both input modified and loop carried)
+    loopOp->addLoopOutput(LoopOp::getFirstOutputOutIndex() + i,
+                          accout,
+                          addScope(subgraph, accout),
+                          false);
+
+    // Mark the updated accumulator as an aliased LoopOp input -> output
+    AliasesMap aliasesMap{subgraph};
+    Aliases &aliases = aliasesMap.getAliases(subgraph.id);
+    auto fwdAliasRegions =
+        aliases.getChainsFromTo(subgraph.getTensor(addScope(subgraph, accin)),
+                                subgraph.getTensor(addScope(subgraph, accout)));
+    auto bwdAliasRegions =
+        aliases.getChainsFromTo(subgraph.getTensor(addScope(subgraph, accout)),
+                                subgraph.getTensor(addScope(subgraph, accin)));
+    loopOp->addAlias(LoopOp::getFirstInputInIndex() + i,
+                     LoopOp::getFirstOutputOutIndex() + i,
+                     fwdAliasRegions,
+                     bwdAliasRegions);
+
+    // IOCOt: Ouptut of the copy from compute to IO tiles
+    TensorId iocoutput = "IOCOt_" + std::to_string(i);
+
+    // Insert copy betweeen IO and compute tiles
+    if (outputExStrategy.at(i).tileSet() == TileSet::IO) {
+      auto ioTileCopyOp = subgraph.createConnectedOp<IoTileCopyOp>(
+          {{IoTileCopyOp::getInIndex(), addScope(subgraph, output)}},
+          {{IoTileCopyOp::getOutIndex(), addScope(subgraph, iocoutput)}},
+          Onnx::CustomOperators::IoTileCopy,
+          gSettings.copy("IpuCopyToIo_" + std::to_string(i)));
+      ioTileCopyOp->settings.tileSet = TileSet::IO;
+      ioTileCopyOp->setPipelineStage(numPipelineStages - 1);
+      ioTileCopyOp->setVirtualGraphId(numPipelineStages - 1);
+      output = iocoutput;
+    }
+
+    // Store the output of one loop iteration
+    auto hostStoreOp = subgraph.createConnectedOp<HostStoreOp>(
+        {{HostStoreOp::getLocalTensorInIndex(), addScope(subgraph, output)}},
+        {},
+        Onnx::CustomOperators::HostStore,
+        sgSettings.copy("HostStore_" + std::to_string(i)),
+        outstream);
+
+    // Set the output exchange strategy
+    artm[outstream] = outputExStrategy.at(i);
+
+    hostStoreOp->settings.tileSet = outputExStrategy.at(i).tileSet();
+    hostStoreOp->setPipelineStage(numPipelineStages - 1);
+    hostStoreOp->setVirtualGraphId(numPipelineStages - 1);
+  }
+
+  loopOp->setup();
+  loopOp->setTripCountValue(numPipelineStages + 2);
+
+  // Set output strategies (anchors / HostStore)
+  df = DataFlow(1, artm);
+  ir.setDataFlow(df);
 
   ir.updateVertices();
 }

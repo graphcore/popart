@@ -9,6 +9,11 @@
 
 namespace popart {
 
+AnchorReturnType::AnchorReturnType()
+    : artStr_("all"), artId_(getIdFromStr("all")), returnPeriod_(0),
+      tileSet_(TileSet::Compute),
+      exchangeStrategy_(ExchangeStrategy::JustInTime) {}
+
 AnchorReturnType::AnchorReturnType(std::string artString,
                                    TileSet tileSet,
                                    ExchangeStrategy exchangeStrategy)

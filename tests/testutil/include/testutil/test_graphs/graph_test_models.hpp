@@ -309,4 +309,62 @@ public:
   TraverseCallSiteTestModel();
 };
 
+/**
+ * Describes a multi-stage pipeline model, as it would occur before
+ * decomposing the loop in the explicit pipeline transform.
+ * Contains HostLoadOp, HostStoreOp, IpuCopyOp, AccumulateOp, MatMulOp,
+ * IoTileCopyOp.
+ *
+ * p0,..., pn: numPipelineStages
+ *
+ *                                     (A0 and A1 are two accumulators that
+ *                                      will be passed through and updated
+ *                                      inside of the loop by AccumulateOp)
+ *
+ *                                        A0           A1
+ * LoopOp(numPipelineStages + 2):         |            |
+ *                                        |            |
+ *         (numParallelPaths times)       |            |
+ * p0      HostLoad ...  HostLoad         |            |
+ *         |             |                |            |
+ *        (IoTileCopy)   (IoTileCopy)     |            |
+ *         |             |                |            |
+ * p1      MatMul        MatMul           |            |
+ *         |             |                |            |
+ *         IpuCopy       IpuCopy          |            |
+ *         |             |                |            |
+ *         MatMul        MatMul           |            |
+ *         ...           ...              |            |
+ *         |             |                |            |
+ * pn      MatMul        Matmul ----------|------> Accumulate
+ *         |     \-------|----------> Accumulate       |
+ *        (IoTileCopy)   (IoTileCopy)     |            |
+ *         |             |                |            |
+ *         HostStore     HostStore        |            |
+ *                                        A0'          A1'
+ *
+ *                                (A0', A1': Updated, aliased accumulator state)
+ */
+class ExplicitPipelineTestModel0 : public GraphTestModel {
+public:
+  /**
+   * Construct the ExplicitPipelineTestModel
+   * \param numPipelineStages  Number of pipeline stages.
+   * \param numParallelPaths   Number of paths through each pipeline stage.
+   * \param inputExStrategy    TileSet and ExchangeStrategy for each input of
+   *                           each path.
+   * \param outputExStrategy   TileSet and ExchangeStrategy for each output of
+   *                           each path.
+   */
+  ExplicitPipelineTestModel0(
+      int numPipelineStages,
+      int numParallelPaths,
+      std::map<int, popart::InputSettings> inputExStrategy,
+      std::map<int, popart::AnchorReturnType> outputExStrategy);
+
+  popart::LoopOp *loopOp;
+  popart::Graph *graphPt;
+  popart::Graph *subgraphPt;
+};
+
 #endif

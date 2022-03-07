@@ -35,6 +35,10 @@ IdentityOp::inplacePriorityDefault() const {
   return {{Onnx::CustomOperators::IdentityInplace, 10}};
 }
 
+IdentityInplaceOp::IdentityInplaceOp(const OperatorIdentifier &_opid,
+                                     const Op::Settings &settings_)
+    : IdentityOp(_opid, settings_) {}
+
 IdentityInplaceOp::IdentityInplaceOp(const IdentityOp &op)
     : IdentityOp(Onnx::CustomOperators::IdentityInplace, op.settings) {}
 

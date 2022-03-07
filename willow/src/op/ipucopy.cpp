@@ -21,7 +21,7 @@ std::string IpuCopyOp::getFromToStr() const {
 }
 
 IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
-                     uint64_t _destIpu,
+                     VGraphId _destIpu,
                      const Op::Settings &settings_)
     : Op(_opid, settings_), destIpu(_destIpu) {
   if (getIr().getSessionOptions().executionPhaseSettings.phases < 2 &&
@@ -65,11 +65,11 @@ void IpuCopyOp::setSourceTensors(const SourceTensorMap sourceTensors_) {
   sourceTensors = sourceTensors_;
 }
 
-uint64_t IpuCopyOp::getSourceIpu(const TensorId &tenId) const {
+VGraphId IpuCopyOp::getSourceIpu(const TensorId &tenId) const {
   return sourceIpus.at(tenId);
 }
 
-uint64_t IpuCopyOp::getSourceIpu() const {
+VGraphId IpuCopyOp::getSourceIpu() const {
   auto sourceIpu = sourceIpus.begin()->second;
   // check all source ipus are the same
   for (auto id_source : sourceIpus) {
@@ -83,7 +83,7 @@ uint64_t IpuCopyOp::getSourceIpu() const {
   return sourceIpu;
 }
 
-uint64_t IpuCopyOp::getMinSourceIpu() const {
+VGraphId IpuCopyOp::getMinSourceIpu() const {
   auto minSourceIpu = sourceIpus.begin()->second;
 
   for (auto id_source : sourceIpus) {
@@ -94,7 +94,7 @@ uint64_t IpuCopyOp::getMinSourceIpu() const {
   return minSourceIpu;
 }
 
-uint64_t IpuCopyOp::getMaxSourceIpu() const {
+VGraphId IpuCopyOp::getMaxSourceIpu() const {
   auto maxSourceIpu = sourceIpus.begin()->second;
 
   for (auto id_source : sourceIpus) {
@@ -140,7 +140,7 @@ bool IpuCopyOp::copiesOptimizerTensors() const {
 
 void IpuCopyOp::connectInTensor(InIndex inIndex,
                                 TensorId tenId,
-                                uint64_t sourceIpu) {
+                                VGraphId sourceIpu) {
   sourceIpus.insert({tenId, sourceIpu});
   if (sourceTensors.find(sourceIpu) == sourceTensors.end()) {
     sourceTensors.insert({sourceIpu, {tenId}});

@@ -185,6 +185,18 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
   defaultConnectInTensor(inIndex, tenId);
 }
 
+void Op::connectInTensor(InIndex inIndex, TensorId tenId, VGraphId vgid) {
+  connectInTensor(inIndex, tenId);
+}
+
+void Op::connectInTensorDispatch(InIndex inIndex, TensorId tensorId) {
+  VGraphId vgid = -1;
+  if (isIpuCopyOp()) {
+    vgid = getGraph().getTensor(tensorId)->getVirtualGraphIdUnsafe();
+  }
+  connectInTensor(inIndex, tensorId, vgid);
+}
+
 void Op::connectInTensorLike(const Op *other, InIndex index, TensorId tenId) {
   IpuCopyOp *dstOp       = dynamic_cast<IpuCopyOp *>(this);
   const IpuCopyOp *srcOp = dynamic_cast<const IpuCopyOp *>(other);
@@ -1572,6 +1584,29 @@ Op *Op::getFollowingOp(OutIndex outIndex) {
 std::vector<Op *> Op::getFollowingOps(OutIndex outIndex) {
   auto t = outTensor(outIndex);
   return t->consumers.getOps();
+}
+
+bool Op::isPipelineIpuCopyOp() const {
+  if (auto ipuCopyOp = dynamic_cast<const IpuCopyOp *>(this)) {
+
+    std::set<PipelineStage> inputStages;
+    std::set<PipelineStage> outputStages;
+
+    for (auto &input : ipuCopyOp->input->tensors()) {
+      auto stages = input->getPipelineStages();
+      inputStages.insert(stages.begin(), stages.end());
+    }
+
+    for (auto &output : ipuCopyOp->output->tensors()) {
+      auto stages = output->getPipelineStages();
+      outputStages.insert(stages.begin(), stages.end());
+    }
+
+    if (inputStages != outputStages) {
+      return true;
+    }
+  }
+  return false;
 }
 
 } // namespace popart
