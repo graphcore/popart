@@ -17,7 +17,7 @@
 
 # Packages we depend on at build-time:
 wheel
-jinja2==2.11.3
+jinja2==3.0.3
 libclang==12.0.0
 mypy==0.910
 onnx==1.6.0
