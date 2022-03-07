@@ -21,6 +21,14 @@ public:
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 
+protected:
+  // Use for both the outplace variant and as a fallback for the inplace
+  // variants
+  void outplace(snap::program::Sequence &prog,
+                const snap::Tensor &x,
+                const snap::Tensor &y,
+                const snap::Tensor &condition) const;
+
 private:
   virtual void doGrow(snap::program::Sequence &,
                       const snap::Tensor &,

@@ -76,6 +76,19 @@ view::RegMap BaseWhereOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
+void BaseWhereOpx::outplace(snap::program::Sequence &prog,
+                            const snap::Tensor &x,
+                            const snap::Tensor &y,
+                            const snap::Tensor &condition) const {
+  const auto result = popops::select(graph().getPoplarGraph(),
+                                     x.getPoplarTensor(),
+                                     y.getPoplarTensor(),
+                                     condition.getPoplarTensor(),
+                                     prog.getPoplarSequence(),
+                                     debugContext());
+  setOutTensor(WhereOp::outIndex(), snap::Tensor{result, graph()});
+}
+
 InIndex BaseWhereOpx::unwindIndex() const {
   if (op_p->inShape(WhereOp::xInIndex()) ==
       op_p->outShape(WhereOp::outIndex())) {
@@ -104,14 +117,7 @@ void WhereOpx::doGrow(snap::program::Sequence &prog,
                       const snap::Tensor &x,
                       const snap::Tensor &y,
                       const snap::Tensor &condition) const {
-
-  const auto result = popops::select(graph().getPoplarGraph(),
-                                     x.getPoplarTensor(),
-                                     y.getPoplarTensor(),
-                                     condition.getPoplarTensor(),
-                                     prog.getPoplarSequence(),
-                                     debugContext());
-  setOutTensor(WhereOp::outIndex(), snap::Tensor{result, graph()});
+  outplace(prog, x, y, condition);
 }
 
 WhereLhsInplaceOpx::WhereLhsInplaceOpx(Op *op, Devicex *devicex)
@@ -123,6 +129,11 @@ void WhereLhsInplaceOpx::doGrow(snap::program::Sequence &prog,
                                 const snap::Tensor &x,
                                 const snap::Tensor &y,
                                 const snap::Tensor &condition) const {
+  // Fallback to outplace if not parallel writable
+  if (!x.isParallelWriteable()) {
+    outplace(prog, x, y, condition);
+    return;
+  }
 
   popops::selectInPlace(graph().getPoplarGraph(),
                         x.getPoplarTensor(),
@@ -143,6 +154,12 @@ void WhereRhsInplaceOpx::doGrow(snap::program::Sequence &prog,
                                 const snap::Tensor &x,
                                 const snap::Tensor &y,
                                 const snap::Tensor &condition) const {
+  // Fallback to outplace if not parallel writable
+  if (!y.isParallelWriteable()) {
+    outplace(prog, x, y, condition);
+    return;
+  }
+
   // Reverse the order and use not to reverse condition
   auto expr = pe::Select(pe::_1, pe::_2, pe::Not(pe::_3));
 
