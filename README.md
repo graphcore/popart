@@ -102,10 +102,10 @@ pip3 install torch==1.9.1+cpu torchvision==0.10.1+cpu -f https://download.pytorc
 pip3 install mypy==0.910
 ```
 
-### **jinja2** (version 2.11.3 or compatible)
+### **jinja2** (version 3.0.3 or compatible)
 
 ```sh
-pip3 install Jinja2==2.11.3
+pip3 install Jinja2=3.0.3
 ```
 
 ### **libclang** (version 12.0.0 or compatible)
