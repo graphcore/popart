@@ -352,6 +352,8 @@ void AliasModelGrower::addAliaserConstraints(
   logging::ir::trace("Inserting constraints for AliasModel, Graph \"{}\"",
                      graph.id);
 
+  std::map<ExecutionContext, std::vector<Op *>> contexts;
+
   // Insert constraints:
   for (auto from : opSubset) {
     const auto tos        = graph.topoCons->getAfters(from);
@@ -370,7 +372,41 @@ void AliasModelGrower::addAliaserConstraints(
         }
       }
     }
+    contexts[from->settings.executionContext].push_back(from);
   }
+
+  std::vector<Op *> prev;
+  auto context_constraints = [&](ExecutionContext context) {
+    // This function adds constraints between the ops in `prev` and
+    // `contexts[context]` Then sets `prev` to `contexts[context]`. By
+    // repeatedly calling this function the constaints will create an ordering
+    // between ExecutionContexts
+    auto next = contexts.find(context);
+    if (next != contexts.end()) {
+      for (auto &from : prev) {
+        const auto memoryFrom = aliasModel.get().getAll(from->id);
+        for (auto &to : next->second) {
+          const auto memoryTo = aliasModel.get().getAll(to->id);
+          for (auto f : memoryFrom) {
+            for (auto t : memoryTo) {
+              aliasModel.get().g.constraint(f, t);
+            }
+          }
+        }
+      }
+      prev = next->second;
+    }
+  };
+  // Execution contexts are represented in the main graph.
+  // From a scheduling perspective they act like topological constraints where
+  // the order is as below:
+  //    `WeightsFromHost` -> `Normal` -> `AccumulateOuter` -> `WeightsToHost`
+  // When adding the constraints to the aliasModel it is important to add this
+  // ordering as otherwise the model may incorrectly detect ambiguous execution.
+  context_constraints(ExecutionContext::WeightsFromHostFragment);
+  context_constraints(ExecutionContext::Normal);
+  context_constraints(ExecutionContext::AccumulateOuterFragment);
+  context_constraints(ExecutionContext::WeightsToHostFragment);
 }
 
 std::string AliasModelGrower::ambiguitySummary(const Graph &graph,
