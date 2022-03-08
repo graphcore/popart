@@ -7,6 +7,24 @@
 #include <transforms/autodiff/stitcherfactory.hpp>
 
 namespace popart {
+namespace {
+/**
+ * Check the graph for modifying ops. Autodiff does not work on modifying ops,
+ * e.g. those created explicitly by the user in popXL.
+ *
+ * \param graph The graph to check.
+ */
+void checkForModifyingOps(Graph &graph) {
+  for (auto &opPair : graph.getOps()) {
+    if (opPair.second->modifies()) {
+      throw error("The graph {} contains a modifying op: {}. Autodiff cannot "
+                  "be used on graphs with inplace modifying ops.",
+                  graph.id,
+                  opPair.second->debugName());
+    }
+  }
+}
+} // namespace
 
 GradGrowerGraph::GradGrowerGraph(AutodiffIrInterface &dep)
     : GradGrowerGraphInterface{}, AutodiffHelper{dep},
@@ -38,6 +56,10 @@ FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
 
     // Check if we don't already have a backwards graph for this subgraph.
     if (calledGraphGradInfo.find(fwdGraph.id) == calledGraphGradInfo.end()) {
+
+      // Check this graph has no modifying ops that would cause problems in
+      // autodiff.
+      checkForModifyingOps(fwdGraph);
 
       // Create a fresh ID.
       GraphId bwdGraphId = bwdGraphCreator.genNewBwdGraphId(fwdGraph.id);

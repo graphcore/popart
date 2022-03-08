@@ -8,6 +8,7 @@ import popxl
 import popxl.ops as ops
 
 from popxl.transforms.autodiff import ExpectedConnectionType
+from typing import Callable
 
 
 @pytest.mark.parametrize(
@@ -125,3 +126,67 @@ def test_grad_graph_info_repr():
             re.match(
                 r"GradGraphInfo\[(.|\n)*?graph\=(.|\n)*?expected_inputs\=(.|\n)*?expected_outputs\=(.|\n)*?\]",
                 bwd_info_repr))
+
+
+def modifying_subgraph_1(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
+    # Modifying
+    # will raise.
+    a += b
+    return a
+
+
+def modifying_subgraph_2(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
+    # Modifying
+    # will raise.
+    a = ops.gelu_(a)
+    c = a + b
+    return c
+
+
+def modifying_subgraph_3(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
+    # Inplace but not modifying (concat_ doesn't modify.)
+    # will not raise.
+    a = ops.concat_([a, b], axis=0)
+    return a
+
+
+def modifying_subgraph_4(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
+    # Modifying
+    # will raise.
+    return ops.var_updates.accumulate_(a, b, 0.1)
+
+
+@pytest.mark.parametrize("subgraph,willraise", [(modifying_subgraph_1, True),
+                                                (modifying_subgraph_2, True),
+                                                (modifying_subgraph_3, False),
+                                                (modifying_subgraph_4, True)])
+def test_modifying_ops(subgraph: Callable, willraise: bool):
+    """Test that an error is/isn't thrown when trying to autodiff a subgraph with/without
+    a modifying op in.
+
+    Args:
+        subgraph (Callable): The subgraph to use, see above for definitions.
+        willraise (bool): Whether or not the graph created will raise an error.
+    """
+    import popart
+
+    ir = popxl.Ir()
+    with ir.main_graph:
+        a = popxl.variable([1], name="a")
+        b = popxl.variable([1], name="b")
+        fwd_graph = ir.create_graph(subgraph, a.spec, b.spec)
+        fwd_call_info = ops.call_with_info(fwd_graph, a, b)
+
+        y = fwd_call_info.outputs[0]
+        d2h = popxl.d2h_stream(y.shape, y.dtype)
+        ops.host_store(d2h, y)
+
+        if willraise:
+            with pytest.raises(popart.popart_exception) as e_info:
+                _ = popxl.transforms.autodiff(fwd_graph)
+
+            assert (e_info.value.args[0].startswith(
+                f"The graph {subgraph.__name__}_subgraph(0) contains a modifying op"
+            ))
+        else:
+            _ = popxl.transforms.autodiff(fwd_graph)
