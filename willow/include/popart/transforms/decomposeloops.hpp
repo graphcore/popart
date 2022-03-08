@@ -105,7 +105,7 @@ public:
   virtual bool operator<(const DecomposeLoopOpType &other) const = 0;
 
   virtual std::ostream &output(std::ostream &) const = 0;
-  virtual ~DecomposeLoopOpType(){};
+  virtual ~DecomposeLoopOpType() {}
 
   virtual bool operator==(const DecomposeLoopOpType &other) const = 0;
   virtual bool operator!=(const DecomposeLoopOpType &other) const = 0;
@@ -144,7 +144,7 @@ public:
    */
   DecomposeLoopOpPipelineType()
       : ps(unusedPipelineStage), type(DecomposeLoopOpTypeEnum::AuxiliaryBefore),
-        pipelineIpuCopy(false), computeLike(false){};
+        pipelineIpuCopy(false), computeLike(false) {}
 
   /**
    * Create Op type for pipelining.
@@ -277,7 +277,7 @@ private:
  */
 class DecomposeLoopOpTypeWrapper {
 public:
-  DecomposeLoopOpTypeWrapper() : type(nullptr){};
+  DecomposeLoopOpTypeWrapper() : type(nullptr) {}
 
   template <typename T>
   DecomposeLoopOpTypeWrapper(T t) : type(std::make_shared<T>(t)) {}

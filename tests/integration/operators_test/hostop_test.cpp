@@ -158,7 +158,6 @@ public:
   static const popart::popx::OpxCreator<HostOpx> creator;
 };
 
-constexpr popart::OpVersion version = 1;
 const popart::OperatorIdentifier HostOp::identifier{"test.custom_ops",
                                                     "HostOp",
                                                     popart::OpVersion{1},

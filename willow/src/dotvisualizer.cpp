@@ -223,7 +223,7 @@ void DotVisualizer::write(const Ir &ir) {
     strm(gString, ir) << "\", color = " << getOpNodeColor(n) << "];\n";
 
     auto addEdge =
-        [this, &generateNodeName, &ir, &gString](
+        [this, &gString, &ir](
             const std::string &srcNodeName,
             const std::string &dstNodeName,
             const std::map<TensorId, view::Regions> &aliasedRegions,
@@ -257,7 +257,7 @@ void DotVisualizer::write(const Ir &ir) {
         };
 
     auto addEdgeToConsumer =
-        [this, &addEdge, &generateNodeName, &ir, &gString](
+        [&addEdge, &generateNodeName](
             std::string srcNodeName,
             Op *c,
             const std::map<TensorId, view::Regions> &aliasedRegions,

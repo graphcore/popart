@@ -76,8 +76,8 @@ DecomposeLoopOpIOOverlapType::DecomposeLoopOpIOOverlapType(
     DecomposeLoopOpTypeEnum type_)
     : DecomposeLoopOpType(), type(type_) {}
 
-bool DecomposeLoopOpIOOverlapType::
-operator<(const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::operator<(
+    const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() < castOther->getType();
@@ -85,8 +85,8 @@ operator<(const DecomposeLoopOpType &other) const {
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::
-operator==(const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::operator==(
+    const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() == castOther->getType();
@@ -94,8 +94,8 @@ operator==(const DecomposeLoopOpType &other) const {
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::
-operator!=(const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::operator!=(
+    const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() != castOther->getType();
@@ -602,7 +602,7 @@ public:
         (isOnIOTiles && DecomposeLoops::isComputeLikeIOOp(
                             model_.getComputeLikeExchangeStrategies(), op)) ||
         isOnComputeTiles;
-  };
+  }
 
   /**
    * Register any type of operation occuring before the current operation.
@@ -617,7 +617,7 @@ public:
     if (it != opToDecomposeLoopOpType.end()) {
       beforeTypes.insert(model.unwrap(it->second));
     }
-  };
+  }
 
   /**
    * Register any type of operation occuring after the current operation.
@@ -632,7 +632,7 @@ public:
     if (it != opToDecomposeLoopOpType.end()) {
       afterTypes.insert(model.unwrap(it->second));
     }
-  };
+  }
 
   /**
    * Register all relations the current Op has to operations occuring `before`

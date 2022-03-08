@@ -251,7 +251,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopOverlapClassifyTestOverlap) {
     };
     edges.insert({p - 2, p - 1});
     for (int j = 0; j < numStages; ++j) {
-      preds[p++] = [i, &opTypeMap](const Op *op) {
+      preds[p++] = [&opTypeMap](const Op *op) {
         return op->isConvertibleTo<MatMulOp>() &&
                op->settings.tileSet == TileSet::Compute &&
                opTypeMap.at(op->getGraph().getOp(op->id)) ==
@@ -260,7 +260,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopOverlapClassifyTestOverlap) {
       };
       edges.insert({p - 2, p - 1});
       if (j < numStages - 1) {
-        preds[p++] = [i, &opTypeMap](const Op *op) {
+        preds[p++] = [&opTypeMap](const Op *op) {
           return op->isConvertibleTo<IpuCopyOp>() &&
                  op->settings.tileSet == TileSet::Compute &&
                  opTypeMap.at(op->getGraph().getOp(op->id)) ==
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopOverlapClassifyTestOverlap) {
         edges.insert({p - 2, p - 1});
       }
     }
-    preds[p++] = [i, &opTypeMap](const Op *op) {
+    preds[p++] = [&opTypeMap](const Op *op) {
       return op->isConvertibleTo<AccumulateOp>() &&
              op->settings.tileSet == TileSet::Compute &&
              opTypeMap.at(op->getGraph().getOp(op->id)) ==

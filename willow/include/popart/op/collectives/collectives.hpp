@@ -49,7 +49,7 @@ public:
   virtual bool hasCorrespondingLinkedIndexTensor(Tensor *t);
   bool hasCorrespondingLinkedIndexTensor(InIndex in) {
     return hasCorrespondingLinkedIndexTensor(inTensor(in));
-  };
+  }
   virtual Tensor *getCorrespondingLinkedIndexTensor(Tensor *t);
   Tensor *getCorrespondingLinkedIndexTensor(InIndex in) {
     return getCorrespondingLinkedIndexTensor(inTensor(in));
@@ -90,7 +90,7 @@ public:
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
-  void setup();
+  void setup() override;
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex in) const;
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex out) const;
   std::vector<bool> getModifiesIndexInplace() const {
