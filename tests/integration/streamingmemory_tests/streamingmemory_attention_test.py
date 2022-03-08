@@ -521,7 +521,7 @@ def test_attention_streamingmemory(tmpdir):
         test_results.append(run_test(index, test_option))
         index += 1
 
-    gt_onnx = onnx.load(str(tmpdir / f"streamingmemory_attention_0.onnx"))
+    gt_onnx = onnx.load(str(tmpdir / "streamingmemory_attention_0.onnx"))
 
     for i in range(1, index):
         print(f"Testing run {i}: {test_variants[i]}")

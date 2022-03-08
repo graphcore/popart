@@ -208,7 +208,7 @@ class Ir:
         return f'Ir(graphs: {len(self.graphs)})'
 
     def __repr__(self):
-        x = f'Ir:'
+        x = 'Ir:'
         for graph in self.graphs.keys():
             x += f'\n  {graph}'
         return x
@@ -230,10 +230,10 @@ def load_from_file(x):
 
 
 def print_usage():
-    print(f'Usage:')
+    print('Usage:')
     print(f'  python3 -i {sys.argv[0]} path_to_ir_dump.json')
     print()
-    print(f"This will start an interactive python session, with the "
+    print("This will start an interactive python session, with the "
           "ir dump loaded to the variable `ir'")
 
 

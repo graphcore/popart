@@ -291,7 +291,7 @@ class Attribute:
                         "reduce") >= 0 and self.name == "axes":
                     return "nonstd::optional<std::vector<int64_t>>()"
                 else:
-                    return f'std::vector<int64_t>()'
+                    return 'std::vector<int64_t>()'
             elif self.type == onnx.defs.OpSchema.AttrType.FLOATS:
                 return 'std::vector<float>()'
             elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
@@ -635,9 +635,7 @@ class Builder;
 
                         f.write("    {}(".format(op.CppName()))
                         if op.inputs > 0:
-                            f.write(
-                                "const std::vector<TensorId>& args,\n".format(
-                                    op.CppName()))
+                            f.write("const std::vector<TensorId>& args,\n")
 
                         # In the case of a variable number outputs, set the number of ouputs
                         if op.min_output != op.max_output:
@@ -906,7 +904,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
 
                 namespace py = pybind11;
                 using namespace popart;
-                
+
                 PYBIND11_MODULE(popart_opset{opset_version}, m) {{
                 """)
                 # Add all ops in the this op set
@@ -1004,7 +1002,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                             f.write(f"return opset.{op.CppName()}(")
 
                             if op.inputs > 0:
-                                f.write("args,\n".format(op.CppName()))
+                                f.write("args,\n")
 
                             if op.min_output != op.max_output:
                                 f.write("num_outputs,\n")
@@ -1035,8 +1033,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
                                     f.write(f" = {a.DefaultValue()}")
                                 f.write(",\n")
 
-                        f.write(
-                            f"py::arg(\"debugContext\") = std::string(),\n")
+                        f.write("py::arg(\"debugContext\") = std::string(),\n")
                         f.write(
                             f"OPSET{opset_version}_DOC(popart, {op.CppName()}, opset{opset_version}))\n"
                         )

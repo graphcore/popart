@@ -63,7 +63,7 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
         {
             0: t.id,
             1: index.id
-        }, {0: g._create_tensor_id(f"dynamic_slice_out")}, opid, axes, sizes,
+        }, {0: g._create_tensor_id("dynamic_slice_out")}, opid, axes, sizes,
         no_overlap, settings)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

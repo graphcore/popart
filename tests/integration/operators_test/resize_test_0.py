@@ -322,17 +322,17 @@ def test_resize_11_debug():
         print('Creating session')
         sess = popart.InferenceSession(proto, dataFlow, device)
 
-        print(f'Initializing anchor arrays')
+        print('Initializing anchor arrays')
         anchors = sess.initAnchorArrays()
 
-        print(f'Preparinng device')
+        print('Preparinng device')
         sess.prepareDevice()
 
-        print(f'Creating stepio')
+        print('Creating stepio')
         inputs = {d: data}
         stepio = popart.PyStepIO(inputs, anchors)
 
-        print(f'Running model')
+        print('Running model')
         sess.run(stepio)
 
-        print(f'Fin')
+        print('Fin')

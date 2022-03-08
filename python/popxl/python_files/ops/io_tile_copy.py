@@ -42,7 +42,7 @@ def io_tile_copy(t: Tensor) -> Tensor:
             0: t.id,
         },
         {
-            0: g._create_tensor_id(t.name + f"_iotilecopy"),
+            0: g._create_tensor_id(t.name + "_iotilecopy"),
         },
         opid,
         settings,

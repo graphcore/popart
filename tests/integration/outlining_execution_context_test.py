@@ -91,7 +91,7 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
             session.run(stepio)
 
-            file_path = str(tmpdir / f"outlining_execution_context_model.onnx")
+            file_path = str(tmpdir / "outlining_execution_context_model.onnx")
             session.modelToHost(file_path)
             post_proto = onnx.load(file_path)
 

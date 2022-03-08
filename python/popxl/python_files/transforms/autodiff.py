@@ -124,10 +124,10 @@ class GradGraphInfo:
         """Return a string representation for this GradGraphInfo object."""
         result = "GradGraphInfo[\n"
         result += f"  graph={self.graph.id}\n"
-        result += f"  expected_inputs=[\n"
+        result += "  expected_inputs=[\n"
         result += "".join([f"    {repr(ec)}\n" for ec in self.expected_inputs])
         result += "  ]\n"
-        result += f"  expected_outputs=[\n"
+        result += "  expected_outputs=[\n"
         result += "".join(
             [f"    {repr(ec)}\n" for ec in self.expected_outputs])
         result += "  ]\n"

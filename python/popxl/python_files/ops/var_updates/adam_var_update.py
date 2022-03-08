@@ -75,7 +75,7 @@ def adam_var_update(
 
     op = pb_g.createConnectedOp_AdamVarUpdateOp(
         ins,
-        {0: g._create_tensor_id(f"adam_var_update_out")},
+        {0: g._create_tensor_id("adam_var_update_out")},
         lr_ov,
         max_weight_norm_ov,
         settings,

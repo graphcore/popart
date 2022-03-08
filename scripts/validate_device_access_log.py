@@ -123,7 +123,7 @@ def validate_events(input_file):
                 elif last_event == 'try-attach-success':
                     ensure_event(['detach', 'detach-on-destruct'], last_event)
                 elif last_event == 'try-attach-fail':
-                    fail(f"encountered 'try-attach-fail")
+                    fail("encountered 'try-attach-fail")
                 elif last_event == 'detach':
                     ensure_event(['attach', 'select'], last_event)
                 elif last_event == 'detach-on-destruct':

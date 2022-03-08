@@ -54,7 +54,7 @@ def getModelProto():
 
 
 def compare_weights(session0, session1, tmpdir):
-    ref_path = str(tmpdir / f"ref_session.onnx")
+    ref_path = str(tmpdir / "ref_session.onnx")
     session0.modelToHost(ref_path)
     session0_proto = onnx.load(ref_path)
     session0_weights = {}

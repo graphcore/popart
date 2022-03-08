@@ -74,7 +74,7 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
             0: t.id,
             1: index.id,
             2: t_update.id
-        }, {0: g._create_tensor_id(f"dynamic_update_out")}, opid, axes, sizes,
+        }, {0: g._create_tensor_id("dynamic_update_out")}, opid, axes, sizes,
         no_overlap, settings, t_update._pb_tensor.info)
 
     return Tensor._from_pb_tensor(op.outTensor(0))
@@ -148,7 +148,7 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
             0: t.id,
             1: index.id,
             2: t_update.id
-        }, {0: g._create_tensor_id(f"dynamicupdateinplace_out")}, opid, axes,
+        }, {0: g._create_tensor_id("dynamicupdateinplace_out")}, opid, axes,
         sizes, no_overlap, settings, t_update._pb_tensor.info)
 
     return Tensor._from_pb_tensor(op.outTensor(0))

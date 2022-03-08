@@ -1,7 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
-import test_util as tu
 
 
 class PopartTestSession:
@@ -55,7 +54,7 @@ class PopartTestSession:
             print(f'Returning loss from builder {self._builder._loss}')
             return self._builder._loss
         else:
-            print(f'Returning default loss')
+            print('Returning default loss')
             return anchorIds[0]
 
     def _get_session(self, **kwargs):

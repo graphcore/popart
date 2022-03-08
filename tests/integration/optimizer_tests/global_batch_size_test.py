@@ -169,7 +169,7 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
 
             session.run(stepio)
 
-            file_path = str(tmpdir / f"model_test.onnx")
+            file_path = str(tmpdir / "model_test.onnx")
             session.modelToHost(file_path)
             post_proto = onnx.load(file_path)
 

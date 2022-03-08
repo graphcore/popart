@@ -159,7 +159,7 @@ def test_basic_host_load_output(enable_pipelining: bool):
                 bundle["session"].weightsFromHost()
                 bundle["session"].run(bundle["stepio"])
                 bundle["session"].weightsToHost()
-            print(f"\tChecking", bundle_false["out"], "vs", bundle_true["out"])
+            print("\tChecking", bundle_false["out"], "vs", bundle_true["out"])
             assert np.allclose(bundle_false["anchors"][bundle_false["out"]],
                                bundle_true["anchors"][bundle_true["out"]])
 

@@ -808,7 +808,7 @@ def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
         remote_buffer.meta_shape = np_data.shape
     elif remote_buffer.meta_shape != np_data.shape:
         raise ValueError(
-            f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {var.shape}. "
+            f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {np_data.shape}. "
             f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
         )
 
