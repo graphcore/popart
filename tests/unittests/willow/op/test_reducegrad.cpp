@@ -48,6 +48,7 @@ BOOST_AUTO_TEST_CASE(TestReduceGradOutputDataTypeIsChangeable) {
       Shape{1, 1, 1});
 
   BOOST_TEST(g.getTensors().get(gradIn)->info.dataType() == originalDataType);
+  BOOST_TEST(g.getTensors().get(gradOut)->info.dataType() == originalDataType);
   DataType newDataType = DataType::FLOAT16; // != originalDataType
 
   // 2.
@@ -56,4 +57,5 @@ BOOST_AUTO_TEST_CASE(TestReduceGradOutputDataTypeIsChangeable) {
 
   // 3.
   BOOST_TEST(g.getTensors().get(gradIn)->info.dataType() == newDataType);
+  BOOST_TEST(g.getTensors().get(gradOut)->info.dataType() == newDataType);
 }

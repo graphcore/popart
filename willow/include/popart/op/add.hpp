@@ -58,7 +58,7 @@ public:
   std::unique_ptr<Op> clone() const final;
 
 private:
-  TensorInfo forward_op_arg_info;
+  Shape forward_op_arg_shape;
 };
 
 class AddArg1GradOp : public ReduceSumOp {
@@ -72,7 +72,7 @@ public:
   std::unique_ptr<Op> clone() const final;
 
 private:
-  TensorInfo forward_op_arg_info;
+  Shape forward_op_arg_shape;
 };
 
 } // namespace popart

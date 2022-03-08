@@ -53,7 +53,7 @@ AddArg0GradOp::AddArg0GradOp(const Op &op, const std::vector<int64_t> &_axes)
                   _axes,
                   false,
                   op.getSettings()),
-      forward_op_arg_info(op.inInfo(AddOp::getArg0InIndex())) {}
+      forward_op_arg_shape(op.inShape(AddOp::getArg0InIndex())) {}
 
 const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -67,7 +67,10 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
   return inInfo;
 }
 
-void AddArg0GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
+void AddArg0GradOp::setup() {
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
+                            forward_op_arg_shape};
+}
 
 std::unique_ptr<Op> AddArg0GradOp::clone() const {
   return std::make_unique<AddArg0GradOp>(*this);
@@ -78,7 +81,7 @@ AddArg1GradOp::AddArg1GradOp(const Op &op, const std::vector<int64_t> &_axes)
                   _axes,
                   false,
                   op.getSettings()),
-      forward_op_arg_info(op.inInfo(AddOp::getArg1InIndex())) {}
+      forward_op_arg_shape(op.inShape(AddOp::getArg1InIndex())) {}
 
 const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -95,7 +98,10 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
   return inInfo;
 }
 
-void AddArg1GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
+void AddArg1GradOp::setup() {
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
+                            forward_op_arg_shape};
+}
 
 std::unique_ptr<Op> AddArg1GradOp::clone() const {
   return std::make_unique<AddArg1GradOp>(*this);
