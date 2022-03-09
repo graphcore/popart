@@ -85,12 +85,12 @@ class TestPythonDocExamples(ExamplesTester):
 
     def test_documentation_popxl_basic_subgraph(self):
         """Test the popxl basic subgraph example"""
-        filename = "basic_subgraph_popxl.py"
+        filename = "basic_graph_popxl.py"
         self.run_python(filename, self.base_path)
 
     def test_documentation_popxl_create_multi_subgraph(self):
         """Test the popxl create multiple subgraph example"""
-        filename = "create_multi_subgraphs_from_same_func_popxl.py"
+        filename = "create_multi_graphs_from_same_func_popxl.py"
         self.run_python(filename, self.base_path)
 
     def test_documentation_popxl_multi_callsites_graph_input(self):
@@ -105,12 +105,12 @@ class TestPythonDocExamples(ExamplesTester):
 
     def test_documentation_popxl_repeat_0(self):
         """Test the popxl basic repeat example"""
-        filename = "repeat_subgraph_popxl_0.py"
+        filename = "repeat_graph_popxl_0.py"
         self.run_python(filename, self.base_path)
 
     def test_documentation_popxl_repeat_1(self):
         """Test the popxl subgraph in parent in repeat example"""
-        filename = "repeat_subgraph_popxl_1.py"
+        filename = "repeat_graph_popxl_1.py"
         self.run_python(filename, self.base_path)
 
 

@@ -13,7 +13,7 @@ You can get your the graph context by using:
 
 * ``get_current_graph()`` also called ``gcg()``.
 
-  Returns the current subgraph from the current context.
+  Returns the current graph from the current context.
 
 * ``get_main_graph()``, also called ``gmg()``.
 
