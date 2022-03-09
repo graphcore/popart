@@ -41,7 +41,7 @@ def host_load(h2d_stream: HostToDeviceStream,
         pb_main = gmg()._pb_graph
         name = _ir.removeScope(pb_main, stream_tensor_id)
 
-    init_tensor = init(shape, dtype, name + '_init')
+    init_tensor = init(shape, dtype, name + '_init', 'undef')
 
     name_hostload = g._create_tensor_id(name + '_hostload')
 

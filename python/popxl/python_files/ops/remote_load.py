@@ -58,7 +58,7 @@ def remote_load(remote_buffer: RemoteBuffer,
     if name is None:
         name = f"id_{remote_buffer_id}_offset_{offset.name}"
 
-    remote_load_tensor = init(shape, dtype, name + '_remote_load')
+    remote_load_tensor = init(shape, dtype, name + '_remote_load', 'undef')
 
     check_in_graph(g, remote_load_tensor=remote_load_tensor, offset=offset)
 
