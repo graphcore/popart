@@ -11,21 +11,21 @@ def mean(t: Tensor,
          axis: Optional[Union[int, Iterable[int]]] = None,
          keepdims: bool = False) -> Tensor:
     """
-    Compute the arithmetic mean of elements over a given axis.
+    Compute the arithmetic mean of elements in a tensor along axes.
 
     Args:
         t (Tensor):
             Tensor to compute mean.
         axis (int or list):
-            Axis or axes to mean over. If none is provided all axes will
+            Axis or axes to computer the mean along. If none is provided all axes will
             be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True` or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the arithmetic means computed along the specified axes.
     """
     ctx = get_current_context()
     g = ctx.graph

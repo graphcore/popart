@@ -8,16 +8,16 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def add(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Adds two Tensors element-wise.
+    Add two tensors element-wise.
 
-    Follows numpy broadcasting rules. Arguments must have the same dtype.
+    Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
     Args:
         lhs, rhs: Tensor
             Tensors to be added.
     Returns:
         add: Tensor
-            The sum of lhs and rhs
+            The sum of the input tensors
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -46,8 +46,9 @@ def add(lhs: Tensor, rhs: Tensor) -> Tensor:
 @op_debug_context
 def add_(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Adds two Tensors element-wise in place on the lhs Tensor.
-    Follows numpy broadcasting rules. Arguments must have the same dtype.
+    Add two tensors element-wise (in-place).
+
+    Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
     Note: There is no add_rhs_inplace_ op, please use add_lhs_inplace_(rhs, lhs) or rhs += lhs for
         the same functionality.

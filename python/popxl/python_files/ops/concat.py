@@ -9,7 +9,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     """
-    Concatenate tensors along an axis. The output will be copied to a new tensor.
+    Concatenate tensors along an axis and copy output to a new tensor.
 
     Args:
         ts: Iterable[Tensor]
@@ -49,7 +49,7 @@ def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
 @op_debug_context
 def concat_(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     """
-    Concatenate tensors along an axis. The output will alias each of the input tensors.
+    Concatenate tensors along an axis with the output aliasing each of the input tensors.
 
     Args:
         ts: Iterable[Tensor]

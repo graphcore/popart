@@ -11,9 +11,9 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
                    axes: Iterable[int], sizes: Iterable[int],
                    no_overlap: bool) -> Tensor:
     """
-    Updates a slice of a tensor.
+    Update a slice of a tensor.
 
-    The word "dynamic" refers to the fact that the index can be specified
+    "Dynamic" means that the index can be specified
     during runtime.
 
     index, axes and sizes determines the slice of t which will be updated.
@@ -25,12 +25,12 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     step - will equal 1
 
     Limitations:
-    Assuming we would like to update t with dimension (4, 3).
+    Assuming we would like to update `t` with dimension (4, 3).
     The slicing of t will have the following limitations:
-    - Step other than 1 is not supported (i.e. t[::2,:] is not supported)
-    - Negative slicing is not supported (i.e. t[:-1,:] is not supported)
+    - Step other than 1 is not supported (which means t[::2,:] is not supported)
+    - Negative slicing is not supported (which means t[:-1,:] is not supported)
     - stop larger than the size of the axis is not supported
-     (i.e. t[:5,:] is not supported)
+     (which means t[:5,:] is not supported)
 
     Args:
         t: Tensor
@@ -38,9 +38,9 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
         index: Tensor
             The indices to start the slice from.
         t_update: Tensor
-            The tensor to update t with.
+            The tensor to update `t` with.
         axes: Iterable[int]
-            The axess of t to make the update at.
+            The axes of `t` to be updated.
         sizes: Iterable[int]
             The sizes of the updates along the specified axes.
             For example:
@@ -85,26 +85,26 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
                     axes: Iterable[int], sizes: Iterable[int],
                     no_overlap: bool) -> Tensor:
     """
-    Updates a slice of a tensor (inplace).
+    Update a slice of a tensor (in-place).
 
-    Dynamically updates tensor `t` inplace. The word "dynamic" refers to the
-    fact that the index can be specified during runtime.
+    Dynamically updates tensor `t` in-place. The index can be specified during runtime.
 
     index, axes and sizes determines the slice of t which will be updated.
     The dimension of this slice and t_update must match.
     A slice along an axis can be defined as by the tuple
-    ( start, stop, step )
-    start - will be equal the index for the respective axis
-    stop - will be equal index + size for the respective axis
-    step - will equal 1
+    (`start`, `stop`, `step`)
+
+    * `start` - will be equal to the index for the respective axis
+    * `stop` - will be equal to index + size for the respective axis
+    * `step` - will equal 1
 
     Limitations:
-    Assuming we would like to update t with dimension (4, 3).
-    The slicing of t will have the following limitations:
-    - Step other than 1 is not supported (i.e. t[::2,:] is not supported)
-    - Negative slicing is not supported (i.e. t[:-1,:] is not supported)
+    Assuming we would like to update `t` with dimension (4, 3).
+    The slicing of `t` will have the following limitations:
+    - Step other than 1 is not supported (which means t[::2,:] is not supported)
+    - Negative slicing is not supported (which means t[:-1,:] is not supported)
     - stop larger than the size of the axis is not supported
-     (i.e. t[:5,:] is not supported)
+     (which means t[:5,:] is not supported)
 
     Args:
         t: Tensor

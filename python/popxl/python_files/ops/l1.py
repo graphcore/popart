@@ -11,23 +11,21 @@ def l1(t: Tensor,
        axis: Optional[Union[int, Iterable[int]]] = None,
        keepdims: bool = False) -> Tensor:
     """
-    Compute L1 norm for elements over a given axis.
-
-    The L1 norm is the sum of the magnitudes of the elements.
+    Compute the sum of the magnitudes of the elements in a tensor (L1 norm) along specified axes.
 
     Args:
         t: Tensor
-            Tensor to compute L1 norm.
+            Tensor to compute L1 norm of.
         axis (int or list):
-            Axis or axes to L1 norm over. If none is provided all elements
+            Axis or axes to compute L1 norm along. If none is provided all elements
             will be normed. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the L1 norm of elements along the specified axes.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -9,10 +9,10 @@ from .utils import handle_negative_axis
 @debug_context_frame_offset(1)
 def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
     """
-    Removes axes of length one from the tensor.
+    Remove axes of length one from the tensor.
 
-    Takes an input axes with a list of axes to squeeze.
-    If axes is not provided, all the single dimensions will be removed from the shape.
+    Takes an input `axes` with a list of axes to squeeze.
+    If `axes` is not provided, all the single dimensions will be removed from the shape.
     If an axis is selected with shape entry not equal to one, an error is raised.
     Implemented using `reshape` under the hood.
 

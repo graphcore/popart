@@ -17,7 +17,7 @@ def adam_var_update(
         learning_rate: Optional[Union[float, Tensor]] = None,
         max_weight_norm: Optional[Union[float, Tensor]] = None) -> Tensor:
     """
-     Calculate the variable update for Adam / LAMB as follows:
+     Calculate the updated weight tensor for Adam/LAMB.
 
      x = updater term (see :func:`~popxl.ops.adamupdater`)
      lr = learning rate

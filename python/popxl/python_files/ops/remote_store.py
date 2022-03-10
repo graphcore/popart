@@ -12,24 +12,24 @@ from .utils import check_in_graph
 def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
                  t: Tensor) -> None:
     """
-    Stores a tensor in streaming memory.
+    Store a tensor in Streaming Memory.
 
-    This operation stores the input tensor to the remote buffer residing in the off-chip streaming memory.
+    This operation stores the input tensor in the remote buffer residing in the off-chip Streaming Memory.
 
-    This Op is typically used when the user wants to store several different identically
-    shaped tensors to the same remote buffer by specifying the offset (see below).
+    This op is typically used to store different identically
+    shaped tensors to the same remote buffer by specifying the offset.
 
-    Op instances with matching ``remote_buffer_id`` (specified in the ``remote_buffer``)
-    will outline together, meaning that if multiple different tensors are to be stored
+    Op instances with matching ``remote_buffer_id`` (specified in ``remote_buffer``)
+    will outline together, meaning that if different tensors are to be stored
     under the same remote buffer ID, a different ``offset`` value has to be supplied for
     each tensor.
 
-    The ``remote_buffer`` handles the relationship between ``remote_buffer_id``, ``shape``
+    ``remote_buffer`` handles the relationship between ``remote_buffer_id``, ``shape``
     and ``dtype`` as ``shape`` and ``dtype`` needs to be fixed for each ``remote_buffer_id``.
 
-    All ``offset``s need to be >= 0.
+    Each value of ``offset`` must be >= 0.
 
-    If ``t`` is of rank ``x``, the remote buffer of a certain ``remote_buffer_id`` will be of
+    If ``t`` is of rank ``x``, the remote buffer with ``remote_buffer_id`` will be of
     rank ``x+1``, where the new dimension (the row) will be of size ``entries``.
 
     Note:

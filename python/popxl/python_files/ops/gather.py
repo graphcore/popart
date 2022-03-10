@@ -15,7 +15,7 @@ def gather(
         zero_OOR=False,
 ) -> Tensor:
     """
-    Selects multiple elements from an array.
+    Select multiple elements from a tensor along specified axes.
 
     Elements are specified via `indices`, along a specified axis.
     Equivlent to `numpy.take`. Note that this is different from `torch.gather`.
@@ -47,14 +47,14 @@ def gather(
         indices: Tensor
             The indices of the elements to extract
         axis: int
-            Which axis to gather on. Default is 0.
+            Axis along which to gather. Default is 0.
         available_memory_proportion: Optional[float]
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
         zero_OOR: bool
-            If False, out of range (OOR) indices will produce garbage data.
-            If True, OOR indices will produce zeros.
+            If `False`, out of range indices will produce garbage data.
+            If `True`, out of range indices will produce zeros.
 
     Returns:
         gather: Tensor

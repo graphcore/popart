@@ -69,7 +69,7 @@ def random_normal(seed_tensor: Tensor,
     """
     Randomly sample from a normal distribution.
 
-    The distribution will have mean and the standard deviation is specified by `mean` and `std` respectively.
+    The mean and standard deviation of the distribution is specified by `mean` and `std` respectively.
 
     Note: not compatible with `IPUModel`.
 

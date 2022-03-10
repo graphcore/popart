@@ -12,10 +12,9 @@ def group_norm(t: Tensor,
                num_groups: int,
                eps: float = 1e-5) -> Tensor:
     """
-    Applies group normalisation over a tensor.
+    Apply group normalisation over a tensor.
 
-    This operation applies a group norm on tensor `t`. See
-    https://arxiv.org/abs/1803.08494.
+    For more details, refer to the paper :arxiv:`Group Normalization <1803.08494>`.
 
     Args:
         t: Tensor
@@ -64,9 +63,8 @@ def group_norm(t: Tensor,
 def layer_norm(t: Tensor, weight: Tensor, bias: Tensor,
                eps: float = 1e-5) -> Tensor:
     """
-    Applies layer normalisation.
+    Apply layer normalisation to a tensor.
 
-    Applies layer normalisation over a tensor `t`.
     Uses `group_norm` under the hood.
 
     Args:

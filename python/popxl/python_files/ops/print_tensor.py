@@ -19,12 +19,12 @@ def print_tensor(t: Tensor,
     Args:
         t (Tensor): The tensor to print.
         title (str, optional): Title to print. Defaults to None.
-        print_self (bool, optional): Print the tensor itself. Defaults to True.
-        print_gradient (bool, optional): Whether to print the associated gradient tensor of t.
+        print_self (bool, optional): Print the tensor itself. Defaults to `True`.
+        print_gradient (bool, optional): Indicates if the associated gradient tensor of t is also printed (`True`) or not (`False`).
             Defaults to False.
 
     Returns:
-        Tensor: The same unaltered tensor.
+        Tensor: The input tensor, unchanged.
     """
     ctx = get_current_context()
     g = ctx.graph

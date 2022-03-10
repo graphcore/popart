@@ -8,14 +8,14 @@ from .utils import check_in_graph
 @op_debug_context
 def negate(t: Tensor) -> Tensor:
     """
-    Logical negation of a tensor.
+    Compute logical negation of a tensor.
 
     Args:
         t: Tensor
             Input tensor.
     Returns:
         out: Tensor
-            Output tensor.
+            Output tensor that is the logical negation of `t`.
     """
     ctx = get_current_context()
     g = ctx.graph

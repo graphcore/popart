@@ -13,20 +13,22 @@ def scatter(t: Tensor,
             axis: int = 0,
             available_memory_proportion: Optional[float] = None) -> Tensor:
     """
-    Update multiple elements from an array
+    Update the values of multiple elements in an tensor.
 
-    Elements are specified by `indices`. The indices are updated with the values in `values`.
+    Elements are specified by `indices`. The elements are updated with the
+    values in `values`.
 
-    Scatter takes three inputs data, indices, and values of the same rank r >= 1 and an optional
-    attribute axis that identifies an axis of data (by default, the outer-most axis, that is axis 0).
-    The output of the operation is produced by creating a copy of the input data, and then
-    updating its value to values specified by updates at specific index positions specified by indices.
-    Its output shape is the same as the shape of data.
+    `scatter` requires the three input tensor to be of the same rank `r >=
+    1`.  The optional attribute `axis` identifies the axis of the tensor along which the update will be performed. By default, the outer-most axis, that is axis 0, is used. The output of the operation
+    is produced by creating a copy of the input data, and then updating its
+    value to values specified by updates at specific index positions specified
+    by `indices`. Its output shape is the same as the shape of data.
 
-    For each entry in values, the target index in data is obtained by combining the corresponding
-    entry in indices with the index of the entry itself: the index-value for dimension = axis is
-    obtained from the value of the corresponding entry in indices and the index-value for
-    dimension != axis is obtained from the index of the entry itself.
+    For each entry in `values`, the target index in `t`` is obtained by combining
+    the corresponding entry in `indices` with the index of the entry itself: the
+    index-value for dimension = axis is obtained from the value of the
+    corresponding entry in indices and the index-value for dimension != axis is
+    obtained from the index of the entry itself.
 
     Pseudo example:
 

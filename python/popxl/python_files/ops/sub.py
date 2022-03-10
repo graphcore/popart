@@ -8,9 +8,9 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Subtracts two tensors element-wise.
+    Subtract two tensors element-wise.
 
-    Follows numpy broadcasting rules. Arguments must have the same dtype.
+    Follows NumPy broadcasting rules. Arguments must have the same dtype.
         Args:
             lhs, rhs: Tensor
                 Tensors to be subtracted.

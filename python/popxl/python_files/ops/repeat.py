@@ -17,12 +17,12 @@ def repeat(graph: Graph,
            inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
            ) -> Tuple[Tensor, ...]:
     """
-    Repeatedly calls a graph.
+    Repeatedly call a graph.
 
     This operation repeatedly executes a graph `repeat_count` number of times. The
-    provided input tensors are provided as graph inputs for the first iteration.
+    input tensors are provided as graph inputs for the first iteration.
 
-    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    The `inputs` and `inputs_dict` tensors are passed as graph inputs.
     You can specify an input either positionally using `inputs` or via a tensor
     map using `inputs_dict`.
 
@@ -91,14 +91,14 @@ def repeat_with_info(
         inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
 ) -> CallSiteInfo:
     """
-    Repeatedly calls a graph and returns information about the callsite.
+    Repeatedly call a graph and return information about the call site.
 
     This operation repeatedly executes a graph `repeat_count` number of times. The
-    provided input tensors are provided as graph inputs for the first iteration.
+    input tensors are provided as graph inputs for the first iteration.
 
     Returns `CallSiteInfo` that can be used to inspect callsite inputs/outputs.
 
-    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    The `inputs` and `inputs_dict` tensors are passed as graph inputs.
     You can specify an input either positionally using `inputs` or via a tensor
     map using `inputs_dict`.
 
@@ -341,7 +341,7 @@ def _setup_inputs(inputs: Iterable[Tensor],
         inputs (Iterable[Tensor]): User defined explicit inputs.
         inputs_dict (Mapping[Tensor, Tensor]):
             Mapping of `graph tensor -> parent tensor` that corresponds to
-            the inputs that the callable defined internally, e.g. by using
+            the inputs that the callable defined internally, for example, by using
             popxl.graph_input. Defaults to an empty dictionary.
             Works effectively the same as the call op's `inputs_dict` argument.
         pb_top_graph (_ir.Graph): Top _ir graph

@@ -11,23 +11,23 @@ def logsumexp(t: Tensor,
               axis: Optional[Union[int, Iterable[int]]] = None,
               keepdims: bool = False) -> Tensor:
     """
-    Compute the log of the summed exponentials of elements over a given axis.
+    Compute the log of the summed exponentials of elements in a tensor along specified axes.
 
     Supported dtypes: floats.
 
     Args:
         t (Tensor):
-            Tensor to compute logsumexp.
+            Tensor to compute the log of the summed exponentials of.
         axis (int or list):
-            Axis or axes to logsumexp over. If none is provided all axes will
+            Axis or axes to compute the log of the summed exponentials along. If none is provided all axes will
             be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the log of the summed exponentials of the elements along the specified axes.
     """
     ctx = get_current_context()
     g = ctx.graph

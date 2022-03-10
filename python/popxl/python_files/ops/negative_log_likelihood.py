@@ -14,14 +14,14 @@ def nll_loss_with_softmax_grad(
         loss_grad: Union[float, Tensor] = 1,
         reduction: popart.ReductionType = popart.ReductionType.Mean,
         ignore_index: Optional[int] = None) -> Tuple[Tensor, Tensor]:
-    """ Computes the negative log likelihood loss.
+    """ Compute the negative log likelihood loss.
 
         Computes the negative log likelihood loss `l` and returns the gradient `dE/dx` where `probs = softmax(x)`.
-        Argument `loss_grad` should be the gradient `dE/dl`, where `E` is the error from which back propagation is initialised from.
+        `loss_grad` should be the gradient `dE/dl`, where `E` is the error from which back propagation is initialised from.
         Typically `E = l`, so to return `dl/dx` then `loss_grad` should be `dl/dl` which would be `1`.
 
     Args:
-        probs (Tensor): probabilities. Expected to be the ouput of `ops.softmax`.
+        probs (Tensor): probabilities. Expected to be the output of `ops.softmax`.
         labels (Tensor): labels. Target values for the probabilities.
         loss_grad (Tensor): `dE/dl`. Supports float32 dtypes with float16 `probs`
         reduction (ReductionType): Specify how to reduce the loss. Defaults to ReductionType.Mean.

@@ -152,9 +152,9 @@ def call(graph: Graph,
          inputs_dict: Optional[Mapping[Tensor, Tensor]] = None
          ) -> Tuple[Tensor, ...]:
     """
-    An op that calls a graph.
+    Call a graph.
 
-    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    The `inputs` and `inputs_dict` tensors are passed as graph inputs.
     You can specify an input either positionally using `inputs` or via a tensor
     map using `inputs_dict`.
 
@@ -184,12 +184,12 @@ def call_with_info(graph: Graph,
                    inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
                    check_inputs: bool = True) -> CallSiteInfo:
     """
-    An op that calls a graph and returns information about the callsite.
+    Call a graph and return information about the call site.
 
-    The provided `inputs` and `inputs_dict` tensors are passed as graph inputs.
+    The `inputs` and `inputs_dict` tensors are passed as graph inputs.
     You can specify an input either positionally using `inputs` or via a tensor
     map using `inputs_dict`. This op returns `CallSiteInfo` that can be used
-    to inspect callsite inputs/outputs.
+    to inspect call site inputs/outputs.
 
     Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
     The order of inputs in will be the same as the order of the tensor inputs in the

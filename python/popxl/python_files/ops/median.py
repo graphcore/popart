@@ -11,17 +11,17 @@ def median(t: Tensor,
            axis: Optional[Union[int, Iterable[int]]] = None,
            keepdims: bool = False) -> Tensor:
     """
-    Compute the median of elements over a given axis.
+    Compute the median of elements in a tensor along axes.
 
     Args:
         t (Tensor):
             Tensor to compute median.
         axis (int or list):
-            Axis or axes to median over. If none is provided all axes will
+            Axis or axes to compute the median along. If none is provided all axes will
             be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
         Tensor

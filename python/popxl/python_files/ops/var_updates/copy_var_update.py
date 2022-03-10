@@ -8,7 +8,7 @@ from ..utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def copy_var_update_(t: Tensor, X: Tensor) -> Tensor:
     """
-    Updates tensor `t` inplace by copying `X`.
+    Update a tensor in-place by copying the tensor containing the updater values.
 
     Args:
         t: Tensor

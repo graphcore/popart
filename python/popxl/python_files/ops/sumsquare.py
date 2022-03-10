@@ -11,15 +11,15 @@ def sumsquare(t: Tensor,
               axis: Optional[Union[int, Iterable[int]]] = None,
               keepdims: bool = False) -> Tensor:
     """
-    Compute the sum of the squared elements over a given axis.
+    Compute the sum of the squares of tensor elements over an axis.
 
     Args:
         t (Tensor):
-            Tensor to compute sumsquare.
+            Tensor to compute the sum of squares.
         axis (int or list):
-            Axis or axes to sumsquare over. If none is provided all axes will
+            Axis or axes over which to compute the sum of squares. If none is provided all axes will
             be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced or not.
 

@@ -29,13 +29,13 @@ def matmul(lhs: Tensor,
            serialise_factor: int = 1,
            output_type: Optional[dtypes.dtype] = None,
            partials_type: Optional[dtypes.dtype] = None) -> Tensor:
-    """Matrix multiplies two tensors.
+    """Perform matrix multiplication of two tensors.
 
-    Follows numpy matrix multiplication rules for N-D tensors, see
+    Follows NumPy matrix multiplication rules for N-D tensors, see
     https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
 
     Arguments must have the same dtype. Shapes must be compatible as per
-    numpy matrix multiplication rules.
+    NumPy matrix multiplication rules.
 
     Args:
         lhs, rhs (Tensor): Tensors to be matrix multiplied.
@@ -94,7 +94,7 @@ def matmul(lhs: Tensor,
 
 def _convert_serialisation_settings(mode: SerialiseMode,
                                     factor: int) -> _ir.op.SerialiseSettings:
-    """Convert the given serialise enum and factor to a ir.op.SerialiseSettings
+    """Convert the given serialise enum and factor to ir.op.SerialiseSettings
 
     Args:
         mode (SerialiseMode): The mode to use

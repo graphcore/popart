@@ -69,7 +69,8 @@ def adam_updater(acc_first_order: Tensor,
                  beta2: Optional[Union[float, Tensor]] = None,
                  epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
-    Calculate a updater term x for Adam as follows.
+    Calculate an updater term to update the weights for Adam.
+
     accumulated bias corrected first order momentum (FP16/FP32) mc:
     mc = m / (1 - b1 ** t)  (without correction: mc = m)
 
@@ -82,7 +83,7 @@ def adam_updater(acc_first_order: Tensor,
     updater term (FP16/FP32, without weight decay mode: decay) x:
     x = mc / (sqrt(vc) + eps)
 
-    Note: `time_step` will be incremented by one.
+    Note: `time_step` will be incremented by 1.
 
     Args:
         acc_first_order: Tensor (m)
@@ -136,7 +137,8 @@ def lamb_updater(acc_first_order: Tensor,
                  beta2: Optional[Union[float, Tensor]] = None,
                  epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
-    Calculate a updater term x for Lamb as follows.
+    Calculate an updater term to update the weights for LAMB.
+
     accumulated bias corrected first order momentum (FP16/FP32) mc:
     mc = m / (1 - b1 ** t)  (without correction: mc = m)
 
@@ -201,7 +203,8 @@ def adamax_updater(acc_first_order: Tensor,
                    beta1: Union[float, Tensor] = 0.9,
                    epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
     """
-    Calculate a updater term x for Adamax as follows.
+    Calculate an updater term to update the weights for Adamax.
+
     accumulated bias corrected first order momentum (FP16/FP32) mc:
     mc = m / (1 - b1 ** t)
     updater term (FP16/FP32, with weight decay mode: decay and wd > 0.0) x:
