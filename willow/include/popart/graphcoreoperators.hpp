@@ -103,6 +103,7 @@ const static AiGraphcoreOpIdV1 ReshapeGrad("ReshapeGrad");
 const static AiGraphcoreOpIdV1 ResizeGrad("ResizeGrad");
 const static AiGraphcoreOpIdV1 ReverseGrad("ReverseGrad");
 const static AiGraphcoreOpIdV1 RNNGrad("RNNGrad");
+const static AiGraphcoreOpIdV1 RoiAlignGrad("RoiAlignGrad");
 const static AiGraphcoreOpIdV1 Scale("Scale");
 const static AiGraphcoreOpIdV1 ScaleGrad("ScaleGrad");
 const static AiGraphcoreOpIdV1 ScatterDataGrad("ScatterDataGrad");

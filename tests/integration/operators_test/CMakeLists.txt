@@ -128,6 +128,7 @@ add_popart_py_unit_test(prelu_test prelu_test.py)
 add_popart_py_unit_test(upsample_test upsample_test.py)
 add_popart_py_unit_test(packed_data_test packed_data_test.py)
 add_popart_py_unit_test(packed_data_test_ipu_model packed_data_test_ipu_model.py VARIANTS IpuModel)
+add_popart_py_unit_test(roialign_test roialign_test.py VARIANTS IpuModel)
 
 add_popart_cpp_unit_test(cast_test cast_test.cpp)
 add_popart_cpp_unit_test(histogram_test histogram_test.cpp)
