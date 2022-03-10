@@ -8,9 +8,9 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Applies an equal operation elemement-wise.
+    Compare two tensors element-wise.
 
-    Follows numpy broadcasting rules.
+    Follows NumPy broadcasting rules.
 
     Args:
         lhs, rhs: Tensor

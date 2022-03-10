@@ -11,23 +11,21 @@ def l2(t: Tensor,
        axis: Optional[Union[int, Iterable[int]]] = None,
        keepdims: bool = False) -> Tensor:
     """
-    Compute L2 norm for elements over a given axis.
-
-    The L2 norm is the square root of the sum of the squares of the elements.
+    Compute the square root of the sum of the squares of the elements in a tensor (L2 norm) along specified axes.
 
     Args:
         t: Tensor
-            Tensor to compute L2 norm.
+            Tensor to compute L2 norm of.
         axis (int or list):
-            Axis or axes to L2 norm over. If none is provided all elements
+            Axis or axes to compute L2 norm along. If none is provided all elements
             will be normed. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the L2 norm of elements along the specified axes.
     """
     ctx = get_current_context()
     g = ctx.graph

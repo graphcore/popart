@@ -10,7 +10,7 @@ from .utils import check_in_graph
 def ipu_copy(t: Tensor, destination: int,
              source: Optional[int] = None) -> Tensor:
     """
-    Copies a tensor to an IPU.
+    Copy a tensor to an IPU.
 
     Args:
         t: Tensor

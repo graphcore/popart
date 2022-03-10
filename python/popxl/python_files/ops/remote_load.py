@@ -15,12 +15,12 @@ def remote_load(remote_buffer: RemoteBuffer,
                 offset: Union[int, Tensor],
                 name: Optional[str] = None) -> Tensor:
     """
-    Loads a tensor from streaming memory.
+    Load a tensor from Streaming Memory.
 
-    This operation loads a tensor from the remote buffer residing in the off-chip streaming memory.
+    This operation loads a tensor from the remote buffer residing in the off-chip Streaming Memory.
 
     The tensor will be loaded from the memory location corresponding to
-    ``remote_buffer_id`` (specified in the ``remote_buffer``).
+    ``remote_buffer_id`` (specified in ``remote_buffer``).
 
     The relationship between ``offset`` and ``remote_buffer_id`` is thoroughly
     described in ``remote_store``.
@@ -86,9 +86,9 @@ def remote_load(remote_buffer: RemoteBuffer,
 def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
                  t: Tensor) -> Tensor:
     """
-    Loads a tensor from streaming memory (inplace).
+    Load a tensor from Streaming Memory (in-place).
 
-    This operation load a tensor inplace from the remote buffer residing in the off-chip streaming memory.
+    This operation loads a tensor in-place from the remote buffer residing in the off-chip Streaming Memory.
 
     This op is identical to ``remote_load``, but with the exception that the tensor loaded from
     the remote buffer will be written to ``t`` directly.
@@ -142,7 +142,7 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
 
 
 def multiply_tuple(tup: Tuple) -> int:
-    """Multiple the elements of a tuple
+    """Multiply the elements in a tuple
 
     Args:
         tup (Tuple): The tuple.

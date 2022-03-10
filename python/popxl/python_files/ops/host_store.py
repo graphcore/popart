@@ -10,9 +10,9 @@ from .utils import check_in_graph
 @op_debug_context
 def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     """
-    Transfers a tensor from the device to the host.
+    Transfer a tensor from the IPU to the host.
 
-    This operation represents the transfer of data from the device to the
+    This operation represents the transfer of data from the IPU to the
     host. It uses the existing device to host transfers created when building
     the IR, but defers the actual poplar::Copy until the op itself runs. This
     allows the copy to be scheduled as part of the normal op scheduling.

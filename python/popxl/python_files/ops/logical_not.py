@@ -9,7 +9,8 @@ from .utils import check_in_graph, cast_if_needed
 @op_debug_context
 def logical_not(t: Tensor) -> Tensor:
     """
-    Computes element-wise the value of NOT t.
+    Compute the element-wise NOT of a tensor.
+
     Inputs will be cast to bool if needed.
 
     Args:

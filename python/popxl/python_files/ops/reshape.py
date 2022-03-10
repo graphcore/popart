@@ -53,7 +53,7 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 @op_debug_context
 def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
-    Reshape a tensor in place.
+    Reshape a tensor (in-place).
 
     This is the in-place version of :func:`~ops.reshape`.
 

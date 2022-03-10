@@ -47,7 +47,7 @@ def transpose(t: Tensor,
 def transpose_(t: Tensor,
                permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
-    Permutes the axes of a tensor in place.
+    Permute the axes of a tensor (in-place).
 
     By default this operation reverses the axes of `t`.
 

@@ -15,17 +15,17 @@ def all_reduce(
         op: CollectiveOps = 'add',
 ) -> List[Tensor]:
     """
-    All-reduce tensors across IPUs within a replica.
+    Allreduce tensors across IPUs within a replica.
 
     Currently only the 'add' reduce op is supported by autodiff.
 
     Args:
         ts (List[Tensor]): Tensors to reduce
-        ipus (Optional[List[int]]): IPUs the tensors are located on. If None the op will try and infer.
+        ipus (Optional[List[int]]): IPUs the tensors are located on. If None, the op will try and infer.
         op (str): The reducing op. Options: add, mean, mul, min, max, and, or, square_add, local.
 
     Returns:
-        List[Tensor]: Output Tensors. Each Tensors data is identical on a IPU corresponding to `ipus`
+        List[Tensor]: Output Tensors. The data of each tensor is identical on the IPUs corresponding to `ipus`
     """
     return _all_reduce(ts, ipus, op)
 
@@ -37,8 +37,9 @@ def all_reduce_identical_inputs(
         op: CollectiveOps = 'add',
 ) -> List[Tensor]:
     """
-    All-reduce tensors across IPUs within a replica where the input tensors are identical.
-    This means the op is an identity but the corresponding grad op is an all-reduce.
+    Allreduce tensors across IPUs within a replica where the input tensors are identical.
+
+    This means the op is an identity but the corresponding grad op is an allreduce.
 
     Currently only the 'add' reduce op is supported by autodiff.
 
@@ -63,7 +64,8 @@ def all_reduce_identical_grad_inputs(
         op: CollectiveOps = 'add',
 ) -> List[Tensor]:
     """
-    All-reduce tensors across IPUs within a replica where the grad tensors of the corresponding grad op are identical.
+    Allreduce tensors across IPUs within a replica where the grad tensors of the corresponding grad op are identical.
+
     This means that this op is an all-reduce and the corresponding grad op an identity.
 
     Currently only the 'add' reduce op is supported by autodiff.

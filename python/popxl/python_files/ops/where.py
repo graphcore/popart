@@ -9,19 +9,19 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set, cast_if_needed
 @op_debug_context
 def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Element-wise `lhs if condition else rhs`.
+    Element-wise selection based on satisfying a condition.
 
-    Chooses either elements from `lhs` or `rhs` depending on the corresponding element in `condition`.
+    Chooses elements from `lhs` or `rhs` depending on whether the corresponding element in `condition` is satisfied or not.
     The operator supports multi-directional broadcasting (NumPy-style).
 
     Args:
         condition (Tensor):
-            A boolean tensor where True indicates the lhs element and False the rhs element.
+            A boolean tensor where `True` indicates the `lhs` element and `False` the `rhs` element.
             The tensor will be cast to a bool if necessary.
         lhs, rhs (Tensor):
             Tensors to choose elements from.
     Returns:
-        Tensor: The tensor containing elementwise lhs if condition else rhs.
+        Tensor: The tensor containing element-wise `lhs if condition else rhs.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -13,9 +13,9 @@ from .utils import handle_optimizer_value
 def accumulate_(t: Tensor, X: Tensor,
                 f: Optional[Union[float, Tensor]] = None) -> Tensor:
     """
-    Updates tensor `t` inplace using `t = t + (f * X)`.
+    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X)`.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
     `f` must be scalar.
@@ -24,9 +24,9 @@ def accumulate_(t: Tensor, X: Tensor,
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the variable
+            Value to update the tensor with
         f: Optional[Union[float, Tensor]]
-            Optional scalar to apply to update before the addition.
+            Optional scalar to apply to `X` before the addition.
     Returns:
         updated: Tensor
             An alias to the variable.
@@ -65,9 +65,9 @@ def accumulate_(t: Tensor, X: Tensor,
 def accumulate_square_(t: Tensor, X: Tensor,
                        f: Union[float, Tensor] = 1.0) -> Tensor:
     """
-    Updates tensor `t` inplace using `t = t + (f * X^2)`.
+    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X^2)`.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
     `f` must be scalar.
@@ -76,9 +76,9 @@ def accumulate_square_(t: Tensor, X: Tensor,
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the variable
+            Value to update the tensor with
         f: Optional[Union[float, Tensor]]
-            Optional scalar to apply to update before the addition.
+            Optional scalar to apply to `X` before the addition.
     Returns:
         updated: Tensor
             An alias to the variable.
@@ -116,7 +116,8 @@ def accumulate_square_(t: Tensor, X: Tensor,
 def accumulate_mean_(t: Tensor, X: Tensor,
                      step: Union[float, Tensor]) -> Tensor:
     """
-    Updates a tensor `t` inplace using `t = (step/(step+1)) * t + (1/(step+1)) * X`.
+    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (step/(step+1)) * t + (1/(step+1)) * X`.
+
     Intended to be used to keep track of the mean of a series of values.
 
     For example:
@@ -132,7 +133,7 @@ def accumulate_mean_(t: Tensor, X: Tensor,
 
     will result with `accum` having the value `(a+b)/2 = 1.5`.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
     `step` must be scalar.
@@ -179,9 +180,9 @@ def accumulate_mean_(t: Tensor, X: Tensor,
 def accumulate_moving_average_(t: Tensor, X: Tensor,
                                f: Union[float, Tensor]) -> Tensor:
     """
-    Updates tensor `t` inplace using `t = (f * t) + ((1-f) * X)`.
+    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X)`.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
     `f` must be scalar.
@@ -230,9 +231,9 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 def accumulate_moving_average_square_(t: Tensor, X: Tensor,
                                       f: Union[float, Tensor]) -> Tensor:
     """
-    Updates tensor `t` inplace using `t = (f * t) + ((1-f) * X^2)`.
+    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X^2)`.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
     `f` must be scalar.
@@ -241,7 +242,7 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
         t: Tensor
             Tensor to be updated.
         X: Tensor
-            Value to update the variable
+            Value to update the tensor
         f: Union[float, Tensor]
             Scalar to apply to update before the addition.
     Returns:
@@ -279,18 +280,18 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
 
 def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
     """
-    Inplace multiplies tensor 't' by a factor `f`: t = t * f.
+    Scale a tensor in-place.
 
-    Will directly zero the input tensor if the factor is const and 0.
+    This op will directly zero the input tensor if the factor is const and 0.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
 
     Args:
         t: Tensor
             Tensor to be updated.
         f: Union[float, Tensor]
-            The scalar to multiply by. If a float this will be a const multiplication, otherwise
+            The scalar to multiply `t` by. If a float this will be a const multiplication, otherwise
             will multiply by the values of the (non-const) tensor `f` elementwise.
     Returns:
         updated: Tensor
@@ -326,7 +327,9 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
 
 def accumulator_zero_(t: Tensor) -> Tensor:
     """
-    An AccumulatorScaleOp with a factor of 0, so zeroes the input tensor.
+    Zero the input tensor.
+
+    This is an AccumulatorScaleOp with a factor of 0, and this zeroes the input tensor.
 
     Args:
         t: Tensor
@@ -345,15 +348,15 @@ def sparse_accumulate_(t: Tensor,
                        f: Optional[Union[float, Tensor]] = None,
                        W: Optional[Tensor] = None) -> Tensor:
     """
-    Applies a sparse accumulate operation to t.
+    Apply a sparse accumulate operation to a tensor.
 
-    Does not apply numpy broadcasting.
+    Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
     `t` and `X` must be the same shape, but can be different types.
 
     Detail:
 
-    Say you have:
+    Assume you have:
     w -> Gather -> x
 
     In backward pass you have:
@@ -379,7 +382,7 @@ def sparse_accumulate_(t: Tensor,
 
     ---------
 
-    The input tensor W is an optional input. This is can be used when two different views of the
+    The input tensor `W` is an optional input. This is can be used when two different views of the
     weight are consumed in the forward pass, and one of those ops is a Gather, thus requiring a
     SparseAccumulate in the weight update step.
 

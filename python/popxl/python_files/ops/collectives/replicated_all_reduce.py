@@ -11,7 +11,7 @@ def replicated_all_reduce(t: Tensor,
                           op: CollectiveOps = 'add',
                           group: Optional[CommGroup] = None,
                           link: Optional[Tensor] = None) -> Tensor:
-    """Reduces tensor `t` across replicas.
+    """Reduce a tensor across replicas.
 
     Args:
         t (Tensor): Tensor to be reduced

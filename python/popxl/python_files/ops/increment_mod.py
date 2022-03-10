@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
     """
-    Computes `(t + increment) % modulus`.
+    Compute `(t + increment) % modulus`.
 
     Args:
         t: Tensor
@@ -48,7 +48,7 @@ def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
 @op_debug_context
 def increment_mod_(t: Tensor, increment: float, modulus: float) -> Tensor:
     """
-    Computes `(t + increment) % modulus` (inplace on `t`).
+    Compute `(t + increment) % modulus` (in-place).
 
     Args:
         t: Tensor

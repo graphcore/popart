@@ -23,7 +23,7 @@ def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
 
 def check_in_graph(graph: Graph, *args, **tensors: Tensor):
     """
-    Checks if tensors are in graph and is a tensor.
+    Check if tensors are in graph and is a tensor.
 
     If not, raises a ValueError or TypeError.
     Specify all tensors using keyword augments to aid the error message.
@@ -47,7 +47,8 @@ def check_in_graph(graph: Graph, *args, **tensors: Tensor):
 def check_tensor_ipu_and_tile_set(*args, **tensors: Tensor):
     """
     Check that all tensors exist on the same IPUs and tile sets.
-    If an tensor's IPU or tile set cannot be determined the check is skipped.
+
+    If a tensor's IPU or tile set cannot be determined, the check is skipped.
     Specify all tensors using keyword augments to aid the error message.
     """
     #Python >=3.7 signature `check_tensor_ipu_and_tile_set(*, **tensors: Tensor)`

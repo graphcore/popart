@@ -54,15 +54,13 @@ def split_random_seed(seed: Tensor, n: int = 2) -> Tuple[Tensor, ...]:
 
     Chaining calls to `split_random_seed` can be used to ensure unique random behaviour
     across a program. For example:
-    ```
-        seed, s1 = ops.split_random_seed(seed)
 
-        y = ops.dropout(x, s1)
+    .. code-block:: python
 
-        seed, s2 = ops.split_random_seed(seed)
-
-        z = ops.dropout(y, s2)
-    ```
+       seed, s1 = ops.split_random_seed(seed)
+       y = ops.dropout(x, s1)
+       seed, s2 = ops.split_random_seed(seed)
+       z = ops.dropout(y, s2)
 
     Args:
         seed (Tensor): Seed tensor used to be produce new seeds. Must be shape=(2,) dtype=uint32.

@@ -10,12 +10,12 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
                   no_overlap: bool) -> Tensor:
     """
-    Returns a cloned slice of the input tensor.
+    Return a cloned slice of the input tensor.
 
-    The word "dynamic" refers to the fact that the index can be specified
+    "Dynamic" means that the index can be specified
     during runtime.
 
-    A slice along an axis can be defined as by the tuple
+    A slice along an axis can be defined by the tuple
     ( start, stop, step )
     start - will be equal the index for the respective axis
     stop - will be equal index + size for the respective axis
@@ -23,10 +23,10 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
 
     Limitations:
     Assuming we would like to slice A with dimension (4, 3)
-    - Step other than 1 is not supported (i.e. t[::2,:] is not supported)
-    - Negative slicing is not supported (i.e. t[:-1,:] is not supported)
+    - Step other than 1 is not supported (which means t[::2,:] is not supported)
+    - Negative slicing is not supported (which means t[:-1,:] is not supported)
     - stop greater than the size of the axis is not supported
-     (i.e. t[:5,:] is not supported)
+     (which means t[:5,:] is not supported)
 
     Args:
         t: Tensor
@@ -47,7 +47,7 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
             There are no run-time or compile-time checks possible to ensure this.
     Returns:
         out: Tensor
-            A clone (i.e. not a view) of the sliced input tensor.
+            A clone (which means, not a view) of the sliced input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -10,10 +10,10 @@ from popxl.ops.utils import check_in_graph, check_tensor_ipu_and_tile_set
 def replicated_all_gather(t: Tensor,
                           group: Optional[CommGroup] = None,
                           link: Optional[Tensor] = None) -> Tensor:
-    """Gathers tensor `t` across replicas. Output tensor contains in the values of `t` from each replica.
+    """Gather a tensor across replicas such that the output tensor contains the values of the tensor from each replica.
 
     Args:
-        t (Tensor): Tensor to be reduced. Must be rank=1.
+        t (Tensor): Tensor to be gathered. Must be rank=1.
         group (Optional[CommGroup]): Replicas to gather from. Defaults to All replicas.
         link (Optional[Tensor]): The tensor to link the collective operation with other collective
             operations for replicated tensor sharding. All collective operations, whose link tensor

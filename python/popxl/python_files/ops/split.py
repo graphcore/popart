@@ -10,17 +10,15 @@ from .utils import check_in_graph, handle_negative_axis
 def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
     """
-    Splits a tensor into a list of tensors.
-
-    Splits a tensor on a given axis into a list of tensors.
+    Split a tensor (along an axis) into a list of tensors.
 
     Args:
         t: Tensor
             Tensor to be split.
         splits: int or List[int]
-            Either an int which specifies the number of splits or a list of ints specifing the length of each output tensor.
+            Either an int which specifies the number of splits or a list of ints specifying the length of each output tensor.
         axis: int (default 0)
-            Which axis to split on
+            Axis to split along
     Returns:
         out: List[Tensor]
             A list of tensors

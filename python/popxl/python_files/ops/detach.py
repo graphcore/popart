@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def detach(t: Tensor) -> Tensor:
     """
-    Prevents gradient computation of this tensor.
+    Prevent gradient computation of this tensor.
 
     This operations is numerically equivlent to the identity op.
 
@@ -40,10 +40,10 @@ def detach(t: Tensor) -> Tensor:
 @op_debug_context
 def detach_(t: Tensor) -> Tensor:
     """
-    Prevents gradient computation of this tensor (inplace).
+    Prevent gradient computation of this tensor (in-place).
 
-    The inplace version of :func:`~ops.detach`. Behaviour is the same, but
-    blocks gradient propagation inplace on the input tensor.
+    The in-place version of :func:`~ops.detach`. The functionality is the same, but this
+    blocks gradient propagation in-place on the input tensor.
 
     Args:
         t: Tensor

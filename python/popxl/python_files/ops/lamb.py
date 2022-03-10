@@ -6,7 +6,7 @@ from .utils import check_in_graph
 
 def lamb_square(t: Tensor) -> Tensor:
     """
-    Squares each element before applying an add reduction.
+    Square each element before applying an add reduction.
 
     Used in the LAMB optimizer: https://arxiv.org/abs/1904.00962
 

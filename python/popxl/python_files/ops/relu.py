@@ -8,8 +8,9 @@ from .utils import check_in_graph
 @op_debug_context
 def relu(t: Tensor) -> Tensor:
     """
-    Computes the Relu activation on a Tensor.
-    https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
+    Compute the ReLU activation of a tensor.
+
+    For more details, refer to `Rectifier (neural networks) <https://en.wikipedia.org/wiki/Rectifier_(neural_networks)>`__.
 
     Args:
         t: Tensor
@@ -35,8 +36,9 @@ def relu(t: Tensor) -> Tensor:
 @op_debug_context
 def relu_(t: Tensor) -> Tensor:
     """
-    Computes the Relu activation on a Tensor inplace.
-    https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
+    Compute the ReLU activation of a tensor (in-place).
+
+    For more details, refer to `Rectifier (neural networks) <https://en.wikipedia.org/wiki/Rectifier_(neural_networks)>`__.
 
     Args:
         t: Tensor

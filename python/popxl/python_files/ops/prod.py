@@ -11,17 +11,17 @@ def prod(t: Tensor,
          axis: Optional[Union[int, Iterable[int]]] = None,
          keepdims: bool = False) -> Tensor:
     """
-    Compute the product of elements over a given axis.
+    Compute the product of elements over an axis.
 
     Args:
         t (Tensor):
-            Tensor to compute prod.
+            Tensor to compute product of.
         axis (int or list):
-            Axis or axes to compute product over. If none is provided all axes will
-            be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            Axis or axes to compute product along. If none is provided, all axes will
+            be reduced. If the axis is negative, the product is computed from the
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced ('True`) or not ('False`).
 
     Returns:
         Tensor

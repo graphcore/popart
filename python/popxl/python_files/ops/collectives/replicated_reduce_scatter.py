@@ -13,7 +13,7 @@ def replicated_reduce_scatter(
         group: Optional[CommGroup] = None,
         configure_output_for_replicated_tensor_sharding: bool = False,
         link: Optional[Tensor] = None) -> Tensor:
-    """Reduces tensor `t` across replicas. Each replica will only receive a unique slice of `t`.
+    """Reduce a tensor across replicas with each replica receiving a unique slice of the tensor.
 
     Args:
         t (Tensor): Tensor to be reduced. Inputs will be flattened.

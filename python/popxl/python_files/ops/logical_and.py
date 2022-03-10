@@ -9,9 +9,9 @@ from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 @op_debug_context
 def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Applies a logical AND elemement-wise.
+    Apply a logical AND element-wise.
 
-    Follows numpy broadcasting rules.
+    Follows NumPy broadcasting rules.
     Inputs will be cast to bool if needed.
 
     Args:

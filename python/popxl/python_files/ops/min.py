@@ -11,21 +11,20 @@ def min(t: Tensor,
         axis: Optional[Union[int, Iterable[int]]] = None,
         keepdims: bool = False) -> Tensor:
     """
-    Compute the min of elements over a given axis.
+    Compute the minimum of the elements of a tensor along axes.
 
     Args:
         t (Tensor):
-            Tensor to compute min.
+            Tensor to compute minimum of.
         axis (int or list):
-            Axis or axes to min over. If none is provided all axes will
-            be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            Axis or axes to compute minimum along. If none is provided, all axes will be reduced. If the axis is negative, it counts from the
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True` or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the minimum of the elements along the axes.
     """
     ctx = get_current_context()
     g = ctx.graph

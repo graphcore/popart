@@ -8,19 +8,19 @@ from .utils import check_in_graph, handle_negative_axis
 @op_debug_context
 def softmax(t: Tensor, axis: int) -> Tensor:
     """
-    Computes the softmax on an input.
+    Normalize the elements of a tensor along specified axes.
 
-    This recales the slices of axis such that all elements are within [0, 1] and
+    This rescales the slices of `axis` such that all elements are within the range [0, 1] and
     sum to 1. The output shape and dtype matches the input.
 
     Args:
         t: Tensor
-            Tensor to be softmaxed.
+            Tensor to be normalized.
         axis: int
-            The axis along which the softmax will be computed.
+            The axis along which the normalization will be computed.
     Returns:
         out: Tensor
-            The softmaxed tensor
+            The normalized tensor
     """
     ctx = get_current_context()
     g = ctx.graph

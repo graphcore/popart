@@ -11,23 +11,23 @@ def logsum(t: Tensor,
            axis: Optional[Union[int, Iterable[int]]] = None,
            keepdims: bool = False) -> Tensor:
     """
-    Compute the log of summed elements over a given axis.
+    Compute the log of summed elements of a tensor over specified axes.
 
     Supported dtypes: floats.
 
     Args:
         t (Tensor):
-            Tensor to compute logsum.
+            Tensor to compute the log of the sum of.
         axis (int or list):
-            Axis or axes to logsum over. If none is provided all axes will
+            Axis or axes to compute the log of the sum along. If none is provided all axes will
             be reduced. If axis is negative it counts from the
-            last to the the first axis.
+            last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced or not.
+            Keep the axis that is being reduced (`True` or not (`False`).
 
     Returns:
         Tensor
-            The reduced tensor.
+            The reduced tensor containing the log of the summed elements along the specified axes.
     """
     ctx = get_current_context()
     g = ctx.graph

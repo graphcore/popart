@@ -16,13 +16,13 @@ def slice(t: Tensor,
           step: Optional[Union[int, List[Optional[int]]]] = None,
           axis: Optional[Union[int, List[int]]] = None) -> Tensor:
     """
-    Selects elements from a tensor using a slice or multiple slices.
+    Select elements from a tensor using a slice or multiple slices.
 
     A slice specifies the start (inclusive) and stop (exclusive) index of elements to select.
-    Multiple slices can be specified using a list of items for each parameter (start, stop, step).
-    If step is `-1` the slice is performed backwards.
+    Multiple slices can be specified using a list of items for each parameter (`start`, `stop`, `step`).
+    If `step` is `-1`, the slice is performed backwards.
 
-    If axis is not specified, each slice will correspond to axis 0 to N where N is the number of slices.
+    If `axis` is not specified, each slice will correspond to axis 0 to `N` where `N` is the number of slices.
 
     Examples:
 
@@ -80,10 +80,9 @@ def slice_(t: Tensor,
            step: Optional[Union[int, List[Optional[int]]]] = None,
            axis: Optional[Union[int, List[int]]] = None) -> Tensor:
     """
-    Selects elements from a tensor using a slice or multiple slices (inplace).
+    Select elements from a tensor using a slice or multiple slices (in-place).
 
-    This is the inplace version of :func:`~ops.slice`. Behaviour is the same, but modifies the
-        tensor inplace.
+    This is the in-place version of :func:`~ops.slice`. The functionality is the same, but the tensor is sliced in place.
 
     Args:
         t (Tensor): Tensor to slice

@@ -12,10 +12,10 @@ from .init import init
 def host_load(h2d_stream: HostToDeviceStream,
               name: Optional[str] = None) -> Tensor:
     """
-    Transfers a tensor from the host to the device.
+    Transfer a tensor from the host to the IPU.
 
     This operation represents the transfer of data from the host to the
-    device. It uses the existing host to device transfers created when building
+    IPU. It uses the existing host to IPU transfers created when building
     the IR, but defers the actual poplar::Copy until the op itself runs. This
     allows the copy to be scheduled as part of the normal op scheduling.
 
@@ -27,7 +27,7 @@ def host_load(h2d_stream: HostToDeviceStream,
         name (str): Name to use for the returned tensor.
 
     Returns:
-        Tensor: The output tensor streamed from host.
+        Tensor: The output tensor streamed from the host.
     """
     ctx = get_current_context()
     g = ctx.graph
