@@ -1010,7 +1010,7 @@ PYBIND11_MODULE(popart_core, m) {
                  GradientTensorTrackingMethod>(),
         py::arg("enabled")         = false,
         py::arg("toTrackTensors")  = nonstd::optional<std::vector<TensorId>>(),
-        py::arg("binEdgeLocation") = 0.0625f,
+        py::arg("binEdgeLocation") = 0.125f,
         py::arg("thresholdUpperCountProportion") = 1e-7,
         py::arg("updatePeriod")                  = 1,
         py::arg("gradientTensorTrackingMethod") =

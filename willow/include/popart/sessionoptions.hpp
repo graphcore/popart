@@ -62,7 +62,7 @@ struct AutomaticLossScalingSettings {
   /// represents the smallest representable value, and `1` the maximum. This is
   /// the single bin edge of the histogram that is an input to the loss scale
   /// updater algorithm.
-  float binEdgeLocation = 0.0625f;
+  float binEdgeLocation = 0.125f;
 
   /// The proportion of the elements in the upper bin above which the loss scale
   /// is increased, and below which the loss scale is decreased. Should be in
