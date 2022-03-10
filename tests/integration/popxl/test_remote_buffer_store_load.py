@@ -152,7 +152,6 @@ def build_model(data: Dict[str, np.array]
 
         # Store and load the first tensor
         remote_buffer_1 = RemoteBuffer(
-            ir=ir,
             tensor_shape=tensors["store_in_1"]._pb_tensor.info.shape(),
             tensor_dtype=dtype.as_dtype(
                 tensors["store_in_1"]._pb_tensor.info.data_type_lcase()),
@@ -182,7 +181,6 @@ def build_model(data: Dict[str, np.array]
 
             # Store and load the second and third tensor using a new buffer id
             remote_buffer_2 = RemoteBuffer(
-                ir=ir,
                 tensor_shape=tensors["store_in_2"]._pb_tensor.info.shape(),
                 tensor_dtype=dtype.as_dtype(
                     tensors["store_in_2"]._pb_tensor.info.data_type_lcase()),

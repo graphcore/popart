@@ -20,18 +20,13 @@ StreamBufferMaps = Union[h2dStreamBufferMaps, d2hStreamBufferMaps]
 
 
 class Session:
-    """Class that represents the PopART runtime session.
-
-    A class that allows you to execute a `popxl` graph of operations.
-
-    .. warning:: The session object takes ownership of the provided Ir and it cannot be modified afterwards.
-    """
-
     def __init__(self,
                  ir: Ir,
                  device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu"
                  ) -> None:
-        """Initialise a new session.
+        """A runtime session that can execute a PopXL `Ir`.
+
+        .. warning:: The session object takes ownership of the provided Ir and it cannot be modified afterwards.
 
         Args:
             ir (Ir): The Ir to use for this session.

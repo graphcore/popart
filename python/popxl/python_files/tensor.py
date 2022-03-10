@@ -186,10 +186,6 @@ class Tensor:
         return tuple(self._pb_tensor.info.strides())
 
     @property
-    def name(self) -> str:
-        return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
-
-    @property
     @debug_context_frame_offset(2)
     def T(self) -> 'Tensor':
         """The tensor transposed with reversed axes."""

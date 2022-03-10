@@ -19,15 +19,14 @@ if TYPE_CHECKING:
 
 
 class Ir:
-    """
-    Class that represents the PopART IR.
-
-    This class contains a main graph. Furthermore, it defines methods and
-    decorators for creating additional graphs from Python functions.
-    """
-
     def __init__(self):
-        """Initialises a new IR."""
+        """
+        PopXL intermediate representation (IR).
+
+        An IR contains a main graph (property `main_graph`) and can create
+        additional graphs using member methods e.g. `create_graph` and
+        `create_empty_graph`.
+        """
         self._pb_ir = _ir.Ir()
         # Set better defaults for popxl programs.
         # Some parts of graph construction use the session options to make decisions,
@@ -419,7 +418,7 @@ class Ir:
     def __eq__(self, value: 'Ir') -> bool:
         if not isinstance(value, Ir):
             raise TypeError(
-                f"Value must be of type popxl.Ir. Value: {value}. Type: {type(value)}"
+                f"Value must be of type popxl.Ir. Type: {type(value)}. Value: {value}."
             )
         return self.id == value.id
 

@@ -34,10 +34,10 @@ def standard_remote_buffer(
         Iterator[RemoteBuffer]: The standard remote buffer handle
     """
     t_shape, t_dtype, entries = input
-    standard_remote_buffer = RemoteBuffer(ir=popxl.Ir(),
-                                          tensor_shape=t_shape,
-                                          tensor_dtype=t_dtype,
-                                          entries=entries)
+    with popxl.Ir().main_graph:
+        standard_remote_buffer = RemoteBuffer(tensor_shape=t_shape,
+                                              tensor_dtype=t_dtype,
+                                              entries=entries)
     yield standard_remote_buffer
 
 
@@ -50,29 +50,26 @@ class TestRemoteBuffer:
         """
         # Test the initializer
         t_shape, t_dtype, entries = input
-        ir = popxl.Ir()
-        standard_remote_buffer = RemoteBuffer(ir=ir,
-                                              tensor_shape=t_shape,
-                                              tensor_dtype=t_dtype,
-                                              entries=entries)
-        assert standard_remote_buffer.remote_buffer_id == 1
-        assert standard_remote_buffer.tensor_shape == t_shape
-        assert standard_remote_buffer.tensor_dtype == t_dtype
-        assert standard_remote_buffer.entries == entries
+        with popxl.Ir().main_graph:
+            standard_remote_buffer = RemoteBuffer(tensor_shape=t_shape,
+                                                  tensor_dtype=t_dtype,
+                                                  entries=entries)
+            assert standard_remote_buffer.remote_buffer_id == 1
+            assert standard_remote_buffer.tensor_shape == t_shape
+            assert standard_remote_buffer.tensor_dtype == t_dtype
+            assert standard_remote_buffer.entries == entries
 
-        # Test that the buffer id is incremented
-        remote_buffer_2 = RemoteBuffer(ir=ir,
-                                       tensor_shape=t_shape,
-                                       tensor_dtype=t_dtype,
-                                       entries=entries)
-        assert remote_buffer_2.remote_buffer_id == 2
+            # Test that the buffer id is incremented
+            remote_buffer_2 = RemoteBuffer(tensor_shape=t_shape,
+                                           tensor_dtype=t_dtype,
+                                           entries=entries)
+            assert remote_buffer_2.remote_buffer_id == 2
 
-        # Assert that entries have to be positive
-        with pytest.raises(ValueError) as e_info:
-            _ = RemoteBuffer(ir=popxl.Ir(),
-                             tensor_shape=t_shape,
-                             tensor_dtype=t_dtype,
-                             entries=0)
+            # Assert that entries have to be positive
+            with pytest.raises(ValueError) as e_info:
+                _ = RemoteBuffer(tensor_shape=t_shape,
+                                 tensor_dtype=t_dtype,
+                                 entries=0)
         assert e_info.value.args[0].startswith(
             "Entries must be a non-zero, positive integer")
 
@@ -118,12 +115,12 @@ class TestRemoteBuffer:
         assert standard_remote_buffer.entries == 2
 
         # Check that non-positive values are not allowed
-        with pytest.raises(ValueError) as e_info:
-            t_shape, t_dtype, _ = input
-            _ = RemoteBuffer(ir=popxl.Ir(),
-                             tensor_shape=t_shape,
-                             tensor_dtype=t_dtype,
-                             entries=0)
+        with popxl.Ir().main_graph:
+            with pytest.raises(ValueError) as e_info:
+                t_shape, t_dtype, _ = input
+                _ = RemoteBuffer(tensor_shape=t_shape,
+                                 tensor_dtype=t_dtype,
+                                 entries=0)
         assert e_info.value.args[0].startswith(
             "Entries must be a non-zero, positive integer")
         with pytest.raises(ValueError) as e_info:
@@ -149,25 +146,22 @@ class TestRemoteBuffer:
         with main:
             t = popxl.variable(data=np.zeros(t_shape), dtype=t_dtype)
 
-        # Create the handles
-        remote_buffer_1 = standard_remote_buffer
-        remote_buffer_1.validate_tensor_matches_buffer(t)
-        # Create an instance equivalent of standard_remote_buffer
-        remote_buffer_2 = RemoteBuffer(ir=popxl.Ir(),
-                                       tensor_shape=t_shape,
-                                       tensor_dtype=t_dtype,
-                                       entries=entries)
-        remote_buffer_2.validate_tensor_matches_buffer(t)
-        # Create an instance equivalent of standard_remote_buffer, but with shape changed
-        remote_buffer_3 = RemoteBuffer(ir=popxl.Ir(),
-                                       tensor_shape=(1, 3, 5),
-                                       tensor_dtype=t_dtype,
-                                       entries=entries)
-        # Create an instance equivalent of standard_remote_buffer, but with dtype changed
-        remote_buffer_4 = RemoteBuffer(ir=popxl.Ir(),
-                                       tensor_shape=t_shape,
-                                       tensor_dtype=int16,
-                                       entries=entries)
+            # Create the handles
+            remote_buffer_1 = standard_remote_buffer
+            remote_buffer_1.validate_tensor_matches_buffer(t)
+            # Create an instance equivalent of standard_remote_buffer
+            remote_buffer_2 = RemoteBuffer(tensor_shape=t_shape,
+                                           tensor_dtype=t_dtype,
+                                           entries=entries)
+            remote_buffer_2.validate_tensor_matches_buffer(t)
+            # Create an instance equivalent of standard_remote_buffer, but with shape changed
+            remote_buffer_3 = RemoteBuffer(tensor_shape=(1, 3, 5),
+                                           tensor_dtype=t_dtype,
+                                           entries=entries)
+            # Create an instance equivalent of standard_remote_buffer, but with dtype changed
+            remote_buffer_4 = RemoteBuffer(tensor_shape=t_shape,
+                                           tensor_dtype=int16,
+                                           entries=entries)
 
         assume_fails = (remote_buffer_3, remote_buffer_4)
         for assume_fail in assume_fails:
@@ -184,18 +178,15 @@ class TestRemoteBuffer:
         """
         t_shape, t_dtype, entries = input
 
-        ir_1 = popxl.Ir()
-        ir_2 = popxl.Ir()
+        with popxl.Ir().main_graph:
+            rb_1 = RemoteBuffer(tensor_shape=t_shape,
+                                tensor_dtype=t_dtype,
+                                entries=entries)
 
-        rb_1 = RemoteBuffer(ir=ir_1,
-                            tensor_shape=t_shape,
-                            tensor_dtype=t_dtype,
-                            entries=entries)
-
-        rb_2 = RemoteBuffer(ir=ir_2,
-                            tensor_shape=t_shape,
-                            tensor_dtype=t_dtype,
-                            entries=entries)
+        with popxl.Ir().main_graph:
+            rb_2 = RemoteBuffer(tensor_shape=t_shape,
+                                tensor_dtype=t_dtype,
+                                entries=entries)
 
         assert rb_1.remote_buffer_id == rb_2.remote_buffer_id
 
@@ -243,16 +234,14 @@ class TestRemoteBuffer:
             input (Tuple[Tuple[int, ...], dtype, int]): The standard remote buffer handle input
         """
         ir = popxl.Ir()
-        # Creating without context
-        t_shape, t_dtype, entries = input
-        remote_buffer_class = RemoteBuffer(ir=ir,
-                                           tensor_shape=t_shape,
-                                           tensor_dtype=t_dtype,
-                                           entries=entries)
-        # Create with context
-        main = ir.main_graph
 
-        with main:
+        with ir.main_graph:
+            t_shape, t_dtype, entries = input
+            # Creating with class
+            remote_buffer_class = RemoteBuffer(tensor_shape=t_shape,
+                                               tensor_dtype=t_dtype,
+                                               entries=entries)
+            # Create with function
             remote_buffer_context = remote_buffer(tensor_shape=t_shape,
                                                   tensor_dtype=t_dtype,
                                                   entries=entries)

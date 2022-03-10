@@ -20,7 +20,7 @@ def test_remote_variable():
 
     with main:
         x = np.array(1).astype(np.int32)
-        buffer = popxl.RemoteBuffer(ir, x.shape, dtypes.int32, 1)
+        buffer = popxl.RemoteBuffer(x.shape, dtypes.int32, 1)
         remote_x = popxl.remote_variable(x, buffer, 0)
 
         y = popxl.variable(2)
@@ -47,7 +47,7 @@ def test_remote_variable_replica_not_sharded():
 
     with main:
         x = np.array(1).astype(np.int32)
-        buffer = popxl.RemoteBuffer(ir, x.shape, dtypes.int32, 1)
+        buffer = popxl.RemoteBuffer(x.shape, dtypes.int32, 1)
         remote_x = popxl.remote_variable(x, buffer, 0)
 
         y = popxl.variable(2, name="y")
@@ -75,7 +75,7 @@ def test_remote_replia_sharded_variable_gather():
 
     with main:
         x = np.array([1, 2]).astype(np.int32)
-        buffer = popxl.RemoteBuffer(ir, (x.size // 2, ), dtypes.int32, 1)
+        buffer = popxl.RemoteBuffer((x.size // 2, ), dtypes.int32, 1)
         remote_x = popxl.remote_replica_sharded_variable(x, buffer, 0)
 
         y = popxl.variable([3, 4], name="y")
@@ -171,7 +171,7 @@ def test_remote_replia_sharded_variable_no_gather():
 
     with main:
         x = np.array([1, 2]).astype(np.int32)
-        buffer = popxl.RemoteBuffer(ir, (x.size // 2, ), dtypes.int32, 1)
+        buffer = popxl.RemoteBuffer((x.size // 2, ), dtypes.int32, 1)
         remote_x = popxl.remote_replica_sharded_variable(x, buffer, 0)
 
         y = popxl.variable([3, 4], name="y")
@@ -204,7 +204,7 @@ def test_remote_replia_sharded_reuse_buffer():
     with main:
         x1 = np.array([1, 2]).astype(np.int32)
         x2 = np.array([3, 4]).astype(np.int32)
-        buffer = popxl.RemoteBuffer(ir, (x1.size // 2, ), dtypes.int32, 2)
+        buffer = popxl.RemoteBuffer((x1.size // 2, ), dtypes.int32, 2)
         popxl.remote_replica_sharded_variable(x1, buffer, 0, name="x1")
         popxl.remote_replica_sharded_variable(x2, buffer, 1, name="x2")
 

@@ -43,8 +43,7 @@ class TestRemoteStore:
             # 2. offset
             n_tensors = 2
 
-            remote_buffer = RemoteBuffer(ir=ir,
-                                         tensor_shape=tensor_shape,
+            remote_buffer = RemoteBuffer(tensor_shape=tensor_shape,
                                          tensor_dtype=tensor_dtype,
                                          entries=entries)
 

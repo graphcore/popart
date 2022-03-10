@@ -77,8 +77,7 @@ class TestTensorLocation():
 
             var_shard_shape: Tuple[int, ...] = (weight_data.size //
                                                 NUM_LOCAL_REPLICAS, )
-            remote_buffer = RemoteBuffer(ir,
-                                         var_shard_shape,
+            remote_buffer = RemoteBuffer(var_shard_shape,
                                          dtypes.float32,
                                          entries=NUM_LOCAL_REPLICAS)
             w = popxl.remote_replica_sharded_variable(weight_data,

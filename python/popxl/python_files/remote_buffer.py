@@ -8,18 +8,14 @@ from popxl.tensor import Tensor
 
 
 class RemoteBuffer:
-    """Store to or load from remote buffers residing in Streaming Memory.
-    """
-
-    def __init__(self, ir: Ir, tensor_shape: Tuple[int, ...],
-                 tensor_dtype: dtype, entries: int) -> None:
-        """Initialize the RemoteBuffer.
+    def __init__(self, tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
+                 entries: int) -> None:
+        """Store to or load from remote buffers residing in Streaming Memory.
 
         This constructor will automatically assign a buffer ID and store the buffer information in
         the underlying `remoteBufferInfoMap`.
 
         Args:
-            ir (Ir): IR where the remote buffer is to be created.
             tensor_shape (Tuple[int, ...]]): The shape of the tensors to be stored in the buffer.
             tensor_dtype (dtype) : The type of the tensors to be stored in the buffer.
             entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type.
@@ -32,7 +28,7 @@ class RemoteBuffer:
                 f"Entries must be a non-zero, positive integer. Got {entries}")
 
         # Get the python bound ir
-        self._current_ir = ir._pb_ir
+        self._current_ir = gcg().ir._pb_ir
         self._meta_shape: Tuple[int, ...] = tuple()
 
         # Obtain the buffer id
@@ -174,16 +170,17 @@ class RemoteBuffer:
         return hash((self._current_ir, self.remote_buffer_id))
 
 
-def remote_buffer(tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
-                  entries: int) -> RemoteBuffer:
+def remote_buffer(tensor_shape: Tuple[int, ...],
+                  tensor_dtype: dtype,
+                  entries: int = 1) -> RemoteBuffer:
     """Return a remote buffer based on the current IR from the context.
 
     Args:
         tensor_shape (Tuple[int, ...]]): The shape of the tensors to be stored in the buffer.
         tensor_dtype (dtype): The type of the tensors to be stored in the buffer.
-        entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type.
+        entries (int): Sets the size of the buffer to this number of tensors with the specified shape and type. Defaults to 1.
 
     Returns:
         RemoteBuffer: The remote buffer based on the current IR from the context.
     """
-    return RemoteBuffer(gcg().ir, tensor_shape, tensor_dtype, entries)
+    return RemoteBuffer(tensor_shape, tensor_dtype, entries)
