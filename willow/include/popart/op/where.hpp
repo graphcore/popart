@@ -14,11 +14,6 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() override;
   void setup() final;
 
-  std::vector<std::tuple<OperatorIdentifier, float>>
-  inplacePriorityDefault() const final;
-
-  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
-
   // Inputs
   static InIndex conditionInIndex() { return 0; }
   static InIndex xInIndex() { return 1; }
@@ -28,32 +23,6 @@ public:
   static OutIndex outIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-  poprithms::memory::inplace::Proposal
-  mapInplaceProposal(const AliasModel &aliasModel,
-                     OperatorIdentifier opId) const override;
-
-  void growAliasModel(AliasModel &m) const override;
-};
-
-class WhereLhsInplaceOp : public WhereOp {
-public:
-  WhereLhsInplaceOp(const WhereOp &op);
-
-  std::unique_ptr<Op> clone() const override;
-
-  view::Regions modifies(InIndex index) const final;
-  view::Regions aliases(InIndex index, OutIndex) const final;
-};
-
-class WhereRhsInplaceOp : public WhereOp {
-public:
-  WhereRhsInplaceOp(const WhereOp &op);
-
-  std::unique_ptr<Op> clone() const override;
-
-  view::Regions modifies(InIndex index) const final;
-  view::Regions aliases(InIndex index, OutIndex) const final;
 };
 
 class WhereXGradOp : public Op {

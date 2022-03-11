@@ -1,7 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/op/where.hpp>
 #include <popart/popx/devicex.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/wherex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
@@ -9,151 +8,29 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
-namespace pe = popops::expr;
-
 namespace popart {
 namespace popx {
 
-BaseWhereOpx::BaseWhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
-
-void BaseWhereOpx::grow(snap::program::Sequence &prog) const {
-  const auto condition = getInTensor(WhereOp::conditionInIndex());
-  auto x               = getInTensor(WhereOp::xInIndex());
-  auto y               = getInTensor(WhereOp::yInIndex());
-
-  doGrow(prog, x, y, condition);
-}
-
-InputCreatorType BaseWhereOpx::getInputCreatorType(InIndex inIndex) const {
-  // If it's broadcasted, revert to linear
-  if (op_p->inInfo(inIndex).shape() !=
-      op_p->outInfo(WhereOp::outIndex()).shape()) {
-    return InputCreatorType::Deadend;
-  }
-  // To avoid complications, always unwind on one index
-  // Favour the order x, y, condition
-  InIndex unwindIdx = unwindIndex();
-  if (inIndex == unwindIdx) {
-    return InputCreatorType::CanUnwind;
-  }
-
-  // On other indicies, allow a creator which clones the input matching
-  // unwindIndex. If we got here, at least this input and the unwindIndex match
-  // the output size.
-  return InputCreatorType::CanCreateOrUnwind;
-}
-
-snap::Tensor BaseWhereOpx::unwindTensorLayout(snap::Tensor tensor,
-                                              InIndex inIndex,
-                                              OutIndex) const {
-  if (inIndex == WhereOp::conditionInIndex()) {
-    return graph().clone(
-        popType(op_p->inInfo(inIndex)), tensor, debugContext());
-  }
-
-  return tensor;
-}
-
-std::set<TensorId> BaseWhereOpx::mustExistBeforeCreate(InIndex) const {
-  std::set<TensorId> mustExist;
-  mustExist.insert(op_p->input->tensor(unwindIndex())->id);
-  return mustExist;
-}
-
-snap::Tensor
-BaseWhereOpx::createInputTensor(InIndex inIndex,
-                                const poplar::DebugNameAndId &dnai) const {
-  const auto unwindIdx = unwindIndex();
-  if (!dv_p->lowering().tensors().contains(op_p->input->id(unwindIdx))) {
-    throw internal_error("WhereOpx::createInputTensor invalid configuration.");
-  }
-
-  return graph().clone(
-      popType(op_p->inInfo(inIndex)), getInTensor(unwindIdx), dnai);
-}
-
-view::RegMap BaseWhereOpx::unwindRegion(InIndex, OutIndex) const {
-  return [](const view::Region &r) { return view::Regions(1, r); };
-}
-
-InIndex BaseWhereOpx::unwindIndex() const {
-  if (op_p->inShape(WhereOp::xInIndex()) ==
-      op_p->outShape(WhereOp::outIndex())) {
-    return WhereOp::xInIndex();
-  }
-
-  if (op_p->inShape(WhereOp::yInIndex()) ==
-      op_p->outShape(WhereOp::outIndex())) {
-    return WhereOp::yInIndex();
-  }
-
-  if (op_p->inShape(WhereOp::conditionInIndex()) ==
-      op_p->outShape(WhereOp::outIndex())) {
-    return WhereOp::conditionInIndex();
-  }
-
-  // Technically, all three may broadcast different dimensions.
-  return -1;
-}
-
-WhereOpx::WhereOpx(Op *op, Devicex *devicex) : BaseWhereOpx(op, devicex) {
+WhereOpx::WhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<WhereOp>(op, {Onnx::Operators::Where_9});
 }
 
-void WhereOpx::doGrow(snap::program::Sequence &prog,
-                      const snap::Tensor &x,
-                      const snap::Tensor &y,
-                      const snap::Tensor &condition) const {
+void WhereOpx::grow(snap::program::Sequence &prog) const {
+
+  const auto condition =
+      getInTensor(WhereOp::conditionInIndex()).getPoplarTensor();
+  const auto x = getInTensor(WhereOp::xInIndex()).getPoplarTensor();
+  const auto y = getInTensor(WhereOp::yInIndex()).getPoplarTensor();
 
   const auto result = popops::select(graph().getPoplarGraph(),
-                                     x.getPoplarTensor(),
-                                     y.getPoplarTensor(),
-                                     condition.getPoplarTensor(),
+                                     x,
+                                     y,
+                                     condition,
                                      prog.getPoplarSequence(),
-                                     debugContext());
+                                     debugContext(),
+                                     poplar::OptionFlags());
+
   setOutTensor(WhereOp::outIndex(), snap::Tensor{result, graph()});
-}
-
-WhereLhsInplaceOpx::WhereLhsInplaceOpx(Op *op, Devicex *devicex)
-    : BaseWhereOpx(op, devicex) {
-  verifyOp<WhereLhsInplaceOp>(op);
-}
-
-void WhereLhsInplaceOpx::doGrow(snap::program::Sequence &prog,
-                                const snap::Tensor &x,
-                                const snap::Tensor &y,
-                                const snap::Tensor &condition) const {
-
-  popops::selectInPlace(graph().getPoplarGraph(),
-                        x.getPoplarTensor(),
-                        y.getPoplarTensor(),
-                        condition.getPoplarTensor(),
-                        prog.getPoplarSequence(),
-                        debugContext());
-
-  setOutTensor(WhereOp::outIndex(), x);
-}
-
-WhereRhsInplaceOpx::WhereRhsInplaceOpx(Op *op, Devicex *devicex)
-    : BaseWhereOpx(op, devicex) {
-  verifyOp<WhereRhsInplaceOp>(op);
-}
-
-void WhereRhsInplaceOpx::doGrow(snap::program::Sequence &prog,
-                                const snap::Tensor &x,
-                                const snap::Tensor &y,
-                                const snap::Tensor &condition) const {
-  // Reverse the order and use not to reverse condition
-  auto expr = pe::Select(pe::_1, pe::_2, pe::Not(pe::_3));
-
-  popops::mapInPlace(
-      graph().getPoplarGraph(),
-      expr,
-      {y.getPoplarTensor(), x.getPoplarTensor(), condition.getPoplarTensor()},
-      prog.getPoplarSequence(),
-      debugContext());
-
-  setOutTensor(WhereOp::outIndex(), y);
 }
 
 WhereXGradOpx::WhereXGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -265,10 +142,6 @@ void WhereYGradOpx::grow(snap::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<WhereOpx> whereOpxCreator(Onnx::Operators::Where_9);
-OpxCreator<WhereLhsInplaceOpx>
-    whereLhsInplaceOpxCreator(Onnx::CustomOperators::WhereLhsInplace);
-OpxCreator<WhereRhsInplaceOpx>
-    whereRhsInplaceOpxCreator(Onnx::CustomOperators::WhereRhsInplace);
 OpxCreator<WhereXGradOpx> whereXGradOpxCreator(Onnx::GradOperators::WhereXGrad);
 OpxCreator<WhereYGradOpx> whereYGradOpxCreator(Onnx::GradOperators::WhereYGrad);
 } // namespace

@@ -1185,47 +1185,6 @@ def test_where_0(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-@pytest.mark.parametrize("side", ("lhs", "rhs"))
-def test_where_inplace(op_tester, side):
-    lhs = (side == "lhs")
-    rhs = (side == "rhs")
-    assert lhs ^ rhs
-
-    condition = np.random.rand(100, 200).astype(np.bool)
-    x = np.random.rand(100, 200).astype(np.float32)
-    y = np.random.rand(100, 200).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(condition)
-        i2 = builder.addInputTensor(x)
-        i3 = builder.addInputTensor(y)
-
-        o = builder.aiOnnx.where([i1, i2, i3])
-
-        builder.setInplacePreferences(o, {
-            "WhereLhsInplace": 1 if lhs else 0,
-            "WhereRhsInplace": 1 if rhs else 0
-        })
-
-        builder.addOutputTensor(i2)
-        builder.addOutputTensor(i3)
-        builder.addOutputTensor(o)
-
-        return [o]
-
-    def reference(_):  # ref_data is an unused argument
-        ct = torch.tensor(condition)
-        cx = torch.tensor(x).float()
-        cy = torch.tensor(y).float()
-        out = torch.where(ct, cx, cy)
-        return [out]
-
-    patterns = ["InPlace"]
-    op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
-
-    session = op_tester.run(init_builder, reference, 'infer')
-
-
 def test_round(op_tester):
     d1 = np.random.rand(2, 7).astype(np.float32)
     d1 = d1 * 6 - 3  # numbers in range [-3, 3]
