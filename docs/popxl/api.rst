@@ -40,7 +40,6 @@ Contexts
 .. autofunction:: popxl.ipu
 .. autofunction:: popxl.name_scope
 .. autofunction:: popxl.op_debug_context
-.. autofunction:: popxl.pipeline_stage
 
 .. _popxl-dtypes:
 

@@ -23,7 +23,6 @@ class Context:
     def _reset(self):
         self._graphs: List['Graph'] = []
         self._ipu_id: int = 0
-        self._pipeline_stage: Optional[int] = None
         self._in_sequence: Optional[bool] = None
         self._previous_ops: DefaultDict[InSequenceKey,
                                         List[int]] = defaultdict(list)
@@ -46,10 +45,6 @@ class Context:
         if vgid is not None:
             settings.vgraphId = _ir.OptionalVGraphId(vgid)
 
-        pstage = self.pipeline_stage
-        if pstage is not None:
-            settings.pipelineStage = _ir.OptionalPipelineStage(pstage)
-
         settings.executionContext = self._execution_context
 
         if self.io_tile_set:
@@ -63,10 +58,6 @@ class Context:
     @property
     def ipu_id(self) -> Optional[int]:
         return self._ipu_id
-
-    @property
-    def pipeline_stage(self) -> Optional[int]:
-        return self._pipeline_stage
 
     @property
     def io_tile_set(self) -> bool:
@@ -263,16 +254,6 @@ def ipu(ipu: int):
     ctx._ipu_id = ipu
     yield ipu
     ctx._ipu_id = prev
-
-
-@contextmanager
-def pipeline_stage(stage: int):
-    """Set the pipeline stage on Ops created in this context."""
-    ctx = get_current_context()
-    prev = ctx._pipeline_stage
-    ctx._pipeline_stage = stage
-    yield stage
-    ctx._pipeline_stage = prev
 
 
 @contextmanager

@@ -15,7 +15,7 @@ if (actualVersion != requiredVersion):
 
 __all__ = [
     # context.py
-    "get_current_graph", "get_main_graph", "gcg", "gmg", "pipeline_stage",
+    "get_current_graph", "get_main_graph", "gcg", "gmg",
     "in_sequence", "name_scope", "ipu", "io_tiles",
     # dtypes.py
     "dtype", "bool", "int8", "int16", "int32", "int64", "uint8", "uint16",
@@ -45,7 +45,7 @@ __all__ = [
 ]
 
 from .context import (get_current_graph, get_main_graph, gcg, gmg,
-    pipeline_stage, in_sequence, name_scope, ipu, io_tiles)
+    in_sequence, name_scope, ipu, io_tiles)
 from .dtypes import (dtype, bool, int8, int16, int32, int64, uint8,
     uint16, uint32, uint64, half, float16, float, float32, double, float64,
     complex64, complex128)
