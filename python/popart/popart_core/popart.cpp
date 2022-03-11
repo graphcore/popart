@@ -3086,12 +3086,16 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("retrievalMode_"));
     cls.def("numReplicasReturningVariable",
             &VariableSettings::numReplicasReturningVariable);
+    cls.def("groupCount", &VariableSettings::groupCount);
+    cls.def("getRealGroupSize", &VariableSettings::getRealGroupSize);
     cls.def("getGroupRepresentative",
             &VariableSettings::getGroupRepresentative,
             py::arg("group"));
     cls.def("getSharedVariableDomain",
             &VariableSettings::getSharedVariableDomain);
     cls.def("getRetrievalMode", &VariableSettings::getRetrievalMode);
+    cls.def("shapeOnReplica", &VariableSettings::shapeOnReplica);
+    cls.def("groups", &VariableSettings::groups);
   }
   { m.attr("CommGroupType") = popart_internal_ir.attr("CommGroupType"); }
   { m.attr("CommGroup") = popart_internal_ir.attr("CommGroup"); }
