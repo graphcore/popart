@@ -2692,25 +2692,24 @@ void IrLowering::prePlanMatMuls() {
   }
 
   for (const auto &graph_op : matMulGraphsOps) {
-    snap::Graph *graph    = graph_op.first;
-    std::vector<Op *> ops = graph_op.second;
+    const snap::Graph *graph = graph_op.first;
 
     std::vector<poplin::MatMulParams> allMatMulParams;
     std::vector<poplar::OptionFlags> allOptionFlags;
 
+    // The input tensors to the matmul opx are reshaped before being passed
+    // to the poplibs matmul call. These tensors don't exist at this point,
+    // so we create a dummy graph, and perform these same transformations on
+    // dummy input tensors, in order to get the correct input shapes from
+    // which to generate the MatMulParams.
+    // TODO: T31134 we could avoid this by moving the reshaping of inputs into
+    // the IR.
+    snap::Graph dummyGraph(graph->getTarget());
     for (Op *op : matMulOps) {
       auto matMulOp  = dynamic_cast<MatMulOp *>(op);
       auto matMulOpx = dynamic_cast<MatMulOpx *>(getOpx(op->id));
 
       poplin::MatMulParams matMulParams;
-      // The input tensors to the matmul opx are reshaped before being passed
-      // to the poplibs matmul call. These tensors don't exist at this point,
-      // so we create a dummy graph, and perform these same transformations on
-      // dummy input tensors, in order to get the correct input shapes from
-      // which to generate the MatMulParams.
-      // TODO: T31134 we could avoid this by moving the reshaping of inputs into
-      // the IR.
-      snap::Graph dummyGraph(graph->getTarget());
       auto inputType = popType(matMulOp->lhsIn()->info.dataType());
       auto dummyLhs  = dummyGraph.addVariable(
           inputType, matMulOp->lhsIn()->info.shape_szt());
