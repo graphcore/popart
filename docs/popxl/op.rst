@@ -42,7 +42,9 @@ Then store data from device to host by using:
 
   host_store(d2h_stream: DeviceToHostStream, t: Tensor)
 
-Where the ``t`` is the tensor to be copied to the host.
+Where the ``t`` is the tensor to be copied to the host. Note that you require a separate ``host_load`` or
+``host_store`` for each tensor and transfer to or from the device respectively. However the transfers
+will be merged into one internally for efficiency if the op's schedule allows it.
 
 
 List of available operations

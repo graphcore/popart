@@ -14,6 +14,7 @@ PopXL User Guide and API (experimental)
     graph
     transforms
     context
+    session
     api
     genindex
     legal

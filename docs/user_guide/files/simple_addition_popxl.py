@@ -7,7 +7,6 @@ popxl.
 import numpy as np
 import popxl
 import popxl.ops as ops
-import popart
 
 # Creating a model with popxl
 ir = popxl.Ir()
@@ -26,31 +25,29 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
-
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
-
-device = popart.DeviceManager().createCpuDevice()
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
+session = popxl.Session(ir, "ipu_model")
 
 # Generate some random input data
 data_a = np.random.rand(1).astype(np.float32)
 data_b = np.random.rand(1).astype(np.float32)
-inputs = {input0.tensor_id: data_a, input1.tensor_id: data_b}
+inputs = {input0: data_a, input1: data_b}
 
+# SessionRun begin
 # run the model
-stepio = popart.PyStepIO(inputs, anchors)
-session.run(stepio)
+outputs = session.run(inputs)
 
 print(f"Input a is {data_a}")
 print(f"Input b is {data_b}")
-print(f"Result is {anchors[o_d2h.tensor_id]}")
+print(f"Result is {outputs[o_d2h]}")
+# SessionRun end
+
+# SessionRun2 begin
+# Alternatively:
+run_output = {o_d2h: np.zeros(shape=[1]).astype(np.float32)}
+
+session.run_with_outputs(inputs, run_output)
+
+print(f"Input a is {data_a}")
+print(f"Input b is {data_b}")
+print(f"Result is {run_output[o_d2h]}")
+# SessionRun2 end

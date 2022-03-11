@@ -7,7 +7,6 @@ with autodiff.
 import numpy as np
 import popxl
 import popxl.ops as ops
-import popart
 from typing import Tuple
 import popxl.transforms as transforms
 
@@ -72,38 +71,13 @@ with main:
     ops.host_store(grad_d2h, grads_w)
     # Op end
 
-dataFlow = popart.DataFlow(batchesPerStep=1,
-                           anchorTensors={
-                               o_d2h.tensor_id: popart.AnchorReturnType("All"),
-                               grad_d2h.tensor_id:
-                               popart.AnchorReturnType("All")
-                           })
-
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
-
-for g in ir.getAllGraphs():
-    ir.applyPreAliasPatterns(g)
-ir.updateVertices()
-
-device = popart.DeviceManager().createCpuDevice()
-# TODO the popart.InferenceSession will be replaced by popxl Session when D59103 is ready
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
+session = popxl.Session(ir, "ipu_model")
 
 # Generate some random input data
-inputs = {input.tensor_id: np.random.rand(2, 2).astype(np.float32)}
+inputs = {input: np.random.rand(2, 2).astype(np.float32)}
 
-# run the model
-stepio = popart.PyStepIO(inputs, anchors)
-session.weightsFromHost()
-session.run(stepio)
+outputs = session.run(inputs)
 
-print(f"Input is {inputs[input.tensor_id]}")
-print(f"Output is {anchors[o_d2h.tensor_id]}")
-print(f"Grads is {anchors[grad_d2h.tensor_id]}")
+print(f"Input is {inputs[input]}")
+print(f"Output is {outputs[o_d2h]}")
+print(f"Grads is {outputs[grad_d2h]}")

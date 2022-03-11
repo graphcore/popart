@@ -113,6 +113,16 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "repeat_graph_popxl_1.py"
         self.run_python(filename, self.base_path)
 
+    def test_documentation_popxl_repeat_2(self):
+        """Test the popxl subgraph in parent in repeat example"""
+        filename = "repeat_graph_popxl_2.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popart_ir_get_set_tensors(self):
+        """Test the popxl getting / setting tensor data example"""
+        filename = "tensor_get_write_popxl.py"
+        self.run_python(filename, self.base_path)
+
 
 class TestPopartCustomOperatorCube(ExamplesTester):
     """Tests for example of Popart cube custom operator"""

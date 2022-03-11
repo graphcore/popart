@@ -7,7 +7,6 @@ subgraph from multiple callsites.
 import numpy as np
 import popxl
 import popxl.ops as ops
-import popart
 
 # Creating a model with popxl
 ir = popxl.Ir()
@@ -40,29 +39,12 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
-
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
-
-device = popart.DeviceManager().createCpuDevice()
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
-
 # Generate some random input data
-inputs = {input.tensor_id: np.random.rand(2, 2).astype(np.float32)}
+inputs = {input: np.random.rand(2, 2).astype(np.float32)}
 
-# run the model
-stepio = popart.PyStepIO(inputs, anchors)
-session.weightsFromHost()
-session.run(stepio)
+session = popxl.Session(ir, "ipu_model")
 
-print(f"Input is {inputs[input.tensor_id]}")
-print(f"Result is {anchors[o_d2h.tensor_id]}")
+outputs = session.run(inputs)
+
+print(f"Input is {inputs[input]}")
+print(f"Result is {outputs[o_d2h]}")

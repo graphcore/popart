@@ -6,7 +6,6 @@ different types of tensors in popxl.
 
 import popxl
 import popxl.ops as ops
-import popart
 
 # Creating a model with popxl
 ir = popxl.Ir()
@@ -23,25 +22,13 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
+# Session begin
+# Construct an Ir `ir`...
 
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
+ir.num_host_transfers = 1
 
-device = popart.DeviceManager().createCpuDevice()
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
+session = popxl.Session(ir, "ipu_model")
+outputs = session.run()
 
-# run the model
-stepio = popart.PyStepIO({}, anchors)
-session.weightsFromHost()
-session.run(stepio)
-
-print(f"Result is {anchors[o_d2h.tensor_id]}")
+print(f"Result is {outputs[o_d2h]}")
+# Session end

@@ -6,7 +6,6 @@ subgraph from a Python function with a repeat operation.
 import numpy as np
 import popxl
 import popxl.ops as ops
-import popart
 
 # Creating a model with popxl
 ir = popxl.Ir()
@@ -33,25 +32,8 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
+session = popxl.Session(ir, "ipu_model")
 
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
+outputs = session.run()
 
-device = popart.DeviceManager().createCpuDevice()
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
-
-# run the model
-stepio = popart.PyStepIO({}, anchors)
-session.weightsFromHost()
-session.run(stepio)
-
-assert (anchors[o_d2h.tensor_id] == [[3, 3], [3, 3]]).all()
+np.testing.assert_allclose(outputs[o_d2h], [[3, 3], [3, 3]])

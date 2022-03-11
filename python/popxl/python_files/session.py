@@ -24,9 +24,13 @@ class Session:
                  ir: Ir,
                  device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu"
                  ) -> None:
-        """A runtime session that can execute a PopXL `Ir`.
+        """
+        A runtime session that can execute a PopXL `Ir`.
 
-        .. warning:: The session object takes ownership of the provided Ir and it cannot be modified afterwards.
+        .. warning:: The session object takes ownership of the provided Ir and it cannot be modified
+        afterwards.
+
+        Initialise a new session.
 
         Args:
             ir (Ir): The Ir to use for this session.
@@ -148,7 +152,7 @@ class Session:
         """Returns the full input shape that this array will need to be, when taking into account
         num_host_transfers and replication_factor.
 
-        For example, shape = (3, 4), device_iterations = 8, replicas = 4, _full_input_shape =
+        For example, shape = (3, 4), num_host_transfers = 8, replicas = 4, _full_input_shape =
         (8, 4) + (3, 4)  (8, 4, 3, 4)
 
         Args:
@@ -162,7 +166,9 @@ class Session:
     def get_tensor_data(self, tensor: Union[Variable, Constant]) -> np.ndarray:
         """Get the data stored in the tensor on the device.
 
-        This will sync all the host buffers with the corresponding tensors on the device.
+        This will sync all the host buffers with the corresponding tensors on the device. Note this
+        is a memory view of the data, so will not allocate extra memory for the data, but it is your
+        responsibility to ensure the data in the tensor is live at the point of retrival.
 
         Args:
             tensor (Union[Variable, Constant]): The tensor to get the data for. Must be Constant or

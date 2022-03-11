@@ -6,7 +6,6 @@ PopXL context manager in_sequence
 
 import popxl
 import popxl.ops as ops
-import popart
 
 # Creating a model with popxl
 ir = popxl.Ir()
@@ -21,26 +20,8 @@ with main:
         # host store
         o_d2h = popxl.d2h_stream(x.shape, x.dtype, name="output_stream")
         ops.host_store(o_d2h, x)
-# Op end
-dataFlow = popart.DataFlow(
-    batchesPerStep=1,
-    anchorTensors={o_d2h.tensor_id: popart.AnchorReturnType("All")})
 
-ir = ir._pb_ir
-ir.setDataFlow(dataFlow)
-opts = ir.getSessionOptions()
-opts.useHostCopyOps = True
-opts.enableExplicitMainLoops = True
-ir.updateVertices()
-
-device = popart.DeviceManager().createCpuDevice()
-session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-session.prepareDevice()
-anchors = session.initAnchorArrays()
+session = popxl.Session(ir, "ipu_model")
 
 # run the model
-stepio = popart.PyStepIO({}, anchors)
-session.weightsFromHost()
-session.run(stepio)
-
-print(f"Result is {anchors[o_d2h.tensor_id]}")
+outputs = session.run()
