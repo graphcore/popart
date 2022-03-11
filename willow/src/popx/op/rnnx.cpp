@@ -725,7 +725,6 @@ poplar::Type RNNGradOpx::getTensorType() const {
 
 unsigned RNNGradOpx::getMinGrainSize() const {
   auto &rnn_grad_op = getOp<RNNGradOp>();
-  return 1;
   return std::max(1,
                   16 / rnn_grad_op.inInfo(RNNGradOp::getInputInIndex())
                            .getDataTypeInfo()
