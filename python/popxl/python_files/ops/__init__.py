@@ -53,6 +53,7 @@ from .squeeze import squeeze
 from .sub import sub
 from .sum import sum
 from .sumsquare import sumsquare
+from .tanh import tanh
 from .transpose import transpose, transpose_
 from .where import where
 
@@ -188,6 +189,8 @@ __all__ = [
     "sum",
     # sumsquare.py
     "sumsquare",
+    # tanh.py
+    "tanh",
     # transpose.py
     "transpose",
     "transpose_",
