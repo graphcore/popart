@@ -31,6 +31,7 @@
 #include "bindings/tensorinfo.hpp"
 #include "bindings/tensorlocation.hpp"
 #include "bindings/tensors.hpp"
+#include "bindings/topocons.hpp"
 #include "bindings/util.hpp"
 // transforms
 #include "bindings/transforms/autodiff.hpp"
@@ -73,6 +74,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindBwdGraphInfo(m);
   bindCommGroup(m);
   bindUtil(m);
+  bindTopoCons(m);
   // Ops
   {
     op::_bindAll(m);

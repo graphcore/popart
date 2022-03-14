@@ -24,10 +24,6 @@ namespace _internal {
 namespace ir {
 
 void bindGraph(py::module &m) {
-  py::class_<TopoCons> tc(m, "TopoCon");
-
-  tc.def("insert", py::overload_cast<Op *, Op *, bool>(&TopoCons::insert));
-
   py::class_<Graph> g(m, "Graph");
 
   g.def(py::init<Ir &, const GraphId &>())

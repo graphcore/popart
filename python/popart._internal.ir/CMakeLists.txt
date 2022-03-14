@@ -174,6 +174,7 @@ add_popart_python_module(
   bindings/graphid.cpp
   bindings/ir.cpp
   bindings/op.cpp
+  bindings/topocons.cpp
   # Manual ops
   bindings/op/enums.cpp
   bindings/op/loop.cpp
