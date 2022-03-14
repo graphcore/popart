@@ -13,6 +13,7 @@ import popart._internal.ir as _ir
 from popxl.graph import Graph
 from popxl.module import Module
 from popxl.tensor import Tensor, TensorByRef, TensorSpec, graph_input, graph_output
+from popxl.replica_grouping import ReplicaGrouping
 
 if TYPE_CHECKING:
     IrCache = WeakValueDictionary[int, 'Ir']
@@ -424,3 +425,54 @@ class Ir:
 
     def __repr__(self) -> str:
         return f"Ir[id={self.id}]"
+
+    def replica_grouping(self, stride: int,
+                         group_size: int) -> 'ReplicaGrouping':
+        """
+        Create a :py:class:`~popxl.ReplicaGrouping` object.
+
+        A :py:class:`~popxl.ReplicaGrouping` object represents a way in which
+        replicas are grouped for the purpose of getting and setting variable
+        values and
+        :ref:`collective operations<popxl_ops_collectives_available_ops>`.
+
+        A grouping always exactly partitions a set of replicas, so every replica
+        is exactly in one group. We specify these partitions with a ``stride``
+        and ``group_size`` argument. The ``stride`` specifies the offset between
+        replicas within a group and the ``group_size`` specifies the number of
+        replicas within a group.
+
+        Group with ``stride`` 1 and ``group_size`` 2 for 8 replicas:
+
+        .. code-block:: python
+
+            0,0,1,1,2,2,3,3
+
+        Group with ``stride`` 1 and ``group_size`` 4 for 8 replicas:
+
+        .. code-block:: python
+
+            0,0,0,0,1,1,1,1
+
+        Group with ``stride`` 2 and ``group_size`` 4 for 8 replicas:
+
+        .. code-block:: python
+
+            0,1,0,1,0,1,0,1
+
+        Group with ``stride`` 4 and ``group_size`` 2 for 8 replicas:
+
+        .. code-block:: python
+
+            0,1,2,3,0,1,2,3
+
+        Args:
+            stride (int): The offset between elements in a replica group.
+            group_size (int): The number of replicas in each replica group.
+
+        Returns:
+            ReplicaGrouping: An object describing the replica grouping.
+        """
+        return ReplicaGrouping._from_params(ir=self,
+                                            stride=stride,
+                                            group_size=group_size)

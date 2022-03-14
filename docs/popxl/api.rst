@@ -94,6 +94,13 @@ Remote buffers
 
 .. _popxl-streams:
 
+Replica grouping
+----------------
+
+.. autoclass:: popxl.ReplicaGrouping
+    :members:
+    :special-members: __init__
+
 Streams
 -------
 

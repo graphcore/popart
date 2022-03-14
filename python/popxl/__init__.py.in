@@ -31,6 +31,8 @@ __all__ = [
     "create_seeds",
     # remote_buffer.py
     "RemoteBuffer", "remote_buffer",
+    # replica_grouping.py
+    "ReplicaGrouping",
     # streams.py
     "HostToDeviceStream", "DeviceToHostStream", "h2d_stream", "d2h_stream",
     # tensor.py
@@ -54,6 +56,7 @@ from .module import Module
 from .ir import Ir
 from .random_seed import create_seeds
 from .remote_buffer import (RemoteBuffer, remote_buffer)
+from .replica_grouping import (ReplicaGrouping)
 from .streams import (HostToDeviceStream, DeviceToHostStream,
     h2d_stream, d2h_stream)
 from .tensor import (Tensor, variable, remote_variable,

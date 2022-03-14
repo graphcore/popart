@@ -11,6 +11,7 @@ from popxl import dtypes
 from popxl.context import gcg, gmg, debug_context_frame_offset, _execution_context, get_main_graph
 from popxl.typing_ import NewAliasAnnotation
 from popxl.errors import UndefinedValue
+from popxl.replica_grouping import ReplicaGrouping
 
 if TYPE_CHECKING:
     from popxl import Ir
@@ -656,12 +657,11 @@ downcast_np_dtypes = {
 }
 
 
-def variable(
-        data: Union[HostTensor, float, int],
-        dtype: Optional[dtypes.dtype] = None,
-        name: Optional[str] = None,
-        downcast: bool = True,
-) -> Variable:
+def variable(data: Union[HostTensor, float, int],
+             dtype: Optional[dtypes.dtype] = None,
+             name: Optional[str] = None,
+             downcast: bool = True,
+             replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
     """
     Create a variable tensor that is initialised with data during graph creation.
 
@@ -686,7 +686,19 @@ def variable(
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
+        replica_grouping:
+            The grouping of replicas to use when getting and setting variable
+            values. Generally it makes sense to group replicas together that
+            are guaranteed to agree on value based on the collective operations
+            you add to the IR. Replicas within a group are always initialised
+            with a shared value and by default, when retrieving values from
+            replicas, only one value is returned per group. By default all
+            replicas are in one group.
     """
+    if replica_grouping is not None:
+        raise RuntimeError(
+            "Using non-default replica grouping is not yet supported")
+
     g = gcg()
     pb_g = g._pb_graph
 
@@ -711,13 +723,15 @@ def variable(
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def remote_variable(data: Union[HostTensor, float, int],
-                    remote_buffer: "RemoteBuffer",
-                    offset: int = 0,
-                    dtype: Optional[dtypes.dtype] = None,
-                    name: Optional[str] = None,
-                    downcast: bool = True,
-                    num_shards: int = 1) -> Variable:
+def remote_variable(
+        data: Union[HostTensor, float, int],
+        remote_buffer: "RemoteBuffer",
+        offset: int = 0,
+        dtype: Optional[dtypes.dtype] = None,
+        name: Optional[str] = None,
+        downcast: bool = True,
+        num_shards: int = 1,
+        replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
 
     Args:
@@ -736,12 +750,23 @@ def remote_variable(data: Union[HostTensor, float, int],
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
         shards (int):
             Number of shards for this variable.
+        replica_grouping:
+            The grouping of replicas to use when getting and setting variable
+            values. Generally it makes sense to group replicas together that
+            are guaranteed to agree on value based on the collective operations
+            you add to the IR. Replicas within a group are always initialised
+            with a shared value and by default, when retrieving values from
+            replicas, only one value is returned per group. By default all
+            replicas are in one group.
     Returns:
         Variable: The remote variable.
 
     Raises:
         ValueError: if the variable shape or dtype does not match remote buffer's
     """
+    if replica_grouping is not None:
+        raise RuntimeError(
+            "Using non-default replica grouping is not yet supported")
 
     var = variable(data, dtype, name, downcast)
     # Check if the var matches the remote buffer in shape and dtype
@@ -754,12 +779,14 @@ def remote_variable(data: Union[HostTensor, float, int],
     return var
 
 
-def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
-                                    remote_buffer: "RemoteBuffer",
-                                    offset: int = 0,
-                                    dtype: Optional[dtypes.dtype] = None,
-                                    name: Optional[str] = None,
-                                    downcast: bool = True) -> Variable:
+def remote_replica_sharded_variable(
+        data: Union[HostTensor, float, int],
+        remote_buffer: "RemoteBuffer",
+        offset: int = 0,
+        dtype: Optional[dtypes.dtype] = None,
+        name: Optional[str] = None,
+        downcast: bool = True,
+        replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
         The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
         data parallelism) of the same model/graph. Eliminates redundant data storage when the full
@@ -784,6 +811,14 @@ def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
+        replica_grouping:
+            The grouping of replicas to use when getting and setting variable
+            values. Generally it makes sense to group replicas together that
+            are guaranteed to agree on value based on the collective operations
+            you add to the IR. Replicas within a group are always initialised
+            with a shared value and by default, when retrieving values from
+            replicas, only one value is returned per group. By default all
+            replicas are in one group.
 
     Raises:
         ValueError: If replication has not been enabled.
@@ -793,6 +828,10 @@ def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
     Returns:
         Variable: The remote sharded variable.
     """
+    if replica_grouping is not None:
+        raise RuntimeError(
+            "Using non-default replica grouping is not yet supported")
+
     opts = gcg().ir._pb_ir.getSessionOptions()
     num_replicas: int = opts.replicatedGraphCount
 
@@ -829,7 +868,9 @@ def remote_replica_sharded_variable(data: Union[HostTensor, float, int],
 def replica_sharded_variable(data: Union[HostTensor, float, int],
                              dtype: Optional[dtypes.dtype] = None,
                              name: Optional[str] = None,
-                             downcast: bool = True) -> Tuple[Variable, Tensor]:
+                             downcast: bool = True,
+                             replica_grouping: Optional[ReplicaGrouping] = None
+                             ) -> Tuple[Variable, Tensor]:
     """Scatter a tensor in equal shards across replicas (data parallelism) of the
         same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does
         not need to be present on each IPU. Does not store the full tensor in remote memory.
@@ -844,6 +885,14 @@ def replica_sharded_variable(data: Union[HostTensor, float, int],
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
+        replica_grouping:
+            The grouping of replicas to use when getting and setting variable
+            values. Generally it makes sense to group replicas together that
+            are guaranteed to agree on value based on the collective operations
+            you add to the IR. Replicas within a group are always initialised
+            with a shared value and by default, when retrieving values from
+            replicas, only one value is returned per group. By default all
+            replicas are in one group.
 
     Returns:
         Tuple[Variable, Tensor]:
@@ -851,6 +900,10 @@ def replica_sharded_variable(data: Union[HostTensor, float, int],
             1. The full variable. This should NOT be used directly. It can be used to interact with Session's get/set data methods
             2. The sharded variable.
     """
+    if replica_grouping is not None:
+        raise RuntimeError(
+            "Using non-default replica grouping is not yet supported")
+
     import popxl.ops as ops
     from popxl.remote_buffer import remote_buffer
 
