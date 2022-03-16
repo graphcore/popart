@@ -45,9 +45,12 @@ view::RegMap defaultRegMapImpl(const Op &op,
   } else if (!op.output->hasIndex(o)) {
     throw error("{} called for op with no zero output", methodName);
   } else if (op.inShape(i) != op.outShape(o)) {
-    throw error("default {} not valid : should be specialised for {}",
+    throw error("default {} not valid : should be specialised for {}, "
+                "because input {} and output {} shape do not match.",
                 methodName,
-                op.str());
+                op.str(),
+                op.inShape(i),
+                op.outShape(o));
   }
   return [](const view::Region &r) { return view::Regions(1, r); };
 }

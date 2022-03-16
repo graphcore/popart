@@ -11,7 +11,8 @@ import test_util as tu
 
 
 @tu.requires_ipu_model
-def test_2_restores_for_1_stash():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_2_restores_for_1_stash(explicit):
     """
     The model:
            IPU0, PS0
@@ -51,13 +52,14 @@ def test_2_restores_for_1_stash():
         opts.enablePipelining = pipeline
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = bps
+        opts.enableExplicitIR(explicit)
         if recompute == True:
             opts.autoRecomputation = popart.RecomputationType.Pipeline
 
         with tu.create_test_device(numIpus=2) as device:
             session = popart.TrainingSession(
                 deviceInfo=device,
-                dataFlow=popart.DataFlow(1, [loss, w0],
+                dataFlow=popart.DataFlow(1, [loss],
                                          popart.AnchorReturnType("Final")),
                 fnModel=builder.getModelProto(),
                 loss=loss,
@@ -69,11 +71,16 @@ def test_2_restores_for_1_stash():
             anchors = session.initAnchorArrays()
             stepio = popart.PyStepIO({in0: in0_data}, anchors)
             session.run(stepio)
-            return anchors[w0]
+            session.weightsToHost()
+            w0R = np.array(-777.0 * np.ones(w0_data.shape), dtype=np.float32)
+            weightsRead = popart.PyWeightsIO({w0: w0R})
+            session.readWeights(weightsRead)
+            return w0R
 
     ref_weights = runModel(pipeline=False, recompute=False)
     pipelined_weights = runModel(pipeline=True, recompute=False)
     pipelined_recomp_weights = runModel(pipeline=True, recompute=True)
+    print("Untrained        :", w0_data)
     print("Ref              :", ref_weights)
     print("Pipelined        :", pipelined_weights)
     print("Pipelined, recomp:", pipelined_recomp_weights)
@@ -82,6 +89,8 @@ def test_2_restores_for_1_stash():
     assert np.allclose(ref_weights, pipelined_recomp_weights)
 
 
+# Test not relevant for explicit pipelining, which should support this through
+# multiple recomputation
 @tu.requires_ipu_model
 def test_2_restores_for_1_stash_not_supported_with_recomp():
     """
@@ -103,8 +112,9 @@ def test_2_restores_for_1_stash_not_supported_with_recomp():
     recompute fragments:
         - Restore in0 in PS2, recompute x0 for Add's consumption
         - Restore in0 in PS4, recompute x0 Transpose's consumption
-    Supporting recomputation of a tenosr in >1 fragment is to do in T30014.
+    Supporting recomputation of a tensor in >1 fragment is to do in T30014.
     For now we raise an exception
+    This should not be an issue with explicit pipelining.
     """
 
     bps = 5

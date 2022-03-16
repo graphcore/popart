@@ -88,8 +88,6 @@ public:
 
 protected:
   CalledGraphGradOpHelper calledGraphGradOpHelper;
-
-private:
   // Regions of Input Tensors (InIndex) are aliased by Output Tensors (OutIndex)
   std::map<std::pair<InIndex, OutIndex>, std::pair<view::Chains, view::Chains>>
       aliasMap;

@@ -41,9 +41,7 @@ def test_explicit_pipelining_0():
         opts.explicitRecomputation = True
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        if isExplicit:
-            opts.enableExplicitMainLoops = True
-            opts.useHostCopyOps = True
+        opts.enableExplicitIR(isExplicit)
 
         with tu.create_test_device(numIpus=3) as device:
             session = popart.InferenceSession(fnModel=builder.getModelProto(),

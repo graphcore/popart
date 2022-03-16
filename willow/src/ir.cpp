@@ -490,10 +490,13 @@ void Ir::verifyPipelineSettings() const {
     return;
   }
 
-  if (!virtualGraphsEnabled() || getMaxVirtualGraphId() == 1) {
-    throw error("Pipelining requires more than 1 IPU and the "
+  if (getSessionOptions().implicitPipeliningEnabled() &&
+      (!virtualGraphsEnabled() || getNumVirtualGraphIds() == 1)) {
+    throw error("Pipelining requires more than 1 IPU (currently {}) and the "
                 "'virtualGraphMode' session option "
-                "to not be VirtualGraphMode::Off.");
+                "to not be VirtualGraphMode::Off (currently {}).",
+                getNumVirtualGraphIds(),
+                getSessionOptions().virtualGraphMode);
   }
 
   auto getPipelineStage = [](auto x) -> PipelineStage {
@@ -1341,11 +1344,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   removeIsolatedTensors(true);
   updateVertices();
 
-  if (userOptions.explicitRecomputation) {
-    logging::transform::warn(
-        "WARNING: Enabling explicit recomputation. This option is deprecated "
-        "and will be removed in a future version. Future versions will enable "
-        "this option by default.");
+  if (getSessionOptions().explicitRecomputation) {
     if (autoRecomputationEnabled() &&
         getSessionOptions().executionPhaseSettings.phases < 2) {
       logging::transform::info("Auto-annotating Ops for recomputation");
@@ -1551,6 +1550,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     // Add explicit training loops
     applyTransform(MainLoops::id(), getMainGraph());
     removeIsolatedTensors(true);
+    dotCheckpoint(*this, "MainLoops");
   }
 
   if (getSessionOptions().useHostCopyOps) {
@@ -1582,7 +1582,11 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // restore them when needed in the backwards pass, allowing
   // for greater parallelism during compute.
   if (getSessionOptions().enablePipelining) {
-    applyTransform(Pipeline::id(), getMainGraph());
+    if (getSessionOptions().explicitPipeliningEnabled()) {
+      applyTransform(Pipeline::id(), (MainLoops::getInnerLoopSubgraph(*this)));
+    } else {
+      applyTransform(Pipeline::id(), getMainGraph());
+    }
     updateVertices();
   }
 
@@ -1624,8 +1628,10 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     }
   }
 
-  if (getSessionOptions().enablePipelining &&
+  if (getSessionOptions().implicitPipeliningEnabled() &&
       getSessionOptions().autoRecomputation == RecomputationType::Pipeline) {
+    // Mechanism only relevant for implicit pipelining, explicit recomputation
+    // has separate mechanism dealing with this
     const auto scopedStopwatch =
         timePartitionLogger().scopedStopwatch("setFinalFwdStageRecomputation");
     Pipeline::setFinalFwdStageRecomputation(getMainGraph());
@@ -1694,7 +1700,6 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
     verifyConnectivity();
     verifyTensorIds();
     verifyVirtualGraphIds(true);
-    verifyVertexAttributesOnlyInMain();
     verifyRecomputeAttributes();
     verifyExecutionContexts();
     verifyPipelineStageAttributes();
@@ -1800,42 +1805,6 @@ void Ir::addAdditionalModelProtoTensor(Tensor *tensor) {
     // in the onnx modelproto
     if (!storingIsDisabledForTensor(tensor)) {
       additionalModelProtoTensors.insert(tensor);
-    }
-  }
-}
-
-void Ir::verifyVertexAttributesOnlyInMain() const {
-  auto verify = [](const Vertex *v) {
-    if (v->toLoss != PathToLoss::Undefined) {
-      throw error("Vertex {}, which is not in the main scope, does not have "
-                  "PathToLoss::Undefined",
-                  v->str());
-    }
-    if (v->fromLoss != PathFromLoss::Undefined) {
-      throw error("Vertex {}, which is not in the main scope, does not have "
-                  "PathFromLoss::Undefined",
-                  v->str());
-    }
-    if (v->scheduledPreLoss != ScheduledPreLoss::Undefined) {
-      throw error("Vertex {}, which is not in the main scope, does not have "
-                  "ScheduledPreLoss::Undefined",
-                  v->str());
-    }
-  };
-
-  for (auto op : getAllOps()) {
-
-    // If this Vertex is not in the main Graph
-    if (!op->settings.scope.str().empty()) {
-      verify(op);
-
-      for (auto tIn : op->input->tensors()) {
-        verify(tIn);
-      }
-
-      for (auto tOut : op->output->tensors()) {
-        verify(tOut);
-      }
     }
   }
 }
@@ -2696,53 +2665,60 @@ void Ir::updateVertices() {
   logging::ir::info(
       "Updating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
 
-  // 1, 2)
-  graphFromLossToLossUpdater::propagate(getMainGraph());
+  for (auto &graphIdAndGraphPt : graphs) {
+    auto &graph = *graphIdAndGraphPt.second.get();
 
-  // 3.1) scheduledPreLoss for Ops.
-  // Op which have PathFromLoss::Yes are ScheduledPreLoss::No
-  for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
+    // 1, 2)
+    graphFromLossToLossUpdater::propagate(graph);
 
-    if (op->fromLoss == PathFromLoss::Yes ||
-        op->settings.executionContext ==
-            ExecutionContext::AccumulateOuterFragment) {
-      op->scheduledPreLoss = ScheduledPreLoss::No;
-    } else {
-      op->scheduledPreLoss = ScheduledPreLoss::Yes;
-    }
-    if (op->scheduledPreLoss == ScheduledPreLoss::No &&
-        op->settings.recomputeType != RecomputeType::Recomputed) {
-      op->settings.recomputeType = RecomputeType::Checkpoint;
-    }
-  }
+    // 3.1) scheduledPreLoss for Ops.
+    // Op which have PathFromLoss::Yes are ScheduledPreLoss::No
+    for (auto &id_op : graph.getOps()) {
+      auto op = id_op.second.get();
 
-  logging::ir::debug("setting scheduledPreLoss for Tensors in updateVertices");
-  // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
-  // in the schedule
-  bool postLoss = false;
-  for (auto op :
-       getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes)) {
-    postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
-    if (postLoss) {
-      // The loss has been crossed, everything ScheduledPreLoss::No from here on
-      op->scheduledPreLoss = ScheduledPreLoss::No;
-    }
-    for (auto tensor : op->input->tensors()) {
-      // inputs to pre-loss are pre-loss
-      if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        tensor->scheduledPreLoss = ScheduledPreLoss::Yes;
-        // inputs to post-loss are post-loss if not already pre-loss
-      } else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-        if (tensor->scheduledPreLoss != ScheduledPreLoss::Yes) {
-          tensor->scheduledPreLoss = ScheduledPreLoss::No;
-        }
+      if (op->fromLoss == PathFromLoss::Yes ||
+          op->settings.executionContext ==
+              ExecutionContext::AccumulateOuterFragment) {
+        op->scheduledPreLoss = ScheduledPreLoss::No;
+      } else {
+        op->scheduledPreLoss = ScheduledPreLoss::Yes;
+      }
+      if (op->scheduledPreLoss == ScheduledPreLoss::No &&
+          op->settings.recomputeType != RecomputeType::Recomputed) {
+        op->settings.recomputeType = RecomputeType::Checkpoint;
       }
     }
-    // Outputs are always the same as the producer Op, this rule takes priority
-    // over all input annotation rules.
-    for (auto tensor : op->output->tensors()) {
-      tensor->scheduledPreLoss = op->scheduledPreLoss;
+
+    if (graph.id == getMainGraph().id) {
+      logging::ir::debug(
+          "setting scheduledPreLoss for Tensors in updateVertices");
+      // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
+      // in the schedule
+      bool postLoss = false;
+      for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+        postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
+        if (postLoss) {
+          // The loss has been crossed, everything ScheduledPreLoss::No from
+          // here on
+          op->scheduledPreLoss = ScheduledPreLoss::No;
+        }
+        for (auto tensor : op->input->tensors()) {
+          // inputs to pre-loss are pre-loss
+          if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+            tensor->scheduledPreLoss = ScheduledPreLoss::Yes;
+            // inputs to post-loss are post-loss if not already pre-loss
+          } else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+            if (tensor->scheduledPreLoss != ScheduledPreLoss::Yes) {
+              tensor->scheduledPreLoss = ScheduledPreLoss::No;
+            }
+          }
+        }
+        // Outputs are always the same as the producer Op, this rule takes
+        // priority over all input annotation rules.
+        for (auto tensor : op->output->tensors()) {
+          tensor->scheduledPreLoss = op->scheduledPreLoss;
+        }
+      }
     }
   }
 }
@@ -3097,8 +3073,8 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   return version;
 }
 
-unsigned Ir::getMaxVirtualGraphId() const {
-  unsigned maxVirtualGraphId = 1;
+unsigned Ir::getNumVirtualGraphIds() const {
+  unsigned numVirtualGraphIds = 1;
   unsigned replGraphCount =
       static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
   unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
@@ -3107,12 +3083,12 @@ unsigned Ir::getMaxVirtualGraphId() const {
       throw error("For replicated graphs, the number of IPUs must be divisible "
                   "by the replication factor.");
     } else {
-      maxVirtualGraphId = numIPUs / replGraphCount;
+      numVirtualGraphIds = numIPUs / replGraphCount;
     }
   } else {
-    maxVirtualGraphId = numIPUs;
+    numVirtualGraphIds = numIPUs;
   }
-  return maxVirtualGraphId;
+  return numVirtualGraphIds;
 }
 
 OpId Ir::getFinalLossOpId() const { return finalLossOpId; }
@@ -3553,7 +3529,7 @@ void Ir::applyInplacePattern(Graph &graph) {
             inplaceBlocking = true;
           }
 
-          if (getSessionOptions().enablePipelining &&
+          if (getSessionOptions().implicitPipeliningEnabled() &&
               Pipeline::inplaceRecomputationConflict(
                   op, in_index.first, out_index.first)) {
             logging::pattern::trace(
@@ -4171,8 +4147,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -22,14 +22,16 @@ namespace recompute {
 
 namespace {
 
-void allCheckpointAfterLastCheckpoint(Op *lossOp) {
+void allCheckpointAfterLastCheckpoint(std::vector<Op *> lossOps) {
   // Change to checkpoint mode after the last recompute checkpoints op.
   // This reduces the compute time as no need to recompute twice the last
-  // recomute segment.
+  // recompute segment.
   logging::transform::info("Turn recompute ops to checkpoint between the last "
                            "checkpoints and the loss.");
   OpSearchHelper opSearch;
-  opSearch.pushInputProducers(lossOp);
+  for (auto op : lossOps) {
+    opSearch.pushInputProducers(op);
+  }
   while (!opSearch.empty()) {
     // Get an op from the search list
     Op *x = opSearch.pop();
@@ -45,7 +47,7 @@ void allCheckpointAfterLastCheckpoint(Op *lossOp) {
 void annotateNormOnly(Graph &graph) {
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
-    if (op->toLoss == PathToLoss::Yes && op->isNorm()) {
+    if (op->toLoss == PathToLoss::Yes && op->isNorm() && op->canRecompute()) {
       // don't checkpoint Norms as their outputs are large and
       // relatively cheap to recompute
       op->settings.recomputeType = RecomputeType::Recompute;
@@ -137,7 +139,7 @@ void annotateStandard(const Graph &graph) {
   }
 
   for (auto op : fwdOps) {
-    if (checkpoints.count(op) == 0) {
+    if (checkpoints.count(op) == 0 && op->canRecompute()) {
       op->settings.recomputeType = RecomputeType::Recompute;
     }
   }
@@ -146,15 +148,35 @@ void annotateStandard(const Graph &graph) {
 } // namespace
 
 void annotateRecomputeAll(Graph &graph) {
+  std::vector<Op *> lossOps;
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     if (op->toLoss == PathToLoss::Yes &&
-        op->settings.recomputeType == RecomputeType::Undefined) {
+        op->settings.recomputeType == RecomputeType::Undefined &&
+        op->canRecompute()) {
       op->settings.recomputeType = RecomputeType::Recompute;
     }
+    if (op->toLoss == PathToLoss::Yes && op->fromLoss == PathFromLoss::Yes) {
+      lossOps.push_back(op);
+    }
   }
-  Op *loss_op = graph.getOp(graph.getIr().getFinalLossOpId());
-  allCheckpointAfterLastCheckpoint(loss_op);
+  allCheckpointAfterLastCheckpoint(lossOps);
+}
+
+void annotateRecomputePipeline(Graph &graph) {
+  std::vector<Op *> lossOps;
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->toLoss == PathToLoss::Yes &&
+        op->settings.recomputeType == RecomputeType::Undefined &&
+        op->canRecompute()) {
+      op->settings.recomputeType = RecomputeType::Recompute;
+    }
+    if (op->toLoss == PathToLoss::Yes && op->fromLoss == PathFromLoss::Yes) {
+      lossOps.push_back(op);
+    }
+  }
+  allCheckpointAfterLastCheckpoint(lossOps);
 }
 
 void autoAnnotate(Graph &graph, RecomputationType rctype) {
@@ -180,9 +202,15 @@ void autoAnnotate(Graph &graph, RecomputationType rctype) {
     annotateRecomputeAll(graph);
     break;
   }
-
-  case RecomputationType::N:
   case RecomputationType::Pipeline:
+    if (graph.getIr().getSessionOptions().explicitPipeliningEnabled()) {
+      annotateRecomputePipeline(graph);
+    } else {
+      throw error("Invalid RecomputationType::Pipeline in autoAnnotate when "
+                  "using implicit pipelining.");
+    }
+    break;
+  case RecomputationType::N:
   default: {
     throw error("Invalid RecomputationType in autoAnnotate");
   }

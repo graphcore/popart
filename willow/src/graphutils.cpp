@@ -565,7 +565,22 @@ bool operator<(const Edge &a, const Edge &b) {
 }
 
 std::vector<std::vector<Op *>>
-findMatchingOps(Graph &graph, OpPreds preds, Edges edges) {
+findMatchingOps(Graph &graph, const OpPredMap &preds, const Edges &edges) {
+  OpPreds predsVector(preds.size(), [](const Op *op) { return false; });
+
+  for (auto &pred : preds) {
+    if (pred.first >= preds.size()) {
+      throw error(
+          "Predicate {} out of range [0, {}].", pred.first, preds.size());
+    }
+    predsVector[pred.first] = pred.second;
+  }
+
+  return findMatchingOps(graph, predsVector, edges);
+}
+
+std::vector<std::vector<Op *>>
+findMatchingOps(Graph &graph, const OpPreds &preds, const Edges &edges) {
 
   std::map<int, std::set<Edge>> outEdgeMap;
   std::map<int, std::set<Edge>> inEdgeMap;

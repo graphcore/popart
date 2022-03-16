@@ -145,7 +145,12 @@ public:
     for (auto &in : inIdxTensorMap) {
       auto modifiedRegions =
           graph.getTensors().get(in.second)->modifiedRegionsByOps(ops, aliases);
-      modifiesMap[in.second] = modifiedRegions;
+      if (!modifiedRegions.empty()) {
+        logging::trace("[MainLoops] Modified input {} regions {}",
+                       in.second,
+                       modifiedRegions);
+        modifiesMap[in.second] = modifiedRegions;
+      }
     }
 
     evaluated = true;
@@ -273,22 +278,12 @@ void moveIntoLoop(LoopOp *loop,
     Op *cloneOp    = cloneOpUp.get();
     opRemaps.insert({op, {cloneOp}});
 
+    cloneOp->fromLoss = op->fromLoss;
+    cloneOp->toLoss   = op->toLoss;
+
     subgraph.moveIntoGraph(std::move(cloneOpUp));
 
     cloneOp->setScope(subgraph.getScope());
-
-    auto connectInTensorFn =
-        [](Op *srcOpP, Op *dstOpP, InIndex index, TensorId tensorId) {
-          IpuCopyOp *srcOp = dynamic_cast<IpuCopyOp *>(srcOpP);
-          IpuCopyOp *dstOp = dynamic_cast<IpuCopyOp *>(dstOpP);
-          if (srcOp && dstOp) {
-            TensorId srcTensorId = srcOp->input->tensor(index)->id;
-            dstOp->connectInTensor(
-                index, tensorId, srcOp->getSourceIpu(srcTensorId));
-          } else {
-            dstOpP->connectInTensor(index, tensorId);
-          }
-        };
 
     for (auto input : op->input->tensorIdMap()) {
       TensorId subgraphTensorId;
@@ -298,7 +293,7 @@ void moveIntoLoop(LoopOp *loop,
                              input.second);
       }
       subgraphTensorId = find->second;
-      connectInTensorFn(op, cloneOp, input.first, subgraphTensorId);
+      cloneOp->connectInTensorLike(op, input.first, subgraphTensorId);
     }
     for (auto output : op->output->tensorIdMap()) {
       TensorId subgraphTensorId =
@@ -503,9 +498,10 @@ void MainLoops::setupAnchors(Graph &graph,
     std::vector<Op *> newOuterGraphOps;
     std::vector<Op *> newInnerGraphOps;
 
-    auto rightId     = anchorIdArt.first;
+    auto rightId = anchorIdArt.first;
+    auto art     = anchorIdArt.second;
+
     auto leftId      = ir.getAnchorRemap().getLeft(rightId);
-    auto art         = anchorIdArt.second;
     TensorInfo tInfo = innerGraph.getTensors().get(leftId)->info;
 
     if (art.id() == AnchorReturnTypeId::Sum ||

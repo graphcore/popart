@@ -15,7 +15,6 @@
 #include <popart/graphutils.hpp>
 #include <popart/transforms/decomposeloops.hpp>
 
-#include <testutil/irquery/irquery.hpp>
 #include <testutil/test_graphs/graph_test_models.hpp>
 
 using namespace popart;
@@ -217,8 +216,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopOverlapClassifyTestOverlap) {
   // as expected.
 
   // Number of predicates: We expect 11 ops per path, based on the testModel.
-  graphutils::OpPreds preds(numParallel * 11,
-                            [](const Op *op) { return false; });
+  graphutils::OpPredMap preds;
   graphutils::Edges edges;
 
   int p = 0;
@@ -343,7 +341,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineClassifyTest) {
   // as expected.
 
   // Number of predicates: We expect 9 ops per path, based on the testModel.
-  graphutils::OpPreds preds(9, [](const Op *op) { return false; });
+  graphutils::OpPredMap preds;
   graphutils::Edges edges;
 
   int p      = 0;
@@ -452,8 +450,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineClassifyTestOverlap) {
   // as expected.
 
   // Number of predicates: We expect 11 ops per path, based on the testModel.
-  graphutils::OpPreds preds(numParallel * 11,
-                            [](const Op *op) { return false; });
+  graphutils::OpPredMap preds;
   graphutils::Edges edges;
 
   int p = 0;
@@ -581,7 +578,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineModelTest) {
 
   // Matches before the LoopOp:
   {
-    graphutils::OpPreds preds(11, [](const Op *op) { return false; });
+    graphutils::OpPredMap preds;
     graphutils::Edges edges;
 
     int p = 0;
@@ -631,7 +628,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineModelTest) {
 
   // Matches in the LoopOp body subgraph:
   {
-    graphutils::OpPreds preds(9, [](const Op *op) { return false; });
+    graphutils::OpPredMap preds;
     graphutils::Edges edges;
 
     int p = 0;
@@ -688,7 +685,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineModelTest) {
 
   // Matches after the LoopOp:
   {
-    graphutils::OpPreds preds(9, [](const Op *op) { return false; });
+    graphutils::OpPredMap preds;
     graphutils::Edges edges;
 
     int p = 0;
@@ -835,8 +832,7 @@ BOOST_AUTO_TEST_CASE(DecomposeLoopPipelineModelTestOverlap) {
 
   // Matches in the LoopOp body subgraph:
   {
-    graphutils::OpPreds preds(numParallel * 11,
-                              [](const Op *op) { return false; });
+    graphutils::OpPredMap preds;
     graphutils::Edges edges;
 
     int p = 0;

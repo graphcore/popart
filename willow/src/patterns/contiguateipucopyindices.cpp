@@ -131,7 +131,7 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   }
 
   // Connect the output tensor to the back of the sequence. Note: this
-  // can have more than one ouput (all with the same destIPUs) if this
+  // can have more than one output (all with the same destIPUs) if this
   // IpuCopy has been merged in the MergeCopies transform
   auto outputs = op->output->tensorIdMap();
   op->disconnectAllOutputs();

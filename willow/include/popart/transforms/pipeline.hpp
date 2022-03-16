@@ -6,6 +6,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/restore.hpp>
+#include <popart/transforms/decomposeloops.hpp>
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -35,6 +36,8 @@ public:
                int64_t _maxPipelineStage,
                bool _doTraining,
                bool _doGradAccl);
+
+  int64_t numStages;
 
   bool doTraining;
   bool doGradAccl;
@@ -80,9 +83,80 @@ public:
   }
 };
 
+/**
+ * Struct holding tensors and operations required to set up stashes
+ */
+struct PipelineStashInfo {
+  /**
+   * TensorIds which are candidates for stashing.
+   */
+  std::set<TensorId> toStashTensors;
+
+  /**
+   * StashTensorId -> std::pair<StashRefOp, RestoreRefOps>
+   * StashRefOp:    Operation that produces a tensor which is a candidate for
+   *                stashing.
+   * RestoreRefOps: Operations that are consumers of a tensor which is a
+   *                candidate for stashing.
+   */
+  std::map<TensorId, std::pair<Op *, std::vector<Op *>>> stashRestoreRefOps;
+};
+
+/**
+ * Struct holding metadata required to set up dynamic stash operations
+ */
+struct PipelineDynamicStashInfo {
+
+  /**
+   * The tensor to stash
+   */
+  Tensor *tensor;
+
+  /**
+   * Number of required stash entries
+   * (stash tensor shape is [stashSize, *tensorShape])
+   */
+  int stashSize;
+
+  /**
+   * Single reference operation from which the DynamicUpdateOp (for stashing)
+   * will inherit placement (IPU and pipeline stage)
+   */
+  Op *stashRefOp;
+
+  /**
+   * Vector of reference operations from which the DynamicSliceOp (for
+   * restoring) will inherit placement (IPU and pipeline stage)
+   */
+  std::vector<Op *> restoreRefOps;
+
+  /**
+   * Vector of stages in which the tensor needs to be restored
+   */
+  std::vector<PipelineStage> restoreStages;
+
+  /**
+   * All consumers of the tensor (of which a subset will be required to consume
+   * the restored tensor).
+   */
+  std::vector<Op *> consumers;
+
+  /**
+   * Base TensorId for the stash tensors
+   */
+  TensorId stashTensorBaseId;
+
+  /**
+   * Base TensorId for the stash counters
+   */
+  TensorId stashCounterBaseId;
+};
+
 class Pipeline : public Transform {
 public:
   static std::size_t id();
+
+  static bool checkIsFullRecompute(Graph &graph);
 
   Pipeline() : Transform() {}
   virtual ~Pipeline() override {}
@@ -90,7 +164,8 @@ public:
   /**
    * Checks if the pipelining settings are valid and applies either
    * implicit or explicit pipelining transforms to the graph
-   * \param graph top-level IR graph (main graph)
+   * \param graph top-level IR graph (main graph) for implicit pipelining,
+   *              pipeline loop subgraph for explicit pipelining
    * \return true if the transformation has changed the graph
    */
   virtual bool apply(Graph &graph) const final;
@@ -121,7 +196,7 @@ public:
   static bool inplaceRecomputationConflict(Op *op, InIndex in, OutIndex out);
 
   /**
-   * Implicit recompute only!
+   * Implicit pipelining and implicit recompute only!
    * This annotation pass will try to set the Ops between
    * the topologically final Checkpoints and the loss
    * to NOT be recomputed. This avoid a program where
@@ -130,6 +205,29 @@ public:
    * \param graph top-level IR graph (main graph)
    */
   static void setFinalFwdStageRecomputation(Graph &graph);
+
+  /**
+   * Check and adjust pipeline stage annotations on operations
+   * \param graph Graph on which to check pipeline stages
+   */
+  static void checkOpsPipelineStage(Graph &graph);
+
+  /**
+   * Add all required dynamic update and dynamic slice operations to the graph,
+   * which link forward and recompute/backward stages together via stashes
+   * Only works for explicit pipelining
+   * \param  graph Pipeline loop subgraph
+   * \return       True if successful, will raise error if not
+   */
+  bool addDynamicStashAndRestoreOps(Graph &graph) const;
+
+  /**
+   * Add required IpuCopyOps to ensure that within the pipelined execution,
+   * no copies between non-contiguous pipeline stages occur
+   * \param  graph Pipeline loop subgraph
+   * \return       True if successful, will raise error if not
+   */
+  bool contiguateIpuCopies(Graph &graph) const;
 
 private:
   /**
@@ -150,17 +248,87 @@ private:
                                            int64_t stashSize) const;
 
   /**
+   * Select tensors candidates and prepare
+   * (select reference operations for both stash and restore)
+   * the IR for stashing
+   * \param  graph                   Pipeline loop subgraph
+   *                                 (explicit pipelining)
+   *                                 or main graph (implicit pipelining)
+   * \param  toStashCandidateTensors Candidates for stashing
+   * \return                         Struct holding tensors and operations
+   *                                 required to set up stashes
+   */
+  PipelineStashInfo
+  prepareForStashing(Graph &graph,
+                     std::set<TensorId> toStashCandidateTensors) const;
+
+  /**
+   * Create a stash tensor and add a DynamicUpdateInplaceOp to write a tensor
+   * to the stash
+   * \param graph  Pipeline loop subgraph
+   * \param info   Metadata for creating the stash
+   */
+  TensorId
+  addDynamicStashOpForTensor(Graph &graph,
+                             const PipelineDynamicStashInfo &info) const;
+
+  /**
+   * Create a DynamicSliceOp to restore a tensor from the stash
+   * \param graph                   Pipeline loop subgraph
+   * \param info                    Metadata for creating the stash
+   * \param restoreRefOpIndex       The index of the current restore operation
+   * \param stashTensorInnerGraphId The TensorId of the stash tensor
+   *                                (restore operation stash input)
+   * \param lastRestoreTensorId     TensorId to use for the current restore
+   *                                operation slice input
+   * \return                        TensorId to use for the next restore
+   *                                operation slice input
+   *                                (current restore operation slice output)
+   */
+  TensorId addDynamicRestoreOpForTensor(Graph &graph,
+                                        const PipelineDynamicStashInfo &info,
+                                        size_t restoreRefOpIndex,
+                                        TensorId stashTensorInnerGraphId,
+                                        TensorId lastRestoreTensorId) const;
+
+  /**
+   * Create all required DynamicSliceOp to restore a tensor from the stash
+   * (calls \ref addDynamicRestoreOpForTensor)
+   * \param graph                   Pipeline loop subgraph
+   * \param info                    Metadata for creating the stash
+   * \param stashTensorInnerGraphId The TensorId of the stash tensor
+   *                                (restore operation stash input)
+   */
+  void addDynamicRestoreOpsForTensor(Graph &graph,
+                                     const PipelineDynamicStashInfo &info,
+                                     TensorId stashTensorInnerGraphId) const;
+
+  /**
+   * Create all required stash and restore operations
+   * (calls \ref addDynamicStashOpForTensor)
+   * (calls \ref addDynamicRestoreOpsForTensor)
+   * \param graph              Pipeline loop subgraph
+   * \param pipelineStashInfo  Metadata for creating the stash
+   * \param tid                TensorId of the tensor to stash
+   */
+  void addDynamicStashAndRestoreOpsForTensor(
+      Graph &graph,
+      const PipelineStashInfo &pipelineStashInfo,
+      TensorId tid) const;
+
+  /**
    * Add all required stash and restore operations to the graph, which link
    * forward and recompute/backward stages together
-   * \param  graph top-level IR graph (main graph)
-   * \return true
+   * Only works for implicit pipelining
+   * \param  graph Top-level IR graph (main graph)
+   * \return       True if successful, will raise error if not
    */
   bool addStashRestoreOps(Graph &graph) const;
 
   /**
    * Transforms a linear set of pipeline stages into (explicit) pipeline cycles,
    * by inserting CallOps for each pipeline stage and unrolling the innermost
-   * (explicit) loop partially.
+   * (explicit) loop partially
    * \param  graph the innermost loop graph containing the pipeline operations
    *               with gradient accumulation enabled, the loop subgraph is the
    *               accumulation loop, otherwise it is the batches-per-step loop
@@ -172,11 +340,6 @@ private:
 /**
  * \class ExplicitPipeline
  * \brief Transforms the graph to express the pipeline explicitly.
- *
- * .. warning::
- *
- *    Will not work with a nested scope (for example in stepLoop and
- *    gradAccumulation)
  *
  * See docs/notes/transforms/pipelining.md for a detailed description
  * of pipelining
@@ -222,35 +385,15 @@ private:
   LoopOp *pipelineMainLoop;
 
   /**
-   * Struct describing how a clone of the graph containing the pipeline stages
-   * maps to the original and vice versa.
-   * The cloned graph is used as a reference while transforming the original
-   * graph into fill, main and flush phases.
+   * Map of all ops that should be outlined into CallOp
    */
-  struct InnerLoopSubgraphClone {
-    std::string clonedGraphId = "pipelineClone";
-    std::map<OpId, OpId> originalGraphOpIdAndClonedGraphOpId;
-    std::map<OpId, OpId> clonedGraphOpIdAndOriginalGraphOpId;
-  } cloneSrct;
-
-  /**
-   * Struct containing maps to categorize any pipeline annotated Op
-   * \a hostLoadOps:  instances of \a HostLoadOp
-   * \a hostStoreOps: instances of \a HostStoreOp
-   * \a ipuCopyOps:   instances of \a IpuCopyOp (cross-pipeline stage copies)
-   * \a mainOps:      remaining operations
-   */
-  struct InnerLoopOpsCategories {
-    std::map<PipelineStage, std::vector<OpId>> mainOps, hostLoadOps,
-        hostStoreOps, ipuCopyOps;
-  } innerLoopOpsCategories;
+  std::map<PipelineStage, std::vector<OpId>> opsToOutline;
 
   /**
    * Struct to help link \a OpIds to stages and stages to \a IpuCopyOps
    */
   struct PipelineStageOpIdMaps {
     std::map<OpId, PipelineStage> opIdAndPipelineStage;
-    std::map<PipelineStage, OpId> ipuCopyCallOps;
   } pipelineStageOpIdMaps;
 
   /**
@@ -264,64 +407,32 @@ private:
   void compatibilityChecks() const;
 
   /**
-   * Fill the \a innerLoopOpsCategories
+   * Find operations that can be outlined in order to make the final, unrolled
+   * pipeline graph more streamlined (such as reusing operations for each
+   * pipeline stage).
    */
-  void categorizeInnerLoopOps();
+  void findOpsToOutline();
 
   /**
-   * Replace opsCategories with callOps
-   *
-   * \param  opsCategory  The ops to move into subgraphs and replace with
-   * CallOps \param  subgraphPostfix Postfix to be used in the subgraph Id
-   * \return Map of pipepline stage to replacement CallOps
-   */
-  std::map<PipelineStage, OpId> replaceOpsCategoriesWithCallOps(
-      const std::map<PipelineStage, std::vector<OpId>> &opsCategory,
-      std::string subgraphPostfix);
-
-  /**
-   * Create callOps of the innerLoopOpsCategories and fill pStageOpIdMaps.
+   * Create callOps of the operations picked in \ref findOpsToOutline.
    */
   void createCallOps();
 
   /**
-   * Unroll the loop operator and creates the fill phase.
-   *
-   * \return A map between the TensorId of the innerLoopSubgraph and the
-   *         TensorId belonging to the cloned Ops in the fill stage.
-   *         These tensors represent the input to the main pipeline phase.
+   * Decompose the pipeline loop to represent explicit pipelining.
    */
-  std::map<TensorId, TensorId> createFillPhase();
+  void decompose();
 
   /**
-   * Modify the pipeline loop to adjust the main phase.
-   *
-   * \param lastOriginalAndClonedTensorId A map between the TensorId of the
-   *                                      innerLoopSubgraph and the TensorId
-   *                                      belonging to the cloned Ops in the
-   *                                      fill stage. These tensors represent
-   *                                      the input to the main pipeline cycle.
-   * \return                              A map which can be used to connect
-   *                                      tensors to the input of the
-   *                                      flush phase
-   */
-  std::map<std::pair<PipelineStage, TensorId>, TensorId>
-  modifyInputAndOutputInInnerLoop(
-      const std::map<TensorId, TensorId> lastOriginalAndClonedTensorId);
-
-  /**
-   * Unroll the loop operator and create the flush phase.
-   *
-   * \param tensorIdsToFlushStage A map which can be used to connect tensors to
-   *                              the input of the flush phase
-   */
-  void createFlushPhase(const std::map<std::pair<PipelineStage, TensorId>,
-                                       TensorId> tensorIdsToFlushStage);
-
-  /**
-   * Remove the cloned graph and unset the pipeline stage on all operators.
+   * Unset the pipeline stage on all operators.
    */
   void cleanUp();
+
+  /**
+   * Calculate the minimum and maximum \c PipelineStage to unroll
+   * \return Pair of {min, max} \c PipelineStages
+   */
+  std::pair<PipelineStage, PipelineStage> getMinAndMaxUnrollStages() const;
 };
 
 } // namespace popart

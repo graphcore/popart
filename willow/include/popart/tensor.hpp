@@ -186,10 +186,11 @@ public:
   bool isOptimizerStateTensor() const;
   bool isAccumulatorTensor() const;
   /**
-   * Is this tensor produced by a hostLoad op?
+   * Is this tensor produced by a HostLoad Op or MultiExchangeOp with HostLoad
+   * descriptor?
    *
-   * \returns true If producer is a hostLoad Op
-   * \returns false Otherwise.
+   * \return true if producer is a HostLoad Op or MultiExchangeOp with HostLoad
+   * descriptor false otherwise.
    */
   bool isHostLoadTensor() const;
   // Returns true for tensors that are weights (variables),

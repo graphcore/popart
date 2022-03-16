@@ -15,6 +15,7 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
@@ -1038,7 +1039,23 @@ bool Tensor::isAccumulatorTensor() const {
 }
 
 bool Tensor::isHostLoadTensor() const {
-  return (hasProducer() && getProducer()->isConvertibleTo<HostLoadOp>());
+  if (!hasProducer()) {
+    return false;
+  }
+  if (getProducer()->isConvertibleTo<HostLoadOp>()) {
+    return true;
+  }
+  if (MultiExchangeOp *producer =
+          dynamic_cast<MultiExchangeOp *>(getProducer())) {
+    auto outIndex   = producer->output->indices(getIr().getTensor(id)).front();
+    auto descriptor = producer->getExchangeDescriptor(
+        producer->outIndexToDescriptorIndex(outIndex).first);
+    if (descriptor.isHostExchange() &&
+        descriptor.getDirection() == ExchangeDirection::Load) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool Tensor::isWeightTensor() const {

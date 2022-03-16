@@ -26,10 +26,9 @@ namespace popart {
 
 std::size_t OverlapIO::id() { return typeid(OverlapIO).hash_code(); }
 
-namespace {
-
-std::set<ExchangeStrategy> overlapIORequired(Ir &ir) {
-  std::set<ExchangeStrategy> required;
+std::map<ExchangeStrategy, std::set<PipelineStage>>
+OverlapIO::overlapIORequired(Ir &ir) {
+  std::map<ExchangeStrategy, std::set<PipelineStage>> required;
 
   auto hostLoadTensors = ir.getHostLoadTensors();
   for (auto &loadTensor : hostLoadTensors) {
@@ -42,7 +41,11 @@ std::set<ExchangeStrategy> overlapIORequired(Ir &ir) {
         if (loadOp && loadOp->settings.tileSet == TileSet::IO) {
           logging::transform::trace(
               "[OverlapIO] Op {} {}", op->debugName(), strategy);
-          required.insert(strategy);
+          if (loadOp->hasPipelineStage()) {
+            required[strategy].insert(loadOp->getPipelineStage());
+          } else {
+            required.insert({strategy, {}});
+          }
         }
       }
     }
@@ -52,13 +55,18 @@ std::set<ExchangeStrategy> overlapIORequired(Ir &ir) {
   for (auto &storeTensor : hostStoreTensors) {
     auto art = ir.getDataFlow().getAnchorReturnTypeMap().at(storeTensor.first);
     for (Tensor *storeInTensor : storeTensor.second) {
-      auto ops = storeInTensor->consumers.getOps();
+      auto strategy = art.exchangeStrategy();
+      auto ops      = storeInTensor->consumers.getOps();
       for (auto op : ops) {
         auto storeOp = dynamic_cast<HostStoreOp *>(op);
         if (storeOp && storeOp->settings.tileSet == TileSet::IO) {
           logging::transform::trace(
               "[OverlapIO] Op {} {}", op->debugName(), art.exchangeStrategy());
-          required.insert(art.exchangeStrategy());
+          if (storeOp->hasPipelineStage()) {
+            required[strategy].insert(storeOp->getPipelineStage());
+          } else {
+            required.insert({strategy, {}});
+          }
         }
       }
     }
@@ -66,8 +74,6 @@ std::set<ExchangeStrategy> overlapIORequired(Ir &ir) {
 
   return required;
 }
-
-} // namespace
 
 bool OverlapIO::apply(Graph &graph) const {
   logging::transform::debug("[OverlapIO] Started.");
@@ -98,9 +104,11 @@ bool OverlapIO::apply(Graph &graph) const {
       innerSubgraph.getGraphId() != outerSubgraph.getGraphId() &&
       outerSubgraph.getGraphId() != ir.getMainGraph().getGraphId();
 
+  // Explicit pipelining unrolls the inner loop for overlap by itself
   bool overlapInner =
       (overlapInnerLoop || overlapLoops || overlapStep) &&
-      outerSubgraph.getGraphId() != ir.getMainGraph().getGraphId();
+      outerSubgraph.getGraphId() != ir.getMainGraph().getGraphId() &&
+      !ir.getSessionOptions().explicitPipeliningEnabled();
 
   if (overlapOuter || overlapInner) {
     logging::transform::debug("[OverlapIO] Overlap IO is required.");

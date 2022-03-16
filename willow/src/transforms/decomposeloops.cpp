@@ -76,8 +76,8 @@ DecomposeLoopOpIOOverlapType::DecomposeLoopOpIOOverlapType(
     DecomposeLoopOpTypeEnum type_)
     : DecomposeLoopOpType(), type(type_) {}
 
-bool DecomposeLoopOpIOOverlapType::operator<(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator<(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() < castOther->getType();
@@ -85,8 +85,8 @@ bool DecomposeLoopOpIOOverlapType::operator<(
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::operator==(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator==(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() == castOther->getType();
@@ -94,8 +94,8 @@ bool DecomposeLoopOpIOOverlapType::operator==(
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::operator!=(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator!=(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() != castOther->getType();
@@ -280,7 +280,7 @@ DecomposeLoopModel::classifyOperations(Graph &subgraph) const {
 
       auto oldType = lastOpToDecomposeLoopOpType.find(op);
       auto newType = getDecomposeLoopOpType(
-          lastOpToDecomposeLoopOpType, op, allowSeeding, allowDelaying);
+          opToDecomposeLoopOpType, op, allowSeeding, allowDelaying);
 
       if (newType.hasValue() && (oldType == lastOpToDecomposeLoopOpType.end() ||
                                  oldType->second != newType)) {

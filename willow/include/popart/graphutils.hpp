@@ -239,22 +239,35 @@ private:
 
 bool operator<(const Edge &a, const Edge &b);
 
-using OpPred  = std::function<bool(const Op *op)>;
-using OpPreds = std::vector<OpPred>;
-using Edges   = std::set<Edge>;
+using OpPred    = std::function<bool(const Op *op)>;
+using OpPreds   = std::vector<OpPred>;
+using OpPredMap = std::map<size_t, OpPred>;
+using Edges     = std::set<Edge>;
 
 /**
  * Returns Ops matching the \a preds connected by directed \a edges
  * \param preds Predicate functions that match Ops
  * \param edges Connectivity matrix between predicated Ops, where the fromIndex
- * and toIndex of the \a edges correspond to the indices in the \a preds vector.
+ *              and toIndex of the \a edges correspond to the indices in the
+ *              \a preds vector.
  * \return vector of all matches
  */
 std::vector<std::vector<Op *>>
-findMatchingOps(Graph &graph, OpPreds preds, Edges edges);
+findMatchingOps(Graph &graph, const OpPreds &preds, const Edges &edges);
 
 /**
- * Enum categorzing operations by their relation to the final loss.
+ * Returns Ops matching the \a preds connected by directed \a edges
+ * \param preds Predicate functions that match Ops
+ * \param edges Connectivity matrix between predicated Ops, where the fromIndex
+ *              and toIndex of the \a edges correspond to the indices in the
+ *              \a preds vector.
+ * \return vector of all matches
+ */
+std::vector<std::vector<Op *>>
+findMatchingOps(Graph &graph, const OpPredMap &preds, const Edges &edges);
+
+/**
+ * Enum categorizing operations by their relation to the final loss.
  * Can be used to optimize recomputation.
  *
  * The operations are classified into four types by their position relative

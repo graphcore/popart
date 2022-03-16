@@ -4231,6 +4231,8 @@ static const char *__doc_popart_DomainOpSet_impl = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DomainOpSet_impl = R"doc()doc";
 
+static const char *__doc_popart_DotCheck_MainLoops = R"doc()doc";
+
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
 static const char *__singlelinedoc_popart_ErrorSource = R"doc()doc";

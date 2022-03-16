@@ -698,8 +698,8 @@ bool Patterns::operator==(const Patterns &p) const {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::Patterns>::operator()(
-    const popart::Patterns &patterns) const {
+std::size_t std::hash<popart::Patterns>::
+operator()(const popart::Patterns &patterns) const {
   std::size_t seed = 0;
   for (const auto &kv : patterns.getSettings()) {
     boost::hash_combine(seed, kv.first);

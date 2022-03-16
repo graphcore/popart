@@ -1,7 +1,9 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
+import pytest
 import json
+import re
 
 # 'import test_util' requires adding to sys.path
 import sys
@@ -56,7 +58,8 @@ def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
 
 
 @tu.requires_ipu_model
-def test_full_recompute_pipelining():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_full_recompute_pipelining(explicit):
     batches_per_step = 5
     batch_size = 1
     hidden_size = 16
@@ -79,7 +82,7 @@ def test_full_recompute_pipelining():
     input_data = np.random.normal(
         0, 0.02, [batches_per_step] + input_shape).astype(np.float32)
 
-    def run_test(mode=None, verify=None):
+    def run_test(mode=None, verify=None, explicit=False):
         builder = popart.Builder(opsets={
             "ai.onnx": 9,
             "ai.onnx.ml": 1,
@@ -127,6 +130,8 @@ def test_full_recompute_pipelining():
         opts = popart.SessionOptions()
         opts.enableOutlining = False
         opts.enablePipelining = True
+        opts.enableExplicitIR(explicit)
+
         if mode is not None:
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -156,46 +161,86 @@ def test_full_recompute_pipelining():
                 session.run(stepio)
 
             if verify is not None:
-                verify(session)
+                verify(session, explicit)
 
         return anchors
 
-    def verify(session):
-        ''' Verify the the matmul in the main graphs is correct'''
+    def verify(session, explicit):
+        ''' Verify the pipeline stashing is correct'''
         ir = json.loads(session._serializeIr(
             popart.IrSerializationFormat.JSON))
-        stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
+        if explicit:
+            # Explicit pipelining
+            stashes = [
+                op for graph in ir for op in ir[graph]
+                if (op["type"] == "DynamicUpdate"
+                    or op["type"] == "DynamicUpdateInplace")
+            ]
+        else:
+            # Implicit pipelining
+            stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
+
         stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
+        print(stashedTensors)
 
-        assert 'x_in' in stashedTensors
-        assert 'mask' in stashedTensors
-        assert 'mask_c1' in stashedTensors
+        # Need to be sorted such that if one name includes another,
+        # the longer one appears first
+        # Use regexp to catch variants occuring in explicit pipelining
+        expectedStashes = [
+            '(.*)Z/Reshape:0_c1', '(.*)x_in', '(.*)mask(.*)_c1', '(.*)mask'
+        ]
 
-        # Verify inplacing
-        inplaces = [op for op in ir["maingraph"] if "Inplace" in op["type"]]
+        for expected in expectedStashes:
+            found = ''
+            for stash in stashedTensors:
+                if re.match(expected, stash):
+                    found = expected
+                    # Avoid matching multiple times (see above)
+                    stashedTensors.remove(stash)
+                    break
+            # Assert on name rather than true/false so it is more useful for
+            # debugging
+            assert expected == found
 
-        bins = dict()
-        for op in inplaces:
-            if op["type"] in bins:
-                bins[op["type"]] += 1
-            else:
-                bins[op["type"]] = 1
+    # Verify inplacing due to problematic inplacing + implicit recompute relationship
+        if explicit:
+            # Not crucial since not using implicit recompute, therefore we do
+            # not expect inplacing to be problematic
+            pass
+        else:
+            # Verify inplacing due to problematic inplacing +
+            # implicit recompute relationship
+            inplaces = [
+                op for op in ir["maingraph"] if "Inplace" in op["type"]
+            ]
 
-        print(bins)
-        # T35025 : Adjusted due to inplace tensors being consumed by implicit recompute
-        assert "ReshapeInplace" in bins and bins["ReshapeInplace"] == 39
-        assert "SliceInplace" in bins and bins["SliceInplace"] == 9
-        assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41
-        assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 1
-        assert "IdentityInplace" in bins and bins["IdentityInplace"] == 34
-        assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 4
-        assert "ConcatInplace" in bins and bins["ConcatInplace"] == 3
-        assert "RestoreInplace" in bins and bins["RestoreInplace"] == 4
-        assert len(inplaces) == 136
+            bins = dict()
+            for op in inplaces:
+                if op["type"] in bins:
+                    bins[op["type"]] += 1
+                else:
+                    bins[op["type"]] = 1
 
-    n_anchors = run_test()
-    s_anchors = run_test(popart.RecomputationType.Standard)
-    p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
+            print(bins)
+            # T35025 : Adjusted due to inplace tensors being consumed by
+            # implicit recompute
+            assert "ReshapeInplace" in bins and bins["ReshapeInplace"] == 39
+            assert "SliceInplace" in bins and bins["SliceInplace"] == 9
+            assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41
+            assert "AddLhsInplace" in bins and bins["AddLhsInplace"] == 1
+            assert "IdentityInplace" in bins and bins["IdentityInplace"] == 34
+            assert "MulLhsInplace" in bins and bins["MulLhsInplace"] == 4
+            assert "ConcatInplace" in bins and bins["ConcatInplace"] == 3
+            assert "RestoreInplace" in bins and bins["RestoreInplace"] == 4
+            assert len(inplaces) == 136
+
+    # Keep one reference point always implicit to ascertain equality of the
+    # two implementations
+    n_anchors = run_test(explicit=False)
+    s_anchors = run_test(popart.RecomputationType.Standard, explicit=explicit)
+    p_anchors = run_test(popart.RecomputationType.Pipeline,
+                         verify,
+                         explicit=explicit)
 
     for key in s_anchors:
         assert np.allclose(n_anchors[key], s_anchors[key])

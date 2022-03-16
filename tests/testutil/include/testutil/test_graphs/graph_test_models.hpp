@@ -349,18 +349,48 @@ class ExplicitPipelineTestModel0 : public GraphTestModel {
 public:
   /**
    * Construct the ExplicitPipelineTestModel
-   * \param numPipelineStages  Number of pipeline stages.
-   * \param numParallelPaths   Number of paths through each pipeline stage.
+   * \param numPipelineStages  Number of pipeline stages
+   * \param numParallelPaths   Number of paths through each pipeline stage
    * \param inputExStrategy    TileSet and ExchangeStrategy for each input of
-   *                           each path.
+   *                           each path
    * \param outputExStrategy   TileSet and ExchangeStrategy for each output of
-   *                           each path.
+   *                           each path
    */
   ExplicitPipelineTestModel0(
       int numPipelineStages,
       int numParallelPaths,
       std::map<int, popart::InputSettings> inputExStrategy,
       std::map<int, popart::AnchorReturnType> outputExStrategy);
+
+  popart::LoopOp *loopOp;
+  popart::Graph *graphPt;
+  popart::Graph *subgraphPt;
+};
+
+/**
+ * Describes a simple model before the application of explicit pipelining.
+ * The model contains skip-connections between pipeline stages to trigger
+ * multiple restores.
+ *
+ * Pseudocode of the core model:
+ *
+ * output = ...
+ * for i in range(numLayers):
+ *   for j in range(numMatMulsPerLayer):
+ *     output = matmul(w_i_j, output);
+ *     if i >= 2:
+ *       output = add(output, output_of_(i-2)_j)
+ *
+ * Transforms, which are not under-test, applied to the model:
+ * - constructBackwards
+ * - InterIpuCopy
+ * - MainLoops
+ *
+ * (in order to avoid construction by hand)
+ */
+class ExplicitPipelineTestModel1 : public GraphTestModel {
+public:
+  ExplicitPipelineTestModel1(int numLayers, int numMatMulsPerLayer);
 
   popart::LoopOp *loopOp;
   popart::Graph *graphPt;

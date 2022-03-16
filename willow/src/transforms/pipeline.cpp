@@ -4,12 +4,17 @@
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/dynamic/dynamicslice.hpp>
+#include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/op/identity.hpp>
+#include <popart/op/incrementmod.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
@@ -20,7 +25,9 @@
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/mainloops.hpp>
+#include <popart/transforms/overlapio.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/randomsetup.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
@@ -113,75 +120,6 @@ void setIPUCopyPipelineStage(IpuCopyOp *op) {
       // Const or Stream tensors
       auto ps = in0->consumers.findLowestPipelineStage();
       op->setPipelineStage(ps);
-    }
-  }
-}
-
-void checkOpsPipelineStage(Graph &graph) {
-  // return the pipeline stage or -1 if not set
-  // throw error if pipeline stage is negative
-  auto getPipelineStage = [](auto x) -> PipelineStage {
-    if (x->hasPipelineStage()) {
-      auto ps = x->getPipelineStage();
-      if (ps < 0) {
-        throw error("Op has bad pipeline stage {}", ps);
-      }
-      return ps;
-    } else {
-      return -1;
-    }
-  };
-
-  // collect all ops in each pipeline stage
-  std::map<PipelineStage, std::vector<Op *>> pipelineStages;
-
-  for (auto &id_op : graph.getOps()) {
-    auto op = id_op.second.get();
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
-      auto ps = getPipelineStage(op);
-      pipelineStages[ps].push_back(op);
-    }
-  }
-
-  // if no ops have had the pipeline stage attribute set, set it to the virtual
-  // graph id
-  if (pipelineStages.size() == 1 && pipelineStages.count(-1) != 0) {
-    for (auto &id_op : graph.getOps()) {
-      auto op = id_op.second.get();
-      if (!op->isConvertibleTo<IpuCopyOp>()) {
-        auto vgraphid = op->getVirtualGraphId();
-        op->setPipelineStage(vgraphid);
-      }
-    }
-  }
-
-  std::ostringstream oss;
-  oss << "For all IpuCopyOps (other than those copying optimizer tensors):\n"
-      << " (1) set pipeline stage\n"
-      << " (2) insert topological constraint that it precedes "
-      << "all non-IpuCopyOps in each pipeline stage";
-  logging::transform::debug(oss.str());
-
-  for (auto &id_op : graph.getOps()) {
-    if (auto copyOp = dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
-      // Copies of optimizer Tensors do not run in the main program fragment
-      if (!copyOp->copiesOptimizerTensors()) {
-        // (1) set pipeline stage
-        setIPUCopyPipelineStage(copyOp);
-        // (2) insert topological constraint
-        std::vector<Op *> nonCopyOps =
-            pipelineStages.at(copyOp->getPipelineStage());
-        std::vector<Op *> mainProgramOps;
-        for (auto op : nonCopyOps) {
-          if (op->settings.executionContext == ExecutionContext::Normal) {
-            mainProgramOps.push_back(op);
-          }
-        }
-        graph.topoCons->insert({{
-            copyOp,        // Key
-            mainProgramOps // OpsBeforeKey
-        }});
-      }
     }
   }
 }
@@ -312,7 +250,8 @@ bool isProducedOnIPU(Tensor *tensor) {
   if (tensor->hasProducer() &&
       tensor->getProducer()->isConvertibleTo<InitOp>()) {
     return true;
-  } else if (tensor->isHostLoadTensor()) {
+  }
+  if (tensor->isHostLoadTensor()) {
     return false;
   }
   // Doesn't have a producer and it's a stream
@@ -599,54 +538,105 @@ void mergeConsecutivePipelineStages(Graph &graph) {
   }
 }
 
-bool isFullRecompute(Graph &graph) {
-  auto &ir = graph.getIr();
-  return ir.canTrain() && (ir.getSessionOptions().autoRecomputation ==
-                           RecomputationType::Pipeline);
-}
-
 bool hasCheckpointProducer(Tensor *tensor) {
   return !tensor->hasProducer() ||
          tensor->getProducer()->settings.recomputeType ==
              RecomputeType::Checkpoint;
 }
 
-bool onlyConsumedByPostLossOps(Tensor *tensor) {
-  for (auto consumer : tensor->consumers.getOps()) {
-    if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-      return false;
+bool onlyConsumedByPostLossOps(
+    Tensor *tensor,
+    std::map<Op *, graphutils::OpFinalLossRelation, POpCmp> relations) {
+  if (tensor->getIr().getSessionOptions().explicitPipeliningEnabled()) {
+    // Explicit code path
+    for (auto consumer : tensor->consumers.getOps()) {
+      if (relations.at(consumer) == graphutils::OpFinalLossRelation::ToLoss ||
+          relations.at(consumer) ==
+              graphutils::OpFinalLossRelation::FromToLoss) {
+        return false;
+      }
     }
+    return true;
+  } else {
+    // Implicit code path
+    for (auto consumer : tensor->consumers.getOps()) {
+      if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        return false;
+      }
+    }
+    return true;
   }
-  return true;
 }
 
 std::set<TensorId> getStashCandidateTensors(Graph &graph) {
+  bool isExplicit =
+      graph.getIr().getSessionOptions().explicitPipeliningEnabled();
 
-  bool full_recompute = isFullRecompute(graph);
+  bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
+
+  std::map<Op *, graphutils::OpFinalLossRelation, POpCmp> relations;
+
+  if (isExplicit) {
+    relations = graphutils::getOpFinalLossRelations(graph);
+  }
 
   std::set<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
     auto tensor = graph.getTensors().get(tid);
 
-    if (tensor->consumers.getOps().empty() ||
-        tensor->tensorType() == TensorType::Variable ||
-        tensor->tensorType() == TensorType::Const ||
-        tensor->isOptimizerTensor()) {
-      continue;
+    bool stashing = true;
+    std::string reason;
+
+    if (stashing && tensor->consumers.getOps().empty()) {
+      reason   = "the tensor not having any consumers.";
+      stashing = false;
     }
 
-    // Full Recompute use stashes only on the inputs to an IPU
-    // to complete any pipeline stage. Or tensors specified by the user.
-    if (full_recompute && isProducedOnIPU(tensor) &&
+    if (stashing && (tensor->tensorType() == TensorType::Variable ||
+                     tensor->tensorType() == TensorType::Const)) {
+      reason   = logging::format("the tensor being a {}", tensor->tensorType());
+      stashing = false;
+    }
+
+    if (stashing && ((tensor->isGraphInput() && !isExplicit) ||
+                     tensor->isImplicitLoopInput())) {
+      reason = "the tensor being a non-stashable graph input (the value of "
+               "implicit loop inputs remains either unchanged, or changes "
+               "inplace, for all loop iterations, and therefore it is not "
+               "required to back-up (stash) past values)";
+      stashing = false;
+    }
+
+    if (stashing && tensor->isOptimizerTensor()) {
+      reason = "the tensor being an optimizer tensor (the value of optimizer "
+               "tensors remains unchanged across loop iterations)";
+      stashing = false;
+    }
+
+    // Full recompute uses stashes only on the inputs to an IPU
+    // to complete any pipeline stage, or tensors specified by the user.
+    if (stashing && isFullRecompute && isProducedOnIPU(tensor) &&
         !hasCheckpointProducer(tensor)) {
-      continue;
+      reason = logging::format(
+          "the tensor not being an input to an IPU, and using full recompute "
+          "(produced on IPU: {} checkpoint producer: {}) (the tensor will be "
+          "recomputed instead of stashed and restored)",
+          isProducedOnIPU(tensor),
+          hasCheckpointProducer(tensor));
+      stashing = false;
     }
 
-    // We only concern ourselves with the normal context
-    if (tensor->hasProducer() &&
+    // We only concern ourselves with the normal and subgraphs context
+    if (stashing && tensor->hasProducer() &&
         tensor->getProducer()->settings.executionContext !=
-            popart::ExecutionContext::Normal) {
-      continue;
+            popart::ExecutionContext::Normal &&
+        tensor->getProducer()->settings.executionContext !=
+            popart::ExecutionContext::Subgraph) {
+      reason =
+          logging::format("the tensor produced in context {}, which is not "
+                          "part of a pipelined execution",
+                          tensor->getProducer()->settings.executionContext);
+      stashing = false;
     }
 
     auto onlyConsumedByCopies = [](Tensor *t) {
@@ -662,27 +652,44 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
     std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
 
     // There is no need to stash a tensor that only appears in 1 stage.
-    // Unless using full_recompute, then it must be consumed by something
+    // Unless using full recompute, then it must be consumed by something
     // other than a copy (it's not just "passing through"), which is
     // scheduled pre-loss (we're not recomputing grad ops)
-    if (tensorStages.size() == 1 &&
-        !(full_recompute && !onlyConsumedByCopies(tensor) &&
-          !onlyConsumedByPostLossOps(tensor))) {
-      continue;
+    if (stashing && tensorStages.size() == 1 &&
+        !(!isExplicit && isFullRecompute && !onlyConsumedByCopies(tensor) &&
+          !onlyConsumedByPostLossOps(tensor, relations))) {
+      reason   = logging::format("only appearing in 1 stage: {} (there are no "
+                               "further stages requiring the restored value)",
+                               tensorStages);
+      stashing = false;
     }
 
-    logging::transform::debug("Adding {} to stash candidates", tid);
-    toStashCandidateTensors.insert(tid);
+    if (stashing) {
+      logging::transform::debug(
+          "[getStashCandidateTensors] Adding {} to stash candidates", tid);
+      toStashCandidateTensors.insert(tid);
+    } else {
+      logging::transform::trace(
+          "[getStashCandidateTensors] Not stashing tensor {} due to {}.",
+          tid,
+          reason);
+    }
   }
 
   return toStashCandidateTensors;
 }
 
+// Implicit recompute only, does not make use of the op->canRecompute() and
+// has it's own rules instead.
 bool isRecomputable(Op *op) {
-  if (op->settings.executionContext != ExecutionContext::Normal) {
+  if (op->settings.executionContext != ExecutionContext::Normal &&
+      op->settings.executionContext != ExecutionContext::Subgraph) {
     return false;
   }
   if (op->isConvertibleTo<HostLoadOp>()) {
+    return false;
+  }
+  if (op->isConvertibleTo<HostStoreOp>()) {
     return false;
   }
   if (op->isConvertibleTo<InitOp>()) {
@@ -693,7 +700,7 @@ bool isRecomputable(Op *op) {
   if (op->isConvertibleTo<IpuCopyOp>()) {
     return false;
   }
-  // Dont recompute the GetRandomSeedOp, or the identity that clones it.
+  // Don't recompute the GetRandomSeedOp, or the identity that clones it.
   auto clonesRandomSeed = [&] {
     if (op->isConvertibleTo<IdentityOp>()) {
       auto input = op->inTensor(0);
@@ -720,7 +727,7 @@ bool outputsAreStashed(Op *op, std::set<TensorId> &stashTensors) {
 
 void setRecomputation(Graph &graph,
                       std::set<TensorId> &toStashCandidateTensors) {
-  bool full_recompute = isFullRecompute(graph);
+  bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
 
   auto isConsumedByCopy = [](Op *op) {
     for (auto tensor : op->output->tensors()) {
@@ -739,6 +746,16 @@ void setRecomputation(Graph &graph,
         if (consumer->isConvertibleTo<HostLoadOp>()) {
           return true;
         }
+        if (MultiExchangeOp *multiExchangeOp =
+                dynamic_cast<MultiExchangeOp *>(consumer)) {
+          auto inIndex    = multiExchangeOp->input->indices(tensor).front();
+          auto descriptor = multiExchangeOp->getExchangeDescriptor(
+              multiExchangeOp->outIndexToDescriptorIndex(inIndex).first);
+          if (descriptor.isHostExchange() &&
+              descriptor.getDirection() == ExchangeDirection::Load) {
+            return true;
+          }
+        }
       }
     }
     return false;
@@ -749,8 +766,8 @@ void setRecomputation(Graph &graph,
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     if (isRecomputable(op)) {
-      if (full_recompute) {
-        // In full_recompute all forward ops are Recomputed unless specified by
+      if (isFullRecompute) {
+        // In isFullRecompute all forward ops are Recomputed unless specified by
         // the user.
         if (op->settings.recomputeType != RecomputeType::Checkpoint &&
             !outputsAreStashed(op, toStashCandidateTensors) &&
@@ -883,7 +900,113 @@ bool containsSeedTensor(std::set<TensorId> ids) {
   return false;
 }
 
+void adjustStashCandidatesForRandomSeed(
+    Graph &graph,
+    std::set<TensorId> &toStashCandidateTensors) {
+  auto &ir = graph.getIr();
+  if (RandomSetup::hasRandomSeed(ir) &&
+      containsSeedTensor(toStashCandidateTensors)) {
+    // Neither the input or the output of a GetRandomSeedOp should be stashed.
+    auto getRandomSeedOp = findGetRandomSeedOp(graph);
+    toStashCandidateTensors.erase(getRandomSeedOp->inId(0));
+    toStashCandidateTensors.erase(getRandomSeedOp->outId(0));
+    // Instead, we need to clone the output of the random seed op and stash
+    // that.
+    auto stashableRandomSeed = createStashableRandomSeed(getRandomSeedOp);
+    toStashCandidateTensors.insert(stashableRandomSeed);
+  }
+}
+
+IncrementModOp *insertCounterUpdate(Graph &graph,
+                                    int stashSize,
+                                    TensorId stashCounterInnerGraphId,
+                                    TensorId updatedStashCounterInnerGraphId,
+                                    const Op::Settings &settings) {
+  return graph.createConnectedOp<IncrementModOp>(
+      {{IncrementModOp::getInIndex(), stashCounterInnerGraphId}},
+      {{IncrementModOp::getOutIndex(), updatedStashCounterInnerGraphId}},
+      Onnx::CustomOperators::IncrementMod_1,
+      static_cast<double>(1),
+      static_cast<double>(stashSize),
+      settings);
+}
+
 } // namespace
+
+void Pipeline::checkOpsPipelineStage(Graph &graph) {
+  // return the pipeline stage or -1 if not set
+  // throw error if pipeline stage is negative
+  auto getPipelineStage = [](auto x) -> PipelineStage {
+    if (x->hasPipelineStage()) {
+      auto ps = x->getPipelineStage();
+      if (ps < 0) {
+        throw error("Op has bad pipeline stage {}", ps);
+      }
+      return ps;
+    } else {
+      return -1;
+    }
+  };
+
+  // collect all ops in each pipeline stage
+  std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      auto ps = getPipelineStage(op);
+      pipelineStages[ps].push_back(op);
+    }
+  }
+
+  // if no ops have had the pipeline stage attribute set, set it to the virtual
+  // graph id
+  if (pipelineStages.size() == 1 && pipelineStages.count(-1) != 0) {
+    for (auto &id_op : graph.getOps()) {
+      auto op = id_op.second.get();
+      if (!op->isConvertibleTo<IpuCopyOp>()) {
+        auto vgraphid = op->getVirtualGraphId();
+        op->setPipelineStage(vgraphid);
+      }
+    }
+  }
+
+  std::ostringstream oss;
+  oss << "For all IpuCopyOps (other than those copying optimizer tensors):\n"
+      << " (1) set pipeline stage\n"
+      << " (2) insert topological constraint that it precedes "
+      << "all non-IpuCopyOps in each pipeline stage";
+  logging::transform::debug(oss.str());
+
+  for (auto &id_op : graph.getOps()) {
+    if (auto copyOp = dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
+      // Copies of optimizer Tensors do not run in the main program fragment
+      if (!copyOp->copiesOptimizerTensors()) {
+        // (1) set pipeline stage
+        setIPUCopyPipelineStage(copyOp);
+        // (2) insert topological constraint
+        std::vector<Op *> nonCopyOps =
+            pipelineStages.at(copyOp->getPipelineStage());
+        std::vector<Op *> mainProgramOps;
+        for (auto op : nonCopyOps) {
+          if (op->settings.executionContext == ExecutionContext::Normal) {
+            mainProgramOps.push_back(op);
+          }
+        }
+        graph.topoCons->insert({{
+            copyOp,        // Key
+            mainProgramOps // OpsBeforeKey
+        }});
+      }
+    }
+  }
+}
+
+bool Pipeline::checkIsFullRecompute(Graph &graph) {
+  auto &ir = graph.getIr();
+  return ir.canTrain() && (ir.getSessionOptions().autoRecomputation ==
+                           RecomputationType::Pipeline);
+}
 
 void Pipeline::setFinalFwdStageRecomputation(Graph &graph) {
   // This annotation pass will try to set the Ops between
@@ -1103,15 +1226,12 @@ bool Pipeline::apply(Graph &graph) const {
                 "to not be VirtualGraphMode::Off.");
   }
 
-  if (ir.getSessionOptions().explicitPipeliningEnabled()) {
-    checkOpsPipelineStage(MainLoops::getInnerLoopSubgraph(ir));
-  } else {
-    checkOpsPipelineStage(graph);
-  }
+  checkOpsPipelineStage(graph);
 
   // 2. Currently user-annotated recomputation is not supported with pipelining
   // (TODO T9575)
-  if (ir.getMainGraph().hasUserRecomputeOps()) {
+  if (ir.getSessionOptions().implicitPipeliningEnabled() &&
+      graph.hasUserRecomputeOps()) {
     throw error("When pipelining is enabled, user annotation for recomputation "
                 "is not allowed");
   }
@@ -1125,34 +1245,24 @@ bool Pipeline::apply(Graph &graph) const {
   // The checks:
   // 3.2 Copies in the correct direction
 
-  auto getIpuCopyOps = [&graph] {
-    // contiguating IpuCopyOps
-    std::vector<popart::IpuCopyOp *> ipuCopies;
-    for (auto &op_pair : graph.getOps()) {
-      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op_pair.second.get());
-      if (ipuCopyOp &&
-          ipuCopyOp->settings.executionContext == ExecutionContext::Normal) {
-        ipuCopies.push_back(ipuCopyOp);
-      }
-    }
-    return ipuCopies;
-  };
-
   chainCopiesTransform(graph);
 
   // Other sharding assumptions to check:
 
   // 4. Ir stream tensors cannot be consumed by ops on multiple IPUs
-  for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
-    auto tensor = graph.getTensors().get(tid);
-    std::set<VGraphId> virtualGraphs;
-    for (auto c : tensor->consumers.getOps()) {
-      virtualGraphs.insert(getVirtualGraphIdOrSourceIpu(c, tensor));
-    }
+  // (not relevant for explicit pipelining)
+  if (ir.getSessionOptions().implicitPipeliningEnabled()) {
+    for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
+      auto tensor = graph.getTensors().get(tid);
+      std::set<VGraphId> virtualGraphs;
+      for (auto c : tensor->consumers.getOps()) {
+        virtualGraphs.insert(getVirtualGraphIdOrSourceIpu(c, tensor));
+      }
 
-    if (virtualGraphs.size() > 1) {
-      throw error("For pipelining, stream tensors can only be streamed "
-                  "directly onto a single IPU");
+      if (virtualGraphs.size() > 1) {
+        throw error("For pipelining, stream tensors can only be streamed "
+                    "directly onto a single IPU");
+      }
     }
   }
 
@@ -1178,9 +1288,39 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
 
-  // Now apply the transform
+  // 6. Contiguate the IPUCopies
+  contiguateIpuCopies(graph);
 
-  // 0. Contiguate the IPUCopies
+  if (ir.getSessionOptions().explicitPipeliningEnabled()) {
+    // Get the inner loop subgraph that is to be pipelined
+
+    // 7. Add dynamic stash and restore ops
+    addDynamicStashAndRestoreOps(graph);
+
+    // 8. Decompose loop to enable explicit pipelining
+    return applyExplicit(graph);
+  } else {
+    // 7. Add implicit stash and restore ops
+    return addStashRestoreOps(graph);
+  }
+}
+
+bool Pipeline::contiguateIpuCopies(Graph &graph) const {
+  auto getIpuCopyOps = [&graph] {
+    // contiguating IpuCopyOps
+    std::vector<popart::IpuCopyOp *> ipuCopies;
+    for (auto &op_pair : graph.getOps()) {
+      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op_pair.second.get());
+      if (ipuCopyOp &&
+          (ipuCopyOp->settings.executionContext == ExecutionContext::Normal ||
+           ipuCopyOp->settings.executionContext ==
+               ExecutionContext::Subgraph)) {
+        ipuCopies.push_back(ipuCopyOp);
+      }
+    }
+    return ipuCopies;
+  };
+
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : getIpuCopyOps()) {
     if (!ipuCopyOp->isExcludedFromPattern(&contiguator) &&
@@ -1189,7 +1329,7 @@ bool Pipeline::apply(Graph &graph) const {
       contiguator.apply(ipuCopyOp);
     }
   }
-  ir.updateVertices();
+  graph.getIr().updateVertices();
 
   // verify that all IpuCopies are contiguous
   for (auto ipuCopyOp : getIpuCopyOps()) {
@@ -1220,15 +1360,7 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
 
-  if (ir.getSessionOptions().explicitPipeliningEnabled()) {
-    // Get the inner loop subgraph that is to be pipelined
-    auto &toPipelineGraph = MainLoops::getInnerLoopSubgraph(ir);
-    addStashRestoreOps(toPipelineGraph);
-    return applyExplicit(toPipelineGraph);
-  } else {
-    // The graph to be pipelined is always the main graph
-    return addStashRestoreOps(graph);
-  }
+  return true;
 }
 
 bool Pipeline::applyExplicit(Graph &innerLoopSubgraph) const {
@@ -1237,23 +1369,13 @@ bool Pipeline::applyExplicit(Graph &innerLoopSubgraph) const {
   return true;
 }
 
-bool Pipeline::addStashRestoreOps(Graph &graph) const {
-  auto &ir            = graph.getIr();
-  bool full_recompute = isFullRecompute(graph);
-
-  auto toStashCandidateTensors = getStashCandidateTensors(graph);
-
-  if (RandomSetup::hasRandomSeed(ir) &&
-      containsSeedTensor(toStashCandidateTensors)) {
-    // Neither the input or the output of a GetRandomSeedOp should be stashed.
-    auto getRandomSeedOp = findGetRandomSeedOp(graph);
-    toStashCandidateTensors.erase(getRandomSeedOp->inId(0));
-    toStashCandidateTensors.erase(getRandomSeedOp->outId(0));
-    // Instead, we need to clone the output of the random seed op and stash
-    // that.
-    auto stashableRandomSeed = createStashableRandomSeed(getRandomSeedOp);
-    toStashCandidateTensors.insert(stashableRandomSeed);
-  }
+PipelineStashInfo
+Pipeline::prepareForStashing(Graph &graph,
+                             std::set<TensorId> toStashCandidateTensors) const {
+  auto &ir             = graph.getIr();
+  bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
+  bool isExplicit =
+      graph.getIr().getSessionOptions().explicitPipeliningEnabled();
 
   std::set<TensorId> toStashTensors;
   // StashTensorId -> std::pair<StashRefOp, RestoreRefOps>
@@ -1264,20 +1386,25 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
     toStashTensors = toStashCandidateTensors;
   }
 
-  // If there is recomputation, the candidate set is reduced.
-  //
-  // Candidate Tensors which can be recomputed from other stashing candidates,
-  // are filtered out, and their producers are set to Recompute.
-  //
-  // The only exceptions are candidate stashing Tensors which are copied to
-  // another IPU : these must be stashed even if they recomputable. This
-  // guarantees that the correct Tensor is copied after fwd and bwd have
-  // executed.
-  //
-  // Algorithm : initialize all pre-loss Ops to be Recompute, and then set to
-  // Checkpoint if (1) cannot be computed from previous Stashed Tensors or (2)
-  // must be copied to next IPU.
-  else {
+  else if (isExplicit) {
+    // Explicit pipelining uses explicit recomputation, so by this point in
+    // time, all the recomputation ops have already been inserted into the IR.
+    // Therefore we can filter recomputation based on the recomputed ops.
+    toStashTensors = toStashCandidateTensors;
+  } else {
+    // If there is recomputation, the candidate set is reduced.
+    //
+    // Candidate Tensors which can be recomputed from other stashing candidates,
+    // are filtered out, and their producers are set to Recompute.
+    //
+    // The only exceptions are candidate stashing Tensors which are copied to
+    // another IPU : these must be stashed even if they recomputable. This
+    // guarantees that the correct Tensor is copied after fwd and bwd have
+    // executed.
+    //
+    // Algorithm : initialize all pre-loss Ops to be Recompute, and then set to
+    // Checkpoint if (1) cannot be computed from previous Stashed Tensors or (2)
+    // must be copied to next IPU.
     setRecomputation(graph, toStashCandidateTensors);
 
     std::set<TensorId> checkpointTensors;
@@ -1291,10 +1418,10 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
       if (!tensor->hasProducer() ||
           tensor->getProducer()->settings.recomputeType !=
               RecomputeType::Recompute) {
-        // For full_recompute if a stash candidate doesn't have a
+        // For isFullRecompute if a stash candidate doesn't have a
         // restoreReference then it is not required for recomputation during the
         // backwards pass.
-        if (full_recompute) {
+        if (isFullRecompute) {
           auto stashRef = getStashReferenceOp(tensor);
           auto restoreRefs =
               findDescendentsOnDifferentPipelineStages(tensor, stashRef);
@@ -1351,16 +1478,390 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
     }
   }
 
-  logging::transform::debug("Final Stash Tensors");
-  for (auto tid : toStashTensors) {
-    logging::transform::debug("  {}", tid);
+  logging::transform::debug(
+      "[Pipeline::prepareForStashing] Final stash tensors: {}", toStashTensors);
+
+  PipelineStashInfo info;
+  info.toStashTensors     = toStashTensors;
+  info.stashRestoreRefOps = stashRestoreRefOps;
+
+  return info;
+}
+
+TensorId Pipeline::addDynamicStashOpForTensor(
+    Graph &graph,
+    const PipelineDynamicStashInfo &info) const {
+  auto &ir                         = graph.getIr();
+  LoopOp *innerLoopOp              = MainLoops::getInnerLoopOp(ir);
+  auto &pipelineMainLoopOuterGraph = innerLoopOp->getGraph();
+
+  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "");
+  Op::Settings stashSettings(graph, "");
+
+  // Info for the stash counters
+  TensorInfo counterInfo(DataType::INT32, {});
+
+  // Add the stash size as the leading dimension of the stash tensor
+  TensorInfo stashTensorInfo = info.tensor->info;
+  Shape tensorShape          = info.tensor->info.shape();
+  Shape stashTensorShape;
+  stashTensorShape.reserve(stashTensorInfo.shape().size() + 1);
+  stashTensorShape.push_back(info.stashSize);
+  stashTensorShape.insert(
+      stashTensorShape.end(), tensorShape.begin(), tensorShape.end());
+  stashTensorInfo.set(info.tensor->info.dataType(), stashTensorShape);
+
+  auto stashTensorInnerGraphId = addScope(graph, info.stashTensorBaseId);
+  auto stashTensorOuterGraphId =
+      addScope(pipelineMainLoopOuterGraph, info.stashTensorBaseId);
+  auto updatedStashTensorInnerGraphId =
+      ir.createIntermediateTensorId(stashTensorInnerGraphId);
+  auto updatedStashTensorOuterGraphId =
+      ir.createIntermediateTensorId(stashTensorOuterGraphId);
+
+  logging::transform::trace(
+      "[Pipeline::addDynamicStashOpForTensor] Creating stash "
+      "tensorIds: {} -> [{} -> {}] -> {}",
+      stashTensorOuterGraphId,
+      stashTensorInnerGraphId,
+      updatedStashTensorInnerGraphId,
+      updatedStashTensorOuterGraphId);
+
+  auto stashCounterInnerGraphId = addScope(graph, info.stashCounterBaseId);
+  auto stashCounterOuterGraphId =
+      addScope(pipelineMainLoopOuterGraph, info.stashCounterBaseId);
+  auto updatedStashCounterInnerGraphId =
+      ir.createIntermediateTensorId(stashCounterInnerGraphId);
+  auto updatedStashCounterOuterGraphId =
+      ir.createIntermediateTensorId(stashCounterOuterGraphId);
+
+  logging::transform::trace(
+      "[Pipeline::addDynamicStashOpForTensor] Creating stash counter "
+      "tensorIds: {} -> [{} -> {}] -> {}",
+      stashCounterOuterGraphId,
+      stashCounterInnerGraphId,
+      updatedStashCounterInnerGraphId,
+      updatedStashCounterOuterGraphId);
+
+  // Create the stash counter in the outer graph (once per stash)
+  auto stashCounterInitOp =
+      pipelineMainLoopOuterGraph.createConnectedOp<InitOp>(
+          {},
+          {{InitOp::getOutIndex(), stashCounterOuterGraphId}},
+          Onnx::CustomOperators::Init_1,
+          counterInfo,
+          TensorType::ActGrad,
+          InitType::Zero,
+          outerSettings.copy("Init_" + info.stashCounterBaseId));
+
+  // Create the stash in the outer graph
+  auto stashTensorInitOp = pipelineMainLoopOuterGraph.createConnectedOp<InitOp>(
+      {},
+      {{InitOp::getOutIndex(), stashTensorOuterGraphId}},
+      Onnx::CustomOperators::Init_1,
+      stashTensorInfo,
+      TensorType::ActGrad,
+      InitType::NoInit,
+      outerSettings.copy("Init_" + info.stashTensorBaseId));
+
+  // Loop input stash counter
+  innerLoopOp->addLoopInput(LoopOp::getFirstInputInIndex(),
+                            stashCounterOuterGraphId,
+                            stashCounterInnerGraphId,
+                            false);
+
+  // Loop input stash tensor (implicit, modified input)
+  auto stashInIndex = innerLoopOp->input->n();
+  innerLoopOp->addLoopInput(
+      stashInIndex, stashTensorOuterGraphId, stashTensorInnerGraphId, false);
+  innerLoopOp->addModified(
+      stashInIndex,
+      {view::Region::getFull(
+          innerLoopOp->input->tensor(stashInIndex)->info.shape(),
+          view::AccessType::ReadWrite)});
+
+  // Dynamic update the stash inplace
+  auto dynamicUpdateOp = graph.createConnectedOp<DynamicUpdateInplaceOp>(
+      {{DynamicUpdateInplaceOp::getUpdateInIndex(), stashTensorInnerGraphId},
+       {DynamicUpdateInplaceOp::getIndexInIndex(), stashCounterInnerGraphId},
+       {DynamicUpdateInplaceOp::getInIndex(), info.tensor->id}},
+      {{DynamicUpdateInplaceOp::getOutIndex(), updatedStashTensorInnerGraphId}},
+      Onnx::CustomOperators::DynamicUpdateInplace,
+      std::vector<int64_t>{0},
+      std::vector<int64_t>{1},
+      false,
+      stashSettings.copy("DynamicUpdate_" + info.stashTensorBaseId));
+
+  // Update the stash counter
+  Op *stashCounterUpdateOp = insertCounterUpdate(
+      graph,
+      info.stashSize,
+      stashCounterInnerGraphId,
+      updatedStashCounterInnerGraphId,
+      stashSettings.copy("Counter_" + info.stashTensorBaseId));
+
+  // Loop carry the updated counter
+  innerLoopOp->addLoopOutput(LoopOp::getFirstOutputOutIndex(),
+                             updatedStashCounterOuterGraphId,
+                             updatedStashCounterInnerGraphId,
+                             false);
+
+  stashCounterInitOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(info.stashRefOp, info.tensor));
+  stashTensorInitOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(info.stashRefOp, info.tensor));
+
+  stashCounterUpdateOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(info.stashRefOp, info.tensor));
+  stashCounterUpdateOp->setPipelineStage(info.stashRefOp->getPipelineStage());
+
+  dynamicUpdateOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(info.stashRefOp, info.tensor));
+  dynamicUpdateOp->setPipelineStage(info.stashRefOp->getPipelineStage());
+
+  return stashTensorInnerGraphId;
+}
+
+TensorId
+Pipeline::addDynamicRestoreOpForTensor(Graph &graph,
+                                       const PipelineDynamicStashInfo &info,
+                                       size_t restoreRefOpIndex,
+                                       TensorId stashTensorInnerGraphId,
+                                       TensorId lastRestoreTensorId) const {
+
+  auto &ir                         = graph.getIr();
+  LoopOp *innerLoopOp              = MainLoops::getInnerLoopOp(ir);
+  auto &pipelineMainLoopOuterGraph = innerLoopOp->getGraph();
+
+  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "");
+  Op::Settings restoreSettings(graph, "");
+
+  Op *restoreRefOp = info.restoreRefOps.at(restoreRefOpIndex);
+
+  // Info for the stash and restore counters
+  TensorInfo counterInfo(DataType::INT32, {});
+
+  TensorId restoreCounterInnerGraphId =
+      ir.createIntermediateTensorId(addScope(graph, info.stashCounterBaseId));
+  TensorId restoreCounterOuterGraphId = ir.createIntermediateTensorId(
+      addScope(pipelineMainLoopOuterGraph, info.stashCounterBaseId));
+  TensorId updatedRestoreCounterInnerGraphId =
+      ir.createIntermediateTensorId(addScope(graph, info.stashCounterBaseId));
+  TensorId updatedRestoreCounterOuterGraphId = ir.createIntermediateTensorId(
+      addScope(pipelineMainLoopOuterGraph, info.stashCounterBaseId));
+
+  logging::transform::trace("[Pipeline::addDynamicRestoreOpForTensor] Creating "
+                            "tensorIds: {} -> [{} -> {}] -> {}",
+                            restoreCounterOuterGraphId,
+                            restoreCounterInnerGraphId,
+                            updatedRestoreCounterInnerGraphId,
+                            updatedRestoreCounterOuterGraphId);
+
+  // Create the restore counter in the outer graph (once per restore)
+  auto restoreCounterInitOp =
+      pipelineMainLoopOuterGraph.createConnectedOp<InitOp>(
+          {},
+          {{InitOp::getOutIndex(), restoreCounterOuterGraphId}},
+          Onnx::CustomOperators::Init_1,
+          counterInfo,
+          TensorType::ActGrad,
+          InitType::Zero,
+          outerSettings.copy("Init_" + info.stashCounterBaseId + "_" +
+                             std::to_string(restoreRefOpIndex)));
+
+  restoreCounterInitOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(restoreRefOp, info.tensor));
+
+  // Loop input restore counter
+  innerLoopOp->addLoopInput(LoopOp::getFirstInputInIndex(),
+                            restoreCounterOuterGraphId,
+                            restoreCounterInnerGraphId,
+                            false);
+
+  // Update the restore counter
+  Op *restoreCounterUpdateOp = insertCounterUpdate(
+      graph,
+      info.stashSize,
+      restoreCounterInnerGraphId,
+      updatedRestoreCounterInnerGraphId,
+      restoreSettings.copy("Counter_" + info.stashTensorBaseId + "_" +
+                           std::to_string(restoreRefOpIndex)));
+
+  restoreCounterUpdateOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(restoreRefOp, info.tensor));
+  restoreCounterUpdateOp->setPipelineStage(restoreRefOp->getPipelineStage());
+
+  // Loop carry the updated counter
+  innerLoopOp->addLoopOutput(LoopOp::getFirstOutputOutIndex(),
+                             updatedRestoreCounterOuterGraphId,
+                             updatedRestoreCounterInnerGraphId,
+                             false);
+
+  TensorId toRestoreTensorId =
+      lastRestoreTensorId.empty() ? info.tensor->id : lastRestoreTensorId;
+  TensorId restoredTensorId = ir.createIntermediateTensorId(info.tensor->id);
+
+  logging::transform::trace(
+      "[Pipeline::addDynamicRestoreOpForTensor] Restoring tensor "
+      "{}: {} -> {}",
+      info.tensor->id,
+      toRestoreTensorId,
+      restoredTensorId);
+
+  DynamicSliceOp *dynamicSliceOp = graph.createConnectedOp<DynamicSliceOp>(
+      {{DynamicSliceOp::getInIndex(), stashTensorInnerGraphId},
+       {DynamicSliceOp::getIndexInIndex(), restoreCounterInnerGraphId},
+       {DynamicSliceOp::getSliceInIndex(), toRestoreTensorId}},
+      {{DynamicSliceOp::getOutIndex(), restoredTensorId}},
+      Onnx::CustomOperators::DynamicSlice_1,
+      std::vector<int64_t>{0},
+      std::vector<int64_t>{1},
+      false,
+      restoreSettings.copy("DynamicSlice_" + info.stashTensorBaseId + "_" +
+                           std::to_string(restoreRefOpIndex)));
+
+  dynamicSliceOp->setVirtualGraphId(
+      getVirtualGraphIdOrSourceIpu(restoreRefOp, info.tensor));
+  dynamicSliceOp->setPipelineStage(restoreRefOp->getPipelineStage());
+
+  // Disconnect tensor from all consumers in the restore op's pipeline stage,
+  // reconnect to restoreId
+
+  for (Op *consumer : info.consumers) {
+    if (consumer->getPipelineStage() == dynamicSliceOp->getPipelineStage()) {
+      for (auto inIndex : consumer->input->indicesMap().at(info.tensor)) {
+        consumer->disconnectInTensor(inIndex, info.tensor);
+        consumer->connectInTensor(inIndex, restoredTensorId);
+      }
+    } else {
+      logging::transform::trace("[Pipeline::addDynamicRestoreOpForTensor] Not "
+                                "connecting consumer {} to DynamicSliceOp {} "
+                                "as they have different pipeline stages.",
+                                consumer->debugName(),
+                                dynamicSliceOp->debugName());
+    }
   }
 
-  // 2. For each Tensor to be stashed, create a single stash
-  //    and one or more (possible in-place) restore ops
+  return restoredTensorId;
+}
+
+void Pipeline::addDynamicRestoreOpsForTensor(
+    Graph &graph,
+    const PipelineDynamicStashInfo &info,
+    TensorId stashTensorInnerGraphId) const {
+
+  TensorId lastRestoreTensorId = "";
+  for (size_t restoreRefOpIndex = 0;
+       restoreRefOpIndex < info.restoreRefOps.size();
+       restoreRefOpIndex++) {
+    lastRestoreTensorId = addDynamicRestoreOpForTensor(graph,
+                                                       info,
+                                                       restoreRefOpIndex,
+                                                       stashTensorInnerGraphId,
+                                                       lastRestoreTensorId);
+  }
+}
+
+void Pipeline::addDynamicStashAndRestoreOpsForTensor(
+    Graph &graph,
+    const PipelineStashInfo &pipelineStashInfo,
+    TensorId tid) const {
+  auto &ir = graph.getIr();
+
+  PipelineDynamicStashInfo info;
+
+  info.tensor = graph.getTensors().get(tid);
+  // Important to capture the consumers before inserting new operations
+  info.consumers = info.tensor->consumers.getOps();
+
+  if (info.tensor->consumers.getOps().empty()) {
+    throw internal_error("[Pipeline::addDynamicStashOpsForTensor] Request to "
+                         "stash tensor {} with no "
+                         "consumers, bailing",
+                         info.tensor->str());
+  }
+
+  if (pipelineStashInfo.stashRestoreRefOps.find(tid) !=
+      pipelineStashInfo.stashRestoreRefOps.end()) {
+    auto refs          = pipelineStashInfo.stashRestoreRefOps.at(tid);
+    info.stashRefOp    = refs.first;
+    info.restoreRefOps = refs.second;
+  } else {
+    info.stashRefOp    = getStashReferenceOp(info.tensor);
+    info.restoreRefOps = getRestoreReferenceOps(info.tensor, info.stashRefOp);
+  }
+
+  for (Op *restoreRefOp : info.restoreRefOps) {
+    info.restoreStages.push_back(restoreRefOp->getPipelineStage());
+  }
+
+  // The largest PipelineStage of the restoreRefOps determines stash size
+  info.stashSize =
+      *std::max_element(info.restoreStages.begin(), info.restoreStages.end()) -
+      info.stashRefOp->getPipelineStage() + 1;
+
+  logging::transform::debug(
+      "[Pipeline::addDynamicStashOpsForTensor] Adding stash of "
+      "size {} of activations {} for "
+      "pipelining. Stash stage: {}, restore stages: {}",
+      info.stashSize,
+      info.tensor->id,
+      info.stashRefOp->getPipelineStage(),
+      info.restoreStages);
+
+  // Base TensorId for the stash tensor
+  info.stashTensorBaseId = addPrefix(
+      ir, removeScope(graph, info.tensor->id), reservedStashedPrefix());
+
+  // Base TensorIds for the stash counter
+  info.stashCounterBaseId = addPrefix(
+      ir, removeScope(graph, info.tensor->id), reservedCounterPrefix());
+
+  TensorId stashTensorInnerGraphId = addDynamicStashOpForTensor(graph, info);
+  addDynamicRestoreOpsForTensor(graph, info, stashTensorInnerGraphId);
+}
+
+bool Pipeline::addDynamicStashAndRestoreOps(Graph &graph) const {
+  auto &ir = graph.getIr();
+
+  // Get graph which pipelineMainLoop is part of
+  LoopOp *innerLoopOp = MainLoops::getInnerLoopOp(ir);
+
+  logging::transform::debug(
+      "[Pipeline::addDynamicStashOps] Adding pipeline stashes to {}",
+      innerLoopOp->debugName());
+
+  auto toStashCandidateTensors = getStashCandidateTensors(graph);
+  adjustStashCandidatesForRandomSeed(graph, toStashCandidateTensors);
+  auto pipelineStashInfo = prepareForStashing(graph, toStashCandidateTensors);
+
+  if (!ir.getSessionOptions().explicitRecomputation) {
+    throw error("[Pipeline::addDynamicStashOps] Explicit pipelining requires "
+                "explicit recomputation to be enabled.");
+  }
+
+  for (auto &tid : pipelineStashInfo.toStashTensors) {
+    addDynamicStashAndRestoreOpsForTensor(graph, pipelineStashInfo, tid);
+  }
+
+  innerLoopOp->setup();
+
+  return true;
+}
+
+bool Pipeline::addStashRestoreOps(Graph &graph) const {
+  auto &ir             = graph.getIr();
+  bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
+
+  auto toStashCandidateTensors = getStashCandidateTensors(graph);
+  adjustStashCandidatesForRandomSeed(graph, toStashCandidateTensors);
+  auto pipelineStashInfo = prepareForStashing(graph, toStashCandidateTensors);
+
+  // For each Tensor to be stashed, create a single stash
+  // and one or more (possible in-place) restore ops
   Op::Settings settings(graph, "");
 
-  for (auto &tid : toStashTensors) {
+  for (auto &tid : pipelineStashInfo.toStashTensors) {
     auto tensor = graph.getTensors().get(tid);
 
     if (tensor->consumers.getOps().empty()) {
@@ -1371,8 +1872,9 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
 
     Op *stashRefOp;
     std::vector<Op *> restoreRefOps;
-    if (stashRestoreRefOps.find(tid) != stashRestoreRefOps.end()) {
-      auto refs     = stashRestoreRefOps.at(tid);
+    if (pipelineStashInfo.stashRestoreRefOps.find(tid) !=
+        pipelineStashInfo.stashRestoreRefOps.end()) {
+      auto refs     = pipelineStashInfo.stashRestoreRefOps.at(tid);
       stashRefOp    = refs.first;
       restoreRefOps = refs.second;
     } else {
@@ -1415,7 +1917,7 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
     // it must not be inplace, but stashes needed for recomputation must be
     // inplace. To resolve this contradiction an IdentityOp is inserted between
     // the the stashed tensor and the IpuCopy
-    if (full_recompute) {
+    if (isFullRecompute) {
       insertClonesBeforeIpuCopyConsumers(
           graph,
           tensor,
@@ -1587,13 +2089,14 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
   // by the recompute phase before it is copied to the next IPU, or back
   // to host (in the case of anchor tensors). So insert a identity
   // (clone) between the op and the copy.
-  if (full_recompute) {
+  if (isFullRecompute) {
     for (auto &tid : graph.getTensors().getAllTensorIds()) {
       auto tensor = graph.getTensors().get(tid);
 
       // Stash tensors have already been covered above
-      if (std::find(toStashTensors.cbegin(), toStashTensors.cend(), tid) !=
-          toStashTensors.cend()) {
+      if (std::find(pipelineStashInfo.toStashTensors.cbegin(),
+                    pipelineStashInfo.toStashTensors.cend(),
+                    tid) != pipelineStashInfo.toStashTensors.cend()) {
         continue;
       }
 
@@ -1646,7 +2149,8 @@ PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
                            int64_t _numPipelineStages,
                            bool _doTraining,
                            bool _doGradAccl)
-    : doTraining(_doTraining), doGradAccl(_doGradAccl) {
+    : numStages(_numPipelineStages), doTraining(_doTraining),
+      doGradAccl(_doGradAccl) {
 
   auto fillFlushPhaseCycles = _numPipelineStages - 1;
   fillPhase.start           = 0;
@@ -1689,30 +2193,66 @@ ExplicitPipelineHelper::ExplicitPipelineHelper(Graph &innerLoopSubgraph_)
 
 void ExplicitPipelineHelper::createExplicitPipeline() {
   compatibilityChecks();
-  categorizeInnerLoopOps();
+  ir.dotCheckpoint(ir, "ExplicitPipelineBeforeOutline");
+  findOpsToOutline();
   createCallOps();
+  ir.dotCheckpoint(ir, "ExplicitPipelineAfterOutline");
+  decompose();
+  cleanUp();
+  ir.dotCheckpoint(ir, "ExplicitPipelineAfterDecompose");
+}
 
-  // Reduce the trip count of the loop op to account for the extra fill and
-  // flush calls
-  pipelineMainLoop->setTripCountValue(pInfo.getMainCycles());
+std::pair<PipelineStage, PipelineStage>
+ExplicitPipelineHelper::getMinAndMaxUnrollStages() const {
+  // minStage == 1 means in the first unroll step, only stage 0 will be pulled
+  // out of the LoopOp subgraph (and added before the LoopOp).
+  PipelineStage minStage = 1;
 
-  // In addition, we need to clone the innerLoopSubgraph as we will loop over
-  // the scheduled ops and modify it in the unrolling
-  cloneSrct.originalGraphOpIdAndClonedGraphOpId =
-      ir.cloneGraph(innerLoopSubgraph.id, {cloneSrct.clonedGraphId}).opIdMap;
-  for (const auto originalAndClonedOp :
-       cloneSrct.originalGraphOpIdAndClonedGraphOpId) {
-    cloneSrct.clonedGraphOpIdAndOriginalGraphOpId[originalAndClonedOp.second] =
-        originalAndClonedOp.first;
+  // maxStage == numStages - 1 means in the last unroll step, only the last
+  // stage will be pulled out of the LoopOp subgraph
+  // (and added behind the LoopOp).
+  PipelineStage maxStage = pInfo.numStages - 1;
+
+  // Check where (which PipelineStage) overlapped IO is required.
+  auto overlapRequired = OverlapIO::overlapIORequired(ir);
+  auto overlapLoops    = overlapRequired.find(ExchangeStrategy::OverlapLoops);
+  auto overlapInnerLoop =
+      overlapRequired.find(ExchangeStrategy::OverlapInnerLoop);
+
+  // The lowest PipelineStage requiring an overlapped IO strategy
+  OptionalPipelineStage minOverlapStage;
+
+  // The highest PipelineStage requiring an overlapped IO strategy
+  OptionalPipelineStage maxOverlapStage;
+
+  if (overlapLoops != overlapRequired.end() &&
+      overlapInnerLoop != overlapRequired.end()) {
+    minOverlapStage = std::min(*(overlapLoops->second.begin()),
+                               *(overlapInnerLoop->second.begin()));
+    maxOverlapStage = std::max(*--(overlapLoops->second.end()),
+                               *--(overlapInnerLoop->second.end()));
+  } else if (overlapLoops != overlapRequired.end()) {
+    minOverlapStage = *(overlapLoops->second.begin());
+    maxOverlapStage = *--(overlapLoops->second.end());
+  } else if (overlapInnerLoop != overlapRequired.end()) {
+    minOverlapStage = *(overlapInnerLoop->second.begin());
+    maxOverlapStage = *--(overlapInnerLoop->second.end());
   }
 
-  // Unroll the loop for the fill stage
-  auto lastOriginalAndClonedTensorId = createFillPhase();
-  auto tensorIdsToFlushStage =
-      modifyInputAndOutputInInnerLoop(lastOriginalAndClonedTensorId);
-  createFlushPhase(tensorIdsToFlushStage);
+  // Overlapped IO on first stage required, which means one extra loop unroll
+  if (minOverlapStage && *minOverlapStage == PipelineStage{0}) {
+    // First unroll step will only pull IO out of the LoopOp subgraph
+    minStage = 0;
+  }
 
-  cleanUp();
+  // Overlapped IO on last stage required, which means one extra loop unroll
+  if (maxOverlapStage &&
+      *maxOverlapStage == PipelineStage{pInfo.numStages - 1}) {
+    // Last unroll step will only pull IO out of the LoopOp subgraph
+    maxStage = pInfo.numStages;
+  }
+
+  return {minStage, maxStage};
 }
 
 void ExplicitPipelineHelper::compatibilityChecks() const {
@@ -1739,72 +2279,49 @@ void ExplicitPipelineHelper::compatibilityChecks() const {
   }
 }
 
-void ExplicitPipelineHelper::categorizeInnerLoopOps() {
-  auto isForStreamingFromHost = [](Op *op) {
-    if (op->isConvertibleTo<HostLoadOp>()) {
-      return true;
-    }
-    // If an InitOp whose output is consumed by a HostLoadOp ??
-    if (op->isConvertibleTo<InitOp>()) {
-      auto consumerOps =
-          op->outTensor(InitOp::getOutIndex())->consumers.getOps();
-      if (consumerOps.size() == 1 &&
-          consumerOps[0]->isConvertibleTo<HostLoadOp>()) {
-        return true;
-      }
-    }
-    return false;
-  };
+void ExplicitPipelineHelper::findOpsToOutline() {
+  opsToOutline.clear();
 
-  auto insertOp = [](Op *op,
-                     std::map<PipelineStage, std::vector<OpId>> &pStageOpIds) {
-    if (op->hasPipelineStage()) {
-      PipelineStage pStage = op->getPipelineStage();
+  std::set<ExchangeStrategy> computeLikeExchangeStrategies = {
+      ExchangeStrategy::JustInTime};
 
-      auto it = pStageOpIds.find(pStage);
-      if (it != pStageOpIds.end()) {
-        it->second.push_back(op->id);
-      } else {
-        pStageOpIds.emplace(pStage, std::vector<OpId>{op->id});
-      }
-    } else {
-      throw error("[Explicit Pipeline] Op {} does not have the PipelineStage "
-                  "attribute set",
-                  op->str());
-    }
-  };
+  auto minAndMaxStage = getMinAndMaxUnrollStages();
 
-  for (OpId opId : innerLoopSubgraph.getOpIds()) {
-    Op *op = innerLoopSubgraph.getOp(opId);
-    if (op->isIpuCopyOp()) {
-      insertOp(op, innerLoopOpsCategories.ipuCopyOps);
-    } else if (isForStreamingFromHost(op)) {
-      insertOp(op, innerLoopOpsCategories.hostLoadOps);
-    } else if (op->isConvertibleTo<HostStoreOp>()) {
-      insertOp(op, innerLoopOpsCategories.hostStoreOps);
-    } else {
-      insertOp(op, innerLoopOpsCategories.mainOps);
+  // Reuse the same Op classification model as for loop unrolling
+  DecomposeLoopPipelineModel model(minAndMaxStage.first,
+                                   minAndMaxStage.second,
+                                   pInfo.numStages,
+                                   DecomposeTopoConLevel::None,
+                                   DecomposeTopoConLevel::None,
+                                   DecomposeTopoConLevel::None,
+                                   computeLikeExchangeStrategies);
+
+  auto classOps = model.classifyOperations(innerLoopSubgraph);
+
+  for (auto &classOp : classOps) {
+    auto utype = model.unwrap(classOp.second);
+    // Only pipeline stage compute operations should be outlined at this stage
+    if (utype.getType() == DecomposeLoopOpTypeEnum::Compute &&
+        !utype.isPipelineIpuCopy()) {
+      // One CallOp per pipeline stage
+      opsToOutline[utype.getPipelineStage()].push_back(classOp.first->id);
     }
   }
 }
 
-std::map<PipelineStage, OpId>
-ExplicitPipelineHelper::replaceOpsCategoriesWithCallOps(
-    const std::map<PipelineStage, std::vector<OpId>> &opsCategory,
-    std::string subgraphPostfix) {
+void ExplicitPipelineHelper::createCallOps() {
   std::map<PipelineStage, Graph *> subgraphs;
   std::map<PipelineStage, OpId> pipelineStageAndOpId;
 
   AliasesMap aliasesMap{&ir};
 
-  for (auto pstage_ops : opsCategory) {
+  for (auto pstage_ops : opsToOutline) {
     auto pStage                = pstage_ops.first;
     auto ops                   = pstage_ops.second;
     auto subgraphableOpCluster = SubgraphableOpCluster(ops, &innerLoopSubgraph);
     std::map<Op *, int> index_map;
-    std::string sgId =
-        "PipelineStage_" + std::to_string(pStage) + "_" + subgraphPostfix;
-    auto &subgraph = SubgraphOutline::createSubgraph(
+    std::string sgId = "PipelineStage_" + std::to_string(pStage) + "_main";
+    auto &subgraph   = SubgraphOutline::createSubgraph(
         {subgraphableOpCluster}, ir, index_map, sgId);
 
     subgraphs.emplace(pStage, &subgraph);
@@ -1814,337 +2331,40 @@ ExplicitPipelineHelper::replaceOpsCategoriesWithCallOps(
             subgraphableOpCluster, subgraph, index_map, aliasesMap)
             ->id;
   }
-  return pipelineStageAndOpId;
 }
 
-void ExplicitPipelineHelper::createCallOps() {
-  auto mainCallOps =
-      replaceOpsCategoriesWithCallOps(innerLoopOpsCategories.mainOps, "Main");
-  auto hostLoadCallOps = replaceOpsCategoriesWithCallOps(
-      innerLoopOpsCategories.hostLoadOps, "FromHost");
-  auto hostStoreCallOps = replaceOpsCategoriesWithCallOps(
-      innerLoopOpsCategories.hostStoreOps, "ToHost");
-  pipelineStageOpIdMaps.ipuCopyCallOps = replaceOpsCategoriesWithCallOps(
-      innerLoopOpsCategories.ipuCopyOps, "IpuCopy");
+void ExplicitPipelineHelper::decompose() {
+  DecomposeLoops decomposer;
 
-  // As we are going to loop over all ops in a scheduled order we create a map
-  // of all inner loop ops and their corresponding pipeline stage
-  for (auto pStageOps : mainCallOps) {
-    pipelineStageOpIdMaps.opIdAndPipelineStage[pStageOps.second] =
-        pStageOps.first;
-  }
-  for (auto pStageOps : hostLoadCallOps) {
-    pipelineStageOpIdMaps.opIdAndPipelineStage[pStageOps.second] =
-        pStageOps.first;
-  }
-  for (auto pStageOps : hostStoreCallOps) {
-    pipelineStageOpIdMaps.opIdAndPipelineStage[pStageOps.second] =
-        pStageOps.first;
-  }
-  for (auto pStageOps : pipelineStageOpIdMaps.ipuCopyCallOps) {
-    pipelineStageOpIdMaps.opIdAndPipelineStage[pStageOps.second] =
-        pStageOps.first;
-  }
-}
+  std::set<ExchangeStrategy> computeLikeExchangeStrategies = {
+      ExchangeStrategy::JustInTime};
 
-std::map<TensorId, TensorId> ExplicitPipelineHelper::createFillPhase() {
-  // Get graph which piplineMainLoop is part of
-  auto &pipelineMainLoopOuterGraph = pipelineMainLoop->getGraph();
+  // Unroll skewed by pipeline stage such that the main loop ends up
+  // overlapping all pipeline stages
+  DecomposeTopoConLevel before = DecomposeTopoConLevel::Full;
+  DecomposeTopoConLevel loop   = DecomposeTopoConLevel::Full;
+  DecomposeTopoConLevel after  = DecomposeTopoConLevel::Full;
 
-  // Map to keep track of which tensor id from the original set of tensors will
-  // map to cloned tensors
-  std::map<TensorId, TensorId> lastOriginalAndClonedTensorId;
+  auto minAndMaxStage = getMinAndMaxUnrollStages();
 
-  // Get the operators in correct order so that we can add tensors as consumers
-  // to cloned ops
-  // Don't need the optimal schedule as any valid order would suffice to get the
-  // tensors in the correct order
-  auto scheduledOps =
-      innerLoopSubgraph.getOpSchedule({}, RequireOptimalSchedule::No);
+  auto model = DecomposeLoopPipelineModel(minAndMaxStage.first,
+                                          minAndMaxStage.second,
+                                          pInfo.numStages,
+                                          before,
+                                          loop,
+                                          after,
+                                          computeLikeExchangeStrategies);
 
-  // Nested loop where the outer loop sets the limit on the maximum
-  // PipelineStage which is allowed in an operator when creating the fill stage
-  // In other words: We will unroll the loop until the pipelinestage max
-  // Note that the fill stage consist of one less pipeline than the number of
-  // pipeline stages
-  for (auto pStageMax = pInfo.fillPhase.end; pStageMax >= pInfo.fillPhase.start;
-       pStageMax--) {
-    // As we need a new TensorID for each IPU which are part of the fill stage
-    // we will create a map between the original tensors (i.e. those in the
-    // original loop operator) and the corresponding tensor ids in the unrolled
-    // loop
-    std::map<TensorId, TensorId> originalTensorIdAndNewIntermediateTensorId;
-
-    for (auto op : scheduledOps) {
-      if (pipelineStageOpIdMaps.opIdAndPipelineStage.count(op->id) == 0) {
-        // The operator is not part of any pipeline stages
-        continue;
-      }
-      auto pStage = pipelineStageOpIdMaps.opIdAndPipelineStage.at(op->id);
-      if (pStage > pStageMax) {
-        // The pipeline stage is higher than the number of cycles used for
-        // filling
-        continue;
-      }
-
-      // Clone the operator
-      auto clonedOpUp = op->clone();
-
-      // Change ownership of the cloned operator after obtaining the raw pointer
-      auto clonedOp = clonedOpUp.get();
-      pipelineMainLoopOuterGraph.moveIntoGraph(std::move(clonedOpUp));
-
-      // Change scope of the clonedOp so that it is no longer a part of the
-      // innerLoop
-      clonedOp->settings.scope = pipelineMainLoop->settings.scope;
-
-      // The cloned operator should not be connected to any tensors of the
-      // original operator (as these will belong to the inner loop) New tensors
-      // (belonging to the fill phase) replacing these (belonging to the inner
-      // loop) will be created below
-      clonedOp->disconnectAllInputs();
-      clonedOp->disconnectAllOutputs();
-
-      // First we clone the input tensors
-      auto tensorInputMap = op->input->tensorMap();
-      for (auto indexAndTensor : tensorInputMap) {
-        auto index  = indexAndTensor.first;
-        auto tensor = indexAndTensor.second;
-
-        // We remove the inner loop scope from the tensor
-        auto newInputTensorId = removeScope(innerLoopSubgraph, tensor->id);
-
-        if (tensor->hasProducer()) {
-          // As we are looping over the ops schedule the first tensor will not
-          // have a producer
-          newInputTensorId =
-              originalTensorIdAndNewIntermediateTensorId.at(tensor->id);
-        }
-
-        // Attach to the new tensor to the cloned op
-        clonedOp->connectInTensor(index, newInputTensorId);
-      }
-      // Then we clone the output tensors
-      auto tensorOuputMap = op->output->tensorMap();
-      for (auto indexAndTensor : tensorOuputMap) {
-        auto index  = indexAndTensor.first;
-        auto tensor = indexAndTensor.second;
-
-        // We remove the inner loop scope from the tensor
-        auto newOutputTensorId = removeScope(innerLoopSubgraph, tensor->id);
-        // Create the tensor with the tensorId made above
-
-        // It could be tempting to set the tensorIds with graph.addScope()
-        // However, we will be creating these output several times (one for each
-        // pipeline stage minus one) Thus, we have to create an intermediate
-        // tensor (i.e. one which is not created by the end-user)
-        auto newIntermediateOutputTensorId =
-            ir.createIntermediateTensorId(newOutputTensorId);
-        clonedOp->createAndConnectOutTensor(index,
-                                            newIntermediateOutputTensorId);
-
-        originalTensorIdAndNewIntermediateTensorId[tensor->id] =
-            newIntermediateOutputTensorId;
-
-        // Update the map of original and intermediate tensors
-        if (pStage == pStageMax) {
-          lastOriginalAndClonedTensorId[tensor->id] =
-              newIntermediateOutputTensorId;
-        }
-      }
-      // Propagate tensor info
-      clonedOp->setup();
-    }
-  }
-
-  return lastOriginalAndClonedTensorId;
-}
-
-std::map<std::pair<PipelineStage, TensorId>, TensorId>
-ExplicitPipelineHelper::modifyInputAndOutputInInnerLoop(
-    const std::map<TensorId, TensorId> lastOriginalAndClonedTensorId) {
-  // Add the input from the fill pahse to the main phase of the LoopOp
-
-  // Extract the output from the main phase which will be used in the flush
-  // phase
-  std::map<std::pair<PipelineStage, TensorId>, TensorId> tensorIdsToFlushStage;
-
-  for (auto pipelineStageAndOpId : pipelineStageOpIdMaps.ipuCopyCallOps) {
-    auto pStage = pipelineStageAndOpId.first;
-    auto opId   = pipelineStageAndOpId.second;
-
-    // Loop over tensors belonging to the opId of the current pipelineStage
-    Op *op              = innerLoopSubgraph.getOp(opId);
-    auto tensorOuputMap = op->output->tensorMap();
-    for (auto indexAndTensor : tensorOuputMap) {
-      auto outTensor = indexAndTensor.second;
-
-      // Add tensors from the fill phase to the loopOp
-      // An intermediate (i.e. not user specified) tensor for the output from
-      // the current iteration (which is going to be the input of the next
-      // iteration)
-      auto loopInId = ir.createIntermediateTensorId(outTensor->id);
-      // Add the tensor which is an output of the copy operator as the input for
-      // the next iteration
-      pipelineMainLoop->addLoopInput(
-          LoopOp::getFirstInputInIndex(),
-          lastOriginalAndClonedTensorId.at(outTensor->id),
-          loopInId,
-          false);
-
-      // Add output which are going to the flush stage
-      auto loopOutId = removeScope(innerLoopSubgraph, outTensor->id);
-      // The output in this pipeline stage in the main loop will be connected to
-      // the next pipeline stage in the flush stage, thus we add 1 to pStage
-      tensorIdsToFlushStage[{pStage + 1, outTensor->id}] = loopOutId;
-      pipelineMainLoop->addLoopOutput(
-          LoopOp::getFirstOutputOutIndex(), loopOutId, outTensor->id, false);
-
-      // Disconnect the input tensor (which is the output tensor of the copy op)
-      // of the ops consuming the output tensor The data in the tensor will be
-      // loop carried as described above
-      auto outTensorConsumerOps = outTensor->consumers.getOps();
-      for (auto outTensorConsumerOp : outTensorConsumerOps) {
-        auto indices = outTensorConsumerOp->input->indices(outTensor);
-        for (auto index : indices) {
-          outTensorConsumerOp->disconnectInTensor(index);
-          outTensorConsumerOp->connectInTensor(index, loopInId);
-        }
-      }
-    }
-  }
-
-  // Setup the main loop after altering it
-  pipelineMainLoop->setup();
-
-  return tensorIdsToFlushStage;
-}
-
-void ExplicitPipelineHelper::createFlushPhase(
-    const std::map<std::pair<PipelineStage, TensorId>, TensorId>
-        tensorIdsToFlushStage) {
-  // Get graph which piplineMainLoop is part of
-  auto &pipelineMainLoopOuterGraph = pipelineMainLoop->getGraph();
-  // Get the cloned innerLoopSubgraph
-  auto &innerLoopSubgraphClone = ir.getGraph({cloneSrct.clonedGraphId});
-
-  // As we have altered the graph we need to loop over the shedule ops of the
-  // cloned graph
-  auto clonedScheduledOps =
-      innerLoopSubgraphClone.getOpSchedule({}, RequireOptimalSchedule::No);
-
-  // Nested loop where the outer loop sets the limit on the minimum
-  // PipelineStage which is allowed in an operator when creating the flush stage
-  // In other words: We will unroll the loop from pipelinestage min
-  // Note that the flush stage consist of one less pipeline than the number of
-  // pipeline stages
-  for (auto pStageMin =
-           1; // All but the first pipeline stage is part of the flush phase
-       pStageMin <=
-       pInfo.mainPhase.start; // There are as many flush stages as fill stages
-       pStageMin++) {
-    // As we need a new TensorID for each IPU which are part of the flush stage
-    // we will create a map between the original tensors (i.e. those in the
-    // original loop operator) and the corresponding tensor ids in the unrolled
-    // loop
-    std::map<TensorId, TensorId> originalTensorIdAndNewIntermediateTensorId;
-
-    for (auto op : clonedScheduledOps) {
-      if (cloneSrct.clonedGraphOpIdAndOriginalGraphOpId.count(op->id) == 0) {
-        // The operator is not part of the cloned graph
-        continue;
-      }
-      if (pipelineStageOpIdMaps.opIdAndPipelineStage.count(
-              cloneSrct.clonedGraphOpIdAndOriginalGraphOpId.at(op->id)) == 0) {
-        // The operator is not part of any pipeline stages
-        continue;
-      }
-      auto pStage = pipelineStageOpIdMaps.opIdAndPipelineStage.at(
-          cloneSrct.clonedGraphOpIdAndOriginalGraphOpId.at(op->id));
-      if (pStage < pStageMin) {
-        // The pipeline stage is lower than the number of cycles used for
-        // flushing
-        continue;
-      }
-
-      // Clone the operator
-      auto clonedOpUp = op->clone();
-
-      // Change ownership of the cloned operator after obtaining the raw pointer
-      auto clonedOp = clonedOpUp.get();
-      pipelineMainLoopOuterGraph.moveIntoGraph(std::move(clonedOpUp));
-
-      // Change scope of the clonedOp so that it is no longer a part of the
-      // innerLoop
-      clonedOp->settings.scope = pipelineMainLoop->settings.scope;
-
-      // The cloned operator should not be connected to any tensors of the
-      // original operator (as these will belong to the inner loop) New tensors
-      // (belonging to the flush phase) replacing these (belonging to the inner
-      // loop) will be created below
-      clonedOp->disconnectAllInputs();
-      clonedOp->disconnectAllOutputs();
-
-      // First we clone the input tensors
-      auto tensorInputMap = op->input->tensorMap();
-      for (auto indexAndTensor : tensorInputMap) {
-        auto index  = indexAndTensor.first;
-        auto tensor = indexAndTensor.second;
-
-        // We remove the inner loop scope from the tensor
-        auto newInputTensorId = removeScope(innerLoopSubgraphClone, tensor->id);
-
-        auto mapIt = tensorIdsToFlushStage.find(
-            {pStageMin, addScope(innerLoopSubgraph, newInputTensorId)});
-        if (mapIt != tensorIdsToFlushStage.end()) {
-          // The tensors is an output from the loop op
-          newInputTensorId = mapIt->second;
-        } else {
-          // The input of this op comes from a newly cloned op
-          newInputTensorId =
-              originalTensorIdAndNewIntermediateTensorId.at(tensor->id);
-        }
-
-        // Attach to the new tensor to the cloned op
-        clonedOp->connectInTensor(index, newInputTensorId);
-      }
-      // Then we clone the output tensors
-      auto tensorOuputMap = op->output->tensorMap();
-      for (auto indexAndTensor : tensorOuputMap) {
-        auto index  = indexAndTensor.first;
-        auto tensor = indexAndTensor.second;
-
-        // We remove the inner loop scope from the tensor
-        auto newOutputTensorId =
-            removeScope(innerLoopSubgraphClone, tensor->id);
-        // Create the tensor with the tensorId made above
-
-        // It could be tempting to set the tensorIds with graph.addScope()
-        // However, we will be creating these output several times (one for each
-        // pipeline stage minus one) Thus, we have to create an intermediate
-        // tensor (i.e. one which is not created by the end-user)
-        auto newIntermediateOutputTensorId =
-            ir.createIntermediateTensorId(newOutputTensorId);
-
-        clonedOp->createAndConnectOutTensor(index,
-                                            newIntermediateOutputTensorId);
-
-        originalTensorIdAndNewIntermediateTensorId[tensor->id] =
-            newIntermediateOutputTensorId;
-      }
-      // Propagate tensor info
-      clonedOp->setup();
-    }
-  }
+  decomposer.decomposeLoop(
+      pipelineMainLoop->getGraph(), pipelineMainLoop, model);
 }
 
 void ExplicitPipelineHelper::cleanUp() {
-  // Unset pipeline stage attributes of all ops
+  // Unset pipeline stage attributes of all ops, since this is no longer
+  // required after the pipeline is represented explicitly in the IR
   for (auto op : ir.getAllOps()) {
     op->setPipelineStage({});
   }
-
-  ir.removeGraph({cloneSrct.clonedGraphId});
 }
 
 } // namespace popart

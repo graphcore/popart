@@ -523,7 +523,7 @@ public:
   // VGraphs), based on replication factor and number of IPUs. Equal to number
   // of IPUs // replicated graph factor if using replicated graphs, else equal
   // to number of IPUs.
-  unsigned getMaxVirtualGraphId() const;
+  unsigned getNumVirtualGraphIds() const;
 
   // Return the opset version in use for a domain. Empty domain implies AiOnnx.
   // If the Ir has no Onnx model, returns `getDefaultOpsetVersion(domain)`.

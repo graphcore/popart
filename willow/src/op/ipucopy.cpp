@@ -47,8 +47,11 @@ void IpuCopyOp::setup() {
 }
 
 bool IpuCopyOp::isOutlineable() const {
-  return getGraph().getIr().getSessionOptions().executionPhaseSettings.phases >
-         1;
+  // Set to false is legacy behaviour for implicit IRs
+  return getGraph().getIr().getSessionOptions().enableExplicitMainLoops ||
+         getGraph().getIr().getSessionOptions().explicitRecomputation ||
+         getGraph().getIr().getSessionOptions().executionPhaseSettings.phases >
+             1;
 }
 
 const SourceIpuMap &IpuCopyOp::getSourceIpus() const { return sourceIpus; }

@@ -30,8 +30,8 @@ DecomposeLoopOpPipelineType::DecomposeLoopOpPipelineType(
     : DecomposeLoopOpType(), ps(ps_), type(type_),
       pipelineIpuCopy(pipelineIpuCopy_), computeLike(computeLike_) {}
 
-bool DecomposeLoopOpPipelineType::operator<(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpPipelineType::
+operator<(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpPipelineType *>(&other)) {
     return std::make_tuple(this->ps,
@@ -46,8 +46,8 @@ bool DecomposeLoopOpPipelineType::operator<(
   return false;
 }
 
-bool DecomposeLoopOpPipelineType::operator==(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpPipelineType::
+operator==(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpPipelineType *>(&other)) {
     return *this == *castOther;
@@ -55,8 +55,8 @@ bool DecomposeLoopOpPipelineType::operator==(
   return false;
 }
 
-bool DecomposeLoopOpPipelineType::operator!=(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpPipelineType::
+operator!=(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpPipelineType *>(&other)) {
     return *this != *castOther;
@@ -64,16 +64,16 @@ bool DecomposeLoopOpPipelineType::operator!=(
   return true;
 }
 
-bool DecomposeLoopOpPipelineType::operator==(
-    const DecomposeLoopOpPipelineType &other) const {
+bool DecomposeLoopOpPipelineType::
+operator==(const DecomposeLoopOpPipelineType &other) const {
   return std::make_tuple(
              this->ps, this->type, this->pipelineIpuCopy, this->computeLike) ==
          std::make_tuple(
              other.ps, other.type, other.pipelineIpuCopy, other.computeLike);
 }
 
-bool DecomposeLoopOpPipelineType::operator!=(
-    const DecomposeLoopOpPipelineType &other) const {
+bool DecomposeLoopOpPipelineType::
+operator!=(const DecomposeLoopOpPipelineType &other) const {
   return !(*this == other);
 }
 
@@ -529,6 +529,14 @@ public:
         }
       }
       if (isOnComputeTiles) {
+        if (allowDelaying && !anyAfter({auxBefore,
+                                        ioBefore,
+                                        ioToCompute,
+                                        auxBeforeComputeLike,
+                                        ioBeforeComputeLike})) {
+          // If there is no dependency, run as compute
+          return compute;
+        }
         if (!afterTypes.empty()) {
           auto type = *afterTypes.begin();
           if (type == ioBefore || type == ioToCompute) {
@@ -538,6 +546,9 @@ public:
           if (type == ioBeforeComputeLike) {
             // Op can occur before any IO or compute
             type = auxBeforeComputeLike;
+          }
+          if (type == computePipelineIpuCopy) {
+            type = compute;
           }
           return type;
         }
@@ -551,11 +562,10 @@ public:
             // Op can occur before any IO or compute
             type = auxAfterComputeLike;
           }
+          if (type == computePipelineIpuCopy) {
+            type = auxAfter;
+          }
           return type;
-        }
-        if (allowDelaying) {
-          // If there is no dependency, run as compute
-          return compute;
         }
       }
     }

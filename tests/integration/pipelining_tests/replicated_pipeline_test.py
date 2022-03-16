@@ -1,6 +1,7 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
+import pytest
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -23,7 +24,8 @@ def get_model_anchors(doSharding,
                       acclSteps=1,
                       doDevicex=True,
                       anchorRestoredTensors=False,
-                      returnRawInput=False):
+                      returnRawInput=False,
+                      explicit=False):
     np.random.seed(seed=1)
 
     builder = popart.Builder()
@@ -70,6 +72,7 @@ def get_model_anchors(doSharding,
     opts.enableGradientAccumulation = doGradientAccl
     opts.accumulationFactor = acclSteps
     opts.enableStochasticRounding = False
+    opts.enableExplicitIR(explicit)
 
     if doSharding is False:
         numIpus = 1 * replicated_graph_count
@@ -235,7 +238,8 @@ def compare_anchors_pipe(no_pipe_anchors, pipe_anchors):
 
 
 @tu.requires_ipu
-def test_output_matches_replication_infer():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_output_matches_replication_infer(explicit):
     """
     Pipelining + No Replication
     vs
@@ -244,26 +248,25 @@ def test_output_matches_replication_infer():
     Inference only
     """
 
-    no_repl_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=BPS,
-        doTraining=False,
-        replicated_graph_count=1,
-    )
-    repl_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=BPS,
-        doTraining=False,
-        replicated_graph_count=REPL_FACTOR,
-    )
+    no_repl_anchors = get_model_anchors(doSharding=True,
+                                        doPipelining=True,
+                                        batchesPerStep=BPS,
+                                        doTraining=False,
+                                        replicated_graph_count=1,
+                                        explicit=explicit)
+    repl_anchors = get_model_anchors(doSharding=True,
+                                     doPipelining=True,
+                                     batchesPerStep=BPS,
+                                     doTraining=False,
+                                     replicated_graph_count=REPL_FACTOR,
+                                     explicit=explicit)
 
     compare_anchors_repl(no_repl_anchors, repl_anchors)
 
 
 @tu.requires_ipu
-def test_output_matches_pipeline_infer():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_output_matches_pipeline_infer(explicit):
     """
     Pipelining + Replication
     vs
@@ -272,26 +275,25 @@ def test_output_matches_pipeline_infer():
     Inference only
     """
 
-    pipe_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=BPS,
-        doTraining=False,
-        replicated_graph_count=REPL_FACTOR,
-    )
-    no_pipe_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=False,
-        batchesPerStep=BPS,
-        doTraining=False,
-        replicated_graph_count=REPL_FACTOR,
-    )
+    pipe_anchors = get_model_anchors(doSharding=True,
+                                     doPipelining=True,
+                                     batchesPerStep=BPS,
+                                     doTraining=False,
+                                     replicated_graph_count=REPL_FACTOR,
+                                     explicit=explicit)
+    no_pipe_anchors = get_model_anchors(doSharding=True,
+                                        doPipelining=False,
+                                        batchesPerStep=BPS,
+                                        doTraining=False,
+                                        replicated_graph_count=REPL_FACTOR,
+                                        explicit=explicit)
 
     compare_anchors_both_repl(pipe_anchors, no_pipe_anchors)
 
 
 @tu.requires_ipu
-def test_output_matches_pipeline_train():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_output_matches_pipeline_train(explicit):
     """
     No Pipelining + Replication + Gradient Accumulation
     vs
@@ -299,24 +301,22 @@ def test_output_matches_pipeline_train():
 
     Training
     """
-    no_repl_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=False,
-        batchesPerStep=BPS,
-        doTraining=True,
-        doGradientAccl=True,
-        acclSteps=4,
-        replicated_graph_count=REPL_FACTOR,
-    )
-    repl_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=BPS,
-        doTraining=True,
-        doGradientAccl=True,
-        acclSteps=4,
-        replicated_graph_count=REPL_FACTOR,
-    )
+    no_repl_anchors = get_model_anchors(doSharding=True,
+                                        doPipelining=False,
+                                        batchesPerStep=BPS,
+                                        doTraining=True,
+                                        doGradientAccl=True,
+                                        acclSteps=4,
+                                        replicated_graph_count=REPL_FACTOR,
+                                        explicit=explicit)
+    repl_anchors = get_model_anchors(doSharding=True,
+                                     doPipelining=True,
+                                     batchesPerStep=BPS,
+                                     doTraining=True,
+                                     doGradientAccl=True,
+                                     acclSteps=4,
+                                     replicated_graph_count=REPL_FACTOR,
+                                     explicit=explicit)
 
     compare_anchors_pipe(no_repl_anchors, repl_anchors)
 

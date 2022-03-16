@@ -14,7 +14,8 @@ batch_size = 32
 
 
 @tu.requires_ipu_model
-def test_pipeline_grad_accl_model1():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_pipeline_grad_accl_model1(explicit):
     """
     Test a sequence of matmuls with gradient accumulation and with/
     without pipelining.
@@ -31,7 +32,8 @@ def test_pipeline_grad_accl_model1():
         doTraining=True,
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
-        labelArray=labelArray)
+        labelArray=labelArray,
+        explicit=False)
     gradaccl_pipeline_anchors = get_model_anchors_model1(
         doSharding=True,
         doPipelining=True,
@@ -39,7 +41,8 @@ def test_pipeline_grad_accl_model1():
         doTraining=True,
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
-        labelArray=labelArray)
+        labelArray=labelArray,
+        explicit=explicit)
     for (tId1, t1), (tId2, t2) in zip(gradaccl_no_pipeline_anchors.items(),
                                       gradaccl_pipeline_anchors.items()):
         for i in range(min(np.shape(t1)[0], np.shape(t2)[0])):
@@ -49,7 +52,8 @@ def test_pipeline_grad_accl_model1():
 
 
 @tu.requires_ipu_model
-def test_pipeline_grad_accl_model2():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_pipeline_grad_accl_model2(explicit):
     """
     Test a non-linear model with gradient accumulation and with/
     without pipelining.
@@ -63,14 +67,16 @@ def test_pipeline_grad_accl_model2():
         batchesPerStep=batchesPerStep,
         doTraining=True,
         doGradAccl=True,
-        gradAcclFactor=gradAcclFactor)
+        gradAcclFactor=gradAcclFactor,
+        explicit=False)
     gradaccl_pipeline_anchors = get_model_anchors_model2(
         doSharding=True,
         doPipelining=True,
         batchesPerStep=batchesPerStep,
         doTraining=True,
         doGradAccl=True,
-        gradAcclFactor=gradAcclFactor)
+        gradAcclFactor=gradAcclFactor,
+        explicit=explicit)
     for (tId1, t1), (tId2, t2) in zip(gradaccl_no_pipeline_anchors.items(),
                                       gradaccl_pipeline_anchors.items()):
         for i in range(min(np.shape(t1)[0], np.shape(t2)[0])):
@@ -107,7 +113,8 @@ def get_model_anchors_model1(doSharding,
                              gradAcclFactor=1,
                              doDevicex=True,
                              anchorRestoredTensors=False,
-                             labelArray=None):
+                             labelArray=None,
+                             explicit=False):
     micro_batch_size = batch_size // gradAcclFactor
     builder = popart.Builder()
 
@@ -155,6 +162,8 @@ def get_model_anchors_model1(doSharding,
     opts.enableGradientAccumulation = doGradAccl
     opts.accumulationFactor = gradAcclFactor
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    opts.enableExplicitIR(explicit)
 
     if doSharding is False:
         numIPUs = 1
@@ -220,7 +229,8 @@ def get_model_anchors_model2(doSharding,
                              gradAcclFactor=1,
                              doDevicex=True,
                              anchorRestoredTensors=False,
-                             returnRawInput=False):
+                             returnRawInput=False,
+                             explicit=False):
 
     np.random.seed(1234)
     builder = popart.Builder()
@@ -262,6 +272,8 @@ def get_model_anchors_model2(doSharding,
     opts.enablePipelining = doPipelining
     opts.enableGradientAccumulation = doGradAccl
     opts.accumulationFactor = gradAcclFactor
+
+    opts.enableExplicitIR(explicit)
 
     if doSharding is False:
         numIPUs = 1

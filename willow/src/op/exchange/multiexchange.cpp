@@ -198,6 +198,21 @@ VGraphIdAndTileSet MultiExchangeOp::getIntrospectionOutVirtualGraphId(
   return {vgid ? *vgid : unusedVGraphId, tiles};
 }
 
+bool MultiExchangeOp::hasSideEffect() const {
+  for (auto &d : descriptors) {
+    if (d.isHostExchange()) {
+      // All host exchanges have side effects, as they will trigger and advance
+      // streams on the host.
+      return true;
+    }
+    if (d.getDirection() == ExchangeDirection::Store) {
+      // All stores have side effects, since they write to remote memory.
+      return true;
+    }
+  }
+  return false;
+}
+
 ReplicatedTensorShardingIndices
 MultiExchangeOp::getReplicatedTensorShardingIndices() const {
   ReplicatedTensorShardingIndices indices;

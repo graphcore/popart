@@ -183,7 +183,15 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
                   to->getIntrospectionInVirtualGraphId(inIndex).second;
 
               // If the ops have different IO tile status
-              if (fromTileSet != toTileSet) {
+              if (fromTileSet != toTileSet &&
+                  fromTileSet != TileSet::Undefined &&
+                  toTileSet != TileSet::Undefined) {
+
+                logging::trace("[IoComputeTileCopy::apply] Copying {} from "
+                               "tile set: {} to tile set: {}",
+                               tensor->id,
+                               fromTileSet,
+                               toTileSet);
 
                 bool alreadyCopied =
                     copiedTensors.find({tensor->id, toTileSet}) !=

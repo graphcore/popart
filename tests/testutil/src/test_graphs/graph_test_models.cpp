@@ -41,6 +41,7 @@
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/autodiff.hpp>
+#include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/util.hpp>
 
@@ -1006,33 +1007,32 @@ ExplicitRecomputeTestModel::ExplicitRecomputeTestModel(bool pipelining,
   std::shared_ptr<Optimizer> optimizer;
   std::shared_ptr<OptimizerDecompose> decomposer;
 
-  optimizer  = std::make_shared<SGD>(0.1, 0.1, 0.0, 0.0, 0.1, 1.0);
-  decomposer = std::make_shared<SGD0Decompose>();
+  optimizer = std::make_shared<SGD>(0.1, 0.1, 0.0, 0.0, 0.1, 1.0);
 
   ir.setOptimizer(*optimizer);
 
   TensorInfo tInfo{DataType::FLOAT, {4, 4}};
   float tData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
-  std::string input = "I";
+  TensorId input = "I";
   graph.getTensors().addVarInit("I", tInfo, static_cast<void *>(&tData));
-  std::string output = "";
+  TensorId output = "";
 
   std::vector<TensorId> identities;
 
   for (size_t i = 0; i < numLayers; ++i) {
     for (size_t j = 0; j < numMatMulsPerLayer; ++j) {
       // W: Weights
-      std::string w = "Wt_" + std::to_string(i) + "_" + std::to_string(j);
+      TensorId w = "Wt_" + std::to_string(i) + "_" + std::to_string(j);
       // OM: Matmul outputs
-      std::string moutput = "OMt" + std::to_string(i) + "_" + std::to_string(j);
+      TensorId moutput = "OMt" + std::to_string(i) + "_" + std::to_string(j);
       // OA: Addition outputs
-      std::string aoutput = "OAt" + std::to_string(i) + "_" + std::to_string(j);
+      TensorId aoutput = "OAt" + std::to_string(i) + "_" + std::to_string(j);
       // OI: Identity outputs
-      std::string ioutput = "OIt" + std::to_string(i) + "_" + std::to_string(j);
+      TensorId ioutput = "OIt" + std::to_string(i) + "_" + std::to_string(j);
 
       // Add skip connection to trigger multiple recompute
-      std::string skipoutput = "";
+      TensorId skipoutput = "";
       if (i >= 2) {
         skipoutput = "OMt" + std::to_string(i - 2) + "_" + std::to_string(j);
       }
@@ -1169,6 +1169,7 @@ ExplicitPipelineTestModel0::ExplicitPipelineTestModel0(
   // Enable pipelining, IO tiles, explicit IR
   options.enablePipelining = true;
   options.numIOTiles       = 32;
+  options.virtualGraphMode = VirtualGraphMode::Manual;
   options.enableExplicitIR(true);
 
   ir.setUserOptions(options);
@@ -1422,4 +1423,170 @@ ExplicitPipelineTestModel0::ExplicitPipelineTestModel0(
   ir.setDataFlow(df);
 
   ir.updateVertices();
+}
+
+ExplicitPipelineTestModel1::ExplicitPipelineTestModel1(int numLayers,
+                                                       int numMatMulsPerLayer) {
+
+  SessionOptions options;
+
+  // Enable pipelining, explicit IR
+  options.enablePipelining = true;
+  options.virtualGraphMode = VirtualGraphMode::Manual;
+  options.enableExplicitIR(true);
+
+  Graph &graph = ir.getMainGraph();
+  ir.setUserOptions(options);
+
+  std::shared_ptr<Optimizer> optimizer;
+
+  optimizer = std::make_shared<SGD>(0.1, 0.1, 0.0, 0.0, 0.1, 1.0);
+
+  ir.setOptimizer(*optimizer);
+
+  TensorInfo tInfo{DataType::FLOAT, {4, 4}};
+  float tData[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+
+  // ISt: HostLoad input stream
+  TensorId instream = "ISt";
+
+  // IIt: InitOp output
+  TensorId init_input = "IIt";
+
+  // It: Model input (HostLoadOp output)
+  TensorId input = "It";
+
+  // Add input stream
+  graph.getTensors().addStream(instream, tInfo);
+
+  auto initOp =
+      graph.createConnectedOp<InitOp>({},
+                                      {{InitOp::getOutIndex(), init_input}},
+                                      Onnx::CustomOperators::Init_1,
+                                      tInfo,
+                                      TensorType::ActGrad,
+                                      InitType::Zero,
+                                      Op::Settings{graph, "Init_input"});
+
+  initOp->setPipelineStage(0);
+  initOp->setVirtualGraphId(0);
+
+  auto hostLoadOp = graph.createConnectedOp<HostLoadOp>(
+      {{HostLoadOp::getLocalTensorInIndex(), init_input}},
+      {{HostLoadOp::getLocalTensorOutIndex(), input}},
+      Onnx::CustomOperators::HostLoad,
+      Op::Settings{graph, "HostLoad_input"},
+      instream);
+
+  hostLoadOp->setPipelineStage(0);
+  hostLoadOp->setVirtualGraphId(0);
+
+  TensorId output = "";
+
+  AnchorReturnTypeMap artm;
+
+  for (size_t i = 0; i < numLayers; ++i) {
+    for (size_t j = 0; j < numMatMulsPerLayer; ++j) {
+      // W: Weights
+      TensorId w = "Wt_" + std::to_string(i) + "_" + std::to_string(j);
+      // OM: Matmul outputs
+      TensorId moutput = "OMt" + std::to_string(i) + "_" + std::to_string(j);
+      // OA: Addition outputs
+      TensorId aoutput = "OAt" + std::to_string(i) + "_" + std::to_string(j);
+      // OI: Identity outputs
+      TensorId ioutput = "OIt" + std::to_string(i) + "_" + std::to_string(j);
+
+      // Add skip connection to trigger multiple recompute
+      TensorId skipoutput = "";
+      if (i >= 2) {
+        skipoutput = "OMt" + std::to_string(i - 2) + "_" + std::to_string(j);
+      }
+
+      graph.getTensors().addVarInit(w, tInfo, static_cast<void *>(&tData));
+
+      auto matMulOp = graph.createConnectedOp<MatMulOp>(
+          {{MatMulOp::getLhsInIndex(), input}, {MatMulOp::getRhsInIndex(), w}},
+          {{MatMulOp::getOutIndex(), moutput}},
+          Onnx::Operators::MatMul_1,
+          Op::Settings{graph,
+                       "MatMul_" + std::to_string(i) + "_" + std::to_string(j)},
+          0.6f,
+          MatMulBaseOp::SerialiseSettings{
+              MatMulBaseOp::SerialiseSettings::Mode::None, 0, false},
+          DataType::FLOAT,
+          MatMulPartialsType::FLOAT);
+
+      matMulOp->settings.recomputeType = RecomputeType::Checkpoint;
+      matMulOp->setPipelineStage(i);
+      matMulOp->setVirtualGraphId(i % 2);
+      output = moutput;
+
+      // HostStore output stream
+      TensorId outstream = moutput;
+
+      // Create a HostStore operation
+      auto hostStoreOp = graph.createConnectedOp<HostStoreOp>(
+          {{IdentityOp::getInIndex(), moutput}},
+          {},
+          Onnx::CustomOperators::HostStore,
+          Op::Settings{graph,
+                       "HostStore_" + std::to_string(i) + "_" +
+                           std::to_string(j)},
+          outstream);
+
+      artm[outstream] = AnchorReturnType("all");
+
+      hostStoreOp->settings.recomputeType = RecomputeType::Checkpoint;
+      hostStoreOp->setPipelineStage(i);
+      hostStoreOp->setVirtualGraphId(i % 2);
+
+      if (!skipoutput.empty()) {
+        auto addOp = graph.createConnectedOp<AddOp>(
+            {{AddOp::getArg0InIndex(), moutput},
+             {AddOp::getArg1InIndex(), skipoutput}},
+            {{AddOp::getOutIndex(), aoutput}},
+            Onnx::Operators::Add_7,
+            Op::Settings{graph,
+                         "Add_" + std::to_string(i) + "_" + std::to_string(j)});
+
+        addOp->settings.recomputeType = RecomputeType::Checkpoint;
+        addOp->setPipelineStage(i);
+        addOp->setVirtualGraphId(i % 2);
+        output = aoutput;
+      }
+      input = output;
+    }
+  }
+
+  // Lt: Loss tensor
+  TensorId loss = "Lt";
+
+  auto l1Op = graph.createConnectedOp<L1Op>({{L1Op::getInIndex(), output}},
+                                            {{L1Op::getOutIndex(), loss}},
+                                            Onnx::CustomOperators::L1,
+                                            0.1f,
+                                            ReductionType::Mean,
+                                            Op::Settings{graph, "L1"});
+  l1Op->setPipelineStage(numLayers - 1);
+  l1Op->setVirtualGraphId((numLayers - 1) % 2);
+
+  // Anchor all identities so we generate some "FromToLoss" operations
+  df = DataFlow(numLayers * 2, artm);
+  ir.setDataFlow(df);
+
+  ir.setFinalLoss(loss);
+  ir.updateVertices();
+
+  ir.constructBackwards();
+  ir.updateVertices();
+
+  ir.applyTransform(InterIpuCopy::id(), ir.getMainGraph());
+  ir.updateVertices();
+
+  ir.applyTransform(MainLoops::id(), ir.getMainGraph());
+  ir.updateVertices();
+
+  loopOp     = MainLoops::getInnerLoopOp(ir);
+  subgraphPt = &loopOp->getCalledGraph();
+  graphPt    = &ir.getMainGraph();
 }

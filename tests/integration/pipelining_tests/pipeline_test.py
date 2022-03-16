@@ -73,7 +73,8 @@ def test_one_ipu():
 
 
 @tu.requires_ipu_model
-def test_enabled_recomputation():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_enabled_recomputation(explicit):
     """
     In this test we check that NO error is thrown when doing pipelining
     if recomputation is enabled
@@ -85,6 +86,7 @@ def test_enabled_recomputation():
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     opts.autoRecomputation = popart.RecomputationType.Standard
+    opts.enableExplicitIR(explicit)
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -100,7 +102,8 @@ def test_enabled_recomputation():
 
 
 @tu.requires_ipu_model
-def test_stream_tensors_to_multiple_ipus():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_stream_tensors_to_multiple_ipus(explicit):
     """
     Streaming an input to Ops on multiple IPUs throws an error
 
@@ -115,6 +118,7 @@ def test_stream_tensors_to_multiple_ipus():
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+    opts.enableExplicitIR(explicit)
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -130,7 +134,8 @@ def test_stream_tensors_to_multiple_ipus():
 
 
 @tu.requires_ipu_model
-def test_sharding_multi_source():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_sharding_multi_source(explicit):
     """
     Branched sharding does not merge IPU Copies with pipelining
     e.g. Op0 -> Op2
@@ -153,6 +158,7 @@ def test_sharding_multi_source():
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+    opts.enableExplicitIR(explicit)
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -222,7 +228,8 @@ _UINT8 = _DataType('UINT8', np.uint8)
 
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
-def test_output_matches_train(inputType):
+@pytest.mark.parametrize("explicit", [False, True])
+def test_output_matches_train(inputType, explicit):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -234,17 +241,20 @@ def test_output_matches_train(inputType):
                                           doPipelining=False,
                                           batchesPerStep=bps,
                                           doTraining=True,
-                                          inputType=inputType)
+                                          inputType=inputType,
+                                          explicit=explicit)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
                                          doTraining=True,
-                                         inputType=inputType)
+                                         inputType=inputType,
+                                         explicit=explicit)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
                                           doTraining=True,
-                                          inputType=inputType)
+                                          inputType=inputType,
+                                          explicit=explicit)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -265,7 +275,8 @@ def test_output_matches_train(inputType):
 
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
-def test_acts_match_restored_acts(inputType):
+@pytest.mark.parametrize("explicit", [False])
+def test_acts_match_restored_acts(inputType, explicit):
     """
     In this test we check that the stashed tensors and their equivalent
     Restored tensors have the same values for all batches. This confirms
@@ -282,7 +293,8 @@ def test_acts_match_restored_acts(inputType):
                                           doTraining=True,
                                           anchorRestoredTensors=True,
                                           returnRawInput=True,
-                                          inputType=inputType)
+                                          inputType=inputType,
+                                          explicit=explicit)
 
     for (tId, t) in pipelined_anchors.items():
         for i in range(np.shape(t)[0]):
@@ -304,7 +316,8 @@ def test_acts_match_restored_acts(inputType):
 
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
-def test_output_matches_infer(inputType):
+@pytest.mark.parametrize("explicit", [False, True])
+def test_output_matches_infer(inputType, explicit):
     """
     In this test we check that the anchors of equivalent non-sharded, sharded
     and non-pipelined, and sharded and pipelined models are equal when doing
@@ -315,17 +328,20 @@ def test_output_matches_infer(inputType):
                                           doPipelining=False,
                                           batchesPerStep=bps,
                                           doTraining=False,
-                                          inputType=inputType)
+                                          inputType=inputType,
+                                          explicit=explicit)
     multiIpu_anchors = get_model_anchors(doSharding=True,
                                          doPipelining=False,
                                          batchesPerStep=bps,
                                          doTraining=False,
-                                         inputType=inputType)
+                                         inputType=inputType,
+                                         explicit=explicit)
     pipelined_anchors = get_model_anchors(doSharding=True,
                                           doPipelining=True,
                                           batchesPerStep=bps,
                                           doTraining=False,
-                                          inputType=inputType)
+                                          inputType=inputType,
+                                          explicit=explicit)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
@@ -356,7 +372,8 @@ def get_model_anchors(doSharding,
                       doDevicex=True,
                       anchorRestoredTensors=False,
                       returnRawInput=False,
-                      inputType=None):
+                      inputType=None,
+                      explicit=False):
     np.random.seed(seed=1)
 
     builder = popart.Builder()
@@ -401,6 +418,7 @@ def get_model_anchors(doSharding,
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enablePipelining = doPipelining
+    opts.enableExplicitIR(explicit)
 
     if doSharding is False:
         numIPUs = 1
@@ -548,7 +566,8 @@ def test_pipeline_stage_errors():
 
 
 @tu.requires_ipu_model
-def test_pipeline_stages_backwards_through_ipus():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_pipeline_stages_backwards_through_ipus(explicit):
     dummy_data = np.array([0.5, 1.0], dtype=np.float32)
     bps = 2
 
@@ -593,6 +612,7 @@ def test_pipeline_stages_backwards_through_ipus():
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.batchesPerStep = bps
+    session.options.enableExplicitIR(explicit)
 
     # test a pipeline stage appearing on multiple virtual graphs
     with tu.create_test_device(numIpus=2) as device:
@@ -610,7 +630,8 @@ def test_pipeline_stages_backwards_through_ipus():
 
 
 @tu.requires_ipu_model
-def test_multiple_stages_per_virtual_graph_inference():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_multiple_stages_per_virtual_graph_inference(explicit):
     bps = 4
     dummy_data = np.random.rand(2, 2).astype(np.float32)
     data = np.random.rand(bps, 2, 2).astype(np.float32)
@@ -652,6 +673,7 @@ def test_multiple_stages_per_virtual_graph_inference():
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
     session.batchesPerStep = bps
+    session.options.enableExplicitIR(explicit)
 
     # test a pipeline stage appearing on multiple virtual graphs
     with tu.create_test_device(numIpus=2) as device:
@@ -672,7 +694,8 @@ def test_multiple_stages_per_virtual_graph_inference():
 # run the same model with and without revisiting ipus and compare the resultant weights.
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
-def test_multiple_stages_per_virtual_graph_training(inputType):
+@pytest.mark.parametrize("explicit", [False, True])
+def test_multiple_stages_per_virtual_graph_training(inputType, explicit):
     accumulation_factor = 5
     micro_batches_per_step = 5
     bps = micro_batches_per_step // accumulation_factor
@@ -727,6 +750,7 @@ def test_multiple_stages_per_virtual_graph_training(inputType):
         session.batchesPerStep = bps
         session.options.enableGradientAccumulation = True
         session.options.accumulationFactor = accumulation_factor
+        session.options.enableExplicitIR(explicit)
 
         # test a pipeline stage appearing on multiple virtual graphs
         with tu.create_test_device(numIpus=numIpus) as device:
@@ -765,7 +789,8 @@ def test_multiple_stages_per_virtual_graph_training(inputType):
 # run the same model with and without recomputation and check the updated weights
 @tu.requires_ipu_model
 @pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
-def test_recomputation(inputType):
+@pytest.mark.parametrize("explicit", [False, True])
+def test_recomputation(inputType, explicit):
     accumulationFactor = 3
     microBatchesPerStep = 3
     bps = microBatchesPerStep // accumulationFactor
@@ -816,6 +841,7 @@ def test_recomputation(inputType):
             session.options.autoRecomputation = popart.RecomputationType.Standard
         session.options.accumulationFactor = accumulationFactor
         session.options.enableGradientAccumulation = True
+        session.options.enableExplicitIR(explicit)
 
         with tu.create_test_device(numIpus=2) as device:
             session.prepare(init_builder, device=device)
@@ -847,7 +873,8 @@ def test_recomputation(inputType):
 # Test that pipeline IpuCopyOpx handles internal aliases correctly. Expectation
 # that the ConatOp output contains such internal aliases and the pipelined
 # program compiles successfully.
-def test_internal_alias_ipucopy():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_internal_alias_ipucopy(explicit):
     builder = popart.Builder()
 
     with builder.virtualGraph(0), builder.pipelineStage(0):
@@ -861,6 +888,7 @@ def test_internal_alias_ipucopy():
     opts = popart.SessionOptions()
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+    opts.enableExplicitIR(explicit)
 
     with tu.create_test_device(numIpus=2) as device:
         session = popart.InferenceSession(
@@ -878,7 +906,8 @@ def test_internal_alias_ipucopy():
 
 
 @tu.requires_ipu_model
-def test_bad_auto_staging():
+@pytest.mark.parametrize("explicit", [False, True])
+def test_bad_auto_staging(explicit):
     bps = 4
     dummy_data = np.random.rand(2, 2).astype(np.float32)
     data = np.random.rand(bps, 2, 2).astype(np.float32)
@@ -912,10 +941,13 @@ def test_bad_auto_staging():
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
+    session.options.enableExplicitIR(explicit)
+    session.device = 'ipu_model'
+    session.numIPUs = 2
     session.batchesPerStep = bps
 
     # test a pipeline stage appearing on multiple virtual graphs
-    with tu.create_test_device(numIpus=2) as device:
+    with tu.create_test_device(numIpus=session.numIPUs) as device:
         with pytest.raises(popart.popart_exception) as e_info:
             session.prepare(init_builder, device=device)
 
