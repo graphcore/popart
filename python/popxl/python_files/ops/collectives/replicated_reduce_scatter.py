@@ -19,6 +19,7 @@ def replicated_reduce_scatter(
         t (Tensor): Tensor to be reduced. Inputs will be flattened.
         op (str, optional): Operation to reduce with. Defaults to 'add'.
             Options: 'add', 'mean', 'mul', 'min', 'max', 'and', 'or', 'square_add', 'local'.
+            Note that 'local' means slice of a tensor per replica but without any reduction.
         group (Optional[CommGroup]): Replicas to reduce across. Defaults to All replicas.
         configure_output_for_replicated_tensor_sharding (Optional[bool]): Configures the output to be a replica sharded tensor. Defaults to false.
             Replicated tensor sharded tensors do not follow the data element order of the original tensor, and can only be

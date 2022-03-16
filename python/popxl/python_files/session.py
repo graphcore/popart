@@ -164,7 +164,7 @@ class Session:
         return self._extra_input_dims + shape
 
     def get_tensor_data(self, tensor: Union[Variable, Constant]) -> np.ndarray:
-        """Get the data stored in the tensor on the device.
+        """Get the data stored in the tensor on the device including IPU and remote memory.
 
         This will sync all the host buffers with the corresponding tensors on the device. Note this
         is a memory view of the data, so will not allocate extra memory for the data, but it is your

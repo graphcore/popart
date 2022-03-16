@@ -121,6 +121,30 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_popart_ir_get_set_tensors(self):
         """Test the popxl getting / setting tensor data example"""
         filename = "tensor_get_write_popxl.py"
+
+    def test_documentation_popxl_autodiff(self):
+        """Test the popxl autodiff op"""
+        filename = "autodiff_popxl.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popxl_in_sequence(self):
+        """Test the popxl in sequence context manager"""
+        filename = "in_sequence_popxl.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popxl_remote_var(self):
+        """Test the popxl remote variable"""
+        filename = "remote_variable_popxl.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popxl_remote_rts_var(self):
+        """Test the popxl remote rts variable"""
+        filename = "remote_rts_var_popxl.py"
+        self.run_python(filename, self.base_path)
+
+    def test_documentation_popxl_rts_var(self):
+        """Test the popxl rts variable"""
+        filename = "rts_var_popxl.py"
         self.run_python(filename, self.base_path)
 
 

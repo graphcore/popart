@@ -15,6 +15,7 @@ PopXL User Guide and API (experimental)
     transforms
     context
     session
+    remote
     api
     genindex
     legal
@@ -27,12 +28,6 @@ PopXL User Guide and API (experimental)
   --------------------
 
   - Explain how you add an IfOp in PopXL.
-
-..
-  Using the context manager
-  -------------------------
-
-  - Explain how to use our context manager, and why/when you want to use it.
 
 ..
   Running a model created in PopXL

@@ -37,10 +37,6 @@ Contexts
 .. autofunction:: popxl.ipu
 .. autofunction:: popxl.name_scope
 .. autofunction:: popxl.op_debug_context
-<<<<<<< HEAD
-=======
-
->>>>>>> c615c1397 (Addressing review comments and fixing api.rst to properly include transforms)
 
 .. _popxl-dtypes:
 
@@ -194,6 +190,11 @@ Ops available in PopXL
 ----------------------
 
 .. automodule:: popxl.ops
+    :members:
+    :undoc-members:
+    :special-members: __init__
+
+.. automodule:: popxl.ops.collectives
     :members:
     :undoc-members:
     :special-members: __init__
