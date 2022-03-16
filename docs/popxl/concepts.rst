@@ -2,7 +2,7 @@ Concepts
 ========
 
 The building blocks of PopXL are the intermediate representation (IR), graphs, tensors and ops. This section describes these concepts. Further information
-on how each topic applies to PopXL can be found later in the referenced sections.
+on how each concept applies to PopXL can be found in the referenced sections.
 
 
 IRs
@@ -38,11 +38,12 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
 
    The main graph (MG) calls graph 1 (G1) which in turn calls graph 2
    (G2). This creates a call tree which is depicted on the right. Op nodes are
-   green, intermediate tensors are red and constants are yellow.
+   green, intermediate tensors are red and constant tensors are yellow.
 
 
 * The **main graph** (:numref:`sec_maingraphs`) is the entry point of the IR (like the ``main()`` function in many programming languages). There is only one main graph per IR. The main graph can contain intermediate, constant and variable tensors.
 
+<<<<<<< HEAD
 * **Graphs** (:numref:`sec_graphs`) can be called by other graphs using the ``call`` or ``repeat`` op. If a graph has multiple call sites, the graph is outlined during lowering, leading to code reuse and reduced memory usage. A graph can only contain intermediate or constant tensors and not variable tensors. A graphs inputs and outputs are specified on graph creation.
 
 .. figure:: images/popart_ir_graph_tensors.png
@@ -53,6 +54,11 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
    Graph 1 (G1) calls graph 2 (G2) and passes the input tensors B and C - these are known as parent graph inputs. The callsite creates a tensor D known as the parent graph output. Tensor B and C in G1 are mapped to tensors E and F, known as the graph inputs, in G2 at the call site. Similarly tensor I in G2, known as the graph outputs, are mapped to tensor D in G1.
 
 When a graph is called, using the ``call`` or ``repeat`` op, the inputs must be provided by the calling graph, these tensors are known as **parent inputs**. Similarly tensors that are outputs at the callsite are known as **parent outputs**. The parent inputs and outputs are specific to a callsite. The input data can be either passed by reference or value, and this is determined by the user at the call site.
+=======
+* **Subgraphs** (:numref:`sec_subgraphs`) have input and output tensors. Subgraphs can be called by other graphs using the :py:func:`popxl.ops.call` or :py:func:`popxl.ops.repeat` op. If a subgraph has multiple call sites, the subgraph is outlined during lowering, leading to code reuse and reduced memory usage. A subgraph can only contain intermediate or constant tensors and not variable tensors. Subgraphs have intermediate tensors which are marked as inputs or outputs. When a subgraph is called, the inputs must be provided by the calling graph. The input data can be either passed by reference or value, and this is determined by the user at the call site.
+>>>>>>> 92c75b9ed (Adding links to API refs)
+
+.. _sec_concept_tensors:
 
 Tensors
 -------
@@ -63,9 +69,11 @@ There are three types of tensors: intermediate, variable and constant. Variable 
 
 * **Constant tensors** contain data that cannot change.
 
-* **Variable tensors** contain data that is always live and hence is never freed. Typically model weights are kept on the IPU between runs and are therefore defined as variable tensors.
+* **Variable tensors** contain data that is always live and hence is never freed. Typically model weights are kept on the IPU between runs and are therefore defined as variable tensors. Variable tensors are analogous to "global variables" in other programming languages, which can be accessed throughout the lifetime of the program.
 
-* **Intermediate tensors** are not initialised with data and are live from the time they are produced until their final consumer.
+* **Intermediate tensors** are not initialised with data and are live from the time they are produced until their final consumer. Intermediate tensors are analogous to "local variables" in other programming languages, which are created and discarded dynamically as the program executes.
+
+.. _sec_concept_ops:
 
 Operations
 ----------

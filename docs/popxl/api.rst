@@ -4,22 +4,19 @@ Python API Reference
 ====================
 
 .. warning::
-     This Python module is currently experimental and may be subject to change
+     This Python package is currently experimental and may be subject to change
      in future releases in ways that are not backwards compatible and without
      deprecation warnings.
 
-The ``popxl`` module provides access to the intermediate representation (IR)
-for a computational graph of a model. The PopART IR is the intermediate
-representation of models created with PopART.
-
-This is an experimental Python module that allows you to create (and to a
-limited degree manipulate) PopART IRs directly.
+The ``popxl`` package provides access to the PopART intermediate representation
+for a computational graph of a model. It allows you to directly create (and to a
+limited degree manipulate) PopART IRs.
 
 
 .. autoclass:: popxl.Ir
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-contexts:
 
@@ -29,7 +26,7 @@ Contexts
 .. autoclass:: popxl.Context
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autofunction:: popxl.gcg
 .. autofunction:: popxl.get_current_graph
@@ -40,6 +37,10 @@ Contexts
 .. autofunction:: popxl.ipu
 .. autofunction:: popxl.name_scope
 .. autofunction:: popxl.op_debug_context
+<<<<<<< HEAD
+=======
+
+>>>>>>> c615c1397 (Addressing review comments and fixing api.rst to properly include transforms)
 
 .. _popxl-dtypes:
 
@@ -49,7 +50,7 @@ Data types
 .. autoclass:: popxl.dtype
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-graphs:
 
@@ -59,7 +60,7 @@ Graphs
 .. autoclass:: popxl.Graph
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-modules:
 
@@ -69,7 +70,7 @@ Modules
 .. autoclass:: popxl.Module
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-random-seeds:
 
@@ -88,7 +89,7 @@ Remote buffers
 .. autoclass:: popxl.RemoteBuffer
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autofunction:: popxl.remote_buffer
 
@@ -107,12 +108,12 @@ Streams
 .. autoclass:: popxl.DeviceToHostStream
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.HostToDeviceStream
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-tensors:
 
@@ -122,17 +123,17 @@ Tensors
 .. autoclass:: popxl.Tensor
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.Constant
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.Variable
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autofunction:: popxl.constant
 .. autofunction:: popxl.remote_replica_sharded_variable
@@ -149,53 +150,43 @@ Tensors
 
 .. _popxl-tensor-locations:
 
-Tensor Locations
+Tensor locations
 ----------------
 
 .. autoclass:: popxl.ExecutionContext
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.ReplicatedTensorSharding
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.TensorLocation
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.TensorStorage
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. autoclass:: popxl.TileSet
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
 
 .. _popxl-transforms:
 
 Transforms
 ----------
 
-.. autoclass:: popxl.ExpectedConnectionType
+.. automodule:: popxl.transforms
     :members:
     :undoc-members:
-    :special-members:
-
-.. autoclass:: popxl.GradGraphInfo
-    :members:
-    :undoc-members:
-    :special-members:
-
-.. autofunction:: popxl.autodiff
-.. autofunction:: popxl.io_tile_exchange
-.. autofunction:: popxl.merge_exchange
-
+    :special-members: __init__
 
 .. _available_ops:
 
@@ -205,4 +196,4 @@ Ops available in PopXL
 .. automodule:: popxl.ops
     :members:
     :undoc-members:
-    :special-members:
+    :special-members: __init__
