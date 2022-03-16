@@ -39,10 +39,8 @@ void TopKGradOpx::grow(snap::program::Sequence &prog) const {
 
   auto gradIn = getInTensor(TopKGradOp::gradInIndex());
 
-  snap::Tensor dataGrad = graph().addVariable(
+  snap::Tensor dataGrad = graph().addLinearlyMappedVariable(
       gradIn.elementType(), getGradOutShape(), debugContext("dataGrad"));
-
-  snap::poputil::mapTensorLinearly(graph(), dataGrad);
 
   popops::zero(graph().getPoplarGraph(),
                dataGrad.getPoplarTensor(),
@@ -95,9 +93,8 @@ void TopKOpx::grow(snap::program::Sequence &prog) const {
   // Add variable to store indices
   auto indsShape = input.shape();
   indsShape[1]   = K;
-  auto topKInds  = graph().addVariable(
+  auto topKInds  = graph().addLinearlyMappedVariable(
       poplar::UNSIGNED_INT, indsShape, debugContext("topKInds"));
-  snap::poputil::mapTensorLinearly(graph(), topKInds);
 
   auto topKVals = popnn::topK(graph().getPoplarGraph(),
                               input,

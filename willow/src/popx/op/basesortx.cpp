@@ -65,10 +65,7 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().addVariable(popType(info), shape, dnai);
-
-    // Map it linearly
-    snap::poputil::mapTensorLinearly(graph(), t);
+    auto t = graph().addLinearlyMappedVariable(popType(info), shape, dnai);
 
     // DimShuffle back to the desired shape
     std::vector<unsigned> permutation(t.rank());

@@ -266,11 +266,9 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
 
   auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
 
-  auto &graph     = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
-  auto fullTensor = graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
-
-  // Map it linearly
-  snap::poputil::mapTensorLinearly(graph, fullTensor);
+  auto &graph = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
+  auto fullTensor =
+      graph.addLinearlyMappedVariable(popType(inInfo), inInfo.shape_szt(), "");
 
   logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                           inTensor.shape());

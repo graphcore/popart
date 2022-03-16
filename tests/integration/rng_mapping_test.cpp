@@ -38,10 +38,6 @@ public:
   static snap::Tensor createStateTensor(snap::Graph &graph) {
     return createRNGStateTensor(graph, "");
   }
-
-  static void layoutStateTensor(snap::Graph &graph, snap::Tensor &tensor) {
-    layoutRNGStateTensor(graph, tensor);
-  }
 };
 
 // This test checks that popart::popx::layoutRNGStateTensor produces the
@@ -51,18 +47,17 @@ BOOST_AUTO_TEST_CASE(TestRngMapping) {
   auto target = poplar::Target::createIPUTarget(1, "ipu2");
   snap::Graph graph(target);
 
-  auto tensorWithExpectedLayout =
-      RngStateLoweringLayoutTester::createStateTensor(graph);
-  testLayoutRNGStateTensor(graph, tensorWithExpectedLayout);
-  auto expectedLayout = graph.getPoplarGraph().getTileMapping(
-      tensorWithExpectedLayout.getPoplarTensor());
+  auto t = RngStateLoweringLayoutTester::createStateTensor(graph);
 
-  auto tensorWithActualLayout =
-      RngStateLoweringLayoutTester::createStateTensor(graph);
-  RngStateLoweringLayoutTester::layoutStateTensor(graph,
-                                                  tensorWithActualLayout);
-  auto actualLayout = graph.getPoplarGraph().getTileMapping(
-      tensorWithActualLayout.getPoplarTensor());
+  // This is the actual layout that is used in popart.
+  auto actualLayout =
+      graph.getPoplarGraph().getTileMapping(t.getPoplarTensor());
+
+  testLayoutRNGStateTensor(graph, t);
+
+  // This is the layout we want to have.
+  auto expectedLayout =
+      graph.getPoplarGraph().getTileMapping(t.getPoplarTensor());
 
   BOOST_REQUIRE_EQUAL(actualLayout, expectedLayout);
 }

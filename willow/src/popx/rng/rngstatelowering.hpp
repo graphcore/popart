@@ -140,10 +140,6 @@ protected:
   static snap::Tensor createRNGStateTensor(snap::Graph &graph,
                                            const std::string &name);
 
-  // Helper function to ensure our tensors have a layout that prevents
-  // unnecessary exchanges.
-  static void layoutRNGStateTensor(snap::Graph &graph, snap::Tensor &tensor);
-
 private:
   // Helper function for calling `setHwSeeds` with `rngState`.
   virtual void lowerSetHwSeeds(snap::program::Sequence &seq,

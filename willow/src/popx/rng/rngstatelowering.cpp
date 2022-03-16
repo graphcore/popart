@@ -27,14 +27,10 @@ RngStateLowering::RngStateLowering(IrLowering &irLowering_, snap::Graph &graph_)
   // Create tensor to hold the inacive RNG state.
   differingSeedsRngStateTensor =
       createRNGStateTensor(graph.get(), "differingSeedsRngStateTensor");
-  // Layout tensor carefully to avoid exchanges.
-  layoutRNGStateTensor(graph.get(), differingSeedsRngStateTensor);
 
   // Create tensor to hold the inacive RNG state.
   identicalSeedsRngStateTensor =
       createRNGStateTensor(graph.get(), "identicalSeedsRngStateTensor");
-  // Layout tensor carefully to avoid exchanges.
-  layoutRNGStateTensor(graph.get(), identicalSeedsRngStateTensor);
 }
 
 RngStateLowering::~RngStateLowering() = default;
@@ -137,23 +133,14 @@ snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
   std::vector<size_t> rngStateTensorShape{target.getNumTiles(),
                                           target.getNumWorkerContexts(),
                                           rngStateSizePerWorker};
-  return graph.addVariable(poplar::UNSIGNED_INT, rngStateTensorShape, {name});
-}
-
-void RngStateLowering::layoutRNGStateTensor(snap::Graph &graph,
-                                            snap::Tensor &tensor) {
-
-  auto numTiles = graph.getTarget().getNumTiles();
-  if (tensor.rank() >= 1 && tensor.dim(0) == numTiles) {
-    unsigned minElementsPerTile = tensor[0].numElements();
-    snap::poputil::mapTensorLinearly(
-        graph, tensor, minElementsPerTile, minElementsPerTile);
-  } else {
-    throw internal_error("[RngStateLowering] Expected tensor with first "
-                         "dimension of {} (got tensor shape {})",
-                         numTiles,
-                         tensor.shape());
-  }
+  // Create tensor with specific mapping to avoid exchanges.
+  unsigned minElementsPerTile =
+      target.getNumWorkerContexts() * rngStateSizePerWorker;
+  return graph.addLinearlyMappedVariable(poplar::UNSIGNED_INT,
+                                         rngStateTensorShape,
+                                         minElementsPerTile,
+                                         minElementsPerTile,
+                                         {name});
 }
 
 void RngStateLowering::lowerSetHwSeeds(

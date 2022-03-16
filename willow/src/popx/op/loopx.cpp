@@ -369,17 +369,16 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   // 3: Create a poplar only iterator variable i, set it to 0
   snap::Tensor iteratorTensor;
-  iteratorTensor =
-      graph().addVariable(poplar::INT, {}, debugContext("iterator"));
-  snap::poputil::mapTensorLinearly(graph(), iteratorTensor);
+  iteratorTensor = graph().addLinearlyMappedVariable(
+      poplar::INT, {}, debugContext("iterator"));
   popops::zero(graph().getPoplarGraph(),
                iteratorTensor.getPoplarTensor(),
                prog.getPoplarSequence(),
                debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
-  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
-  snap::poputil::mapTensorLinearly(graph(), exitTensor);
+  auto exitTensor =
+      graph().addLinearlyMappedVariable(poplar::BOOL, {}, debugContext("exit"));
   prog.add(
       snap::program::Copy(fconst, exitTensor, {}, debugContext("exit_false")));
 
