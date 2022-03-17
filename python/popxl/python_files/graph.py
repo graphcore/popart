@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-"""Definition of a class that represents graphs in the PopART IR."""
+
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Set
+from typing import TYPE_CHECKING, Any, Callable, Optional, Tuple, Set, Dict
 
 import popart._internal.ir as _ir
 
@@ -103,12 +103,22 @@ class Graph:
         Get the input tensors of the graph.
 
         Returns:
-            Tuple[Tensor, ...]: A tuple of all the input tensors.
+            Dict[Tensor, ...]: A tuple of all the input tensors.
         """
         _pb_ins = self._pb_graph.getInputIds()
         return tuple(
             Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
             for o in _pb_ins)
+
+    @property
+    def inputs_by_name(self) -> Dict[str, Tensor]:
+        """
+        Get the input tensors of the graph as a dictionary.
+
+        Returns:
+            Dict[str, Tensor]: A dict that maps tensor name to tensor
+        """
+        return {t.name: t for t in self.inputs}
 
     @property
     def outputs(self) -> Tuple[Tensor, ...]:

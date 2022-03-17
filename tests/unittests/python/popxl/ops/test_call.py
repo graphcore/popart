@@ -182,3 +182,72 @@ class TestCall:
 
         assert len(g.inputs) == 5
         assert len(g.outputs) == 1
+
+    def test_coerce_tensor_positionally(self):
+        """Auto-convert value "1" into tensor on ops.call using inputs"""
+        ir = popxl.Ir()
+
+        def identity_(x):
+            return x
+
+        with ir.main_graph:
+            a = popxl.variable(1, dtype=popxl.int32)
+
+            g = ir.create_graph(identity_, a.spec)
+
+            x, = ops.call(g, 1)
+
+        assert len(g.inputs) == 1
+        assert len(g.outputs) == 1
+        assert x.dtype == popxl.int32
+
+    def test_coerce_tensor_inputs_dict(self):
+        """Auto-convert value "1" into tensor on ops.call using inputs_dict"""
+        ir = popxl.Ir()
+
+        def identity_(x):
+            return x
+
+        with ir.main_graph:
+            a = popxl.variable(1, dtype=popxl.int32)
+
+            g = ir.create_graph(identity_, a.spec)
+
+            x, = ops.call(g, inputs_dict={g.inputs[0]: 1})
+
+        assert len(g.inputs) == 1
+        assert len(g.outputs) == 1
+        assert x.dtype == popxl.int32
+
+    def test_error_duplicate_inputs_positional_and_inputs_dict(self):
+        """Error if specifing the same input in inputs and inputs_dict"""
+        ir = popxl.Ir()
+
+        def identity_(x):
+            return x
+
+        with ir.main_graph:
+            a = popxl.variable(1, dtype=popxl.int32)
+
+            g = ir.create_graph(identity_, a)
+
+            with pytest.raises(ValueError):
+                ops.call(g, a, inputs_dict={g.inputs[0]: a})
+
+    def test_error_could_not_coerce_into_tensor(self):
+        """Error if could not auto-convert value into tensor using ops.call"""
+        ir = popxl.Ir()
+
+        def identity_(x):
+            return x
+
+        with ir.main_graph:
+            a = popxl.variable(1, dtype=popxl.int32)
+
+            g = ir.create_graph(identity_, a)
+
+            with pytest.raises(TypeError):
+                ops.call(g, 'a')
+
+            with pytest.raises(TypeError):
+                ops.call(g, None)

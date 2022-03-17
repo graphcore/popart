@@ -361,7 +361,7 @@ class Tensor:
         """A helper method that's used in operator overloading to ensure that
         all operands are of type `Tensor`.
         If any are not, an attempt is made to convert the operands to a
-        constant tensor.
+        constant tensor with the same dtype as `self`.
 
         Returns:
             Tensor:
