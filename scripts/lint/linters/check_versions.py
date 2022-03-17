@@ -63,8 +63,13 @@ class VersionChecker:
             relative_path = self.install_dir.joinpath(
                 'install_linters.py').relative_to(repo_dir)
             module_path = str(relative_path.with_suffix("")).replace("/", ".")
-            print("You can install the correct linter version using "
-                  f"python3 -m {module_path}.")
+            print(
+                "\n\n\x1b[0;30;43mInstall the correct linter versions with the following command:\x1b[0m"
+            )
+            print(f"\npython3 -m {module_path} /localdata/$USER/.local\n")
+            print(
+                "Where /localdata/$USER/.local is the install dir (the user is free to change this path if desired)"
+            )
 
     def print_missing_errors(self) -> None:
         """Print the linters not found.

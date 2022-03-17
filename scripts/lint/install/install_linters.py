@@ -54,7 +54,26 @@ class Installer:
         # care that our PATH and LD_LIBRARY_PATH is resolving the paths correctly
 
         # Get the location of the bin and lib of the packages (this differs if one uses anaconda or pip)
-        package_root = Path(site.getusersitepackages()).parents[2]
+        try:
+            package_root = Path(site.getusersitepackages()).parents[2]
+        except AttributeError:
+            # NOTE: For some reason venv doesn't seem to implement the getusersitepackages function.
+            #       According to https://docs.python.org/3/library/site.html#site.USER_SITE
+            #       this can be None if getusersitepackages has not been set.
+            package_root = Path(site.USER_SITE).parents[2]
+            if package_root is None:
+                raise RuntimeError(
+                    "Could not find the location of python lib and python bin.\n"
+                    "See https://docs.python.org/3/library/site.html#site.USER_SITE for details."
+                )
+
+        if self.install_dir == package_root:
+            raise RuntimeError(
+                "install_dir should not be the same directory as the directory"
+                "where the python binaries and libraries are installed.\n"
+                f"Please specify an install_dir different than {self.install_dir}"
+            )
+
         package_bin = package_root.joinpath("bin")
         package_lib = package_root.joinpath("lib")
 
@@ -143,13 +162,28 @@ class Installer:
     def _print_success(self):
         """Print the success message.
         """
-        print("\n\x1b[6;30;42mSuccess!\x1b[0m")
-        print("Ensure that the linters are available by adding for example")
+        print("\n\x1b[6;30;42mSuccess!\x1b[0m\n")
+        print("\n\n\x1b[0;30;43mFurther instructions:\x1b[0m")
+        print(
+            "Copy and paste the following to the bottom of your $HOME/.bashrc\n"
+        )
         print(f"export PATH=\"{self.path}:$PATH\"")
         print(
             f"export LD_LIBRARY_PATH=\"{self.ld_library_path}:$LD_LIBRARY_PATH\""
         )
-        print("To $HOME/.bashrc or the like")
+        print("\nExplanation:")
+        print("The linters must be visible for the shell.")
+        print("They become visible by setting these environment variables.")
+        print(
+            "We are currently using a python version of clang-format instead of the LLVM version."
+        )
+        print(
+            "Thus we've set the python paths before the install_dir paths in the env variables."
+        )
+        print(
+            "If you are using a different shell than bash the *.rc file and commands may differ."
+        )
+        print("Refer to the shell documentation for more info.")
 
 
 def main() -> None:

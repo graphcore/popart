@@ -28,6 +28,7 @@ repos:
             language: python
             exclude: ".*"  # Does not run on files
             always_run: true
+            fail_fast: true
             additional_dependencies:
                 - pyyaml
           - id: copyright-linter
