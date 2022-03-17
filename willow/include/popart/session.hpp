@@ -101,9 +101,17 @@ public:
   /**
    * Compiles the graph and exports it to the specified path.
    *
-   * This will create a \c snap::Graph and compile the \c poplar::Executable
-   * before exporting the executable and metadata.
-
+   * This will create a \c snap::Graph and compile the \c poplar::Executable.
+   * After that it will export the executable and metadata to
+   * the specified path. The exported file will be in the
+   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
+   * popef</a> format. This means that it can be used to run inference using the
+   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
+   * Triton Inference Server</a> because Graphcore provides a backend to
+   * it. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
+   * Poplar Triton Backend</a> for more information.
+   *
    * \param filename Name of the file where the compiled executable and
    *                 associated metadata will be saved.
    */
@@ -112,8 +120,16 @@ public:
   /**
    * Compiles the graph and exports it to the specified stream.
    *
-   * This will create a \c snap::Graph and compile the \c poplar::Executable
-   * before exporting the executable and metadata.
+   * This will create a \c snap::Graph and compile the \c poplar::Executable.
+   * After that it will export the executable and metadata to
+   * the specified stream. The data will be streamed in the
+   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
+   * popef</a> format. This means that it can be used to run inference using the
+   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
+   * Triton Inference Server</a> because Graphcore provides a backend to
+   * it. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
+   * Poplar Triton Backend</a> for more information.
    *
    * \param out Stream where the compiled executable and
    *            associated metadata will be written to.
@@ -122,6 +138,15 @@ public:
 
   /**
    * Save a compiled graph to the specified path.
+   *
+   * The file will be in the
+   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
+   * popef</a> format. This means that it can be used to run inference using the
+   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
+   * Triton Inference Server</a> because Graphcore provides a backend to
+   * it. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
+   * Poplar Triton Backend</a> for more information.
    *
    * \pre prepareDevice() must have been called.
    *
@@ -135,6 +160,15 @@ public:
 
   /**
    * Save a compiled graph to the specified stream.
+   *
+   * The data will be streamed in the
+   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
+   * popef</a> format. This means that it can be used to run inference using the
+   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
+   * Triton Inference Server</a> because Graphcore provides a backend to
+   * it. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
+   * Poplar Triton Backend</a> for more information.
    *
    * \pre prepareDevice() must have been called.
    *

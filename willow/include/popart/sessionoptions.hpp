@@ -746,6 +746,16 @@ struct SessionOptions {
   bool constantWeights = true;
 
   /// Enable Poplar executable caching.
+  /// You can set the file save location with the #cachePath. The file will be
+  /// in the <a
+  /// href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
+  /// popef</a> format. This means that it can be used to run inference using
+  /// the <a
+  /// href="https://developer.nvidia.com/nvidia-triton-inference-server">Triton
+  /// Inference Server</a> because Graphcore provides a backend to it. See the
+  /// <a
+  /// href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
+  /// Poplar Triton Backend</a> for more information.
   bool enableEngineCaching = false;
 
   /// Folder to save the \c poplar::Executable to.

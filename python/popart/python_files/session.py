@@ -163,8 +163,15 @@ class InferenceSession(_InferenceSessionCore):
     def compileAndExport(self, filename) -> None:
         """Compiles the graph and exports it to the specified file.
 
-        This will form the snap::Graph and compile the polar::Executable
-        before exporting the executable and metadata.
+        This will form the snap::Graph and compile the polar::Executable.
+        After that it will export the executable and metadata
+        to the specified path. The exported file will be in the
+        `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`__
+        format. This means that it can be used to run inference using the
+        `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`__
+        because Graphcore provides a backend to it. See the
+        `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
+        for more information.
 
         Arguments:
             filename: Where to save the executable and metadata. If
@@ -286,8 +293,15 @@ class TrainingSession(_TrainingSessionCore):
     def compileAndExport(self, filename) -> None:
         """Compiles the graph and exports it to the specified file.
 
-        This will form the snap::Graph and compile the polar::Executable
-        before exporting the executable and metadata.
+        This will form the snap::Graph and compile the polar::Executable.
+        After that it will export the executable and metadata
+        to the specified path. The exported file will be in the
+        `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`__
+        format. This means that it can be used to run inference using the
+        `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`__
+        because Graphcore provides a backend to it. See the
+        `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
+        for more information.
 
         Arguments:
             filename: Where to save the executable and metadata. If
