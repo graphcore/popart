@@ -3,6 +3,7 @@
 #ifndef GUARD_NEURALNET_BROADCAST_UTILS_HPP
 #define GUARD_NEURALNET_BROADCAST_UTILS_HPP
 
+#include <cstddef>
 #include <vector>
 
 namespace popart {

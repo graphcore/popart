@@ -14,6 +14,7 @@
 namespace pe = popops::expr;
 
 namespace popart {
+class ScaledVarUpdateOp;
 namespace popx {
 
 ScaledVarUpdateOpx::ScaledVarUpdateOpx(Op *op, Devicex *devicex)

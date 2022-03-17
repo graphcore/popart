@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot1Test
 
-#include <../random_util.hpp>
+#include "../random_util.hpp"
 
 #include <cassert>
 #include <climits>

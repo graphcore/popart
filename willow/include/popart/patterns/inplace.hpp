@@ -16,6 +16,7 @@ public:
   // testOp : the op which will have the cloned tensors connected to it
   //          ownership of opNew is given to this new object
   ExternOpTensorBundle(Op *copyOp, std::unique_ptr<Op> testOp);
+  ~ExternOpTensorBundle();
 
   // return the "test" Op
   Op *getOp();

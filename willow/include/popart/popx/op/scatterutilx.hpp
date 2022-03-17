@@ -5,12 +5,14 @@
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
+#include <popart/names.hpp>
 
 namespace popops {
 class SlicePlan;
 }
 
 namespace popart {
+class TensorInfo;
 namespace popx {
 class PopOpx;
 namespace scatterutilx {

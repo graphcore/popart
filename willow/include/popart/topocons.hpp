@@ -4,10 +4,9 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
-struct POpCmp;
-
 // Topological constraints
 //
 // A topological constraint is a single edge between

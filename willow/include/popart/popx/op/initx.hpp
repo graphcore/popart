@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_INITX_HPP
 
 #include <popart/names.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {

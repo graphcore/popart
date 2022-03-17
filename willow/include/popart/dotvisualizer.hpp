@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 #define GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 
+#include <fstream>
 #include <string>
 #include <popart/names.hpp>
 #include <popart/sessionoptions.hpp>

@@ -2,7 +2,7 @@
 #ifndef GUARD_ELEMENTWISEBINARY_TESTCASE_HPP
 #define GUARD_ELEMENTWISEBINARY_TESTCASE_HPP
 
-#include <../test_runner.hpp>
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 
 #include <popart/builder.hpp>

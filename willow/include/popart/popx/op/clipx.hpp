@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_CLIPX_HPP
 
 #include <popart/names.hpp>
+#include <popart/op/clip.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
 namespace popart {

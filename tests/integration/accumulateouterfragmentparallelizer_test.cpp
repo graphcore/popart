@@ -3,7 +3,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <test_runner.hpp>
+#include "test_runner.hpp"
 
 #include <popart/names.hpp>
 #include <popart/op/exchange/multiexchange.hpp>

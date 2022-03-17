@@ -1,0 +1,9 @@
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+[
+  # Mappings for Graphcore repositories
+  { ref: "gc_mappings.imp" },
+
+  # All other mappings
+  # Also includes the boost_mapping.imp file
+  { ref: "external_mappings.imp" }
+]

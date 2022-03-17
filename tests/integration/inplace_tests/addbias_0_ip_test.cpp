@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AddBias0InplaceTest
 
-#include <../test_runner.hpp>
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/tensors.hpp>

@@ -51,8 +51,10 @@ class RNN_Helper():
             hidden_size = params[R].shape[-1]
             batch_size = params[X].shape[1]
 
-            b = params[B] if B in params else np.zeros(2 * hidden_size, dtype=np.float32)
-            h_0 = params[H_0] if H_0 in params else np.zeros((batch_size, hidden_size), dtype=np.float32)
+            b = params[B] if B in params else np.zeros(2 * hidden_size,
+                                                       dtype=np.float32)
+            h_0 = params[H_0] if H_0 in params else np.zeros(
+                (batch_size, hidden_size), dtype=np.float32)
 
             self.X = params[X]
             self.W = params[W]
@@ -69,8 +71,10 @@ class RNN_Helper():
         h_list = []
         H_t = self.H_0
         for x in np.split(self.X, self.X.shape[0], axis=0):
-            H = self.f(np.dot(x, np.transpose(self.W)) + np.dot(H_t, np.transpose(self.R)) + np.add(
-                *np.split(self.B, 2)))
+            H = self.f(
+                np.dot(x, np.transpose(self.W)) +
+                np.dot(H_t, np.transpose(self.R)) +
+                np.add(*np.split(self.B, 2)))
             h_list.append(H)
             H_t = H
         concatenated = np.concatenate(h_list)

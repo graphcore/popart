@@ -1,8 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Speed0SubgraphTest
 
+#include "../random_util.hpp"
 #include "validate.hpp"
-#include <../random_util.hpp>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <iostream>

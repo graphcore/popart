@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_OVERLAPIO_HPP
 #define GUARD_NEURALNET_OVERLAPIO_HPP
 
+#include <map>
+#include <popart/op/exchange/exchange.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {

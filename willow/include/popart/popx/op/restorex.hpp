@@ -7,6 +7,7 @@
 namespace popart {
 
 class RestoreOp;
+class RestoreInplaceOp;
 class RestoreOpx;
 
 namespace popx {

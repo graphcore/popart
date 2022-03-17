@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_LOOP_HPP
 #define GUARD_NEURALNET_LOOP_HPP
 
+#include <set>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/subgraph.hpp>
+#include <popart/tensorlocation.hpp>
 
 namespace popart {
+
+class OperatorIdentifier;
 
 // Loop operation construct
 //

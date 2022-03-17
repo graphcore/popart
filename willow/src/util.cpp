@@ -1,5 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/printiter.hpp>

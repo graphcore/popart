@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Basic0LogicalIf
 
-#include <../test_runner.hpp>
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 #include <filereader.hpp>
 #include <popart/builder.hpp>

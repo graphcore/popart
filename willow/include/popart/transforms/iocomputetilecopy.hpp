@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_IOCOMPUTETILECOPY_HPP
 #define GUARD_NEURALNET_IOCOMPUTETILECOPY_HPP
 
+#include <popart/names.hpp>
+#include <popart/tensorlocation.hpp>
 #include <popart/transforms/transform.hpp>
 
 // IoComputeTileCopy:

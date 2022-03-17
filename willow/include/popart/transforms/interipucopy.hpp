@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_INTERIPUCOPY_HPP
 #define GUARD_NEURALNET_INTERIPUCOPY_HPP
 
+#include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {

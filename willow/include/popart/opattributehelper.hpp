@@ -6,12 +6,12 @@
 #include <set>
 #include <tuple>
 #include <popart/op.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
 
 class Ir;
 struct SessionOptions;
-struct PTensorCmp;
 
 /**
  *  Helper class to set Op's placement attributes by inheriting them from

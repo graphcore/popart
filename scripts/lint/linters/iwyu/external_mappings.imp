@@ -1,0 +1,33 @@
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+[
+  # Allow C++ libraries to be used instead of the corresponding C libraries
+  {include: ["<stddef.h>", "public", "<cstddef>", "public"]},
+  {include: ["<cstdint.h>", "public", "<cstdint>", "public"]},
+  {include: ["<bits/std_abs.h>", "private", "<cstdlib>", "public"]},
+  {include: ["<stdlib.h>", "public", "<cstdlib>", "public"]},
+  {include: ["<assert.h>", "public", "<cassert>", "public"]},
+  {include: ["<math.h>", "public", "<cmath>", "public"]},
+  {include: ["<limits.h>", "public", "<climits>", "public"]},
+  {include: ["<ctype.h>", "public", "<cctype>", "public"]},
+
+  # Avoid including a private header
+  {include: ["<ext/alloc_traits.h>", "private", "<map>", "public"]},
+  {include: ["<ext/alloc_traits.h>", "private", "<string>", "public"]},
+  {include: ["<ext/alloc_traits.h>", "private", "<vector>", "public"]},
+  {include: ["<ext/alloc_traits.h>", "private", "<set>", "public"]},
+
+  # spdlog mappings for willow/src/logging.cpp
+  {include: ["<spdlog/common.h>", "public", "<spdlog/spdlog.h>", "public"]},
+  {include: ["<spdlog/details/file_helper-inl.h>", "public", "<spdlog/spdlog.h>", "public"]},
+  {include: ["<spdlog/logger.h>", "public", "<spdlog/spdlog.h>", "public"]},
+  {include: ["<spdlog/fmt/bundled/ostream.h>", "public", "<spdlog/fmt/ostr.h>", "public"]},
+  {include: ["<spdlog/sinks/ansicolor_sink-inl.h>", "public", "<spdlog/fmt/ostr.h>", "public"]},
+  {include: ["<spdlog/sinks/base_sink-inl.h>", "public", "<spdlog/fmt/ostr.h>", "public"]},
+  {include: ["<spdlog/sinks/basic_file_sink-inl.h>", "public", "<spdlog/fmt/ostr.h>", "public"]},
+
+  # Single pybind11 mapping
+  { include: ["<pybind11/detail/common.h>", "private", "<pybind11/pybind11.h>", "public"] },
+
+  # A number of boost mappings to avoid replacing every library with it's individual components
+  { ref: "boost_mappings.imp" }
+]

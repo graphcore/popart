@@ -39,6 +39,8 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
                            {});
 }
 
+CtcOpx::~CtcOpx() = default;
+
 void CtcOpx::grow(snap::program::Sequence &prog) const {
 
   const auto &op = getOp<CtcOp>();

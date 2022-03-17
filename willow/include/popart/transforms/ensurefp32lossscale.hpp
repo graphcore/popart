@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
 #define GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
 
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {

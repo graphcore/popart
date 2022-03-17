@@ -7,6 +7,9 @@
 #include <popart/popx/popopx.hpp>
 
 namespace popart {
+class MatMulOp;
+class MatMulBaseOp;
+enum class MatMulPartialsType;
 namespace popx {
 
 class MatMulOpx : public PopOpx {

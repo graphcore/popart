@@ -5,6 +5,7 @@
 #include <set>
 
 #include <popart/names.hpp>
+#include <popart/popx/preparedtensor.hpp>
 #include <popart/popx/viewchangers.hpp>
 
 #include <snap/Tensor.hpp>

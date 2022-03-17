@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_NAMESX_HPP
 #define GUARD_NEURALNET_NAMESX_HPP
 
+#include <snap/Tensor.hpp>
 #include <poplar/Graph.hpp>
 #include <popart/names.hpp>
 

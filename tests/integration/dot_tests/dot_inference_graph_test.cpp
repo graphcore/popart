@@ -3,7 +3,7 @@
 // as a .dot file which can be compiled into a .pdf file.
 #define BOOST_TEST_MODULE dot_inference_graph_test
 
-#include <../random_util.hpp>
+#include "../random_util.hpp"
 #include <boost/filesystem.hpp>
 
 #include <boost/test/unit_test.hpp>

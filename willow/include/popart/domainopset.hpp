@@ -2,6 +2,8 @@
 #ifndef GUARD_DOMAINOPSET_HPP
 #define GUARD_DOMAINOPSET_HPP
 
+#include <memory>
+
 namespace popart {
 
 class BuilderImpl;

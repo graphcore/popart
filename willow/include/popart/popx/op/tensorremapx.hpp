@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_TENSORREMAPX_HPP
 
 #include <popart/names.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
 namespace popx {

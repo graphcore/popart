@@ -17,6 +17,7 @@ namespace popx {
 class CtcBeamSearchDecoderOpx : public PopOpx {
 public:
   CtcBeamSearchDecoderOpx(Op *op, Devicex *device);
+  ~CtcBeamSearchDecoderOpx();
 
   void grow(snap::program::Sequence &prog) const final;
 

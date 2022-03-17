@@ -24,8 +24,8 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/popopx.hpp>
 
+#include "random_util.hpp"
 #include <filereader.hpp>
-#include <random_util.hpp>
 
 using namespace popart;
 using namespace popart::popx;

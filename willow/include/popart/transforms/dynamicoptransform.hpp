@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_DynamicOpTransform_HPP
 #define GUARD_NEURALNET_DynamicOpTransform_HPP
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@ namespace popart {
 class AliasModel;
 class Op;
 struct POpCmp;
+class Ir;
 
 class DynamicOpTransform : public Transform {
 public:

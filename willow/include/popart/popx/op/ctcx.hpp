@@ -20,6 +20,7 @@ namespace popx {
 class CtcOpx : public PopOpx {
 public:
   CtcOpx(Op *, Devicex *);
+  ~CtcOpx();
   void grow(snap::program::Sequence &) const final;
 
   // See PopOpx::createInputTensor.

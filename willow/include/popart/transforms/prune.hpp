@@ -2,9 +2,14 @@
 #ifndef GUARD_NEURALNET_PRUNE_HPP
 #define GUARD_NEURALNET_PRUNE_HPP
 
+#include <set>
+#include <vector>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+
+class Tensor;
+class Op;
 
 class PruneHelper {
 public:

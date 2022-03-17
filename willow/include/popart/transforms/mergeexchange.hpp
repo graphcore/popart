@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_MERGEEXCHANGE_HPP
 #define GUARD_NEURALNET_MERGEEXCHANGE_HPP
 
+#include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
 // MergeExchange:
@@ -9,7 +10,7 @@
 // into a MultiExchange
 
 namespace popart {
-
+class ExchangeBaseOp;
 class MergeExchange : public Transform {
 public:
   static std::size_t id();

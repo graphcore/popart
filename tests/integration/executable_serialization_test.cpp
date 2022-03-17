@@ -12,8 +12,8 @@
 
 #include <popef/Reader.hpp>
 
+#include "random_util.hpp"
 #include <filereader.hpp>
-#include <random_util.hpp>
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>

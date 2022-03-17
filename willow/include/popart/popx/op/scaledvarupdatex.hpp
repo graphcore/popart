@@ -5,6 +5,7 @@
 #include <popart/popx/op/varupdatex.hpp>
 
 namespace popart {
+class ScaledVarUpdateOp;
 namespace popx {
 
 class ScaledVarUpdateOpx : public VarUpdateOpx {

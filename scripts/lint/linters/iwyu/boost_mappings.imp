@@ -1,0 +1,83 @@
+# Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+
+# These are mappings used to suppress questionable boost header
+# suggestions. Some of the suppressed suggestions might be useful
+# and should be revisited in the future, but we want to start with
+# minimal changes to any external libraries.
+[
+  # Avoid replacing boost/test/unit_test.hpp with multiple smaller headers
+  { include: ["@<boost/test/.*>", "public", "<boost/test/unit_test.hpp>", "public"] },
+  { include: ["@<boost/preprocessor/.*>", "private", "<boost/test/unit_test.hpp>", "public"] },
+
+  { include: ["@<boost/range/algorithm/.*>", "public", "<boost/range/algorithm.hpp>", "public"] },
+  { include: ["<boost/range/const_iterator.hpp>", "public", "<boost/range/algorithm.hpp>", "public"] },
+  { include: ["@<boost/range/algorithm_ext/.*>", "public", "<boost/range/algorithm_ext.hpp>", "public"] },
+  { include: ["<boost/iterator/iterator_facade.hpp>", "public", "<boost/algorithm/string/case_conv.hpp>", "public"] },
+  { include: ["<boost/core/enable_if.hpp>", "public", "<boost/range/algorithm/find.hpp>", "public"] },
+
+  { include: ["@<boost/icl/.*>", "public", "<boost/icl/interval.hpp>", "public"] },
+  { include: ["@<boost/icl/concept/.*>", "public", "<boost/icl/interval.hpp>", "public"] },
+
+  { include: ["@<boost/filesystem/.*>", "public", "<boost/filesystem.hpp>", "public"] },
+
+  { include: ["@<boost/program_options/.*>", "public", "<boost/program_options.hpp>", "public"] },
+  { include: ["<boost/assert.hpp>", "public", "<boost/test/unit_test.hpp>", "public"] },
+
+  { symbol: ["boost::hash_combine", "private", "<boost/functional/hash.hpp>", "public"] },
+
+  { include: ["<trompeloeil.hpp>", "private", "<boost/trompeloeil.hpp>", "public"] },
+
+  { include: ["<boost/lexical_cast/bad_lexical_cast.hpp>", "public", "<boost/program_options.hpp>", "public"] },
+
+  { include: ["<boost/numeric/conversion/cast.hpp>", "public", "<boost/lexical_cast.hpp>", "public"] },
+  { include: ["<boost/numeric/conversion/converter_policies.hpp>", "public", "<boost/lexical_cast.hpp>", "public"] },
+
+  { include: ["<boost/container_hash/extensions.hpp>", "public", "<boost/functional/hash.hpp>", "public"] },
+
+  { include: ["<boost/iterator/iterator_facade.hpp>", "public", "<boost/filesystem.hpp>", "public"] },
+  { include: ["<boost/system/error_code.hpp>", "public", "<boost/filesystem.hpp>", "public"] },
+
+  # tests/integration/popart._internal.ir_cpp/basic_inference.cpp
+  { include: ["<boost/numeric/ublas/detail/config.hpp>", "public", "<boost/numeric/ublas/matrix.hpp>", "public"] },
+  { include: ["<boost/numeric/ublas/storage.hpp>", "public", "<boost/numeric/ublas/matrix.hpp>", "public"] },
+  { include: ["<boost/numeric/ublas/functional.hpp>", "public", "<boost/numeric/ublas/matrix.hpp>", "public"] },
+  { include: ["<boost/numeric/ublas/matrix_expression.hpp>", "public", "<boost/numeric/ublas/matrix.hpp>", "public"] },
+
+  { include: ["<boost/algorithm/string/split.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/iterator/iterator_facade.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/type_index/type_index_facade.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/core/swap.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/algorithm/string/predicate.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/core/addressof.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+  { include: ["<boost/random/uniform_real_distribution.hpp>", "public", "<boost/algorithm/string.hpp>", "public"] },
+
+  { include: ["@<boost/property_tree/.*>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/operators.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/multi_index/detail/bidir_node_iterator.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/iterator/iterator_facade.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/core/swap.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/optional/optional.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/exception/exception.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+  { include: ["<boost/property_tree/detail/exception_implementation.hpp>", "public", "<boost/property_tree/ptree.hpp>", "public"] },
+
+  { include: ["<boost/range/const_iterator.hpp>", "public", "<boost/range/algorithm/find.hpp>", "public"] },
+
+  { include: ["<boost/integer/common_factor_rt.hpp>", "public", "<boost/integer/common_factor.hpp>", "public"] },
+
+  { include: ["<boost/pending/property.hpp>", "public", "<boost/graph/undirected_graph.hpp>", "public"] },
+  { include: ["<boost/graph/graph_selectors.hpp>", "public", "<boost/graph/undirected_graph.hpp>", "public"] },
+
+  # willow/src/patterns/padsum.cpp
+  { include: ["@<boost/numeric/interval/.*>", "public", "<boost/numeric/interval.hpp>", "public"] },
+  { include: ["@<boost/range/adaptor/reversed.hpp>", "public", "<boost/range/adaptors.hpp>", "public"] },
+  { include: ["<boost/range/detail/range_return.hpp>", "public", "<boost/range/adaptors.hpp>", "public"] },
+  { include: ["<boost/range/distance.hpp>", "public", "<boost/range/adaptors.hpp>", "public"] },
+  { include: ["<boost/range/iterator_range_core.hpp>", "public", "<boost/range/adaptors.hpp>", "public"] },
+  { include: ["@<boost/iterator/.*>", "public", "<boost/range/adaptors.hpp>", "public"] },
+
+  # Avoid including boost/cstdint.hpp
+  { include: ["<boost/cstdint.hpp>", "public", "<boost/numeric/interval.hpp>", "public"] },
+  { include: ["<boost/cstdint.hpp>", "public", "<boost/icl/interval.hpp>", "public"] },
+  { include: ["<boost/cstdint.hpp>", "public", "<boost/integer/common_factor.hpp>", "public"] },
+  { include: ["<boost/cstdint.hpp>", "public", "<boost/lexical_cast.hpp>", "public"] },
+]

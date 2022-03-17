@@ -6,6 +6,7 @@
 #include <popart/popx/popopx.hpp>
 
 namespace popart {
+class ExpandOp;
 namespace popx {
 
 class BaseExpandOpx : public PopOpx {

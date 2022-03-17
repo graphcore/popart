@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_HALF_HPP
 #define GUARD_NEURALNET_HALF_HPP
 #include <cstdint>
+#include <iosfwd>
+#include <type_traits>
 
 namespace popart {
 

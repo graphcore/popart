@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHOP_HPP
 #define GUARD_NEURALNET_SUBGRAPHOP_HPP
 
+#include <popart/chains.hpp>
 #include <popart/op.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 

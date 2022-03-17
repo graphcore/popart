@@ -3,7 +3,6 @@
 #define GUARD_NEURALNET_PIPELINE_HPP
 
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/transforms/decomposeloops.hpp>
@@ -11,6 +10,9 @@
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+
+class Ir;
+class LoopOp;
 
 /**
  * A helper class for constructing the pipeline on a per-cycle basis

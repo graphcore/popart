@@ -54,6 +54,8 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
   up_op->setup();
 }
 
+ExternOpTensorBundle::~ExternOpTensorBundle() = default;
+
 Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
 Inplace::Inplace() : Pattern() {}

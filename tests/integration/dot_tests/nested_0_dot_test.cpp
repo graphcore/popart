@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NestedDotTest
 
-#include <../random_util.hpp>
+#include "../random_util.hpp"
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>

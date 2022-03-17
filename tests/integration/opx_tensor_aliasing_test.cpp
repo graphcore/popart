@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OpxTensorAliasingTest
 
-#include <random_util.hpp>
+#include "random_util.hpp"
 
 #include <boost/test/unit_test.hpp>
 

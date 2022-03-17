@@ -1,8 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BatchSerializeIrTest
 
-#include <../random_util.hpp>
-#include <../test_runner.hpp>
+#include "../random_util.hpp"
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 #include <string>
 #include <popart/builder.hpp>

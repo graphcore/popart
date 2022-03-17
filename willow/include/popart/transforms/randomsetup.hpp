@@ -8,10 +8,9 @@
 
 #include <popart/vendored/optional.hpp>
 
+#include <popart/pointercomparators.hpp>
+
 namespace popart {
-
-struct POpCmp;
-
 // There are a number of operations that exhibit random behaviour in PopART.
 // These 'random ops' are all derived from RandomBaseOp and require a seed
 // tensor as input ([2], UINT32). This seed tensor is passed to the random

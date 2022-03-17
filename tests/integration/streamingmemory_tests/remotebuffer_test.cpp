@@ -2,7 +2,7 @@
 // Test the RemoteStore, RemoteLoad and RemoteLoadInplace Ops
 #define BOOST_TEST_MODULE RemoteBufferTest
 
-#include <../random_util.hpp>
+#include "../random_util.hpp"
 #include <boost/test/unit_test.hpp>
 #include <filereader.hpp>
 #include <popart/builder.hpp>

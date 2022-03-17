@@ -3,7 +3,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <test_runner.hpp>
+#include "test_runner.hpp"
 
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>

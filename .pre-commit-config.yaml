@@ -98,13 +98,22 @@ repos:
                 --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
             ]
     #      - id: cpplint
-    #      - id: include-what-you-use
-    # The clone linter should run after the format linters so that it only works on formatted files
     - repo: local
       hooks:
+          # The clone linter should run after the format linters so that it only works on formatted files
           - id: clone-linter
             name: Clone linter
             description: Ensures that all Ops implements a clone().
             entry: python3 -m scripts.lint.linters.clone_linter
             language: python
             files: "willow/include/popart/op/.*.hpp"
+          # - id: iwyu
+          #   language: script
+          #   name: Include what you use
+          #   types: [c++]
+          #   entry: scripts/lint/linters/iwyu/include_what_you_use_linter.sh
+          #   exclude: >
+          #     (?x)^(
+          #         tests/integration/verify_cxx_11_interface/verify_cxx_11_interface.cpp|
+          #         willow/include/popart/opidentifier.hpp
+          #     )$

@@ -1,4 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
+#define GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
+
+#include "tgutils.hpp"
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
@@ -134,3 +138,5 @@ template <class T> Tensor *maybeTraverseProducer(InIndex index, Tensor *t) {
 
 } // namespace tgutil
 } // namespace popart
+
+#endif

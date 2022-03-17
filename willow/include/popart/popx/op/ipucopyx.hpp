@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_IPUCOPYX_HPP
 #define GUARD_NEURALNET_IPUCOPYX_HPP
 
+#include <snap/Tensor.hpp>
+
 #include <popart/names.hpp>
 #include <popart/popx/namesx.hpp>
 #include <popart/popx/popopx.hpp>

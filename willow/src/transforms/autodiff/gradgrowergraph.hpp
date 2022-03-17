@@ -43,6 +43,7 @@ class GradGrowerGraph : public GradGrowerGraphInterface,
 public:
   // Constructor.
   GradGrowerGraph(AutodiffIrInterface &dep);
+  ~GradGrowerGraph();
 
   /**
    * Apply autodiff recursively, top-down, resulting in the creation of a

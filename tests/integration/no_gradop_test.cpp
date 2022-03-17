@@ -5,7 +5,7 @@
 
 #include <memory>
 
-#include <test_runner.hpp>
+#include "test_runner.hpp"
 
 #include <onnxutil.hpp>
 #include <popart/builder.hpp>

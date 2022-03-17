@@ -2,12 +2,16 @@
 #ifndef GUARD_NEURALNET_SLICEPLANX_HPP
 #define GUARD_NEURALNET_SLICEPLANX_HPP
 
+#include <snap/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/vendored/optional.hpp>
 
 #include <popops/DynamicSlice.hpp>
 
 namespace poplar {
+class Graph;
+}
+namespace snap {
 class Graph;
 }
 

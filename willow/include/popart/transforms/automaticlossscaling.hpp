@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_AUTOMATICLOSSSCALE_HPP
 #define GUARD_NEURALNET_AUTOMATICLOSSSCALE_HPP
 
+#include <map>
+#include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
 // For context: why do we support loss scaling in our optimizers?
@@ -242,7 +244,8 @@
 //
 // t_in, t_out, Nop, Expand connections are specified by user.
 namespace popart {
-
+class Op;
+class AliasModel;
 class AutomaticLossScale : public Transform {
 public:
   static std::size_t id();

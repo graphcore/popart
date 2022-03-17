@@ -4,6 +4,8 @@
 
 #include "match.hpp"
 #include <algorithm>
+#include <map>
+#include <set>
 #include <vector>
 
 namespace fwtools {

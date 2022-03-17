@@ -2,6 +2,9 @@
 #ifndef GUARD_NEURALNET_ONNXCONSTEXPR_HPP
 #define GUARD_NEURALNET_ONNXCONSTEXPR_HPP
 
+namespace ONNX_NAMESPACE {
+class NodeProto;
+}
 namespace popart {
 
 class Graph;

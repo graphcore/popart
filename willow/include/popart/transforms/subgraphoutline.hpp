@@ -2,8 +2,10 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHOUTLINE_HPP
 #define GUARD_NEURALNET_SUBGRAPHOUTLINE_HPP
 
+#include <vector>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
-
 namespace popart {
 
 // Forward declaration.

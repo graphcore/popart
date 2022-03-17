@@ -28,6 +28,8 @@ CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
                                  op.getBeamWidth());
 }
 
+CtcBeamSearchDecoderOpx::~CtcBeamSearchDecoderOpx() = default;
+
 void CtcBeamSearchDecoderOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<CtcBeamSearchDecoderOp>();
   const auto &logProbs =

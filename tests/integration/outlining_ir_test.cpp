@@ -1,9 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OutliningIrTest
 
+#include "test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 #include <string>
-#include <test_runner.hpp>
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>

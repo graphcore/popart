@@ -5,6 +5,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 
 namespace _detail {

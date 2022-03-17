@@ -30,6 +30,8 @@ GradGrowerGraph::GradGrowerGraph(AutodiffIrInterface &dep)
     : GradGrowerGraphInterface{}, AutodiffHelper{dep},
       stitcherFactory{std::make_unique<StitcherFactory>()} {}
 
+GradGrowerGraph::~GradGrowerGraph() = default;
+
 FwdGraphToBwdGraphInfo GradGrowerGraph::growBackwardsGraph(
     const GraphId &fwdGraphId,
     const nonstd::optional<TensorIds> &gradsProvidedForTensors,

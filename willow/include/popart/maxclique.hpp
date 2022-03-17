@@ -2,6 +2,9 @@
 #ifndef GUARD_NEURALNET_MAXCLIQUE_HPP
 #define GUARD_NEURALNET_MAXCLIQUE_HPP
 
+#include <memory>
+#include <vector>
+
 namespace popart {
 namespace graphclique {
 

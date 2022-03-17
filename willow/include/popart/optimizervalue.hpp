@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_OPTIMIZERVALUE_HPP
 #define GUARD_NEURALNET_OPTIMIZERVALUE_HPP
 
+#include <functional>
 #include <tuple>
 
 namespace popart {

@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Mul0InplaceTest
 
-#include <elementwisebinary_testcase.hpp>
+#include "elementwisebinary_testcase.hpp"
 #include <popart/op/mul.hpp>
 
 using namespace popart;

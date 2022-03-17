@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OverlapComputeExchangeTest
 
-#include <../random_util.hpp>
+#include "../random_util.hpp"
 #include <boost/test/unit_test.hpp>
 #include <filereader.hpp>
 #include <popart/builder.hpp>

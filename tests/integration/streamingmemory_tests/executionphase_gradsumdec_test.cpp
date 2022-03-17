@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ExecutionPhaseGradSumDecTest
 
-#include <../test_runner.hpp>
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
 #include <string>
 #include <popart/builder.hpp>

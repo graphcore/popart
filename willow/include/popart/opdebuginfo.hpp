@@ -5,6 +5,7 @@
 #include <popart/debugcontext.hpp>
 
 namespace popart {
+class Op;
 class OpDebugInfo : public DebugInfo {
   const Op &op;
   bool finalizeCalled = false;

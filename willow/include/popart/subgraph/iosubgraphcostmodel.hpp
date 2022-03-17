@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_IOSUBGRAPHCOSTMODEL_HPP
 #define GUARD_NEURALNET_IOSUBGRAPHCOSTMODEL_HPP
 
+#include <cstdint>
 #include <map>
 #include <vector>
 

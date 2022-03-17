@@ -7,6 +7,7 @@
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+class LoopOp;
 
 class MainLoops : public Transform {
 private:
