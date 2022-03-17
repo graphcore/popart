@@ -1,15 +1,73 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-from typing import Union
+from typing import Union, Optional, TYPE_CHECKING
 
 import numpy as np
 import popart
-from popxl.tensor import Constant, Variable, dtypes
 from typing_extensions import Literal
+
+try:
+    import torch
+    torch_imported = True
+except ModuleNotFoundError:
+    torch_imported = False
+
+if TYPE_CHECKING:
+    from popxl.tensor import Constant, Variable, dtypes, HostScalarTensor
 
 HW_DEVICE_CONNECTION_TIMEOUT = int(1e4)
 
+downcast_np_dtypes = {
+    np.dtype('int64'): np.dtype('int32'),
+    np.dtype('uint64'): np.dtype('uint32'),
+    np.dtype('float64'): np.dtype('float32'),
+}
 
-def _to_numpy(t: Union[Constant, Variable]) -> np.ndarray:
+
+def to_numpy(
+    x: 'HostScalarTensor',
+    dtype: Optional['dtypes.dtype'] = None,
+    downcast: bool = True,
+    copy: bool = True,
+) -> np.ndarray:
+    """
+    Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
+    
+    Args:
+        x (np.ndarray, torch.tensor or a value NumPy can use to construct an np.ndarray):
+            The data used to initialise the tensor.
+        dtype (Optional[dtype]):
+            The data type of the tensor to be created. If not specified NumPy will infer the data
+            type and downcast to 32 bits if necessary.
+        downcast (bool):
+            If True and no dtype is provided, 64-bit float/ints will be downcast to 32-bit variants. Defaults to True.
+        copy (bool):
+            If true the objects data is guaranteed to be copied.
+    """
+
+    if dtype:
+        np_dtype = dtype.as_numpy() if dtype is not None else None
+
+        if np_dtype in downcast_np_dtypes and downcast and dtype is None:
+            np_dtype = downcast_np_dtypes[np_dtype]
+    else:
+        np_dtype = None
+
+    if torch_imported and isinstance(x, torch.Tensor):
+        x = x.detach().numpy()
+        if dtype:
+            x = x.astype(np_dtype)
+    else:
+        x = np.array(x, dtype=np_dtype)
+
+    if x.dtype in downcast_np_dtypes and downcast and dtype is None:
+        x = x.astype(downcast_np_dtypes[x.dtype])
+    elif copy:
+        x = x.copy()
+
+    return x
+
+
+def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
     """Returns the data contained in the tensor. See the cpp class `TensorData` for details.
 
     Note this is a memory view of the data, so will not allocate extra memory for the data, but
@@ -26,6 +84,8 @@ def _to_numpy(t: Union[Constant, Variable]) -> np.ndarray:
         np.ndarray: A NumPy array containing the data from the tensor,
             with the same data type as the tensor.
     """
+    from popxl.tensor import dtypes
+
     t_ = t._pb_tensor
     if t.dtype == dtypes.float64:
         return np.asarray(t_.dataAsFloat64(), t.dtype.as_numpy())

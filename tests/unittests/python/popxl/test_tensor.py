@@ -4,8 +4,9 @@ import pytest
 
 import popart._internal.ir as _ir
 import popxl
-from popxl.tensor import Variable, Constant, downcast_np_dtypes
+from popxl.tensor import Variable, Constant
 from popxl.errors import UndefinedValue
+from popxl.utils import downcast_np_dtypes
 
 type_map = {Variable: _ir.TensorType.Variable, Constant: _ir.TensorType.Const}
 ctor_map = {Variable: popxl.variable, Constant: popxl.constant}

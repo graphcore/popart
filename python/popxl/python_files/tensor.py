@@ -11,6 +11,7 @@ from popxl import dtypes
 from popxl.context import gcg, gmg, debug_context_frame_offset, _execution_context, get_main_graph
 from popxl.typing_ import NewAliasAnnotation
 from popxl.errors import UndefinedValue
+from popxl.utils import to_numpy
 from popxl.replica_grouping import ReplicaGrouping
 
 if TYPE_CHECKING:
@@ -650,14 +651,7 @@ class Constant(Tensor, tensor_type="Const"):
         return ops.ipu_copy(self, dst, src)
 
 
-downcast_np_dtypes = {
-    np.dtype('int64'): np.dtype('int32'),
-    np.dtype('uint64'): np.dtype('uint32'),
-    np.dtype('float64'): np.dtype('float32'),
-}
-
-
-def variable(data: Union[HostTensor, float, int],
+def variable(data: HostScalarTensor,
              dtype: Optional[dtypes.dtype] = None,
              name: Optional[str] = None,
              downcast: bool = True,
@@ -710,10 +704,7 @@ def variable(data: Union[HostTensor, float, int],
             "or use a constant tensor (`popxl.constant`). "
             "See popxl user guide for more details.")
 
-    np_dtype = dtype.as_numpy() if dtype is not None else None
-    np_data: np.ndarray = np.array(data, dtype=np_dtype)
-    if np_data.dtype in downcast_np_dtypes and downcast and dtype is None:
-        np_data = np_data.astype(downcast_np_dtypes[np_data.dtype])
+    np_data = to_numpy(data, dtype, downcast)
     popxl_dt = dtypes.dtype.as_dtype(np_data)
 
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
@@ -724,7 +715,7 @@ def variable(data: Union[HostTensor, float, int],
 
 
 def remote_variable(
-        data: Union[HostTensor, float, int],
+        data: HostScalarTensor,
         remote_buffer: "RemoteBuffer",
         offset: int = 0,
         dtype: Optional[dtypes.dtype] = None,
@@ -780,7 +771,7 @@ def remote_variable(
 
 
 def remote_replica_sharded_variable(
-        data: Union[HostTensor, float, int],
+        data: HostScalarTensor,
         remote_buffer: "RemoteBuffer",
         offset: int = 0,
         dtype: Optional[dtypes.dtype] = None,
@@ -865,7 +856,7 @@ def remote_replica_sharded_variable(
     return var
 
 
-def replica_sharded_variable(data: Union[HostTensor, float, int],
+def replica_sharded_variable(data: HostScalarTensor,
                              dtype: Optional[dtypes.dtype] = None,
                              name: Optional[str] = None,
                              downcast: bool = True,
@@ -930,7 +921,7 @@ def replica_sharded_variable(data: Union[HostTensor, float, int],
 
 
 def constant(
-        data: Union[HostTensor, float, int],
+        data: HostScalarTensor,
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
@@ -964,10 +955,8 @@ def constant(
     """
     g = gcg()
     pb_g = g._pb_graph
-    np_dtype = dtype.as_numpy() if dtype is not None else None
-    np_data: np.ndarray = np.array(data, dtype=np_dtype)
-    if np_data.dtype in downcast_np_dtypes and downcast and dtype is None:
-        np_data = np_data.astype(downcast_np_dtypes[np_data.dtype])
+
+    np_data = to_numpy(data, dtype, downcast)
     popxl_dt = dtypes.dtype.as_dtype(np_data)
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)

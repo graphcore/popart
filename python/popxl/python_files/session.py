@@ -7,23 +7,24 @@ import popart
 import popart._internal.ir as _ir
 from popxl.ir import Ir
 from popxl.streams import DeviceToHostStream, HostToDeviceStream
-from popxl.tensor import Constant, HostTensor, Variable
+from popxl.tensor import Constant, HostScalarTensor, Variable
 from typing_extensions import Literal
 
-from popxl.utils import _to_device_info, _to_numpy
+from popxl.utils import _to_device_info, _popxl_to_numpy, to_numpy
+from popxl.tensor import Tensor
 
-d2hStreamBufferMaps = Union[Mapping[DeviceToHostStream, np.ndarray],
-                            Mapping[DeviceToHostStream, HostTensor]]
-h2dStreamBufferMaps = Union[Mapping[HostToDeviceStream, np.ndarray],
-                            Mapping[HostToDeviceStream, HostTensor]]
+d2hStreamBufferMaps = Mapping[DeviceToHostStream, np.ndarray]
+h2dStreamBufferMaps = Mapping[HostToDeviceStream, HostScalarTensor]
 StreamBufferMaps = Union[h2dStreamBufferMaps, d2hStreamBufferMaps]
 
 
 class Session:
-    def __init__(self,
-                 ir: Ir,
-                 device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu"
-                 ) -> None:
+    def __init__(
+            self,
+            ir: Ir,
+            device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu",
+            num_ipus: Optional[int] = None,
+    ) -> None:
         """
         A runtime session that can execute a PopXL `Ir`.
 
@@ -41,6 +42,7 @@ class Session:
                 "ipu_model": IPU model.
                 "cpu": CPU model. Does not support replication.
                 Defaults to "ipu_model".
+            num_ipus: (int): The number of IPU devices to use. This is automatically determined if not provided. 
         """
         self.ir_: Ir = ir
 
@@ -78,7 +80,8 @@ class Session:
         # Logs to DEBUG
         self._ir.logIr()
 
-        num_ipus = self._get_ipu_count()
+        if num_ipus is None:
+            num_ipus = self._get_ipu_count()
         device = None
         device = _to_device_info(device_type=device_desc, num_ipus=num_ipus)
         if device is None:
@@ -97,26 +100,73 @@ class Session:
         self._pb_session.prepareDevice()
         self._pb_session.weightsFromHost()
 
-    def _get_ipu_count(self) -> int:
-        """Returns the number of ipus required by this session and ir.
+    # Methods:
+    def run_with_outputs(
+            self,
+            inputs: Optional[h2dStreamBufferMaps] = None,
+            outputs: Optional[d2hStreamBufferMaps] = None,
+            downcast_inputs: bool = True,
+    ) -> None:
+        """Run this session with the provided inputs and outputs.
+        
+        Inputs will be used as inputs to the model, and outputs will be written to by the session.
 
-        Equal to 2 ** ceil(log_2(max(virtual_graphs) + 1))
+        Args:
+            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
+            outputs (d2hStreamBufferMaps, optional): The output buffers, these will be written to
+                and modified. Defaults to None.
+            downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
+        """
+
+        inputs = inputs or {}
+        outputs = outputs or {}
+
+        inputs_np: Dict[Tensor, np.ndarray] = {
+            h2d: to_numpy(arr, downcast=downcast_inputs)
+            for h2d, arr in inputs.items()
+        }
+
+        self._validate_run_inputs(inputs_np)
+        self._validate_run_outputs(outputs)
+
+        stepio_inputs: Dict[str, np.ndarray] = {
+            h2d.tensor_id: arr
+            for h2d, arr in inputs_np.items()
+        }
+
+        stepio_outputs: Dict[str, np.ndarray] = {
+            d2h.tensor_id: arr
+            for d2h, arr in outputs.items()
+        }
+
+        stepio = popart.PyStepIO(stepio_inputs, stepio_outputs)
+        stepio.enableRuntimeAsserts(False)
+        self._pb_session.run(stepio)
+
+        # Arrays in outputs should now alias those filled in by _pb_session.run
+
+    def run(
+            self,
+            inputs: Optional[h2dStreamBufferMaps] = None,
+            downcast_inputs: bool = True,
+    ) -> d2hStreamBufferMaps:
+        """Run :func:`~popxl.Session.run_with_outputs` but create the expected outputs and return them.
+
+        Args:
+            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
+            downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
 
         Returns:
-            int: The number of ipus required by this session + ir.
+            d2hStreamBufferMaps: The map of outputs from the model.
         """
-        ir_ipus = set(ipu for g in self._ir.getAllGraphs()
-                      for ipu in g.getAllVirtualGraphIds(True))
-        if ir_ipus:
-            num_ipus = max(ir_ipus) + 1
-        else:
-            # Edge case : ir_ipus = {}, no graphs found, this leads to an incomprehensible error.
-            raise RuntimeError(
-                f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
-                "nothing, try adding more operations to your graphs.")
-        if self._ir.getSessionOptions().enableReplicatedGraphs:
-            num_ipus *= self._ir.getSessionOptions().replicatedGraphCount
-        return 2**math.ceil(math.log2(num_ipus))
+        # Get D2HStream -> array outputs, convert to TensorId -> array anchors
+        outputs = self.create_host_outputs()
+
+        # Can forward inputs directly to run_with_outputs; it will validate.
+
+        self.run_with_outputs(inputs, outputs, downcast_inputs)
+
+        return outputs
 
     def weights_to_host(self) -> None:
         """Copy the weights to host from the device."""
@@ -136,32 +186,6 @@ class Session:
             required by this session.
         """
         return self.ir.get_all_h2d_streams()
-
-    def _expected_outputs(self) -> List[DeviceToHostStream]:
-        """Returns the list of expected outputs from this session.
-
-        Data will be returned for each of these when doing `:func:`~popxl.Session.run``.
-
-        Returns:
-            List[DeviceToHostStream]: A list of all the device to host streams
-            returned by this session.
-        """
-        return self.ir.get_all_d2h_streams()
-
-    def _full_input_shape(self, shape: Tuple[int, ...]) -> Tuple[int, ...]:
-        """Returns the full input shape that this array will need to be, when taking into account
-        num_host_transfers and replication_factor.
-
-        For example, shape = (3, 4), num_host_transfers = 8, replicas = 4, _full_input_shape =
-        (8, 4) + (3, 4)  (8, 4, 3, 4)
-
-        Args:
-            shape (Tuple[int, ...]): The shape to add the additional dims to.
-
-        Returns:
-            Tuple[int, ...]: The full input shape for this array shape.
-        """
-        return self._extra_input_dims + shape
 
     def get_tensor_data(self, tensor: Union[Variable, Constant]) -> np.ndarray:
         """Get the data stored in the tensor on the device including IPU and remote memory.
@@ -188,7 +212,7 @@ class Session:
         if isinstance(tensor, Variable):
             self._pb_session.copyToTensorData()
 
-        return _to_numpy(tensor)
+        return _popxl_to_numpy(tensor)
 
     def get_tensors_data(self, tensors: Iterable[Union[Variable, Constant]]
                          ) -> Dict[Union[Constant, Variable], np.ndarray]:
@@ -207,7 +231,7 @@ class Session:
         return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {}
         self._pb_session.copyToTensorData()
         for tensor in tensors:
-            return_tensors[tensor] = _to_numpy(tensor)
+            return_tensors[tensor] = _popxl_to_numpy(tensor)
 
         return return_tensors
 
@@ -333,6 +357,77 @@ class Session:
 
         return outputs
 
+    # Properties:
+    @property
+    def ir(self) -> Ir:
+        """The associated Ir for this session. Read only.
+        """
+        return self.ir_
+
+    @property
+    def device(self) -> popart.DeviceInfo:
+        """The popart.DeviceInfo object representing the device for this session to run on.
+        """
+        return self._device
+
+    @device.setter
+    def device(self, device: popart.DeviceInfo) -> None:
+        """Setter for :func:`~popxl.Session.device`
+
+        Args:
+            device (popart.DeviceInfo): The popart.DeviceInfo to set this to.
+        """
+        self._device = device
+
+    # Private methods
+    def _get_ipu_count(self) -> int:
+        """Returns the number of ipus required by this session and ir.
+
+        Equal to 2 ** ceil(log_2(max(virtual_graphs) + 1))
+
+        Returns:
+            int: The number of ipus required by this session + ir.
+        """
+        ir_ipus = set(ipu for g in self._ir.getAllGraphs()
+                      for ipu in g.getAllVirtualGraphIds(True))
+        if ir_ipus:
+            num_ipus = max(ir_ipus) + 1
+        else:
+            # Edge case : ir_ipus = {}, no graphs found, this leads to an incomprehensible error.
+            raise RuntimeError(
+                f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
+                "nothing, try adding more operations to your graphs.")
+        if self._ir.getSessionOptions().enableReplicatedGraphs:
+            num_ipus *= self._ir.getSessionOptions().replicatedGraphCount
+        return 2**math.ceil(math.log2(num_ipus))
+
+    def _expected_outputs(self) -> List[DeviceToHostStream]:
+        """Returns the list of expected outputs from this session.
+
+        Data will be returned for each of these when doing `:func:`~popxl.Session.run``.
+
+        Returns:
+            List[DeviceToHostStream]: A list of all the device to host streams
+            returned by this session.
+        """
+        return self.ir.get_all_d2h_streams()
+
+    def _full_input_shape(self, shape: Tuple[int, ...]) -> Tuple[int, ...]:
+        """Returns the full input shape that this array will need to be.
+
+        The shape is taking into account num_host_transfers and replication_factor.
+
+        For example, shape = (3, 4), num_host_transfers = 8, replicas = 4, _full_input_shape =
+        (8, 4) + (3, 4)  (8, 4, 3, 4)
+
+        Args:
+            shape (Tuple[int, ...]): The shape to add the additional dims to.
+
+        Returns:
+            Tuple[int, ...]: The full input shape for this array shape.
+        """
+        return self._extra_input_dims + shape
+
     def _validate_run_io_streams(self, stream_buffer_map: StreamBufferMaps,
                                  expected_streams: StreamBufferMaps) -> None:
         """Validate that the from / to device streams are present and valid.
@@ -371,12 +466,12 @@ class Session:
 
     def _verify_io_shape(self,
                          s: Union[DeviceToHostStream, HostToDeviceStream],
-                         arr: HostTensor) -> None:
+                         arr: np.ndarray) -> None:
         """Verify the array shape is as expected for a DeviceToHostStream or HostToDeviceStream.
 
         Args:
             s (Union[DeviceToHostStream, HostToDeviceStream]): The stream to check.
-            arr (HostTensor): The corresponding array to check against the stream.
+            arr (np.ndarray): The corresponding array to check against the stream.
 
         Raises:
             ValueError: If the num_host_transfers dimension of the array is != num_host_transfers
@@ -435,62 +530,13 @@ class Session:
         """
         self._validate_run_io_streams(outputs, self._expected_outputs())
 
-    def run_with_outputs(
-            self,
-            inputs: Optional[h2dStreamBufferMaps] = None,
-            outputs: Optional[d2hStreamBufferMaps] = None) -> None:
-        """Run this session with the provided inputs and outputs. Inputs will be used as inputs to
-        the model, and outputs will be written to by the session.
-
-        Args:
-            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
-            outputs (d2hStreamBufferMaps, optional): The output buffers, these will be written to
-                and modified. Defaults to None.
+    # Private properties:
+    @property
+    def _ir(self) -> _ir.Ir:
+        """The associated popart._internal.ir Ir object for this session. Read only.
         """
+        return self.ir._pb_ir
 
-        inputs = inputs or {}
-        outputs = outputs or {}
-
-        self._validate_run_inputs(inputs)
-        self._validate_run_outputs(outputs)
-
-        stepio_inputs: Mapping[str, np.ndarray] = {
-            h2d.tensor_id: arr
-            for h2d, arr in inputs.items()
-        }
-
-        stepio_outputs: Dict[str, np.ndarray] = {
-            d2h.tensor_id: arr
-            for d2h, arr in outputs.items()
-        }
-
-        stepio = popart.PyStepIO(stepio_inputs, stepio_outputs)
-        stepio.enableRuntimeAsserts(False)
-        self._pb_session.run(stepio)
-
-        # Arrays in outputs should now alias those filled in by _pb_session.run
-
-    def run(self, inputs: Optional[h2dStreamBufferMaps] = None
-            ) -> d2hStreamBufferMaps:
-        """Run :func:`~popxl.Session.run_with_outputs` but create the expected outputs and return them.
-
-        Args:
-            inputs (h2dStreamBufferMaps, optional): The inputs to the model. Defaults to None.
-
-        Returns:
-            d2hStreamBufferMaps: The map of outputs from the model.
-        """
-        # Get D2HStream -> array outputs, convert to TensorId -> array anchors
-        outputs: Mapping[DeviceToHostStream, np.
-                         ndarray] = self.create_host_outputs()
-
-        # Can forward inputs directly to run_with_outputs; it will validate.
-
-        self.run_with_outputs(inputs, outputs)
-
-        return outputs
-
-    # Properties:
     @property
     def _extra_input_dims(self) -> Tuple[int, ...]:
         """The tuple of extra input dimensions required for this session. Equal to
@@ -505,30 +551,3 @@ class Session:
         if self.ir.replication_factor > 1:
             _extra_input_dims += (self.ir.replication_factor, )
         return _extra_input_dims
-
-    @property
-    def ir(self) -> Ir:
-        """The associated Ir for this session. Read only.
-        """
-        return self.ir_
-
-    @property
-    def _ir(self) -> _ir.Ir:
-        """The associated popart._internal.ir Ir object for this session. Read only.
-        """
-        return self.ir._pb_ir
-
-    @property
-    def device(self) -> popart.DeviceInfo:
-        """The popart.DeviceInfo object representing the device for this session to run on.
-        """
-        return self._device
-
-    @device.setter
-    def device(self, device: popart.DeviceInfo) -> None:
-        """Setter for :func:`~popxl.Session.device`
-
-        Args:
-            device (popart.DeviceInfo): The popart.DeviceInfo to set this to.
-        """
-        self._device = device
