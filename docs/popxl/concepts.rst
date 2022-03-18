@@ -43,7 +43,6 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
 
 * The **main graph** (:numref:`sec_maingraphs`) is the entry point of the IR (like the ``main()`` function in many programming languages). There is only one main graph per IR. The main graph can contain intermediate, constant and variable tensors.
 
-<<<<<<< HEAD
 * **Graphs** (:numref:`sec_graphs`) can be called by other graphs using the ``call`` or ``repeat`` op. If a graph has multiple call sites, the graph is outlined during lowering, leading to code reuse and reduced memory usage. A graph can only contain intermediate or constant tensors and not variable tensors. A graphs inputs and outputs are specified on graph creation.
 
 .. figure:: images/popart_ir_graph_tensors.png
@@ -51,12 +50,11 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
    :align: center
    :name: popart_ir_graph_tensors
 
-   Graph 1 (G1) calls graph 2 (G2) and passes the input tensors B and C - these are known as parent graph inputs. The callsite creates a tensor D known as the parent graph output. Tensor B and C in G1 are mapped to tensors E and F, known as the graph inputs, in G2 at the call site. Similarly tensor I in G2, known as the graph outputs, are mapped to tensor D in G1.
+   Graph 1 (G1) calls graph 2 (G2) and passes the input tensors B and C - these are known as parent graph inputs. The call site creates a tensor D known as the parent graph output. Tensor B and C in G1 are mapped to tensors E and F, known as the graph inputs, in G2 at the call site. Similarly tensor I in G2, known as the graph outputs, are mapped to tensor D in G1.
 
-When a graph is called, using the ``call`` or ``repeat`` op, the inputs must be provided by the calling graph, these tensors are known as **parent inputs**. Similarly tensors that are outputs at the callsite are known as **parent outputs**. The parent inputs and outputs are specific to a callsite. The input data can be either passed by reference or value, and this is determined by the user at the call site.
-=======
+When a graph is called, using the ``call`` or ``repeat`` op, the inputs must be provided by the calling graph, these tensors are known as **parent inputs**. Similarly tensors that are outputs at the call site are known as **parent outputs**. The parent inputs and outputs are specific to a call site. The input data can be either passed by reference or value, and this is determined by the user at the call site.
+
 * **Subgraphs** (:numref:`sec_subgraphs`) have input and output tensors. Subgraphs can be called by other graphs using the :py:func:`popxl.ops.call` or :py:func:`popxl.ops.repeat` op. If a subgraph has multiple call sites, the subgraph is outlined during lowering, leading to code reuse and reduced memory usage. A subgraph can only contain intermediate or constant tensors and not variable tensors. Subgraphs have intermediate tensors which are marked as inputs or outputs. When a subgraph is called, the inputs must be provided by the calling graph. The input data can be either passed by reference or value, and this is determined by the user at the call site.
->>>>>>> 92c75b9ed (Adding links to API refs)
 
 .. _sec_concept_tensors:
 
