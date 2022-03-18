@@ -91,6 +91,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
   auto getResult = [](RunType rt) {
     int accumulationFactor  = 3;
     int microBatchesPerStep = 3;
+    // cppcheck knownConditionTrueFalse is suppressed here for extra safety
+    // cppcheck-suppress knownConditionTrueFalse
     if (microBatchesPerStep % accumulationFactor != 0) {
       throw error("accumulation factor is not a factor of microBatchesPerStep");
     }
@@ -318,18 +320,14 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
   std::cout << "Get results for SingleDevice run\n\n" << std::endl;
   auto exact = getResult(RunType::SingleDevice);
 
-  bool printLog = true;
+  std::cout << "For continuous (no recompute)" << std::endl;
+  print(exact, continuous);
 
-  if (printLog) {
-    std::cout << "For continuous (no recompute)" << std::endl;
-    print(exact, continuous);
+  std::cout << "The relative difference between exact and continuous is "
+            << getMeanRelative(exact, continuous) << std::endl;
 
-    std::cout << "The relative difference between exact and continuous is "
-              << getMeanRelative(exact, continuous) << std::endl;
-
-    std::cout << "The relative difference between exact and recomp is "
-              << getMeanRelative(exact, recomp) << std::endl;
-  }
+  std::cout << "The relative difference between exact and recomp is "
+            << getMeanRelative(exact, recomp) << std::endl;
 
   //  the experiment above give 0.11868 for this run
   BOOST_CHECK(getMeanRelative(exact, continuous) < 1e-8);

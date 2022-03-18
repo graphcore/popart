@@ -2147,9 +2147,11 @@ void Ir::registerInputTensors() {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0 && unusedInitializers.count(id) == 0) {
 
+      // Suppressing cppcheck below as this is maybe not decided?
       // Should we allow unused stream tensors in the ONNX Model? To be decided.
       bool allowUnusedStreamTensors = true;
       if (consumerTypes.find(id) == consumerTypes.end() &&
+          // cppcheck-suppress knownConditionTrueFalse
           !allowUnusedStreamTensors) {
         throw error("Request to create popart Stream Tensor {} failed, "
                     "as it has no consumers in the ONNX GraphProto. ",
@@ -4147,8 +4149,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

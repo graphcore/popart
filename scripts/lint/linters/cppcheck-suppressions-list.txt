@@ -5,7 +5,6 @@ derefInvalidIteratorRedundantCheck  // Not addressed
 duplicateBreak  // Not addressed
 duplicateExpression  // Not addressed
 duplicateValueTernary  // Not addressed
-knownConditionTrueFalse  // Not addressed
 missingInclude  // Not addressed
 multiCondition  // Not addressed
 noExplicitConstructor  // Not addressed

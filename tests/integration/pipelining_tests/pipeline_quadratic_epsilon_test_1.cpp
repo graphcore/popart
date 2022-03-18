@@ -411,31 +411,27 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
   auto exact = getResults(
       RunType::SingleDevice, learnRates, nSteps_s, accumulationFactor);
 
-  bool printLog = true;
+  for (int i = 0; i < exact.size() - 1; ++i) {
+    std::cout << "\n@ learning rate " << learnRates[i] << std::endl;
+    std::cout << "-----------------" << std::endl;
+    std::cout << "For continuous (without recompute)" << std::endl;
+    print(exact[i], continuous[i]);
+    std::cout << "For continuous (with recompute)" << std::endl;
+    print(exact[i], recomp[i]);
+  }
 
-  if (printLog) {
-    for (int i = 0; i < exact.size() - 1; ++i) {
-      std::cout << "\n@ learning rate " << learnRates[i] << std::endl;
-      std::cout << "-----------------" << std::endl;
-      std::cout << "For continuous (without recompute)" << std::endl;
-      print(exact[i], continuous[i]);
-      std::cout << "For continuous (with recompute)" << std::endl;
-      print(exact[i], recomp[i]);
-    }
+  std::cout << "Reporting mean relative differences over all weights "
+            << std::endl;
+  for (int i = 0; i < exact.size() - 1; ++i) {
+    std::cout << "\n@ learning rate " << learnRates[i] << std::endl;
+    std::cout << "exact <-> continuous "
+              << getMeanRelative(exact[i], continuous[i]) << std::endl;
 
-    std::cout << "Reporting mean relative differences over all weights "
+    std::cout << "exact <-> recomp " << getMeanRelative(exact[i], recomp[i])
               << std::endl;
-    for (int i = 0; i < exact.size() - 1; ++i) {
-      std::cout << "\n@ learning rate " << learnRates[i] << std::endl;
-      std::cout << "exact <-> continuous "
-                << getMeanRelative(exact[i], continuous[i]) << std::endl;
 
-      std::cout << "exact <-> recomp " << getMeanRelative(exact[i], recomp[i])
-                << std::endl;
-
-      std::cout << "continuous <-> recomp "
-                << getMeanRelative(continuous[i], recomp[i]) << std::endl;
-    }
+    std::cout << "continuous <-> recomp "
+              << getMeanRelative(continuous[i], recomp[i]) << std::endl;
   }
 
   // The final run should match the first run exactly (same learning rate)

@@ -303,7 +303,7 @@ SubgraphOp::getIntrospectionInVirtualGraphId(InIndex index,
     }
   } else {
     // No VGID determined by introspection or tensor
-    if (vgidSet.empty() && Op::hasVirtualGraphId()) {
+    if (Op::hasVirtualGraphId()) {
       vgidSet.insert({Op::getVirtualGraphId(), getSettings().tileSet});
     }
   }

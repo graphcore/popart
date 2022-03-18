@@ -153,11 +153,6 @@ void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
   // is known
   Shape weightsKShape;
   if ((inputs.size() > 1) && impl->hasTensorShape(inputs[1])) {
-    if (inputs.size() < 2) {
-      throw error("Conv requires at least two inputs: data, and weights. {} "
-                  "inputs provided.",
-                  inputs.size());
-    }
     weightsKShape = impl->getTensorShape(inputs[1]);
     weightsKShape.erase(weightsKShape.begin(), weightsKShape.begin() + 2);
 
@@ -176,6 +171,10 @@ void verifyConvBase(std::unique_ptr<BuilderImpl> &impl,
             weightsKShape);
       }
     }
+  } else if (inputs.size() < 2) {
+    throw error("Conv requires at least two inputs: data, and weights. {} "
+                "inputs provided.",
+                inputs.size());
   }
 
   // Prepare attributes for verifyWindowParameters:

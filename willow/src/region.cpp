@@ -493,8 +493,9 @@ Regions Region::reshape(Region fullInRegion, Region fullOutRegion) const {
   }
   regions = mergeRegions(regions);
 
+  // Suppressing cppcheck in case the user wants to verify the area
   bool verifyArea = false;
-  if (verifyArea) {
+  if (verifyArea) { // cppcheck-suppress knownConditionTrueFalse
     int64_t reshapeAreas{0};
     for (auto x : regions) {
       reshapeAreas += x.nelms();

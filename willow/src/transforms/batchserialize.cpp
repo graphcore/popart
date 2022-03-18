@@ -439,7 +439,7 @@ bool BatchSerialize::apply(Graph &graph) const {
       Op *producer = nullptr;
       Op::Settings producerSettings(ir.getMainGraph(), "");
 
-      if (!producer && tensor->hasProducer()) {
+      if (tensor->hasProducer()) {
         producer = tensor->getProducer();
         producerSettings =
             producer->getOutSettings(producer->output->indices(tensor).front());

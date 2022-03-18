@@ -62,7 +62,10 @@ private:
   void maybeCreatePassThroughOutput(const TensorId &new_id,
                                     OutIndex pass_through_index,
                                     const TensorInfo &out_info);
+  // Suppressing cppcheck as linear_before_reset_attribute may change
+  // cppcheck-suppress knownConditionTrueFalse
   int getNumIntermediates() { return 3 + (linear_before_reset_attribute != 0); }
+  // cppcheck-suppress knownConditionTrueFalse
   int getNumBiases() { return 3 * (1 + (linear_before_reset_attribute != 0)); }
   void trySetOutInfo(OutIndex, const TensorInfo &);
 

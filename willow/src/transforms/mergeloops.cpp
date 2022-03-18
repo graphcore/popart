@@ -699,7 +699,7 @@ bool MergeLoops::checkIdenticalPaths(
     return false;
   }
 
-  if (opInT0->id == opInT1->id && opIn0 >= loop0->getNumExplicitInputs() &&
+  if (opIn0 >= loop0->getNumExplicitInputs() &&
       opIn1 >= loop1->getNumExplicitInputs()) {
     // Identical implicit inputs, only one needs to be wired up
     return true;

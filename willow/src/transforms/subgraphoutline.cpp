@@ -81,17 +81,6 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
   RecomputeType recompute      = RecomputeType::Undefined;
   RecomputeType last_recompute = RecomputeType::Undefined;
 
-  auto aof_schedule = opts.accumulateOuterFragmentSettings.schedule;
-
-  bool check_vgid_in_aof =
-      (aof_schedule !=
-       AccumulateOuterFragmentSchedule::OverlapCycleOptimized) &&
-      (aof_schedule != AccumulateOuterFragmentSchedule::OverlapMemoryOptimized);
-
-  bool overlap_phase = opts.executionPhaseSettings.phases > 1 &&
-                       opts.executionPhaseSettings.schedule ==
-                           ExecutionPhaseSchedule::BatchClusteredIO;
-
   bool overlap_batch_serial =
       opts.batchSerializationSettings.factor > 1 &&
       (opts.batchSerializationSettings.batchSchedule ==
@@ -111,16 +100,7 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
     // - Improves subgraph structures by dividing the schedule into
     //   logical units
     // - Speeds up the outlining match algorithm
-    bool check_vgid        = true;
-    bool check_phase       = true;
     bool check_batchserial = true;
-
-    if (overlap_phase) {
-      // Disable vgid and phase barriers when using the BatchClusteredIO
-      // schedule, so that subgraphs can span multiple phases and virtual graphs
-      check_vgid  = false;
-      check_phase = false;
-    }
 
     if (overlap_batch_serial) {
       // Don't insert barriers for outlining if a BSP overlap schedule is used,
@@ -134,13 +114,8 @@ std::vector<int64_t> getBoundariesCrossed(const SessionOptions &opts,
                     ? RecomputeType::Recompute
                     : RecomputeType::Checkpoint;
 
-    check_vgid &= check_vgid_in_aof ||
-                  exec_cont != ExecutionContext::AccumulateOuterFragment;
-
     if (i > start &&
         ((exec_cont != last_exec_cont) || (recompute != last_recompute) ||
-         (check_vgid && vgid != last_vgid) ||
-         (check_phase && phase != last_phase) ||
          (check_batchserial && batchserial != last_batchserial))) {
       crossing.push_back(i - start);
     }

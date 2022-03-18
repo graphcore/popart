@@ -468,7 +468,7 @@ public:
     return opVec;
   }
 
-  bool contains(Op *op) {
+  bool contains(const Op *op) {
     for (auto indexAndOp : ops) {
       if (indexAndOp.second == op) {
         return true;

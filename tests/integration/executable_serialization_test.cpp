@@ -263,7 +263,7 @@ getPopefTensor(const std::string &tensorId,
     throw error("Popef file does not contain expected tensor.");
   }
 
-  return it != popefTensors.end() ? boost::addressof(*it) : nullptr;
+  return boost::addressof(*it);
 }
 
 void checkCorrectionPopefTensor(

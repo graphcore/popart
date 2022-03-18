@@ -30,7 +30,7 @@ MergeCollectivesTransform::applyToOps(Graph &graph,
   // Touch each op in the schedule exactly once
   for (std::vector<Op *>::iterator schedulePos = opSchedule.begin();
        schedulePos != opSchedule.end();
-       schedulePos++) {
+       ++schedulePos) {
     Op *op = *schedulePos;
     if (includeOps.count(op->id) > 0) {
       if (graph.getIr()

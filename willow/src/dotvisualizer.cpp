@@ -176,11 +176,7 @@ void DotVisualizer::write(const Ir &ir) {
     // The string which will appear in the dot file to represent an Op
     std::stringstream coreNameStream;
     // add a graph identifier
-    auto gString        = n->getGraph().id.str();
-    bool addGraphPrefix = false;
-    if (addGraphPrefix) {
-      coreNameStream << '<' << getAbridgedGraphName(gString) << '>' << ' ';
-    }
+    auto gString = n->getGraph().id.str();
     coreNameStream << getNextGraphIndex(gString) << '.' << ' ' << n->opid.type
                    << " (" << n->id << ')';
     for (auto calledGraphId : n->getCalledGraphIds()) {

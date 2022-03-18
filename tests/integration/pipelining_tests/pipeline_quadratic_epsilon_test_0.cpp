@@ -101,8 +101,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
   using namespace popart;
 
-  bool printStdOut = true;
-
   // Return {initial weights, updated weights}
   auto getResults = [exportFinalDotFiles](bool continuous) {
     // input stream samples weights are generated randomly
@@ -312,12 +310,10 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     return delta;
   };
 
-  if (printStdOut) {
-    std::cout << "Exact: " << std::endl;
-    printResults(exact);
-    std::cout << "Continuous: " << std::endl;
-    printResults(continuous);
-  }
+  std::cout << "Exact: " << std::endl;
+  printResults(exact);
+  std::cout << "Continuous: " << std::endl;
+  printResults(continuous);
 
   auto delta_exact      = getDelta(exact.start, exact.end);
   auto delta_continuous = getDelta(continuous.start, continuous.end);
@@ -331,12 +327,10 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   // delta starts 0
   // delta ends 0.000577103
 
-  if (printStdOut) {
-    std::cout << "delta exact " << delta_exact << std::endl;
-    std::cout << "delta continuous " << delta_continuous << std::endl;
-    std::cout << "delta starts " << delta_starts << std::endl;
-    std::cout << "delta ends " << delta_ends << std::endl;
-  }
+  std::cout << "delta exact " << delta_exact << std::endl;
+  std::cout << "delta continuous " << delta_continuous << std::endl;
+  std::cout << "delta starts " << delta_starts << std::endl;
+  std::cout << "delta ends " << delta_ends << std::endl;
 
   BOOST_CHECK(delta_ends < 0.0006);
 }

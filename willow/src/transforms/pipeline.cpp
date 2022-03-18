@@ -587,7 +587,7 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
     bool stashing = true;
     std::string reason;
 
-    if (stashing && tensor->consumers.getOps().empty()) {
+    if (tensor->consumers.getOps().empty()) {
       reason   = "the tensor not having any consumers.";
       stashing = false;
     }

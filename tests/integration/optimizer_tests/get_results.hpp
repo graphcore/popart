@@ -347,13 +347,14 @@ getResults(const popart::SGD &opt0, // initial Optimizer
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
   } else {
 
+    // Suppressing cppcheck knownConditionTrueFalse due to the following TODO
     // TODO : cleaner acquisition failure solution T10881
     bool errorIfFailToAcquire = false;
 
     auto devices =
         popart::DeviceManager::createDeviceManager().enumerateDevices();
     if (devices.size() == 0) {
-      if (errorIfFailToAcquire) {
+      if (errorIfFailToAcquire) { // cppcheck-suppress knownConditionTrueFalse
         throw error("Failed to enumerate any devices in get_results.hpp");
       } else {
         return _detail::acquisitionFailure;
