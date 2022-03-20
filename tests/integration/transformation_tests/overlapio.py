@@ -1,11 +1,9 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import sys
 from pathlib import Path
-
 import numpy as np
-
+import pytest
 import popart
-
 import pva
 
 # `import test_util` requires adding to sys.path
@@ -98,16 +96,16 @@ def get_compute_io_overlap_percentage(report, runIndex):
 
 
 def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
-              exchange_strategy):
+              exchange_strategy, pipelining):
     np.random.seed(num_inputs * num_matmuls)
     builder = popart.Builder()
+
+    inputs = []
+    weights = []
 
     labels = builder.addInputTensor(
         popart.TensorInfo("INT32", [1, size]),
         popart.InputSettings(tile_set, exchange_strategy), "label")
-
-    inputs = []
-    weights = []
     s = []
     for i in range(num_inputs):
         x = builder.addInputTensor(
@@ -116,17 +114,22 @@ def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
         inputs += [x]
 
         for j in range(num_matmuls):
-            weight = np.random.normal(0, 0.05,
-                                      (1, size, size)).astype(np.float32)
-            w = builder.addInitializedInputTensor(weight, f"x{i}w{j}")
-            weights += [w]
+            with builder.virtualGraph(
+                    j if pipelining else 0), builder.pipelineStage(j):
+                weight = np.random.normal(0, 0.05,
+                                          (1, size, size)).astype(np.float32)
+                w = builder.addInitializedInputTensor(weight, f"x{i}w{j}")
+                weights += [w]
 
-            x = builder.aiOnnx.matmul([w, x])
+                x = builder.aiOnnx.matmul([w, x])
         s += [x]
 
-    sum = builder.aiOnnx.sum(s)
-    probs = builder.aiOnnx.softmax([sum])
-    loss = builder.aiGraphcore.nllloss([probs, labels])
+    with builder.virtualGraph(num_matmuls -
+                              1 if pipelining else 0), builder.pipelineStage(
+                                  num_matmuls - 1):
+        sum = builder.aiOnnx.sum(s)
+        probs = builder.aiOnnx.softmax([sum])
+        loss = builder.aiGraphcore.nllloss([probs, labels])
 
     proto = builder.getModelProto()
 
@@ -140,22 +143,33 @@ def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
 
 
 def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
-              exchange_strategy):
+              exchange_strategy, pipelining):
     size = 64
+    num_inputs = 4
+    num_matmuls = 2 if pipelining else 1
 
     proto, inputs, weights, labels, dataFlow, loss, sum = get_model(
-        size, batches_per_step, 4, 1, tile_set, exchange_strategy)
+        size, batches_per_step, num_inputs, num_matmuls, tile_set,
+        exchange_strategy, pipelining)
 
     opts = popart.SessionOptions()
-    opts.enableExplicitMainLoops = True
-    opts.useHostCopyOps = True
-    opts.instrumentWithHardwareCycleCounter = False
-    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
-    # Both true & false should work - testing with false to avoid
-    # host-cycle-overhead
-    opts.rearrangeAnchorsOnHost = False
-    opts.rearrangeStreamsOnHost = False
+    opts.enableExplicitIR(True)
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    if pipelining:
+        opts.enablePipelining = pipelining
+        opts.autoRecomputation = popart.RecomputationType.Pipeline
+        ipus_per_replica = num_matmuls
+    else:
+        ipus_per_replica = 1
+
+    opts.instrumentWithHardwareCycleCounter = False
+
+    # rearrangeOnHost = False can block IO overalp due to inter-tile exchange
+    # caused by rearrangements on the device - testing without it
+    opts.rearrangeAnchorsOnHost = True
+    opts.rearrangeStreamsOnHost = True
 
     # Set session options to generate the report
     tu.set_autoreport_options(opts, tmpdir, output_execution_profile=True)
@@ -175,7 +189,7 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
     pat = popart.Patterns(popart.PatternsLevel.Default)
 
-    with tu.create_test_device(numIpus=replicas,
+    with tu.create_test_device(numIpus=replicas * ipus_per_replica,
                                tilesPerIPU=tu.USE_ALL_TILES) as device:
         session = popart.TrainingSession(
             fnModel=proto,
@@ -233,18 +247,23 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
     return overlapPercentage, weights_data
 
 
-def test_overlap_training(tmpdir):
-    p0, w0 = run_model(tmpdir, 1, 8, 2, popart.TileSet.Compute,
-                       popart.ExchangeStrategy.JustInTime)
-    p1, w1 = run_model(tmpdir, 1, 8, 2, popart.TileSet.IO,
-                       popart.ExchangeStrategy.JustInTime)
-    p2, w2 = run_model(tmpdir, 1, 8, 2, popart.TileSet.IO,
-                       popart.ExchangeStrategy.OverlapInnerLoop)
+@pytest.mark.parametrize("pipelining", [False, True])
+def test_overlap_training(tmpdir, pipelining):
+    print("Temporary directory:", tmpdir)
 
-    # Check all weights are equal
-    for w in w0:
-        assert np.allclose(w0[w], w1[w], equal_nan=False)
-        assert np.allclose(w0[w], w2[w], equal_nan=False)
+    batches_per_step = 1
+    accum_factor = 16
+    replicas = 2
+
+    p0, w0 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
+                       popart.TileSet.Compute,
+                       popart.ExchangeStrategy.JustInTime, pipelining)
+    p1, w1 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
+                       popart.TileSet.IO, popart.ExchangeStrategy.JustInTime,
+                       pipelining)
+    p2, w2 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
+                       popart.TileSet.IO,
+                       popart.ExchangeStrategy.OverlapInnerLoop, pipelining)
 
     # Reference values (MK2 C200):
     # p0 0.0
@@ -255,7 +274,13 @@ def test_overlap_training(tmpdir):
     print("p1", p1)
     print("p2", p2)
 
-    # Check that overlapped IO increases compute-IO overlap percentage significantly
+    # Check all weights are equal
+    for w in w0:
+        assert np.allclose(w0[w], w1[w], equal_nan=False)
+        assert np.allclose(w0[w], w2[w], equal_nan=False)
+
+    # Check that overlapped IO increases compute-IO overlap percentage
+    # significantly
     # At least 25% more than not using IO tiles at all
     assert p2 - p0 > 0.25
     # At least 25% more than using IO tiles but no overlap strategy
