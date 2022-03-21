@@ -44,6 +44,16 @@ bool MultiReplicatedAllReduceOp::isCollectiveLinkedIndexTensor(
   return false;
 }
 
+ReplicatedTensorShardingIndices
+MultiReplicatedAllReduceOp::getReplicatedTensorShardingIndices() const {
+  ReplicatedTensorShardingIndices indices;
+  for (OutIndex outIdx = 0; outIdx < output->n(); ++outIdx) {
+    indices.insert(std::pair<std::set<InIndex>, std::set<OutIndex>>{
+        {(InIndex)outIdx}, {outIdx}});
+  }
+  return indices;
+}
+
 view::Regions MultiReplicatedAllReduceOp::modifies(InIndex index) const {
   if (getModifiesIndexInplace().at(index)) {
     return {view::Region::getFull(inShape(index))};

@@ -19,17 +19,15 @@ std::vector<Op *> ContiguateCollectivesTransform::applyToOps(
     Graph &graph,
     const std::set<OpId> includeOps) const {
 
-  auto &ir   = graph.getIr();
-  auto &opts = ir.getSessionOptions();
-  if (opts.accumulateOuterFragmentSettings.schedule !=
-      AccumulateOuterFragmentSchedule::Scheduler) {
+  auto &opts = graph.getIr().getSessionOptions();
+  if (opts.accumulateOuterFragmentSettings.schedule ==
+      AccumulateOuterFragmentSchedule::Serial) {
     throw error(
-        "[ContiguateCollectivesTransform::applyToOps] Incompatible user "
-        "options: AccumulateOuterFragmentSchedule must be set to ::Scheduler "
-        "when using the "
-        "replicatedCollectivesSettings.prepareScheduleForMergingCollectives "
-        "session option. The schedule constraints introduced by the two "
-        "transforms are incompatible.");
+        "Incompatible accumulateOuterFragmentSchedule used with session "
+        "option: options.replicatedCollectivesSettings."
+        "prepareScheduleForMergingCollectives. "
+        "Specifically SessionOptions::accumulateOuterFragmentSettings.schedule "
+        "can not be set to AccumulateOuterFragmentSchedule::Serial");
   }
 
   std::set<Op *> opsToProcess;
@@ -134,7 +132,7 @@ void ContiguateCollectivesTransform::processOp(
       allMatchNames);
 
   // Force the ops to follow one another in the schedule
-  BaseType *&before = baseOp;
+  BaseType *before = *allMatches.begin();
   for (BaseType *after : allMatches) {
     // baseOp is in allMatches, so need to prevent creation of A before A type
     // constraint

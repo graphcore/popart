@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
 #define GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/tensorindex.hpp>
 
 namespace popart {
 class MultiReplicatedAllReduceOp : public MultiCollectiveBaseOp {
@@ -22,6 +23,8 @@ public:
   Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override;
   bool isCollectiveLinkedIndexTensor(InIndex in) const override;
   bool isCollectiveLinkedIndexTensor(Tensor *t) const override;
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
   view::Regions modifies(InIndex index) const override;
   view::Regions aliases(InIndex in, OutIndex out) const override;
   void growAliasModel(AliasModel &m) const override;

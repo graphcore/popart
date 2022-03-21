@@ -1538,6 +1538,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   if (userOptions.replicatedCollectivesSettings
           .prepareScheduleForMergingCollectives) {
     applyTransform(ContiguateCollectivesTransform::id(), getMainGraph());
+    updateVertices();
   }
   if (userOptions.replicatedCollectivesSettings.mergeAllReduceCollectives) {
     applyTransform(MergeCollectivesTransform::id(), getMainGraph());
