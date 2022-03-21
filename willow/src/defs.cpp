@@ -55,6 +55,7 @@ void Expm1ShapeInference(InferenceContext &ctx);
 void Log1pShapeInference(InferenceContext &ctx);
 void ReshapeShapeInference(InferenceContext &ctx);
 void ReverseShapeInference(InferenceContext &ctx);
+void SliceShapeInference(InferenceContext &ctx);
 void ScatterReduceShapeInference(InferenceContext &ctx);
 void RemainderShapeInference(InferenceContext &ctx);
 void FmodShapeInference(InferenceContext &ctx);
@@ -444,6 +445,81 @@ void ReshapeShapeInference(InferenceContext &ctx) {
 
 void ReverseShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void SliceShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  std::vector<int64_t> axes;
+  std::vector<int64_t> starts;
+  std::vector<int64_t> ends;
+
+  if (!getRepeatedAttribute(ctx, "axes", axes)) {
+    fail_shape_inference("Missing axes");
+  }
+  if (!getRepeatedAttribute(ctx, "starts", starts)) {
+    fail_shape_inference("Missing starts");
+  }
+  if (!getRepeatedAttribute(ctx, "ends", ends)) {
+    fail_shape_inference("Missing ends");
+  }
+
+  if (axes.size() != starts.size() || axes.size() != ends.size()) {
+    fail_shape_inference("Attribute size mismatch")
+  }
+
+  if (!std::is_sorted(axes.begin(), axes.end())) {
+    fail_shape_inference("Axes not sorted")
+  }
+
+  ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+
+  const onnx::TensorShapeProto &input_shape(
+      ctx.getInputType(0)->tensor_type().shape());
+
+  // Because the axes are in ascending order, we can walk through them and the
+  // input shape at the same time. This will hold the axes index.
+  size_t current_axis_idx = 0;
+
+  for (size_t idx = 0; idx < input_shape.dim_size(); idx++) {
+    if (!input_shape.dim(idx).has_dim_value()) {
+      fail_shape_inference("Input shape incomplete")
+    }
+
+    onnx::TensorShapeProto_Dimension *new_dim =
+        ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape()->add_dim();
+
+    // Assume no slice on this dim to allow continue
+    int64_t cur_size = input_shape.dim(idx).dim_value();
+    new_dim->set_dim_value(cur_size);
+
+    // No more axes to slice
+    if (current_axis_idx == axes.size()) {
+      continue;
+    }
+
+    // Not slicing on this axis
+    if (axes[current_axis_idx] != idx) {
+      continue;
+    }
+
+    int64_t start = starts[current_axis_idx];
+    int64_t end   = ends[current_axis_idx];
+
+    start = start < 0 ? cur_size + start : start;
+    end   = end < 0 ? cur_size + end : end;
+    start = std::min(start, cur_size);
+    start = std::max(start, static_cast<int64_t>(0));
+    end   = std::min(end, cur_size);
+    end   = std::max(end, static_cast<int64_t>(0));
+
+    if (start > end) {
+      fail_shape_inference("Start greater than end for an axis");
+    }
+
+    new_dim->set_dim_value(end - start);
+    current_axis_idx++;
+  }
 }
 
 void InitShapeInference(InferenceContext &ctx) {
@@ -1351,6 +1427,41 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ReverseShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
+    Slice,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Slice the input tensor.")
+        .Input(0, "data", "Input tensor", "T")
+        .Output(0, "sliced", "Output Tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(uint8)",
+             "tensor(uint16)",
+             "tensor(uint32)",
+             "tensor(uint64)",
+             "tensor(int8)",
+             "tensor(int16)",
+             "tensor(int32)",
+             "tensor(int64)",
+             "tensor(float16)",
+             "tensor(float)",
+             "tensor(bool)"},
+            "Input and output types can be any type supported by the IPU.")
+        .Attr("axes", "Axes for start and end.", AttributeProto::INTS, true)
+        .Attr("starts",
+              "Starting indices of corresponding axis in `axes`",
+              AttributeProto::INTS,
+              true)
+        .Attr("ends",
+              "Ending indices (exclusive) of corresponding axis in axes`",
+              AttributeProto::INTS,
+              true)
+        .TypeAndShapeInferenceFunction(SliceShapeInference))
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
     ScatterReduce,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1783,6 +1894,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Reverse)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Slice)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

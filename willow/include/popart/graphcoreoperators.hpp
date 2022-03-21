@@ -273,6 +273,7 @@ const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 SignInplace("SignInplace");
 const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
 const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
+const static AiGraphcoreOpIdV1 Slice_1("Slice", 1, 1);
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SoftPlusInplace("SoftPlusInplace");
 const static AiGraphcoreOpIdV1 SoftSignInplace("SoftSignInplace");
@@ -362,6 +363,7 @@ const static OperatorIdentifier Reverse   = CustomOperators::Reverse;
 const static OperatorIdentifier Round     = CustomOperators::Round_1;
 const static OperatorIdentifier Scale     = CustomOperators::Scale_1;
 const static OperatorIdentifier ScaledAdd = CustomOperators::ScaledAdd;
+const static OperatorIdentifier Slice     = CustomOperators::Slice_1;
 const static OperatorIdentifier BinaryConstScalar =
     CustomOperators::BinaryConstScalar;
 const static OperatorIdentifier ShapedDropout =

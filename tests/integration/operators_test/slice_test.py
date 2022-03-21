@@ -5,15 +5,26 @@ import torch
 import pytest
 
 
-def test_slice_opset9(op_tester):
+# Slice1 used by opsets < 10 and aiGraphcore
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_opset1(op_tester, graphcore):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset9.slice([i1],
-                                       axes=[0, 1],
-                                       starts=[1, 0],
-                                       ends=[2, 3])
+
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          axes=[0, 1],
+                                          starts=[1, 0],
+                                          ends=[2, 3])
+        else:
+            o = builder.aiOnnxOpset9.slice([i1],
+                                           axes=[0, 1],
+                                           starts=[1, 0],
+                                           ends=[2, 3])
+
+        assert builder.getTensorShape(o) == [1, 3]
         builder.addOutputTensor(o)
         return [o]
 
@@ -58,7 +69,9 @@ def test_slice_default_axes(op_tester):
         i1 = builder.addInputTensor(d1)
         starts = builder.addInitializedInputTensor(startsV)
         ends = builder.addInitializedInputTensor(endsV)
+
         o = builder.aiOnnx.slice([i1, starts, ends])
+        assert builder.getTensorShape(o) == [1, 3]
         builder.addOutputTensor(o)
         return [o]
 
@@ -70,7 +83,8 @@ def test_slice_default_axes(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_slice_neg(op_tester):
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_neg(op_tester, graphcore):
     d1 = np.array([1., 2., 3., 4., 5., 6., 7., 8.]).astype(np.float32)
     axesV = np.array([0]).astype(np.int32)
     startsV = np.array([-5]).astype(np.int32)
@@ -82,7 +96,16 @@ def test_slice_neg(op_tester):
         starts = builder.addInitializedInputTensor(startsV)
         ends = builder.addInitializedInputTensor(endsV)
 
-        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          starts=[startsV[0]],
+                                          ends=[endsV[0]],
+                                          axes=[axesV[0]])
+        else:
+            o = builder.aiOnnx.slice([i1, starts, ends, axes])
+
+        assert builder.getTensorShape(o) == [2]
+
         builder.addOutputTensor(o)
         return [o]
 
@@ -94,7 +117,8 @@ def test_slice_neg(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_slice_grad(op_tester):
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_grad(op_tester, graphcore):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
     axesV = np.array([0, 1]).astype(np.int32)
     startsV = np.array([1, 0]).astype(np.int32)
@@ -106,7 +130,14 @@ def test_slice_grad(op_tester):
         starts = builder.aiOnnx.constant(startsV)
         ends = builder.aiOnnx.constant(endsV)
 
-        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          starts=[startsV[0], startsV[1]],
+                                          ends=[endsV[0], endsV[1]],
+                                          axes=[axesV[0], axesV[1]])
+        else:
+            o = builder.aiOnnx.slice([i1, starts, ends, axes])
+
         builder.addOutputTensor(o)
         return [
             o,
@@ -158,7 +189,8 @@ def test_slice_error_start_input(op_tester):
         "input/1.")
 
 
-def test_slice_start_out_of_bounds(op_tester):
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_start_out_of_bounds(op_tester, graphcore):
     """
     The slice bounds tests follow the behaviour asserted by the Onnx tests,
     which follow the behaviour of numpy.
@@ -188,7 +220,15 @@ def test_slice_start_out_of_bounds(op_tester):
         starts = builder.aiOnnx.constant(startsV)
         ends = builder.aiOnnx.constant(endsV)
 
-        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          starts=[startsV[0]],
+                                          ends=[endsV[0]],
+                                          axes=[axesV[0]])
+        else:
+            o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        assert builder.getTensorShape(o) == [20, 0, 5]
+
         builder.addOutputTensor(o)
 
         return [o, popart.reservedGradientPrefix() + i1]
@@ -202,7 +242,8 @@ def test_slice_start_out_of_bounds(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_slice_end_out_of_bounds(op_tester):
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_end_out_of_bounds(op_tester, graphcore):
     """
     The slice bounds tests follow the behaviour asserted by the Onnx tests,
     which follow the behaviour of numpy.
@@ -232,7 +273,15 @@ def test_slice_end_out_of_bounds(op_tester):
         starts = builder.aiOnnx.constant(startsV)
         ends = builder.aiOnnx.constant(endsV)
 
-        o = builder.aiOnnx.slice([i1, starts, ends, axes])
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          starts=[startsV[0]],
+                                          ends=[endsV[0]],
+                                          axes=[axesV[0]])
+        else:
+            o = builder.aiOnnx.slice([i1, starts, ends, axes])
+
+        assert builder.getTensorShape(o) == [20, 9, 5]
         builder.addOutputTensor(o)
 
         return [
@@ -253,13 +302,25 @@ def test_slice_end_out_of_bounds(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_slice_neg_starts_and_ends(op_tester):
+@pytest.mark.parametrize("graphcore", (True, False))
+def test_slice_neg_starts_and_ends(op_tester, graphcore):
     d1 = np.array([1., 2., 3., 4.]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset9.slice([i1], axes=[0], starts=[-5], ends=[-1])
+        if graphcore:
+            o = builder.aiGraphcore.slice([i1],
+                                          axes=[0],
+                                          starts=[-5],
+                                          ends=[-1])
+            assert builder.getTensorShape(o) == [3]
+        else:
+            o = builder.aiOnnxOpset9.slice([i1],
+                                           axes=[0],
+                                           starts=[-5],
+                                           ends=[-1])
         builder.addOutputTensor(o)
+
         return [o]
 
     def reference(_):  # ref_data is an unused argument

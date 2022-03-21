@@ -82,7 +82,8 @@ SliceInplaceOpx::SliceInplaceOpx(Op *op_, Devicex *devicex)
 namespace {
 OpxCreator<SliceOpx> sliceOpxCreator({Onnx::Operators::Slice_1,
                                       Onnx::Operators::Slice_10,
-                                      Onnx::Operators::Slice_11});
+                                      Onnx::Operators::Slice_11,
+                                      Onnx::AiGraphcore::OpSet1::Slice});
 OpxCreator<SliceInplaceOpx>
     sliceInplaceOpxCreator(Onnx::CustomOperators::SliceInplace);
 } // namespace

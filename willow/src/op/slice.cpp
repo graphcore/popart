@@ -536,7 +536,8 @@ static OpDefinition sliceOpDef({OpDefinition::Inputs({
 static OpCreator<SliceOp> sliceOpCreator(
     OpDefinitions({{Onnx::Operators::Slice_1, sliceOpV1Def},
                    {Onnx::Operators::Slice_10, sliceOpDef},
-                   {Onnx::Operators::Slice_11, sliceOpDef}}),
+                   {Onnx::Operators::Slice_11, sliceOpDef},
+                   {Onnx::AiGraphcore::OpSet1::Slice, sliceOpV1Def}}),
     [](const OpCreatorInfo &info) {
       if (info.opid.version < 10) {
         // Before version 10 the slice parameters were attributes

@@ -2458,6 +2458,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("dimensions"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, reverse));
+    cls.def("slice",
+            &AiGraphcoreOpset1::slice,
+            py::arg("args"),
+            py::arg("ends"),
+            py::arg("starts"),
+            py::arg("axes"),
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, slice));
     cls.def("abort",
             &AiGraphcoreOpset1::abort,
             py::arg("args")         = pybind11::list(),

@@ -785,6 +785,25 @@ public:
                    const DebugContext &debugContext = {});
 
   /**
+   * Add a slice to the model
+   * This version of slice takes the starts, the ends and the axes as attributes
+   * rather than tensor inputs. This reduces the amount of ops as constant
+   * tensors are treated as ops while attributes are not.
+   *
+   * \param args List of input tensor ids
+   * \param axes The 'axes' attribute
+   * \param ends The 'ends' attribute
+   * \param starts The 'starts' attribute
+   * \param name Optional identifier for the operation
+   * \return The normalized output tensor ids
+   */
+  TensorId slice(const std::vector<TensorId> &args,
+                 const std::vector<int64_t> &ends,
+                 const std::vector<int64_t> &starts,
+                 const std::vector<int64_t> &axes = std::vector<int64_t>(),
+                 const popart::DebugContext &debugContext = {});
+
+  /**
    * Add a packedDataBlock operator to the model.
    *
    * Unpack packed sequences of data according to lengths and offsets tensors,

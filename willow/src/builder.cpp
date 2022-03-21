@@ -1062,6 +1062,28 @@ TensorId AiGraphcoreOpset1::reverse(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+TensorId AiGraphcoreOpset1::slice(const std::vector<TensorId> &args,
+                                  const std::vector<int64_t> &ends,
+                                  const std::vector<int64_t> &starts,
+                                  const std::vector<int64_t> &axes,
+                                  const popart::DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  attributes["ends"]   = ends;
+  attributes["starts"] = starts;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::Slice,
+                          getOpsetVersion(),
+                          args,
+                          attributes,
+                          {di});
+  di.setOutputs(outputs);
+  return outputs[0];
+}
+
 TensorId AiGraphcoreOpset1::packedDataBlock(
     const std::vector<TensorId> &args,
     const std::vector<int64_t> &maxSequenceLengths,

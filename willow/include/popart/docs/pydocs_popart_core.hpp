@@ -1528,6 +1528,25 @@ Returns:
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_shapeddropout =
     R"doc(Add a shaped dropout operation to the model. Applies a shaped dropout to the input tensor. This operator requires a shape parameter that is used to define the shape of the dropout mask so that strongly correlated features in the input tensor can be preserved. The provided shape must be broadcastable to the input tensor.  Note that this operation targets the poprand library function of the same name. Args: args: Vector of input tensor ids. shape: Shape of dropout mask. Must be broadcastable to the input. ratio: Probability of dropping an input feature (default = 0.5). name: Optional identifier for operation. Returns: The name of the result tensor.)doc";
 
+static const char *__doc_popart_AiGraphcoreOpset1_slice =
+    R"doc(Add the 'Slice' to the model
+This slice takes the start, end and axes as attributes rather than
+tensors inputs.
+
+
+Args:
+ args: List of input tensor ids
+ axes: The 'axes' attribute
+ ends: The 'ends' attribute
+ starts: The 'starts' attribute
+ name: Optional identifier for the operation
+
+Returns:
+ The normalized output tensor ids)doc";
+
+static const char *__singlelinedoc_popart_AiGraphcoreOpset1_slice =
+    R"doc(Add the 'Slice' to the model This slice takes the start, end and axes as attributes rather than tensors inputs. Args: args: List of input tensor ids axes: The 'axes' attribute ends: The 'ends' attribute starts: The 'starts' attribute name: Optional identifier for the operation Returns: The normalized output tensor ids)doc";
+
 static const char *__doc_popart_AiGraphcoreOpset1_subsample =
     R"doc(Add a sub-sample operation to the model.
 
