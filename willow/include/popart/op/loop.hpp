@@ -10,7 +10,7 @@
 
 namespace popart {
 
-class OperatorIdentifier;
+struct OperatorIdentifier;
 
 // Loop operation construct
 //

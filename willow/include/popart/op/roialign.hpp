@@ -33,7 +33,7 @@ public:
   RoiAlignOp &operator=(const RoiAlignOp &) = delete;
   ~RoiAlignOp() override                    = default;
   std::unique_ptr<popart::Op> clone() const final;
-  virtual void setup();
+  void setup() override;
   std::vector<std::unique_ptr<popart::Op>> getGradOps() final;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
