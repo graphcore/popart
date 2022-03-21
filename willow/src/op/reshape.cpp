@@ -96,15 +96,6 @@ std::unique_ptr<Op> ReshapeOp::clone() const {
   return std::make_unique<ReshapeOp>(*this);
 }
 
-// This will be used by ReshapeGradOp
-ReshapeBaseOp::ReshapeBaseOp(const OperatorIdentifier &_opid,
-                             const std::vector<int64_t> &ots,
-                             const Op::Settings &settings_,
-                             bool handleZero_)
-    : Op(_opid, settings_), outShape(ots), handleZero(handleZero_) {
-  finaliseShape();
-}
-
 void ReshapeBaseOp::setOutShape(const Shape &value) {
   outShape = value;
   finaliseShape();
@@ -121,7 +112,7 @@ void ReshapeBaseOp::finaliseShape() {
         *bad_dim);
   }
 
-  // Do not inferr, do not replace zeros.
+  // Do not infer, do not replace zeros.
   if (!handleZero) {
     return;
   }
@@ -189,9 +180,16 @@ void ReshapeBaseOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   // an input tensor to its Op
   if (inIndex == 0) {
     Op::connectInTensor(inIndex, tenId);
+    if (!outShape.empty()) {
+      // Use the connected input to resolve any "-1" and "0" values in the
+      // output shape.
+      finaliseShape();
+    }
   } else if (inIndex == 1) {
     // we attempt to set outputInfo
     try {
+      // Use both the data input shape and the new shape a constant connected
+      // to this index to resolve the output shape.
       getInTensorData(tenId, outShape);
       finaliseShape();
     } catch (popart::error &err) {
@@ -309,15 +307,6 @@ std::vector<int64_t> getShapeAttrib(const OpCreatorInfo &info) {
   return info.attributes.getAttribute<Attributes::Ints>("shape", {});
 }
 
-void checkNegativeShape(const std::vector<int64_t> &newShape) {
-  auto bad_dim = std::find_if(
-      newShape.begin(), newShape.end(), [&](auto i) { return i < 0; });
-  if (bad_dim != newShape.end()) {
-    throw error("Attribute shape has negative dimension. "
-                "Not supported.");
-  }
-}
-
 // UnSqueeze //
 static OpDefinition
     unsqueezeOpDef({OpDefinition::Inputs({{"data", T}}),
@@ -396,9 +385,8 @@ static OpCreator<ReshapeOp> reshape1OpCreator(
     OpDefinitions({{Onnx::CustomOperators::Reshape_1, reshape1OpDef}}),
     [](const OpCreatorInfo &info) {
       const auto outShape = getShapeAttrib(info);
-      checkNegativeShape(outShape);
       return std::make_unique<ReshapeOp>(
-          Onnx::Operators::Reshape_5, outShape, info.settings, false);
+          Onnx::Operators::Reshape_5, outShape, info.settings, true);
     },
     true);
 

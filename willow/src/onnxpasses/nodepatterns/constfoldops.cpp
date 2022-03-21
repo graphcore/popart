@@ -267,8 +267,28 @@ Constants ReshapeCFold::fold(const NodeProto &node, const Constants &inputs) {
     return res;
   }
 
-  auto attr           = Attributes(node.attribute());
-  const auto shapeOut = attr.getAttribute<Attributes::Ints>("shape", {});
+  auto attr     = Attributes(node.attribute());
+  auto shapeOut = attr.getAttribute<Attributes::Ints>("shape", {});
+
+  const poprithms::compute::host::Tensor &constant(inputs.at(node.input(0)));
+
+  // Handle a negative dim in the reshape
+  size_t nonMinusOneProd = 1;
+  int64_t minusOneDim    = -1;
+  for (size_t dim = 0; dim < shapeOut.size(); dim++) {
+    if (shapeOut[dim] == -1) {
+      minusOneDim = dim;
+    } else if (shapeOut[dim] == 0) {
+      shapeOut[dim] = constant.shape().dim(dim);
+      nonMinusOneProd *= shapeOut[dim];
+    } else {
+      nonMinusOneProd *= shapeOut[dim];
+    }
+  }
+
+  if (minusOneDim != -1) {
+    shapeOut[minusOneDim] = constant.nelms() / nonMinusOneProd;
+  }
 
   Constants res;
   res.insert(

@@ -15,9 +15,10 @@ namespace popart {
 class ReshapeBaseOp : public Op {
 public:
   ReshapeBaseOp(const OperatorIdentifier &_opid,
-                const Shape &,
+                const Shape &ots_,
                 const Op::Settings &settings_,
-                bool handleZero = true);
+                bool handleZero_ = true)
+      : Op(_opid, settings_), outShape(ots_), handleZero(handleZero_) {}
 
   ReshapeBaseOp(const OperatorIdentifier &_opid,
                 const Op::Settings &settings_,

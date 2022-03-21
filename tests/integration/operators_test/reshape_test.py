@@ -158,6 +158,7 @@ def test_reshape_graphcore(op_tester):
 def test_reshape_neg_graphcore(op_tester):
     d1 = np.random.rand(2, 4, 3).astype(np.float32)
     d2a = [-1, 6]
+    d2 = np.array(d2a).astype(np.int64)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -165,10 +166,29 @@ def test_reshape_neg_graphcore(op_tester):
         builder.addOutputTensor(o)
         return [o]
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, None, 'infer')
+    def reference(_):  # ref_data is an unused argument
+        out = np.reshape(d1, d2)
+        return [out]
 
-    assert ('Attribute shape has negative dimension.') in str(e_info.value)
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_reshape_zero_graphcore(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2a = [-1, 0]
+    d2 = np.array(d2a).astype(np.int64)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiGraphcore.reshape(i1, shape=d2a)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        out = np.reshape(d1, [6, 4])
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
 
 
 def test_reshape_graphcore_grad(op_tester):
