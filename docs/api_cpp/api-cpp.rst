@@ -76,6 +76,11 @@ Session options
 .. doxygenstruct:: popart::AccumulateOuterFragmentSettings
   :members:
 
+.. doxygenenum:: popart::AutodiffStitchStrategy
+
+.. doxygenstruct:: popart::AutodiffSettings
+  :members:
+
 .. doxygenstruct:: popart::AutomaticLossScalingSettings
   :members:
 
@@ -195,6 +200,12 @@ Builder
   #include <popart/builder.hpp>
 
 .. doxygenclass:: popart::Builder
+   :members:
+
+.. doxygenclass:: popart::Ir
+   :members:
+
+.. doxygenclass:: popart::Graph
    :members:
 
 .. doxygenclass:: popart::AiGraphcoreOpset1
@@ -409,6 +420,29 @@ Patterns
 
 .. doxygenclass:: popart::Patterns
    :members:
+
+
+Transforms
+..........
+
+.. code-block:: cpp
+
+  #include <popart/transforms/autodiff.hpp>
+
+.. doxygenclass:: popart::Autodiff
+   :members:
+
+.. code-block:: cpp
+
+  #include <popart/bwdgraphinfo.hpp>
+
+.. doxygenstruct:: popart::BwdGraphInfo
+  :members:
+
+.. doxygenenum:: popart::ExpectedConnectionType
+
+.. doxygenstruct:: popart::ExpectedConnection
+  :members:
 
 
 Type definitions
