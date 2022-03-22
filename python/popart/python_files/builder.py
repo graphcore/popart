@@ -104,8 +104,11 @@ class Builder():
                AiOnnxOpset10, popart.AiOnnxOpset11]:
         """Reroute all attribute requests to the underlying ``_BuilderCore`` object
 
-        Arguments:
-            name:  attribute required.
+        Args:
+            name (str): Attribute required.
+
+        Raises:
+            RuntimeError: If an invalid opset is used.
 
         Returns:
             Return value from the ``builder._impl.attr`` call.
@@ -167,8 +170,8 @@ class Builder():
 
 
 class AiOnnx(Opset):
-    """Base class for the various AiOnnx builder interfaces. 
-    The most recent version of ONNX operators that require 
+    """Base class for the various AiOnnx builder interfaces.
+    The most recent version of ONNX operators that require
     special treatment such as Loop, Scan, Logical_If etc. go here.
     While, older versions where the function signature differs
     are implemented on a corresponding subclass.

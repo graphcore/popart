@@ -363,6 +363,9 @@ class Tensor:
         If any are not, an attempt is made to convert the operands to a
         constant tensor with the same dtype as `self`.
 
+        Raises:
+            ValueError: If the value has 0 elements.
+
         Returns:
             Tensor:
                 A `popxl.Tensor`.
@@ -671,8 +674,9 @@ def variable(data: HostScalarTensor,
             a = popxl.variable(0)
 
     Args:
-        data (np.ndarray, or a value NumPy can use to construct an np.ndarray):
+        data (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.ndarray, or a value NumPy can use to construct an np.ndarray.
         dtype (Optional[dtype]):
             The data type of the tensor to be created. If not specified NumPy will infer the data
             type and downcast to 32 bits if necessary.
@@ -688,6 +692,13 @@ def variable(data: HostScalarTensor,
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+
+    Raises:
+        RuntimeError: If a non-default replica group is used
+        ValueError: If the tensor is tried initialised within a graph
+
+    Returns:
+        Variable: The desired variable.
     """
     if replica_grouping is not None:
         raise RuntimeError(
@@ -726,8 +737,9 @@ def remote_variable(
     """Create a variable Tensor that is stored in remote memory.
 
     Args:
-        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+        data (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
         remote_buffer (RemoteBuffer):
             The remote buffer to store the variable.
         offset (int):
@@ -739,7 +751,7 @@ def remote_variable(
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        shards (int):
+        num_shards (int):
             Number of shards for this variable.
         replica_grouping:
             The grouping of replicas to use when getting and setting variable
@@ -749,11 +761,13 @@ def remote_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-    Returns:
-        Variable: The remote variable.
 
     Raises:
-        ValueError: if the variable shape or dtype does not match remote buffer's
+        RuntimeError: If a non-default replica group is used.
+        ValueError: If the variable shape or dtype does not match remote buffer's.
+
+    Returns:
+        Variable: The remote variable.
     """
     if replica_grouping is not None:
         raise RuntimeError(
@@ -791,8 +805,9 @@ def remote_replica_sharded_variable(
        ReduceScatter operation.
 
     Args:
-        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+        data (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
         remote_buffer (RemoteBuffer): The handle to the remote buffer.
         offset (int): The offset to index the tensor shard in the remote tensor.
         dtype (Optional[dtype]):
@@ -812,6 +827,7 @@ def remote_replica_sharded_variable(
             replicas are in one group.
 
     Raises:
+        RuntimeError: If a non-default replica group is used.
         ValueError: If replication has not been enabled.
         ValueError: If the number of elements of `var` is not divisible by the number of replicas.
         ValueError: if the variable shape or dtype does not match remote buffer's
@@ -867,8 +883,9 @@ def replica_sharded_variable(data: HostScalarTensor,
         not need to be present on each IPU. Does not store the full tensor in remote memory.
 
     Args:
-        data (np.ndarray, or a value numpy can use to construct an np.ndarray):
+        data (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.ndarray, or a value numpy can use to construct an np.ndarray.
         dtype (Optional[dtype]):
             The data type of the tensor to be created, if not specified Numpy will infer the data
             type and be downcasted to 32 bits if necessary.
@@ -876,7 +893,7 @@ def replica_sharded_variable(data: HostScalarTensor,
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping:
+        replica_grouping (Optional[ReplicaGrouping]):
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -884,6 +901,9 @@ def replica_sharded_variable(data: HostScalarTensor,
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+
+    Raises:
+        RuntimeError: If non-default grouping is used.
 
     Returns:
         Tuple[Variable, Tensor]:
@@ -945,13 +965,16 @@ def constant(
             b = a + 1
 
     Args:
-        data (np.array, or a value numpy can use to construct an np.ndarray):
+        data (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.array, or a value numpy can use to construct an np.ndarray.
         dtype (Optional[dtype]):
             The data type of the tensor to be created. If not specified, NumPy will infer the data
             type and downcast to 32 bits if necessary.
         name (Optional[str]):
             The name of the tensor. Defaults to `None`.
+        downcast (bool):
+            Whether or not to downcast the data to the given dtype.
     """
     g = gcg()
     pb_g = g._pb_graph
@@ -994,12 +1017,19 @@ def graph_input(shape: Iterable[int],
             y, = ops.call(add_w_graph, x, w)
 
     Args:
-        shape (Tuple[int, ...])
+        shape (Iterable[int]):
             The shape of the tensor.
         dtype (dtype):
             The data type of the tensor.
         name (Optional[str]):
             The name of the tensor.
+        by_ref (bool):
+            If the tensor should be added by reference
+        meta_shape (Optional[Iterable[int]]):
+            The meta shape of the tensor.
+
+    Returns:
+        Tensor: The created input tensor.
     """
     g = gcg()
     pb_g = g._pb_graph

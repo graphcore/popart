@@ -1,4 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from typing import Tuple
 import operator
 import subprocess
 from itertools import accumulate
@@ -26,22 +27,28 @@ def bor(*args: int) -> int:
     return list(accumulate(args, operator.or_))[-1]
 
 
-def bash(args, cwd='.', log=True, ignore_return_code=False) -> str:
+def bash(args: Tuple[str, ...],
+         cwd: str = '.',
+         log: bool = True,
+         ignore_return_code: bool = False) -> str:
     """
     Run a bash subprocess.
+
     This is used primarily for executing cmake, ninja, the test script and gcovr.
 
-    Arguments
-    ---
-        args: Sequence or str of args, the same as you would pass to subprocess.Popen
-        cwd: Path-like to the directory in which to execute the bash subprocess
-        log: Bool, if True the stdout of the process is sent to stdout and the 
+    Args:
+        args (Tuple[str,...]): Sequence or str of args, the same as you would pass to
+            subprocess.Popen.
+        cwd (str): Path-like to the directory in which to execute the bash subprocess.
+        log (bool): If True the stdout of the process is sent to stdout and the
             result is returned as a string. Otherwise, discard the output.
-        ignore_return_code: Bool, if false an erroneous return code is discarded, 
+        ignore_return_code (bool): If false an erroneous return code is discarded,
             otherwise CalledProcessError is raised.
 
+    Raises:
+        CalledProcessError: If the called process did not return 0.
+
     Returns
-    ---
         str: the collected stdout of the subprocess.
     """
     process = subprocess.Popen(args,

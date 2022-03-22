@@ -115,7 +115,7 @@ def get_test_time(baseurl, project):
 
 def get_build_time(baseurl, project):
     """ Get the build time for a specific project for a child job """
-    regex = re.compile(f"(\d+)\t(\d+)\t(?:.*)+\n")
+    regex = re.compile("(\d+)\t(\d+)\t(?:.*)+\n")
     ninja_log = get_ninja_log(baseurl, project)
     min_millis = min([int(m[0]) for m in re.findall(regex, ninja_log)])
     max_millis = max([int(m[1]) for m in re.findall(regex, ninja_log)])

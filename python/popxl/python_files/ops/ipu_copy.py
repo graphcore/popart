@@ -13,18 +13,17 @@ def ipu_copy(t: Tensor, destination: int,
     Copy a tensor to an IPU.
 
     Args:
-        t: Tensor
-            Tensor to be copied.
-        destination: int
-            IPU for the tensor to be copied to.
-        source: Optional[int]
-            IPU for the tensor to be copied from.
+        t (Tensor): Tensor to be copied.
+        destination (int): IPU for the tensor to be copied to.
+        source (Optional[int]): IPU for the tensor to be copied from.
             By default, the source will be taken from the producer of `t`.
             If `t` does not have a producer a source MUST be provided.
 
+    Raises:
+        ValueError: If the source IPU could not be inferred when the source is not set.
+
     Returns:
-        t_copied: Tensor
-            The copied tensor
+        t_copied (Tensor): The copied tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

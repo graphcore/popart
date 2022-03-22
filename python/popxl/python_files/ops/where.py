@@ -18,8 +18,11 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
         condition (Tensor):
             A boolean tensor where `True` indicates the `lhs` element and `False` the `rhs` element.
             The tensor will be cast to a bool if necessary.
-        lhs, rhs (Tensor):
-            Tensors to choose elements from.
+        lhs (Tensor):
+            The left hand side operand.
+        rhs (Tensor):
+            The right hand side operand.
+
     Returns:
         Tensor: The tensor containing element-wise `lhs if condition else rhs.
     """

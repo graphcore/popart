@@ -48,7 +48,7 @@ def create_test_device(
         DeviceConnectionType.OnDemand,
         selectionCriterion: popart.DeviceSelectionCriterion = popart.
         DeviceSelectionCriterion.Random,
-        tilesPerIPU=None):
+        tilesPerIPU=None) -> DeviceContext:
     testDeviceType = os.environ.get("TEST_TARGET")
 
     if opts:

@@ -241,11 +241,16 @@ def process_op_header(
     """Go through the file's definitions and process each child node in turn.
 
     Args:
-        path (Path): Path of the hpp file
+        filename (Path): Path of the hpp file
         ops_path (str): Path where the ops.hpp files are stored.
+        include_directories (List[str]): Directories to include.
+
+    Raises:
+        FileNotFoundError: If a include directory cannot be found.
+        LibclangError: If a clang diagnostics emits an error.
 
     Returns:
-        List[Dict]: List of dicts with info on the ops
+        Tuple[Path, List[Dict]]: List of dicts with info on the ops.
     """
     path = ops_path / filename
     ops: Dict = {}
@@ -344,8 +349,10 @@ def parse_ops(ops_dir: Path,
     one thread per file.
 
     Args:
-        ops_path (str): Path where the <op>.hpp files are stored
-        jobs (int, optional): Number of threads. Defaults to 1.
+        ops_dir (Path): Path where the <op>.hpp files are stored
+        filenames (List[Path]): Filenames to be used
+        include_directories (List[Path]): Directories to be included
+        jobs (int): Number of threads. Defaults to 1.
     """
     data = None
 

@@ -17,15 +17,18 @@ def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
     Implemented using `reshape` under the hood.
 
     Args:
-        t: Tensor
-            Tensor to be squeezed.
-        axes: List[int]
-            List of integers indicating the dimensions to squeeze.
+        t (Tensor): Tensor to be squeezed.
+        axes (List[int]): List of integers indicating the dimensions to squeeze.
             Negative value means counting dimensions from the back.
             Accepted range is `[-r, r-1]` where `r = rank(t)`.
+
+    Raises:
+        ValueError: A ValueError is raised if:
+            - The axes contains duplicates.
+            - The axis cannot be squeezed.
+
     Returns:
-        out: Tensor
-            Squeezed tensor.
+        out (Tensor): Squeezed tensor.
     """
 
     shape = t.shape

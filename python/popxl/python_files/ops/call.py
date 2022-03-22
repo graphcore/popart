@@ -45,7 +45,7 @@ class CallSiteInfo:
         using the input or output tensor in the called graph.
 
         Args:
-            subgraph_tensor (Tensor): The tensor in the called graph.
+            graph_tensor (Tensor): The tensor in the called graph.
 
         Raises:
             ValueError: If `graph_tensor` is not an input or output of the called graph.
@@ -130,6 +130,7 @@ class CallSiteInfo:
 
         Args:
             parent_tensor (Tensor): Input tensor in parent graph to be modified.
+            infer_modified_regions (bool): Whether or not to infer the modified regions.
 
         Args:
             op_tensor (Tensor): Tensor to be modified.
@@ -204,8 +205,18 @@ def call_with_info(
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, TensorLike]]):
             Provide inputs via graph tensor. Mapping of `graph tensor -> parent tensor`.
-        check_inputs (bool = True):
-            Check when called if all inputs have been provided.
+        check_inputs (bool):
+            Check when called if all inputs have been provided. Defaults to True.
+
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - An incorrect number of inputs have been provided
+            - A parent input tensor is not in the parent graph
+            - A graph input tensor is specified twice
+        TypeError: A TypeError will be raised if:
+            - Graph input tensor is specified twice
+            - If a graph input cannot be coerced into a tensor
+
     Returns:
         info: CallSiteInfo
             Information on the created callsite.

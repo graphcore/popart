@@ -20,7 +20,11 @@ def host_store(d2h_stream: DeviceToHostStream, t: Tensor) -> None:
     Data is received on the host via the :py:class:`IStepIO` object passed to
     `session.run()`.
 
+    Raises:
+        ValueError: If the stream shape or dtype doesn't match the tensor shape.
+
     Args:
+        d2h_stream (DeviceToHostStream): The stream to use for the host store.
         t (Tensor): The input tensor to copy to host.
     """
     ctx = get_current_context()

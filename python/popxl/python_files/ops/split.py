@@ -9,21 +9,21 @@ from .utils import check_in_graph, handle_negative_axis
 @op_debug_context
 def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
-    """
-    Split a tensor (along an axis) into a list of tensors.
+    """Split a tensor (along an axis) into a list of tensors.
 
     Args:
-        t: Tensor
-            Tensor to be split.
-        splits: int or List[int]
-            Either an int which specifies the number of splits or a list of ints specifying the length of each output tensor.
-        axis: int (default 0)
-            Axis to split along
-    Returns:
-        out: List[Tensor]
-            A list of tensors
-    """
+        t (Tensor): Tensor to be split.
+        splits (Union[int, List[int]]): Either an int which specifies the
+            number of splits or a list of ints specifying the length of
+            each output tensor.
+        axis (int, optional): Axis to split along. Defaults to 0.
 
+    Raises:
+        ValueError: If the split doesn't equally divide the tensor.
+
+    Returns:
+        List[Tensor]: A list of tensors.
+    """
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph

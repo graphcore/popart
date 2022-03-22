@@ -38,7 +38,8 @@ def matmul(lhs: Tensor,
     NumPy matrix multiplication rules.
 
     Args:
-        lhs, rhs (Tensor): Tensors to be matrix multiplied.
+        lhs (Tensor): Left hand side of matrix multiplication.
+        rhs (Tensor): Right hand side of matrix multiplication.
         available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation. Defaults to 1.0.

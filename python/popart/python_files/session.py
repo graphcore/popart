@@ -12,11 +12,14 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
                       ) -> Dict[str, np.array]:
     """Create the anchor arrays to feed data back into Python with.
 
-    Arguments:
-        sess: PopART session.
+    Args:
+        sess (Union["InferenceSession", "TrainingSession"]): PopART session.
+
+    Raises:
+        RuntimeError: If the anchor period does not divide batchesPerStep
 
     Returns:
-        Dict of anchor names and their relevant np arrays.
+        Dict[str, np.array]: Dict of anchor names and their relevant np arrays.
     """
 
     anchorArrays = {}
@@ -160,7 +163,7 @@ class InferenceSession(_InferenceSessionCore):
         """
         return _initAnchorArrays(self)
 
-    def compileAndExport(self, filename) -> None:
+    def compileAndExport(self, filename: str) -> None:
         """Compiles the graph and exports it to the specified file.
 
         This will form the snap::Graph and compile the polar::Executable.
@@ -173,9 +176,9 @@ class InferenceSession(_InferenceSessionCore):
         `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
         for more information.
 
-        Arguments:
-            filename: Where to save the executable and metadata. If
-                      it does not exist, it will be created.
+        Args:
+            filename (str): Where to save the executable and metadata.
+                If it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs
@@ -290,7 +293,7 @@ class TrainingSession(_TrainingSessionCore):
         """
         return _initAnchorArrays(self)
 
-    def compileAndExport(self, filename) -> None:
+    def compileAndExport(self, filename: str) -> None:
         """Compiles the graph and exports it to the specified file.
 
         This will form the snap::Graph and compile the polar::Executable.
@@ -303,9 +306,9 @@ class TrainingSession(_TrainingSessionCore):
         `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
         for more information.
 
-        Arguments:
-            filename: Where to save the executable and metadata. If
-                      it does not exist, it will be created.
+        Args:
+            filename (str): Where to save the executable and metadata.
+                If it does not exist, it will be created.
 
         Raises:
             popart.OutOfMemoryException: If an out of memory event occurs

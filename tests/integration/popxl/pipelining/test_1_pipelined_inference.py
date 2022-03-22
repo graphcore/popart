@@ -168,10 +168,10 @@ def ramp_down(t_out_d2h: DeviceToHostStream,
     (see ASCII illustration in pipelined_inference_model for details).
 
     Args:
-        t_in_h2d (HostToDeviceStream): The host to device stream
-        tensor_variable (Dict[str, Variable]): Dictionary containing the weights and biases
+        t_out_d2h (DeviceToHostStream): The device to host stream.
+        tensor_variable (Dict[str, Variable]): Dictionary containing the weights and biases.
         micro_batch_tensor (Dict[int, Dict[str, Tensor]]): The map between the micro batch and the
-          popxl tensors
+          popxl tensors.
     """
     micro_batch_tensor = pipeline_cycle_n_minus_2(t_out_d2h, tensor_variable,
                                                   micro_batch_tensor)

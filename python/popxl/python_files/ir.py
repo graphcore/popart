@@ -126,14 +126,20 @@ class Ir:
                 The Python function that defines the graph. The signature of
                 `fn` with its arguments is used to determine the
                 inputs of the graph.
-            args (Any):
+            *args (Any):
                 Arguments passed to the Python function that defines the graph
                 that can be a mixture of tensors and other types. Tensors are
                 used to determine the tensor info of the inputs.
-            kwargs (Any):
+            **kwargs (Any):
                 Keyword arguments passed to the Python function that defines the
                 graph that can be a mixture of tensors and other types. Tensors
                 are used to determine the tensor info of the inputs.
+
+        Raises:
+            TypeError: If `fn` is not a callable extending the popxl.Module or if any of the
+                arguments listed in *args mixes Tensors with other types
+            ValueError: If the *args and **kwargs don't match the signature or if the output
+                of a subgraph is not a Tensor, an iterable of Tensors or None.
 
         Returns:
             Graph:

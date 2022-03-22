@@ -20,7 +20,13 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 
     Args:
         t (Tensor): The tensor to be reshaped.
-        shape (Tuple[int): Tuple containing the shape of the output.
+        shape (Tuple[int, ...]): Tuple containing the shape of the output.
+
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - An invalid value is encountered in the shape.
+            - If more than -1 is given in shape.
+
     Returns:
         out (Tensor): The reshaped tensor.
     """
@@ -59,7 +65,13 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 
     Args:
         t (Tensor): The tensor to be reshaped.
-        shape (Tuple[int): Tuple containing the shape of the output.
+        shape (Tuple[int, ...]): Tuple containing the shape of the output.
+
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - An invalid value is encountered in the shape.
+            - If more than -1 is given in shape.
+
     Returns:
         out (Tensor): An alias of the input tensor, reshaped.
     """

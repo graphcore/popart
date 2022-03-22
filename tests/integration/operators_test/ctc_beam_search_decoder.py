@@ -20,8 +20,8 @@ def test_ctc_beam_search_decoder(op_tester, max_time, batch_size, num_classes,
                                  blank, beam_width, top_paths):
     """Test that the CTC beam search decoder is interfaced correctly.
 
-    Rigorous tests for correctness are done lower in the stack, here only the 
-    interface to the decoder is tested. 
+    Rigorous tests for correctness are done lower in the stack, here only the
+    interface to the decoder is tested.
     """
     torch.manual_seed(42)
 
@@ -106,14 +106,14 @@ def reference_decode(log_probs, beam_width, top_paths, blank):
 
 
     Args:
-        log_probs: The output log probabilities (e.g. post-logsoftmax) for each
+        log_probs (np.array): The output log probabilities (e.g. post-logsoftmax) for each
             time step. Should be an array of shape (time x output dim).
         beam_width (int): Size of the beam to use during inference.
         top_paths (int): Number of top paths to return.
         blank (int): Index of the CTC blank label.
 
     Returns:
-        tuple: Returns the output label sequence and the corresponding length 
+        tuple: Returns the output label sequence and the corresponding length
             and log-likelihood estimated by the decoder.
     """
 

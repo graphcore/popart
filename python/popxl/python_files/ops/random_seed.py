@@ -15,6 +15,9 @@ def create_random_seed(seed: Tensor, modifier: Tensor) -> Tensor:
         seed (Tensor): Seed Tensor used to produce the new seed. Must be shape=(2,) dtype=uint32.
         modifier (Tensor): A scalar modifier to be combined with `seed` before generating the output.
 
+    Raises:
+        ValueError: If the seed Tensor does not have shape=(2,) or dtype=uint32.
+
     Returns:
         Tensor: A new random seed.
     """

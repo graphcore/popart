@@ -42,7 +42,10 @@ class Session:
                 "ipu_model": IPU model.
                 "cpu": CPU model. Does not support replication.
                 Defaults to "ipu_model".
-            num_ipus: (int): The number of IPU devices to use. This is automatically determined if not provided. 
+            num_ipus: (int): The number of IPU devices to use. This is automatically determined if not provided.
+
+        Raises:
+            RuntimeError: If the desired device could not be acquired.
         """
         self.ir_: Ir = ir
 
@@ -108,7 +111,7 @@ class Session:
             downcast_inputs: bool = True,
     ) -> None:
         """Run this session with the provided inputs and outputs.
-        
+
         Inputs will be used as inputs to the model, and outputs will be written to by the session.
 
         Args:
@@ -384,6 +387,9 @@ class Session:
         """Returns the number of ipus required by this session and ir.
 
         Equal to 2 ** ceil(log_2(max(virtual_graphs) + 1))
+
+        Raises:
+            RuntimeError: If the Ir has no graphs.
 
         Returns:
             int: The number of ipus required by this session + ir.

@@ -24,17 +24,18 @@ downcast_np_dtypes = {
 
 
 def to_numpy(
-    x: 'HostScalarTensor',
-    dtype: Optional['dtypes.dtype'] = None,
-    downcast: bool = True,
-    copy: bool = True,
+        x: 'HostScalarTensor',
+        dtype: Optional['dtypes.dtype'] = None,
+        downcast: bool = True,
+        copy: bool = True,
 ) -> np.ndarray:
     """
     Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
-    
+
     Args:
-        x (np.ndarray, torch.tensor or a value NumPy can use to construct an np.ndarray):
+        x (HostScalarTensor):
             The data used to initialise the tensor.
+            This can be an np.ndarray, torch.tensor or a value NumPy can use to construct an np.ndarray.
         dtype (Optional[dtype]):
             The data type of the tensor to be created. If not specified NumPy will infer the data
             type and downcast to 32 bits if necessary.

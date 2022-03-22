@@ -397,12 +397,13 @@ def test_inplacing_ambiguity_subgraph_6():
 
 
 def setup_ir(ir: popxl.Ir, host_stores: List[popxl.DeviceToHostStream],
-             device) -> popart.InferenceSession:
+             device: tu.DeviceContext) -> popart.InferenceSession:
     """Simple function to take an ir and create a session for.
 
     Args:
         ir (popxl.Ir): The ir to prepare
         host_stores (List[popxl.DeviceToHostStream]): The d2h streams to use in the anchors.
+        device (DeviceContext): The device to create the session on.
 
     Returns:
         popart.InferenceSession: The session using the ir.

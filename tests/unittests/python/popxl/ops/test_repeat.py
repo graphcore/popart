@@ -70,9 +70,10 @@ def run_ir(ir: popxl.Ir, bps: int, y_id: str,
     """Take the given ir and inputs and run it.
 
     Args:
-        ir (popxl.Ir): The ir to run
-        y_id (str): The output id, will return this anchor
-        inputs (Dict[str, np.array]): Dict of the inputs to pass to PyStepio
+        ir (popxl.Ir): The ir to run.
+        bps (int): Batches per step.
+        y_id (str): The output id, will return this anchor.
+        inputs (Dict[str, np.array]): Dict of the inputs to pass to PyStepIO.
 
     Returns:
         np.array: The anchor associated with y_id.

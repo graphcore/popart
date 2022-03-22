@@ -21,10 +21,13 @@ def init(shape: Iterable[int],
     In contrast, `init` can be executed anywhere so it can return an initialised tensor in non-main graphs. However, it can only be initialised to zero or undefined values.
 
     Args:
-        dtype (dtypes.dtype): Data type of the output tensor
+        dtype (dtypes.dtype): Data type of the output tensor.
         shape (Tuple[int]): Shape of the output tensor.
         name (str): Name of the output tensor.
-        init_type ("zero" | "undef"): Initialisation of the output tensor.
+        init_type (Union[Literal["zero"], Literal["undef"]]): Initialisation of the output tensor.
+
+    Raises:
+        ValueError: If the init_type is unknown.
 
     Returns:
         Tensor: Output tensor.

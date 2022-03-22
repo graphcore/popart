@@ -14,10 +14,10 @@ def call_command(cmd: str) -> None:
     """Call a command line command and print the output continuously.
 
     Args:
-        cmd (str): The command to run
+        cmd (str): The command to run.
 
     Raises:
-        SystemExit: The error if the command returned a non-zero integer
+        RuntimeError: The error if the command returned a non-zero integer.
     """
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE,
@@ -46,6 +46,11 @@ class Installer:
 
         Args:
             install_dir (str): The directory where `bin`, `lib` and `include` will be installed to
+
+        Raises:
+            RuntimeError: A RuntimeError will be raised if:
+                - The location of the python lib and python bin cannot be found.
+                - The install_dir equals the location of the python lib and python bin.
         """
         # Resolve the path
         self.install_dir = str(Path(install_dir).resolve())

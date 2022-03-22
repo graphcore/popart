@@ -3,7 +3,6 @@ from popxl.context import gcg
 from typing import Tuple
 import popart._internal.ir as _ir
 from popxl.dtypes import dtype
-from popxl import Ir
 from popxl.tensor import Tensor
 
 
@@ -70,6 +69,7 @@ class RemoteBuffer:
 
         Args:
             t (Tensor): Tensor to check.
+            num_shards (int): The number of shards used.
 
         Raises:
             ValueError: If the tensor does not match the buffer.

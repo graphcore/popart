@@ -11,14 +11,15 @@ def increment_mod(t: Tensor, increment: float, modulus: float) -> Tensor:
     Compute `(t + increment) % modulus`.
 
     Args:
-        t: Tensor
-            Tensor to increment (modulo)
-        increment: float
+        t (Tensor):
+            Tensor to increment (modulo).
+        increment (float):
             How much to increment the input tensor by.
-        increment: float
+        modulus (float):
             The modulo operand.
+
     Returns:
-        out: Tensor
+        Tensor: The output.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -51,14 +52,12 @@ def increment_mod_(t: Tensor, increment: float, modulus: float) -> Tensor:
     Compute `(t + increment) % modulus` (in-place).
 
     Args:
-        t: Tensor
-            Tensor to increment (modulo)
-        increment: float
-            How much to increment the input tensor by.
-        increment: float
-            The modulo operand.
+        t (Tensor): Tensor to increment (modulo).
+        increment (float): How much to increment the input tensor by.
+        modulus (float): The modulo operand.
+
     Returns:
-        out: Tensor (alias of input `t`)
+        out (Tensor): Alias of input `t`.
     """
     ctx = get_current_context()
     g = ctx.graph

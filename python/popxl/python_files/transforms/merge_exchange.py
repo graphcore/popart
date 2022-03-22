@@ -13,6 +13,9 @@ def io_tile_exchange(verify_overlap: bool = True):
         verify_overlap (bool, optional): Verify only one Operation remains after the context closes.
                                          This is an important requirement for overlapping IO and Compute.
                                          Defaults to True.
+
+    Raises:
+        RuntimeError: If more than one Op remains after io_tile_exchange.
     """
     graph = get_current_graph()
 

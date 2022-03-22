@@ -212,6 +212,9 @@ class GradGraphInfo:
                 differentiated. This can be accessed with
                 :py:class:`popxl.ops.call_with_info()`.
 
+        Raises:
+            TypeError: If the called graph does not match the graph that was auto-differentiated.
+
         Returns:
             Dict[Tensor, Tensor]:
                 A dictionary that maps from a tensor in the gradient graph to an
@@ -379,7 +382,7 @@ def autodiff(graph: Graph,
     input forward graph.
 
     Args:
-        graph (:py:class:`popxl.Graph`):
+        graph (Graph):
             The graph to differentiate.
             grads_provided (Optional[Iterable[popxl.Tensor]], optional):
             The list of gradients that are available for ``autodiff`` to use.
@@ -387,6 +390,9 @@ def autodiff(graph: Graph,
         grads_required (Optional[Iterable[popxl.Tensor]], optional):
             The list of inputs of the forward graph for which gradients are
             required. Defaults to all inputs of the graph.
+        grads_provided (Optional[Iterable[popxl.Tensor]], optional):
+            The list of inputs of the forward graph for which gradients are
+            provided. Defaults to all inputs of the graph.
         called_graphs_grad_info (Optional[Mapping[Graph,GradGraphInfo]],
             optional):
             The gradient graph information for the subgraphs that the

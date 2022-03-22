@@ -37,6 +37,7 @@ def create_model_pipelined(bufferStreams: bool = False,
             Defaults to False.
         pipelining (bool, optional): Whether to pipeline the model in 2 parts.
             Defaults to False.
+        device (Optional[DeviceContext]): The device.
 
     Returns:
         Dict: A dict of session, stepio, anchors and out tensor name required
@@ -173,15 +174,18 @@ def get_model(input_shape: List[int], weight_array: np.array,
     here as well.
 
     Args:
-        batches_per_step (int): Batches to run per step
-        replication_factor (int): Replicas to run
-        batch_size (int): Number of samples per model run
-        channels (int): Number of channels e.g. RGB = 3
-        data_len (int): Data size
-        synthetic_data (bool): Use synthetic data (zeros in this case)
+        input_shape (List[int]): The input shapes of the model
+        weight_array (np.array): The weights.
+        batches_per_step (int): Batches to run per step.
+        replication_factor (int): Replicas to run.
+        batch_size (int): Number of samples per model run.
+        channels (int): Number of channels e.g. RGB = 3.
+        data_len (int): Data size.
+        synthetic_data (bool): Use synthetic data (zeros in this case).
         buffer_streams (bool): The test option: whether to create ops
             before the stream in order to schedule data loading as part of
             graph scheduling. See T29603.
+        device (DeviceContext): The device.
 
     Returns:
         Tuple: session, anchors, input_shape, label_shape required to run the model

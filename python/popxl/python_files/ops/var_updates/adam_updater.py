@@ -103,6 +103,12 @@ def adam_updater(acc_first_order: Tensor,
         epsilon: Union[float, Tensor] = 1e-07
             Scalar to calculate updater.
 
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - weight_decay is set and weight is None.
+            - time_step set None and beta1 and beta2 is not set
+              (no bias correction can take place).
+
     Returns:
         updater: Tensor
             An updater to update weight.
@@ -154,24 +160,37 @@ def lamb_updater(acc_first_order: Tensor,
     Note: `time_step` will be incremented by one.
 
     Args:
-        acc_first_order: Tensor (m)
-            First order momentum (FP16/FP32).
-        acc_second_order: Tensor (v)
-            Second order momentum (FP16/FP32).
-        weight: Optional[Tensor] (w)
-            Weight. Only required for weight_decay.
-        time_step: Tensor (t)
-            Time step. Providing this tensor enables bias correction.
-        weight_decay: Optional[Union[float, Tensor]] = None
+        acc_first_order (Tensor):
+            First order momentum (FP16/FP32) (m).
+        acc_second_order (Tensor):
+            Second order momentum (FP16/FP32) (v).
+        weight (Optional[Tensor], optional):
+            Weight (v). Only required for weight_decay.
+            Defaults to None.
+        time_step (Optional[Tensor], optional):
+            Time step (v). Providing this tensor enables bias correction.
+            Defaults to None.
+        weight_decay (Optional[Union[float, Tensor]], optional):
             Optional scalar to apply weight decay.
-        beta1: Optional[Union[float, Tensor]] = None
+            Defaults to None.
+        beta1 (Optional[Union[float, Tensor]], optional):
             Only required in bias correction for m.
-        beta2: Optional[Union[float, Tensor]] = None
+            Defaults to None.
+        beta2 (Optional[Union[float, Tensor]], optional):
             Only required in bias correction for v.
-        epsilon: Union[float, Tensor] = 1e-07
+            Defaults to None.
+        epsilon (Union[float, Tensor], optional):
             Scalar to calculate updater.
+            Defaults to 1e-07.
+
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - weight_decay is set and weight is None.
+            - time_step set None and beta1 and beta2 is not set
+              (no bias correction can take place).
+
     Returns:
-        updater: Tensor
+        updater (Tensor):
             An updater to update weight.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}
@@ -216,20 +235,25 @@ def adamax_updater(acc_first_order: Tensor,
     Note: `time_step` will be incremented by one.
 
     Args:
-        acc_first_order: Tensor (m)
-            First order momentum (FP16/FP32).
-        acc_second_order: Tensor (v)
-            Second order momentum (FP16/FP32).
-        weight: Optional[Tensor] (w)
-            Weight. Only required for weight_decay.
-        time_step: Tensor (t)
-            Time step.
-        weight_decay: Optional[Union[float, Tensor]] = None
-            Optional scalar to apply weight decay
-        beta1: Union[float, Tensor] = 0.9
-            Scalar to do bias correction for m
-        epsilon: Union[float, Tensor] = 1e-07
-            Scalar to calculate updater.
+        acc_first_order (Tensor):
+            First order momentum (FP16/FP32) (m).
+        acc_second_order (Tensor):
+            Second order momentum (FP16/FP32) (v).
+        weight (Optional[Tensor]):
+            Weight (w). Only required for weight_decay.
+        time_step (Tensor):
+            Time step (t).
+        weight_decay (Optional[Union[float, Tensor]]):
+            Optional scalar to apply weight decay. Defaults to None
+        beta1 (Union[float, Tensor]):
+            Scalar to do bias correction for m. Defaults to 0.9
+        epsilon (Union[float, Tensor]):
+            Scalar to calculate updater. Defaults to 1e-07
+
+    Raises:
+        ValueError: A ValueError will be raised if:
+            - weight_decay is set and weight is None.
+            - time_step is None.
 
     Returns:
         updater: Tensor

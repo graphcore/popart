@@ -139,15 +139,13 @@ def accumulate_mean_(t: Tensor, X: Tensor,
     `step` must be scalar.
 
     Args:
-        `t`: Tensor
-            Tensor to be updated.
-        `X`: Tensor
-            Value to update the variable
-        step: Union[float, Tensor]]
-            Value representing the number of previously accumulated values.
+        t (Tensor): Tensor to be updated.
+        X (Tensor): Value to update the variable.
+        step (Union[float, Tensor]]): Value representing the number of previously accumulated
+          values.
+
     Returns:
-        updated: Tensor
-            An alias to the variable.
+        Tensor: An alias to the variable.
     """
     ctx = get_current_context()
     g = ctx.graph

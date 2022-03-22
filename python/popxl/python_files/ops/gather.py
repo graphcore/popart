@@ -42,22 +42,22 @@ def gather(
         #    [ 8,  9, 10, 11]]]
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor
-        indices: Tensor
+        indices (Tensor):
             The indices of the elements to extract
-        axis: int
+        axis (int):
             Axis along which to gather. Default is 0.
-        available_memory_proportion: Optional[float]
+        available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
-        zero_OOR: bool
+        zero_OOR (bool):
             If `False`, out of range indices will produce garbage data.
             If `True`, out of range indices will produce zeros.
 
     Returns:
-        gather: Tensor
+        gather (Tensor):
             The gathered elements concatenated.
     """
     ctx = get_current_context()
@@ -93,7 +93,7 @@ def tied_gather(
         indices: Tensor,
         axis: int = 0,
         available_memory_proportion: Optional[float] = None,
-        zero_OOR=False,
+        zero_OOR: bool = False,
 ) -> Tensor:
     """
     Select multiple elements from an array.
@@ -128,22 +128,22 @@ def tied_gather(
         #    [ 8,  9, 10, 11]]]
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor
-        indices: Tensor
+        indices (Tensor):
             The indices of the elements to extract
-        axis: int
+        axis (int):
             Which axis to gather on. Default is 0.
-        available_memory_proportion: Optional[float]
+        available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
-        zero_OOR: bool
+        zero_OOR (bool):
             If False, out of range (OOR) indices will produce garbage data.
             If True, OOR indices will produce zeros.
 
     Returns:
-        gather: Tensor
+        gather (Tensor):
             The gathered elements concatenated.
     """
 
