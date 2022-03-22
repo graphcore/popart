@@ -239,10 +239,10 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
         for w in weights_data:
             assert np.count_nonzero(np.isnan(weights_data[w])) == 0
 
-        report = session.getReport()
+    report = session.getReport()
 
-        overlapPercentage = get_compute_io_overlap_percentage(
-            report, warmup_iterations)
+    overlapPercentage = get_compute_io_overlap_percentage(
+        report, warmup_iterations)
 
     return overlapPercentage, weights_data
 
