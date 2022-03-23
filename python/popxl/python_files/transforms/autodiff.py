@@ -236,8 +236,7 @@ class GradGraphInfo:
     def fwd_graph_ins_to_grad_parent_outs(
             self, grad_call_info: CallSiteInfo) -> Dict[Tensor, Tensor]:
         """
-        Get mapping between forward graph inputs and outputs of the parent of
-        the gradient graph.
+        Return mapping between forward graph inputs and outputs of the parent of the gradient graph.
 
         ``autodiff`` is applied to the forward graph. This method returns the
         mapping between the input tensors of the forward graph and the output
@@ -287,8 +286,7 @@ class GradGraphInfo:
             self, fwd_call_info: CallSiteInfo,
             grad_call_info: CallSiteInfo) -> Dict[Tensor, Tensor]:
         """
-        Get mapping between the inputs from the parent of the forward graph and
-        the outputs of the parent of the gradient graph.
+        Return mapping between forward's parent graph inputs and gradient's parent graph outputs.
 
         ``autodiff`` is applied to the forward graph. This method returns the
         mapping between the input tensors from the parent of the forward graph

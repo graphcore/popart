@@ -1,8 +1,8 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to call the same
-subgraph with repeat op and connect the inputs of the subgraph
-with the caller graph by using argument `inputs_dict`.
+Demonstrate how to call the same subgraph with repeat op and `inputs_dict`.
+
+The argument `inputs_dict` connects the inputs of the subgraph with the caller graph.
 '''
 
 import numpy as np

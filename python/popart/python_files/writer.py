@@ -1,12 +1,12 @@
 # Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 """
-Framework independent functionality for driving PopART
+Framework independent functionality for driving PopART.
 """
 
 
 class NetWriter():
     """
-    Base class, to be inherited once per framework
+    Base class, to be inherited once per framework.
 
     Arguments:
         inNames:
@@ -41,7 +41,8 @@ class NetWriter():
         print(self.dataFlow.nAnchors())
 
     def saveModel(self, filename):
-        """
+        """Save the model.
+
         To be implemented once per framework:
         framework specific details of generating
         the ONNX model and writing it to file
@@ -49,18 +50,18 @@ class NetWriter():
         raise NotImplementedError()
 
     def train(self, inputsMap):
-        """
-        Perform ``batchesPerStep`` training steps. This function
-        only needs to be implemented by frameworks which will
+        """Perform ``batchesPerStep`` training steps.
+
+        This function only needs to be implemented by frameworks which will
         be used to verify PopART. See ``torchwriter.py`` for an
         example implementation.
         """
         raise NotImplementedError()
 
     def infer(self, inputsMap):
-        """
-        Perform ``batchesPerStep`` inference steps. This function
-        only needs to be implemented by frameworks which will
+        """Perform ``batchesPerStep`` inference steps.
+
+        This function only needs to be implemented by frameworks which will
         be used to verify PopART. See ``torchwriter.py`` for an
         example implementation.
         """

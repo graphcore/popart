@@ -1,7 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to write and read
-tensor data.
+The intention of this example is to show how to write and read tensor data.
 '''
 
 import popxl

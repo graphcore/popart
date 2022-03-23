@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to use
-call_with_info op.
+The intention of this example is to show how to use call_with_info op.
 '''
 
 import popxl

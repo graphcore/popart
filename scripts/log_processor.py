@@ -1,6 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
-    A script that can do some very basic log processing, currently limited to processing the timestamps in the log. Suppose you have a log like this:
+    A script that can do some very basic log processing.
+
+    The script is currently limited to processing the timestamps in the log. Suppose you have a log like this:
 
       [2020-07-29 08:59:03.333] First log entry.
       [2020-07-29 08:59:03.338] Second log entry.
@@ -43,8 +45,9 @@ datetime_re = re.compile(
 
 def strip_timestamps(input_file, output_file):
     """
-    Change all timestamps to '[<timestamp>]'. This is useful if you are comparing two
-    log files with one another but you do not care about timings.
+    Change all timestamps to '[<timestamp>]'.
+
+    This is useful if you are comparing two log files with one another but you do not care about timings.
     """
     for line in input_file.readlines():
         line = re.sub(datetime_re, '[<timestamp>]', line)
@@ -53,8 +56,9 @@ def strip_timestamps(input_file, output_file):
 
 def rebase_timestamps(input_file, output_file):
     """
-    Change all timestamps to be the time difference from the first log entry. This is
-    useful if you are comparing the timings of two log files with one another.
+    Change all timestamps to be the time difference from the first log entry.
+
+    This is useful if you are comparing the timings of two log files with one another.
     """
     inception = None
     for line in input_file.readlines():
@@ -81,8 +85,9 @@ def rebase_timestamps(input_file, output_file):
 
 def delta_timestamps(input_file, output_file):
     """
-    Change all timestamps to be the time difference from the previous log entry. This is
-    useful if you are comparing the timings of individual steps between two log files.
+    Change all timestamps to be the time difference from the previous log entry.
+
+    This is useful if you are comparing the timings of individual steps between two log files.
     """
     prev_dt = None
     for line in input_file.readlines():

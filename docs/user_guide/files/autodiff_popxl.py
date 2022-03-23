@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to get gradients
-with autodiff.
+The intention of this example is to show how to get gradients with autodiff.
 '''
 
 import numpy as np

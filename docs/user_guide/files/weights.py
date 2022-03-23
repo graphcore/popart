@@ -1,7 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to read the weight from a training session
-and use them in an inference session
+Demonstrate how to read the weight from a training session and use them in an inference session.
 '''
 
 import numpy as np

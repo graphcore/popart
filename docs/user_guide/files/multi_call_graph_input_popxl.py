@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to use graph_input
-in a function and how to call the subgraph multiple times.
+Demonstrate how to use graph_input in a function and how to call the subgraph multiple times.
 '''
 
 import numpy as np

@@ -79,8 +79,7 @@ class Ir:
     @property
     def main_graph(self) -> 'Graph':
         """
-        Every IR is initialised with a main graph. This method returns this
-        graph.
+        Every IR is initialised with a main graph. This method returns this graph.
 
         Returns:
             Graph:
@@ -303,8 +302,7 @@ class Ir:
         self._pb_ir.dotCheckpoint(self._pb_ir, check)
 
     def _create_name(self, name: str) -> str:
-        """Generate a graph name based on the qualified name of the Python
-        function that created it.
+        """Generate a graph name based on the qualified name of the Python function that created it.
 
         Note: occurrences of ".<locals>" in the name are removed.
 
@@ -332,8 +330,7 @@ class Ir:
 
     def get_all_d2h_streams(self) -> Set['DeviceToHostStream']:
         """
-        Returns a List of all ``popxl.DeviceToHostStreams`` in the IR which has a host_store op that
-        streams along it
+        Return all ``DeviceToHostStream`` in the IR which has a host_store op that streams along it.
         """
         from popxl.streams import DeviceToHostStream
 
@@ -350,8 +347,7 @@ class Ir:
 
     def get_all_h2d_streams(self) -> Set['HostToDeviceStream']:
         """
-        Returns a List of all ``popxl.HostToDeviceStreams`` in the IR which has a host_load op that
-        streams along it
+        Return all ``HostToDeviceStream``s in the IR which has a host_load op that streams along it.
         """
         from popxl.streams import HostToDeviceStream
 

@@ -164,7 +164,7 @@ class Graph:
         return value.id in self._pb_graph
 
     def __eq__(self, value: 'Graph') -> bool:
-        """Graph equality, based on graph and Ir `id`"""
+        """Graph equality, based on graph and Ir `id`."""
         if not isinstance(value, Graph):
             raise TypeError(
                 f"Value must be of type popxl.Graph. Value: {value}. Type: {type(value)}"
@@ -172,14 +172,14 @@ class Graph:
         return self.id == value.id and self.ir == value.ir
 
     def __hash__(self):
-        """Hashes the Graph, based on graph and Ir `id`"""
+        """Hashes the Graph, based on graph and Ir `id`."""
         return hash((self.id, self.ir))
 
     def __repr__(self) -> str:
         return f"Graph[id={self.id} name={self.name}]"
 
     def get_tensor(self, tensor_id: str) -> Tensor:
-        """Get tensor using string identifier `tensor_id`"""
+        """Get tensor using string identifier `tensor_id`."""
         return Tensor._from_pb_tensor(self._pb_graph.getTensor(tensor_id))
 
     @property

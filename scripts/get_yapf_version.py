@@ -1,6 +1,6 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 """
-A Python program to print the version of yapf
+A Python program to print the version of yapf.
 """
 
 import sys

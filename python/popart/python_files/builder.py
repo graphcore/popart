@@ -8,7 +8,7 @@ from popart_core import _BuilderCore
 
 
 class Opset():
-    """Minimal base class for the opsets
+    """Minimal base class for the opsets.
 
     Arguments:
         builder: An interface for a Builder, used for creating ONNX graphs.
@@ -21,8 +21,11 @@ class Opset():
 
 
 class Builder():
-    """ A wrapper around the ``Builder`` C++ class, renamed ``BuilderCore`` in pybind,
-    to enable more Pythonic use. See ``builder.hpp`` for the class definition.
+    """
+    A wrapper around the ``Builder`` C++ class.
+
+    Tis is renamed ``BuilderCore`` in pybind, to enable more Pythonic use.
+    See ``builder.hpp`` for the class definition.
 
     Arguments:
         modelProtoOrFilename: Model protobuf string or file path of saved
@@ -102,7 +105,7 @@ class Builder():
     ) -> Union[popart.AiGraphcoreOpset1, popart.AiOnnxOpset6, popart.
                AiOnnxOpset7, popart.AiOnnxOpset8, popart.AiOnnxOpset9, popart.
                AiOnnxOpset10, popart.AiOnnxOpset11]:
-        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object.
 
         Args:
             name (str): Attribute required.
@@ -171,6 +174,7 @@ class Builder():
 
 class AiOnnx(Opset):
     """Base class for the various AiOnnx builder interfaces.
+
     The most recent version of ONNX operators that require
     special treatment such as Loop, Scan, Logical_If etc. go here.
     While, older versions where the function signature differs
@@ -187,7 +191,7 @@ class AiOnnx(Opset):
         super(AiOnnx, self).__init__(builder, version)
 
     def __getattr__(self, name: str) -> Any:
-        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object.
 
         Arguments:
             name: Attribute required.
@@ -421,7 +425,7 @@ class AiGraphcore(Opset):
              num_outputs: int,
              callee: Builder,
              debugName: str = "") -> List[str]:
-        """Add a call operation to the model
+        """Add a call operation to the model.
 
         This is a poplar extension, to expose manual code re-use to
         the builder
@@ -452,7 +456,7 @@ class AiGraphcore(Opset):
                                                 callback._impl, debugName)
 
     def __getattr__(self, name: str) -> Any:
-        """Reroute all attribute requests to the underlying ``_BuilderCore`` object
+        """Reroute all attribute requests to the underlying ``_BuilderCore`` object.
 
         Arguments:
             name: The name of the attribute to be returned.
@@ -464,7 +468,9 @@ class AiGraphcore(Opset):
 
 
 class AiGraphcoreOpset1(AiGraphcore):
-    """Sub-class for backwards compatibility. Will forward all calls to AiGraphcore class.
+    """Sub-class for backwards compatibility.
+
+    Will forward all calls to AiGraphcore class.
     """
 
     def __init__(self, builder: Builder, version: int) -> None:

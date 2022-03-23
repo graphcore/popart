@@ -64,7 +64,7 @@ class dtype:
 
     @property
     def name(self) -> str:
-        """Name of dtype"""
+        """Name of dtype."""
         return self._name
 
     @property
@@ -89,7 +89,7 @@ class dtype:
 
     @classmethod
     def from_name(cls, name: str) -> 'dtype':
-        """Convert a dtype name into a dtype
+        """Convert a dtype name into a dtype.
 
         Args:
             name (str): Dtype name

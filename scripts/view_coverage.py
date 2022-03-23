@@ -1,6 +1,8 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
-    TL;DR: 
+    Module to run tests and view the coverage of the PopART unit tests.
+
+    TL;DR:
     1) Include POPART_ENABLE_COVERAGE=ON in POPART_CMAKE_ARGS when building PopART,
     2) Install gcovr locally using 'pip install gcovr'
     3) Check out the command-line options below or run 'python view_coverage.py -h'
@@ -9,19 +11,19 @@
     This script combines under one CLI the ability to run tests and view coverage of
     the PopART unit tests.
 
-    In order to instrument the PopART source code under willow/ for code coverage, 
+    In order to instrument the PopART source code under willow/ for code coverage,
     you must enable the POPART_ENABLE_COVERAGE flag when running CMake. This enables
     specific compiler flags during compilation, resulting in coverage output being
     produced when the source is compiled and executed.
         Compiling the code with these flags enabled will produce .gcno files in the
     same directory as the object files. These .gcno files contain one half of the
     coverage data. The other half of the data comes from .gcda files that are generated
-    when you run the instrumented code, with a separate .gcda file for each object file. 
+    when you run the instrumented code, with a separate .gcda file for each object file.
     Each time you run the program, the execution counts are summed into any existing
-    .gcda files, so be sure to clean files from previous runs using the --clean flag if 
+    .gcda files, so be sure to clean files from previous runs using the --clean flag if
     you do not want their contents to be included.
 
-    Both .gcno and .gcda files are necessary to produce a coverage report using the 
+    Both .gcno and .gcda files are necessary to produce a coverage report using the
     command-line tool gcovr. If you haven't already, install it by running:
         pip install gcovr
 
@@ -36,29 +38,29 @@
      * -p/--format {all, concise, html, csv, json} specifies the output format for a
         coverage report. This is the output format for any invocation of the script
         i.e for gcovr or for test. If you want any other output, such as JSON or XML
-        then use the  `gcovr --advanced=` option. 
+        then use the  `gcovr --advanced=` option.
      * -c/--clean scans the willow CMakeFiles and deletes .gcda files, which result
         from execution of code instrumented with coverage compiler flags. It is a good
-        idea to run this before running a different suite of tests, for example if 
+        idea to run this before running a different suite of tests, for example if
         running unit tests after having executed the code using the full test suite
         on a previous run.
      *  -d/--directory specifies the directory where PopART will be built. This script
-        will try to infer it from the CBT_BUILDTREE variable, however you may specify 
+        will try to infer it from the CBT_BUILDTREE variable, however you may specify
         it yourself if you don't want to activate the build tree.
-     * -o/--output specifies the directory where the `.coverage` folder containing any 
+     * -o/--output specifies the directory where the `.coverage` folder containing any
         report files is placed. This defaults to the popart/ directory if omitted.
 
         The following arguments are applicable to the `test` subcommand:
 
-        *  -r/--ctest-regexp <regex> run any tests matching the regex pattern. 
-            This would be the same type of pattern as you would provide when 
+        *  -r/--ctest-regexp <regex> run any tests matching the regex pattern.
+            This would be the same type of pattern as you would provide when
             running `ctest -R <regex>`
         *  -f/--filter <gcovr-regexp> displays coverage output for
-            source files which match <gcovr-regexp>. 
-        
-        The `test` subcommand is useful if you are working on testing a specific file 
+            source files which match <gcovr-regexp>.
+
+        The `test` subcommand is useful if you are working on testing a specific file
         and only want to run and view test coverage for that file. For example, if you
-        are looking to measure unit test coverage for topocons.cpp, you might run: 
+        are looking to measure unit test coverage for topocons.cpp, you might run:
             python view_coverage.py test -r unittest -f .*topocons.cpp
 
         The following arguments are applicable to the `gcovr` subcommand:

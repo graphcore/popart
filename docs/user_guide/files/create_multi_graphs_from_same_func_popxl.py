@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to create multiple
-subgraphs from the same function.
+The intention of this example is to show how to create multiple subgraphs from the same function.
 '''
 
 import numpy as np

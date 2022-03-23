@@ -92,12 +92,12 @@ class Domain:
         op.opset = self.opsets[str(opset_version)]
 
     def CppName(self):
-        """ Return a c++ complient name for the operations """
+        """Return a C++ compliment name for the operations."""
 
         return "".join([s.capitalize() for s in self.name.split('.')])
 
     def isLatestOpVersion(self, op):
-        """ If the op is the latest defined version """
+        """Return whether the op is the latest defined version."""
 
         for _op in self.operations:
             if _op.name == op.name:
@@ -115,6 +115,8 @@ class Opset:
 
     def RemoveDuplicates(self):
         """
+        Remove duplicates from opset, leaving the largest version of each op.
+
         When putting ops into the opset, the opset can end up with multiple
         versions of the same op, this function will remove duplicates with the
         smallest version number
@@ -161,7 +163,7 @@ class Attribute:
 
     def CppType(self):
         """
-        Determine the C++ type for an attribute
+        Determine the C++ type for an attribute.
         """
 
         # Special case of Cast where we replace int with DataType
@@ -268,7 +270,8 @@ class Attribute:
 
     def DefaultValue(self):
         """
-        Return the default value for an attribute
+        Return the default value for an attribute.
+
         If there is a default value return that, else
         if the attribute is not required return the default value
         that the code can use to decide if the attribute can be
@@ -376,13 +379,14 @@ class Operation:
         self.onnx_schema = onnx_schema
 
     def __lt__(self, other):
-        """ Sort based on name """
+        """Sort based on name."""
         return self.name < other.name
 
     def CppName(self):
         """
-        Return a C++ name for the operation
-        Need the replace C++ key words
+        Return a C++ name for the operation.
+
+        Need the replace C++ key words.
         """
 
         keywords = ["and", "or", "not", "xor", "if"]
@@ -410,13 +414,13 @@ class Operation:
 
 def spaces(n):
     """
-    Return a string of spaces the same length as in the input string
+    Return a string of spaces the same length as in the input string.
     """
     return ' ' * n
 
 
 def parseDefinitions():
-    """ convert the schema definition to the internal representation """
+    """Convert the schema definition to the internal representation."""
     schema = Schema()
 
     for s in onnx.defs.get_all_schemas_with_history():

@@ -324,7 +324,9 @@ def _setup_inputs(inputs: Iterable[Tensor],
                   pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
                   pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
                   pb_loop_op: _ir.op.LoopOp) -> None:
-    """Do the following:
+    """Setup the inputs.
+
+    This is done in the following way:
 
     1. Connect explicitly passed inputs. These would have been created first
        by ir.get_graph, so we do them first. ir.get_graph will have created
@@ -383,9 +385,11 @@ def _setup_inputs(inputs: Iterable[Tensor],
 def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
                    pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
                    pb_loop_op: _ir.op.LoopOp) -> List[str]:
-    """3. Connect outputs. We introspect the graph to get its outputs then,
-         for each one, create an output tensor of the call op in the middle
-         graph.
+    """Connect outputs (step 3).
+
+    We introspect the graph to get its outputs then, for each one, create an output tensor of the
+    call op in the middle graph.
+
     Args:
         pb_top_graph (_ir.Graph): Top _ir graph
         pb_bottom_graph (_ir.Graph): Bottom _ir Graph

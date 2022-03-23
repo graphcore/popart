@@ -9,7 +9,7 @@ __all__ = ["ILinter"]
 
 
 class ILinter(ABC):
-    """Base class for all the linters"""
+    """Base class for all the linters."""
 
     def __init__(self, config: LinterConfig) -> None:
         self.name = config.name
@@ -35,8 +35,8 @@ class ILinter(ABC):
                 )
 
     def apply(self, filename: str, file_contents: str) -> str:
-        """Apply the linter to the given file, if its available and applicable
-        
+        """Apply the linter to the given file, if its available and applicable.
+
         If you are implementing your own linter, you should NOT override this method,
         and override `apply_lint_function` instead.
         """
@@ -46,7 +46,7 @@ class ILinter(ABC):
             return file_contents
 
     def set_linter_message(self, message: str) -> None:
-        """"Set the message describing and/or explaining the changes applied by this linter"""
+        """"Set the message describing and/or explaining the changes applied by this linter."""
         self._linter_message = message
 
     def get_linter_message(self) -> str:
@@ -55,34 +55,36 @@ class ILinter(ABC):
     @abstractmethod
     def apply_lint_function(self, file_path: str, file_contents: str) -> str:
         """Run the linter on a string representing the contents of a source file.
-        
+
         This method must only return a string containing the file with any changes.
         If no changes were made, return the content of the original file.
-        
+
         Optionally pass the path to the file if the linter requires knowing
         file metadata or only operates in-place.
 
         If you are implementing a new linter, this is the method that is most
         important to override in your linter, as it is what does the 'work'
-        of linting. 
+        of linting.
         """
 
     @abstractmethod
     def get_version(self) -> Tuple:
-        """Return the version of the linter package or binary as a 
-        tuple, leading with major version numbers"""
+        """
+        Return the version of the linter package or binary.
+
+        The version will be returned as a tuple, leading with major version numbers.
+        """
 
     @abstractmethod
     def is_available(self) -> bool:
-        """"Check if the linter is installed"""
+        """"Check if the linter is installed."""
 
     @abstractmethod
     def install_instructions(self, required_version='') -> str:
         """"Return a string describing how the linter should be installed."""
 
     def is_applicable(self, filename: str) -> bool:
-        """Returns true if this linter is applicable to filename,
-        false otherwise"""
+        """Returns true if this linter is applicable to filename, false otherwise."""
         # If excludes are not defined then matches_exclude is vacuously False
         if self.exclude is not None:
             matches_exclude = re.search(self.exclude, filename)

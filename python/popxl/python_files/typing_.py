@@ -7,8 +7,12 @@ T = TypeVar('T')
 
 
 def NewAliasAnnotation(name: str, tp: T) -> T:
-    """Create an alias of `tp` that will be interpreted by static type checkers
-    as `tp` but at runtime can be identified as a unique symbol. For example:
+    """Create a new alias annotation for `tp`.
+
+    This alias of `tp` will be interpreted by static type checkers as `tp`,
+    but at runtime can be identified as a unique symbol.
+
+    For example:
 
     .. code-block:: python
 

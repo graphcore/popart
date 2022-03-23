@@ -10,7 +10,7 @@ import onnx
 
 
 def conv3x3(in_planes, out_planes, stride=1):
-    """3x3 convolution with padding"""
+    """Create 3x3 convolution with padding."""
     return torch.nn.Conv2d(in_planes,
                            out_planes,
                            kernel_size=3,
@@ -23,6 +23,8 @@ class PytorchNetWriter(NetWriter):
     def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo,
                  module, samplesPerBatch):
         """
+        Create a PytorchNetWriter class.
+
         module:
           -- pytorch module (whose forward does not have the loss layers)
         all others:
@@ -40,7 +42,7 @@ class PytorchNetWriter(NetWriter):
 
     def getTorchOptimizer(self):
         """
-        convert popart's Optimizer to a torch Optimizer
+        Convert PopART's Optimizer to a torch Optimizer.
         """
         if (isinstance(self.optimizer, SGD)
                 or isinstance(self.optimizer, ConstSGD)):
@@ -92,7 +94,7 @@ class PytorchNetWriter(NetWriter):
 
     def train(self, inMap):
         """
-        Does training
+        Run training.
         """
         torchOptimizer = self.getTorchOptimizer()
         self.module.train()
@@ -142,7 +144,7 @@ class PytorchNetWriter(NetWriter):
 
     def infer(self, inMap):
         """
-        Does inference (i.e. forward pass only)
+        Run inference (i.e. forward pass only).
         """
         self.module.eval()
 

@@ -5,7 +5,7 @@ from typing import List, Union, Iterable, Tuple
 
 
 def _get_popart_type(dtype: np.dtype) -> str:
-    """Return the relevant PopART type string from a numpy dtype
+    """Return the relevant PopART type string from a numpy dtype.
 
     Arguments:
         dtype: numpy dtype
@@ -34,7 +34,7 @@ class TensorInfo(_TensorInfoCore):
 
     For example:
         TensorInfo(dtype, shape)
-        
+
         TensorInfo(numpy.ndarray)
 
     Raises:
@@ -43,7 +43,7 @@ class TensorInfo(_TensorInfoCore):
 
     def __init__(self, *args: Union[Iterable, np.array]) -> None:
         def unpack_args() -> Tuple[np.dtype, List[int]]:
-            """Return (dtype, shape) from *args
+            """Return (dtype, shape) from *args.
 
             Raises:
                 TypeError: Raised if incorrect type is used to create a tensorinfo.
@@ -60,7 +60,7 @@ class TensorInfo(_TensorInfoCore):
                 raise TypeError(f'Can not create TensorInfo with args {args}')
 
         def sanitize_dtype(dtype: Union[type, np.dtype]) -> str:
-            """Convert a `type` or `numpy.dtype` to a `str`
+            """Convert a ``type`` or ``numpy.dtype`` to a ``str``.
 
             Arguments:
                 dtype: Python type (for example, ``float``) or numpy dtype

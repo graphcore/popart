@@ -12,8 +12,7 @@ from view_coverage import GCovrRunnerParser, clean_coverage_output, run_tests
 
 class CoverageMetrics(Document):
     """
-    Unit test statement and branch coverage across all source
-    files in PopART
+    Unit test statement and branch coverage across all source files in PopART.
     """
     code_metrics_type = Keyword(required=True)
     unittest_branch_covered = Float(required=True)

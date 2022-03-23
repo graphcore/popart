@@ -10,7 +10,7 @@ from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_
 
 
 class SerialiseMode(Enum):
-    """Enum for the serialise mode
+    """Enum for the serialise mode.
 
     Args:
         Enum (enum): The serialisation type.
@@ -95,7 +95,7 @@ def matmul(lhs: Tensor,
 
 def _convert_serialisation_settings(mode: SerialiseMode,
                                     factor: int) -> _ir.op.SerialiseSettings:
-    """Convert the given serialise enum and factor to ir.op.SerialiseSettings
+    """Convert the given serialise enum and factor to ir.op.SerialiseSettings.
 
     Args:
         mode (SerialiseMode): The mode to use
@@ -119,7 +119,7 @@ def _convert_serialisation_settings(mode: SerialiseMode,
 
 
 def _convert_partials_type(type_: dtypes.dtype) -> _ir.op.MatMulPartialsType:
-    """Convert the dtype to an _internal.ir partials type
+    """Convert the dtype to an _internal.ir partials type.
 
     Args:
         type_ (dtypes.dtype): The top level dtype

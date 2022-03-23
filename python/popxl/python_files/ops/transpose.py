@@ -21,7 +21,7 @@ def transpose(t: Tensor,
     Returns:
         out (Tensor): The transposed tensor.
     """
-    permutation = _handle_permuation(t, permutation)
+    permutation = _handle_permutation(t, permutation)
 
     ctx = get_current_context()
     g = ctx.graph
@@ -63,7 +63,7 @@ def transpose_(t: Tensor,
         out (Tensor):
             The transposed input tensor.
     """
-    permutation = _handle_permuation(t, permutation)
+    permutation = _handle_permutation(t, permutation)
 
     ctx = get_current_context()
     g = ctx.graph
@@ -85,10 +85,11 @@ def transpose_(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def _handle_permuation(
+def _handle_permutation(
         t: Tensor, permutation: Optional[Tuple[int, ...]]) -> Tuple[int, ...]:
-    """Give a default (reversed dimensions) permutation if None is provided,
-        and check if values are valid.
+    """Check if the values of a permutation is valid given a tensor.
+
+    The default is to use the reversed dimensions as a permutation (if None is given).
 
     Args:
         t (Tensor): The tensor to be permuted.

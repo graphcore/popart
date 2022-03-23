@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show the three
-different types of tensors in popxl.
+The intention of this example is to show the three different types of tensors in popxl.
 '''
 
 import popxl

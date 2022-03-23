@@ -66,7 +66,7 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
 
 class OutOfMemoryException(popart.popart_exception):
     def __init__(self, e: popart.popart_exception) -> None:
-        """Class initializer
+        """Class initializer.
 
         Arguments:
             e: PopART exception to be thrown.
@@ -75,7 +75,7 @@ class OutOfMemoryException(popart.popart_exception):
         self.error = e
 
     def getSummaryReport(self) -> str:
-        """Get the summary report
+        """Get the summary report.
 
         Returns:
             The summary report string.
@@ -83,7 +83,7 @@ class OutOfMemoryException(popart.popart_exception):
         return self.error.getSummaryReport()
 
     def getProfilePath(self) -> str:
-        """Get the absolute path of the profile file (profile.pop)
+        """Get the absolute path of the profile file (profile.pop).
 
         Returns:
             The absolute path of profile.pop, or an empty string if not created.
@@ -99,8 +99,8 @@ def makedirsAndCheckWritable(path):
 
 
 class InferenceSession(_InferenceSessionCore):
-    """ Create a runtime class for executing an ONNX graph on a set of IPU
-    hardware for inference.
+    """
+    Create a runtime class for executing an ONNX graph on a set of IPU hardware for inference.
 
     A wrapper around the ``Session`` C++ class, renamed ``SessionCore`` in pybind,
     to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
@@ -230,28 +230,28 @@ class InferenceSession(_InferenceSessionCore):
 
 
 class TrainingSession(_TrainingSessionCore):
-    """Create a runtime class for executing an ONNX graph on a set of IPU
-        hardware for training
+    """
+    Create a runtime class for executing an ONNX graph on a set of IPU hardware for training.
 
-        A wrapper around the ``Session C++`` class, renamed ``SessionCore`` in pybind,
-        to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
+    A wrapper around the ``Session C++`` class, renamed ``SessionCore`` in pybind,
+    to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
 
-        Arguments:
-            fnModel: ONNX model proto. Usually a loaded ONNX model,
-                or from ``builder.getModelProto()``.
-            dataFlow: Configuration for the data feeds and fetches.
-            loss: A TensorId of the final scalar loss to use when training.
-            optimizer: The type of optimizer to use when training
-                and it's properties.
-            deviceInfo: DeviceInfo object specifying device type
-                (IPU, IPUModel, CPU) and count.
-            inputShapeInfo: Information about the shapes of
-                input and output tensors. Default: ``popart.InputShapeInfo()``.
-            patterns: Optimization patterns to apply. Default: ``None``.
-            userOptions: Session options to apply.
-                Default: ``popart.SessionOptions()``.
-            name: Session name used in debug to identify this session
-                Default: ``training``
+    Arguments:
+        fnModel: ONNX model proto. Usually a loaded ONNX model,
+            or from ``builder.getModelProto()``.
+        dataFlow: Configuration for the data feeds and fetches.
+        loss: A TensorId of the final scalar loss to use when training.
+        optimizer: The type of optimizer to use when training
+            and it's properties.
+        deviceInfo: DeviceInfo object specifying device type
+            (IPU, IPUModel, CPU) and count.
+        inputShapeInfo: Information about the shapes of
+            input and output tensors. Default: ``popart.InputShapeInfo()``.
+        patterns: Optimization patterns to apply. Default: ``None``.
+        userOptions: Session options to apply.
+            Default: ``popart.SessionOptions()``.
+        name: Session name used in debug to identify this session
+            Default: ``training``
     """
 
     def __init__(

@@ -1,7 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to call the same
-subgraph from multiple callsites.
+Demonstrate how to call the same subgraph from multiple callsites.
 '''
 
 import numpy as np

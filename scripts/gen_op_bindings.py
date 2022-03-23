@@ -1,5 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
+Script to generate op bindings.
+
 This file generates the following:
 
 - A .cpp file containing bindings for the op, taken from the op's hpp file,
@@ -46,8 +48,9 @@ def render_template(template_path: Path, **kwargs) -> Text:
 
 def create_rendered_files(metadata: Dict, template_path: Path,
                           out_dir: Path) -> None:
-    """Create the generated files using the rendered templates. Will create a hpp and cpp
-    file for each associated popart op header.
+    """Create the generated files using the rendered templates.
+
+    Will create a hpp and cpp file for each associated popart op header.
 
     Args:
         metadata (Dict): The metadata from the json file for the hpp in question.
@@ -130,8 +133,7 @@ def create__all_file(metadatas: tuple, template_path: Path,
 
 
 def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
-    """Create the graph.gen.cpp file that contains the createOp and createConnectedOp
-    functions.
+    """Create the graph.gen.cpp file that contains createOp and createConnectedOp.
 
     Args:
         metadatas (tuple): The metadata for all the ops.

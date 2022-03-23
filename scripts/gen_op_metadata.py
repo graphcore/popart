@@ -41,11 +41,11 @@ cindex.TranslationUnit.PARSE_RETAIN_EXCLUDED_CONDITIONAL_BLOCKS = 0x8000
 
 
 class DepthCursor(cindex.Cursor):
-    """Cindex cursor with concept of depth to prevent over-recursion when using
-    walk_preorder. E.g. when processing a class if it has std::string as an
-    argument, it will call walk_preorder on std::string to inspect it, and in
-    turn on std::string's methods. We only want to recurse to a depth of 3
-    (popart->Class->method).
+    """Cindex cursor with concept of depth to prevent over-recursion when using walk_preorder.
+
+    E.g. when processing a class if it has std::string as an argument, it will call
+    walk_preorder on std::string to inspect it, and in turn on std::string's methods.
+    We only want to recurse to a depth of 3 (popart->Class->method).
 
     Args:
         cindex (Cursor): Original cursor
@@ -97,9 +97,9 @@ PATTERNS = [
 
 
 def format_alt_name(str_: str) -> str:
-    """Run some regexes to format an alternative argument name from
-    the type name, in approximately snake_case.
-    e.g. 'const popart::TensorType &' -> 'tensor_type'
+    """Format alternative argument name from the type name in approximately snake_case.
+
+    E.g. 'const popart::TensorType &' -> 'tensor_type'
 
     Args:
         str_ (str): The argument name
@@ -117,10 +117,10 @@ def format_alt_name(str_: str) -> str:
 
 
 class CppArgument():
-    """A wrapper round the cindex.Cursor that represents a cpp
-    constructor argument. Some of the properties / functions on
-    the cindex cursor objects aren't very reliable or useful, so
-    this class adds some for our purposes.
+    """A wrapper round the cindex.Cursor that represents a cpp constructor argument.
+
+    Some of the properties / functions on the cindex cursor objects aren't very
+    reliable or useful, so this class adds some for our purposes.
 
     All quite self explanatory in the context of a Cpp constructor argument.
     """
@@ -164,7 +164,7 @@ class CppArgument():
 
     @property
     def alt_name(self) -> str:
-        "See format_alt_name"
+        """See format_alt_name."""
         return format_alt_name(self.type_.spelling)
 
 
@@ -345,8 +345,7 @@ def parse_ops(ops_dir: Path,
               filenames: List[Path],
               include_directories: List[Path],
               jobs: int = 1) -> Tuple[List, List, List]:
-    """Run over all the files in the given dir and process with process_file,
-    one thread per file.
+    """Run over all the files in the given dir and process with process_file, one thread per file.
 
     Args:
         ops_dir (Path): Path where the <op>.hpp files are stored

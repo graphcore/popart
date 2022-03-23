@@ -1,11 +1,12 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
-    A script to validate the 'build/popart/deviceaccess.log' file generated when
-    running hardware tests with the cmake option
-    POPART_LOG_DEVICE_ACCESS_IN_TESTS set.
+Script to validate 'build/popart/deviceaccess.log'.
 
-    The idea is that this may be able to automatically detect test behaviour
-    that would be problematic for CI.
+This file is generated when running hardware tests with the cmake option
+POPART_LOG_DEVICE_ACCESS_IN_TESTS set.
+
+The idea is that this may be able to automatically detect test behaviour
+that would be problematic for CI.
 """
 
 import argparse
@@ -50,7 +51,7 @@ def parse_line(line):
 
 def validate_events(input_file):
     """
-    Check each test follows the following NFA:
+    Check each test follows the NFA described below.
 
             (init)
               |

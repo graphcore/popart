@@ -282,8 +282,10 @@ class Session:
 
     def write_variables_data(self,
                              tensors: Dict[Variable, np.ndarray]) -> None:
-        """Calls ``write_variable_data`` for multiple tensors, but delays the host to device transfer
-        until last so that it is transferred in one go.
+        """Calls ``write_variable_data`` for multiple tensors in one go.
+
+        The function delays the host to device transfer until last so that
+        it is transferred in one go.
 
         Args:
             tensors (Variable, np.ndarray]): A dictionary of tensors and the
@@ -295,8 +297,9 @@ class Session:
 
     def create_host_outputs(self) -> d2hStreamBufferMaps:
         """
-        Returns a mapping from popxl.DeviceToHostStream to an empty
-        np.ndarray. Later, this can be passed to `session.run_with_outputs`,
+        Returns a mapping from popxl.DeviceToHostStream to an empty np.ndarray.
+
+        Later, this can be passed to `session.run_with_outputs`,
         which will fill each array with the values streamed back from device.
 
         There is an entry in the mapping for every stream in
@@ -375,7 +378,7 @@ class Session:
 
     @device.setter
     def device(self, device: popart.DeviceInfo) -> None:
-        """Setter for :func:`~popxl.Session.device`
+        """Setter for :func:`~popxl.Session.device`.
 
         Args:
             device (popart.DeviceInfo): The popart.DeviceInfo to set this to.
@@ -545,8 +548,9 @@ class Session:
 
     @property
     def _extra_input_dims(self) -> Tuple[int, ...]:
-        """The tuple of extra input dimensions required for this session. Equal to
-        (num_device_iterations, num_replicas)
+        """The tuple of extra input dimensions required for this session.
+
+        Equal to (num_device_iterations, num_replicas)
 
         Returns:
             Tuple[int, ...]: A tuple (num_device_iterations, num_replicas)

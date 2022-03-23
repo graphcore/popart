@@ -58,7 +58,7 @@ def get_cookies():
 
 
 def get_console_text(baseurl):
-    """ Get the console text for a child job as a string """
+    """Get the console text for a child job as a string."""
     fetch_url = f'{baseurl}/consoleText'
     page = requests.get(fetch_url, cookies=get_cookies())
     assert page.status_code == 200
@@ -66,7 +66,7 @@ def get_console_text(baseurl):
 
 
 def get_ninja_log(baseurl, project):
-    """ Get ninja log for a specific project in a child job as a string """
+    """Get ninja log for a specific project in a child job as a string."""
     # Get link to ninja log from project page
     fetch_url = f'{baseurl}/'
     page = requests.get(fetch_url, cookies=get_cookies())
@@ -91,7 +91,7 @@ def get_ninja_log(baseurl, project):
 
 
 def get_child_jobs(baseurl):
-    """ Get a list of child jobs for a parent job """
+    """Get a list of child jobs for a parent job."""
     ChildJob = collections.namedtuple("ChildJob", ["name", "job_nr"])
     regex = r"Starting building: .* » (.*) #(\d+)\n"
     console_text = get_console_text(baseurl)
@@ -101,7 +101,7 @@ def get_child_jobs(baseurl):
 
 
 def get_test_time(baseurl, project):
-    """ Get the test time for a specific project for a child job """
+    """Get the test time for a specific project for a child job."""
     regex = re.compile(
         f"Test project (?:(?:/[^/\n]*)*)/{project}(?:.|\n)*?Total Test time \(real\) =(?:\s+)(\d+\.\d+)"
     )
@@ -114,7 +114,7 @@ def get_test_time(baseurl, project):
 
 
 def get_build_time(baseurl, project):
-    """ Get the build time for a specific project for a child job """
+    """Get the build time for a specific project for a child job."""
     regex = re.compile("(\d+)\t(\d+)\t(?:.*)+\n")
     ninja_log = get_ninja_log(baseurl, project)
     min_millis = min([int(m[0]) for m in re.findall(regex, ninja_log)])

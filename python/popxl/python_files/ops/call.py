@@ -12,8 +12,9 @@ from .utils import check_in_graph
 # TODO: Bind subgraph op T53714
 class CallSiteInfo:
     """
-    Info relating to parent graph calling a graph (subgraph) e.g. using a call op or repeat op. This is a
-    convenience class for extracting information about the callsite and it's subgraph.
+    Info relating to parent graph calling a graph (subgraph) e.g. using a call op or repeat op.
+
+    This is a convenience class for extracting information about the callsite and it's subgraph.
     """
 
     def __init__(self, subgraph_op: Union[_ir.op.CallOp, _ir.op.LoopOp]):
@@ -41,8 +42,9 @@ class CallSiteInfo:
 
     def graph_to_parent(self, graph_tensor: Tensor) -> Tensor:
         """
-        Get the corresponding input or output tensor in the parent graph
-        using the input or output tensor in the called graph.
+        Get the tensor in the parent graph using the tensor in the called graph.
+
+        Both input and output tensors can be used
 
         Args:
             graph_tensor (Tensor): The tensor in the called graph.
@@ -66,8 +68,7 @@ class CallSiteInfo:
 
     def parent_to_graph(self, parent_tensor: Tensor) -> Tensor:
         """
-        Get the corresponding input tensor in the called graph
-        using the input tensor in the parent graph.
+        Get the input tensor in the called graph using the input tensor in the parent graph.
 
         Args:
             parent_tensor (Tensor): The tensor from the parent graph.
@@ -88,19 +89,19 @@ class CallSiteInfo:
         return Tensor._from_pb_tensor(pb_sub_tensor)
 
     def parent_input(self, idx: int) -> Tensor:
-        """Get the parent graph input tensor at a given index"""
+        """Get the parent graph input tensor at a given index."""
         pb_op_in_tensor = self._op.inTensor(idx)
         return Tensor._from_pb_tensor(pb_op_in_tensor)
 
     def parent_output(self, idx: int) -> Tensor:
-        """Get the parent graph output tensor at a given index"""
+        """Get the parent graph output tensor at a given index."""
         pb_op_out_tensor = self._op.outTensor(idx)
         return Tensor._from_pb_tensor(pb_op_out_tensor)
 
     @property
     def inputs(self) -> Tuple[Tensor, ...]:
         """
-        Get the parent graph inputs
+        Get the parent graph inputs.
 
         Returns:
             Tuple[Tensor, ...]
@@ -111,7 +112,7 @@ class CallSiteInfo:
     @property
     def outputs(self) -> Tuple[Tensor, ...]:
         """
-        Get the parent graph outputs
+        Get the parent graph outputs.
 
         Returns:
             Tuple[Tensor, ...]

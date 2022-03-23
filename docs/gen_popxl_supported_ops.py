@@ -11,8 +11,10 @@ if len(sys.argv) < 2:
 
 def get_docstring_summary(obj):
     """
-    Get the summary of an object's docstring which is separated from the
-    rest of the docstring by a blank line. See PEP 257.
+    Get the summary of an object's docstring.
+
+    This is separated from the rest of the docstring by a blank line.
+    See PEP 257 for details.
     """
     if obj.__doc__ is None:
         return ""

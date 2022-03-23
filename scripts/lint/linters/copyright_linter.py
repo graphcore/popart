@@ -71,7 +71,7 @@ class CopyrightLinter:
             return 1
 
     def set_linter_message(self, message: str) -> None:
-        """"Set the message describing and/or explaining the changes applied by this linter"""
+        """"Set the message describing and/or explaining the changes applied by this linter."""
         self._linter_message = message
 
     def _determine_linter_message(self, file_path: str,
@@ -169,9 +169,8 @@ class CopyrightLinter:
         return delim + " " + GC_COPYRIGHT_NOTICE
 
     def _partial_match(self, lines: List[str]):
-        """Check the lines of the file for a comment which is a close match to the
-        copyright notice, but is not exact enough to be matched by a regular
-        expression.
+        """
+        Check the lines of the file for a comment which is a close match to the copyright notice.
 
         This is often useful for files which do contain copyright notices, but they
         have some syntactical or format errors which cause them not to match the

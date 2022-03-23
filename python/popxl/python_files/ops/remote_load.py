@@ -142,7 +142,7 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
 
 
 def multiply_tuple(tup: Tuple) -> int:
-    """Multiply the elements in a tuple
+    """Multiply the elements in a tuple.
 
     Args:
         tup (Tuple): The tuple.

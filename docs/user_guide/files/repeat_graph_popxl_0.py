@@ -1,7 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how to call the same
-subgraph from a Python function with a repeat operation.
+Demonstrate how to call the same subgraph from a Python function with a repeat operation.
 '''
 import numpy as np
 import popxl

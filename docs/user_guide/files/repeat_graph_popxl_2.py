@@ -1,7 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to show how num_host_transfers works with host_load and host_store
-ops inside a repeat op.
+Demonstrate how num_host_transfers works with host_load and host_store ops inside a repeat op.
 '''
 
 import numpy as np

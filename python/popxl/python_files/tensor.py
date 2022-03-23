@@ -150,8 +150,10 @@ class Tensor:
     @property
     def meta_shape(self) -> Tuple[int, ...]:
         """
-        The meta shape of the tensor, which can
-        be used, for example, to store the original tensor shape before
+        Return the meta shape of the tensor.
+
+        The meta shape of the tensor can be used, for example,
+        to store the original tensor shape before
         replicated tensor sharding was applied.
         """
         return tuple(self._pb_tensor.info.metaShape())
@@ -178,7 +180,9 @@ class Tensor:
 
     @property
     def strides(self) -> Tuple[int]:
-        """ Get the strides of the tensor, that is the number of bytes to step in each
+        """ Get the strides of the tensor.
+
+        The strides of the tensor is the number of bytes to step in each
         dimension when traversing an array in memory. See
         https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
 
@@ -230,7 +234,8 @@ class Tensor:
     @property
     def in_sync_with_ipu(self) -> bool:
         """
-        Is the host side buffer data in sync with the data on the IPU device?
+        Check whether the host side buffer data is in sync with the data on the IPU device.
+
         This only applies to variable tensors which can become out of sync if
         `session.weights_from_host` and `session.weights_to_host` are not called.
         Without a transfer from device to host and visa-versa the buffers and the
@@ -358,8 +363,9 @@ class Tensor:
             dtype: Optional[dtypes.dtype] = None,
             raise_on_empty=True,
     ) -> 'Tensor':
-        """A helper method that's used in operator overloading to ensure that
-        all operands are of type `Tensor`.
+        """
+        Ensure that all operands are of type `Tensor`.
+
         If any are not, an attempt is made to convert the operands to a
         constant tensor with the same dtype as `self`.
 
@@ -387,11 +393,11 @@ class Tensor:
         return f"Tensor[{self.id} {self.dtype} {self.shape}]"
 
     def __hash__(self):
-        """Hashes the Tensor, based on Tensor and Ir `id`"""
+        """Hash the Tensor, based on Tensor and Ir `id`."""
         return hash((self.id, self.ir))
 
     def __eq__(self, other: Any) -> bool:
-        """Tensor equality, based on Tensor and Ir `id`"""
+        """Tensor equality, based on Tensor and Ir `id`."""
         return isinstance(
             other, Tensor) and self.id == other.id and self.ir == other.ir
 
@@ -416,8 +422,10 @@ class Tensor:
 
     @debug_context_frame_offset(1)
     def __iadd__(self, other: TensorLike) -> 'Tensor':
-        """Uses ops.add_ to add 'other' inplace on this tensor (on the left hand side,
-            i.e on to this tensor)."""
+        """Return the result of +=.
+
+        Uses ops.add_ to add 'other' inplace on this tensor (on the left hand side, i.e on to this tensor).
+        """
         import popxl.ops as ops
         ops.add_(self, self._ensure_tensor(other))
         return self
@@ -521,8 +529,10 @@ class Tensor:
     def __getitem__(self, key: Union[int, slice, Tuple[Union[int, slice], ...],
                                      'Tensor', HostTensor]) -> 'Tensor':
         """
-        Supports slicing, integer and boolean indexing. Tensors or host tensors (NumPy/PyTorch arrays and sequences)
-        will be converted to a constant Tensor and can be used for integer or boolean indexing.
+        Support for slicing, integer and boolean indexing.
+
+        Tensors or host tensors (NumPy/PyTorch arrays and sequences) will be converted to a constant
+        Tensor and can be used for integer or boolean indexing.
 
         Slicing is triggered when the input is an integer, slice (for example, `0:2`) or a tuple of the two. Slicing
         either selects a single index of an axis using an integer or range using a slice. If a single index
@@ -878,9 +888,11 @@ def replica_sharded_variable(data: HostScalarTensor,
                              downcast: bool = True,
                              replica_grouping: Optional[ReplicaGrouping] = None
                              ) -> Tuple[Variable, Tensor]:
-    """Scatter a tensor in equal shards across replicas (data parallelism) of the
-        same model/graph. Eliminates redundant data storage when the full (un-sharded) tensor does
-        not need to be present on each IPU. Does not store the full tensor in remote memory.
+    """
+    Scatter a tensor in equal shards across replicas (data parallelism) of the same model/graph.
+
+    Eliminates redundant data storage when the full (un-sharded) tensor does not need to be
+    present on each IPU. Does not store the full tensor in remote memory.
 
     Args:
         data (HostScalarTensor):
