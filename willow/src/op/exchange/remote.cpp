@@ -34,7 +34,8 @@ ExchangeDescriptor RemoteStoreOp::getExchangeDescriptor(int index) const {
                             settings.vgraphId,
                             settings.tileSet,
                             input->n(),
-                            output->n());
+                            output->n(),
+                            false);
 }
 
 // RemoteLoadOp

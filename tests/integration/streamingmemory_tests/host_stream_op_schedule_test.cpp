@@ -144,7 +144,7 @@ void createAndRun(bool hostIO = false) {
       if (op->opid == Onnx::CustomOperators::Init_1) {
         initOpscount += 1;
         schedule_str += "i";
-      } else if (op->opid == Onnx::CustomOperators::HostLoad) {
+      } else if (op->opid == Onnx::CustomOperators::HostLoadInplace) {
         hlOpscount += 1;
         schedule_str += "l";
       } else {

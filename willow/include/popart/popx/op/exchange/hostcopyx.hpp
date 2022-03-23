@@ -27,6 +27,11 @@ public:
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
+class HostLoadInplaceOpx : public HostLoadOpx {
+public:
+  HostLoadInplaceOpx(Op *, Devicex *);
+};
+
 class HostStoreOpx : public HostBaseOpx {
 public:
   HostStoreOpx(Op *, Devicex *);

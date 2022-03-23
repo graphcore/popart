@@ -132,13 +132,16 @@ public:
    * \param tileSet Tile set for the exchange
    * \param numInputs Number of tensor inputs expected
    * \param numOutputs Number of tensor outputs expected
+   * \param inplace If the output of the exchange should alias the input during
+   *                \p Load
    */
   ExchangeDescriptor(ExchangeDirection direction,
                      TensorId id,
                      OptionalVGraphId vgid,
                      TileSet tileSet,
                      int numInputs,
-                     int numOutputs);
+                     int numOutputs,
+                     bool inplace);
 
   /**
    * Create an ExchangeDescriptor for a remote exchange
@@ -157,7 +160,7 @@ public:
                      TileSet tileSet,
                      int numInputs,
                      int numOutputs,
-                     bool inplace = true);
+                     bool inplace);
 
   const ExchangeDirection &getDirection() const { return direction; }
 

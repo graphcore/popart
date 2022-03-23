@@ -278,9 +278,9 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopC) {
   {
     size_t j = 0;
     BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
-    BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(stepGraphSchedule, j));
+    BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<AddOp>(stepGraphSchedule, j));
@@ -288,9 +288,9 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopC) {
     BOOST_REQUIRE(checkSchedule<LoopOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostStoreOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
-    BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(stepGraphSchedule, j));
+    BOOST_REQUIRE(checkSchedule<InitOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(stepGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<AddOp>(stepGraphSchedule, j));
@@ -309,9 +309,9 @@ BOOST_AUTO_TEST_CASE(OverlapInnerLoopC) {
     size_t j = 0;
     BOOST_REQUIRE(checkSchedule<HostStoreOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<InitOp>(accumGraphSchedule, j));
-    BOOST_REQUIRE(checkSchedule<InitOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(accumGraphSchedule, j));
+    BOOST_REQUIRE(checkSchedule<InitOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<HostLoadOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<IoTileCopyOp>(accumGraphSchedule, j));
     BOOST_REQUIRE(checkSchedule<AddOp>(accumGraphSchedule, j));

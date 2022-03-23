@@ -120,7 +120,10 @@ def check_ops(session: popart.TrainingSession, bufferStreams: bool,
     ops = ir["maingraph"]
 
     initOps = [op for op in ops if op["type"] == "Init"]
-    hostLoadOps = [op for op in ops if op["type"] == "HostLoad"]
+    hostLoadOps = [
+        op for op in ops
+        if (op["type"] == "HostLoad" or op["type"] == "HostLoadInplace")
+    ]
 
     if bufferStreams:
         assert len(initOps) == numOps

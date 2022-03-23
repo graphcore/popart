@@ -40,10 +40,11 @@ ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        OptionalVGraphId vgid_,
                                        TileSet tileSet_,
                                        int numInputs_,
-                                       int numOutputs_)
+                                       int numOutputs_,
+                                       bool inplace_)
     : direction(direction_), remoteBufferId(-1), hostStreamTensorId(id_),
       vgid(vgid_), tileSet(tileSet_), numInputs(numInputs_),
-      numOutputs(numOutputs_), inplace(false) {}
+      numOutputs(numOutputs_), inplace(inplace_) {}
 
 ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
                                        RemoteBufferId id_,
@@ -137,6 +138,5 @@ ExchangeBaseOp::descriptorIndexToOutIndices(int index) const {
     throw error("[ExchangeBaseOp] No descriptor at index {}", index);
   }
 }
-
 
 } // namespace popart

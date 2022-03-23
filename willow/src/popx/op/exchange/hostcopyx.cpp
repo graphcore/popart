@@ -14,7 +14,7 @@ HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex)
     : ExchangeBaseOpx(op, devicex) {}
 
 HostLoadOpx::HostLoadOpx(Op *op, Devicex *devicex) : HostBaseOpx(op, devicex) {
-  verifyOp<HostLoadOp>(op, Onnx::CustomOperators::HostLoad);
+  verifyOp<HostLoadOp>(op);
   inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
@@ -98,6 +98,12 @@ view::RegMap HostLoadOpx::unwindRegion(InIndex, OutIndex) const {
   return [](const view::Region &r) { return view::Regions(1, r); };
 }
 
+// RemoteLoadInplaceOpx
+HostLoadInplaceOpx::HostLoadInplaceOpx(Op *op, Devicex *devicex)
+    : HostLoadOpx(op, devicex) {
+  verifyOp<HostLoadInplaceOp>(op, Onnx::CustomOperators::HostLoadInplace);
+}
+
 HostStoreOpx::HostStoreOpx(Op *op, Devicex *devicex)
     : HostBaseOpx(op, devicex) {
   verifyOp<HostStoreOp>(op, Onnx::CustomOperators::HostStore);
@@ -159,6 +165,8 @@ HostStoreOpx::createInputTensor(InIndex index,
 
 namespace {
 OpxCreator<HostLoadOpx> hostLoadOpxCreator(Onnx::CustomOperators::HostLoad);
+OpxCreator<HostLoadInplaceOpx>
+    hostLoadInplaceOpxCreator(Onnx::CustomOperators::HostLoadInplace);
 OpxCreator<HostStoreOpx> hostStoreOpxCreator(Onnx::CustomOperators::HostStore);
 } // namespace
 } // namespace popx

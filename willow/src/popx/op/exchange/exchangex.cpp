@@ -79,6 +79,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                                TensorId streamTensorId,
                                snap::Graph &graph,
                                snap::Tensor t,
+                               bool inplace,
                                const poplar::DebugContext &context) {
   snap::Tensor streamTensor =
       getOrCreateStreamTensor(dv_p, id, graph, t, context);
@@ -91,6 +92,15 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
     dv_p->lowering().setStreamTensor(id, streamTensor);
   }
+  // The outplacing of the tensor will be done explicitly
+  if (!inplace) {
+    snap::Tensor tw =
+        graph.clone(streamTensor,
+                    {id + "_writable"},
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+    return tw;
+  }
+  // Outplace fallback
   if (!t.isParallelWriteable()) {
     logging::opx::debug("Tensor {} is not a writable host load tensor "
                         " target, cloning. "
@@ -231,6 +241,7 @@ void HostLoadDescriptorx::post(snap::Graph &graph,
                                      descriptor.getHostStreamTensorId(),
                                      graph,
                                      inTensors.at(0).second,
+                                     descriptor.isInplace(),
                                      context));
 
   snap::Tensor streamTensor =
@@ -253,6 +264,7 @@ snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
                                      descriptor.getHostStreamTensorId(),
                                      graph,
                                      tensor,
+                                     descriptor.isInplace(),
                                      context);
   return unwound;
 }
