@@ -166,10 +166,12 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
     opts.instrumentWithHardwareCycleCounter = False
 
-    # rearrangeOnHost = False can block IO overalp due to inter-tile exchange
-    # caused by rearrangements on the device - testing without it
-    opts.rearrangeAnchorsOnHost = True
-    opts.rearrangeStreamsOnHost = True
+    # Should work with both rearrangeOnHost = `True`/`False`.
+    # Testing with `False` because it is more sensitive to tensor layouts and
+    # therefore brittle.
+    # If `False` works, `True` should work too
+    opts.rearrangeAnchorsOnHost = False
+    opts.rearrangeStreamsOnHost = False
 
     # Set session options to generate the report
     tu.set_autoreport_options(opts, tmpdir, output_execution_profile=True)

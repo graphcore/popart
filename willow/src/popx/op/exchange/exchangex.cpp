@@ -8,6 +8,8 @@
 #include <popart/popx/op/exchange/multiexchangex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <popops/HostSliceTensor.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -117,6 +119,23 @@ snap::Tensor ExchangeDescriptorx::unwind(snap::Graph &,
   return tensor;
 }
 
+snap::Tensor ExchangeDescriptorx::create(snap::Graph &graph,
+                                         const TensorInfo &info) const {
+  std::string debugContext =
+      descriptor.isHostExchange()
+          ? descriptor.getHostStreamTensorId()
+          : std::to_string(descriptor.getRemoteBufferId());
+
+  // Note: ExchangeDirection::Store means isRead is true for the host side
+  return snap::Tensor{popops::createHostTransferableTensor(
+                          graph.getPoplarGraph(),
+                          popType(info.getDataTypeInfo()->type()),
+                          info.shape_szt(),
+                          descriptor.getDirection() == ExchangeDirection::Store,
+                          {debugContext}),
+                      graph};
+}
+
 std::unique_ptr<ExchangeDescriptorx>
 getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor) {
   if (descriptor.isHostExchange()) {
@@ -187,16 +206,14 @@ void HostLoadDescriptorx::exchange(snap::Graph &graph,
   auto it = streams.find(descriptor.getHostStreamTensorId());
 
   if (it != streams.end()) {
-    bool rearrangeOnHost = dv_p->lowering().doRearrangeOnHost(
-        dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
     logging::opx::debug(
         "Found host stream in getFromHostStreams {} doRearrangeOnHost: {}",
         descriptor.getHostStreamTensorId(),
-        rearrangeOnHost);
+        rearrangeOnHost());
     auto stream = streams.at(descriptor.getHostStreamTensorId());
 
     snap::program::Copy copy_prog(
-        stream, streamTensor, rearrangeOnHost, context);
+        stream, streamTensor, rearrangeOnHost(), context);
     prog.add(copy_prog);
 
   } else {
@@ -238,6 +255,11 @@ snap::Tensor HostLoadDescriptorx::unwind(snap::Graph &graph,
                                      tensor,
                                      context);
   return unwound;
+}
+
+bool HostLoadDescriptorx::rearrangeOnHost() const {
+  return dv_p->lowering().doRearrangeOnHost(
+      dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
 }
 
 void HostStoreDescriptorx::pre(snap::Graph &graph,
@@ -301,6 +323,11 @@ void HostStoreDescriptorx::exchange(snap::Graph &graph,
 void HostStoreDescriptorx::post(snap::Graph &graph,
                                 snap::program::Sequence &prog,
                                 poplar::DebugContext context) {}
+
+bool HostStoreDescriptorx::rearrangeOnHost() const {
+  return dv_p->lowering().doRearrangeOnHost(
+      dv_p->ir().getTensor(descriptor.getHostStreamTensorId()));
+}
 
 void RemoteLoadDescriptorx::pre(snap::Graph &graph,
                                 snap::program::Sequence &prog,

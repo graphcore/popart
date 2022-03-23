@@ -20,6 +20,9 @@ public:
   void grow(snap::program::Sequence &) const final;
 
   InputCreatorType getInputCreatorType(InIndex) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
@@ -28,10 +31,10 @@ class HostStoreOpx : public HostBaseOpx {
 public:
   HostStoreOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
-
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
-  view::RegMap unwindRegion(InIndex, OutIndex) const final;
 };
 
 } // namespace popx

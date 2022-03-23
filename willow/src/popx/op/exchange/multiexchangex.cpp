@@ -27,18 +27,46 @@ get(std::map<int, snap::program::Sequence> &xs, int index, snap::Graph &graph) {
 MultiExchangeOpx::MultiExchangeOpx(Op *op, Devicex *devicex)
     : ExchangeBaseOpx(op, devicex) {
   verifyOp<MultiExchangeOp>(op, Onnx::CustomOperators::MultiExchange);
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 InputCreatorType MultiExchangeOpx::getInputCreatorType(InIndex index) const {
   auto &multiExchangeOp = getOp<MultiExchangeOp>();
 
   auto indices = multiExchangeOp.inIndexToDescriptorIndex(index);
+  auto direction =
+      multiExchangeOp.getExchangeDescriptor(indices.first).getDirection();
 
-  return (indices.second == 0 &&
-          multiExchangeOp.getExchangeDescriptor(indices.first).getDirection() ==
-              ExchangeDirection::Load)
-             ? InputCreatorType::CanUnwind
-             : PopOpx::getInputCreatorType(index);
+  if (indices.second == 0) {
+    auto descriptor = multiExchangeOp.getExchangeDescriptor(indices.first);
+    std::shared_ptr<ExchangeDescriptorx> descriptorx =
+        getExchangeDescriptorx(dv_p, descriptor);
+    if (descriptorx->rearrangeOnHost() ||
+        descriptor.getTileSet() == TileSet::Compute) {
+      // If rearranging on host or not using IO tiles, then use unwinding to
+      // minimize rearrangements
+
+      // `Unwind`: In most cases, the input tensor layout can be unwound from
+      // the output, which will cause fewer on-device rearrangements
+      // Only load operations have an output tensor to unwind from
+      return direction == ExchangeDirection::Load ? InputCreatorType::CanUnwind
+                                                  : InputCreatorType::Deadend;
+    } else {
+      // If rearranging on device and using IO tiles, use host transferrable
+      // tensors to facilitate overlapped IO/compute
+
+      // `CanCreate`: Create the tensor with createHostTransferrableTensor to
+      // avoid blocking overlapped IO with misplaced inter-tile exchanges on
+      // IO tiles
+      // `Unwind`: Fallback if creating the tensor is not possible
+      // Only load operations have an output tensor to unwind from
+      return direction == ExchangeDirection::Load
+                 ? InputCreatorType::CanCreateOrUnwind
+                 : InputCreatorType::CanCreate;
+    }
+  }
+
+  return PopOpx::getInputCreatorType(index);
 }
 
 bool MultiExchangeOpx::canUnwind(InIndex in, OutIndex out) const {
@@ -231,24 +259,15 @@ void MultiExchangeOpx::grow(snap::program::Sequence &prog) const {
   }
 }
 
-snap::Graph &MultiExchangeOpx::inGraph(InIndex in) const {
-  if (op_p->getIr().virtualGraphsEnabled()) {
-    auto &multiExchangeOp = getOp<MultiExchangeOp>();
-    auto vgid = multiExchangeOp.Op::getIntrospectionInVirtualGraphId(in);
-    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
-  } else {
-    return dv_p->lowering().graph();
-  }
-}
-
-snap::Graph &MultiExchangeOpx::outGraph(OutIndex out) const {
-  if (op_p->getIr().virtualGraphsEnabled()) {
-    auto &multiExchangeOp = getOp<MultiExchangeOp>();
-    auto vgid = multiExchangeOp.Op::getIntrospectionInVirtualGraphId(out);
-    return dv_p->lowering().getVirtualGraph(vgid.first, vgid.second);
-  } else {
-    return dv_p->lowering().graph();
-  }
+snap::Tensor
+MultiExchangeOpx::createInputTensor(InIndex index,
+                                    const poplar::DebugNameAndId &dnai) const {
+  auto &multiExchangeOp                            = getOp<MultiExchangeOp>();
+  std::shared_ptr<ExchangeDescriptorx> descriptorx = getExchangeDescriptorx(
+      dv_p,
+      multiExchangeOp.getExchangeDescriptor(
+          multiExchangeOp.inIndexToDescriptorIndex(index).first));
+  return descriptorx->create(inGraph(index), inInfo(index));
 }
 
 namespace {

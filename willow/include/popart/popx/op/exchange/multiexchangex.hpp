@@ -28,11 +28,12 @@ public:
   void growPart(OpxGrowPartId id) const final;
 
   InputCreatorType getInputCreatorType(InIndex index) const final;
+  snap::Tensor
+  createInputTensor(InIndex index,
+                    const poplar::DebugNameAndId &dnai) const final;
   bool canUnwind(InIndex, OutIndex) const final;
   snap::Tensor unwindTensorLayout(snap::Tensor, InIndex, OutIndex) const final;
   view::RegMap unwindRegion(InIndex, OutIndex) const final;
-  snap::Graph &inGraph(InIndex in) const;
-  snap::Graph &outGraph(OutIndex out) const;
 };
 
 class MultiExchangeOpxState : public OpxState {

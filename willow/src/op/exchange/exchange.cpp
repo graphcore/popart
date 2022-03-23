@@ -138,6 +138,5 @@ ExchangeBaseOp::descriptorIndexToOutIndices(int index) const {
   }
 }
 
-// FIXME:
 
 } // namespace popart

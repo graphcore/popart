@@ -15,6 +15,7 @@ HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex)
 
 HostLoadOpx::HostLoadOpx(Op *op, Devicex *devicex) : HostBaseOpx(op, devicex) {
   verifyOp<HostLoadOp>(op, Onnx::CustomOperators::HostLoad);
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 void HostLoadOpx::grow(snap::program::Sequence &prog) const {
@@ -49,9 +50,39 @@ void HostLoadOpx::grow(snap::program::Sequence &prog) const {
 }
 
 InputCreatorType HostLoadOpx::getInputCreatorType(InIndex index) const {
-  return index == HostLoadOp::getLocalTensorInIndex()
-             ? InputCreatorType::CanUnwind
-             : PopOpx::getInputCreatorType(index);
+  auto &hostLoadOp = getOp<HostLoadOp>();
+  auto descriptor  = hostLoadOp.getExchangeDescriptor(0);
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, hostLoadOp.getExchangeDescriptor(0));
+  if (descriptorx->rearrangeOnHost() ||
+      descriptor.getTileSet() == TileSet::Compute) {
+    // If rearranging on host or not using IO tiles, then use unwinding to
+    // minimize rearrangements
+
+    // `Unwind`: In most cases, the input tensor layout can be unwound from the
+    // output, which will cause fewer on-device rearrangements
+    return InputCreatorType::CanUnwind;
+  } else {
+    // If rearranging on device and using IO tiles, use host transferrable
+    // tensors to facilitate overlapped IO/compute
+
+    // `CanCreate`: Create the tensor with createHostTransferrableTensor to
+    // avoid blocking overlapped IO with misplaced inter-tile exchanges on
+    // IO tiles
+    // `Unwind`: Fallback if creating the tensor is not possible
+    return InputCreatorType::CanCreateOrUnwind;
+  }
+  return PopOpx::getInputCreatorType(index);
+}
+
+snap::Tensor
+HostLoadOpx::createInputTensor(InIndex index,
+                               const poplar::DebugNameAndId &dnai) const {
+  auto &hostLoadOp = getOp<HostLoadOp>();
+  auto descriptor  = hostLoadOp.getExchangeDescriptor(0);
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, descriptor);
+  return descriptorx->create(inGraph(index), inInfo(index));
 }
 
 snap::Tensor HostLoadOpx::unwindTensorLayout(snap::Tensor tensor,
@@ -70,6 +101,7 @@ view::RegMap HostLoadOpx::unwindRegion(InIndex, OutIndex) const {
 HostStoreOpx::HostStoreOpx(Op *op, Devicex *devicex)
     : HostBaseOpx(op, devicex) {
   verifyOp<HostStoreOp>(op, Onnx::CustomOperators::HostStore);
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 void HostStoreOpx::grow(snap::program::Sequence &prog) const {
@@ -94,18 +126,35 @@ void HostStoreOpx::grow(snap::program::Sequence &prog) const {
 }
 
 InputCreatorType HostStoreOpx::getInputCreatorType(InIndex index) const {
-  return index == HostStoreOp::getLocalTensorInIndex()
-             ? InputCreatorType::CanUnwind
-             : PopOpx::getInputCreatorType(index);
+  auto &hostStoreOp = getOp<HostStoreOp>();
+  auto descriptor   = hostStoreOp.getExchangeDescriptor(0);
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, descriptor);
+  if (descriptorx->rearrangeOnHost() ||
+      descriptor.getTileSet() == TileSet::Compute) {
+    // `Deadend`: HostStore has no output tensor, therefore unwinding is not
+    // available
+    return InputCreatorType::Deadend;
+  } else {
+    // If rearranging on device and using IO tiles, use host transferrable
+    // tensors to facilitate overlapped IO/compute
+
+    // `CanCreate`: Create the tensor with createHostTransferrableTensor to
+    // avoid blocking overlapped IO with misplaced inter-tile exchanges on
+    // IO tiles
+    return InputCreatorType::CanCreate;
+  }
+  return PopOpx::getInputCreatorType(index);
 }
 
 snap::Tensor
-HostStoreOpx::unwindTensorLayout(snap::Tensor tensor, InIndex, OutIndex) const {
-  return tensor;
-}
-
-view::RegMap HostStoreOpx::unwindRegion(InIndex, OutIndex) const {
-  return [](const view::Region &r) { return view::Regions(1, r); };
+HostStoreOpx::createInputTensor(InIndex index,
+                                const poplar::DebugNameAndId &dnai) const {
+  auto &hostStoreOp = getOp<HostStoreOp>();
+  auto descriptor   = hostStoreOp.getExchangeDescriptor(0);
+  std::shared_ptr<ExchangeDescriptorx> descriptorx =
+      getExchangeDescriptorx(dv_p, descriptor);
+  return descriptorx->create(inGraph(index), inInfo(index));
 }
 
 namespace {

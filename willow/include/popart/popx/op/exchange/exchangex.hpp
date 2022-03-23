@@ -29,7 +29,19 @@ public:
 
   virtual snap::Tensor unwind(snap::Graph &, snap::Tensor) const;
 
+  /**
+   * Create an input tensor that is compatible with host and remote exchange
+   * operations without causing rearrangements
+   * \param graph Graph on which to create the tensor
+   * \param info  Tensor info (data type and shape) of the tensor to create
+   * \return      Tensor laid out optimally for exchanges with
+   *              createHostTransferableTensor
+   */
+  virtual snap::Tensor create(snap::Graph &graph, const TensorInfo &info) const;
+
   virtual std::vector<snap::Tensor> getOutTensors() const { return outTensors; }
+
+  virtual bool rearrangeOnHost() const { return true; }
 
 protected:
   Devicex *dv_p;
@@ -53,6 +65,7 @@ public:
             snap::program::Sequence &prog,
             poplar::DebugContext context) override;
   snap::Tensor unwind(snap::Graph &, snap::Tensor) const override;
+  bool rearrangeOnHost() const override;
 };
 
 class HostStoreDescriptorx : public ExchangeDescriptorx {
@@ -67,6 +80,7 @@ public:
   void post(snap::Graph &graph,
             snap::program::Sequence &prog,
             poplar::DebugContext context) override;
+  bool rearrangeOnHost() const override;
 };
 
 class RemoteLoadDescriptorx : public ExchangeDescriptorx {
@@ -104,6 +118,7 @@ getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor);
 class ExchangeBaseOpx : public PopOpx {
 public:
   ExchangeBaseOpx(Op *, Devicex *);
+  std::set<TensorId> mustExistBeforeCreate(int) const override { return {}; }
 };
 
 } // namespace popx
