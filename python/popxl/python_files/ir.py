@@ -428,8 +428,10 @@ class Ir:
     def __repr__(self) -> str:
         return f"Ir[id={self.id}]"
 
-    def replica_grouping(self, stride: int,
-                         group_size: int) -> 'ReplicaGrouping':
+    def replica_grouping(self,
+                         stride: Optional[int] = 1,
+                         group_size: Optional[int] = None
+                         ) -> 'ReplicaGrouping':
         """
         Create a :py:class:`~popxl.ReplicaGrouping` object.
 

@@ -78,10 +78,38 @@ public:
   Tensor *getTensor(const TensorId &);
 
   void addActGrad(const TensorId &);
-  void addVarInit(const TensorId &,
-                  const TensorInfo &,
-                  const void *,
-                  const DebugContext &);
+
+  /**
+   * Add a variable to this graph with the provided properties.
+   *
+   * \param name The name of the variable.
+   * \param info The tensor info to create the variable with,
+   *  including shape and data type.
+   * \param src The data to initialise the tensor with.
+   * \param debugContext The debug context to assist with debugging.
+   */
+  void addVarInit(const TensorId &name,
+                  const TensorInfo &info,
+                  const void *src,
+                  const DebugContext &debugContext);
+  /**
+   * As per addVarInit, but passing a VariableSettings object to allow for
+   * grouped replicas.
+   * \sa addVarInit(const TensorId &, const TensorInfo &, const void *, const
+   * DebugContext &)
+   *
+   * \param name The name of the variable.
+   * \param info The tensor info to create the variable with,
+   *  including shape and data type.
+   * \param src The data to initialise the tensor with.
+   * \param vs The variablesettings to use.
+   * \param debugContext The debug context to assist with debugging.
+   */
+  void addVarInit(const TensorId &name,
+                  const TensorInfo &info,
+                  const void *src,
+                  const VariableSettings &vs,
+                  const DebugContext &debugContext);
   void addConstInit(const TensorId &,
                     const TensorInfo &,
                     const void *,

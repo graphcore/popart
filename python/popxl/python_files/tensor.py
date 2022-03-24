@@ -1,6 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 # Pylint has a False positive on Type as it's used as a type hint encapsulated in a string
 # pylint: disable=unused-import
+import math
 from typing import Any, Dict, Iterable, Optional, Tuple, Type, Union, TYPE_CHECKING
 from typing_extensions import Literal
 from collections.abc import Mapping
@@ -642,12 +643,24 @@ class Variable(Tensor, tensor_type="Variable"):
     parameter that can change while running a model.
     """
 
+    def __init__(self):
+        super().__init__()
+        self._replica_grouping: Union[None, ReplicaGrouping] = None
+
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
         """Returns `ops.ipu_copy(self, dst, src)`.
             Must provide a src value."""
         import popxl.ops as ops
         return ops.ipu_copy(self, dst, src)
+
+    @property
+    def replica_grouping(self) -> Union[None, ReplicaGrouping]:
+        return self._replica_grouping
+
+    @replica_grouping.setter
+    def replica_grouping(self, rg: ReplicaGrouping) -> None:
+        self._replica_grouping = rg
 
 
 class Constant(Tensor, tensor_type="Const"):
@@ -710,10 +723,6 @@ def variable(data: HostScalarTensor,
     Returns:
         Variable: The desired variable.
     """
-    if replica_grouping is not None:
-        raise RuntimeError(
-            "Using non-default replica grouping is not yet supported")
-
     g = gcg()
     pb_g = g._pb_graph
 
@@ -730,8 +739,13 @@ def variable(data: HostScalarTensor,
 
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)
-    pb_g.addVarInit(pb_id, info, np_data)
 
+    if replica_grouping is None:
+        pb_g.addVarInit(pb_id, info, np_data)
+        return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
+
+    pb_g.addVarInit(pb_id, info, np_data,
+                    replica_grouping._to_variable_settings())
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
@@ -742,7 +756,6 @@ def remote_variable(
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
-        num_shards: int = 1,
         replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
 
@@ -761,8 +774,6 @@ def remote_variable(
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        num_shards (int):
-            Number of shards for this variable.
         replica_grouping:
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
@@ -779,13 +790,8 @@ def remote_variable(
     Returns:
         Variable: The remote variable.
     """
-    if replica_grouping is not None:
-        raise RuntimeError(
-            "Using non-default replica grouping is not yet supported")
 
-    var = variable(data, dtype, name, downcast)
-    # Check if the var matches the remote buffer in shape and dtype
-    remote_buffer.validate_tensor_matches_buffer(var, num_shards)
+    var = variable(data, dtype, name, downcast, replica_grouping)
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
@@ -845,12 +851,10 @@ def remote_replica_sharded_variable(
     Returns:
         Variable: The remote sharded variable.
     """
-    if replica_grouping is not None:
-        raise RuntimeError(
-            "Using non-default replica grouping is not yet supported")
 
     opts = gcg().ir._pb_ir.getSessionOptions()
-    num_replicas: int = opts.replicatedGraphCount
+    if not opts.enableReplicatedGraphs:
+        raise ValueError("Replication has not been enabled on the current IR")
 
     # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
     np_dtype = dtype.as_numpy() if dtype is not None else None
@@ -865,15 +869,7 @@ def remote_replica_sharded_variable(
         )
 
     var = remote_variable(data, remote_buffer, offset, dtype, name, downcast,
-                          num_replicas)
-
-    if not opts.enableReplicatedGraphs:
-        raise ValueError("Replication has not been enabled on the current IR")
-
-    if (var.nelms % num_replicas) != 0:
-        raise ValueError(
-            f"Variable {var} is not divisible by the number of replicas {num_replicas}."
-        )
+                          replica_grouping)
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
@@ -923,9 +919,6 @@ def replica_sharded_variable(data: HostScalarTensor,
             1. The full variable. This should NOT be used directly. It can be used to interact with Session's get/set data methods
             2. The sharded variable.
     """
-    if replica_grouping is not None:
-        raise RuntimeError(
-            "Using non-default replica grouping is not yet supported")
 
     import popxl.ops as ops
     from popxl.remote_buffer import remote_buffer
@@ -939,7 +932,7 @@ def replica_sharded_variable(data: HostScalarTensor,
 
     # Create a remote RTS variable
     var = remote_replica_sharded_variable(data, buffer, 0, dtype, name,
-                                          downcast)
+                                          downcast, replica_grouping)
 
     # Load/Store the variable in the WeightsFromHost/WeightsToHost programs.
     with get_main_graph():

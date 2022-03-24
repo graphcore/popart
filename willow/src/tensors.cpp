@@ -3,6 +3,7 @@
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/chains.hpp>
 #include <popart/commgroup.hpp>
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -235,6 +236,44 @@ void Tensors::addVarInit(const TensorId &name,
 
     init->setTensorData(re_info, src);
   } else {
+    init->setTensorData(info, src);
+  }
+}
+
+void Tensors::addVarInitWithLeadingGroupDim(const TensorId &name,
+                                            const TensorInfo &info,
+                                            const void *src,
+                                            const VariableSettings &vs,
+                                            const DebugContext &debugContext) {
+
+  popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
+  logging::devicex::debug(
+      "addVarInitWithLeadingGroupDim.info {}, {}", name, info.shape());
+  insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
+  Tensor *init = get(name);
+  bool iflock =
+      vs.numReplicasReturningVariable(
+          graph.getIr().getSessionOptions().replicatedGraphCount) != 1;
+  if (iflock) {
+    Shape contracted_shape;
+    for (auto i = 1; i < info.shape().size(); i++) {
+      contracted_shape.push_back(info.shape()[i]);
+    }
+    TensorInfo re_info(info.dataType(), contracted_shape);
+    init->info = re_info;
+
+    logging::debug("addVarInitWithLeadingGroupDim({}) --({})-->",
+                   name,
+                   init->info.shape());
+
+    init->setTensorData(info, src);
+  } else {
+    // "Normal" code path.
+    init->info = info;
+    logging::debug("addVarInitWithLeadingGroupDim({}) --({})-->",
+                   name,
+                   init->info.shape());
+
     init->setTensorData(info, src);
   }
 }

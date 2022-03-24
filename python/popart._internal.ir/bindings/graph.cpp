@@ -43,6 +43,22 @@ void bindGraph(py::module &m) {
           py::arg("data"),
           py::arg("debugContext") = std::string())
       .def(
+          "addVarInit",
+          [](Graph &self,
+             const TensorId &tid,
+             const TensorInfo &tinfo,
+             py::array data,
+             const VariableSettings &vs,
+             const DebugContext &dc) {
+            data = makeContiguous(data);
+            self.addVarInit(tid, tinfo, data.request().ptr, vs, dc);
+          },
+          py::arg("tensorId"),
+          py::arg("tensorInfo"),
+          py::arg("data"),
+          py::arg("vs"),
+          py::arg("debugContext") = std::string())
+      .def(
           "addConstInit",
           [](Graph &self,
              const TensorId &tid,

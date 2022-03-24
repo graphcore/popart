@@ -3096,6 +3096,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("getRetrievalMode", &VariableSettings::getRetrievalMode);
     cls.def("shapeOnReplica", &VariableSettings::shapeOnReplica);
     cls.def("groups", &VariableSettings::groups);
+    cls.def("verify", &VariableSettings::verify);
   }
   { m.attr("CommGroupType") = popart_internal_ir.attr("CommGroupType"); }
   { m.attr("CommGroup") = popart_internal_ir.attr("CommGroup"); }

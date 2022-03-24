@@ -25,6 +25,7 @@
 #include <popart/op/if.hpp>
 
 // The layers required to construct the backwards pass
+#include <popart/error.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/conv.hpp>
@@ -160,6 +161,26 @@ void Graph::addVarInit(const TensorId &name,
                        const DebugContext &debugContext) {
 
   getTensors().addVarInit(name, info, src, debugContext);
+}
+
+void Graph::addVarInit(const TensorId &name,
+                       const TensorInfo &info,
+                       const void *src,
+                       const VariableSettings &vs,
+                       const DebugContext &debugContext) {
+  auto replicationFactor =
+      this->getIr().getSessionOptions().globalReplicationFactor;
+  if (auto num_groups = vs.groupCount(replicationFactor) > 1) {
+    if (info.shape().at(0) != num_groups) {
+      throw popart::error(
+          "Incorrect size of tensor {}. Tensor shape at index 0 ({}) "
+          "should be == group_size = {}",
+          name,
+          info.shape().at(0),
+          num_groups);
+    }
+  }
+  getTensors().addVarInitWithLeadingGroupDim(name, info, src, vs, debugContext);
 }
 
 void Graph::addConstInit(const TensorId &name,

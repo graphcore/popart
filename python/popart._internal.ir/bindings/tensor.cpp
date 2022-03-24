@@ -78,6 +78,7 @@ void bindTensor(py::module &m) {
       .def("setReplicatedStreamMode",
            &Tensor::setReplicatedStreamMode,
            py::arg("mode"))
+      .def("getVariableSettings", &Tensor::getVariableSettings)
       // TODO(T42230): Bind and test getPipelineStages.
       // .def("getPipelineStages", &Tensor::getPipelineStages)
       // TODO(T42234): Bind and test getProducerUnsafe, getProducer, setProducer
