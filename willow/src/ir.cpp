@@ -2517,10 +2517,11 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
     return true;
   }
 
-  // 4. The tensor is an Accum__ tensor - these will be zero in the current
-  // implementation
-  if ((tensor->isAccumulatorTensor() &&
-       tensor->id.find(reservedAccumPrefix()) != std::string::npos)) {
+  // 4. The tensor is an Accum__ or Counter__ tensor - these will be zero in the
+  // current implementation
+  if (tensor->isAccumulatorTensor() &&
+      (tensor->id.find(reservedAccumPrefix()) != std::string::npos ||
+       tensor->id.find(reservedCounterPrefix()) != std::string::npos)) {
     return true;
   }
 
@@ -4150,8 +4151,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

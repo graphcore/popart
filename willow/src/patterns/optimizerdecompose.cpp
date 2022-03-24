@@ -210,7 +210,9 @@ OptimizerDecompose::findOrCreateRunningMeanCounter(Graph &graph,
   } else {
     addStateTensor<float>(
         graph, counterId, TensorInfo(DataType::FLOAT, {}), VariableSettings());
-    graph.getIr().addAdditionalModelProtoTensor(counterId);
+    // Note we do not add Counter__ to AdditionalModelProtoTensors, in the
+    // current implementation where it is guaranteed that this is zero after one
+    // run.
 
     auto op_tid        = counterIncrement(graph, combo, counterId);
     counterIncrementOp = op_tid.first;
