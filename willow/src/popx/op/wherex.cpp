@@ -34,13 +34,15 @@ InputCreatorType BaseWhereOpx::getInputCreatorType(InIndex inIndex) const {
   // Favour the order x, y, condition
   InIndex unwindIdx = unwindIndex();
   if (inIndex == unwindIdx) {
-    return InputCreatorType::CanUnwind;
+    // TODO T59196: Set to CanUnwind
+    return InputCreatorType::Deadend;
   }
 
   // On other indicies, allow a creator which clones the input matching
   // unwindIndex. If we got here, at least this input and the unwindIndex match
   // the output size.
-  return InputCreatorType::CanCreateOrUnwind;
+  // TODO T59196: Set to CanCreateOrUnwind
+  return InputCreatorType::Deadend;
 }
 
 snap::Tensor BaseWhereOpx::unwindTensorLayout(snap::Tensor tensor,
