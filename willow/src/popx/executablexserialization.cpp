@@ -18,6 +18,8 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 
+#include <popx/rng/rngstatelowering.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -318,10 +320,10 @@ int getIpuVersion(const IrLowering &ir_lowering) {
     const std::string ipuVersionStr = archVersionStr.substr(ipuVersionPos);
     return std::atoi(ipuVersionStr.c_str());
   } catch (...) {
-    throw error("Cannot get ipu version from target architecture string " +
-                archVersionStr +
+    throw error("Cannot get ipu version from target architecture string {}"
                 ". Expected the target architecture string to contain a "
-                "substring of the form ^ipu[digits]$");
+                "substring of the form ^ipu[digits]$",
+                archVersionStr);
   }
 }
 
@@ -344,30 +346,33 @@ convertOptionFlagsToOptions(const poplar::OptionFlags &optFlags) {
   return opts;
 }
 
-popef::TensorInfo createTensorInfo(const popart::Tensor &tensor) {
+popef::TensorInfo createTensorInfo(const popef::DataType dt,
+                                   const std::vector<int64_t> &shape) {
   popef::TensorInfo tensorInfo;
-  tensorInfo.setDataType(
-      toPopefDataType(tensor.info.getDataTypeInfo()->type()));
-  tensorInfo.setShape(tensor.info.shape());
+  tensorInfo.setDataType(dt);
+  tensorInfo.setShape(shape);
   return tensorInfo;
 }
 
-const popef::Anchor &putAnchorToMetadata(const popart::Tensor &tensor,
+popef::TensorInfo createTensorInfo(const popart::Tensor &tensor) {
+  popef::TensorInfo tensorInfo;
+  const popef::DataType dt =
+      toPopefDataType(tensor.info.getDataTypeInfo()->type());
+  return createTensorInfo(dt, tensor.info.shape());
+}
+
+const popef::Anchor &putAnchorToMetadata(const std::string &name,
+                                         const PopStreamId &handle,
                                          const bool isPerReplica,
                                          const popef::TensorType tensorType,
-                                         nonstd::optional<bool> isAnchorStream,
+                                         const popef::TensorInfo &tensorInfo,
                                          popef::Metadata &metadata) {
   popef::Anchor anchor;
-  anchor.setName(tensor.id);
-  anchor.setTensorInfo(createTensorInfo(tensor));
+  anchor.setName(name);
+  anchor.setHandle(handle);
+  anchor.setTensorInfo(tensorInfo);
   anchor.setIsPerReplica(isPerReplica);
   anchor.setType(tensorType);
-
-  if (tensorType == popef::TensorType::INPUT) {
-    anchor.setHandle(IrLowering::h2dId(tensor.id));
-  } else if (tensorType == popef::TensorType::OUTPUT) {
-    anchor.setHandle(IrLowering::d2hId(tensor.id, *isAnchorStream));
-  }
 
   metadata.anchors().push_back(anchor);
   return metadata.anchors().back();
@@ -387,9 +392,13 @@ void serializePopefTensor(const popart::Tensor &tensor,
   tensorWriter->stream.write(dataPtr, tensor.info.nbytes());
 }
 
-void serializePopefAnchors(const popart::popx::Executablex &popartMetadata,
-                           popef::Metadata &metadata,
-                           popef::Writer &writer) {
+void serializePopefAnchors(
+    const popart::popx::Executablex &popartMetadata,
+    const std::map<uint16_t, std::vector<uint32_t>> rngBuffer,
+    popef::Metadata &metadata,
+    popef::Writer &writer) {
+  const auto &ir = popartMetadata.lowering().ir();
+
   for (auto *tensor : popartMetadata.getWeightTensors()) {
     if (tensor->hasProducer()) {
       throw error("Weights are tensors of variable type that do not"
@@ -398,82 +407,166 @@ void serializePopefAnchors(const popart::popx::Executablex &popartMetadata,
 
     static constexpr bool isPerReplica   = false;
     static constexpr bool isAnchorStream = false;
-    const popef::Anchor *anchor_ptr      = nullptr;
 
-    auto &ir = popartMetadata.lowering().ir();
     if (!ir.streamingIsDisabledForTensor(tensor)) {
       // Tensor has to be handled as an input and output stream.
       // Add the input anchor
-      putAnchorToMetadata(*tensor,
+      putAnchorToMetadata(tensor->id,
+                          IrLowering::h2dId(tensor->id),
                           isPerReplica,
                           popef::TensorType::INPUT,
-                          nonstd::nullopt,
+                          createTensorInfo(*tensor),
                           metadata);
       // Add the output anchor
-      anchor_ptr = &putAnchorToMetadata(*tensor,
-                                        isPerReplica,
-                                        popef::TensorType::OUTPUT,
-                                        isAnchorStream,
-                                        metadata);
+      const popef::Anchor anchor =
+          putAnchorToMetadata(tensor->id,
+                              IrLowering::d2hId(tensor->id, isAnchorStream),
+                              isPerReplica,
+                              popef::TensorType::OUTPUT,
+                              createTensorInfo(*tensor),
+                              metadata);
+
+      serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
     } else {
-      anchor_ptr = &putAnchorToMetadata(*tensor,
-                                        isPerReplica,
-                                        popef::TensorType::UNKNOWN,
-                                        nonstd::nullopt,
-                                        metadata);
+      const popef::Anchor anchor =
+          putAnchorToMetadata(tensor->id,
+                              "",
+                              isPerReplica,
+                              popef::TensorType::UNKNOWN,
+                              createTensorInfo(*tensor),
+                              metadata);
+      serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
     }
-    serializePopefTensor(*tensor, anchor_ptr->tensorInfo(), writer);
   }
 
   for (Tensor *tensor : popartMetadata.getAnchorTensors()) {
     static constexpr bool isPerReplica   = true;
     static constexpr bool isAnchorStream = true;
-    putAnchorToMetadata(*tensor,
+    putAnchorToMetadata(tensor->id,
+                        IrLowering::d2hId(tensor->id, isAnchorStream),
                         isPerReplica,
                         popef::TensorType::OUTPUT,
-                        isAnchorStream,
+                        createTensorInfo(*tensor),
                         metadata);
   }
 
-  if (popartMetadata.getSeedTensor() != nullptr) {
+  if (popartMetadata.getSeedTensor() && !ir.useSyntheticData()) {
     static constexpr bool isPerReplica = false;
+    const popart::Tensor &tensor       = *popartMetadata.getSeedTensor();
     const popef::Anchor &anchor =
-        putAnchorToMetadata(*popartMetadata.getSeedTensor(),
+        putAnchorToMetadata(tensor.id,
+                            IrLowering::h2dId(tensor.id),
                             isPerReplica,
                             popef::TensorType::INPUT,
-                            nonstd::nullopt,
+                            createTensorInfo(tensor),
                             metadata);
     metadata.setSeedHandle(anchor.handle());
     serializePopefTensor(
         *popartMetadata.getSeedTensor(), anchor.tensorInfo(), writer);
+
+    putAnchorToMetadata(tensor.id,
+                        "d2h_randomSeed",
+                        isPerReplica,
+                        popef::TensorType::OUTPUT,
+                        createTensorInfo(tensor),
+                        metadata);
+  }
+
+  if (ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+    static constexpr bool isPerReplica      = true;
+    static constexpr const char *tensorName = "rngStateTensor";
+
+    const auto &target = popartMetadata.lowering().graph().getTarget();
+
+    const popef::DataType dt = popef::DataType::U32;
+    const std::vector<size_t> tensorShape =
+        RngStateLowering::getCombinedRngStateTensorShape(target);
+    const popart::Shape shape(tensorShape.begin(), tensorShape.end());
+    const int repFactor = metadata.replicationFactor();
+
+    putAnchorToMetadata(tensorName,
+                        IrLowering::h2dId(tensorName),
+                        isPerReplica,
+                        popef::TensorType::INPUT,
+                        createTensorInfo(dt, shape),
+                        metadata);
+    putAnchorToMetadata(tensorName,
+                        std::string("d2h_") + tensorName,
+                        isPerReplica,
+                        popef::TensorType::OUTPUT,
+                        createTensorInfo(dt, shape),
+                        metadata);
+
+    popart::Shape shapeWithReplicas(shape);
+    shapeWithReplicas.insert(shapeWithReplicas.begin(), repFactor);
+
+    popef::TensorDataInfo tensorDataInfo;
+    tensorDataInfo.setName(tensorName);
+    tensorDataInfo.setTensorInfo(createTensorInfo(dt, shapeWithReplicas));
+    const int64_t nbytes = tensorDataInfo.tensorInfo().sizeInBytes();
+    std::shared_ptr<popef::BlobWriter> tensorWriter =
+        writer.createTensorData(tensorDataInfo);
+
+    for (int i = 0; i < repFactor; i++) {
+      try {
+        const auto &rngState = rngBuffer.at(i);
+        const char *dataPtr  = reinterpret_cast<const char *>(rngState.data());
+        tensorWriter->stream.write(dataPtr,
+                                   nbytes / metadata.replicationFactor());
+      } catch (...) {
+        throw error("RNGState data for replica {} does not exist or does not "
+                    "have enough data.",
+                    i);
+      }
+    }
+  }
+
+  if (ir.getSessionOptions().instrumentWithHardwareCycleCounter) {
+    static constexpr bool isPerReplica = true;
+    const auto cycleCountIds = popartMetadata.lowering().getCycleCountIds();
+    const popef::DataType dt = popef::DataType::U64;
+    const popart::Shape shape(1, 0);
+    for (const auto &tid : cycleCountIds) {
+      putAnchorToMetadata(tid,
+                          IrLowering::cycleCountStreamId(tid),
+                          isPerReplica,
+                          popef::TensorType::OUTPUT,
+                          createTensorInfo(dt, shape),
+                          metadata);
+    }
   }
 
   for (auto *tensor : popartMetadata.getOptimizerTensors()) {
     static constexpr bool isPerReplica = false;
-    const popef::Anchor &anchor        = putAnchorToMetadata(*tensor,
-                                                      isPerReplica,
-                                                      popef::TensorType::INPUT,
-                                                      nonstd::nullopt,
-                                                      metadata);
+    const popef::Anchor &anchor =
+        putAnchorToMetadata(tensor->id,
+                            IrLowering::h2dId(tensor->id),
+                            isPerReplica,
+                            popef::TensorType::INPUT,
+                            createTensorInfo(*tensor),
+                            metadata);
     serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
   }
 
   for (Tensor *tensor : popartMetadata.getDataStreamTensors()) {
     static constexpr bool isPerReplica = true;
-    putAnchorToMetadata(*tensor,
+    putAnchorToMetadata(tensor->id,
+                        IrLowering::h2dId(tensor->id),
                         isPerReplica,
                         popef::TensorType::INPUT,
-                        nonstd::nullopt,
+                        createTensorInfo(*tensor),
                         metadata);
   }
 }
 
-void serializePopefMetadata(const popart::popx::Executablex &popartMetadata,
-                            const std::string &programHash,
-                            popef::Writer &writer) {
-  auto &ir_lowering = popartMetadata.lowering();
-  auto &ir          = ir_lowering.ir();
-  auto &opts        = ir.getSessionOptions();
+void serializePopefMetadata(
+    const popart::popx::Executablex &popartMetadata,
+    const std::map<uint16_t, std::vector<uint32_t>> rngBuffer,
+    const std::string &programHash,
+    popef::Writer &writer) {
+  const auto &ir_lowering = popartMetadata.lowering();
+  const auto &ir          = ir_lowering.ir();
+  const auto &opts        = ir.getSessionOptions();
 
   const bool isInference =
       ir.getExecutionMode() == Ir::ExecutionMode::Inference;
@@ -493,18 +586,32 @@ void serializePopefMetadata(const popart::popx::Executablex &popartMetadata,
   metadata.setDeviceOptions(convertOptionFlagsToOptions(
       ir_lowering.getDeviceInfo()->getOptionFlags()));
 
-  serializePopefAnchors(popartMetadata, metadata, writer);
+  serializePopefAnchors(popartMetadata, rngBuffer, metadata, writer);
+
+  std::vector<int64_t> loadPrograms{
+      PopPrograms::ProgramIndex::WeightsFromHost,
+      PopPrograms::ProgramIndex::OptimizerFromHost};
+  std::vector<int64_t> mainPrograms{PopPrograms::ProgramIndex::Program};
+  std::vector<int64_t> savePrograms{PopPrograms::ProgramIndex::WeightsToHost};
+
+  if (!metadata.seedHandle().empty()) {
+    loadPrograms.push_back(PopPrograms::ProgramIndex::RandomSeedFromHost);
+    savePrograms.push_back(PopPrograms::ProgramIndex::RandomSeedToHost);
+  }
+
+  if (ir.getSessionOptions().enableLoadAndOffloadRNGState) {
+    loadPrograms.push_back(PopPrograms::ProgramIndex::RngStateFromHost);
+    savePrograms.push_back(PopPrograms::ProgramIndex::RngStateToHost);
+  }
+
+  if (ir.getSessionOptions().instrumentWithHardwareCycleCounter) {
+    savePrograms.push_back(PopPrograms::ProgramIndex::CycleCountTensorToHost);
+  }
 
   popef::ProgramFlow flow;
-  flow.setLoad({PopPrograms::ProgramIndex::WeightsFromHost,
-                PopPrograms::ProgramIndex::OptimizerFromHost,
-                PopPrograms::ProgramIndex::RandomSeedFromHost,
-                PopPrograms::ProgramIndex::RngStateFromHost});
-  flow.setMain({PopPrograms::ProgramIndex::Program});
-  flow.setSave({PopPrograms::ProgramIndex::WeightsToHost,
-                PopPrograms::ProgramIndex::RandomSeedToHost,
-                PopPrograms::ProgramIndex::RngStateToHost,
-                PopPrograms::ProgramIndex::CycleCountTensorToHost});
+  flow.setLoad(loadPrograms);
+  flow.setMain(mainPrograms);
+  flow.setSave(savePrograms);
   metadata.setProgramFlow(flow);
 
   writer.write(metadata);
@@ -857,34 +964,31 @@ deserializePopartMetadata(std::istream &in,
 } // namespace
 
 void serializeEngineExecutable(std::ostream &out,
-                               const poplar::Engine *poplarEngine,
-                               const popart::popx::Executablex *executable,
-                               size_t hash) {
-  const std::string programHash = std::to_string(hash);
+                               const popart::popx::Devicex &device) {
+  const std::string programHash = std::to_string(device.ir().getHash());
   popef::Writer popefWriter(out);
 
   // Export Popart specific data
-  if (executable) {
-    std::shared_ptr<popef::BlobWriter> popefOpaque =
-        popefWriter.createOpaqueBlob(popartOpaqueName, programHash);
-    serializePopartExecutable(popefOpaque->stream, *executable);
+  std::shared_ptr<popef::BlobWriter> popefOpaque =
+      popefWriter.createOpaqueBlob(popartOpaqueName, programHash);
+  serializePopartExecutable(popefOpaque->stream, device.executable_);
 
-    try {
-      serializePopefMetadata(*executable, programHash, popefWriter);
-    } catch (const std::exception &e) {
-      logging::session::warn(
-          "Serializing popef metadata ended with failure due to {}. The popef "
-          "file cannot be used to run model using model_runtime",
-          e.what());
-    }
+  try {
+    serializePopefMetadata(
+        device.executable_, device.rngBuffer, programHash, popefWriter);
+  } catch (const std::exception &e) {
+    logging::session::warn(
+        "Serializing popef metadata ended with failure due to {}. The popef "
+        "file cannot be used to run model using model_runtime",
+        e.what());
   }
 
   // Export Poplar engine's executable
-  if (poplarEngine) {
+  if (device.pEngine.get()) {
     static constexpr bool compress = false;
     std::shared_ptr<popef::BlobWriter> popefExe =
         popefWriter.createExecutable(programHash, compress);
-    poplarEngine->serializeExecutable(popefExe->stream);
+    device.pEngine.get()->serializeExecutable(popefExe->stream);
   }
 }
 

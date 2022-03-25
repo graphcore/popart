@@ -24,19 +24,20 @@ namespace popx {
 // Forward declaration.
 class IrLowering;
 class Executablex;
+class Devicex;
 
 namespace serialization {
 
 // Forward declaration.
 class ReaderImpl;
 
-// Serialize both the poplar engine's executable, popart executable and the
-// hash to the given ostream.
-// poplarEngine / executable are optional and can be nullptr
+// The function prepares popef file which can be used to run a model
+// using model_runtime or serving services supported by Graphcore.
+// In detail: It serializes both the poplar engine's executable,
+// popart executable, the hash to the given ostream, non-user input
+// tensors and prepares popef metadata.
 void serializeEngineExecutable(std::ostream &out,
-                               const poplar::Engine *poplarEngine,
-                               const popart::popx::Executablex *executable,
-                               size_t hash);
+                               const popart::popx::Devicex &device);
 
 class Reader {
 public:

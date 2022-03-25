@@ -18,6 +18,7 @@
 #include <popart/devicemanager.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/enigma.hpp>
+#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
@@ -190,6 +191,10 @@ public:
   void serializeExecutable(const std::string &path);
 
 private:
+  friend void
+  serialization::serializeEngineExecutable(std::ostream &out,
+                                           const popart::popx::Devicex &device);
+
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
 
   // We have datastreams which are created during the prepare phase and

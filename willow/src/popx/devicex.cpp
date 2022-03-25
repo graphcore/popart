@@ -46,7 +46,6 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
@@ -869,10 +868,8 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::connectRngStateStream() {
-  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
-                RngStateLowering::rngStateSizePerWorker *
-                RngStateLowering::numRngStateTensors;
+  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
+      lowering().graph().getTarget());
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
     rngBuffer[replicaId] = std::vector<uint32_t>(rngSize);
@@ -926,10 +923,8 @@ void Devicex::setRngStateFromHost() {
 std::vector<uint32_t> Devicex::getRngStateToHost() {
   // Reset the buffer
   logging::devicex::debug("Cleaning the rng buffer before receiving data");
-  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
-                RngStateLowering::rngStateSizePerWorker *
-                RngStateLowering::numRngStateTensors;
+  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
+      lowering().graph().getTarget());
   for (auto &buffer : rngBuffer) {
     buffer.second = std::vector<uint32_t>(rngSize);
   }
@@ -947,10 +942,8 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
 }
 
 void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
-  int totalNumTiles = deviceInfo->getNumIpus() * deviceInfo->getTilesPerIPU();
-  int rngSize       = totalNumTiles * deviceInfo->getNumWorkerContexts() *
-                RngStateLowering::rngStateSizePerWorker *
-                RngStateLowering::numRngStateTensors;
+  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
+      lowering().graph().getTarget());
   if (rngState.size() != rngSize * getReplicationFactor()) {
     throw runtime_error("Devicex::setRngStateValue received rngState of size "
                         "{}; was expecting size {}",
@@ -1453,8 +1446,7 @@ void Devicex::serializeExecutable(const std::string &path) {
 
 void Devicex::serializeExecutable(std::ostream &out) {
   POPART_TRACEPOINT();
-  popx::serialization::serializeEngineExecutable(
-      out, pEngine.get(), &executable_, executable_.ir().getHash());
+  popx::serialization::serializeEngineExecutable(out, *this);
 }
 
 void Devicex::connectStream(const std::string &streamHandle,
