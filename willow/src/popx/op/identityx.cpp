@@ -61,12 +61,11 @@ void IdentityLossGradOpx::grow(snap::program::Sequence &prog) const {
       // Divide broadcasted tensor by total number of samples
       float scale = static_cast<float>(reference.numElements());
 
-      output = snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                        pe::Divide(pe::_1, pe::Const(scale)),
-                                        {getInTensor(0).getPoplarTensor()},
-                                        prog.getPoplarSequence(),
-                                        debugContext("div")),
-                            graph()};
+      output = snap::popops::map(graph(),
+                                 pe::Divide(pe::_1, pe::Const(scale)),
+                                 {getInTensor(0)},
+                                 prog,
+                                 debugContext("div"));
     } else if (identitylossop.getReductionType() != ReductionType::Sum) {
       // Only mean and sum are supported.
       throw error("Unsupported reduction type for Loss {}",

@@ -7,7 +7,7 @@
 #include <popart/popx/op/greaterx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -20,16 +20,13 @@ GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
 
 void GreaterOpx::grow(snap::program::Sequence &prog) const {
 
-  insert(
-      outId(GreaterOp::getOutIndex()),
-      snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::BinaryOpType::GREATER_THAN,
-                      get(inId(GreaterOp::getArg0InIndex())).getPoplarTensor(),
-                      get(inId(GreaterOp::getArg1InIndex())).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext()),
-          graph()});
+  insert(outId(GreaterOp::getOutIndex()),
+         snap::popops::map(graph(),
+                           popops::expr::BinaryOpType::GREATER_THAN,
+                           get(inId(GreaterOp::getArg0InIndex())),
+                           get(inId(GreaterOp::getArg1InIndex())),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/NonLinearity.hpp>
-#include <popops/ElementWise.hpp>
 #include <popart/op/softsign.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/softsignx.hpp>
@@ -27,11 +27,7 @@ void SoftSignComputex::inplace(snap::program::Sequence &prog,
   // Softsign definition: x/(1+abs(x))
   auto expr = pe::Divide(pe::_1, pe::Add(pe::Const(1.0f), pe::Abs(pe::_1)));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     expr,
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
 }
 
 SoftSignInplaceOpx::SoftSignInplaceOpx(Op *op, Devicex *devicex)
@@ -61,14 +57,10 @@ void SoftSignGradOpx::grow(snap::program::Sequence &prog) const {
       pe::_1,
       pe::Pow(pe::Add(pe::Const(1.0f), pe::Abs(pe::_2)), pe::Const(2.0f)));
 
-  auto output =
-      popops::map(graph().getPoplarGraph(),
-                  expr,
-                  {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
-                  prog.getPoplarSequence(),
-                  debugContext("softsign_grad"));
+  auto output = snap::popops::map(
+      graph(), expr, {grad_in, fwd_input}, prog, debugContext("softsign_grad"));
 
-  setOutTensor(SoftSignGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(SoftSignGradOp::getOutIndex(), output);
 }
 
 namespace {

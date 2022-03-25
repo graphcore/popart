@@ -11,8 +11,8 @@
 #include <popart/popx/op/softmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/NonLinearity.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
@@ -138,11 +138,11 @@ void SoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
 
   // -1 at position "label", 0 elsewhere.
   // p - 1 at position "label" label, p elsewhere.
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     pe::Add(pe::Neg(pe::_1), pe::_2),
-                     {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     debugContext("negsub"));
+  snap::popops::mapInPlace(graph(),
+                           pe::Add(pe::Neg(pe::_1), pe::_2),
+                           {oneHot, probs2D},
+                           prog,
+                           debugContext("negsub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -200,23 +200,23 @@ void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
 
   // oneHotProbs, from a tensor which is sparse with a single 1 per row,
   //              to a tensor which is sparse with a single p per row.
-  auto oneHotProbs = popops::map(graph().getPoplarGraph(),
-                                 popops::expr::BinaryOpType::MULTIPLY,
-                                 oneHot.getPoplarTensor(),
-                                 probs2D.getPoplarTensor(),
-                                 prog.getPoplarSequence(),
-                                 debugContext("mul"));
+  auto oneHotProbs = snap::popops::map(graph(),
+                                       popops::expr::BinaryOpType::MULTIPLY,
+                                       oneHot,
+                                       probs2D,
+                                       prog,
+                                       debugContext("mul"));
 
   // Now compute the SoftmaxGrad:
 
   // TODO: T8303
   // -1 at position "label", 0 elsewhere.
   // p - 1 at position "label" label, p elsewhere.
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     pe::Add(pe::Neg(pe::_1), pe::_2),
-                     {oneHot.getPoplarTensor(), probs2D.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     debugContext("NegSub"));
+  snap::popops::mapInPlace(graph(),
+                           pe::Add(pe::Neg(pe::_1), pe::_2),
+                           {oneHot, probs2D},
+                           prog,
+                           debugContext("NegSub"));
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
@@ -235,22 +235,23 @@ void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
   // Now compute the rest of the nll loss from the same one-hot encoded tensor:
 
   // sum rows, so that just the p corresponding to the label remains
-  snap::Tensor reduction = snap::Tensor{popops::reduce(graph().getPoplarGraph(),
-                                                       oneHotProbs,
-                                                       {1},
-                                                       {popops::Operation::ADD},
-                                                       prog.getPoplarSequence(),
-                                                       debugContext("add")),
-                                        graph()};
+  snap::Tensor reduction =
+      snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                  oneHotProbs.getPoplarTensor(),
+                                  {1},
+                                  {popops::Operation::ADD},
+                                  prog.getPoplarSequence(),
+                                  debugContext("add")),
+                   graph()};
 
   // Create an epsilon value
   snap::Tensor eps = getConst(probs.elementType(), {1}, 1.0e-7, "epsilon");
   // Add eps to reduction to make sure it does not have any 0's and log it,
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     pe::Log(pe::Add(pe::_1, pe::_2)),
-                     {reduction.getPoplarTensor(), eps.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     debugContext("LogEpsMul"));
+  snap::popops::mapInPlace(graph(),
+                           pe::Log(pe::Add(pe::_1, pe::_2)),
+                           {reduction, eps},
+                           prog,
+                           debugContext("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
   if (op.hasIgnoreIndex()) {

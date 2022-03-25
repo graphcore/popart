@@ -6,7 +6,7 @@
 #include <popart/popx/op/orx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -18,14 +18,12 @@ OrOpx::OrOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
 void OrOpx::grow(snap::program::Sequence &prog) const {
 
   insert(outId(OrOp::getOutIndex()),
-         snap::Tensor{
-             popops::map(graph().getPoplarGraph(),
-                         popops::expr::BinaryOpType::LOGICAL_OR,
-                         get(inId(OrOp::getArg0InIndex())).getPoplarTensor(),
-                         get(inId(OrOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
-                         debugContext()),
-             graph()});
+         snap::popops::map(graph(),
+                           popops::expr::BinaryOpType::LOGICAL_OR,
+                           get(inId(OrOp::getArg0InIndex())),
+                           get(inId(OrOp::getArg1InIndex())),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

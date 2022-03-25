@@ -5,7 +5,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -39,9 +39,9 @@ TileGradOpx::TileGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 // Repeats [2]
 // GradOut = Sum([2, 4], [6, 7]) = [8, 11]
 void TileGradOpx::grow(snap::program::Sequence &prog) const {
-  auto inTensor = getInTensor(TileGradOp::getInIndex()).getPoplarTensor();
-  poplar::Tensor intermediateTensor = inTensor;
-  poplar::Tensor outTensor;
+  auto inTensor           = getInTensor(TileGradOp::getInIndex());
+  auto intermediateTensor = inTensor;
+  snap::Tensor outTensor;
 
   auto repeats = getOp<TileGradOp>().getRepeats();
   for (unsigned i = 0; i < repeats.size(); i++) {
@@ -54,23 +54,22 @@ void TileGradOpx::grow(snap::program::Sequence &prog) const {
     for (size_t start = 0; start < inTensor.dim(i); start += outDimSize) {
       auto t = intermediateTensor.slice({start, start + outDimSize}, i);
       if (start == 0) {
-        outTensor =
-            cloneNcopy(prog, snap::Tensor{t, graph()}).getPoplarTensor();
+        outTensor = cloneNcopy(prog, t);
       } else {
-        popops::mapInPlace(graph().getPoplarGraph(),
-                           popops::expr::BinaryOpType::ADD,
-                           outTensor,
-                           t,
-                           prog.getPoplarSequence(),
-                           debugContext(std::string("reduceAdd") +
-                                        sNameDelimiter +
-                                        std::to_string(start)));
+        snap::popops::mapInPlace(graph(),
+                                 popops::expr::BinaryOpType::ADD,
+                                 outTensor,
+                                 t,
+                                 prog,
+                                 debugContext(std::string("reduceAdd") +
+                                              sNameDelimiter +
+                                              std::to_string(start)));
       }
     }
     intermediateTensor = outTensor;
   }
 
-  setOutTensor(TileOp::getOutIndex(), snap::Tensor{outTensor, graph()});
+  setOutTensor(TileOp::getOutIndex(), outTensor);
 }
 
 namespace {

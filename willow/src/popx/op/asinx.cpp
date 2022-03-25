@@ -8,7 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -41,11 +41,7 @@ void AsinComputex::inplace(snap::program::Sequence &p,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(g.getPoplarGraph(),
-                     popops::expr::UnaryOpType::ASIN,
-                     t.getPoplarTensor(),
-                     p.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(g, popops::expr::UnaryOpType::ASIN, t, p, {dnai, s});
 }
 
 AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -53,10 +49,8 @@ AsinGradOpx::AsinGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void AsinGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto input =
-      getInTensor(AsinGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(AsinGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto input     = getInTensor(AsinGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(AsinGradOp::getFwdArgInIndex());
 
   // The derivative of the asin function can be constructed from normal
   // functions d/dx asin(x) = 1/sqrt(1-x^2)
@@ -67,13 +61,13 @@ void AsinGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Divide>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("inverse_sine_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("inverse_sine_grad"));
 
-  setOutTensor(AsinGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(AsinGradOp::getOutIndex(), output);
 }
 
 namespace {

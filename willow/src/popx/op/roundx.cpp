@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/op/round.hpp>
 #include <popart/popx/devicex.hpp>
@@ -28,11 +29,8 @@ void RoundComputex::inplace(snap::program::Sequence &prog,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::ROUND,
-                     tensor.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::ROUND, tensor, prog, {dnai, s});
 }
 
 RoundOpx::RoundOpx(Op *op, Devicex *devicex)

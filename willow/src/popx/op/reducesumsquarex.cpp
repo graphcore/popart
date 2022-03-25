@@ -10,7 +10,7 @@
 #include <popart/tensor.hpp>
 #include <popart/util.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
@@ -50,8 +50,7 @@ ReduceSumSquareGradOpx::ReduceSumSquareGradOpx(Op *op, Devicex *devicex)
 void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceSumSquareGradOp>();
   auto output =
-      cloneNcopy(prog, getInTensor(ReduceSumSquareGradOp::getOutIndex()))
-          .getPoplarTensor();
+      cloneNcopy(prog, getInTensor(ReduceSumSquareGradOp::getOutIndex()));
   auto input_shape     = inShape(ReduceSumSquareGradOp::getInIndex());
   auto output_shape    = outShape(ReduceSumSquareGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -65,17 +64,16 @@ void ReduceSumSquareGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = popops::map(
-      graph().getPoplarGraph(),
+  // TODO: should this be a mapInPlace?
+  output = snap::popops::map(
+      graph(),
       pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(2)),
-      {output,
-       getInTensor(ReduceSumSquareGradOp::getFwdInInIndex()).getPoplarTensor()},
-      prog.getPoplarSequence(),
+      {output, getInTensor(ReduceSumSquareGradOp::getFwdInInIndex())},
+      prog,
       debugContext("mul"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceSumSquareGradOp::getOutIndex(),
-               snap::Tensor{output, graph()});
+  setOutTensor(ReduceSumSquareGradOp::getOutIndex(), output);
 }
 
 namespace {

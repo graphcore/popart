@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/loop.hpp>
@@ -392,25 +392,21 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   // 7: Update the exit condition
   if (hasInput(LoopOp::getMaximumTripCountInIndex())) {
-    poplar::Tensor maxTripCountTensor =
-        getInTensor(LoopOp::getMaximumTripCountInIndex()).getPoplarTensor();
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    auto maxTripCountTensor = getInTensor(LoopOp::getMaximumTripCountInIndex());
+    snap::popops::mapInPlace(
+        graph(),
         popops::expr::Or(popops::expr::Or(popops::expr::_1,
                                           popops::expr::Not(popops::expr::_2)),
                          popops::expr::Gte(popops::expr::_3, popops::expr::_4)),
-        {exitTensor.getPoplarTensor(),
-         condOutTensor.getPoplarTensor(),
-         iteratorTensor.getPoplarTensor(),
-         maxTripCountTensor},
-        loopProg.getPoplarSequence(),
+        {exitTensor, condOutTensor, iteratorTensor, maxTripCountTensor},
+        loopProg,
         debugContext("exit_update"));
   } else {
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    snap::popops::mapInPlace(
+        graph(),
         popops::expr::Or(popops::expr::_1, popops::expr::Not(popops::expr::_2)),
-        {exitTensor.getPoplarTensor(), condOutTensor.getPoplarTensor()},
-        loopProg.getPoplarSequence(),
+        {exitTensor, condOutTensor},
+        loopProg,
         debugContext("exit_update"));
   }
 
@@ -436,11 +432,11 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // 11: Increment the loop iterator
-  popops::mapInPlace(
-      graph().getPoplarGraph(),
+  snap::popops::mapInPlace(
+      graph(),
       popops::expr::Add(popops::expr::_1, popops::expr::Const(1)),
-      {iteratorTensor.getPoplarTensor()},
-      loopContinueProg.getPoplarSequence(),
+      {iteratorTensor},
+      loopContinueProg,
       debugContext("iterator_update"));
 
   // Test if the loop continue condition will not change, and if the loop

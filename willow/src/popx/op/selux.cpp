@@ -8,7 +8,7 @@
 #include <popart/popx/op/selux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -52,11 +52,8 @@ void SeluComputex::inplace(snap::program::Sequence &prog,
   exprs.push_back(
       std::make_unique<pe::Mul>(pe::Const(this->getGamma()), *exprs.back()));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     *exprs.back(),
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(
+      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
 SeluInplaceOpx::SeluInplaceOpx(Op *op, Devicex *devicex)
@@ -73,11 +70,9 @@ SeluGradOpx::SeluGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void SeluGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<SeluGradOp>();
-  const auto input =
-      getInTensor(SeluGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(SeluGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto &op       = getOp<SeluGradOp>();
+  const auto input     = getInTensor(SeluGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(SeluGradOp::getFwdArgInIndex());
 
   // We can write down the gradient of the Elu as two pieces:
   // theta(fwd_input < 0)*alpha*exp(fwd_input) + theta(fwd_input > 0)
@@ -104,13 +99,13 @@ void SeluGradOpx::grow(snap::program::Sequence &prog) const {
       std::make_unique<pe::Mul>(pe::Const(op.getGamma()), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("selu_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("selu_grad"));
 
-  setOutTensor(SeluGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(SeluGradOp::getOutIndex(), output);
 }
 
 namespace {

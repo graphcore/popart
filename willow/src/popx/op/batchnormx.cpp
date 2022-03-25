@@ -7,11 +7,11 @@
 #include <popart/popx/op/batchnormx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
 #include <popnn/BatchNorm.hpp>
 #include <popops/Cast.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 
 #include <cmath>
@@ -43,27 +43,25 @@ snap::Tensor BatchNormOpx::batchNormalise(snap::program::Sequence &prog,
 
   //  combinedMultiplicand = gamma / sDev
   //                       = gamma * invSd
-  auto multiplcand =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Mul(pe::_1, pe::_2),
-                  {scale.getPoplarTensor(), invSd.getPoplarTensor()},
-                  prog.getPoplarSequence(),
-                  debugContext("multiplicand"));
+  auto multiplcand = snap::popops::map(graph(),
+                                       pe::Mul(pe::_1, pe::_2),
+                                       {scale, invSd},
+                                       prog,
+                                       debugContext("multiplicand"));
 
   // addend = beta - gamma * mean / sdDev
   //        = beta - gamma * mean * invSd
-  auto addend =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                  {b.getPoplarTensor(), multiplcand, mean.getPoplarTensor()},
-                  prog.getPoplarSequence(),
-                  debugContext("addend"));
+  auto addend = snap::popops::map(graph(),
+                                  pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
+                                  {b, multiplcand, mean},
+                                  prog,
+                                  debugContext("addend"));
 
   // Perform the batchNorm
   return snap::Tensor{popnn::bn::batchNormalise(graph().getPoplarGraph(),
                                                 x.getPoplarTensor(),
-                                                multiplcand,
-                                                addend,
+                                                multiplcand.getPoplarTensor(),
+                                                addend.getPoplarTensor(),
                                                 prog.getPoplarSequence(),
                                                 debugContext("batchNormalise")),
                       graph()};
@@ -245,28 +243,22 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
           convertInvSdToVar(prog, invSd, epsilon, var.elementType());
 
       // Calculate the running mean
-      auto runningMean = snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              pe::Add(
-                  pe::Mul(pe::Sub(pe::Const(1), pe::Const(momentum)), pe::_2),
+      auto runningMean = snap::popops::map(
+          graph(),
+          pe::Add(pe::Mul(pe::Sub(pe::Const(1), pe::Const(momentum)), pe::_2),
                   pe::Mul(pe::Const(momentum), pe::_1)),
-              {mean.getPoplarTensor(), batchMean.getPoplarTensor()},
-              prog.getPoplarSequence(),
-              debugContext("runningMean")),
-          graph()};
+          {mean, batchMean},
+          prog,
+          debugContext("runningMean"));
 
       // Calculate the running variance using the unbiased results
-      auto runningVar = snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              pe::Add(
-                  pe::Mul(pe::Sub(pe::Const(1), pe::Const(momentum)), pe::_2),
+      auto runningVar = snap::popops::map(
+          graph(),
+          pe::Add(pe::Mul(pe::Sub(pe::Const(1), pe::Const(momentum)), pe::_2),
                   pe::Mul(pe::Const(momentum), pe::_1)),
-              {var.getPoplarTensor(), batchVar.getPoplarTensor()},
-              prog.getPoplarSequence(),
-              debugContext("runningVar")),
-          graph()};
+          {var, batchVar},
+          prog,
+          debugContext("runningVar"));
 
       // return the results
       result =

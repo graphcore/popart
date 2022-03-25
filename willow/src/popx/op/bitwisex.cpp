@@ -6,6 +6,7 @@
 #include <popart/popx/op/bitwisex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 
 namespace popart {
@@ -38,17 +39,13 @@ BitwiseBinaryOpx::BitwiseBinaryOpx(Op *op, Devicex *devicex)
 }
 
 void BitwiseBinaryOpx::grow(snap::program::Sequence &prog) const {
-  insert(
-      outId(BitwiseBinaryOp::getOutIndex()),
-      snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              determineOpType(),
-              getInTensor(BitwiseBinaryOp::getArg0InIndex()).getPoplarTensor(),
-              getInTensor(BitwiseBinaryOp::getArg1InIndex()).getPoplarTensor(),
-              prog.getPoplarSequence(),
-              debugContext()),
-          graph()});
+  insert(outId(BitwiseBinaryOp::getOutIndex()),
+         snap::popops::map(graph(),
+                           determineOpType(),
+                           getInTensor(BitwiseBinaryOp::getArg0InIndex()),
+                           getInTensor(BitwiseBinaryOp::getArg1InIndex()),
+                           prog,
+                           debugContext()));
 }
 
 popops::expr::BinaryOpType BitwiseBinaryOpx::determineOpType() const {

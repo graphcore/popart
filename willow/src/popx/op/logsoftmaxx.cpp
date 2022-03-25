@@ -6,9 +6,9 @@
 #include <popart/popx/op/logsoftmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/LogSoftmax.hpp>
 #include <popnn/NonLinearity.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 #include <poputil/VarStructure.hpp>
@@ -162,24 +162,24 @@ void LogSoftmaxGradOpx::grow(snap::program::Sequence &prog) const {
 
   std::vector<size_t> upRanked(probs.rank(), 1);
   upRanked[0] = probs.dim(0);
-  auto sum_g  = popops::reduce(graph().getPoplarGraph(),
-                              d_probs.getPoplarTensor(),
-                              redDims,
-                              {popops::Operation::ADD},
-                              prog.getPoplarSequence(),
-                              debugContext("reduce"))
+  auto sum_g  = snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                           d_probs.getPoplarTensor(),
+                                           redDims,
+                                           {popops::Operation::ADD},
+                                           prog.getPoplarSequence(),
+                                           debugContext("reduce")),
+                            graph()}
                    .reshape(upRanked);
 
   // g_i - softmax(x_i) * sum_j (g_j)
-  auto dv =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
-                  {d_probs.getPoplarTensor(), probs.getPoplarTensor(), sum_g},
-                  prog.getPoplarSequence(),
-                  debugContext("SubMul"));
+  auto dv = snap::popops::map(graph(),
+                              pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
+                              {d_probs, probs, sum_g},
+                              prog,
+                              debugContext("SubMul"));
 
   dv = dv.reshape(inInfo(LogSoftmaxGradOp::getActsInIndex()).shape_szt());
-  setOutTensor(0, snap::Tensor{dv, graph()});
+  setOutTensor(0, dv);
 }
 
 snap::Tensor LogSoftmaxGradOpx::cloneNcopyGrouped(snap::program::Sequence &s,

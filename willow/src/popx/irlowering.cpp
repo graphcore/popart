@@ -2274,22 +2274,24 @@ void IrLowering::growOpx(PopOpx *opx,
                                  popops::expr::IsFinite(popops::expr::_2));
       }
 
-      auto check        = popops::map(opx->graph().getPoplarGraph(),
-                               popops::expr::NotEqual(lhsExpr, rhsExpr),
-                               {nonModified.second.first.getPoplarTensor(),
-                                nonModified.second.second.getPoplarTensor()},
-                               seqIt->getPoplarSequence(),
-                               opx->debugContext("opxModifyChecking"),
-                               {});
+      auto check = snap::popops::map(
+          opx->graph(),
+          popops::expr::NotEqual(lhsExpr, rhsExpr),
+          {nonModified.second.first, nonModified.second.second},
+          *seqIt,
+          opx->debugContext("opxModifyChecking"),
+          {});
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
       if (check.numElements() > 1) {
-        checkReduced = popops::reduce(opx->graph().getPoplarGraph(),
-                                      checkReduced,
-                                      {0},
-                                      {popops::Operation::LOGICAL_OR},
-                                      seqIt->getPoplarSequence(),
-                                      opx->debugContext("opxModifyChecking"));
+        checkReduced =
+            snap::Tensor{popops::reduce(opx->graph().getPoplarGraph(),
+                                        checkReduced.getPoplarTensor(),
+                                        {0},
+                                        {popops::Operation::LOGICAL_OR},
+                                        seqIt->getPoplarSequence(),
+                                        opx->debugContext("opxModifyChecking")),
+                         opx->graph()};
       } else {
         checkReduced = checkReduced.squeeze({0});
       }
@@ -2298,14 +2300,12 @@ void IrLowering::growOpx(PopOpx *opx,
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
                           nonModified.first),
-          snap::Tensor{check, opx->graph()},
+          check,
           opx->debugContext("if"));
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
-      seqIt->add(snap::program::If(snap::Tensor{checkReduced, opx->graph()},
-                                   ifProg,
-                                   elseProg,
-                                   opx->debugContext("opxModifyCheck")));
+      seqIt->add(snap::program::If(
+          checkReduced, ifProg, elseProg, opx->debugContext("opxModifyCheck")));
     }
   }
 

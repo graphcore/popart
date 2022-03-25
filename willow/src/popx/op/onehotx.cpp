@@ -6,7 +6,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Zero.hpp>
@@ -30,8 +30,7 @@ void OnehotOpx::grow(snap::program::Sequence &prog) const {
 
   const poplar::Tensor &indices =
       getInTensor(OnehotOp::getIndicesInIndex()).getPoplarTensor();
-  const poplar::Tensor &values =
-      getInTensor(OnehotOp::getValuesInIndex()).getPoplarTensor();
+  const auto &values = getInTensor(OnehotOp::getValuesInIndex());
 
   // Create a new output tensor with the type of the values
   const auto shape = vXtoY<int64_t, std::size_t>(
@@ -73,13 +72,12 @@ void OnehotOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Add>(*exprs.front(), *exprs.back()));
 
   // Apply the above expression to the input tensors
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     *exprs.back(),
-                     {output.getPoplarTensor(),
-                      values.slice({0, 1}, 0),
-                      values.slice({1, 2}, 0)},
-                     prog.getPoplarSequence(),
-                     debugContext("combine"));
+  snap::popops::mapInPlace(
+      graph(),
+      *exprs.back(),
+      {output, values.slice({0, 1}, 0), values.slice({1, 2}, 0)},
+      prog,
+      debugContext("combine"));
 
   // reshape the flattened output dimensions back to their original shape
   output = output.reshapePartial(0, 1, indices.shape());
@@ -104,8 +102,7 @@ void OnehotGradOpx::grow(snap::program::Sequence &prog) const {
 
   const poplar::Tensor &indices =
       getInTensor(OnehotGradOp::getIndicesInIndex()).getPoplarTensor();
-  poplar::Tensor gradInput =
-      getInTensor(OnehotGradOp::getGradInIndex()).getPoplarTensor();
+  auto gradInput = getInTensor(OnehotGradOp::getGradInIndex());
 
   // roll the one-hot dimension to the end, if needed
   if (onehotGradOp.getAxis() != -1) {
@@ -130,32 +127,36 @@ void OnehotGradOpx::grow(snap::program::Sequence &prog) const {
                        prog.getPoplarSequence(),
                        debugContext("onehot"));
 
-  auto hotMask = popops::map(graph().getPoplarGraph(),
-                             pe::Mul(pe::_1, pe::_2),
-                             {gradInput, mask.getPoplarTensor()},
-                             prog.getPoplarSequence(),
-                             debugContext("hotMask"));
+  auto hotMask = snap::popops::map(graph(),
+                                   pe::Mul(pe::_1, pe::_2),
+                                   {gradInput, mask},
+                                   prog,
+                                   debugContext("hotMask"));
 
-  auto hotValue = popops::reduce(graph().getPoplarGraph(),
-                                 hotMask.flatten(),
-                                 {0},
-                                 {popops::Operation::ADD},
-                                 prog.getPoplarSequence(),
-                                 debugContext("hotValue"));
+  auto hotValue =
+      snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                  hotMask.flatten().getPoplarTensor(),
+                                  {0},
+                                  {popops::Operation::ADD},
+                                  prog.getPoplarSequence(),
+                                  debugContext("hotValue")),
+                   graph()};
 
   auto nothotMask =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Mul(pe::Neg(pe::Sub(pe::_1, pe::Const(1))), pe::_2),
-                  {mask.getPoplarTensor(), gradInput},
-                  prog.getPoplarSequence(),
-                  debugContext("nothotMask"));
+      snap::popops::map(graph(),
+                        pe::Mul(pe::Neg(pe::Sub(pe::_1, pe::Const(1))), pe::_2),
+                        {mask, gradInput},
+                        prog,
+                        debugContext("nothotMask"));
 
-  auto nothotValue = popops::reduce(graph().getPoplarGraph(),
-                                    nothotMask.flatten(),
-                                    {0},
-                                    {popops::Operation::ADD},
-                                    prog.getPoplarSequence(),
-                                    debugContext("nothotValue"));
+  auto nothotValue =
+      snap::Tensor{popops::reduce(graph().getPoplarGraph(),
+                                  nothotMask.flatten().getPoplarTensor(),
+                                  {0},
+                                  {popops::Operation::ADD},
+                                  prog.getPoplarSequence(),
+                                  debugContext("nothotValue")),
+                   graph()};
 
   const auto shape = vXtoY<int64_t, std::size_t>(onehotGradOp.getOutputShape());
 
@@ -170,19 +171,19 @@ void OnehotGradOpx::grow(snap::program::Sequence &prog) const {
   // The output.slice method returns a view on the underling output tensor
   // that we can write the hot or not hot value into
 
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::ADD,
-                     output.slice({0, 1}, 0).getPoplarTensor(),
-                     nothotValue,
-                     prog.getPoplarSequence(),
-                     debugContext("addNothot"));
+  snap::popops::mapInPlace(graph(),
+                           popops::expr::BinaryOpType::ADD,
+                           output.slice({0, 1}, 0),
+                           nothotValue,
+                           prog,
+                           debugContext("addNothot"));
 
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::ADD,
-                     output.slice({1, 2}, 0).getPoplarTensor(),
-                     hotValue,
-                     prog.getPoplarSequence(),
-                     debugContext("addHot"));
+  snap::popops::mapInPlace(graph(),
+                           popops::expr::BinaryOpType::ADD,
+                           output.slice({1, 2}, 0),
+                           hotValue,
+                           prog,
+                           debugContext("addHot"));
 
   setOutTensor(OnehotGradOp::getOutIndex(), output);
 }

@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/log1p.hpp>
@@ -38,11 +39,8 @@ void Log1pComputex::inplace(snap::program::Sequence &p,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &dbs) const {
 
-  popops::mapInPlace(g.getPoplarGraph(),
-                     popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS,
-                     t.getPoplarTensor(),
-                     p.getPoplarSequence(),
-                     {dnai, dbs});
+  snap::popops::mapInPlace(
+      g, popops::expr::UnaryOpType::LOGARITHM_ONE_PLUS, t, p, {dnai, dbs});
 }
 
 namespace {

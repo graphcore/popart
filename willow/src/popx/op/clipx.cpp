@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/clip.hpp>
@@ -159,19 +160,13 @@ void ClipGradOpx::grow(snap::program::Sequence &prog) const {
   // 3. Multiply 1. and 2.
   // 4. Multiply by gradIn
   // gradin * cast(clipmax != fwdOut) * cast(clipmin != fwdOut)
-  auto outTensor = snap::Tensor{
-      popops::map(
-          graph().getPoplarGraph(),
-          pe::Mul(
-              pe::Mul(pe::_1, pe::Cast(pe::NotEqual(pe::_2, pe::_3), elType)),
+  auto outTensor = snap::popops::map(
+      graph(),
+      pe::Mul(pe::Mul(pe::_1, pe::Cast(pe::NotEqual(pe::_2, pe::_3), elType)),
               pe::Cast(pe::NotEqual(pe::_2, pe::_4), elType)),
-          {gradIn.getPoplarTensor(),
-           fwdOut.getPoplarTensor(),
-           clipmin.getPoplarTensor(),
-           clipmax.getPoplarTensor()},
-          prog.getPoplarSequence(),
-          debugContext("ApplyMinMaxMask")),
-      graph()};
+      {gradIn, fwdOut, clipmin, clipmax},
+      prog,
+      debugContext("ApplyMinMaxMask"));
 
   setOutTensor(clipGradOp->getOutIndex(), outTensor);
 }

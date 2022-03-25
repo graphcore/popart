@@ -14,7 +14,6 @@
 
 #include <snap/popops/ElementWise.hpp>
 #include <popnn/Gru.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 
 namespace popart {
@@ -216,12 +215,12 @@ void GRUOpx::growBias(snap::program::Sequence &prog) const {
   snap::program::Copy copyProg(input_bias, biases, false, debugContext());
   prog.add(copyProg);
 
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     popops::expr::BinaryOpType::ADD,
-                     biases.getPoplarTensor(),
-                     hidden_bias.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     debugContext("add"));
+  snap::popops::mapInPlace(graph(),
+                           popops::expr::BinaryOpType::ADD,
+                           biases,
+                           hidden_bias,
+                           prog,
+                           debugContext("add"));
 }
 
 InputCreatorType GRUOpx::getInputCreatorType(InIndex index) const {

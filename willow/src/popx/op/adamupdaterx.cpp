@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
@@ -25,19 +25,17 @@ AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
   auto &adamUpdaterOp = getOp<AdamUpdaterOp>();
 
-  poplar::Tensor var;
-  poplar::Tensor accl1 =
-      getInTensor(AdamUpdaterOp::getAccl1InIndex()).getPoplarTensor();
-  poplar::Tensor accl2 =
-      getInTensor(AdamUpdaterOp::getAccl2InIndex()).getPoplarTensor();
+  snap::Tensor var;
+  auto accl1            = getInTensor(AdamUpdaterOp::getAccl1InIndex());
+  auto accl2            = getInTensor(AdamUpdaterOp::getAccl2InIndex());
   poplar::Type elemType = accl1.elementType();
-  std::vector<poplar::Tensor> tensors{accl1, accl2};
+  std::vector<snap::Tensor> tensors{accl1, accl2};
 
   int varIndex  = -1;
   int stepIndex = -1;
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {
-    var      = getInTensor(AdamUpdaterOp::getVarInIndex()).getPoplarTensor();
+    var      = getInTensor(AdamUpdaterOp::getVarInIndex());
     elemType = var.elementType();
     tensors.push_back(var);
     varIndex = tensors.size();
@@ -50,15 +48,14 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
 
   // Calculate updater term for both const & tensor optimizer parameters
   if (hasInput(AdamUpdaterOp::getStepInIndex())) {
-    poplar::Tensor step =
-        getInTensor(AdamUpdaterOp::getStepInIndex()).getPoplarTensor();
+    auto step = getInTensor(AdamUpdaterOp::getStepInIndex());
 
     // Update step
-    popops::mapInPlace(graph().getPoplarGraph(),
-                       pe::Add(pe::_1, pe::Const(1)),
-                       {step},
-                       prog.getPoplarSequence(),
-                       debugContext("updateStep"));
+    snap::popops::mapInPlace(graph(),
+                             pe::Add(pe::_1, pe::Const(1)),
+                             {step},
+                             prog,
+                             debugContext("updateStep"));
 
     tensors.push_back(step);
     stepIndex = tensors.size();
@@ -82,8 +79,7 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
                   pe::Pow(pe::Const(adamUpdaterOp.initB1.val()),
                           pe::Cast(pe::PlaceHolder(stepIndex), poplar::FLOAT)));
     } else {
-      tensors.push_back(
-          getInTensor(AdamUpdaterOp::getBeta1InIndex()).getPoplarTensor());
+      tensors.push_back(getInTensor(AdamUpdaterOp::getBeta1InIndex()));
       b1correction =
           pe::Sub(pe::Const(1.0f),
                   pe::Pow(pe::PlaceHolder(tensors.size()),
@@ -102,8 +98,7 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
             pe::Pow(pe::Const(adamUpdaterOp.initB2.val()),
                     pe::Cast(pe::PlaceHolder(stepIndex), poplar::FLOAT)));
       } else {
-        tensors.push_back(
-            getInTensor(AdamUpdaterOp::getBeta2InIndex()).getPoplarTensor());
+        tensors.push_back(getInTensor(AdamUpdaterOp::getBeta2InIndex()));
         b2correction = pe::Sub(
             pe::Const(1.0f),
             pe::Pow(pe::PlaceHolder(tensors.size()),
@@ -133,8 +128,7 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
     expr = pe::Divide(pe::Cast(mhat, accl2.elementType()),
                       pe::Add(vhat, pe::Const(adamUpdaterOp.initEps.val())));
   } else {
-    tensors.push_back(
-        getInTensor(AdamUpdaterOp::getEpsInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdamUpdaterOp::getEpsInIndex()));
     expr = pe::Divide(pe::Cast(mhat, accl2.elementType()),
                       pe::Add(vhat,
                               pe::Cast(pe::PlaceHolder(tensors.size()),
@@ -153,18 +147,14 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
     }
   } else {
     // Non-const weight decay
-    tensors.push_back(
-        getInTensor(AdamUpdaterOp::getWdInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdamUpdaterOp::getWdInIndex()));
     expr = pe::Add(pe::Cast(expr, elemType),
                    pe::Mul(pe::Cast(pe::PlaceHolder(tensors.size()), elemType),
                            pe::PlaceHolder(varIndex)));
   }
 
-  poplar::Tensor updater = popops::map(graph().getPoplarGraph(),
-                                       pe::Cast(expr, elemType),
-                                       tensors,
-                                       prog.getPoplarSequence(),
-                                       debugContext(""));
+  auto updater = snap::popops::map(
+      graph(), pe::Cast(expr, elemType), tensors, prog, debugContext(""));
 
   if (hasInput(AdamUpdaterOp::getVarInIndex())) {
     if (hasInViewChangers(AdamUpdaterOp::getVarInIndex())) {
@@ -178,8 +168,7 @@ void AdamUpdaterOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  setOutTensor(AdamUpdaterOp::getUpdaterOutIndex(),
-               snap::Tensor{updater, graph()});
+  setOutTensor(AdamUpdaterOp::getUpdaterOutIndex(), updater);
 }
 
 namespace {

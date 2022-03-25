@@ -8,8 +8,8 @@
 #include <popart/popx/op/ctcx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/CTCLoss.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
@@ -166,16 +166,14 @@ snap::Tensor CtcOpx::applyReduction(snap::program::Sequence &prog,
     }
     case ReductionType::Mean: {
       // Divide by target max(length, 1).
-      ctcLoss = snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              pe::Divide(pe::_1,
-                         pe::Cast(pe::Max(pe::_2, pe::Const(1)),
-                                  ctcLoss.elementType())),
-              {ctcLoss.getPoplarTensor(), targetLengths.getPoplarTensor()},
-              prog.getPoplarSequence(),
-              debugContext("divByTargetLen")),
-          graph()};
+      ctcLoss =
+          snap::popops::map(graph(),
+                            pe::Divide(pe::_1,
+                                       pe::Cast(pe::Max(pe::_2, pe::Const(1)),
+                                                ctcLoss.elementType())),
+                            {ctcLoss, targetLengths},
+                            prog,
+                            debugContext("divByTargetLen"));
 
       // Take the average.
       double totalSamples = static_cast<double>(ctcLoss.dim(0));
@@ -236,7 +234,7 @@ void CtcGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Apply chain rule for reduction. The result gradient tensor is shape [N].
   auto adjustedCtcLossGrad =
-      applyReductionGrad(prog, ctcLossGrad, targetLengths).getPoplarTensor();
+      applyReductionGrad(prog, ctcLossGrad, targetLengths);
 
   // Expand and broadcast the gradient tensor to [T,N,C].
   adjustedCtcLossGrad =
@@ -251,15 +249,14 @@ void CtcGradOpx::grow(snap::program::Sequence &prog) const {
                                   : pe::Mul(pe::Cast(pe::_1, outType),
                                             pe::Cast(pe::_2, outType));
 
-  auto logProbsGradient = popops::map(
-      graph().getPoplarGraph(),
-      expr,
-      {logProbsGradientWrtCtcLoss.getPoplarTensor(), adjustedCtcLossGrad},
-      prog.getPoplarSequence(),
-      debugContext("chainRule"));
+  auto logProbsGradient =
+      snap::popops::map(graph(),
+                        expr,
+                        {logProbsGradientWrtCtcLoss, adjustedCtcLossGrad},
+                        prog,
+                        debugContext("chainRule"));
 
-  setOutTensor(CtcGradOp::getLogProbsGradientOutIndex(),
-               snap::Tensor{logProbsGradient, graph()});
+  setOutTensor(CtcGradOp::getLogProbsGradientOutIndex(), logProbsGradient);
 }
 
 snap::Tensor
@@ -298,25 +295,25 @@ CtcGradOpx::applyReductionGrad(snap::program::Sequence &prog,
 
     // Take into account gradient for mean reduction.
     auto newCtcLossGrad =
-        popops::map(graph().getPoplarGraph(),
-                    pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
-                    {ctcLossGrad.getPoplarTensor()},
-                    prog.getPoplarSequence(),
-                    debugContext("divBySamples"));
+        snap::popops::map(graph(),
+                          pe::Mul(pe::_1, pe::Const(1.0f / totalSamples)),
+                          {ctcLossGrad},
+                          prog,
+                          debugContext("divBySamples"));
 
     // Expand tensor to [N].
     newCtcLossGrad = newCtcLossGrad.expand({0}).broadcast(N, 0);
 
     // Take into account gradient for division by length.
     newCtcLossGrad =
-        popops::map(graph().getPoplarGraph(),
-                    pe::Divide(pe::_1,
-                               pe::Cast(pe::Max(pe::_2, pe::Const(1)),
-                                        newCtcLossGrad.elementType())),
-                    {newCtcLossGrad, targetLengths.getPoplarTensor()},
-                    prog.getPoplarSequence(),
-                    debugContext("divByTargetLen"));
-    return snap::Tensor{newCtcLossGrad, graph()};
+        snap::popops::map(graph(),
+                          pe::Divide(pe::_1,
+                                     pe::Cast(pe::Max(pe::_2, pe::Const(1)),
+                                              newCtcLossGrad.elementType())),
+                          {newCtcLossGrad, targetLengths},
+                          prog,
+                          debugContext("divByTargetLen"));
+    return newCtcLossGrad;
 
   } else if (op.getReductionType() == ReductionType::Sum) {
 

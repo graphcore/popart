@@ -5,6 +5,7 @@
 #include <popart/popx/op/wherex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
@@ -165,12 +166,8 @@ void WhereRhsInplaceOpx::doGrow(snap::program::Sequence &prog,
   // Reverse the order and use not to reverse condition
   auto expr = pe::Select(pe::_1, pe::_2, pe::Not(pe::_3));
 
-  popops::mapInPlace(
-      graph().getPoplarGraph(),
-      expr,
-      {y.getPoplarTensor(), x.getPoplarTensor(), condition.getPoplarTensor()},
-      prog.getPoplarSequence(),
-      debugContext());
+  snap::popops::mapInPlace(
+      graph(), expr, {y, x, condition}, prog, debugContext());
 
   setOutTensor(WhereOp::outIndex(), y);
 }

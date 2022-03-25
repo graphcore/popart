@@ -4,7 +4,7 @@
 #include <popart/popx/op/subtractx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -15,17 +15,13 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
 }
 
 void SubtractOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(
-      SubtractOp::getOutIndex(),
-      snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              popops::expr::BinaryOpType::SUBTRACT,
-              getInTensor(SubtractOp::getArg0InIndex()).getPoplarTensor(),
-              getInTensor(SubtractOp::getArg1InIndex()).getPoplarTensor(),
-              prog.getPoplarSequence(),
-              debugContext()),
-          graph()});
+  setOutTensor(SubtractOp::getOutIndex(),
+               snap::popops::map(graph(),
+                                 popops::expr::BinaryOpType::SUBTRACT,
+                                 getInTensor(SubtractOp::getArg0InIndex()),
+                                 getInTensor(SubtractOp::getArg1InIndex()),
+                                 prog,
+                                 debugContext()));
 }
 
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)

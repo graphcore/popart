@@ -8,6 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
@@ -26,9 +27,8 @@ ModifyRandomSeedOpx::ModifyRandomSeedOpx(Op *op, Devicex *devicex)
 }
 
 void ModifyRandomSeedOpx::grow(snap::program::Sequence &prog) const {
-  auto inSeed   = getInTensor(op_p->getSeedInIndex()).getPoplarTensor();
-  auto modifier = getInTensor(ModifyRandomSeedOp::getSeedModifierInIndex())
-                      .getPoplarTensor();
+  auto inSeed   = getInTensor(op_p->getSeedInIndex());
+  auto modifier = getInTensor(ModifyRandomSeedOp::getSeedModifierInIndex());
 
   // The seed supplied to poprand is defined as a pair of uint32 values,
   //   inSeed = [L, R].
@@ -42,33 +42,36 @@ void ModifyRandomSeedOpx::grow(snap::program::Sequence &prog) const {
   auto inSeedR = inSeed.slice(1, 2);
 
   // Calculate R + modifier.
-  auto rPlusMod = popops::add(graph().getPoplarGraph(),
-                              inSeedR,
-                              modifier,
-                              prog.getPoplarSequence(),
-                              debugContext("preSeed"));
-  auto metaSeed = poplar::concat({inSeedL, rPlusMod});
+  auto rPlusMod = snap::Tensor{popops::add(graph().getPoplarGraph(),
+                                           inSeedR.getPoplarTensor(),
+                                           modifier.getPoplarTensor(),
+                                           prog.getPoplarSequence(),
+                                           debugContext("preSeed")),
+                               graph()};
+  auto metaSeed = snap::concat({inSeedL, rPlusMod});
   // Calculate randint(R + modifier).
-  auto outSeedRAsInt = poprand::uniform(
-      graph().getPoplarGraph(),
-      &metaSeed,
-      0u,
-      inSeedR,
-      poplar::INT, // unsigned int not supported.
-      static_cast<double>(std::numeric_limits<std::int32_t>::min()),
-      static_cast<double>(std::numeric_limits<std::int32_t>::max()),
-      prog.getPoplarSequence(),
-      debugContext("pickSeed"));
+  auto outSeedRAsInt = snap::Tensor{
+      poprand::uniform(
+          graph().getPoplarGraph(),
+          &metaSeed.getPoplarTensor(),
+          0u,
+          inSeedR.getPoplarTensor(),
+          poplar::INT, // unsigned int not supported.
+          static_cast<double>(std::numeric_limits<std::int32_t>::min()),
+          static_cast<double>(std::numeric_limits<std::int32_t>::max()),
+          prog.getPoplarSequence(),
+          debugContext("pickSeed")),
+      graph()};
   // Map randint(R + modifier) to UNSIGNED INT.
-  auto outSeedR = popops::map(graph().getPoplarGraph(),
-                              pe::Cast(pe::_1, poplar::UNSIGNED_INT),
-                              {outSeedRAsInt},
-                              prog.getPoplarSequence(),
-                              debugContext("castToUint"));
+  auto outSeedR = snap::popops::map(graph(),
+                                    pe::Cast(pe::_1, poplar::UNSIGNED_INT),
+                                    {outSeedRAsInt},
+                                    prog,
+                                    debugContext("castToUint"));
   // Concatenate outSeed.
-  auto outSeedUncopied = poplar::concat({inSeedL, outSeedR});
+  auto outSeedUncopied = snap::concat({inSeedL, outSeedR});
   // Copy.
-  auto outSeed = cloneNcopy(prog, snap::Tensor{outSeedUncopied, graph()});
+  auto outSeed = cloneNcopy(prog, outSeedUncopied);
 
   setOutTensor(ModifyRandomSeedOp::getModifiedSeedOutIndex(), outSeed);
 }

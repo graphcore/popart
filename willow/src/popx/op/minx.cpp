@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/min.hpp>
 #include <popart/popx/op/minx.hpp>
@@ -44,15 +44,14 @@ void MinOpx::grow(snap::program::Sequence &prog) const {
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::BinaryOpType::MINIMUM,
-                      outTensor.getPoplarTensor(),
-                      getInTensor(i).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext(std::string("min") + sNameDelimiter +
-                                   std::to_string(i))),
-          graph()};
+      outTensor =
+          snap::popops::map(graph(),
+                            popops::expr::BinaryOpType::MINIMUM,
+                            outTensor,
+                            getInTensor(i),
+                            prog,
+                            debugContext(std::string("min") + sNameDelimiter +
+                                         std::to_string(i)));
     }
   }
 
@@ -73,14 +72,14 @@ void MinArgGradOpx::grow(snap::program::Sequence &prog) const {
   // 2. Signum the result to give a tensor of 0's and -1's.
   // 3. Add 1 to the result to give a mask tensor
   // 4. Multiply by the gradient tensor.
-  auto result = popops::map(
-      graph().getPoplarGraph(),
+  auto result = snap::popops::map(
+      graph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
-      {getInTensor(MinArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
-       getInTensor(MinArgGradOp::getFwdInIndex()).getPoplarTensor(),
-       getInTensor(MinArgGradOp::getGradInIndex()).getPoplarTensor()},
-      prog.getPoplarSequence(),
+      {getInTensor(MinArgGradOp::getFwdOutInIndex()),
+       getInTensor(MinArgGradOp::getFwdInIndex()),
+       getInTensor(MinArgGradOp::getGradInIndex())},
+      prog,
       debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MinArgGradOp::getFwdOutInIndex()).shape();
@@ -93,7 +92,7 @@ void MinArgGradOpx::grow(snap::program::Sequence &prog) const {
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
   auto out = popops::reduce(graph().getPoplarGraph(),
-                            result,
+                            result.getPoplarTensor(),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog.getPoplarSequence(),

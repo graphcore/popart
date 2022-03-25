@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
@@ -26,7 +26,7 @@ void SumOpx::grow(snap::program::Sequence &prog) const {
   SumOp &sumOp = getOp<SumOp>();
 
   // The input tensors
-  std::vector<poplar::Tensor> inputs;
+  std::vector<snap::Tensor> inputs;
 
   // The "owner" of all expr nodes
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
@@ -36,7 +36,7 @@ void SumOpx::grow(snap::program::Sequence &prog) const {
 
   // Add the input tensors as placeholders to the expression
   for (int i = 0; i < sumOp.input->n(); ++i) {
-    inputs.push_back(getInTensor(i).getPoplarTensor());
+    inputs.push_back(getInTensor(i));
     exprs.push_back(std::make_unique<popops::expr::PlaceHolder>(i + 1));
     expr.push(exprs.back().get());
   }
@@ -53,12 +53,9 @@ void SumOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // Compute the sum
-  auto sum = popops::map(graph().getPoplarGraph(),
-                         *expr.front(),
-                         inputs,
-                         prog.getPoplarSequence(),
-                         debugContext("sum"));
-  setOutTensor(SumOp::getOutIndex(), snap::Tensor{sum, graph()});
+  auto sum = snap::popops::map(
+      graph(), *expr.front(), inputs, prog, debugContext("sum"));
+  setOutTensor(SumOp::getOutIndex(), sum);
 }
 
 InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {

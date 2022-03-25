@@ -8,7 +8,7 @@
 #include <popart/popx/op/thresholdedrelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -44,11 +44,8 @@ void ThresholdedReluComputex::inplace(snap::program::Sequence &prog,
   auto expression = pe::Select(
       pe::Const(0.0f), pe::_1, pe::Lte(pe::_1, pe::Const(getAlpha())));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     expression,
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(
+      graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 ThresholdedReluInplaceOpx::ThresholdedReluInplaceOpx(Op *op, Devicex *devicex)
@@ -67,11 +64,9 @@ ThresholdedReluGradOpx::ThresholdedReluGradOpx(Op *op, Devicex *devicex)
 }
 
 void ThresholdedReluGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<ThresholdedReluGradOp>();
-  const auto input =
-      getInTensor(ThresholdedReluGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(ThresholdedReluGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto &op       = getOp<ThresholdedReluGradOp>();
+  const auto input     = getInTensor(ThresholdedReluGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(ThresholdedReluGradOp::getFwdArgInIndex());
 
   // x <= alpha ? 0 : 1
   auto expression =
@@ -80,14 +75,13 @@ void ThresholdedReluGradOpx::grow(snap::program::Sequence &prog) const {
                          pe::Lte(pe::_2, pe::Const(op.getAlpha()))),
               pe::_1);
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            expression,
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("thresholdedrelu_grad"));
+  auto output = snap::popops::map(graph(),
+                                  expression,
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("thresholdedrelu_grad"));
 
-  setOutTensor(ThresholdedReluGradOp::getOutIndex(),
-               snap::Tensor{output, graph()});
+  setOutTensor(ThresholdedReluGradOp::getOutIndex(), output);
 }
 
 namespace {

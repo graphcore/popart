@@ -9,7 +9,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
@@ -46,11 +46,9 @@ ReduceProdGradOpx::ReduceProdGradOpx(Op *op, Devicex *devicex)
 
 void ReduceProdGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceProdGradOp>();
-  auto output    = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()))
-                    .getPoplarTensor();
+  auto output = cloneNcopy(prog, getInTensor(ReduceProdGradOp::getInIndex()));
   auto fwd_input =
-      cloneNcopy(prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()))
-          .getPoplarTensor();
+      cloneNcopy(prog, getInTensor(ReduceProdGradOp::getFwdInInIndex()));
   auto input_shape     = inShape(ReduceProdGradOp::getInIndex());
   auto output_shape    = outShape(ReduceProdGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -99,8 +97,7 @@ void ReduceProdGradOpx::grow(snap::program::Sequence &prog) const {
   output    = output.flatten(0, static_cast<unsigned>(axis.size()));
   fwd_input = fwd_input.flatten(0, static_cast<unsigned>(axis.size()));
 
-  auto lrcumprod =
-      cloneNcopy(prog, snap::Tensor{output, graph()}).getPoplarTensor();
+  auto lrcumprod = cloneNcopy(prog, output);
 
   // In-place left-right cumprod
   // Left-right multiplication, leaving one out,
@@ -108,17 +105,17 @@ void ReduceProdGradOpx::grow(snap::program::Sequence &prog) const {
   for (int64_t i = 1; i < lrcumprod.dim(0); ++i) {
     auto left  = lrcumprod.slice(i, lrcumprod.dim(0), 0);
     auto right = lrcumprod.slice(0, lrcumprod.dim(0) - i, 0);
-    popops::mapInPlace(graph().getPoplarGraph(),
-                       pe::Mul(pe::_1, pe::_2),
-                       {left, fwd_input.slice(i - 1, i, 0)},
-                       prog.getPoplarSequence(),
-                       debugContext("mul"));
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    snap::popops::mapInPlace(graph(),
+                             pe::Mul(pe::_1, pe::_2),
+                             {left, fwd_input.slice(i - 1, i, 0)},
+                             prog,
+                             debugContext("mul"));
+    snap::popops::mapInPlace(
+        graph(),
         pe::Mul(pe::_1, pe::_2),
         {right,
          fwd_input.slice(lrcumprod.dim(0) - i, lrcumprod.dim(0) - i + 1, 0)},
-        prog.getPoplarSequence(),
+        prog,
         debugContext("mul"));
   }
 
@@ -129,7 +126,7 @@ void ReduceProdGradOpx::grow(snap::program::Sequence &prog) const {
   output = output.dimShuffle(reverse_perm);
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceProdGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(ReduceProdGradOp::getOutIndex(), output);
 }
 
 namespace {

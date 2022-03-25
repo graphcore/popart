@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
@@ -41,13 +42,12 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
   // non-const weight decay scale factor
   if (!vu_op.initWdsf0.isConst()) {
 
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    snap::popops::mapInPlace(
+        graph(),
         pe::Mul(pe::_1, pe::_2),
-        {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
-             .getPoplarTensor(),
-         getInTensor(SGD0VarUpdateOp::getWdsf0InIndex()).getPoplarTensor()},
-        prog.getPoplarSequence(),
+        {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex()),
+         getInTensor(SGD0VarUpdateOp::getWdsf0InIndex())},
+        prog,
         debugContext("nonConstWeightDecay"));
   }
 
@@ -55,12 +55,12 @@ void SGD0VarUpdateOpx::grow(snap::program::Sequence &prog) const {
   else {
     float scaleFactor = vu_op.initWdsf0.val();
     if (scaleFactor != 1.0f) {
-      popops::mapInPlace(graph().getPoplarGraph(),
-                         pe::Mul(pe::_1, pe::Const(scaleFactor)),
-                         {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())
-                              .getPoplarTensor()},
-                         prog.getPoplarSequence(),
-                         debugContext("constWeightDecay"));
+      snap::popops::mapInPlace(
+          graph(),
+          pe::Mul(pe::_1, pe::Const(scaleFactor)),
+          {getInTensor(SGD0VarUpdateOp::getVarToUpdateInIndex())},
+          prog,
+          debugContext("constWeightDecay"));
     }
   }
 

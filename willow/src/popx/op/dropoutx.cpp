@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Cast.hpp>
-#include <popops/ElementWise.hpp>
 #include <poprand/RandomGen.hpp>
 
 #include <popart/error.hpp>
@@ -17,9 +17,9 @@ namespace popx {
 
 namespace {
 
-std::pair<poplar::Tensor, poplar::Tensor>
+std::pair<snap::Tensor, snap::Tensor>
 growDropout(snap::Graph &graph,
-            const poplar::Tensor &input,
+            const snap::Tensor &input,
             const poplar::Tensor &seed,
             const poplar::Tensor &refTensor,
             float ratio,
@@ -32,21 +32,23 @@ growDropout(snap::Graph &graph,
   float scale = 1.f / (1.f - ratio);
 
   // Calculate the dropout mask using poplibs and a tensor of ones.
-  auto mask = poprand::bernoulli(graph.getPoplarGraph(),
-                                 &seed,
-                                 0u,
-                                 refTensor,
-                                 refTensor.elementType(),
-                                 dropoutProbability,
-                                 prog.getPoplarSequence(),
-                                 opx.debugContext("mask"));
+  auto mask = snap::Tensor{poprand::bernoulli(graph.getPoplarGraph(),
+                                              &seed,
+                                              0u,
+                                              refTensor,
+                                              refTensor.elementType(),
+                                              dropoutProbability,
+                                              prog.getPoplarSequence(),
+                                              opx.debugContext("mask")),
+                           graph};
 
   // Use the mask to multiply by the input tensor and scale up.
-  auto dropout = popops::map(graph.getPoplarGraph(),
-                             pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
-                             {mask, input},
-                             prog.getPoplarSequence(),
-                             opx.debugContext("dropout"));
+  auto dropout =
+      snap::popops::map(graph,
+                        pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
+                        {mask, input},
+                        prog,
+                        opx.debugContext("dropout"));
 
   return {dropout, mask};
 }
@@ -71,7 +73,7 @@ void DropoutOpx::grow(snap::program::Sequence &prog) const {
     if (op.getOutputMask()) {
       auto dropout_mask =
           growDropout(graph(),
-                      getInTensor(DropoutOp::getInIndex()).getPoplarTensor(),
+                      getInTensor(DropoutOp::getInIndex()),
                       getInTensor(op.getSeedInIndex()).getPoplarTensor(),
                       refTensor,
                       op.getRatio(),
@@ -80,11 +82,11 @@ void DropoutOpx::grow(snap::program::Sequence &prog) const {
       auto dropout = dropout_mask.first;
       auto mask    = dropout_mask.second;
 
-      setOutTensor(op.getOutIndex(), snap::Tensor{dropout, graph()});
+      setOutTensor(op.getOutIndex(), dropout);
       if (op.output->hasIndex(DropoutOp::getMaskOutIndex())) {
         setOutTensor(DropoutOp::getMaskOutIndex(),
                      snap::Tensor{popops::cast(graph().getPoplarGraph(),
-                                               mask,
+                                               mask.getPoplarTensor(),
                                                poplar::BOOL,
                                                prog.getPoplarSequence(),
                                                debugContext("mask")),

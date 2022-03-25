@@ -26,18 +26,19 @@ LRNOpx::LRNOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 namespace {
-poplar::Tensor getScale(snap::Graph &graph,
-                        const poplar::Tensor &input,
-                        snap::program::Sequence &prog,
-                        const float alpha,
-                        const float bias,
-                        const int64_t size,
-                        const poplar::DebugContext &debugContext) {
+snap::Tensor getScale(snap::Graph &graph,
+                      const snap::Tensor &input,
+                      snap::program::Sequence &prog,
+                      const float alpha,
+                      const float bias,
+                      const int64_t size,
+                      const poplar::DebugContext &debugContext) {
   const poplar::DebugInfo di(debugContext, "");
-  auto square = snap::Tensor{
-      popops::square(
-          graph.getPoplarGraph(), input, prog.getPoplarSequence(), {di}),
-      graph};
+  auto square     = snap::Tensor{popops::square(graph.getPoplarGraph(),
+                                            input.getPoplarTensor(),
+                                            prog.getPoplarSequence(),
+                                            {di}),
+                             graph};
   auto square_sum = graph.clone(square, {di});
   prog.add(snap::program::Copy(square, square_sum, false, {di}));
   auto channels = input.dim(1);
@@ -61,11 +62,11 @@ poplar::Tensor getScale(snap::Graph &graph,
           {di});
   }
 
-  auto scale = popops::map(
-      graph.getPoplarGraph(),
+  auto scale = snap::popops::map(
+      graph,
       pe::Add(pe::Const(bias), pe::Mul(pe::Const(alpha / size), pe::_1)),
-      {square_sum.getPoplarTensor()},
-      prog.getPoplarSequence(),
+      {square_sum},
+      prog,
       {di});
 
   return scale;
@@ -74,7 +75,7 @@ poplar::Tensor getScale(snap::Graph &graph,
 
 void LRNOpx::grow(snap::program::Sequence &prog) const {
   const auto &op   = getOp<LRNOp>();
-  const auto input = getInTensor(LRNOp::getInIndex()).getPoplarTensor();
+  const auto input = getInTensor(LRNOp::getInIndex());
 
   auto scale = getScale(graph(),
                         input,
@@ -84,14 +85,14 @@ void LRNOpx::grow(snap::program::Sequence &prog) const {
                         op.getSize(),
                         debugContext("scale"));
 
-  auto output =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
-                  {input, scale},
-                  prog.getPoplarSequence(),
-                  debugContext("output"));
+  auto output = snap::popops::map(
+      graph(),
+      pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
+      {input, scale},
+      prog,
+      debugContext("output"));
 
-  setOutTensor(LRNOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(LRNOp::getOutIndex(), output);
 }
 
 LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -99,10 +100,9 @@ LRNGradOpx::LRNGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void LRNGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op   = getOp<LRNGradOp>();
-  const auto input = getInTensor(LRNGradOp::getInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(LRNGradOp::getFwdInInIndex()).getPoplarTensor();
+  const auto &op       = getOp<LRNGradOp>();
+  const auto input     = getInTensor(LRNGradOp::getInIndex());
+  const auto fwd_input = getInTensor(LRNGradOp::getFwdInInIndex());
 
   auto scale = getScale(graph(),
                         fwd_input,
@@ -112,8 +112,8 @@ void LRNGradOpx::grow(snap::program::Sequence &prog) const {
                         op.getSize(),
                         debugContext("scale"));
 
-  auto output = popops::map(
-      graph().getPoplarGraph(),
+  auto output = snap::popops::map(
+      graph(),
       pe::Mul(
           pe::_1,
           pe::Sub(
@@ -122,10 +122,10 @@ void LRNGradOpx::grow(snap::program::Sequence &prog) const {
                               pe::Const(2.f * op.getAlpha() * op.getBeta())),
                       pe::Pow(pe::_3, pe::Const(-op.getBeta() - 1.f))))),
       {input, fwd_input, scale},
-      prog.getPoplarSequence(),
+      prog,
       debugContext("grad"));
 
-  setOutTensor(LRNGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(LRNGradOp::getOutIndex(), output);
 }
 
 namespace {

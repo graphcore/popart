@@ -6,7 +6,7 @@
 #include <popart/popx/op/equalx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -22,14 +22,12 @@ EqualOpx::EqualOpx(Op *op, Devicex *devicex)
 void EqualOpx::grow(snap::program::Sequence &prog) const {
 
   insert(outId(EqualOp::getOutIndex()),
-         snap::Tensor{
-             popops::map(graph().getPoplarGraph(),
-                         popops::expr::BinaryOpType::EQUAL,
-                         get(inId(EqualOp::getArg0InIndex())).getPoplarTensor(),
-                         get(inId(EqualOp::getArg1InIndex())).getPoplarTensor(),
-                         prog.getPoplarSequence(),
-                         debugContext()),
-             graph()});
+         snap::popops::map(graph(),
+                           popops::expr::BinaryOpType::EQUAL,
+                           get(inId(EqualOp::getArg0InIndex())),
+                           get(inId(EqualOp::getArg1InIndex())),
+                           prog,
+                           debugContext()));
 }
 
 namespace {

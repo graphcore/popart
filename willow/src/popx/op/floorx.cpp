@@ -1,4 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/op/floor.hpp>
 #include <popart/popx/devicex.hpp>
@@ -28,11 +29,8 @@ void FloorComputex::inplace(snap::program::Sequence &prog,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::FLOOR,
-                     tensor.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::FLOOR, tensor, prog, {dnai, s});
 }
 
 FloorOpx::FloorOpx(Op *op, Devicex *devicex)

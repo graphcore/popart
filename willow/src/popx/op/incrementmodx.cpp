@@ -4,7 +4,7 @@
 #include <popart/popx/op/incrementmodx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -72,12 +72,7 @@ IncrementModComputex<T>::outplace(snap::program::Sequence &p,
       popops::expr::Add(popops::expr::_1, popops::expr::Const(increment)),
       popops::expr::Const(modulus));
 
-  return {popops::map(g.getPoplarGraph(),
-                      expr,
-                      {t.getPoplarTensor()},
-                      p.getPoplarSequence(),
-                      {dnai, s}),
-          g};
+  return snap::popops::map(g, expr, {t}, p, {dnai, s});
 }
 
 template <typename T>
@@ -90,11 +85,7 @@ void IncrementModComputex<T>::inplace(snap::program::Sequence &p,
       popops::expr::Add(popops::expr::_1, popops::expr::Const(increment)),
       popops::expr::Const(modulus));
 
-  popops::mapInPlace(g.getPoplarGraph(),
-                     expr,
-                     {t.getPoplarTensor()},
-                     p.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(g, expr, {t}, p, {dnai, s});
 }
 
 IncrementModOpx::IncrementModOpx(Op *op, Devicex *devicex)

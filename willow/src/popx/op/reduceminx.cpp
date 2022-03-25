@@ -10,7 +10,7 @@
 #include <popart/tensor.hpp>
 #include <popart/util.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
@@ -47,10 +47,9 @@ ReduceMinGradOpx::ReduceMinGradOpx(Op *op, Devicex *devicex)
 
 void ReduceMinGradOpx::grow(snap::program::Sequence &prog) const {
   const auto &op = getOp<ReduceMinGradOp>();
-  auto output    = cloneNcopy(prog, getInTensor(ReduceMinGradOp::getInIndex()))
-                    .getPoplarTensor();
-  auto mask = cloneNcopy(prog, getInTensor(ReduceMinGradOp::getFwdOutInIndex()))
-                  .getPoplarTensor();
+  auto output    = cloneNcopy(prog, getInTensor(ReduceMinGradOp::getInIndex()));
+  auto mask =
+      cloneNcopy(prog, getInTensor(ReduceMinGradOp::getFwdOutInIndex()));
   auto input_shape     = inShape(ReduceMinGradOp::getInIndex());
   auto output_shape    = outShape(ReduceMinGradOp::getOutIndex());
   const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
@@ -66,18 +65,16 @@ void ReduceMinGradOpx::grow(snap::program::Sequence &prog) const {
     }
   }
 
-  output = popops::map(
-      graph().getPoplarGraph(),
+  output = snap::popops::map(
+      graph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
-      {mask,
-       getInTensor(ReduceMinGradOp::getFwdInInIndex()).getPoplarTensor(),
-       output},
-      prog.getPoplarSequence(),
+      {mask, getInTensor(ReduceMinGradOp::getFwdInInIndex()), output},
+      prog,
       debugContext("maskmul"));
 
   // output now matches the shape of output_shape
-  setOutTensor(ReduceMinGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(ReduceMinGradOp::getOutIndex(), output);
 }
 
 namespace {

@@ -8,7 +8,7 @@
 #include <popart/popx/op/hardsigmoidx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -52,11 +52,8 @@ void HardSigmoidComputex::inplace(snap::program::Sequence &prog,
   exprs.push_back(std::make_unique<pe::Min>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Max>(pe::Const(0.0f), *exprs.back()));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     *exprs.back(),
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(
+      graph, *exprs.back(), {tensor}, prog, {dnai, debug_prefix});
 }
 
 HardSigmoidInplaceOpx::HardSigmoidInplaceOpx(Op *op, Devicex *devicex)
@@ -75,11 +72,9 @@ HardSigmoidGradOpx::HardSigmoidGradOpx(Op *op, Devicex *devicex)
 }
 
 void HardSigmoidGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<HardSigmoidGradOp>();
-  const auto input =
-      getInTensor(HardSigmoidGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(HardSigmoidGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto &op       = getOp<HardSigmoidGradOp>();
+  const auto input     = getInTensor(HardSigmoidGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(HardSigmoidGradOp::getFwdArgInIndex());
 
   // The derivative of the Hardsigmoid activation function is:
   // 0 if x > 1-beta/alpha
@@ -113,13 +108,13 @@ void HardSigmoidGradOpx::grow(snap::program::Sequence &prog) const {
       pe::Mul(*theta_plus.back(), *theta_minus.back())));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("hardsigmoid_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("hardsigmoid_grad"));
 
-  setOutTensor(HardSigmoidGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(HardSigmoidGradOp::getOutIndex(), output);
 }
 
 namespace {

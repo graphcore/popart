@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
@@ -35,7 +35,7 @@ void AdamVarUpdateOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor var =
       getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
 
-  std::vector<poplar::Tensor> tensors;
+  std::vector<snap::Tensor> tensors;
 
   pe::Any lr(pe::Const(0.0f));
   pe::Any mwn(pe::Const(0.0f));
@@ -43,26 +43,22 @@ void AdamVarUpdateOpx::grow(snap::program::Sequence &prog) const {
   if (adamVarUpdateOp.initLr.isConst()) {
     lr = pe::Const(adamVarUpdateOp.initLr.val());
   } else {
-    tensors.push_back(
-        getInTensor(AdamVarUpdateOp::getLrInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdamVarUpdateOp::getLrInIndex()));
     lr = pe::PlaceHolder(tensors.size());
   }
 
   // Lamb scaled learning rate: lr = lr * sqrt(r1)/sqrt(r2)
   if (hasInput(AdamVarUpdateOp::getLambR1SqInIndex()) &&
       hasInput(AdamVarUpdateOp::getLambR2SqInIndex())) {
-    tensors.push_back(
-        getInTensor(AdamVarUpdateOp::getLambR1SqInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdamVarUpdateOp::getLambR1SqInIndex()));
     auto r1sqindex = tensors.size();
-    tensors.push_back(
-        getInTensor(AdamVarUpdateOp::getLambR2SqInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdamVarUpdateOp::getLambR2SqInIndex()));
     auto r2sqindex = tensors.size();
 
     if (adamVarUpdateOp.initMwn.isConst()) {
       mwn = pe::Const(adamVarUpdateOp.initMwn.val());
     } else {
-      tensors.push_back(
-          getInTensor(AdamVarUpdateOp::getMwnInIndex()).getPoplarTensor());
+      tensors.push_back(getInTensor(AdamVarUpdateOp::getMwnInIndex()));
       mwn = pe::PlaceHolder(tensors.size());
     }
 
@@ -111,17 +107,14 @@ void AdamVarUpdateOpx::grow(snap::program::Sequence &prog) const {
                         debugContext("varUpdate"));
   } else {
     // Calculate final non-const learning rate tensor from expression
-    poplar::Tensor lrt = popops::map(graph().getPoplarGraph(),
-                                     pe::Neg(lr),
-                                     tensors,
-                                     prog.getPoplarSequence(),
-                                     debugContext("leaningRate"));
+    auto lrt = snap::popops::map(
+        graph(), pe::Neg(lr), tensors, prog, debugContext("leaningRate"));
 
     // Variable update: var -= lr * updater
     popops::scaledAddTo(graph().getPoplarGraph(),
                         var,
                         updater,
-                        lrt,
+                        lrt.getPoplarTensor(),
                         prog.getPoplarSequence(),
                         debugContext("varUpdate"));
   }

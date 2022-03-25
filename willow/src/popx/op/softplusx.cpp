@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <snap/popops/ElementWise.hpp>
 #include <popnn/NonLinearity.hpp>
-#include <popops/ElementWise.hpp>
 #include <popart/op/softplus.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/softplusx.hpp>
@@ -31,11 +31,7 @@ void SoftPlusComputex::inplace(snap::program::Sequence &prog,
       pe::Max(pe::_1, pe::Const(0.0f)),
       pe::Log(pe::Add(pe::Const(1.0f), pe::Exp(pe::Neg(pe::Abs(pe::_1))))));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     expr,
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(graph, expr, {tensor}, prog, {dnai, debug_prefix});
 }
 
 SoftPlusInplaceOpx::SoftPlusInplaceOpx(Op *op, Devicex *devicex)
@@ -62,14 +58,13 @@ void SoftPlusGradOpx::grow(snap::program::Sequence &prog) const {
   // Applying the elementwise chain rule gives:
   //
   // grad_out = grad_in * sigmoid(x)
-  auto output =
-      popops::map(graph().getPoplarGraph(),
-                  pe::_1 * pe::Sigmoid(pe::_2),
-                  {grad_in.getPoplarTensor(), fwd_input.getPoplarTensor()},
-                  prog.getPoplarSequence(),
-                  debugContext("softplus_grad"));
+  auto output = snap::popops::map(graph(),
+                                  pe::_1 * pe::Sigmoid(pe::_2),
+                                  {grad_in, fwd_input},
+                                  prog,
+                                  debugContext("softplus_grad"));
 
-  setOutTensor(SoftPlusGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(SoftPlusGradOp::getOutIndex(), output);
 }
 
 namespace {

@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/reciprocal.hpp>
 #include <popart/popx/devicex.hpp>
@@ -16,17 +16,15 @@ ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex)
 }
 
 void ReciprocalOpx::grow(snap::program::Sequence &prog) const {
-  auto ones =
-      getConst(popType(op_p->inInfo(0)), {1}, 1.0, "ones").getPoplarTensor();
+  auto ones = getConst(popType(op_p->inInfo(0)), {1}, 1.0, "ones");
 
   setOutTensor(0,
-               snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                        popops::expr::BinaryOpType::DIVIDE,
-                                        ones,
-                                        getInTensor(0).getPoplarTensor(),
-                                        prog.getPoplarSequence(),
-                                        debugContext("divide")),
-                            graph()});
+               snap::popops::map(graph(),
+                                 popops::expr::BinaryOpType::DIVIDE,
+                                 ones,
+                                 getInTensor(0),
+                                 prog,
+                                 debugContext("divide")));
 }
 
 namespace {

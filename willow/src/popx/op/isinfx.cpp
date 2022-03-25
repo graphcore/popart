@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/isinf.hpp>
 #include <popart/popx/op/isinfx.hpp>
@@ -16,16 +16,14 @@ void IsInfx::grow(snap::program::Sequence &prog) const {
   // (x == x) && x !isFinite
   setOutTensor(
       IsInf::getOutIndex(),
-      snap::Tensor{
-          popops::map(
-              graph().getPoplarGraph(),
-              popops::expr::And(
-                  popops::expr::Equal(popops::expr::_1, popops::expr::_1),
-                  popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
-              {get(inId(0)).getPoplarTensor()},
-              prog.getPoplarSequence(),
-              debugContext()),
-          graph()});
+      snap::popops::map(
+          graph(),
+          popops::expr::And(
+              popops::expr::Equal(popops::expr::_1, popops::expr::_1),
+              popops::expr::Not(popops::expr::IsFinite(popops::expr::_1))),
+          {get(inId(0))},
+          prog,
+          debugContext()));
 }
 
 namespace {

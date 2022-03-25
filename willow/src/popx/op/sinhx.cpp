@@ -8,7 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -48,11 +48,7 @@ void SinhComputex::inplace(snap::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
 
   // apply the inplace SINH
-  popops::mapInPlace(g.getPoplarGraph(),
-                     *exprs.back(),
-                     {t.getPoplarTensor()},
-                     p.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
 }
 
 SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -60,10 +56,8 @@ SinhGradOpx::SinhGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void SinhGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto input =
-      getInTensor(SinhGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(SinhGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto input     = getInTensor(SinhGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(SinhGradOp::getFwdArgInIndex());
 
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
   exprs.push_back(
@@ -72,13 +66,13 @@ void SinhGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("output_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("output_grad"));
 
-  setOutTensor(SinhGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(SinhGradOp::getOutIndex(), output);
 }
 
 namespace {

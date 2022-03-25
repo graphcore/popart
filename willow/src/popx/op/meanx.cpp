@@ -6,7 +6,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
@@ -28,7 +28,7 @@ void MeanOpx::grow(snap::program::Sequence &prog) const {
     // Follow the logic in the sumx op to build the sum operation over
     // the input tensors.
     // Holder for the input tensors:
-    std::vector<poplar::Tensor> inputs;
+    std::vector<snap::Tensor> inputs;
 
     // The "owner" of all expr nodes:
     std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
@@ -37,7 +37,7 @@ void MeanOpx::grow(snap::program::Sequence &prog) const {
     std::queue<popops::expr::Expr *> expr;
 
     for (int i = 0; i < op_p->input->n(); ++i) {
-      inputs.push_back(getInTensor(i).getPoplarTensor());
+      inputs.push_back(getInTensor(i));
       exprs.push_back(std::make_unique<pe::PlaceHolder>(i + 1));
       expr.push(exprs.back().get());
     }
@@ -53,13 +53,12 @@ void MeanOpx::grow(snap::program::Sequence &prog) const {
       expr.push(exprs.back().get());
     }
     // Add in a divide in the end.
-    outTensor = snap::Tensor{
-        popops::map(graph().getPoplarGraph(),
-                    pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
-                    inputs,
-                    prog.getPoplarSequence(),
-                    debugContext("mean")),
-        graph()};
+    outTensor = snap::popops::map(
+        graph(),
+        pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
+        inputs,
+        prog,
+        debugContext("mean"));
   }
 
   setOutTensor(MeanOp::getOutIndex(), outTensor);
@@ -80,27 +79,26 @@ void MeanArgGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
-  auto out = popops::reduce(
-      graph().getPoplarGraph(),
-      getInTensor(MeanArgGradOp::getGradInIndex()).getPoplarTensor(),
-      vXtoY<int64_t, std::size_t>(axes),
-      {popops::Operation::ADD},
-      prog.getPoplarSequence(),
-      debugContext("reduce"));
+  auto out = snap::Tensor{
+      popops::reduce(
+          graph().getPoplarGraph(),
+          getInTensor(MeanArgGradOp::getGradInIndex()).getPoplarTensor(),
+          vXtoY<int64_t, std::size_t>(axes),
+          {popops::Operation::ADD},
+          prog.getPoplarSequence(),
+          debugContext("reduce")),
+      graph()};
 
   // scale the grad input (reduced)
-  popops::mapInPlace(graph().getPoplarGraph(),
-                     pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
-                     {out},
-                     prog.getPoplarSequence(),
-                     debugContext("mull"));
+  snap::popops::mapInPlace(graph(),
+                           pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
+                           {out},
+                           prog,
+                           debugContext("mull"));
 
   // Reshape the output, to add 1's if needed
-  setOutTensor(
-      MeanArgGradOp::getOutIndex(),
-      snap::Tensor{
-          out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()),
-          graph()});
+  setOutTensor(MeanArgGradOp::getOutIndex(),
+               out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

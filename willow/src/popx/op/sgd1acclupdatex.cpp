@@ -1,5 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
@@ -28,35 +28,33 @@ void SGD1AcclUpdateOpx::grow(snap::program::Sequence &prog) const {
   auto smm1Const  = vu_op.initSmm1.isConst();
   auto swdf1Const = vu_op.initSwd1.isConst();
 
-  const auto &toUpdate =
-      getInTensor(VarUpdateOp::getVarToUpdateInIndex()).getPoplarTensor();
+  const auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
   if (smm1Const) {
     auto smm1Val = vu_op.initSmm1.val();
     if (smm1Val == 0.0f) {
       popops::zero(graph().getPoplarGraph(),
-                   toUpdate,
+                   toUpdate.getPoplarTensor(),
                    prog.getPoplarSequence(),
                    debugContext("resetZeroMm"));
     } else {
       // This may be a mix of half and float but the Mul can handle because
       // it is a "pe::Const"
-      popops::mapInPlace(
-          graph().getPoplarGraph(),
+      snap::popops::mapInPlace(
+          graph(),
           pe::Mul(pe::_1, pe::Const(smm1Val)),
           {toUpdate},
-          prog.getPoplarSequence(),
+          prog,
           debugContext("constMomentumScaling_" + std::to_string(smm1Val)));
     }
   } else {
     // In the case of SGD2, we may need to cast Smm
     // TODO: T40976 can we make it the right type (e.g. half) to begin with
-    popops::mapInPlace(
-        graph().getPoplarGraph(),
+    snap::popops::mapInPlace(
+        graph(),
         pe::Mul(pe::_1, pe::Cast(pe::_2, toUpdate.elementType())),
-        {toUpdate,
-         getInTensor(SGD1AcclUpdateOp::getSmm1InIndex()).getPoplarTensor()},
-        prog.getPoplarSequence(),
+        {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
+        prog,
         debugContext("nonConstMomentumScaling"));
   }
 
@@ -69,7 +67,7 @@ void SGD1AcclUpdateOpx::grow(snap::program::Sequence &prog) const {
     if (swd1Val != 0.0f) {
       popops::scaledAddTo(
           graph().getPoplarGraph(),
-          toUpdate,
+          toUpdate.getPoplarTensor(),
           weights,
           swd1Val,
           prog.getPoplarSequence(),
@@ -78,7 +76,7 @@ void SGD1AcclUpdateOpx::grow(snap::program::Sequence &prog) const {
   } else {
     popops::scaledAddTo(
         graph().getPoplarGraph(),
-        toUpdate,
+        toUpdate.getPoplarTensor(),
         weights,
         getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()).getPoplarTensor(),
         prog.getPoplarSequence(),
@@ -90,8 +88,7 @@ void SGD1AcclUpdateOpx::grow(snap::program::Sequence &prog) const {
                        getInViewChangers(VarUpdateOp::getVarToUpdateInIndex()));
   }
   // return a reference to the input
-  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-               snap::Tensor{toUpdate, graph()});
+  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(), toUpdate);
 }
 
 namespace {

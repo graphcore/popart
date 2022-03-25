@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cmath>
 
+#include <snap/popops/ElementWise.hpp>
 #include <poplin/MatMul.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Pad.hpp>
@@ -492,14 +493,12 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
     if (resultMap.find(idx) == resultMap.end()) {
       resultMap[idx] = slices[i];
     } else {
-      resultMap[idx] =
-          snap::Tensor{popops::map(graph().getPoplarGraph(),
-                                   popops::expr::BinaryOpType::ADD,
-                                   resultMap[idx].getPoplarTensor(),
-                                   slices[i].getPoplarTensor(),
-                                   prog.getPoplarSequence(),
-                                   debugContext()),
-                       graph()};
+      resultMap[idx] = snap::popops::map(graph(),
+                                         popops::expr::BinaryOpType::ADD,
+                                         resultMap[idx],
+                                         slices[i],
+                                         prog,
+                                         debugContext());
     }
   }
 

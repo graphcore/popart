@@ -8,7 +8,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -50,12 +50,7 @@ void AtanComputex::inplace(snap::program::Sequence &p,
   exprs.push_back(std::make_unique<pe::Sqrt>(*exprs.back()));
   exprs.push_back(std::make_unique<pe::Divide>(pe::_1, *exprs.back()));
   exprs.push_back(std::make_unique<pe::Asin>(*exprs.back()));
-
-  popops::mapInPlace(g.getPoplarGraph(),
-                     *exprs.back(),
-                     {t.getPoplarTensor()},
-                     p.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(g, *exprs.back(), {t}, p, {dnai, s});
 }
 
 AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
@@ -63,10 +58,8 @@ AtanGradOpx::AtanGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void AtanGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto input =
-      getInTensor(AtanGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(AtanGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto input     = getInTensor(AtanGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(AtanGradOp::getFwdArgInIndex());
 
   // The derivative of the atan function can be constructed from normal
   // functions d/dx atan(x) = 1/(1+x^2)
@@ -76,13 +69,13 @@ void AtanGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Divide>(pe::Const(1.0f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("inverse_tangent_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("inverse_tangent_grad"));
 
-  setOutTensor(AtanGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(AtanGradOp::getOutIndex(), output);
 }
 
 namespace {

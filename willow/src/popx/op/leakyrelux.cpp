@@ -8,7 +8,7 @@
 #include <popart/popx/op/leakyrelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -36,11 +36,8 @@ void LeakyReluComputex::inplace(snap::program::Sequence &prog,
                                pe::_1,
                                pe::Lt(pe::_1, pe::Const(0.0f)));
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     expression,
-                     {tensor.getPoplarTensor()},
-                     prog.getPoplarSequence(),
-                     {dnai, debug_prefix});
+  snap::popops::mapInPlace(
+      graph, expression, {tensor}, prog, {dnai, debug_prefix});
 }
 
 float LeakyReluComputex::getAlphaFromLReluOp(Op *op) {
@@ -85,9 +82,8 @@ LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
 void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
   auto &op = getOp<LeakyReluGradOp>();
 
-  auto grad = getInTensor(LeakyReluGradOp::getGradInIndex()).getPoplarTensor();
-  auto input =
-      getInTensor(LeakyReluGradOp::getFwdArgInIndex()).getPoplarTensor();
+  auto grad  = getInTensor(LeakyReluGradOp::getGradInIndex());
+  auto input = getInTensor(LeakyReluGradOp::getFwdArgInIndex());
 
   auto alpha = op.getAlpha();
 
@@ -98,13 +94,10 @@ void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
                                pe::_1,
                                pe::Lt(pe::_2, pe::Const(0.0f)));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            expression,
-                            {grad, input},
-                            prog.getPoplarSequence(),
-                            debugContext("leakyrelu_grad"));
+  auto output = snap::popops::map(
+      graph(), expression, {grad, input}, prog, debugContext("leakyrelu_grad"));
 
-  setOutTensor(0, snap::Tensor{output, graph()});
+  setOutTensor(0, output);
 }
 
 namespace {

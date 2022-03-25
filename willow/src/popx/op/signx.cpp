@@ -1,5 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/op/sign.hpp>
 #include <popart/popx/devicex.hpp>
@@ -29,11 +30,8 @@ void SignComputex::inplace(snap::program::Sequence &prog,
                            const poplar::DebugNameAndId &dnai,
                            const std::string &s) const {
 
-  popops::mapInPlace(graph.getPoplarGraph(),
-                     popops::expr::UnaryOpType::SIGNUM,
-                     tensor.getPoplarTensor(),
-                     prog.getPoplarSequence(),
-                     {dnai, s});
+  snap::popops::mapInPlace(
+      graph, popops::expr::UnaryOpType::SIGNUM, tensor, prog, {dnai, s});
 }
 
 SignOpx::SignOpx(Op *op, Devicex *devicex)

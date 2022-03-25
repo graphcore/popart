@@ -6,7 +6,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
@@ -26,15 +26,14 @@ void MaxOpx::grow(snap::program::Sequence &prog) const {
   if (op_p->input->n() > 1) {
 
     for (int i = 1; i < op_p->input->n(); ++i) {
-      outTensor = snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::BinaryOpType::MAXIMUM,
-                      outTensor.getPoplarTensor(),
-                      getInTensor(i).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext(std::string("max") + sNameDelimiter +
-                                   std::to_string(i))),
-          graph()};
+      outTensor =
+          snap::popops::map(graph(),
+                            popops::expr::BinaryOpType::MAXIMUM,
+                            outTensor,
+                            getInTensor(i),
+                            prog,
+                            debugContext(std::string("max") + sNameDelimiter +
+                                         std::to_string(i)));
     }
   }
 
@@ -73,14 +72,14 @@ void MaxArgGradOpx::grow(snap::program::Sequence &prog) const {
   // 2. Signum the result to give a tensor of 0's and -1's.
   // 3. Add 1 from the result to give a mask tensor
   // 4. Multiply by the gradient tensor.
-  auto result = popops::map(
-      graph().getPoplarGraph(),
+  auto result = snap::popops::map(
+      graph(),
       pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
               pe::_3),
-      {getInTensor(MaxArgGradOp::getFwdInIndex()).getPoplarTensor(),
-       getInTensor(MaxArgGradOp::getFwdOutInIndex()).getPoplarTensor(),
-       getInTensor(MaxArgGradOp::getGradInIndex()).getPoplarTensor()},
-      prog.getPoplarSequence(),
+      {getInTensor(MaxArgGradOp::getFwdInIndex()),
+       getInTensor(MaxArgGradOp::getFwdOutInIndex()),
+       getInTensor(MaxArgGradOp::getGradInIndex())},
+      prog,
       debugContext("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
@@ -93,7 +92,7 @@ void MaxArgGradOpx::grow(snap::program::Sequence &prog) const {
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
   auto out = popops::reduce(graph().getPoplarGraph(),
-                            result,
+                            result.getPoplarTensor(),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog.getPoplarSequence(),

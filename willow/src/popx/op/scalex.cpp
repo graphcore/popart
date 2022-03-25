@@ -1,5 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popart/error.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/popx/devicex.hpp>
@@ -23,14 +23,12 @@ snap::Tensor ScaleComputex::outplace(snap::program::Sequence &prog,
                                      const poplar::DebugNameAndId &dnai,
                                      const std::string &s) const {
 
-  return snap::Tensor{
-      popops::map(graph.getPoplarGraph(),
-                  popops::expr::BinaryOpType::MULTIPLY,
-                  tensor.getPoplarTensor(),
-                  getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
-                  prog.getPoplarSequence(),
-                  {dnai, s}),
-      graph};
+  return snap::popops::map(graph,
+                           popops::expr::BinaryOpType::MULTIPLY,
+                           tensor,
+                           getScaleTensor(tensor.elementType(), graph),
+                           prog,
+                           {dnai, s});
 }
 
 float ScaleComputex::getFromScaleOp(Op *op) {
@@ -55,13 +53,12 @@ void ScaleComputex::inplace(snap::program::Sequence &prog,
                             const poplar::DebugNameAndId &dnai,
                             const std::string &s) const {
 
-  popops::mapInPlace(
-      graph.getPoplarGraph(),
-      popops::expr::BinaryOpType::MULTIPLY,
-      tensor.getPoplarTensor(),
-      getScaleTensor(tensor.elementType(), graph).getPoplarTensor(),
-      prog.getPoplarSequence(),
-      {dnai, s});
+  snap::popops::mapInPlace(graph,
+                           popops::expr::BinaryOpType::MULTIPLY,
+                           tensor,
+                           getScaleTensor(tensor.elementType(), graph),
+                           prog,
+                           {dnai, s});
 }
 
 ScaleOpx::ScaleOpx(Op *op, Devicex *devicex)

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -26,18 +26,15 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
 
   auto &rmspropUpdaterOp = getOp<RMSPropUpdaterOp>();
 
-  poplar::Tensor grad =
-      getInTensor(RMSPropUpdaterOp::getGradInIndex()).getPoplarTensor();
-  poplar::Tensor accl1 =
-      getInTensor(RMSPropUpdaterOp::getAccl1InIndex()).getPoplarTensor();
+  auto grad  = getInTensor(RMSPropUpdaterOp::getGradInIndex());
+  auto accl1 = getInTensor(RMSPropUpdaterOp::getAccl1InIndex());
 
-  std::vector<poplar::Tensor> tensors = {grad, accl1};
+  std::vector<snap::Tensor> tensors = {grad, accl1};
 
   pe::Any rmsexpr(pe::Const(0.0f));
   if (hasInput(RMSPropUpdaterOp::getAccl2InIndex())) {
     // Centered version
-    poplar::Tensor accl2 =
-        getInTensor(RMSPropUpdaterOp::getAccl2InIndex()).getPoplarTensor();
+    auto accl2 = getInTensor(RMSPropUpdaterOp::getAccl2InIndex());
     tensors.push_back(accl2);
     // Centered: Accl1 - Accl2^2
     rmsexpr =
@@ -51,8 +48,7 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
   if (rmspropUpdaterOp.initEps.isConst()) {
     epsexpr = pe::Const(rmspropUpdaterOp.initEps.val());
   } else {
-    tensors.push_back(
-        getInTensor(RMSPropUpdaterOp::getEpsInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(RMSPropUpdaterOp::getEpsInIndex()));
     epsexpr = pe::PlaceHolder(tensors.size());
   }
 
@@ -64,22 +60,21 @@ void RMSPropUpdaterOpx::grow(snap::program::Sequence &prog) const {
     denominatorexpr = pe::Add(pe::Sqrt(rmsexpr), epsexpr);
   }
 
-  poplar::Tensor updater =
-      popops::map(graph().getPoplarGraph(),
-                  pe::Cast(pe::Divide(pe::Cast(pe::_1, accl1.elementType()),
-                                      denominatorexpr),
-                           grad.elementType()),
-                  tensors,
-                  prog.getPoplarSequence(),
-                  debugContext(""));
+  auto updater = snap::popops::map(
+      graph(),
+      pe::Cast(
+          pe::Divide(pe::Cast(pe::_1, accl1.elementType()), denominatorexpr),
+          grad.elementType()),
+      tensors,
+      prog,
+      debugContext(""));
 
   if (hasInViewChangers(RMSPropUpdaterOp::getGradInIndex())) {
     setOutViewChangers(RMSPropUpdaterOp::getUpdaterOutIndex(),
                        getInViewChangers(RMSPropUpdaterOp::getGradInIndex()));
   }
 
-  setOutTensor(RMSPropUpdaterOp::getUpdaterOutIndex(),
-               snap::Tensor{updater, graph()});
+  setOutTensor(RMSPropUpdaterOp::getUpdaterOutIndex(), updater);
 }
 
 namespace {

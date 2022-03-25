@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -27,27 +27,23 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
 
   auto &rmspropUpdaterOp = getOp<AdaDeltaUpdaterOp>();
 
-  poplar::Tensor grad =
-      getInTensor(AdaDeltaUpdaterOp::getGradInIndex()).getPoplarTensor();
-  poplar::Tensor accl1 =
-      getInTensor(AdaDeltaUpdaterOp::getAccl1InIndex()).getPoplarTensor();
-  poplar::Tensor accl2 =
-      getInTensor(AdaDeltaUpdaterOp::getAccl2InIndex()).getPoplarTensor();
+  auto grad  = getInTensor(AdaDeltaUpdaterOp::getGradInIndex());
+  auto accl1 = getInTensor(AdaDeltaUpdaterOp::getAccl1InIndex());
+  auto accl2 = getInTensor(AdaDeltaUpdaterOp::getAccl2InIndex());
 
-  std::vector<poplar::Tensor> tensors = {grad, accl1, accl2};
+  std::vector<snap::Tensor> tensors = {grad, accl1, accl2};
 
   pe::Any epsexpr(pe::Const(0.0f));
   if (rmspropUpdaterOp.initEps.isConst()) {
     epsexpr = pe::Const(rmspropUpdaterOp.initEps.val());
   } else {
-    tensors.push_back(
-        getInTensor(AdaDeltaUpdaterOp::getEpsInIndex()).getPoplarTensor());
+    tensors.push_back(getInTensor(AdaDeltaUpdaterOp::getEpsInIndex()));
     epsexpr = pe::PlaceHolder(tensors.size());
   }
 
   // sqrt(Accl2 + eps) / sqrt(Accl1 + eps) * grad
-  poplar::Tensor updater = popops::map(
-      graph().getPoplarGraph(),
+  auto updater = snap::popops::map(
+      graph(),
       pe::Cast(pe::Mul(pe::Divide(
                            pe::Sqrt(pe::Add(
                                pe::Cast(pe::_3, accl1.elementType()), epsexpr)),
@@ -55,7 +51,7 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
                        pe::Cast(pe::_1, accl1.elementType())),
                grad.elementType()),
       tensors,
-      prog.getPoplarSequence(),
+      prog,
       debugContext(""));
 
   if (hasInViewChangers(AdaDeltaUpdaterOp::getGradInIndex())) {
@@ -63,8 +59,7 @@ void AdaDeltaUpdaterOpx::grow(snap::program::Sequence &prog) const {
                        getInViewChangers(AdaDeltaUpdaterOp::getGradInIndex()));
   }
 
-  setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(),
-               snap::Tensor{updater, graph()});
+  setOutTensor(AdaDeltaUpdaterOp::getUpdaterOutIndex(), updater);
 }
 
 snap::Tensor AdaDeltaUpdaterOpx::createInputTensor(

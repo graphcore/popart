@@ -9,7 +9,7 @@
 #include <popart/popx/op/shrinkx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
@@ -50,15 +50,15 @@ void ShrinkComputex::inplace(snap::program::Sequence &prog,
                              const snap::Tensor &tensor,
                              const poplar::DebugNameAndId &dnai,
                              const std::string &debug_prefix) const {
-  popops::mapInPlace(
-      graph.getPoplarGraph(),
+  snap::popops::mapInPlace(
+      graph,
       pe::Select(pe::Add(pe::_1, pe::Const(this->bias())),
                  pe::Select(pe::Sub(pe::_1, pe::Const(this->bias())),
                             pe::Const(0.0f),
                             pe::Gt(pe::_1, pe::Const(this->lambd()))),
                  pe::Lt(pe::_1, pe::Const(-this->lambd()))),
-      {tensor.getPoplarTensor()},
-      prog.getPoplarSequence(),
+      {tensor},
+      prog,
       {dnai, debug_prefix});
 }
 
@@ -76,11 +76,9 @@ ShrinkGradOpx::ShrinkGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
 }
 
 void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
-  const auto &op = getOp<ShrinkGradOp>();
-  const auto input =
-      getInTensor(ShrinkGradOp::getGradInIndex()).getPoplarTensor();
-  const auto fwd_input =
-      getInTensor(ShrinkGradOp::getFwdArgInIndex()).getPoplarTensor();
+  const auto &op       = getOp<ShrinkGradOp>();
+  const auto input     = getInTensor(ShrinkGradOp::getGradInIndex());
+  const auto fwd_input = getInTensor(ShrinkGradOp::getFwdArgInIndex());
 
   std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
   exprs.push_back(
@@ -90,13 +88,13 @@ void ShrinkGradOpx::grow(snap::program::Sequence &prog) const {
   exprs.push_back(std::make_unique<pe::Mul>(pe::Const(0.5f), *exprs.back()));
   exprs.push_back(std::make_unique<pe::Mul>(pe::_1, *exprs.back()));
 
-  auto output = popops::map(graph().getPoplarGraph(),
-                            *exprs.back(),
-                            {input, fwd_input},
-                            prog.getPoplarSequence(),
-                            debugContext("output_grad"));
+  auto output = snap::popops::map(graph(),
+                                  *exprs.back(),
+                                  {input, fwd_input},
+                                  prog,
+                                  debugContext("output_grad"));
 
-  setOutTensor(ShrinkGradOp::getOutIndex(), snap::Tensor{output, graph()});
+  setOutTensor(ShrinkGradOp::getOutIndex(), output);
 }
 
 namespace {

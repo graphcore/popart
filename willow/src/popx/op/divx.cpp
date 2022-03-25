@@ -4,7 +4,7 @@
 #include <popart/popx/op/divx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ElementWise.hpp>
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
@@ -14,16 +14,13 @@ DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 }
 
 void DivOpx::grow(snap::program::Sequence &prog) const {
-  setOutTensor(
-      0,
-      snap::Tensor{
-          popops::map(graph().getPoplarGraph(),
-                      popops::expr::BinaryOpType::DIVIDE,
-                      getInTensor(DivOp::getArg0InIndex()).getPoplarTensor(),
-                      getInTensor(DivOp::getArg1InIndex()).getPoplarTensor(),
-                      prog.getPoplarSequence(),
-                      debugContext()),
-          graph()});
+  setOutTensor(0,
+               snap::popops::map(graph(),
+                                 popops::expr::BinaryOpType::DIVIDE,
+                                 getInTensor(DivOp::getArg0InIndex()),
+                                 getInTensor(DivOp::getArg1InIndex()),
+                                 prog,
+                                 debugContext()));
 }
 
 namespace {
