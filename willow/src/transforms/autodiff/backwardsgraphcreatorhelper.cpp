@@ -379,12 +379,12 @@ void BackwardsGraphCreatorHelper::doPrune(
   };
 
   while (true) {
-    // set to true if a tensor or op is removed
+    // Set to true if a tensor or op is removed.
     bool continueLoop = false;
 
     auto &tensors = graph.getTensors();
 
-    // Remove tensors that are not inputs or outputs and have no consumers
+    // Remove tensors that are not inputs or outputs and have no consumers.
     const auto tensorIds = tensors.getAllTensorIds();
     for (auto id : tensorIds) {
       auto tensor = graph.getTensors().get(id);
@@ -392,21 +392,38 @@ void BackwardsGraphCreatorHelper::doPrune(
         if (isProtectedInputId(id)) {
           processProtectedInputId(id);
         } else {
+          bool canRemove = true;
           if (tensor->hasProducer()) {
+            // We can only remove a tensor that is produced if no outputs
+            // of the producer are consumed.
             auto producer = tensor->getProducer();
-            producer->disconnectOutTensor(tensor);
+            for (auto outTensor : producer->output->tensors()) {
+              if (outTensor->consumers.getTotal() > 0 ||
+                  !isNotOutput(outTensor->id)) {
+                canRemove = false;
+              }
+            }
+            if (producer->hasSideEffect()) {
+              canRemove = false;
+            }
+            if (canRemove) {
+              producer->disconnectAllOutputs();
+            }
           }
-          tensors.remove(id);
-          continueLoop = true;
+
+          if (canRemove) {
+            tensors.remove(id);
+            continueLoop = true;
+          }
         }
       }
     }
 
-    // Remove ops with no outputs
+    // Remove ops with no outputs.
     const auto opIds = graph.getOpIds();
     for (const auto id : opIds) {
       const auto op = graph.getOp(id);
-      if (op->output->n() == 0) {
+      if (op->output->n() == 0 && !op->hasSideEffect()) {
         op->disconnectAllInputs();
         graph.eraseOp(id);
         continueLoop = true;
@@ -418,7 +435,7 @@ void BackwardsGraphCreatorHelper::doPrune(
     }
   }
 
-  // Remove inputs ids that have been pruned
+  // Remove inputs ids that have been pruned.
   auto inputIds = graph.getInputIds();
   for (auto &id : inputIds) {
     if (!graph.getTensors().contains(id)) {

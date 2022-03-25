@@ -1543,13 +1543,10 @@ BOOST_AUTO_TEST_CASE(TestCanHandleNonDifferentiableInput) {
  * must exist too. Breaking this assumption causes an error in the Opx when
  * lowering the Op.
  */
-// TODO(T55417): Enable this test. The bug is known but not fixed:
-//     BackwardsGraphCreatorHelper::doPrune(graph) will eagerly prune a tensor
-//     regardless of whether its producer op is going to be pruned or not.
 BOOST_AUTO_TEST_CASE(
-    TestDoesNotPruneUnrequiredGradTensorIfProducingGradOpStillRequired,
-    *boost::unit_test::disabled()) {
+    TestDoesNotPruneUnrequiredGradTensorIfProducingGradOpStillRequired) {
   auto test = [](AutodiffStitchStrategy stitchStrat) {
+    static constexpr VGraphId vgid = 2;
     Ir ir;
 
     /* Build fwd graph */
@@ -1569,7 +1566,8 @@ BOOST_AUTO_TEST_CASE(
                                    ti,
                                    TensorType::ActGrad,
                                    InitType::Zero,
-                                   Op::Settings{mg, "Init-" + tid});
+                                   Op::Settings{mg, "Init-" + tid})
+          ->setVirtualGraphId(vgid);
     }
 
     Graph &sg = ir.createGraph(GraphId{"sg"});
@@ -1584,29 +1582,32 @@ BOOST_AUTO_TEST_CASE(
     sg.addInput(sg_b, ti);
 
     sg.createConnectedOp<TertiaryOp>(
-        {
-            {TertiaryOp::getArg0InIndex(), sg_a},
-            {TertiaryOp::getArg1InIndex(), sg_b},
-            {TertiaryOp::getArg2InIndex(), sg_c},
+          {
+              {TertiaryOp::getArg0InIndex(), sg_a},
+              {TertiaryOp::getArg1InIndex(), sg_b},
+              {TertiaryOp::getArg2InIndex(), sg_c},
 
-        },
-        {{UnaryOp::getOutIndex(), sg_d}},
+          },
+          {{UnaryOp::getOutIndex(), sg_d}},
 
-        Op::Settings{sg, "Tertiary"});
+          Op::Settings{sg, "Tertiary"})
+        ->setVirtualGraphId(vgid);
 
     sg.markAsOutput(sg_d);
 
     mg.createConnectedOp<CallOp>(
-        {
-            {sg.getInputIndex(sg_a), a},
-            {sg.getInputIndex(sg_b), b},
-            {sg.getInputIndex(sg_c), c},
+          {
+              {sg.getInputIndex(sg_a), a},
+              {sg.getInputIndex(sg_b), b},
+              {sg.getInputIndex(sg_c), c},
 
-        },
-        {{sg.getOutputIndex(sg_d), d}},
-        Onnx::CustomOperators::Call_1,
-        sg,
-        Op::Settings{mg, "Call"});
+          },
+          {{sg.getOutputIndex(sg_d), d}},
+          Onnx::CustomOperators::Call_1,
+          sg,
+          Op::Settings{mg, "Call"})
+        ->setVirtualGraphId(vgid);
+    ;
 
     /* Apply Autodiff */
 
@@ -1617,6 +1618,12 @@ BOOST_AUTO_TEST_CASE(
                             Autodiff::TensorIds({sg_a, sg_b}),
                             FwdGraphToBwdGraphInfo{},
                             stitchStrat);
+    // Helper for testing vgid of an irquery::OpTestWrapper
+    auto hasVgid = [](const auto &tw_op, const VGraphId vgid) -> bool {
+      return tw_op.unwrap()->hasVirtualGraphId() &&
+             tw_op.unwrap()->getVirtualGraphId() == vgid;
+    };
+
     /****** TEST ******/
 
     using irquery::Require;
@@ -1663,14 +1670,38 @@ BOOST_AUTO_TEST_CASE(
 
     const auto &bgInfo = f2bInfo.at(sg.id);
 
-    // Check d and d' are in expectedInputs.
-    BOOST_REQUIRE(bgInfo.expectedInputs.size() == 2);
-    BOOST_REQUIRE(
-        contains(bgInfo.expectedInputs,
-                 ExpectedConnection{sg_d, ExpectedConnectionType::Fwd}));
-    BOOST_REQUIRE(
-        contains(bgInfo.expectedInputs,
-                 ExpectedConnection{sg_d, ExpectedConnectionType::FwdGrad}));
+    // d is an output of the fwd graph, therefore RecomputeMinimal will
+    // not recompute it. It will simply take it as an input to the backward
+    // graph. But RecomputeAllNonInputs will recompute d from a, b, c ->
+    // TertiaryOp -> d, and therefore we need a, b, c as inputs instead of d. d'
+    // is also an input to the backward graph in all cases as it is a provided
+    // gradient.
+    if (stitchStrat == AutodiffStitchStrategy::RecomputeAllNonInputs) {
+      // Check a, b, c and d' are in expectedInputs.
+      BOOST_REQUIRE(bgInfo.expectedInputs.size() == 4);
+
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_a, ExpectedConnectionType::Fwd}));
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_b, ExpectedConnectionType::Fwd}));
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_c, ExpectedConnectionType::Fwd}));
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_d, ExpectedConnectionType::FwdGrad}));
+    } else {
+      // Check d and d' are in expectedInputs.
+      BOOST_REQUIRE(bgInfo.expectedInputs.size() == 2);
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_d, ExpectedConnectionType::Fwd}));
+      BOOST_REQUIRE(
+          contains(bgInfo.expectedInputs,
+                   ExpectedConnection{sg_d, ExpectedConnectionType::FwdGrad}));
+    }
 
     // Check a', b' only in expectedOutputs.
     BOOST_REQUIRE(bgInfo.expectedOutputs.size() == 2);
@@ -1690,12 +1721,21 @@ BOOST_AUTO_TEST_CASE(
     // The forward tensors we need must have been cloned into the backward
     // graph, regardless of whether we did recompute or fwdoutput stitching.
 
-    auto bg_d_grad = fwdIdToBwdGradId(sg, tw_bg->unwrap(), sg_d);
+    auto bg_a      = fwdIdToClonedBwdId(sg, tw_bg->unwrap(), sg_a);
+    auto bg_b      = fwdIdToClonedBwdId(sg, tw_bg->unwrap(), sg_b);
+    auto bg_c      = fwdIdToClonedBwdId(sg, tw_bg->unwrap(), sg_c);
     auto bg_d      = fwdIdToClonedBwdId(sg, tw_bg->unwrap(), sg_d);
     auto bg_a_grad = fwdIdToBwdGradId(sg, tw_bg->unwrap(), sg_a);
     auto bg_b_grad = fwdIdToBwdGradId(sg, tw_bg->unwrap(), sg_b);
+    auto bg_d_grad = fwdIdToBwdGradId(sg, tw_bg->unwrap(), sg_d);
 
-    tw_bg->inputs().hasExactIds({bg_d_grad, bg_d}, Require::MustBeTrue);
+    if (stitchStrat == AutodiffStitchStrategy::RecomputeAllNonInputs) {
+      tw_bg->inputs().hasExactIds({bg_d_grad, bg_a, bg_b, bg_c},
+                                  Require::MustBeTrue);
+    } else {
+      tw_bg->inputs().hasExactIds({bg_d_grad, bg_d}, Require::MustBeTrue);
+    }
+
     tw_bg->outputs().hasExactIds({bg_a_grad, bg_b_grad}, Require::MustBeTrue);
 
     /* Test bg TertiaryGradOp and edge grads and sums */
@@ -1709,6 +1749,25 @@ BOOST_AUTO_TEST_CASE(
                      TertiaryGradOp::getFwdOutInIndex(), bg_d);
         },
         Require::MustBeTrue);
+
+    if (stitchStrat == AutodiffStitchStrategy::RecomputeAllNonInputs) {
+      // a, b, c -> TertiaryOp -> d.
+      // And check if TertiaryOp which is in backward graph has same attributes,
+      // vgid, as TertiaryOp in fwd graph.
+      auto tw_bg_tertiary = tw_bg->ops().hasOp<TertiaryOp>(
+          [&](auto &tw_bg_tertiary) -> bool {
+            return tw_bg_tertiary.inputs().hasIdAtIndex(
+                       TertiaryOp::getArg0InIndex(), bg_a) &&
+                   tw_bg_tertiary.inputs().hasIdAtIndex(
+                       TertiaryOp::getArg1InIndex(), bg_b) &&
+                   tw_bg_tertiary.inputs().hasIdAtIndex(
+                       TertiaryOp::getArg2InIndex(), bg_c) &&
+                   tw_bg_tertiary.outputs().hasIdAtIndex(
+                       TertiaryOp::getOutIndex(), bg_d) &&
+                   hasVgid(tw_bg_tertiary, vgid);
+          },
+          Require::MustBeTrue);
+    }
 
     // TertiaryGradOp -> edge_t; for t = a, b, c
 
