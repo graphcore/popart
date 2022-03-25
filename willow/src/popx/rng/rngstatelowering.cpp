@@ -130,9 +130,8 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
 snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
                                                     const std::string &name) {
   auto &target = graph.getTarget();
-  std::vector<size_t> rngStateTensorShape{target.getNumTiles(),
-                                          target.getNumWorkerContexts(),
-                                          rngStateSizePerWorker};
+  std::vector<size_t> rngStateTensorShape =
+      getRngStateTensorShape(graph.getTarget());
   // Create tensor with specific mapping to avoid exchanges.
   unsigned minElementsPerTile =
       target.getNumWorkerContexts() * rngStateSizePerWorker;
@@ -168,10 +167,14 @@ PriTask RngStateLowering::initRngStateTensor() {
   // Set up combinedRngStateTensor
   auto initRngStateTensorTask = [this]() {
     SequenceMap seqs(graph.get());
-    std::vector<size_t> combinedRngStateTensorShape{numRngStateTensors,
-                                                    getNumTiles(),
-                                                    getNumWorkersPerTile(),
-                                                    rngStateSizePerWorker};
+
+    // Get combined rng state tensor shape for a single replica. The target
+    // is taken intentionally from the graph, not from the deviceInfo.
+    // The graph contains the target for a single replica whereas deviceInfo
+    // for all replicas.
+    const auto &target = graph.get().getTarget();
+    std::vector<size_t> combinedRngStateTensorShape =
+        getCombinedRngStateTensorShape(target);
     combinedRngStateTensor =
         graph.get().addVariable(poplar::UNSIGNED_INT,
                                 combinedRngStateTensorShape,
@@ -212,14 +215,21 @@ PriTask RngStateLowering::randomSeedToHost() {
 
 PriTask RngStateLowering::rngStateFromHost() {
   auto rngStateFromHostTask = [this]() {
+    // Get combined rng state tensor size for a single replica. The target
+    // is taken intentionally from the graph, not from the deviceInfo.
+    // The graph contains the target for a single replica whereas deviceInfo
+    // for all replicas.
+    const auto &target                 = graph.get().getTarget();
+    const size_t combinedRngTensorSize = getCombinedRngStateTensorSize(target);
+
     auto streamRngFromHost = graph.get().addHostToDeviceFIFO(
         "h2d_rngStateTensor",
         poplar::UNSIGNED_INT,
-        getCombinedRngStateSize(),
+        combinedRngTensorSize,
         poplar::ReplicatedStreamMode::REPLICATE);
 
-    logging::devicex::debug("Initializing RNG h2d.");
-    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
+    logging::devicex::debug("Initializing RNG h2d with RNG size equal to {}.",
+                            combinedRngTensorSize);
 
     SequenceMap seqs(graph.get());
     auto &seq =
@@ -253,11 +263,18 @@ PriTask RngStateLowering::rngStateFromHost() {
 
 PriTask RngStateLowering::rngStateToHost() {
   auto rngStateToHostTask = [this]() {
-    auto streamRngToHost = graph.get().addDeviceToHostFIFO(
-        "d2h_rngStateTensor", poplar::UNSIGNED_INT, getCombinedRngStateSize());
+    // Get combined rng state tensor size for a single replica. The target
+    // is taken intentionally from the graph, not from the deviceInfo.
+    // The graph contains the target for a single replica whereas deviceInfo
+    // for all replicas.
+    const auto &target                 = graph.get().getTarget();
+    const size_t combinedRngTensorSize = getCombinedRngStateTensorSize(target);
 
-    logging::devicex::debug("Initializing RNG d2h.");
-    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
+    auto streamRngToHost = graph.get().addDeviceToHostFIFO(
+        "d2h_rngStateTensor", poplar::UNSIGNED_INT, combinedRngTensorSize);
+
+    logging::devicex::debug("Initializing RNG d2h with RNG size equal to {}.",
+                            combinedRngTensorSize);
 
     SequenceMap seqs(graph.get());
     auto &seq =
@@ -283,16 +300,35 @@ PriTask RngStateLowering::rngStateToHost() {
           rngStateToHostTask};
 }
 
-unsigned RngStateLowering::getNumWorkersPerTile() {
-  return graph.get().getTarget().getNumWorkerContexts();
+std::vector<size_t>
+RngStateLowering::getRngStateTensorShape(const poplar::Target &target) {
+  return std::vector<size_t>{
+      getNumTiles(target), getNumWorkersPerTile(target), rngStateSizePerWorker};
 }
 
-unsigned RngStateLowering::getNumTiles() {
-  return graph.get().getTarget().getNumTiles();
+std::vector<size_t>
+RngStateLowering::getCombinedRngStateTensorShape(const poplar::Target &target) {
+  return std::vector<size_t>{numRngStateTensors,
+                             getNumTiles(target),
+                             getNumWorkersPerTile(target),
+                             rngStateSizePerWorker};
 }
 
-unsigned RngStateLowering::getCombinedRngStateSize() {
-  return combinedRngStateTensor.numElements();
+size_t
+RngStateLowering::getCombinedRngStateTensorSize(const poplar::Target &target) {
+  std::vector<size_t> tensorShape = getCombinedRngStateTensorShape(target);
+  return std::accumulate(tensorShape.begin(),
+                         tensorShape.end(),
+                         size_t(1),
+                         std::multiplies<size_t>());
+}
+
+unsigned RngStateLowering::getNumWorkersPerTile(const poplar::Target &target) {
+  return target.getNumWorkerContexts();
+}
+
+unsigned RngStateLowering::getNumTiles(const poplar::Target &target) {
+  return target.getNumTiles();
 }
 
 const TaskId RngStateLowering::initRngStateTensorTaskId =
