@@ -132,7 +132,8 @@ class Context:
         self._op_created_hooks.pop(handle)
 
     def _patch_op_listener(self):
-        """Wraps all `createConnectedOp` and `createOp` in the internal library.
+        """Wrap all `createConnectedOp` and `createOp` in the internal library.
+
             Allowing for the creation of ops to be tracked by popxl.
             Currently this is used for adding topological constraints to linearize graphs."""
 
@@ -150,13 +151,18 @@ class Context:
                 _register_listener(method, getattr(_ir.Graph, method))
 
     def _op_created(self, op: _ir.Op):
-        """Callback for when an op is created."""
+        """
+        Call _add_in_sequence_topocons and call all hooks on the operator.
+
+        Used as a callback when an op is created.
+        """
         self._add_in_sequence_topocons(op)
         for fn in self._op_created_hooks.values():
             fn(op)
 
     def _add_in_sequence_topocons(self, op: _ir.Op):
-        """Adds topocons to ensure operations are executed in sequence.
+        """Add topocons to ensure operations are executed in sequence.
+
             If #op is added in an `in_sequence(True)` context then
                 add a topocon from the Ops in the previous ops.
                 Then set the previous ops to only #op.
@@ -348,7 +354,9 @@ def op_debug_context(name: Fn) -> Fn:
 
 def op_debug_context(name):  # type: ignore
     """
-    Decorator to specify a new op debug context.
+    Specify a new op debug context.
+
+    Commonly used as decorator.
 
     Typical usage:
 

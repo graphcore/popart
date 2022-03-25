@@ -97,7 +97,7 @@ class RemoteBuffer:
 
     @property
     def remote_buffer_id(self) -> int:
-        """The ID of the buffer.
+        """Return the ID of the buffer.
 
         Note that the ID is read only.
 
@@ -108,7 +108,7 @@ class RemoteBuffer:
 
     @property
     def tensor_shape(self) -> Tuple[int, ...]:
-        """The shape of the tensors stored in the buffer.
+        """Return the shape of the tensors stored in the buffer.
 
         The shape cannot be changed after the buffer has been created.
 
@@ -121,7 +121,7 @@ class RemoteBuffer:
 
     @property
     def tensor_dtype(self) -> dtype:
-        """The type of the tensors stored in the buffer.
+        """Return the type of the tensors stored in the buffer.
 
         The type cannot be changed after the buffer has been created.
 
@@ -134,7 +134,7 @@ class RemoteBuffer:
 
     @property
     def entries(self) -> int:
-        """The number of entries that can be stored in the buffer.
+        """Return the number of entries that can be stored in the buffer.
 
         Setting the value of this property will update the size of the buffer.
 

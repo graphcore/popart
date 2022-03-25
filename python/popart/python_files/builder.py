@@ -237,7 +237,7 @@ class AiOnnx(Opset):
              num_outputs: int,
              body: Builder,
              debugContext: str = "") -> List[str]:
-        """Generic Looping construct op.
+        """Construct a generic Looping op.
 
         Arguments:
             args: List of tensor ids to feed as arguments.
@@ -326,7 +326,7 @@ class AiOnnx9(AiOnnx8):
              scan_output_axes: List[int] = [],
              scan_output_directions: List[int] = [],
              debugContext: str = "") -> List[str]:
-        """Generic Scan construct op.
+        """Construct a generic scan op.
 
         Arguments:
             args: List of tensor ids to feed as arguments.

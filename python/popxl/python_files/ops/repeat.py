@@ -271,7 +271,7 @@ def repeat_with_info(
 def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
                            pb_bottom_graph: _ir.Graph
                            ) -> Tuple[_ir.Graph, _ir.op.CallOp, _ir.op.LoopOp]:
-    """Setup the call and repeat ops, as well as the middle graph that the loop op will loop.
+    """Set up the call and repeat ops, as well as the middle graph that the loop op will loop.
 
     Args:
         pb_ir (_ir.Ir): The _ir level Ir
@@ -324,7 +324,7 @@ def _setup_inputs(inputs: Iterable[Tensor],
                   pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
                   pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
                   pb_loop_op: _ir.op.LoopOp) -> None:
-    """Setup the inputs.
+    """Set up the inputs.
 
     This is done in the following way:
 

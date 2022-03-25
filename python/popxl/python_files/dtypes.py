@@ -25,7 +25,10 @@ _PT_TO_POPXL: Mapping[Any, 'dtype'] = {}
 
 class dtype:
     def __init__(self) -> None:
-        """A class to represent the type of elements in a tensor.
+        """
+        Construct the dtype.
+
+        A class to represent the type of elements in a tensor.
 
         Available data types are:
             - `bool`
@@ -64,27 +67,27 @@ class dtype:
 
     @property
     def name(self) -> str:
-        """Name of dtype."""
+        """Return the name of dtype."""
         return self._name
 
     @property
     def is_complex(self) -> bool:
-        """True if a complex number dtype. False otherwise."""
+        """Return True if a complex number dtype. False otherwise."""
         return self._is_complex
 
     @property
     def is_int(self) -> bool:
-        """True if an integer number dtype. False otherwise."""
+        """Return True if an integer number dtype. False otherwise."""
         return self._is_int
 
     @property
     def is_floating_point(self) -> bool:
-        """True if a float point number dtype. False otherwise."""
+        """Return True if a float point number dtype. False otherwise."""
         return self._is_floating_point
 
     @property
     def is_signed(self) -> bool:
-        """True if a signed number dtype. False otherwise."""
+        """Return True if a signed number dtype. False otherwise."""
         return self._is_signed
 
     @classmethod
@@ -110,7 +113,7 @@ class dtype:
 
     @classmethod
     def as_dtype(cls, type_value: Any) -> 'dtype':
-        """Converts the given `type_value` to a `popxl.dtype`.
+        """Convert the given `type_value` to a `popxl.dtype`.
 
         Args:
             type_value:
@@ -170,7 +173,7 @@ class dtype:
             f' with value: {type_value}, type: {type(type_value)}.')
 
     def as_numpy(self) -> np.dtype:
-        """Converts the `popxl.dtype` to a corresponding `numpy.dtype`.
+        """Convert the `popxl.dtype` to a corresponding `numpy.dtype`.
 
         Raises:
             TypeError:
@@ -187,7 +190,7 @@ class dtype:
                             f'corresponding NumPy dtype.')
 
     def as_torch(self) -> np.dtype:
-        """Converts the `popxl.dtype` to a corresponding `torch.dtype`.
+        """Convert the `popxl.dtype` to a corresponding `torch.dtype`.
 
         Raises:
             TypeError:
@@ -223,7 +226,9 @@ class dtype:
             py_type: Any,
             pb_type: _ir.DataType,
     ) -> 'dtype':
-        """Factory method to construct `dtype` instances.
+        """Construct `dtype` instances.
+
+        Used as a factory method.
 
         Args:
             name (str):

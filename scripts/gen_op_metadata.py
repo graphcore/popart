@@ -374,7 +374,11 @@ def parse_ops(ops_dir: Path,
 
 
 def parse_op_filenames(ops_dir: Path, filenames: Any) -> List[Path]:
-    """The filenames are provided as a string of colon-separated absolute paths.
+    """
+    Parse the op filenames.
+
+    The filenames are provided as a string of colon-separated absolute paths.
+
     Break this into a list of string, where each item is a path relative to the
     ops directory.
 

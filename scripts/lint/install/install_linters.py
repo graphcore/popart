@@ -42,7 +42,7 @@ class Installer:
     """
 
     def __init__(self, install_dir: str) -> None:
-        """Setup the class and run the version checker.
+        """Set up the class and run the version checker.
 
         Args:
             install_dir (str): The directory where `bin`, `lib` and `include` will be installed to

@@ -64,7 +64,7 @@ class ReplicaGrouping:
 
     def __repr__(self) -> str:
         """
-        Returns a string representation.
+        Return a string representation.
 
         Returns:
             str: A string representation of this ReplicaGrouping instance.
@@ -72,8 +72,8 @@ class ReplicaGrouping:
         return f"ReplicaGrouping(num_replicas={self._ir.replication_factor}, stride={self.stride}, group_size={self.group_size})"
 
     def _to_variable_settings(self) -> VariableSettings:
-        """Create a popart.VariableSettings object from this ReplicaGrouping's stride and group_size
-        arguments.
+        """
+        Create a popart.VariableSettings object from this ReplicaGrouping's stride and group_size.
 
         Raises:
             ValueError: If incompatible stride and group_size arguments are passed.

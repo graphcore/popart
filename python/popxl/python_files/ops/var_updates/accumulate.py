@@ -13,7 +13,7 @@ from .utils import handle_optimizer_value
 def accumulate_(t: Tensor, X: Tensor,
                 f: Optional[Union[float, Tensor]] = None) -> Tensor:
     """
-    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X)`.
+    Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X)`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
@@ -65,7 +65,7 @@ def accumulate_(t: Tensor, X: Tensor,
 def accumulate_square_(t: Tensor, X: Tensor,
                        f: Union[float, Tensor] = 1.0) -> Tensor:
     """
-    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X^2)`.
+    Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X^2)`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
@@ -116,7 +116,7 @@ def accumulate_square_(t: Tensor, X: Tensor,
 def accumulate_mean_(t: Tensor, X: Tensor,
                      step: Union[float, Tensor]) -> Tensor:
     """
-    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (step/(step+1)) * t + (1/(step+1)) * X`.
+    Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (step/(step+1)) * t + (1/(step+1)) * X`.
 
     Intended to be used to keep track of the mean of a series of values.
 
@@ -178,7 +178,7 @@ def accumulate_mean_(t: Tensor, X: Tensor,
 def accumulate_moving_average_(t: Tensor, X: Tensor,
                                f: Union[float, Tensor]) -> Tensor:
     """
-    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X)`.
+    Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X)`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
@@ -229,7 +229,7 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 def accumulate_moving_average_square_(t: Tensor, X: Tensor,
                                       f: Union[float, Tensor]) -> Tensor:
     """
-    Updates (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X^2)`.
+    Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X^2)`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.

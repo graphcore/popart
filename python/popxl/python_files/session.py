@@ -26,6 +26,8 @@ class Session:
             num_ipus: Optional[int] = None,
     ) -> None:
         """
+        Construct a session object.
+
         A runtime session that can execute a PopXL `Ir`.
 
         .. warning:: The session object takes ownership of the provided Ir and it cannot be modified
@@ -180,7 +182,7 @@ class Session:
         self._pb_session.weightsFromHost()
 
     def expected_inputs(self) -> List[HostToDeviceStream]:
-        """Returns the list of expected inputs for this session.
+        """Return the list of expected inputs for this session.
 
         Data will need to be provided for each of these when doing `:func:`~popxl.Session.run``.
 
@@ -242,7 +244,7 @@ class Session:
                             tensor: Variable,
                             data: np.ndarray,
                             write_from_host: bool = True) -> None:
-        """Writes the variable tensor data from the provided host array.
+        """Write the variable tensor data from the provided host array.
 
         This is only valid for Variable type tensors. This will update values on the device with
         values from the array, both the Tensor and the array must have matching types and shapes.
@@ -282,7 +284,7 @@ class Session:
 
     def write_variables_data(self,
                              tensors: Dict[Variable, np.ndarray]) -> None:
-        """Calls ``write_variable_data`` for multiple tensors in one go.
+        """Call ``write_variable_data`` for multiple tensors in one go.
 
         The function delays the host to device transfer until last so that
         it is transferred in one go.
@@ -297,7 +299,7 @@ class Session:
 
     def create_host_outputs(self) -> d2hStreamBufferMaps:
         """
-        Returns a mapping from popxl.DeviceToHostStream to an empty np.ndarray.
+        Return a mapping from popxl.DeviceToHostStream to an empty np.ndarray.
 
         Later, this can be passed to `session.run_with_outputs`,
         which will fill each array with the values streamed back from device.
@@ -366,13 +368,13 @@ class Session:
     # Properties:
     @property
     def ir(self) -> Ir:
-        """The associated Ir for this session. Read only.
+        """Return the associated Ir for this session. Read only.
         """
         return self.ir_
 
     @property
     def device(self) -> popart.DeviceInfo:
-        """The popart.DeviceInfo object representing the device for this session to run on.
+        """Return the popart.DeviceInfo object representing the device for this session to run on.
         """
         return self._device
 
@@ -387,7 +389,7 @@ class Session:
 
     # Private methods
     def _get_ipu_count(self) -> int:
-        """Returns the number of ipus required by this session and ir.
+        """Return the number of ipus required by this session and ir.
 
         Equal to 2 ** ceil(log_2(max(virtual_graphs) + 1))
 
@@ -411,7 +413,7 @@ class Session:
         return 2**math.ceil(math.log2(num_ipus))
 
     def _expected_outputs(self) -> List[DeviceToHostStream]:
-        """Returns the list of expected outputs from this session.
+        """Return the list of expected outputs from this session.
 
         Data will be returned for each of these when doing `:func:`~popxl.Session.run``.
 
@@ -422,7 +424,7 @@ class Session:
         return self.ir.get_all_d2h_streams()
 
     def _full_input_shape(self, shape: Tuple[int, ...]) -> Tuple[int, ...]:
-        """Returns the full input shape that this array will need to be.
+        """Return the full input shape that this array will need to be.
 
         The shape is taking into account num_host_transfers and replication_factor.
 
@@ -542,13 +544,16 @@ class Session:
     # Private properties:
     @property
     def _ir(self) -> _ir.Ir:
-        """The associated popart._internal.ir Ir object for this session. Read only.
+        """
+        Return the associated popart._internal.ir Ir object for this session.
+
+        Read only.
         """
         return self.ir._pb_ir
 
     @property
     def _extra_input_dims(self) -> Tuple[int, ...]:
-        """The tuple of extra input dimensions required for this session.
+        """Return the tuple of extra input dimensions required for this session.
 
         Equal to (num_device_iterations, num_replicas)
 

@@ -53,7 +53,7 @@ class TensorSpec(Mapping):
                  dtype: dtypes.dtype,
                  meta_shape: Tuple[int, ...] = ()):
         """
-        Description of a tensor.
+        Construct a description of a tensor.
 
         Instances of this class can be used as arguments in `ir.create_graph()` to provide
         a specification of the input tensors.
@@ -105,9 +105,14 @@ class Tensor:
 
     def __init_subclass__(cls, tensor_type: Optional[str] = None,
                           **kwargs) -> None:
-        """Hook called when creating a Tensor subclass.
-           Argument `tensor_type` is used to allow `_from_pb_tensor` to return
-           the correct subclass for any Tensor retrieved from the internal IR"""
+        """
+        Construct a subclass.
+
+        Used as a hook which is called when creating a Tensor subclass.
+
+        Argument `tensor_type` is used to allow `_from_pb_tensor` to return
+        the correct subclass for any Tensor retrieved from the internal IR
+        """
         super().__init_subclass__(**kwargs)
         if tensor_type is not None:
             Tensor._tensor_types[tensor_type] = cls
@@ -126,17 +131,21 @@ class Tensor:
     ## Properties
     @property
     def id(self) -> str:
-        """The fully qualified identifier of the tensor (e.g. 'graph1/Gradient___x')."""
+        """Return the fully qualified identifier of the tensor (e.g. 'graph1/Gradient___x')."""
         return str(self._pb_tensor.id)
 
     @property
     def name(self) -> str:
-        """The identifier of the tensor with the graph scope removed (e.g. 'Gradient___x')."""
+        """Return the identifier of the tensor with the graph scope removed (e.g. 'Gradient___x')."""
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
     def scope(self) -> str:
-        """The graph scope component of the tensor's identifier (e.g. 'graph1')."""
+        """
+        Return the scope.
+
+        The graph scope component of the tensor's identifier (e.g. 'graph1').
+        """
         return self._pb_tensor.getGraph().getScope().str()
 
     @property
@@ -145,7 +154,7 @@ class Tensor:
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        """A tuple of the shape of the tensor."""
+        """Return a tuple of the shape of the tensor."""
         return tuple(self._pb_tensor.info.shape())
 
     @property
@@ -166,12 +175,12 @@ class Tensor:
 
     @property
     def rank(self) -> int:
-        """The total number of dimensions in this tensor."""
+        """Return the total number of dimensions in this tensor."""
         return self._pb_tensor.info.rank()
 
     @property
     def nelms(self) -> int:
-        """The total number of elements in this tensor."""
+        """Return the total number of elements in this tensor."""
         return self._pb_tensor.info.nelms()
 
     @property
@@ -181,7 +190,7 @@ class Tensor:
 
     @property
     def strides(self) -> Tuple[int]:
-        """ Get the strides of the tensor.
+        """Get the strides of the tensor.
 
         The strides of the tensor is the number of bytes to step in each
         dimension when traversing an array in memory. See
@@ -195,19 +204,20 @@ class Tensor:
     @property
     @debug_context_frame_offset(2)
     def T(self) -> 'Tensor':
-        """The tensor transposed with reversed axes."""
+        """Return the tensor transposed with reversed axes."""
         return self.transpose()
 
     @property
     @debug_context_frame_offset(2)
     def T_(self) -> 'Tensor':
-        """The tensor transposed with reversed axes in-place."""
+        """Return the tensor transposed with reversed axes in-place."""
         return self.transpose_()
 
     @property
     def ipu(self) -> int:
         """
-        The IPU that the tensor is assigned to.
+        Return the IPU that the tensor is assigned to.
+
         Raises:
             UndefinedValue: If the IPU is undefined.
         """
@@ -218,7 +228,8 @@ class Tensor:
     @property
     def tile_set(self) -> Literal["compute", "io"]:
         """
-        The tile set (`compute` or `io`) that the tensor is assigned to.
+        Return the tile set (`compute` or `io`) that the tensor is assigned to.
+
         Raises:
             UndefinedValue: If the tile set is undefined.
         """
@@ -266,7 +277,7 @@ class Tensor:
     def transpose_(self,
                    permutation: Optional[Iterable[int]] = None) -> 'Tensor':
         """
-        Permutes the axes of a tensor in place.
+        Permute the axes of a tensor in place.
 
         By default this operation reverses the axes of the tensor.
 
@@ -287,37 +298,37 @@ class Tensor:
 
     @debug_context_frame_offset(1)
     def reshape(self, shape: Iterable[int]) -> 'Tensor':
-        """Returns `ops.reshape(self, shape)`."""
+        """Return `ops.reshape(self, shape)`."""
         import popxl.ops as ops
         return ops.reshape(self, shape)
 
     @debug_context_frame_offset(1)
     def reshape_(self, shape: Iterable[int]) -> 'Tensor':
-        """Returns ops.reshape_(self, shape) inplace."""
+        """Return ops.reshape_(self, shape) inplace."""
         import popxl.ops as ops
         return ops.reshape_(self, shape)
 
     @debug_context_frame_offset(1)
     def flatten(self) -> 'Tensor':
-        """Returns ops.flatten(self)."""
+        """Return ops.flatten(self)."""
         import popxl.ops as ops
         return ops.flatten(self)
 
     @debug_context_frame_offset(1)
     def flatten_(self) -> 'Tensor':
-        """Returns ops.flatten_(self) inplace."""
+        """Return ops.flatten_(self) inplace."""
         import popxl.ops as ops
         return ops.flatten_(self)
 
     @debug_context_frame_offset(1)
     def detach(self) -> 'Tensor':
-        """Returns the detached tensor."""
+        """Return the detached tensor."""
         import popxl.ops as ops
         return ops.detach(self)
 
     @debug_context_frame_offset(1)
     def detach_(self) -> 'Tensor':
-        """Returns this tensor detached inplace."""
+        """Return this tensor detached inplace."""
         import popxl.ops as ops
         return ops.detach_(self)
 
@@ -325,7 +336,7 @@ class Tensor:
     def copy_to_ipu(self, destination: int,
                     source: Optional[int] = None) -> 'Tensor':
         """
-        Copies a tensor to an IPU.
+        Copy a tensor to an IPU.
 
         Args:
             destination (int):
@@ -398,12 +409,12 @@ class Tensor:
         return hash((self.id, self.ir))
 
     def __eq__(self, other: Any) -> bool:
-        """Tensor equality, based on Tensor and Ir `id`."""
+        """Return the Tensor equality, based on Tensor and Ir `id`."""
         return isinstance(
             other, Tensor) and self.id == other.id and self.ir == other.ir
 
     def __len__(self) -> int:
-        """Size of 0th axis or raises a UndefinedValue."""
+        """Return the size of the 0th axis or raises a UndefinedValue."""
         if len(self.shape) > 0:
             return self.shape[0]
         else:
@@ -411,13 +422,13 @@ class Tensor:
 
     @debug_context_frame_offset(1)
     def __add__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.add(self, other)`."""
+        """Return `ops.add(self, other)`."""
         import popxl.ops as ops
         return ops.add(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __radd__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.add(other, self)`."""
+        """Return `ops.add(other, self)`."""
         import popxl.ops as ops
         return ops.add(self._ensure_tensor(other), self)
 
@@ -433,97 +444,97 @@ class Tensor:
 
     @debug_context_frame_offset(1)
     def __sub__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.sub(self, other)`."""
+        """Return `ops.sub(self, other)`."""
         import popxl.ops as ops
         return ops.sub(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rsub__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.sub(other, self)`."""
+        """Return `ops.sub(other, self)`."""
         import popxl.ops as ops
         return ops.sub(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __mul__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.mul(self, other)`."""
+        """Return `ops.mul(self, other)`."""
         import popxl.ops as ops
         return ops.mul(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rmul__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.mul(other, self)`."""
+        """Return `ops.mul(other, self)`."""
         import popxl.ops as ops
         return ops.mul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __truediv__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.div(self, other)`."""
+        """Return `ops.div(self, other)`."""
         import popxl.ops as ops
         return ops.div(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rtruediv__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.div(other, self)`."""
+        """Return `ops.div(other, self)`."""
         import popxl.ops as ops
         return ops.div(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __mod__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.fmod(self, other)`."""
+        """Return `ops.fmod(self, other)`."""
         import popxl.ops as ops
         return ops.fmod(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rmod__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.fmod(other, self)`."""
+        """Return `ops.fmod(other, self)`."""
         import popxl.ops as ops
         return ops.fmod(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __neg__(self) -> 'Tensor':
-        """Returns `ops.negate(self)`."""
+        """Return `ops.negate(self)`."""
         import popxl.ops as ops
         return ops.negate(self)
 
     @debug_context_frame_offset(1)
     def __matmul__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.matmul(self, other)`."""
+        """Return `ops.matmul(self, other)`."""
         import popxl.ops as ops
         return ops.matmul(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rmatmul__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.matmul(other, self)`."""
+        """Return `ops.matmul(other, self)`."""
         import popxl.ops as ops
         return ops.matmul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __and__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_and(self, other)`."""
+        """Return `ops.logical_and(self, other)`."""
         import popxl.ops as ops
         return ops.logical_and(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __rand__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_and(other, self)`."""
+        """Return `ops.logical_and(other, self)`."""
         import popxl.ops as ops
         return ops.logical_and(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __or__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_or(self, other)`."""
+        """Return `ops.logical_or(self, other)`."""
         import popxl.ops as ops
         return ops.logical_or(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
     def __ror__(self, other: TensorLike) -> 'Tensor':
-        """Returns `ops.logical_or(other, self)`."""
+        """Return `ops.logical_or(other, self)`."""
         import popxl.ops as ops
         return ops.logical_or(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
     def __invert__(self) -> 'Tensor':
-        """Returns `ops.logical_not(self)`."""
+        """Return `ops.logical_not(self)`."""
         import popxl.ops as ops
         return ops.logical_not(self)
 
@@ -649,8 +660,11 @@ class Variable(Tensor, tensor_type="Variable"):
 
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
-        """Returns `ops.ipu_copy(self, dst, src)`.
-            Must provide a src value."""
+        """
+        Return ``ops.ipu_copy(self, dst, src)``.
+
+        Must provide a src value.
+        """
         import popxl.ops as ops
         return ops.ipu_copy(self, dst, src)
 
@@ -671,8 +685,11 @@ class Constant(Tensor, tensor_type="Const"):
 
     @debug_context_frame_offset(1)
     def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
-        """Returns ops.ipu_copy(self, dst, src).
-            Must provide a src value."""
+        """
+        Return ``ops.ipu_copy(self, dst, src)``.
+
+        Must provide a src value.
+        """
         import popxl.ops as ops
         return ops.ipu_copy(self, dst, src)
 
@@ -951,7 +968,10 @@ def constant(
         name: Optional[str] = None,
         downcast: bool = True,
 ) -> Constant:
-    """A constant tensor that is initialised with data during graph creation.
+    """
+    Return a constant tensor.
+
+    A constant tensor that is initialised with data during graph creation.
 
     This tensor cannot change during the runtime of a model. The intended use
     of this class is when doing operations between `popxl.Tensor`

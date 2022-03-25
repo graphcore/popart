@@ -86,12 +86,14 @@ repos:
         -   id: pydocstyle
             # Tests are currently emitting a lot of errors, will be fixed at a later stage
             exclude: tests/
-            args: [
+            args:
               # See explanation of error codes at http://www.pydocstyle.org/en/6.1.1/error_codes.html
               # By using select, most checking is ignored
               # This can be checked when enough errors has been fixed
-              --select=D400,D401,D402,D403,D404,D405,D410,D411,D412,D414,D415,D416,D417,D418
-            ]
+              - |-
+                --select=
+                D400,
+                D401
     - repo: https://github.com/pocc/pre-commit-hooks
       rev: v1.3.5
       hooks:

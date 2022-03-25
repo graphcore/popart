@@ -8,7 +8,7 @@ from .utils import check_in_graph
 @op_debug_context
 def tanh(t: Tensor) -> Tensor:
     """
-    Computes the hyperbolic tangent function element-wise on a Tensor.
+    Compute the hyperbolic tangent function element-wise on a Tensor.
 
     Args:
         t: Tensor

@@ -69,7 +69,7 @@ def to_numpy(
 
 
 def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
-    """Returns the data contained in the tensor. See the cpp class `TensorData` for details.
+    """Return the data contained in the tensor. See the cpp class `TensorData` for details.
 
     Note this is a memory view of the data, so will not allocate extra memory for the data, but
     it is your responsibility to ensure the data in the tensor is live at the point
@@ -120,7 +120,7 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
 
 def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
                     num_ipus: int = 1) -> popart.DeviceInfo:
-    """Returns the PopART `DeviceInfo` object relating to the given parameters.
+    """Return the PopART `DeviceInfo` object relating to the given parameters.
 
     Args:
         device_type (Literal[str]): One of:

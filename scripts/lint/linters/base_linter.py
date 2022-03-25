@@ -84,7 +84,7 @@ class ILinter(ABC):
         """"Return a string describing how the linter should be installed."""
 
     def is_applicable(self, filename: str) -> bool:
-        """Returns true if this linter is applicable to filename, false otherwise."""
+        """Return true if this linter is applicable to filename, false otherwise."""
         # If excludes are not defined then matches_exclude is vacuously False
         if self.exclude is not None:
             matches_exclude = re.search(self.exclude, filename)

@@ -49,7 +49,7 @@ class ExpectedConnection:
     """
 
     def __init__(self) -> None:
-        """Constructor for the ``ExpectedConnection`` class."""
+        """Construct the ``ExpectedConnection`` class."""
         self._fwd_graph: _ir.Graph
         self._pb_ec: _ir.ExpectedConnection
         raise TypeError(
@@ -94,7 +94,7 @@ class GradGraphInfo:
     """
 
     def __init__(self) -> None:
-        """Constructor for the ``GradGraphInfo`` class."""
+        """Construct for the ``GradGraphInfo`` class."""
         self._ir: _ir.Ir
         self._fwd_graph: _ir.Graph
         self._expected_inputs: List[ExpectedConnection]

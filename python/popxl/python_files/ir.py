@@ -55,7 +55,9 @@ class Ir:
             cls,
             pb_ir: '_ir.Ir',
     ) -> 'Ir':
-        """Factory method to return popxl.Ir for a pybind _ir.Ir.
+        """Return popxl.Ir for a pybind _ir.Ir.
+
+        Used as a factory method.
 
         Args:
             pb_ir (_ir.Ir):
@@ -365,7 +367,7 @@ class Ir:
     @property
     def num_host_transfers(self) -> int:
         """
-        This represents the number of fwd-bwd iterations of the model that your Ir computes.
+        Return the number of fwd-bwd iterations of the model that your Ir computes.
 
         This property MUST be set before creating a `popxl.Session`.
 

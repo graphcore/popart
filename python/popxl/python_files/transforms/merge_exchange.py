@@ -7,7 +7,7 @@ from popxl.context import io_tiles, in_sequence, get_current_graph, get_current_
 
 @contextmanager
 def io_tile_exchange(verify_overlap: bool = True):
-    """Combines io_tiles, merge_exchange and in_sequence(False).
+    """Combine io_tiles, merge_exchange and in_sequence(False).
 
     Args:
         verify_overlap (bool, optional): Verify only one Operation remains after the context closes.

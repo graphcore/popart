@@ -46,12 +46,12 @@ class Stream:
         return hash(self._stream_tensor)
 
     def __eq__(self, other: Any) -> bool:
-        """Performs an equality check."""
+        """Perform an equality check."""
         return isinstance(
             other, Stream) and self._stream_tensor == other._stream_tensor
 
     def __str__(self) -> str:
-        """Returns a string representation."""
+        """Return a string representation."""
         return str(self._stream_tensor)
 
 
