@@ -10,6 +10,7 @@
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensor.hpp>
@@ -131,6 +132,27 @@ std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
 
   std::set<Tensor *> inverseLossScaleTensors;
   for (Tensor *variable : variables) {
+    // find out if the tensor is connected to an optimizer
+    auto isUpdatedVariable = [](Tensor *tensor) -> bool {
+      bool isUpdated = false;
+      for (Op *consumer : tensor->consumers.getOps()) {
+        if (consumer->isConvertibleTo<VarUpdateOp>()) {
+          isUpdated = true;
+        }
+      }
+      return isUpdated;
+    };
+    // only variables updated by gradients can have lossScaling tensors
+    // values like batchNorm's scale / bias tensors have a
+    // VariableUpdateType::Copy, and don't have lossScaling tensor
+    if (variable->getVariableUpdateType() != VariableUpdateType::Gradient) {
+      continue;
+    }
+    // only variables connected to optimizers can have
+    // lossScaling tensors, the detached variables don't have it
+    if (!isUpdatedVariable(variable)) {
+      continue;
+    }
     if (ir.tensorExistsInInitialisers(variable->id)) {
       TensorId inverseLossScaleId =
           optimizer.getInverseLossScalingTensorId(*variable);

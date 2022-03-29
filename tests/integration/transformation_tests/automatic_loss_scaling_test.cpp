@@ -19,6 +19,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
@@ -144,4 +145,129 @@ BOOST_AUTO_TEST_CASE(AutomaticLossScalingTest0) {
       });
 
   BOOST_CHECK(alsProxyTensorsExist == false);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetInverseLossScaleTensors) {
+  // Model :
+  //
+  //  Input           Weights1
+  //     |              |
+  //     +--- [mul] ----+
+  //            |
+  //         [detach]  Weights2
+  //            |        |
+  //          [mul] -----+
+  //            |
+  //         [batchNorm]
+  //            |
+  //         [sigmoid]
+  //            |
+  //          [scale]
+  //            |
+  //          [L1 loss]
+  //
+  // there's detach & batchNorm in the graph,
+  // "getInverseLossScaleTensors" function should only pick the
+  // variables which use a optimizer to do update.
+  // detached tensors is not connected to optimizer
+  // batch norm's running mean/var's VariableUpdateType==Copy
+  // these tensors don't have related inverseLossScaleTensors
+
+  // Build model to run.
+
+  auto builder     = popart::Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
+
+  std::vector<std::vector<float>> inits;
+  auto createWeight = [](popart::Builder *builder,
+                         std::vector<std::vector<float>> inits,
+                         std::vector<int64_t> shape) -> popart::TensorId {
+    int64_t num_elements = 1;
+    for (auto i : shape) {
+      num_elements *= i;
+    }
+    inits.emplace_back(num_elements, 0);
+    popart::ConstVoidData weights_cvd = {inits.back().data(),
+                                         popart::TensorInfo("FLOAT16", shape)};
+    popart::TensorId weights_id =
+        builder->addInitializedInputTensor(weights_cvd);
+    return weights_id;
+  };
+  auto batchNorm =
+      [createWeight](popart::Builder *builder,
+                     popart::AiOnnxOpset9 aiOnnx,
+                     std::vector<std::vector<float>> inits,
+                     popart::TensorId input_x,
+                     int64_t num_features) -> std::vector<popart::TensorId> {
+    popart::TensorId init_scale = createWeight(builder, inits, {num_features});
+
+    popart::TensorId init_biases = createWeight(builder, inits, {num_features});
+    popart::TensorId mean        = createWeight(builder, inits, {num_features});
+    popart::TensorId var         = createWeight(builder, inits, {num_features});
+
+    auto outs = aiOnnx.batchnormalization(
+        {input_x, init_scale, init_biases, mean, var}, 5, 1e-5, 0.99);
+    return {outs[0], init_scale, init_biases};
+  };
+  popart::TensorId weights1_id =
+      createWeight(builder.get(), inits, std::vector<int64_t>{4, 4});
+  popart::TensorId weights2_id =
+      createWeight(builder.get(), inits, std::vector<int64_t>{4, 4});
+  popart::TensorInfo input_info{"FLOAT16", std::vector<int64_t>{1, 8, 4, 4}};
+  auto input0 = builder->addInputTensor(input_info, "input");
+
+  auto act     = aiOnnx.mul({weights1_id, input0});
+  act          = aiGraphcore.detach({act});
+  act          = aiOnnx.mul({weights2_id, act});
+  auto bn_outs = batchNorm(builder.get(), aiOnnx, inits, {act}, 8);
+  act          = bn_outs[0];
+  act          = aiOnnx.sigmoid({act});
+  act          = aiGraphcore.scale({act}, 2.0f);
+
+  popart::SessionOptions options;
+
+  auto optimizer = popart::SGD({{"lossScaling", {0.2f, false}}});
+  // when weights one specific hyper param,
+  // all hyper params(like weightDecay or lossScaling) for those weights will be
+  // specific tensors, so we only need to specify a specific learningRate.
+  optimizer.insertSpecific(weights2_id,
+                           std::map<std::string, std::pair<float, bool>>{
+                               {"learningRate", {0.3f, false}}});
+  // bn_outs[1] is the scale tensor of batchnorm
+  // bn_outs[2] is the bias tensor of batchnorm
+  // these two tensors are updated by optimzer using their gradients
+  optimizer.insertSpecific(bn_outs[1],
+                           std::map<std::string, std::pair<float, bool>>{
+                               {"learningRate", {0.3f, false}}});
+  optimizer.insertSpecific(bn_outs[2],
+                           std::map<std::string, std::pair<float, bool>>{
+                               {"learningRate", {0.3f, false}}});
+
+  float lambda   = 0.159;
+  auto act_final = builder->aiGraphcoreOpset1().l1loss({act}, lambda);
+  auto proto     = builder->getModelProto();
+  auto dataFlow  = popart::DataFlow(1);
+
+  auto device  = popart::createTestDevice(popart::TEST_TARGET);
+  auto session = popart::TrainingSession::createFromOnnxModel(
+      proto, dataFlow, act_final, optimizer, device);
+
+  session->prepareDevice();
+  // a set of all tensors that used loss scaling.
+  std::set<popart::TensorId> tensors_use_optimizer = {
+      popart::reservedSpecificScaledLearningRate0Prefix() + weights2_id,
+      popart::reservedSpecificScaledLearningRate0Prefix() + bn_outs[1],
+      popart::reservedSpecificScaledLearningRate0Prefix() + bn_outs[2],
+  };
+  auto &ir = session->getIr();
+  std::set<popart::Tensor *> inverseLossScaleTensors =
+      popart::getInverseLossScaleTensors(ir.getMainGraph());
+
+  // check returned  inverseLossScaleTensors is the same as expected
+  BOOST_CHECK(inverseLossScaleTensors.size() == 3);
+  for (popart::Tensor *tensor : inverseLossScaleTensors) {
+    BOOST_CHECK(tensors_use_optimizer.find(tensor->id) !=
+                tensors_use_optimizer.end());
+  }
 }
