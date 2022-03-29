@@ -7,7 +7,7 @@ Session
 A session is a class that represents the PopART runtime session and lets you execute a PopXL
 graph of operations. You create a session with a constructed :py:class:`popxl.Ir` object as described previously:
 
-.. literalinclude:: ../user_guide/files/tensor_addition_popxl.py
+.. literalinclude:: files/tensor_addition.py
   :language: python
   :name: session_construction_code
   :caption: Example of Session construction
@@ -16,7 +16,7 @@ graph of operations. You create a session with a constructed :py:class:`popxl.Ir
 
 .. only:: html
 
-    :download:`Download tensor_addition_popxl.py <../user_guide/files/tensor_addition_popxl.py>`
+    :download:`Download tensor_addition.py <files/tensor_addition.py>`
 
 Where ``ir`` is the ``popxl.Ir`` object you have created.
 
@@ -41,7 +41,7 @@ You have two choices in doing this:
   returned in the shape inferred by the IR. ``device_desc`` is a string describing the type of device
   you will use to run the session with, this is described in :numref:`device-types`.
 
-  .. literalinclude:: ../user_guide/files/simple_addition_popxl.py
+  .. literalinclude:: files/simple_addition.py
     :language: python
     :name: session_run_1
     :caption: Example of running a session
@@ -56,7 +56,7 @@ You have two choices in doing this:
   shape, then pass it to the session. This runs the model and writes the values to the provided array.
   The shapes of the provided arrays will be validated against the inferred shape and an error thrown if incorrect.
 
-  .. literalinclude:: ../user_guide/files/simple_addition_popxl.py
+  .. literalinclude:: files/simple_addition.py
     :language: python
     :name: session_run_2
     :caption: Example 2 of running a session
@@ -74,7 +74,7 @@ the device. You can do this if you want to make comparisons of trained weights v
 to update or reset weights for debugging. You can also do this if you want to save progress on your
 model by storing and reloading the variables.
 
-.. literalinclude:: ../user_guide/files/tensor_get_write_popxl.py
+.. literalinclude:: files/tensor_get_write.py
   :language: python
   :name: tensor_get_write
   :caption: Example of getting and writing tensors
@@ -83,7 +83,7 @@ model by storing and reloading the variables.
 
 .. only:: html
 
-    :download:`Download tensor_get_write_popxl.py <../user_guide/files/tensor_get_write_popxl.py>`
+    :download:`Download tensor_get_write.py <files/tensor_get_write.py>`
 
 You can get or set data for multiple Variables via the methods ``get_tensors_data`` and ``write_variables_data``
 respectively. It will defer the transfer to the host or IPU so that all the reads or writes are performed in one operation.
@@ -129,7 +129,7 @@ then ``input_shape = (7, ) + (2 , ) + (5, 9) = (7, 2, 5, 9, 9)``. Note, ``replic
 are independent and need to have separate dimensions in the input data, or you will find data will be consumed output
 of order.
 
-.. literalinclude:: ../user_guide/files/repeat_graph_popxl_2.py
+.. literalinclude:: files/repeat_graph_2.py
   :language: python
   :name: repeat_graph_popxl_2
   :caption: Example of num_host_transfers with a repeat op.
@@ -138,7 +138,7 @@ of order.
 
 .. only:: html
 
-    :download:`Download repeat_graph_popxl_2.py <../user_guide/files/repeat_graph_popxl_2.py>`
+    :download:`Download repeat_graph_2.py <../user_guide/files/repeat_graph_2.py>`
 
 .. _device-types:
 

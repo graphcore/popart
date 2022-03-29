@@ -37,7 +37,7 @@ You can also use the following context managers in ``popxl``:
   this will cause ambiguity with the in-place operation between
   ``copy_var_update`` and ``host_store``.
 
-.. literalinclude:: ../user_guide/files/in_sequence_popxl.py
+.. literalinclude:: files/in_sequence.py
   :language: python
   :start-after: Op begin
   :end-before: Op end
@@ -46,7 +46,7 @@ You can also use the following context managers in ``popxl``:
 
 .. only:: html
 
-    :download:`Download in_sequence_popxl.py <../user_guide/files/in_sequence_popxl.py>`
+    :download:`Download in_sequence.py <files/in_sequence.py>`
 
 * :py:func:`popxl.name_scope`: sets the name scope for the operations created within this context.
 

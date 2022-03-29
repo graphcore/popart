@@ -11,6 +11,7 @@ PopXL User Guide and API (experimental)
     datatype
     tensor
     op
+    custom_ops
     graph
     transforms
     context

@@ -20,7 +20,7 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 ``b`` is a constant tensor, and ``o`` is an intermediate tensor.
 
 
-.. literalinclude:: ../user_guide/files/tensor_addition_popxl.py
+.. literalinclude:: files/tensor_addition.py
   :language: python
   :name: tensor_addition_code
   :caption: Example of tensor addition
@@ -29,7 +29,7 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
 
 .. only:: html
 
-    :download:`Download tensor_addition_popxl.py <../user_guide/files/tensor_addition_popxl.py>`
+    :download:`Download tensor_addition.py <files/tensor_addition.py>`
 
 .. _sec_tensors_constant:
 

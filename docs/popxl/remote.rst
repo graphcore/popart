@@ -55,7 +55,7 @@ check the value of ``remote_x`` by using ``session.get_tensor_data(remote_x)`` a
 you run a ``session``. Both the ``loaded_x`` and ``remote_x`` have the value 3 in this
 example.
 
-.. literalinclude:: ../user_guide/files/remote_variable_popxl.py
+.. literalinclude:: files/remote_variable.py
   :language: python
   :name: code_remote_variable_popxl
   :caption: Example to use remote buffer and remtoe variable
@@ -64,7 +64,7 @@ example.
 
 .. only:: html
 
-    :download:`Download remote_variable_popxl.py <../user_guide/files/remote_variable_popxl.py>`
+    :download:`Download remote_variable.py <files/remote_variable.py>`
 
 Replicated tensor sharding variables
 -----------------------------------
@@ -149,7 +149,7 @@ can see the burden of remote store and load are hidden.
 
    .. group-tab:: **Remote RTS variable**
 
-      .. literalinclude:: ../user_guide/files/remote_rts_var_popxl.py
+      .. literalinclude:: files/remote_rts_var.py
          :language: python
          :name: code_remote_rts_variable_popxl
          :caption: Example to use remote RTS variable
@@ -158,11 +158,11 @@ can see the burden of remote store and load are hidden.
 
       .. only:: html
 
-         :download:`Download remote_rts_var_popxl.py <../user_guide/files/remote_rts_var_popxl.py>`
+         :download:`Download remote_rts_var.py <files/remote_rts_var.py>`
 
    .. group-tab:: **RTS variable**
 
-      .. literalinclude:: ../user_guide/files/rts_var_popxl.py
+      .. literalinclude:: files/rts_var.py
          :language: python
          :name: code_rts_variable_popxl
          :caption: Example to use RTS variable
@@ -171,4 +171,4 @@ can see the burden of remote store and load are hidden.
 
       .. only:: html
 
-         :download:`Download rts_var_popxl.py <../user_guide/files/rts_var_popxl.py>`
+         :download:`Download rts_var.py <files/rts_var.py>`

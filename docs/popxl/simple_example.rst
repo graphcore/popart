@@ -15,7 +15,7 @@ You need to import the ``popxl`` package in order to use it:
 The IR in PopXL is represented by the class :py:class:`popxl.Ir`.
 :numref:`simple_example` contains a basic example of how to construct such an object.
 
-.. literalinclude:: ../user_guide/files/simple_addition_popxl.py
+.. literalinclude:: files/simple_addition.py
   :language: python
   :lines: 8-9,11-27
   :name: simple_example
@@ -23,7 +23,7 @@ The IR in PopXL is represented by the class :py:class:`popxl.Ir`.
 
 .. only:: html
 
-    :download:`Download simple_addition_popxl.py <../user_guide/files/simple_addition_popxl.py>`
+    :download:`Download simple_addition.py <files/simple_addition.py>`
 
 In PopXL, an IR is essentially a collection of :py:class:`popxl.Graph` objects.
 Each such graph contains a number of operations.

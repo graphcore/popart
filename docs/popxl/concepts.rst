@@ -76,4 +76,4 @@ There are three types of tensors: intermediate, variable and constant. Variable 
 Operations
 ----------
 
-An operation or op (:numref:`sec_operations`) represents an operation in the computational graph and can have input and output tensors.
+An operation or op (:numref:`sec_supported_operations`) represents an operation in the computational graph and can have input and output tensors.

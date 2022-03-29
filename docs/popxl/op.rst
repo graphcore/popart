@@ -1,7 +1,7 @@
-.. _sec_operations:
+.. _sec_supported_operations:
 
-Operations
-==========
+Supported operations
+====================
 
 Operations (or ops) in a graph are connected by input and output tensors. Each
 operation is applied to the input tensors, and optionally produces output

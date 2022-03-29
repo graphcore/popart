@@ -94,7 +94,7 @@ the first inputs of the gradient graph. :numref:`code-autodiff-example` shows ho
 #. Last, calculate the gradient graphs with :py:func:`popxl.ops.call`. ``grad_seed`` is the initial value of the partial gradient. Increasing ``grad_seed`` can serve as loss scaling. ``activation`` is used to connect the input of the gradient graph with the caller graph.
 
 
-.. literalinclude:: ../user_guide/files/autodiff_popxl.py
+.. literalinclude:: files/autodiff.py
   :language: python
   :start-after: Op begin
   :end-before: Op end
@@ -103,4 +103,4 @@ the first inputs of the gradient graph. :numref:`code-autodiff-example` shows ho
 
 .. only:: html
 
-    :download:`Download autodiff_popxl.py <../user_guide/files/autodiff_popxl.py>`
+    :download:`Download autodiff.py <files/autodiff.py>`
