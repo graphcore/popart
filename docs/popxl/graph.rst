@@ -12,7 +12,7 @@ You can create the main graph of an IR by calling :py:attr:`popxl.Ir.main_graph`
 The returned main graph can be used as a context to include its operations
 and tensors.
 
-.. _sec_graphs:
+.. _sec_subgraphs:
 
 Graphs
 ------
@@ -53,7 +53,7 @@ for different input tensors, ``w1`` and ``w2``, which have different shapes.
 
 .. only:: html
 
-    :download:`Download create_multi_subgraphs_from_same_func.py <files/create_multi_subgraphs_from_same_func.py>`
+    :download:`Download create_multi_subgraphs_from_same_func_popxl.py <../user_guide/files/create_multi_graphs_from_same_func_popxl.py>`
 
 You can also create the subgraph with an additional graph input with :py:func:`popxl.graph_input`
 in its Python function. :py:func:`popxl.graph_input` creates a new input tensor for the

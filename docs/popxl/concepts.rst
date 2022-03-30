@@ -10,7 +10,7 @@ IRs
 
 An IR is the intermediate representation in PopXL of an executable program that can be run using a PopXL session. A Python process can initialise multiple IRs.
 
-An IR contains one main graph (:numref:`sec_graphs`), created on IR initialisation, and multiple graphs (:numref:`sec_graphs`) that you create. The main components of an IR are shown in :numref:`fig_popxl_building_blocks`.
+An IR contains one main graph (:numref:`sec_maingraphs`), created on IR initialisation, and multiple graphs (:numref:`sec_subgraphs`) that you create. The main components of an IR are shown in :numref:`fig_popxl_building_blocks`.
 
 
 .. figure:: images/popxl_building_blocks.png
@@ -28,7 +28,7 @@ An IR contains one main graph (:numref:`sec_graphs`), created on IR initialisati
 Graphs
 ------
 
-A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of operations (ops) and tensors. There are two types of PopXL graphs: the main graph (:numref:`sec_maingraphs`) and graphs (:numref:`sec_graphs`). An example is shown in :numref:`fig_popxl_calling_a_graph`.
+A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of operations (ops) and tensors. There are two types of PopXL graphs: the main graph (:numref:`sec_maingraphs`) and graphs (:numref:`sec_subgraphs`). An example is shown in :numref:`fig_popxl_calling_a_graph`.
 
 
 .. figure:: images/popxl_calling_a_graph.png
