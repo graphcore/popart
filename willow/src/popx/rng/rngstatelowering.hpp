@@ -130,10 +130,6 @@ public:
    */
   PriTask rngStateToHost();
 
-  static std::vector<size_t>
-  getCombinedRngStateTensorShape(const poplar::Target &target);
-  static size_t getCombinedRngStateTensorSize(const poplar::Target &target);
-
   // 2 tensors: identicalSeedsRngStateTensor and differingSeedsRngStateTensor
   static const unsigned numRngStateTensors = 2;
   // Size of single RNG state in bytes
@@ -156,10 +152,9 @@ private:
                                const poplar::DebugContext &dbgCtx) const;
 
   // Functions for commonly accessed values
-  static unsigned getNumWorkersPerTile(const poplar::Target &target);
-  static unsigned getNumTiles(const poplar::Target &target);
-  static std::vector<size_t>
-  getRngStateTensorShape(const poplar::Target &target);
+  unsigned getNumWorkersPerTile();
+  unsigned getNumTiles();
+  unsigned getCombinedRngStateSize();
 
   // Reference to IR.
   std::reference_wrapper<IrLowering> irLowering;

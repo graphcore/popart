@@ -130,8 +130,9 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
 snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
                                                     const std::string &name) {
   auto &target = graph.getTarget();
-  std::vector<size_t> rngStateTensorShape =
-      getRngStateTensorShape(graph.getTarget());
+  std::vector<size_t> rngStateTensorShape{target.getNumTiles(),
+                                          target.getNumWorkerContexts(),
+                                          rngStateSizePerWorker};
   // Create tensor with specific mapping to avoid exchanges.
   unsigned minElementsPerTile =
       target.getNumWorkerContexts() * rngStateSizePerWorker;
@@ -167,8 +168,10 @@ PriTask RngStateLowering::initRngStateTensor() {
   // Set up combinedRngStateTensor
   auto initRngStateTensorTask = [this]() {
     SequenceMap seqs(graph.get());
-    std::vector<size_t> combinedRngStateTensorShape =
-        getCombinedRngStateTensorShape(graph.get().getTarget());
+    std::vector<size_t> combinedRngStateTensorShape{numRngStateTensors,
+                                                    getNumTiles(),
+                                                    getNumWorkersPerTile(),
+                                                    rngStateSizePerWorker};
     combinedRngStateTensor =
         graph.get().addVariable(poplar::UNSIGNED_INT,
                                 combinedRngStateTensorShape,
@@ -212,12 +215,11 @@ PriTask RngStateLowering::rngStateFromHost() {
     auto streamRngFromHost = graph.get().addHostToDeviceFIFO(
         "h2d_rngStateTensor",
         poplar::UNSIGNED_INT,
-        getCombinedRngStateTensorSize(graph.get().getTarget()),
+        getCombinedRngStateSize(),
         poplar::ReplicatedStreamMode::REPLICATE);
 
     logging::devicex::debug("Initializing RNG h2d.");
-    logging::devicex::debug(
-        "RNG size {}", getCombinedRngStateTensorSize(graph.get().getTarget()));
+    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
 
     SequenceMap seqs(graph.get());
     auto &seq =
@@ -252,13 +254,10 @@ PriTask RngStateLowering::rngStateFromHost() {
 PriTask RngStateLowering::rngStateToHost() {
   auto rngStateToHostTask = [this]() {
     auto streamRngToHost = graph.get().addDeviceToHostFIFO(
-        "d2h_rngStateTensor",
-        poplar::UNSIGNED_INT,
-        getCombinedRngStateTensorSize(graph.get().getTarget()));
+        "d2h_rngStateTensor", poplar::UNSIGNED_INT, getCombinedRngStateSize());
 
     logging::devicex::debug("Initializing RNG d2h.");
-    logging::devicex::debug(
-        "RNG size {}", getCombinedRngStateTensorSize(graph.get().getTarget()));
+    logging::devicex::debug("RNG size {}", getCombinedRngStateSize());
 
     SequenceMap seqs(graph.get());
     auto &seq =
@@ -284,35 +283,16 @@ PriTask RngStateLowering::rngStateToHost() {
           rngStateToHostTask};
 }
 
-std::vector<size_t>
-RngStateLowering::getRngStateTensorShape(const poplar::Target &target) {
-  return std::vector<size_t>{
-      getNumTiles(target), getNumWorkersPerTile(target), rngStateSizePerWorker};
+unsigned RngStateLowering::getNumWorkersPerTile() {
+  return graph.get().getTarget().getNumWorkerContexts();
 }
 
-std::vector<size_t>
-RngStateLowering::getCombinedRngStateTensorShape(const poplar::Target &target) {
-  return std::vector<size_t>{numRngStateTensors,
-                             getNumTiles(target),
-                             getNumWorkersPerTile(target),
-                             rngStateSizePerWorker};
+unsigned RngStateLowering::getNumTiles() {
+  return graph.get().getTarget().getNumTiles();
 }
 
-size_t
-RngStateLowering::getCombinedRngStateTensorSize(const poplar::Target &target) {
-  std::vector<size_t> tensorShape = getCombinedRngStateTensorShape(target);
-  return std::accumulate(tensorShape.begin(),
-                         tensorShape.end(),
-                         decltype(tensorShape)::value_type(1),
-                         std::multiplies<size_t>());
-}
-
-unsigned RngStateLowering::getNumWorkersPerTile(const poplar::Target &target) {
-  return target.getNumWorkerContexts();
-}
-
-unsigned RngStateLowering::getNumTiles(const poplar::Target &target) {
-  return target.getNumTiles();
+unsigned RngStateLowering::getCombinedRngStateSize() {
+  return combinedRngStateTensor.numElements();
 }
 
 const TaskId RngStateLowering::initRngStateTensorTaskId =
