@@ -60,8 +60,9 @@ def check_for_test_entry(lint_path, cmakelists_path):
     print(
         f"Could not find `add_popart_py_unit_test` entry for '{lint_path.name}' "
         f"in '{cmakelists_relative_path}'. If this is intentional, please exclude the "
-        f"path \"({test_relative_path})\" in the popart .arclint file, under the"
-        f" section 'popart-test-linter'.",
+        f"path \"({test_relative_path})\" in both .arclint (for arc) and "
+        f".pre-commit-config.yaml (for pre-commit). You can find this "
+        "setting under the 'popart-test-linter' section in both files.",
         file=sys.stderr)
     return 1
 
