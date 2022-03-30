@@ -122,3 +122,10 @@ class TestPythonDocExamples(ExamplesTester):
         self.run_python(filename,
                         file_dir=working_dir,
                         working_dir=working_dir)
+
+    def test_documentation_popxl_mnist(self):
+        """Test the popxl basic mnist example"""
+        filename = "mnist.py"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)

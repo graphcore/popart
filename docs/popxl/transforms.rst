@@ -21,7 +21,7 @@ Currently, we support the following transforms:
 
 ..  -  Merge exchange
 
-.. _autodiff:
+.. _sec_autodiff:
 
 Autodiff
 -----------
@@ -75,6 +75,7 @@ The inputs are as follows:
   * You use ``called_graphs_grad_info`` to provide the information for gradient graphs, which you have already calculated, as inputs to subsequent ``autodiff`` calls where that gradient graph information is needed.
 
 The :py:class:`popxl.transforms.GradGraphInfo` object contains all the information and tools you need to get a gradient graph:
+You can find how to use them in the application example in :numref:`sec_grad_example_mnist`.
 
  -  ``graph``: the associated gradient graph as produced by ``autodiff``
  -  ``forward_graph``: the forward graph that ``autodiff`` was applied to

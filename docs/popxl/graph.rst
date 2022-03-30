@@ -25,7 +25,7 @@ In PopXL, you have access to ``create_graph()`` before you call a graph with
 In the example, a subgraph is created and called instead of directly calling the Python function
 ``increment_fn()``.
 
-.. literalinclude:: ../user_guide/files/basic_graph.py
+.. literalinclude:: files/basic_graph.py
   :language: python
   :name: code_basic_graph_popxl
   :caption: Example to create and call graphs
@@ -34,7 +34,7 @@ In the example, a subgraph is created and called instead of directly calling the
 
 .. only:: html
 
-    :download:`Download basic_graph.py <../user_guide/files/basic_graph.py>`
+    :download:`Download basic_graph.py <files/basic_graph.py>`
 
 Creating a graph
 ----------------
@@ -114,7 +114,7 @@ that the input tensor ``subgraph_tensor`` can be modified by this :py:func:`popx
 support for in-place variable updates as in :numref:`code_call_with_info_popxl`. After calling the subgraph, the value
 of the variable tensor ``x`` is changed to 2.
 
-.. literalinclude:: ../user_guide/files/call_with_info.py
+.. literalinclude:: files/call_with_info.py
   :language: python
   :name: code_call_with_info_popxl
   :caption: Example of ``call_with_info`` op
@@ -123,7 +123,7 @@ of the variable tensor ``x`` is changed to 2.
 
 .. only:: html
 
-    :download:`Download call_with_info.py <../user_guide/files/call_with_info.py>`
+    :download:`Download call_with_info.py <files/call_with_info.py>`
 
 The op :py:func:`popxl.ops.call_with_info` is helpful when building and optimizing the backward graph. More details are given in :numref:`autodiff`.
 
@@ -169,7 +169,7 @@ from ``increment_fn`` is called twice. The input ``x`` is incremented twice by
 ``value``. After the first iteration, the outputs ``x + value`` and ``value``
 are copied to the inputs for the second iteration.
 
-.. literalinclude:: ../user_guide/files/repeat_graph_0.py
+.. literalinclude:: files/repeat_graph_0.py
   :language: python
   :name: code_repeat_graph_popxl_0
   :caption: Example of ``repeat`` op to increment a tensor by a fixed value
@@ -178,7 +178,7 @@ are copied to the inputs for the second iteration.
 
 .. only:: html
 
-    :download:`Download repeat_graph_0.py <../user_guide/files/repeat_graph_0.py>`
+    :download:`Download repeat_graph_0.py <files/repeat_graph_0.py>`
 
 
 :numref:`code_repeat_graph_popxl_1` shows how to use the
@@ -186,7 +186,7 @@ are copied to the inputs for the second iteration.
 layer. The subgraph ``linear_graph`` is created from the PopXL ``build``
 method.
 
-.. literalinclude:: ../user_guide/files/repeat_graph_1.py
+.. literalinclude:: files/repeat_graph_1.py
   :language: python
   :name: code_repeat_graph_popxl_1
   :caption: Example of ``repeat`` op using ``inputs_dict``
@@ -195,4 +195,4 @@ method.
 
 .. only:: html
 
-    :download:`Download repeat_graph_1.py <../user_guide/files/repeat_graph_1.py>`
+    :download:`Download repeat_graph_1.py <files/repeat_graph_1.py>`
