@@ -240,7 +240,7 @@ const static AiGraphcoreOpIdV1 ReplicatedAllReduce("ReplicatedAllReduce", 1, 1);
 const static AiGraphcoreOpIdV1
     ReplicatedAllReduceInplace("ReplicatedAllReduceInplace", 1, 1);
 const static AiGraphcoreOpIdV1
-    ReplicatedReduceScatter("ReplicatedReduceScatter");
+    ReplicatedReduceScatter("ReplicatedReduceScatter", {1, 2}, 1);
 const static AiGraphcoreOpIdV1 ResetAccumulation("ResetAccl");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
 const static AiGraphcoreOpIdV1 Reshape_1("Reshape", 1, 1);
@@ -352,6 +352,10 @@ const static OperatorIdentifier PackedDataBlock =
     CustomOperators::PackedDataBlock;
 const static OperatorIdentifier ReplicatedAllReduce =
     CustomOperators::ReplicatedAllReduce;
+const static OperatorIdentifier ReplicatedReduceScatter =
+    CustomOperators::ReplicatedReduceScatter;
+const static OperatorIdentifier ReplicatedAllGather =
+    CustomOperators::ReplicatedAllGather;
 const static OperatorIdentifier Remainder = CustomOperators::Remainder;
 const static OperatorIdentifier Reshape   = CustomOperators::Reshape_1;
 const static OperatorIdentifier Reverse   = CustomOperators::Reverse;

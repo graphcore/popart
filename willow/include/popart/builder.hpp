@@ -11,6 +11,7 @@
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/op/scatterreduce.hpp>
 #include <popart/operators.hpp>
@@ -465,20 +466,42 @@ public:
                              const DebugContext &debugContext = {});
 
   /**
-   * Add a replicated all-reduce operation to the model.
+   * Add a replicated all-reduce operation to the model
    *
    * This is a Poplar extension, to expose manual code re-use to
-   * the builder.
+   * the builder
    *
-   * \param args Vector of input tensor ids to reduce across.
-   * \param commGroup GCL CommGroup parameter.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param args               Vector of input tensor ids to reduce across
+   * \param collectiveOperator GCL collective operator
+   * \param commGroup          GCL CommGroup parameter
+   * \param debugContext       Optional debug context
+   * \return                   The name of the result tensor
    */
   TensorId replicatedallreduce(
       const std::vector<TensorId> &args,
-      const nonstd::optional<std::vector<int64_t>> &commGroup = nonstd::nullopt,
-      const DebugContext &debugContext                        = {});
+      const nonstd::optional<CollectiveOperator> &collectiveOperator =
+          nonstd::nullopt,
+      const nonstd::optional<CommGroup> &commGroup = nonstd::nullopt,
+      const DebugContext &debugContext             = {});
+
+  /**
+   * Add a replicated reduce-scatter operation to the model
+   *
+   * This is a Poplar extension, to expose manual code re-use to
+   * the builder
+   *
+   * \param args               Vector of input tensor ids to reduce across
+   * \param collectiveOperator GCL collective operator
+   * \param commGroup          GCL CommGroup parameter
+   * \param debugContext       Optional debug context
+   * \return                   The name of the result tensor
+   */
+  TensorId replicatedreducescatter(
+      const std::vector<TensorId> &args,
+      const nonstd::optional<CollectiveOperator> &collectiveOperator =
+          nonstd::nullopt,
+      const nonstd::optional<CommGroup> &commGroup = nonstd::nullopt,
+      const DebugContext &debugContext             = {});
 
   /**
    * Add an \c l1 loss operation to the model.

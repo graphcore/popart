@@ -153,10 +153,10 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
                     ReplicatedAllReduceOpDef}}),
     [](const OpCreatorInfo &info) {
-      CommGroup group       = extractCommGroupFromAttrs(info.attributes);
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
+      CommGroup group = extractCommGroupFromAttrs(info.attributes);
 
       return std::unique_ptr<ReplicatedAllReduceOp>(
           new ReplicatedAllReduceOp(info.opid, op, group, info.settings));

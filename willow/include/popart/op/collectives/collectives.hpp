@@ -72,7 +72,7 @@ public:
    * as optimizers, where all inputs consumed are rearranged in the same way.
    * \return True if this operation is configured for replicated tensor sharding
    */
-  virtual bool isconfigureOutputForReplicatedTensorSharding() const {
+  virtual bool isConfigureOutputForReplicatedTensorSharding() const {
     return false;
   }
 
