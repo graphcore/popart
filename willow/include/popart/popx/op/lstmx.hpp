@@ -37,7 +37,7 @@ private:
                            snap::program::Sequence &) const;
   void prepareWeights(snap::program::Sequence &) const;
   snap::Tensor getInput(snap::program::Sequence &) const;
-  std::unique_ptr<snap::Tensor> createIntermediate() const;
+  std::unique_ptr<poplar::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
   snap::Tensor getSeqLens() const;

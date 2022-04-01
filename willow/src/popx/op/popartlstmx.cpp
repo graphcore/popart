@@ -26,15 +26,6 @@ poplar::Tensor concatWeights(const poplar::Tensor &inputWeights,
   return poplar::concat(inputWeights, outputWeights, 1);
 }
 
-template <typename T> auto getPoplarTensor(T *tensor) {
-  using P = decltype(&tensor->getPoplarTensor());
-  if (tensor) {
-    return &tensor->getPoplarTensor();
-  } else {
-    return P{};
-  }
-}
-
 poplar::OptionFlags
 addAvailableMemoryProportionOption(const PopartLSTMOp &op,
                                    const poplar::OptionFlags &flags) {
@@ -66,17 +57,16 @@ void PopartLSTMOpx::grow(snap::program::Sequence &prog) const {
   auto params = createLSTMParams(lstm_op, seq_lens);
   poplar::Tensor output;
   poplar::Tensor cellState;
-  std::tie(output, cellState) =
-      popnn::lstm::lstmFwd(graph().getPoplarGraph(),
-                           params,
-                           initState,
-                           input.getPoplarTensor(),
-                           lstmWeights,
-                           getPoplarTensor(intermediates.get()),
-                           prog.getPoplarSequence(),
-                           debugContext("lstmFwd"),
-                           options,
-                           &dv_p->matmulCache);
+  std::tie(output, cellState) = popnn::lstm::lstmFwd(graph().getPoplarGraph(),
+                                                     params,
+                                                     initState,
+                                                     input.getPoplarTensor(),
+                                                     lstmWeights,
+                                                     intermediates.get(),
+                                                     prog.getPoplarSequence(),
+                                                     debugContext("lstmFwd"),
+                                                     options,
+                                                     &dv_p->matmulCache);
 
   setOutTensor(PopartLSTMOp::getOutputOutIndex(),
                snap::Tensor{output, graph()});
@@ -84,14 +74,15 @@ void PopartLSTMOpx::grow(snap::program::Sequence &prog) const {
                snap::Tensor{cellState, graph()});
 
   if (hasOutput(PopartLSTMOp::getIntermediatesOutIndex())) {
-    setOutTensor(PopartLSTMOp::getIntermediatesOutIndex(), *intermediates);
+    setOutTensor(PopartLSTMOp::getIntermediatesOutIndex(),
+                 snap::Tensor{*intermediates, graph()});
   }
 }
 
-std::unique_ptr<snap::Tensor> PopartLSTMOpx::getIntermediates() const {
-  std::unique_ptr<snap::Tensor> intermediates = nullptr;
+std::unique_ptr<poplar::Tensor> PopartLSTMOpx::getIntermediates() const {
+  std::unique_ptr<poplar::Tensor> intermediates = nullptr;
   if (hasOutput(PopartLSTMOp::getIntermediatesOutIndex())) {
-    intermediates = std::make_unique<snap::Tensor>(poplar::Tensor{}, graph());
+    intermediates = std::make_unique<poplar::Tensor>();
   }
   return intermediates;
 }

@@ -19,28 +19,16 @@
 namespace popart {
 namespace popx {
 
-namespace {
-
-poplar::Tensor *getPoplarTensor(snap::Tensor *t) {
-  if (t) {
-    return &t->getPoplarTensor();
-  } else {
-    return nullptr;
-  }
-}
-
-} // unnamed namespace
-
 GRUOpx::GRUOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<GRUOp>(op, {Onnx::Operators::GRU_3, Onnx::Operators::GRU_7});
 }
 
 // Only create an intermediate tensor if it is consumed or used as a anchor
-std::unique_ptr<snap::Tensor> GRUOpx::createIntermediate() const {
+std::unique_ptr<poplar::Tensor> GRUOpx::createIntermediate() const {
   if (getOp<GRUOp>().isTraining()) {
-    return std::make_unique<snap::Tensor>(poplar::Tensor{}, graph());
+    return std::make_unique<poplar::Tensor>();
   } else {
-    return std::unique_ptr<snap::Tensor>(nullptr);
+    return std::unique_ptr<poplar::Tensor>(nullptr);
   }
 }
 
@@ -93,31 +81,29 @@ void GRUOpx::grow(snap::program::Sequence &prog) const {
   snap::Tensor output;
 
   if (gru_op.getDirectionAttribute() == "forward") {
-    output =
-        snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
-                                        createGRUParams(),
-                                        init_state_h.getPoplarTensor(),
-                                        input.getPoplarTensor(),
-                                        *weights,
-                                        getPoplarTensor(intermediate.get()),
-                                        prog.getPoplarSequence(),
-                                        debugContext("gruFwd"),
-                                        dv_p->lowering().lstmOptions,
-                                        &dv_p->matmulCache),
-                     graph()};
+    output = snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
+                                             createGRUParams(),
+                                             init_state_h.getPoplarTensor(),
+                                             input.getPoplarTensor(),
+                                             *weights,
+                                             intermediate.get(),
+                                             prog.getPoplarSequence(),
+                                             debugContext("gruFwd"),
+                                             dv_p->lowering().lstmOptions,
+                                             &dv_p->matmulCache),
+                          graph()};
   } else if (gru_op.getDirectionAttribute() == "backward") {
-    output =
-        snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
-                                        createGRUParams(),
-                                        init_state_h.getPoplarTensor(),
-                                        input.reverse(0).getPoplarTensor(),
-                                        *weights,
-                                        getPoplarTensor(intermediate.get()),
-                                        prog.getPoplarSequence(),
-                                        debugContext("gruFwd"),
-                                        dv_p->lowering().lstmOptions,
-                                        &dv_p->matmulCache),
-                     graph()};
+    output = snap::Tensor{popnn::gru::gruFwd(graph().getPoplarGraph(),
+                                             createGRUParams(),
+                                             init_state_h.getPoplarTensor(),
+                                             input.reverse(0).getPoplarTensor(),
+                                             *weights,
+                                             intermediate.get(),
+                                             prog.getPoplarSequence(),
+                                             debugContext("gruFwd"),
+                                             dv_p->lowering().lstmOptions,
+                                             &dv_p->matmulCache),
+                          graph()};
   } else if (gru_op.getDirectionAttribute() == "bidirectional") {
     // TODO: Add support for bidirectional GRU op.
     throw error(
@@ -125,7 +111,8 @@ void GRUOpx::grow(snap::program::Sequence &prog) const {
         gru_op.debugName());
   }
   if (intermediate) {
-    setOutTensor(GRUOp::getIntermediatesPassThroughIndex(), *intermediate);
+    setOutTensor(GRUOp::getIntermediatesPassThroughIndex(),
+                 snap::Tensor{*intermediate, graph()});
   }
 
   reshapeAndInsert(GRUOp::getFullHiddenStateOutIndex(), output);

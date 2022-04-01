@@ -54,18 +54,19 @@ PreparedCopyTensors IpuCopyOpx::createPipelinedOutput() const {
 
     // When pipelining, create the copy destination, but don't add the copy
     // program.
-    snap::Tensor tLocalForCopy{{}, srcVirtualGraph(idx)};
-    snap::Tensor tForCopy{{}, dstVirtualGraph(idx)};
+    poplar::Tensor tLocalForCopy{};
+    poplar::Tensor tForCopy{};
     auto t = snap::Tensor{
         poputil::createIpuCopy(dv_p->lowering().graph().getPoplarGraph(),
                                getInTensor(idx).getPoplarTensor(),
                                static_cast<int>(op.getDestIpu()),
-                               tForCopy.getPoplarTensor(),
-                               tLocalForCopy.getPoplarTensor(),
+                               tForCopy,
+                               tLocalForCopy,
                                debugContext("createOutput")),
         dstVirtualGraph(idx)};
     setOutTensor(idx, t);
-    copyTensors[idx] = {tForCopy, tLocalForCopy};
+    copyTensors[idx] = {snap::Tensor{tForCopy, dstVirtualGraph(idx)},
+                        snap::Tensor{tLocalForCopy, srcVirtualGraph(idx)}};
   }
   return copyTensors;
 }

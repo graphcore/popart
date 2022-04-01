@@ -155,7 +155,7 @@ public:
 private:
   snap::Tensor createLSTMInput() const;
   snap::Tensor createWeightsInput() const;
-  std::unique_ptr<snap::Tensor> getIntermediates() const;
+  std::unique_ptr<poplar::Tensor> getIntermediates() const;
 };
 
 class PopartLSTMGradOpx : public PopartLSTMOpxBase<PopartLSTMGradOp> {

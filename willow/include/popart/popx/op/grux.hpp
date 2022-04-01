@@ -35,7 +35,7 @@ private:
   void prepareInitialState(snap::Tensor &init_state_h,
                            snap::program::Sequence &prog) const;
   snap::Tensor getInput(snap::program::Sequence &) const;
-  std::unique_ptr<snap::Tensor> createIntermediate() const;
+  std::unique_ptr<poplar::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const snap::Tensor &) const;
   bool inputCreated(InIndex) const;
 

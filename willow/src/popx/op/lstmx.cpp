@@ -22,28 +22,16 @@
 namespace popart {
 namespace popx {
 
-namespace {
-
-poplar::Tensor *getPoplarTensor(snap::Tensor *t) {
-  if (t) {
-    return &t->getPoplarTensor();
-  } else {
-    return nullptr;
-  }
-}
-
-} // unnamed namespace
-
 LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LSTMOp>(op, {Onnx::Operators::LSTM_1, Onnx::Operators::LSTM_7});
 }
 
 // Only create an intermediate tensor if it is consumed or used as a anchor
-std::unique_ptr<snap::Tensor> LSTMOpx::createIntermediate() const {
+std::unique_ptr<poplar::Tensor> LSTMOpx::createIntermediate() const {
   if (getOp<LSTMOp>().isTraining()) {
-    return std::make_unique<snap::Tensor>(poplar::Tensor{}, graph());
+    return std::make_unique<poplar::Tensor>();
   } else {
-    return std::unique_ptr<snap::Tensor>(nullptr);
+    return std::unique_ptr<poplar::Tensor>(nullptr);
   }
 }
 
@@ -69,7 +57,6 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
   poplar::Tensor outputP, cell_stateP;
   auto input    = getInput(prog);
   auto &lstm_op = getOp<LSTMOp>();
-  auto seq_lens = getSeqLens();
   auto options =
       addAvailableMemoryProportionOption(lstm_op, dv_p->lowering().lstmOptions);
 
@@ -79,7 +66,7 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
                            init_state,
                            input.getPoplarTensor(),
                            *weights,
-                           getPoplarTensor(intermediate.get()),
+                           intermediate.get(),
                            prog.getPoplarSequence(),
                            debugContext("lstmFwd"),
                            options,
@@ -88,7 +75,8 @@ void LSTMOpx::grow(snap::program::Sequence &prog) const {
   snap::Tensor cell_state{cell_stateP, graph()};
 
   if (intermediate) {
-    setOutTensor(LSTMOp::getIntermediatesPassThroughIndex(), *intermediate);
+    setOutTensor(LSTMOp::getIntermediatesPassThroughIndex(),
+                 snap::Tensor{*intermediate, graph()});
   }
 
   reshapeAndInsert(LSTMOp::getFullHiddenStateOutIndex(), output);
@@ -125,7 +113,7 @@ snap::Tensor LSTMOpx::getSeqLens() const {
     return getInTensor(LSTMOp::getSequenceLensInIndex())
         .reinterpret(poplar::UNSIGNED_INT);
   } else {
-    return snap::Tensor(poplar::Tensor{}, graph());
+    return snap::Tensor{};
   }
 }
 
@@ -222,7 +210,6 @@ snap::Tensor LSTMOpx::reshapePoplibWeightsForOnnx(snap::Tensor poplib_weights,
 
 snap::Tensor LSTMOpx::createLSTMInput() const {
   auto &lstm_op    = getOp<LSTMOp>();
-  auto seq_lens    = getSeqLens();
   auto lstm_params = createLSTMParams();
   auto options =
       addAvailableMemoryProportionOption(lstm_op, dv_p->lowering().lstmOptions);
@@ -240,7 +227,6 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
   if (!initial_state) {
     auto cache       = &dv_p->matmulCache;
     auto &lstm_op    = getOp<LSTMOp>();
-    auto seq_lens    = getSeqLens();
     auto lstm_params = createLSTMParams();
     auto options     = addAvailableMemoryProportionOption(
         lstm_op, dv_p->lowering().lstmOptions);
@@ -258,7 +244,6 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
 popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
   if (!weights) {
     auto &lstm_op    = getOp<LSTMOp>();
-    auto seq_lens    = getSeqLens();
     auto lstm_params = createLSTMParams();
     auto options     = addAvailableMemoryProportionOption(
         lstm_op, dv_p->lowering().lstmOptions);
@@ -417,7 +402,6 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
                             .getPoplarTensor()
                             .reshape({max_seq_length, batch_size, hidden_size});
 
-  auto seq_lens    = getSeqLens();
   auto lstm_params = createLSTMParams();
 
   auto output_grad = getInTensor(LSTMGradOp::getFullHiddenStateGradInIndex())
@@ -539,7 +523,7 @@ snap::Tensor LSTMGradOpx::getSeqLens() const {
     return getInTensor(LSTMGradOp::getSequenceLensInIndex())
         .reinterpret(poplar::UNSIGNED_INT);
   } else {
-    return snap::Tensor();
+    return snap::Tensor{};
   }
 }
 
