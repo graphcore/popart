@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <poprithms/logging/timepartitionlogger.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/graph.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/inittensor.hpp>
@@ -13,7 +14,7 @@ namespace popx {
 
 namespace {
 
-snap::Graph &getDstGraph(Tensor *t, IrLowering &irLowering) {
+snap::Graph &getGraph(Tensor *t, IrLowering &irLowering) {
   auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
 
   if (vgid.first == unusedVGraphId) {
@@ -123,7 +124,7 @@ bool InitTensorCloning::initTensor(IrLowering &irLowering) const {
   Tensor *t = irLowering.ir().getTensor(srcId);
   auto vgid = t->getVirtualGraphIdAndTileSetUnsafe();
 
-  auto &dstGraph = getDstGraph(t, irLowering);
+  auto &dstGraph = getGraph(t, irLowering);
 
   logging::debug("Cloning tensor {} to {} (vgid: {} tileset: {}). Source "
                  "TensorInfo is: {}",
@@ -251,7 +252,7 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
       vgid.first,
       vgid.second);
 
-  auto &dstGraph = getDstGraph(tensor, irLowering);
+  auto &dstGraph = getGraph(tensor, irLowering);
 
   auto dataType = tensor->info.dataType();
 
@@ -269,6 +270,59 @@ bool InitTensorLinear::initTensor(IrLowering &irLowering) const {
 
   irLowering.tensors().insert(getDstId(), newTensor);
   irLowering.addLinearlyCreatedInputTensors(tensor->id);
+  return true;
+}
+
+InitTensorRTS::InitTensorRTS(TensorId srcId_,
+                             TensorId dstId_,
+                             RequireParallelWritable requireParallelWritable,
+                             double priority_)
+    : InitTensorBase(InitMethod::ReplicatedTensorSharding,
+                     dstId_,
+                     requireParallelWritable,
+                     priority_),
+      srcId(srcId_) {}
+
+bool InitTensorRTS::initTensor(IrLowering &irLowering) const {
+  if (!irLowering.tensors().contains(srcId)) {
+    return false;
+  }
+
+  // Try if an existing Poplar tensor can be reused
+  if (irLowering.tryInitTensorByPostIRAliasing(
+          getDstId(), requireParallelWritable, ViewChangers())) {
+    return true;
+  }
+
+  Tensor *srcTensor = irLowering.ir().getTensor(getSrcId());
+  Tensor *dstTensor = irLowering.ir().getTensor(getDstId());
+
+  auto vgid = dstTensor->getVirtualGraphIdAndTileSetUnsafe();
+
+  logging::devicex::debug("Creating poplar::Tensor '{}' with replicated tensor "
+                          "sharding on vgid: {}, tileset: {}.",
+                          dstTensor->id,
+                          vgid.first,
+                          vgid.second);
+
+  auto &srcGraph = getGraph(srcTensor, irLowering);
+  auto &dstGraph = getGraph(dstTensor, irLowering);
+
+  auto newTensor = poputil::cloneToGraph(
+      srcGraph.getPoplarGraph(),
+      dstGraph.getPoplarGraph(),
+      irLowering.tensors().get(srcId).getPoplarTensor(),
+      {poplar::DebugNameAndId(dstTensor->str(),
+                              dstTensor->getDebugInfo().getId(),
+                              dstTensor->getDebugInfo().getPathName())},
+      poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
+
+  if (irLowering.tensors().hasViewChangers(getSrcId())) {
+    irLowering.tensors().setViewChangers(
+        getDstId(), irLowering.tensors().getViewChangers(getSrcId()));
+  }
+  irLowering.tensors().insert(getDstId(), {newTensor, dstGraph});
+  irLowering.addEfficientlyCreatedInputTensors(dstTensor->id);
   return true;
 }
 
@@ -296,6 +350,10 @@ std::ostream &operator<<(std::ostream &os, const InitMethod &method) {
   }
   case InitMethod::Linear: {
     os << "Linear";
+    break;
+  }
+  case InitMethod::ReplicatedTensorSharding: {
+    os << "ReplicatedTensorSharding";
     break;
   }
   }

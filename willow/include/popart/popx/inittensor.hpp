@@ -18,7 +18,8 @@ enum class InitMethod {
   PostIrAliasing,
   Cloning,
   Creator,
-  Linear
+  Linear,
+  ReplicatedTensorSharding
 };
 
 std::ostream &operator<<(std::ostream &os, const InitMethod &type);
@@ -175,6 +176,24 @@ public:
                    RequireParallelWritable requireParallelWritable,
                    double priority);
   bool initTensor(IrLowering &irLowering) const override;
+};
+
+/**
+ * Create tensor dstId by using an associated RTS (replicated tensor sharding)
+ * CBR (collective balanced reorder) tensor
+ */
+class InitTensorRTS : public InitTensorBase {
+public:
+  InitTensorRTS(TensorId srcId,
+                TensorId dstId,
+                RequireParallelWritable requireParallelWritable,
+                double priority);
+  bool initTensor(IrLowering &irLowering) const override;
+  virtual bool hasSrcId() const { return true; }
+  virtual TensorId getSrcId() const { return srcId; }
+
+private:
+  TensorId srcId;
 };
 
 } // namespace popx

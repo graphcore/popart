@@ -1074,6 +1074,25 @@ InitTensorPtrs IrLowering::getInitTensorCreators(
 
     return creators;
   } else {
+    if (!tensor->info.metaShape().empty()) {
+      logging::info("Cannot revert to linear layout for tensor {} since it is "
+                    "used in RTS (replicated tensor sharding).",
+                    tensor->id);
+
+      auto &tracer = getReplicatedTensorShardingBundle()
+                         .getReplicatedTensorShardingTracer();
+      auto group = tracer.getGroup(tensor->id);
+
+      InitTensorPtrs creators;
+
+      // Loop over other tensors that should have the same tensor layout
+      for (auto shardedTensorId : group.shardedTensorIds) {
+        creators.insert(std::make_shared<InitTensorRTS>(
+            shardedTensorId, tensor->id, requireParallelWritable, 1.0f));
+      }
+      return creators;
+    }
+
     logging::devicex::trace("Reverting to linear creator");
     return {std::make_shared<InitTensorLinear>(
         tensor->id, requireParallelWritable, 1.0f)};
@@ -2274,24 +2293,22 @@ void IrLowering::growOpx(PopOpx *opx,
                                  popops::expr::IsFinite(popops::expr::_2));
       }
 
-      auto check = snap::popops::map(
-          opx->graph(),
-          popops::expr::NotEqual(lhsExpr, rhsExpr),
-          {nonModified.second.first, nonModified.second.second},
-          *seqIt,
-          opx->debugContext("opxModifyChecking"),
-          {});
+      auto check        = popops::map(opx->graph().getPoplarGraph(),
+                               popops::expr::NotEqual(lhsExpr, rhsExpr),
+                               {nonModified.second.first.getPoplarTensor(),
+                                nonModified.second.second.getPoplarTensor()},
+                               seqIt->getPoplarSequence(),
+                               opx->debugContext("opxModifyChecking"),
+                               {});
       auto checkReduced = check.flatten();
       // Convert result to boolean scalar
       if (check.numElements() > 1) {
-        checkReduced =
-            snap::Tensor{popops::reduce(opx->graph().getPoplarGraph(),
-                                        checkReduced.getPoplarTensor(),
-                                        {0},
-                                        {popops::Operation::LOGICAL_OR},
-                                        seqIt->getPoplarSequence(),
-                                        opx->debugContext("opxModifyChecking")),
-                         opx->graph()};
+        checkReduced = popops::reduce(opx->graph().getPoplarGraph(),
+                                      checkReduced,
+                                      {0},
+                                      {popops::Operation::LOGICAL_OR},
+                                      seqIt->getPoplarSequence(),
+                                      opx->debugContext("opxModifyChecking"));
       } else {
         checkReduced = checkReduced.squeeze({0});
       }
@@ -2300,12 +2317,14 @@ void IrLowering::growOpx(PopOpx *opx,
                           "but the Poplar tensors disagree.",
                           opx->op_p->debugName(),
                           nonModified.first),
-          check,
+          snap::Tensor{check, opx->graph()},
           opx->debugContext("if"));
       auto elseProg =
           snap::program::Sequence(opx->debugContext("else"), graph());
-      seqIt->add(snap::program::If(
-          checkReduced, ifProg, elseProg, opx->debugContext("opxModifyCheck")));
+      seqIt->add(snap::program::If(snap::Tensor{checkReduced, opx->graph()},
+                                   ifProg,
+                                   elseProg,
+                                   opx->debugContext("opxModifyCheck")));
     }
   }
 

@@ -143,7 +143,14 @@ std::unique_ptr<Op> HostStoreOp::clone() const {
   return std::make_unique<HostStoreOp>(*this);
 }
 
-void HostStoreOp::setup() {}
+void HostStoreOp::setup() {
+  if (!inInfo(HostStoreOp::getLocalTensorInIndex()).metaShape().empty()) {
+    throw error(
+        "RTS (replicated tensor sharded) tensor ({}) cannot be an input "
+        "to HostStoreOp.",
+        inTensor(HostStoreOp::getLocalTensorInIndex())->id);
+  }
+}
 
 ExchangeDescriptor HostStoreOp::getExchangeDescriptor(int index) const {
   return ExchangeDescriptor(ExchangeDirection::Store,

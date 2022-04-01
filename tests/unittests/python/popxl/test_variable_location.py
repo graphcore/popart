@@ -133,68 +133,6 @@ def test_replia_sharded_variable_gather():
 
 
 @tu.requires_ipu_model
-def test_replica_sharded_variable_no_gather():
-    ir = popxl.Ir()
-    opts = ir._pb_ir.getSessionOptions()
-    ir.replication_factor = 2
-    ir.num_host_transfers = 1
-    opts.enableInplaceAmbiguityChecking = False
-
-    main = ir.main_graph
-
-    with main:
-        x = np.array([1, 2]).astype(np.int32)
-        remote_x, loaded_x = popxl.replica_sharded_variable(x, dtypes.int32)
-
-        y = popxl.variable([3, 4])
-        sharded_y = ops.collectives.replicated_reduce_scatter(
-            y, 'local', None, True)
-
-        # Add to sharded x
-        updated_x = ops.scaled_add_(loaded_x, sharded_y)
-
-        y_d2h = popxl.d2h_stream(updated_x.shape, updated_x.dtype)
-        ops.host_store(y_d2h, updated_x)
-
-    result, stored = run(ir, y_d2h, remote_x)
-    print(result.flatten())
-    assert np.allclose(result.flatten(), [4, 6])
-    assert np.allclose(stored, [4, 6])
-
-
-@tu.requires_ipu_model
-def test_remote_replia_sharded_variable_no_gather():
-    ir = popxl.Ir()
-    ir.replication_factor = 2
-    ir.num_host_transfers = 1
-    main = ir.main_graph
-
-    with main:
-        x = np.array([1, 2]).astype(np.int32)
-        buffer = popxl.RemoteBuffer((x.size // 2, ), dtypes.int32, 1)
-        remote_x = popxl.remote_replica_sharded_variable(x, buffer, 0)
-
-        y = popxl.variable([3, 4], name="y")
-        sharded_y = ops.collectives.replicated_reduce_scatter(
-            y, 'local', None, True)
-
-        # loaded_x.shape = (1,)
-        loaded_x = ops.remote_load(buffer, 0, "x")
-
-        # Add to sharded x
-        updated_x = ops.scaled_add_(loaded_x, sharded_y)
-
-        ops.remote_store(buffer, 0, updated_x)
-
-        y_d2h = popxl.d2h_stream(updated_x.shape, updated_x.dtype)
-        ops.host_store(y_d2h, updated_x)
-
-    result, stored = run(ir, y_d2h, remote_x)
-    np.testing.assert_equal(result.flatten(), [4, 6])
-    np.testing.assert_equal(stored, [4, 6])
-
-
-@tu.requires_ipu_model
 def test_remote_replia_sharded_reuse_buffer():
     ir = popxl.Ir()
     ir.replication_factor = 2

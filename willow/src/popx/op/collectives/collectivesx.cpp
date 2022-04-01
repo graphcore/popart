@@ -18,6 +18,8 @@
 
 #include <poputil/Util.hpp>
 
+#include <boost/math/common_factor.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -120,6 +122,18 @@ CollectivesBaseOpx::getCollectiveBalancedReorder(
   return cbr.get();
 }
 
+namespace {
+unsigned numGrainElements(const poplar::Target &target,
+                          const poplar::Type &type) {
+  const auto exchangeBytesPerCycle = target.getExchangeBytesPerCycle();
+  const auto typeSize              = target.getTypeSize(type);
+  const auto vecWidth              = target.getVectorWidth(type);
+  return boost::math::lcm<unsigned>(exchangeBytesPerCycle,
+                                    vecWidth * typeSize) /
+         typeSize;
+}
+} // namespace
+
 gcl::CollectiveBalancedReorder *
 CollectivesBaseOpx::createCollectiveBalancedReorder(
     snap::Tensor tensor,
@@ -186,7 +200,10 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
         cbrGraph->getPoplarGraph(),
         tensor.getPoplarTensor(),
         replicationFactor,
-        getDebugNameAndId());
+        getDebugNameAndId(),
+        false,
+        numGrainElements(cbrGraph->getPoplarGraph().getTarget(),
+                         tensor.getPoplarTensor().elementType()));
     auto cbrId = dv_p->lowering()
                      .getReplicatedTensorShardingBundle()
                      .registerCollectiveBalancedReorder(cbr);

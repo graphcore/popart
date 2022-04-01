@@ -150,24 +150,31 @@ class TestTensorLocation():
             ops.var_updates.accumulate_(loaded_w, grad_shard)
             ops.remote_store(remote_buffer, 0, loaded_w)
 
-            w_d2h = popxl.d2h_stream(loaded_w.shape, loaded_w.dtype)
-            ops.host_store(w_d2h, loaded_w)
+            # Need to gather the weight and gradient, since sharded tensors
+            # cannot be stored to the host via streams
+            loaded_gathered_w = ops.collectives.replicated_all_gather(loaded_w)
 
-            grad_shard_d2h = popxl.d2h_stream(grad_shard.shape,
-                                              grad_shard.dtype)
-            ops.host_store(grad_shard_d2h, grad_shard)
+            grad = ops.collectives.replicated_all_gather(grad_shard)
+
+            w_d2h = popxl.d2h_stream(loaded_gathered_w.shape,
+                                     loaded_gathered_w.dtype)
+            ops.host_store(w_d2h, loaded_gathered_w)
+
+            grad_d2h = popxl.d2h_stream(grad.shape, grad.dtype)
+            ops.host_store(grad_d2h, grad)
 
         ir._pb_ir.logIr()
 
         session, outputs = self.run(ir, data)
 
-        np_loaded_w = outputs[w_d2h]
-        np_grad_shard = outputs[grad_shard_d2h]
+        np_loaded_gathered_w = outputs[w_d2h]
+        np_grad = outputs[grad_d2h]
 
         # Check the weight has updated. So w = weight_data + w'
-        np.testing.assert_allclose(np_loaded_w, weight_data + np_grad_shard)
+        np.testing.assert_allclose(np_loaded_gathered_w, weight_data + np_grad)
         # w now has been updated as we have synced remote buffers with device.
-        np.testing.assert_allclose(session.get_tensor_data(w), np_loaded_w)
+        np.testing.assert_allclose(session.get_tensor_data(w),
+                                   np_loaded_gathered_w[0])
 
     def run(self, ir: popxl.Ir,
             data: Mapping[popxl.HostToDeviceStream, np.ndarray]):
