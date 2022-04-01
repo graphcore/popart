@@ -114,6 +114,12 @@ pip3 install Jinja2=3.0.3
 pip3 install libclang==12.0.0
 ```
 
+### **cppimport** (version 21.3.7 or compatible)
+
+```sh
+pip3 install cppimport==21.3.7
+```
+
 ## Installing Third-Party Library Dependencies
 
 PopART compiles against a number of libraries that you will need to have available on your system:

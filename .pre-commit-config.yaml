@@ -101,7 +101,6 @@ repos:
       hooks:
           # Install with pip3 install clang-format==9.0.0
           - id: clang-format
-            exclude: willow/include/popart/vendored/
             args: [
                 -i,  # Fix inplace
                 --style=file  # Use .clang-tidy

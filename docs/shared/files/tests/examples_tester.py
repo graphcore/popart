@@ -35,8 +35,17 @@ class ExamplesTester(unittest.TestCase):
                 Working path: {self.cwd}\n
                 Output of failed command:\n{combined_output}""")
 
-    def run_python(self, filename, file_dir, working_dir, timeout_secs=600.0):
+    def run_python(self,
+                   filename,
+                   file_dir,
+                   working_dir,
+                   timeout_secs=600.0,
+                   *args,
+                   **kwargs):
         py_exec = sys.executable
         file_path = os.path.join(file_dir, filename)
-        cmd = f"{py_exec} {file_path}"
+        cmd = f"{py_exec} {file_path}{' '.join([str(a) for a in args])}"
+        for k, v in kwargs.items():
+            k_str = f" --{k} {str(v)}"
+            cmd += k_str
         self.run_command(cmd, working_dir, timeout_secs)
