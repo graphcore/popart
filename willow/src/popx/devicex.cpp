@@ -343,7 +343,7 @@ void Devicex::remoteBufferWeightsToHost() {
           // from all replicas in this group.
           std::vector<char> tmp(cbr_nelms * elemSize);
 
-          // Iterate over group members, collect the Tensor's shards
+          // Iterate over group members, collect the Tensor's Shards
           for (unsigned group_member = 0; group_member < realGroupSize;
                group_member++) {
             unsigned replica_id = group_main + (group_member * group_increment);
@@ -351,7 +351,7 @@ void Devicex::remoteBufferWeightsToHost() {
             copyFromRemoteBuffer(&tmp[addr], replica_id);
           }
 
-          // Calculate the address in the output buffer we want to write to.
+          // Calculate the address in the ouput buffer we want to write to.
           unsigned address;
           if (returned == groups) {
             address = group * nelms * elemSize;

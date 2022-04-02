@@ -738,51 +738,15 @@ AiGraphcoreOpset1::call(const std::vector<TensorId> &args,
 
 TensorId AiGraphcoreOpset1::replicatedallreduce(
     const std::vector<TensorId> &args,
-    const nonstd::optional<CollectiveOperator> &collectiveOperator,
-    const nonstd::optional<CommGroup> &commGroup,
+    const nonstd::optional<std::vector<int64_t>> &commGroup,
     const DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});
-  if (collectiveOperator) {
-    attributes.insert(
-        {sCollectiveOperator, static_cast<int64_t>(*collectiveOperator)});
-  }
   if (commGroup) {
-    attributes.insert({sCollectiveCommGroup,
-                       std::vector<int64_t>{
-                           static_cast<int64_t>(commGroup->type),
-                           static_cast<int64_t>(commGroup->replicaGroupSize)}});
+    attributes.insert({sCollectiveCommGroup, *commGroup});
   }
   auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ReplicatedAllReduce,
-                          getOpsetVersion(),
-                          args,
-                          attributes,
-                          {di});
-
-  di.setOutputs(outputs);
-  return outputs.at(0);
-}
-
-TensorId AiGraphcoreOpset1::replicatedreducescatter(
-    const std::vector<TensorId> &args,
-    const nonstd::optional<CollectiveOperator> &collectiveOperator,
-    const nonstd::optional<CommGroup> &commGroup,
-    const DebugContext &debugContext) {
-  std::map<std::string, popart::any> attributes;
-  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
-  attributes.insert({sDebugInfoId, di.getId()});
-  if (collectiveOperator) {
-    attributes.insert(
-        {sCollectiveOperator, static_cast<int64_t>(*collectiveOperator)});
-  }
-  if (commGroup) {
-    attributes.insert({sCollectiveCommGroup,
-                       std::vector<int64_t>{
-                           static_cast<int64_t>(commGroup->type),
-                           static_cast<int64_t>(commGroup->replicaGroupSize)}});
-  }
-  auto outputs = impl->op(Onnx::AiGraphcore::OpSet1::ReplicatedReduceScatter,
                           getOpsetVersion(),
                           args,
                           attributes,

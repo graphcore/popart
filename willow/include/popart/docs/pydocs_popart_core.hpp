@@ -1371,9 +1371,6 @@ Args:
 Returns:
  The name of the result tensor.)doc";
 
-static const char *__doc_popart_AiGraphcoreOpset1_replicatedreducescatter =
-    R"doc()doc";
-
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_replicatedallreduce =
     R"doc(Add a replicated all-reduce operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: Vector of input tensor ids to reduce across. commGroup: GCL CommGroup parameter. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
 

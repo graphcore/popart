@@ -58,7 +58,7 @@ void ReplicatedReduceScatterOp::setup() {
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;
 
   Shape metaShape;
-  if (isConfigureOutputForReplicatedTensorSharding()) {
+  if (isconfigureOutputForReplicatedTensorSharding()) {
     metaShape = inInfo_.shape();
   }
 
@@ -81,7 +81,7 @@ ReplicatedReduceScatterOp::getReplicatedTensorShardingIndices() const {
   return {{{}, {ReplicatedReduceScatterOp::getOutIndex()}}};
 }
 
-bool ReplicatedReduceScatterOp::isConfigureOutputForReplicatedTensorSharding()
+bool ReplicatedReduceScatterOp::isconfigureOutputForReplicatedTensorSharding()
     const {
   return configureOutputForReplicatedTensorSharding ||
          hasInput(ReplicatedReduceScatterOp::getCollectiveLinkedIndex()) ||
@@ -133,10 +133,10 @@ static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedReduceScatter,
                     ReplicatedReduceScatterOpDef}}),
     [](const OpCreatorInfo &info) {
-      CommGroup group       = extractCommGroupFromAttrs(info.attributes);
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
+      CommGroup group = extractCommGroupFromAttrs(info.attributes);
       bool replicatedTensorSharding =
           static_cast<bool>(info.attributes.getAttribute<Attributes::Int>(
               sReplicatedTensorSharding, 0));

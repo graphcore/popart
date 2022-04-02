@@ -29,7 +29,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
   auto toReduceScatter = getInTensor(inIndex);
 
   if (getOp<ReplicatedReduceScatterOp>()
-          .isConfigureOutputForReplicatedTensorSharding()) {
+          .isconfigureOutputForReplicatedTensorSharding()) {
     auto group = getCollectiveLinkedGroup(
         CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
 
@@ -53,7 +53,6 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
                                 toReduceScatter.elementType(),
                                 inId(ReplicatedReduceScatterOp::getInIndex())),
                             graph()};
-      // Zero the pad regions
       popops::zero(graph().getPoplarGraph(),
                    c.getPoplarTensor(),
                    prog.getPoplarSequence(),
@@ -61,7 +60,6 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
       auto ref = snap::Tensor{
           cbr->undoRearrangeForCollective(c.getPoplarTensor()), graph()};
       if (hasInViewChangers(ReplicatedReduceScatterOp::getInIndex())) {
-        // Copy data to non-pad regions
         prog.add(snap::program::Copy(
             getInViewChangers(ReplicatedReduceScatterOp::getInIndex())
                 .apply(toReduceScatter)
@@ -70,7 +68,6 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
             false,
             debugContext()));
       } else {
-        // Copy data to non-pad regions
         prog.add(snap::program::Copy(
             toReduceScatter.flatten(), ref.flatten(), false, debugContext()));
       }

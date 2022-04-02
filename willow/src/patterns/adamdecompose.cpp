@@ -227,7 +227,7 @@ bool AdamDecompose::apply(Op *op) const {
   TensorId gradIntoAccumId = weightGradId;
 
   if (combo->reductionType == OptimizerReductionType::GradReduce) {
-    TensorId reducedId = gradReduce(graph, combo, weightId, weightGradId);
+    TensorId reducedId = gradReduce(graph, combo, weightGradId);
     gradIntoAcclId     = reducedId;
     gradIntoAccumId    = reducedId;
   }
@@ -237,7 +237,6 @@ bool AdamDecompose::apply(Op *op) const {
     gradIntoAcclId =
         gradAccum(graph,
                   combo,
-                  weightId,
                   accumId,
                   gradIntoAccumId,
                   combo->reductionType == OptimizerReductionType::AccumReduce);

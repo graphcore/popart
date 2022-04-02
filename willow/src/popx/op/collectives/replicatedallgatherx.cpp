@@ -32,7 +32,7 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
       debugContext("replicatedAllGather"),
       allGatherOptions);
   if (getOp<ReplicatedAllGatherOp>()
-          .isConfigureOutputForReplicatedTensorSharding()) {
+          .isconfigureOutputForReplicatedTensorSharding()) {
     auto cbr = getCollectiveBalancedReorder(
         CollectivesBaseOp::getDefaultTensorShardingGroupIndex());
     if (cbr) {
@@ -56,7 +56,7 @@ InputCreatorType
 ReplicatedAllGatherOpx::getInputCreatorType(InIndex index) const {
   return index == ReplicatedAllGatherOp::getInIndex() &&
                  getOp<ReplicatedAllGatherOp>()
-                     .isConfigureOutputForReplicatedTensorSharding()
+                     .isconfigureOutputForReplicatedTensorSharding()
              ? InputCreatorType::CanCreateOrUnwind
              : PopOpx::getInputCreatorType(index);
 }

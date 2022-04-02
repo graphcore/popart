@@ -2132,8 +2132,8 @@ void Ir::registerInputTensors() {
           logging::warn("Tensor {} was declined as a target of optimization "
                         "\"constantWeights\" "
                         "on the grounds that the tensor's {} do not allow for "
-                        "the TensorType::Variable "
-                        "to be initialized as a TensorType::Const",
+                        "the VariableTensor "
+                        "to be Initialized as a ConstTensor",
                         tenId,
                         vs);
         }

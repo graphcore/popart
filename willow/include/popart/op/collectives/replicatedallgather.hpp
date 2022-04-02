@@ -28,7 +28,7 @@ public:
    * Check \a RTS mode (see collectives.hpp)
    * \return True if this operation is configured for replicated tensor sharding
    */
-  bool isConfigureOutputForReplicatedTensorSharding() const override;
+  bool isconfigureOutputForReplicatedTensorSharding() const override;
 
   std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
   fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,

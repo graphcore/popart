@@ -81,7 +81,7 @@ ReplicatedAllGatherOp::getReplicatedTensorShardingIndices() const {
   return {{{ReplicatedAllGatherOp::getInIndex()}, {}}};
 }
 
-bool ReplicatedAllGatherOp::isConfigureOutputForReplicatedTensorSharding()
+bool ReplicatedAllGatherOp::isconfigureOutputForReplicatedTensorSharding()
     const {
   return hasInput(ReplicatedAllGatherOp::getCollectiveLinkedIndex()) ||
          !inInfo(ReplicatedAllGatherOp::getInIndex()).metaShape().empty();

@@ -110,9 +110,10 @@ def get_weights_array(shape: List[int], groups=[], seed=10111) -> np.array:
     np.random.seed(seed)
     reshape = []
     if len(groups) > 1:
-        shape = [len(groups)] + shape
+        reshape = [len(groups)]
+    reshape.extend(shape)
 
-    array = np.linspace(0, 1, np.prod(shape)).astype(np.float32).reshape(shape)
+    array = np.random.random_sample(reshape).astype(np.float32)
     return array
 
 
@@ -634,122 +635,3 @@ def test_onnx_checkpointing(config):
 
         assert np.allclose(array_one, buffer_one)
         assert np.allclose(array_two, buffer_two)
-
-
-DATA_SIZE = 5
-
-
-def instance(repl: int,
-             vs: popart.VariableSettings,
-             location=None,
-             length: int = 5,
-             RTS: bool = False) -> np.ndarray:
-    with tu.create_test_device(numIpus=repl) as device:
-        shape = [O_DIM, CHANNELS, DATA_SIZE, DATA_SIZE]
-
-        # meta
-        builder = popart.Builder()
-
-        # Make the Input
-        t_info = popart.TensorInfo("FLOAT", shape)
-        input_tensor = builder.addInputTensor(t_info, "input")
-
-        # make the label
-        label_shape = [O_DIM]
-        label_info = popart.TensorInfo("INT32", label_shape)
-        label_tensor = builder.addInputTensor(label_info, "label")
-
-        # Make the weight
-        weight = get_weights_array(shape, vs.groups(repl))
-        weight_tensor = builder.addInitializedInputTensor(weight, vs)
-
-        # graph body
-        mul_tensor = builder.aiOnnx.matmul([input_tensor, weight_tensor])
-        rsh_tensor = builder.reshape_const(
-            builder.aiOnnx, [mul_tensor],
-            [O_DIM, CHANNELS * DATA_SIZE * DATA_SIZE])
-        relu_tensor = builder.aiOnnx.relu([rsh_tensor])
-        out_tensor = builder.aiOnnx.softmax([relu_tensor])
-        loss = builder.aiGraphcore.nllloss([out_tensor, label_tensor])
-
-        # Dataflow elements
-        art = popart.AnchorReturnType("All")
-        data_flow = popart.DataFlow(BATCHES_PER_STEP, {out_tensor: art})
-
-        # Make the session options
-        options = popart.SessionOptions()
-        options.replicatedGraphCount = repl
-        options.enableReplicatedGraphs = True
-        options.enableOutlining = False
-        if (location is not None):
-            options.weightTensorLocationSettings = location
-
-        # weightIO
-        buffer = np.zeros(weight.shape).astype(np.float32)
-        weightsIo = popart.PyWeightsIO({weight_tensor: buffer})
-
-        # ready session
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=data_flow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(1e-3))
-        session.prepareDevice()
-
-        session.weightsFromHost()
-        session.weightsToHost()
-        session.readWeights(weightsIo)
-
-        assert np.allclose(weight, buffer)
-
-        prefix_shape = [repl] if repl > 1 else []
-        if BATCHES_PER_STEP > 1:
-            prefix_shape = [BATCHES_PER_STEP] + prefix_shape
-
-        # run
-        for step in range(length):
-            input = np.random.random_sample(prefix_shape + shape).astype(
-                np.float32)
-            label = np.random.randint(low=0, high=20,size=prefix_shape + label_shape).astype(\
-                                                                            np.int32)
-
-            input = np.arange(np.prod(shape)).astype(np.float32)
-            for i in range(len(prefix_shape), 0, -1):
-                input = np.tile(input, prefix_shape[i - 1])
-
-            input = input.reshape(prefix_shape + shape)
-            label = np.arange(label.size).reshape(label.shape).astype(np.int32)
-
-            io = popart.PyStepIO(\
-                    { input_tensor: input,    \
-                      label_tensor: label },  \
-                    session.initAnchorArrays())
-            session.run(io)
-
-        session.weightsToHost()
-        session.readWeights(weightsIo)
-
-        return buffer
-
-
-@tu.requires_ipu
-def test_locations():
-    replication_factor = 4
-    group = popart.CommGroup(popart.CommGroupType.Consecutive, 2)
-
-    variable_setting = popart.VariableSettings(group)
-
-    local = instance(replication_factor, variable_setting)
-
-    remote = instance(replication_factor, variable_setting,
-                      getOffChipLocation(group))
-
-    assert np.allclose(local, remote)
-
-    shard = instance(replication_factor,
-                     variable_setting,
-                     getOffChipLocation(group, True),
-                     RTS=True)
-
-    assert np.allclose(local, shard)

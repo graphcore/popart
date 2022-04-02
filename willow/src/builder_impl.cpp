@@ -519,8 +519,7 @@ TensorId BuilderImpl::addInitializedInputTensor(
   // Replication Factor Awareness
   auto replicationFactor = readReplicationFactor();
   if (replicationFactor > 1) {
-    Shape grouped_shape;
-    grouped_shape.reserve(initData.info.shape().size() + 1);
+    Shape grouped_shape(0);
     grouped_shape.push_back(variableSettings.groupCount(replicationFactor));
     for (auto &elem : initData.info.shape()) {
       grouped_shape.push_back(elem);
