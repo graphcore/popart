@@ -13,6 +13,8 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Arguments must have the same dtype.
 
+    This is similar to :onnxop:`Mul`.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be multiplied.

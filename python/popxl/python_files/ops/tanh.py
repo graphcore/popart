@@ -10,6 +10,8 @@ def tanh(t: Tensor) -> Tensor:
     """
     Compute the hyperbolic tangent function element-wise on a Tensor.
 
+    This is similar to :onnxop:`Tanh`.
+
     Args:
         t: Tensor
             Input tensor.

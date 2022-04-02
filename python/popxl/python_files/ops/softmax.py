@@ -13,6 +13,8 @@ def softmax(t: Tensor, axis: int) -> Tensor:
     This rescales the slices of `axis` such that all elements are within the range [0, 1] and
     sum to 1. The output shape and dtype matches the input.
 
+    This is similar to :onnxop:`Softmax`.
+
     Args:
         t: Tensor
             Tensor to be normalized.

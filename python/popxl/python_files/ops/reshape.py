@@ -22,6 +22,8 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
         t (Tensor): The tensor to be reshaped.
         shape (Tuple[int, ...]): Tuple containing the shape of the output.
 
+    This is similar to :onnxop:`Reshape`.
+
     Raises:
         ValueError: A ValueError will be raised if:
             - An invalid value is encountered in the shape.
@@ -67,6 +69,8 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
         t (Tensor): The tensor to be reshaped.
         shape (Tuple[int, ...]): Tuple containing the shape of the output.
 
+    This is similar to :onnxop:`Reshape`.
+
     Raises:
         ValueError: A ValueError will be raised if:
             - An invalid value is encountered in the shape.
@@ -108,6 +112,8 @@ def flatten(t: Tensor) -> Tensor:
 
     Internally this uses :func:`~ops.reshape`.
 
+    This is similar to :onnxop:`Flatten`.
+
     Args:
         t (Tensor): The tensor to be flattened.
 
@@ -125,6 +131,8 @@ def flatten_(t: Tensor) -> Tensor:
     Internally this uses :func:`~ops.reshape`.
 
     This is the in-place version of :func:`~ops.flatten`
+
+    This is similar to :onnxop:`Flatten`.
 
     Args:
         t (Tensor): The tensor to be flattened.

@@ -13,6 +13,8 @@ def sum(t: Tensor,
     """
     Sum elements over an axis.
 
+    This is similar to :onnxop:`Sum`.
+
     Args:
         t (Tensor):
             Tensor to be summed.

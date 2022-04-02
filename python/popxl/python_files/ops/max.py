@@ -13,6 +13,8 @@ def max(t: Tensor,
     """
     Compute the maximum of elements in a tensor along specified axes.
 
+    This is similar to :onnxop:`Max`.
+
     Args:
         t (Tensor):
             Tensor to compute maximum of.

@@ -16,6 +16,8 @@ def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
     If an axis is selected with shape entry not equal to one, an error is raised.
     Implemented using `reshape` under the hood.
 
+    This is similar to :onnxop:`Squeeze`.
+
     Args:
         t (Tensor): Tensor to be squeezed.
         axes (List[int]): List of integers indicating the dimensions to squeeze.

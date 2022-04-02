@@ -11,6 +11,8 @@ def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
     """Split a tensor (along an axis) into a list of tensors.
 
+    This is similar to :onnxop:`Split`.
+
     Args:
         t (Tensor): Tensor to be split.
         splits (Union[int, List[int]]): Either an int which specifies the

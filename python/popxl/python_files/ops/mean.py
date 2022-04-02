@@ -13,6 +13,8 @@ def mean(t: Tensor,
     """
     Compute the arithmetic mean of elements in a tensor along axes.
 
+    This is similar to :onnxop:`Mean`.
+
     Args:
         t (Tensor):
             Tensor to compute mean.

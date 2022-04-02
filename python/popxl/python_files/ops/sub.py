@@ -11,6 +11,9 @@ def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
     Subtract two tensors element-wise.
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
+
+    This is similar to :onnxop:`Sub`.
+
         Args:
             lhs, rhs: Tensor
                 Tensors to be subtracted.

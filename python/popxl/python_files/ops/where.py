@@ -14,6 +14,8 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     Chooses elements from `lhs` or `rhs` depending on whether the corresponding element in `condition` is satisfied or not.
     The operator supports multi-directional broadcasting (NumPy-style).
 
+    This is similar to :onnxop:`Where`.
+
     Args:
         condition (Tensor):
             A boolean tensor where `True` indicates the `lhs` element and `False` the `rhs` element.

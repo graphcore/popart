@@ -13,6 +13,8 @@ def logical_not(t: Tensor) -> Tensor:
 
     Inputs will be cast to bool if needed.
 
+    This is similar to :onnxop:`Not`.
+
     Args:
         t: Tensor
             Input tensor.

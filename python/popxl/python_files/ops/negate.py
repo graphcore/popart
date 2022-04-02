@@ -10,6 +10,8 @@ def negate(t: Tensor) -> Tensor:
     """
     Compute logical negation of a tensor.
 
+    This is similar to :onnxop:`Neg`.
+
     Args:
         t: Tensor
             Input tensor.

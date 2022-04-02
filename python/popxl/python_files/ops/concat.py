@@ -11,6 +11,8 @@ def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     """
     Concatenate tensors along an axis and copy output to a new tensor.
 
+    This is similar to :onnxop:`Concat`.
+
     Args:
         ts: Iterable[Tensor]
             Tensors to be concatenated.

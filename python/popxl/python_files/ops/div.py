@@ -14,6 +14,8 @@ def div(lhs: Tensor, rhs: Tensor) -> Tensor:
     Output will be the same dtype as the inputs.
     With integer values, floor division is used.
 
+    This is similar to :onnxop:`Div`.
+
     Args:
         lhs: Tensor
             Divisor

@@ -32,10 +32,12 @@ def matmul(lhs: Tensor,
     """Perform matrix multiplication of two tensors.
 
     Follows NumPy matrix multiplication rules for N-D tensors, see
-    https://numpy.org/doc/stable/reference/generated/numpy.matmul.html
+    :py:func:`numpy.matmul`.
 
-    Arguments must have the same dtype. Shapes must be compatible as per
+    Arguments must have the same dtype. Shapes must be compatible as defined by the
     NumPy matrix multiplication rules.
+
+    This is similar to :onnxop:`MatMul`.
 
     Args:
         lhs (Tensor): Left hand side of matrix multiplication.

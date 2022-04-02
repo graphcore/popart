@@ -12,6 +12,8 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules.
 
+    This is similar to :onnxop:`Equal`.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be compared.

@@ -14,6 +14,8 @@ def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Inputs will be cast to bool if needed.
 
+    This is similar to :onnxop:`And`.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be compared.

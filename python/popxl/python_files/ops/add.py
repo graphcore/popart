@@ -12,6 +12,8 @@ def add(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
+    This is similar to :onnxop:`Add`.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be added.

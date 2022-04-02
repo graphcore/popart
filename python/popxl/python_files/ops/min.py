@@ -13,6 +13,8 @@ def min(t: Tensor,
     """
     Compute the minimum of the elements of a tensor along axes.
 
+    This is similar to :onnxop:`Min`.
+
     Args:
         t (Tensor):
             Tensor to compute minimum of.

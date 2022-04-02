@@ -84,6 +84,8 @@ def slice_(t: Tensor,
 
     This is the in-place version of :func:`~ops.slice`. The functionality is the same, but the tensor is sliced in place.
 
+    This is similar to :onnxop:`Slice`.
+
     Args:
         t (Tensor): Tensor to slice
         start: Index of first element (inclusive) or `None` which defaults to 0.

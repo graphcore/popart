@@ -14,6 +14,8 @@ def transpose(t: Tensor,
 
     By default this operation reverses the axes of `t`.
 
+    This is similar to :onnxop:`Transpose`.
+
     Args:
         t (Tensor): Tensor to be transposed.
         permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
@@ -53,6 +55,8 @@ def transpose_(t: Tensor,
 
     This is the in-place version of :func:`~ops.transpose`. The behaviour is the same, but it modifies the
     tensor in place.
+
+    This is similar to :onnxop:`Transpose`.
 
     Args:
         t (Tensor): Tensor to be transposed.

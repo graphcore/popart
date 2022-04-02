@@ -14,6 +14,8 @@ def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Inputs will be cast to bool if needed.
 
+    This is similar to :onnxop:`Or`.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be compared.

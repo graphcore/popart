@@ -42,6 +42,8 @@ def scatter(t: Tensor,
         x[3] = -3
         x1 == x2
 
+    This is similar to :onnxop:`Scatter`.
+
     Args:
         t: Tensor
             Input tensor
