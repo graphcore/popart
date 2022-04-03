@@ -164,6 +164,7 @@ BOOST_AUTO_TEST_CASE(
 
     pat.gradAccum(graph,
                   adam,
+                  wId,
                   accumId,
                   gradId,
                   false,

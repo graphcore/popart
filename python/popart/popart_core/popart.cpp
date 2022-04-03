@@ -2357,11 +2357,23 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, fmod));
     cls.def("replicatedallreduce",
-            &AiGraphcoreOpset1::replicatedallreduce,
+            py::overload_cast<const std::vector<TensorId> &,
+                              const nonstd::optional<CollectiveOperator> &,
+                              const nonstd::optional<CommGroup> &,
+                              const DebugContext &>(
+                &AiGraphcoreOpset1::replicatedallreduce),
             py::arg("args"),
-            py::arg("commGroup")    = py::none(),
-            py::arg("debugContext") = std::string(),
+            py::arg("collectiveOperator") = py::none(),
+            py::arg("commGroup")          = py::none(),
+            py::arg("debugContext")       = std::string(),
             DOC(popart, AiGraphcoreOpset1, replicatedallreduce));
+    cls.def("replicatedreducescatter",
+            &AiGraphcoreOpset1::replicatedreducescatter,
+            py::arg("args"),
+            py::arg("collectiveOperator") = py::none(),
+            py::arg("commGroup")          = py::none(),
+            py::arg("debugContext")       = std::string(),
+            DOC(popart, AiGraphcoreOpset1, replicatedreducescatter));
     cls.def("l1loss",
             &AiGraphcoreOpset1::l1loss,
             py::arg("args"),

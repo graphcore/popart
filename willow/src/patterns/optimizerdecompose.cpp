@@ -235,6 +235,7 @@ bool OptimizerDecompose::runningMeanReduction(Graph &graph) const {
 
 TensorId OptimizerDecompose::gradAccum(Graph &graph,
                                        Op *combo,
+                                       TensorId weightId,
                                        TensorId accumId,
                                        TensorId gradIntoAccumId,
                                        bool accumReduce,
@@ -302,7 +303,7 @@ TensorId OptimizerDecompose::gradAccum(Graph &graph,
 
   if (accumReduce) {
     bool runningReplica = runningMeanReduction(graph);
-    Tensor *t           = graph.getTensors().get(accumId);
+    Tensor *t           = graph.getTensors().get(weightId);
     CommGroup cg        = t->getVariableSettings().getSharedVariableDomain();
     auto reduceOpUp     = std::make_unique<ReplicatedAllReduceInplaceOp>(
         Onnx::CustomOperators::ReplicatedAllReduceInplace,
@@ -378,10 +379,11 @@ Op *OptimizerDecompose::zeroAccumulator(Graph &graph,
 
 TensorId OptimizerDecompose::gradReduce(Graph &graph,
                                         Op *combo,
+                                        TensorId weightId,
                                         TensorId weightGradId,
                                         TensorId outputId) const {
   bool runningMean = runningMeanReduction(graph);
-  Tensor *t        = graph.getTensors().get(weightGradId);
+  Tensor *t        = graph.getTensors().get(weightId);
   CommGroup cg     = t->getVariableSettings().getSharedVariableDomain();
   auto reduceOpUp  = std::make_unique<ReplicatedAllReduceOp>(
       Onnx::CustomOperators::ReplicatedAllReduce,

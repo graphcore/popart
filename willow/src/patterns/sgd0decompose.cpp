@@ -55,10 +55,13 @@ bool SGD0Decompose::apply(Op *op) const {
   TensorId finalGradId      = reservedFinalReducedGradPrefix() + weightId;
 
   if (combo->reductionType == OptimizerReductionType::GradReduce) {
-    TensorId reducedId = gradReduce(
-        graph, combo, weightGradId, !combo->withGradAccum ? finalGradId : "");
-    gradIntoAccumId  = reducedId;
-    gradIntoUpdateId = reducedId;
+    TensorId reducedId = gradReduce(graph,
+                                    combo,
+                                    weightId,
+                                    weightGradId,
+                                    !combo->withGradAccum ? finalGradId : "");
+    gradIntoAccumId    = reducedId;
+    gradIntoUpdateId   = reducedId;
   }
 
   Op *zeroAccum = nullptr;
@@ -66,6 +69,7 @@ bool SGD0Decompose::apply(Op *op) const {
     gradIntoUpdateId =
         gradAccum(graph,
                   combo,
+                  weightId,
                   accumId,
                   gradIntoAccumId,
                   combo->reductionType == OptimizerReductionType::AccumReduce,

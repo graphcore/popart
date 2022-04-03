@@ -40,6 +40,7 @@ protected:
   // Gradient accumulation
   TensorId gradAccum(Graph &graph,
                      Op *combo,
+                     TensorId weightId,
                      TensorId accumId,
                      TensorId gradIntoAccumId,
                      bool accumReduce,
@@ -57,6 +58,7 @@ protected:
   // Gradient reduction
   TensorId gradReduce(Graph &graph,
                       Op *combo,
+                      TensorId weightId,
                       TensorId weightGradId,
                       TensorId outputId = "") const;
 
