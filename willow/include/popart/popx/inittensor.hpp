@@ -189,8 +189,8 @@ public:
                 RequireParallelWritable requireParallelWritable,
                 double priority);
   bool initTensor(IrLowering &irLowering) const override;
-  virtual bool hasSrcId() const { return true; }
-  virtual TensorId getSrcId() const { return srcId; }
+  bool hasSrcId() const override { return true; }
+  TensorId getSrcId() const override { return srcId; }
 
 private:
   TensorId srcId;

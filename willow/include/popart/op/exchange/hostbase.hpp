@@ -12,7 +12,7 @@ public:
   HostBaseOp(const OperatorIdentifier &_opid,
              const Op::Settings &settings_,
              TensorId sid_)
-      : ExchangeBaseOp(_opid, settings_), hostStreamTensorId(sid_){};
+      : ExchangeBaseOp(_opid, settings_), hostStreamTensorId(sid_) {}
 
   static InIndex getLocalTensorInIndex() { return 0; }
 
