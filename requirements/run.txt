@@ -28,3 +28,4 @@ torchvision==0.10.1+cpu; sys_platform != "darwin"
 torch==1.9.1; sys_platform == "darwin"
 torchvision==0.10.1; sys_platform == "darwin"
 cppimport==21.3.7
+tqdm>=4.46.0

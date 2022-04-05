@@ -18,6 +18,7 @@ PopXL User Guide and API (experimental)
     session
     remote
     application_example
+    application_example_rts
     api
     genindex
     legal

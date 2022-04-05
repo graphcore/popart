@@ -66,6 +66,8 @@ example.
 
     :download:`Download remote_variable.py <files/remote_variable.py>`
 
+.. _sec_rts:
+
 Replicated tensor sharding variables
 -----------------------------------
 

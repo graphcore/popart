@@ -21,6 +21,7 @@
                 "(docs/user_guide/files/tests/test_popart_doc_examples.py)",
                 "(docs/popxl/files/tests/test_popxl_doc_examples.py)",
                 "(docs/popxl/files/mnist.py)",
+                "(docs/popxl/files/mnist_rts.py)",
                 "(tests/linters/.*)"
             ]
         },

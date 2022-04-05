@@ -137,3 +137,24 @@ class TestPythonDocExamples(ExamplesTester):
         self.run_python(filename,
                         file_dir=working_dir,
                         working_dir=working_dir)
+
+    def test_documentation_popxl_mnist_replication_train(self):
+        """Test the popxl mnist with replication example"""
+        filename = "mnist_rts.py --replication-factor 2"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
+    def test_documentation_popxl_mnist_rts_train(self):
+        """Test the popxl mnist with RTS example"""
+        filename = "mnist_rts.py --replication-factor 2 --rts"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
+    def test_documentation_popxl_mnist_rts_train_test(self):
+        """Test the popxl mnist with RTS example"""
+        filename = "mnist_rts.py --replication-factor 2 --rts --test"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)

@@ -113,6 +113,8 @@ pad the last 2 batches of data for stream A with zeros on every model run.
   This behaviour will likely change in the future so that the correct number of batches of data are
   required per stream.
 
+.. _sec_session_inputs:
+
 Data input shape
 ----------------
 
@@ -138,7 +140,7 @@ of order.
 
 .. only:: html
 
-    :download:`Download repeat_graph_2.py <../user_guide/files/repeat_graph_2.py>`
+    :download:`Download repeat_graph_2.py <files/repeat_graph_2.py>`
 
 .. _device-types:
 
