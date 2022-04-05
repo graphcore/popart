@@ -31,7 +31,7 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
     settings = ctx._get_op_settings('equal')
     opid = _ir.OperatorIdentifier("ai.onnx", "Equal", 7, _ir.NumInputs(2, 2),
                                   1)
-    op = pb_g.createConnectedOp_AndOp(
+    op = pb_g.createConnectedOp_EqualOp(
         {
             0: lhs.id,
             1: rhs.id
