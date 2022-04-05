@@ -822,22 +822,26 @@ int Consumers::getTotal() const {
 
 // using 'this' in a constructor list? Be careful.
 // https://stackoverflow.com/questions/5058349
+
 Tensor::Tensor(TensorId n,
                TensorType t,
                Graph &g,
                const DebugContext &debugContext)
-    : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorType_(t), data_(nullptr), di(debugContext, n, t),
-      variableUpdateType(VariableUpdateType::Gradient),
-      variableSettings(VariableSettings()) {}
+    : Tensor(n, t, VariableSettings(), g, debugContext) {}
 
 Tensor::Tensor(TensorId n,
                VariableSettings vs,
                Graph &g,
                const DebugContext &debugContext)
+    : Tensor(n, TensorType::Variable, vs, g, debugContext) {}
+
+Tensor::Tensor(TensorId n,
+               TensorType t,
+               VariableSettings vs,
+               Graph &g,
+               const DebugContext &debugContext)
     : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
-      tensorType_(TensorType::Variable), data_(nullptr),
-      di(debugContext, n, TensorType::Variable),
+      tensorType_(t), data_(nullptr), di(debugContext, n, t),
       variableUpdateType(VariableUpdateType::Gradient), variableSettings(vs) {}
 
 void Consumers::decrement(Op *op) {

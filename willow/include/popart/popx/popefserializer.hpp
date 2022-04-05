@@ -1,12 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPEXECUTABLESERIALIZATION_HPP
-#define GUARD_NEURALNET_POPEXECUTABLESERIALIZATION_HPP
-
-#include <map>
-#include <memory>
-#include <set>
+#ifndef GUARD_NEURALNET_POPEF_SERIALIZER_HPP
+#define GUARD_NEURALNET_POPEF_SERIALIZER_HPP
 
 #include <iostream>
+#include <memory>
+#include <stddef.h>
 
 namespace poplar {
 // Forward declaration.
@@ -73,4 +71,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_WILLOWEXECUTABLESERIALIZATION_HPP
+#endif // GUARD_NEURALNET_POPEF_SERIALIZER_HPP

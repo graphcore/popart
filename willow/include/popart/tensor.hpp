@@ -118,6 +118,11 @@ public:
   // must be set after construction
   Tensor(TensorId, TensorType, Graph &, const DebugContext & = {});
   Tensor(TensorId, VariableSettings, Graph &, const DebugContext & = {});
+  Tensor(TensorId,
+         TensorType,
+         VariableSettings,
+         Graph &,
+         const DebugContext & = {});
   TensorId id;
   std::string str() const final { return id; }
 

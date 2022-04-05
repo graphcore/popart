@@ -46,9 +46,9 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popefserializer.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/pritask.hpp>

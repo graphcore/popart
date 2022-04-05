@@ -18,12 +18,24 @@ class TensorData {
 public:
   // create by copying from src to data_,
   // the size of the copy determined by TensorInfo
+  //
+  // NOTE: The TensorInfo passed in here may not match the TensorInfo associated
+  // with the Tensor that owns this TensorData. This is because for some
+  // VariableSetting values the data owned by this class contains data for
+  // multiple replica groups and this is not reflected in the TensorInfo of
+  // Tensor because those describe the per-replica shapes.
   TensorData(const TensorInfo &, const void *src);
+
+  // Instantiate TensorData with a specific size.
+  TensorData(const void *src, const size_t size);
 
   // create by copying to data_ from ONNX_NAMESPACE::TensorProto
   TensorData(const ONNX_NAMESPACE::TensorProto &);
 
   void *data();
+  // Expose size of data because the TensorInfo object to create this object
+  // may no longer exist, and we can't rely on the Tensor's TensorInfo matching.
+  size_t size() const { return data_.size(); }
   const void *data() const;
 
   // reset the data in the TensorData by copying from src.

@@ -16,9 +16,12 @@ TensorData::TensorData(const ONNX_NAMESPACE::TensorProto &tp) {
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
-TensorData::TensorData(const TensorInfo &info, const void *from) {
-  data_.resize(info.nbytes());
-  std::memcpy(data_.data(), from, info.nbytes());
+TensorData::TensorData(const TensorInfo &info, const void *from)
+    : TensorData(from, info.nbytes()) {}
+
+TensorData::TensorData(const void *src, const size_t size) {
+  data_.resize(size);
+  std::memcpy(data_.data(), src, size);
 }
 
 void *TensorData::data() { return data_.data(); }

@@ -57,13 +57,13 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 #include <popart/popx/op/convbasex.hpp>
 #include <popart/popx/op/matmulx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popefserializer.hpp>
 #include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/pritask.hpp>

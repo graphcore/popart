@@ -26,8 +26,8 @@
 #include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/popefserializer.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>

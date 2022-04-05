@@ -61,12 +61,37 @@ struct TensorLocationInfo{
   remoteBufferInfo @2: RemoteBufferInfo;
 }
 
+enum CommGroupType {
+  all @0;
+  consecutive @1;
+  orthogonal @2;
+  none @3;
+  n @4;
+}
+
+struct CommGroup {
+  type @0: CommGroupType;
+  replicaGroupSize @1: Int32;
+}
+
+enum VariableRetrievalMode {
+  onePerGroup @0;
+  allReduceReplicas @1;
+  allReplicas @2;
+}
+
+struct VariableSettings {
+  sharedVariableDomain @0: CommGroup;
+  retrievalMode @1: VariableRetrievalMode;
+}
+
 struct Tensor {
   id @0 :TensorId;
   tensorType @1 :TensorType;
   tensorInfo @2 :TensorInfo;
   tensorLocationInfo @3: TensorLocationInfo;
   tensorData @4 :Data;
+  variableSettings @5: VariableSettings;
 }
 
 enum SyntheticDataMode{

@@ -14,7 +14,7 @@
 #include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
-#include <popart/popx/executablexserialization.hpp>
+#include <popart/popx/popefserializer.hpp>
 #include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
