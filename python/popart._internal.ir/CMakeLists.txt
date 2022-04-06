@@ -181,6 +181,9 @@ add_popart_python_module(
   bindings/op/ipucopy.cpp
   bindings/op/call.cpp
   bindings/op/concat.cpp
+  bindings/op/conv.cpp
+  bindings/op/roialign.cpp
+  bindings/op/pool.cpp
   bindings/op/matmul.cpp
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp

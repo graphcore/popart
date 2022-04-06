@@ -3,6 +3,8 @@
 #include "bindings/basicoptionals.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
+#include "bindings/op/pool.hpp"
+#include "bindings/op/roialign.hpp"
 #include "bindings/op/varupdate.hpp"
 
 #include <pybind11/numpy.h>
@@ -16,11 +18,15 @@
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/adamupdater.hpp>
+#include <popart/op/averagepool.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/conv.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/maxpool.hpp>
+#include <popart/op/roialign.hpp>
 #include <popart/op/varupdate.hpp>
 
 namespace popart {
@@ -72,6 +78,74 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("serialization"),
         py::arg("outputType"),
         py::arg("partialsType"),
+        py::return_value_policy::reference);
+
+  // RoiAlignOp
+  g.def("createOp_RoiAlignOp",
+        &Graph::createOp<RoiAlignOp,
+                         const OperatorIdentifier &,
+                         const Op::Settings &,
+                         const float,
+                         const uint64_t,
+                         const uint64_t,
+                         const uint64_t>,
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("spatialScale"),
+        py::arg("samplingRatio"),
+        py::arg("alignedHeight"),
+        py::arg("alignedWidth"),
+        py::return_value_policy::reference);
+
+  // ConvOp
+  g.def("createOp_ConvOp",
+        &Graph::createOp<ConvOp,
+                         const OperatorIdentifier &,
+                         const Op::Settings &,
+                         std::vector<int64_t>,
+                         std::vector<int64_t>,
+                         std::vector<int64_t>,
+                         int64_t,
+                         const AutoPad &,
+                         const MultiConvOptions &>,
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("strides"),
+        py::arg("pads"),
+        py::arg("dilations"),
+        py::arg("group"),
+        py::arg("padType"),
+        py::arg("convOpts"),
+        py::return_value_policy::reference);
+
+  // AveragePool
+  g.def("createOp_AveragePoolOp",
+        &Graph::createOp<AveragePoolOp,
+                         const OperatorIdentifier &,
+                         int64_t,
+                         const std::vector<int64_t> &,
+                         const HasReceptiveFieldOp::ReceptiveOpAttributes &,
+                         const Op::Settings &>,
+        py::arg("opid"),
+        py::arg("countIncludePad"),
+        py::arg("kernelShape"),
+        py::arg("attributes"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // MaxPool
+  g.def("createOp_MaxPoolOp",
+        &Graph::createOp<MaxPoolOp,
+                         const OperatorIdentifier &,
+                         const std::vector<int64_t> &,
+                         int64_t,
+                         const HasReceptiveFieldOp::ReceptiveOpAttributes &,
+                         const Op::Settings &>,
+        py::arg("opid"),
+        py::arg("kernelShape"),
+        py::arg("storageOrder"),
+        py::arg("attributes"),
+        py::arg("settings"),
         py::return_value_policy::reference);
 
   // LoopOp
@@ -301,6 +375,84 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("serialization"),
         py::arg("outputType"),
         py::arg("partialsType"),
+        py::return_value_policy::reference);
+
+  // RoiAlignOp
+  g.def("createConnectedOp_RoiAlignOp",
+        &Graph::createConnectedOp<RoiAlignOp,
+                                  const OperatorIdentifier &,
+                                  const Op::Settings &,
+                                  const float,
+                                  const uint64_t,
+                                  const uint64_t,
+                                  const uint64_t>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("spatialScale"),
+        py::arg("samplingRatio"),
+        py::arg("alignedHeight"),
+        py::arg("alignedWidth"),
+        py::return_value_policy::reference);
+
+  // ConvOp
+  g.def("createConnectedOp_ConvOp",
+        &Graph::createConnectedOp<ConvOp,
+                                  const OperatorIdentifier &,
+                                  const Op::Settings &,
+                                  std::vector<int64_t>,
+                                  std::vector<int64_t>,
+                                  std::vector<int64_t>,
+                                  int64_t,
+                                  const AutoPad &,
+                                  const MultiConvOptions &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("settings"),
+        py::arg("strides"),
+        py::arg("pads"),
+        py::arg("dilations"),
+        py::arg("group"),
+        py::arg("padType"),
+        py::arg("convOpts"),
+        py::return_value_policy::reference);
+
+  // AveragePool
+  g.def("createConnectedOp_AveragePoolOp",
+        &Graph::createConnectedOp<
+            AveragePoolOp,
+            const OperatorIdentifier &,
+            int64_t,
+            const std::vector<int64_t> &,
+            const HasReceptiveFieldOp::ReceptiveOpAttributes &,
+            const Op::Settings &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("countIncludePad"),
+        py::arg("kernelShape"),
+        py::arg("attributes"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // MaxPool
+  g.def("createConnectedOp_MaxPoolOp",
+        &Graph::createConnectedOp<
+            MaxPoolOp,
+            const OperatorIdentifier &,
+            const std::vector<int64_t> &,
+            int64_t,
+            const HasReceptiveFieldOp::ReceptiveOpAttributes &,
+            const Op::Settings &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("kernelShape"),
+        py::arg("storageOrder"),
+        py::arg("attributes"),
+        py::arg("settings"),
         py::return_value_policy::reference);
 
   // LoopOp
