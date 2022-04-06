@@ -196,3 +196,20 @@ method.
 .. only:: html
 
     :download:`Download repeat_graph_1.py <files/repeat_graph_1.py>`
+
+Graph replication
+-----------------
+
+For improved performance, multiple IPUs can run in data parallel mode.
+In data parallel mode multiple replicas of the graph are run on separate sets of IPUs.
+
+Replicas can be grouped, see :numref:`sec_replication_types`. By default, there is only one group.
+Replicas in a group are loaded with the same values.
+
+Most operations can use replica grouping to reduce over only the grouped replica graphs,
+allowing for all replicas in a group to benefit from each other's updates.
+
+Graph replication cannot be used with IPU Model targets.
+
+To set the replication factor (the number of replicated graphs), you
+can set the ``ir.replication_factor``.

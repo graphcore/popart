@@ -70,6 +70,9 @@ the IPU at runtime using :py:func:`popart_core.Session.readWeights()` and
 Note that, you have to copy the initial value of a variable tensor to the IPU
 from the host before running the graph with :py:func:`popart_core.Session.weightsFromHost()`.
 
+If your graph has a replication factor, you can load different instances of the variable on
+different replicas by using replica grouping, see :numref:`sec_replica_grouping`.
+
 .. _sec_tensors_intermediate:
 
 Intermediate tensors

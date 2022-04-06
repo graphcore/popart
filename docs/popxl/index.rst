@@ -17,6 +17,7 @@ PopXL User Guide and API (experimental)
     context
     session
     remote
+    replication
     application_example
     application_example_rts
     api
