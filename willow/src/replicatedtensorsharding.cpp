@@ -45,24 +45,13 @@ ReplicatedTensorShardingTracer::ReplicatedTensorShardingTracer(const Ir &ir_)
     : ir(ir_) {}
 
 bool ReplicatedTensorShardingTracer::TraceHelper::traceVisitor(Tensor *t) {
-
   // Check if a restart is needed because the start tensors have changed
   if (restart) {
     return false;
   }
 
+  // Same shape and meta shape implies connected RTS domain
   bool shapeMatch = false;
-
-  if (!t->info.metaShape().empty()) {
-    if (!group.shape.has_value()) {
-      group.shape = t->info.shape();
-    }
-    if (!group.metaShape.has_value()) {
-      group.metaShape = t->info.metaShape();
-    }
-  }
-
-  // Same shape and meta shape -> connected RTS domain
   if (group.shape.has_value() && group.metaShape.has_value() &&
       t->info.shape() == *(group.shape) &&
       t->info.metaShape() == *(group.metaShape)) {
@@ -246,46 +235,8 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceFilter(Op *op,
     return true;
   }
 
-  // Collective ops may specify additional matching conditions
-  if (CollectivesBaseOp *collectiveOp = dynamic_cast<CollectivesBaseOp *>(op)) {
-    for (auto rtsIndices : collectiveOp->getReplicatedTensorShardingIndices()) {
-      auto &inIndices  = rtsIndices.first;
-      auto &outIndices = rtsIndices.second;
-      for (InIndex in : inIndices) {
-        if (collectiveOp->hasInput(in)) {
-          // Check if tn is an rts input
-          if (collectiveOp->inId(in) == tn->id) {
-            return true;
-          }
-          // Check if tn is a linked index tensor for rts
-          if (collectiveOp->hasCorrespondingLinkedIndexTensor(in)) {
-            if (collectiveOp->getCorrespondingLinkedIndexTensor(in)->id ==
-                tn->id) {
-              return true;
-            }
-          }
-        }
-      }
-      for (OutIndex out : outIndices) {
-        if (collectiveOp->hasOutput(out)) {
-          // Check if tn is an rts output
-          if (collectiveOp->outId(out) == tn->id) {
-            return true;
-          }
-          // Check if tn is a linked index tensor for the rts output
-          if (collectiveOp->hasCorrespondingLinkedIndexTensor(out)) {
-            if (collectiveOp->getCorrespondingLinkedIndexTensor(out)->id ==
-                tn->id) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // All other ops should be traversed if the input/output tensors
-  // are RTS related
+  // Traverse ops based on whether tn and tq are linked according to RTS indices
+  // or a collective linked tensor (for collective ops only)
   auto rtsIndices = op->getReplicatedTensorShardingIndices();
 
   std::vector<InIndex> tqIn;
@@ -324,9 +275,24 @@ bool ReplicatedTensorShardingTracer::TraceHelper::traceFilter(Op *op,
     if (tqInSet && tnInSet) {
       // Input and output tensor are in the same RTS domain
       return true;
+    } else if (CollectivesBaseOp *collectiveOp =
+                   dynamic_cast<CollectivesBaseOp *>(op)) {
+      // For collective ops, if the two tensors are not in the same RTS domain,
+      // it could still be that one is a linked tensor for another
+      if (tnInSet && collectiveOp->hasCorrespondingLinkedIndexTensor(tn)) {
+        // tn is an RTS tensor and tq is the associated linked tensor
+        if (collectiveOp->getCorrespondingLinkedIndexTensor(tn)->id == tq->id) {
+          return true;
+        }
+      } else if (tqInSet &&
+                 collectiveOp->hasCorrespondingLinkedIndexTensor(tq)) {
+        // tq is an RTS tensor and tn is the associated linked tensor
+        if (collectiveOp->getCorrespondingLinkedIndexTensor(tq)->id == tn->id) {
+          return true;
+        }
+      }
     }
   }
-
   return false;
 }
 
@@ -445,6 +411,26 @@ void ReplicatedTensorShardingTracer::trace(
   if (!anyGroupsSet) {
 
     TraceHelper helper;
+
+    // Set the group shape from the start tensors
+    for (auto t : startTensors) {
+      if (!t->info.metaShape().empty()) {
+        if (!helper.group.shape.has_value()) {
+          helper.group.shape = t->info.shape();
+        } else if (helper.group.shape != t->info.shape()) {
+          throw internal_error(
+              "[ReplicatedTensorShardingTracer::trace] The start tensors for "
+              "the trace have incompatible shapes");
+        }
+        if (!helper.group.metaShape.has_value()) {
+          helper.group.metaShape = t->info.metaShape();
+        } else if (helper.group.metaShape != t->info.metaShape()) {
+          throw internal_error(
+              "[ReplicatedTensorShardingTracer::trace] The start tensors for "
+              "the trace have incompatible metaShapes");
+        }
+      }
+    }
 
     helper.registerRemoteBuffers(ir);
 
