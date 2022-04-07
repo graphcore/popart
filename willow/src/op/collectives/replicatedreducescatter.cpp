@@ -52,7 +52,8 @@ void ReplicatedReduceScatterOp::setup() {
       (getGCLCommGroup().type == CommGroupType::Consecutive ||
        getGCLCommGroup().type == CommGroupType::Orthogonal)) {
     replicationFactor = getGCLCommGroup().replicaGroupSize;
-  }
+  } else if (getGCLCommGroup().type == CommGroupType::None)
+    replicationFactor = 1;
 
   // ceil(numElements / replicationFactor)
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;

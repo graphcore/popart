@@ -188,8 +188,7 @@ class Tensor:
         # TODO T53608: needs clean up. Exposing private object without documentation
         return self._pb_tensor.tensorLocationInfo
 
-    @property
-    def strides(self) -> Tuple[int]:
+    def strides(self, shape=None) -> Tuple[int]:
         """Get the strides of the tensor.
 
         The strides of the tensor is the number of bytes to step in each
@@ -199,7 +198,9 @@ class Tensor:
         Returns:
             List[int]: The strides of the tensor.
         """
-        return tuple(self._pb_tensor.info.strides())
+        if shape == None:
+            shape = self.shape
+        return tuple(self._pb_tensor.info.strides(shape))
 
     @property
     @debug_context_frame_offset(2)
@@ -877,11 +878,15 @@ def remote_replica_sharded_variable(
     np_dtype = dtype.as_numpy() if dtype is not None else None
     np_data: np.ndarray = np.array(data, dtype=np_dtype)
 
+    if replica_grouping and replica_grouping.num_groups > 1:
+        required_shape = np_data.shape[1:]
+    else:
+        required_shape = np_data.shape
     if remote_buffer.meta_shape == ():
-        remote_buffer.meta_shape = np_data.shape
-    elif remote_buffer.meta_shape != np_data.shape:
+        remote_buffer.meta_shape = required_shape
+    elif remote_buffer.meta_shape != required_shape:
         raise ValueError(
-            f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {np_data.shape}. "
+            f"Cannot use RemoteBuffer[id={remote_buffer.remote_buffer_id}] for replica sharded variable of shape {required_shape}. "
             f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
         )
 

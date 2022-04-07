@@ -7,6 +7,7 @@ add_popart_py_unit_test(popxl-modified_call test_modified_call.py VARIANTS IpuMo
 add_popart_py_unit_test(popxl-random-seed test_random_seed.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-remote_buffer_store_load test_remote_buffer_store_load.py VARIANTS Hw)
 add_popart_py_unit_test(popxl-model_caching test_model_caching.py VARIANTS Hw)
+add_popart_py_unit_test(popxl-grouped_initialization test_grouped_initialization.py VARIANTS Hw)
 add_popart_py_unit_test(popxl-rts_autodiff test_rts_autodiff.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-gather_oor test_gather_oor.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-session test_session.py VARIANTS IpuModel)

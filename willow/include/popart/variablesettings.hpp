@@ -127,6 +127,17 @@ public:
                        const TensorId name) const;
 
   /**
+   * Takes the shape of a tensor on a replica and returns it's full ONNX shape.
+   *
+   * This is the inverse operation to shapeOnReplica
+   *
+   * \param  replica_shape The shape of the data on a replica.
+   * \param  replicaCount  The local replication factor, used to calculate
+   *                       the return factor.
+   * \return               The shape as presented by Onnx.
+   */
+  Shape shapeOnHost(Shape replica_shape, unsigned replicaCount) const;
+  /**
    * This function returns a set of vectors where each vector contains all
    * the replicaId's of the replicas with a sharedVariableDomain given the
    * variableSettings and the replicaCount.

@@ -30,14 +30,17 @@ namespace {
  */
 template <typename RESULT_TYPE> py::array getTensorData(Tensor &t) {
   auto data = reinterpret_cast<RESULT_TYPE *>(t.tensorData()->data());
-  std::vector<int64_t> shape = t.info.shape();
-  auto strides               = t.info.strides();
+  auto replicationFactor =
+      t.getIr().getSessionOptions().getGlobalReplicationFactor();
+  auto hostShape =
+      t.getVariableSettings().shapeOnHost(t.info.shape(), replicationFactor);
+  auto strides = t.info.strides(hostShape);
   // Note: py::memoryview::from_buffer doesn't malloc, it just provides a view
   // into some existing memory
   // See:
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html#memory-view
   return py::memoryview::from_buffer(data, // buffer pointer
-                                     shape,
+                                     hostShape,
                                      strides);
 }
 } // namespace

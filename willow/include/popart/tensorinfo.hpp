@@ -241,11 +241,11 @@ public:
    * dimension when traversing an array in memory. See
    * https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
    *
-   * \returns std::vector<int> The strides vector.
+   * \param shape The on-host ONNX shape of a tensor. This is different from
+   * this->shape(), which gives the on-replica shape of a tensor \returns
+   * std::vector<int> The strides vector.
    */
-  std::vector<int> strides() {
-    auto shape = this->shape();
-
+  std::vector<int> strides(const std::vector<long> &shape) {
     if (shape.size() == 0) {
       return {};
     } else if (shape.size() == 1 && shape.at(0) == 0) {

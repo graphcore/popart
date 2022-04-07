@@ -510,7 +510,7 @@ class Session:
             data_index += 1
             if arr.shape[repl_index] != self.ir.replication_factor:
                 raise ValueError(
-                    f"Dimension {repl_index} ({arr.shape[1]}) for the array provided for {stream_type_str} "
+                    f"Dimension {repl_index} ({arr.shape[repl_index]}) for the array provided for {stream_type_str} "
                     f"stream {s.tensor_id} is the wrong size.\n"
                     f"It should be of size replication_factor = {self.ir.replication_factor}"
                 )

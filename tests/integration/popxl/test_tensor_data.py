@@ -42,7 +42,7 @@ class TestData:
         session = popxl.Session(ir, device_desc="ipu_model")
         retrieved_array = session.get_tensor_data(t)
 
-        assert arr.strides == t.strides
+        assert arr.strides == t.strides()
         assert arr.shape == retrieved_array.shape
         assert np.allclose(arr, retrieved_array)
 

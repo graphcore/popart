@@ -260,10 +260,14 @@ void Devicex::weightsToTensorData() {
   std::transform(tensors.begin(),
                  tensors.end(),
                  std::inserter(Wdata, Wdata.end()),
-                 [](Tensor *t) {
+                 [replicas = getReplicationFactor()](Tensor *t) {
                    MutableVoidData tData;
-                   tData.data = t->tensorData()->data();
+                   tData.data     = t->tensorData()->data();
+                   auto hostShape = t->getVariableSettings().shapeOnHost(
+                       t->info.shape(), replicas);
+
                    tData.info = t->info;
+                   tData.info.set(tData.info.dataType(), hostShape);
                    return std::make_pair(t->id, tData);
                  });
   // Actually do the transfer for these tensors.

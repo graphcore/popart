@@ -187,7 +187,7 @@ def test_tensor_strides(shape, np_dtype, ir_dtype):
     """
     tInfo = _ir.TensorInfo(ir_dtype, shape)
     arr = np.zeros(shape=shape, dtype=np_dtype)
-    assert tuple(tInfo.strides()) == arr.strides
+    assert tuple(tInfo.strides(shape)) == arr.strides
 
 
 @pytest.mark.parametrize("dType1", [_ir.DataType.FLOAT16, _ir.DataType.FLOAT])

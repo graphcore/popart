@@ -215,6 +215,21 @@ Shape VariableSettings::shapeOnReplica(const Shape full_shape,
   return reshape;
 }
 
+Shape VariableSettings::shapeOnHost(const Shape replicaShape,
+                                    unsigned replicaCount) const {
+  auto numGroups = groupCount(replicaCount);
+
+  // If there's only one group, the replica and host dimensions are the same
+  if (numGroups == 1) {
+    return Shape(replicaShape);
+  }
+
+  // Otherwise prepend numGroups to the shape
+  Shape hostShape = {numGroups};
+  hostShape.insert(hostShape.end(), replicaShape.begin(), replicaShape.end());
+  return hostShape;
+}
+
 std::vector<std::vector<std::int64_t>>
 VariableSettings::groups(unsigned replicaCount) const {
   std::vector<std::vector<std::int64_t>> groups;

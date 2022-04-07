@@ -163,7 +163,8 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
           (shardingDomain.type == CommGroupType::Consecutive ||
            shardingDomain.type == CommGroupType::Orthogonal)) {
         replicationFactor = shardingDomain.replicaGroupSize;
-      }
+      } else if (shardingDomain.type == CommGroupType::None)
+        replicationFactor = 1;
     }
   }
 

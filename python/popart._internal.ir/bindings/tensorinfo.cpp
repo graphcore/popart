@@ -68,7 +68,7 @@ void bindTensorInfo(py::module &m) {
       .def("nelms", &TensorInfo::nelms)
       .def("nbytes", &TensorInfo::nbytes)
       .def("dim", &TensorInfo::dim, py::arg("i"))
-      .def("strides", &TensorInfo::strides)
+      .def("strides", &TensorInfo::strides, py::arg("shape"))
       .def("dataType", &TensorInfo::dataType)
       .def("data_type", &TensorInfo::data_type)
       .def("data_type_lcase", &TensorInfo::data_type_lcase)
