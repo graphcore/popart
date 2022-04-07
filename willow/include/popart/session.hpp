@@ -51,17 +51,29 @@ protected:
                          const Patterns &patterns);
 
 public:
+  /**
+   * Destructor for the Session class.
+   */
   virtual ~Session() = 0;
 
+  /**
+   * Get state of the random number generator.
+   */
   std::vector<uint32_t> getRNGState();
+
+  /**
+   * Set state of the random number generator.
+   */
   void setRNGState(const std::vector<uint32_t>);
 
   /**
-   * Sets the random number generator seed that explicitly seeds all random
-   * operations and, as a side-effect, derive a new RNG state from the seed and
-   * sets it on the device. This RNG state is used to resolve stochastic
-   * rounding. Note that to deterministically store and restore the combined
-   * random state for a session, do the following:
+   * Set the value of the random number generator seed.
+
+   * This method explicitly seeds all random operations. Additionally, this
+   * method derives a new state for the random number generator (RNG) from the
+   * seed and sets it on the device. This RNG state is used to resolve
+   * stochastic rounding. Note that to deterministically store and restore the
+   * combined random state for a session, do the following:
    *
    * C++:
    * ```
@@ -85,121 +97,129 @@ public:
    * s1.setRNGState(rngState)
    * ```
    *
-   * \param The seed value.
+   * \param seedValue The value of the seed.
    */
   void setRandomSeed(uint64_t seedValue);
 
   /**
-   * Get the value of the random number seed. By later calling `setRandomSeed`
-   * with this value you can reinstate the random state logic that seeds random
-   * operations.
+   * Get the value of the random number generator seed.
+
+   * Calling setRandomSeed() with this value (at a later stage) reinstates the
+   * random state logic that seeds random operations.
    *
-   * \returns The seed value.
+   * \returns The value used to seed current random operations.
    */
   uint64_t getRandomSeed();
 
   /**
-   * Compiles the graph and exports it to the specified path.
+   * Compile the graph and export it to a file.
    *
-   * This will create a \c snap::Graph and compile the \c poplar::Executable.
-   * After that it will export the executable and metadata to
-   * the specified path. The exported file will be in the
-   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
-   * popef</a> format. This means that it can be used to run inference using the
-   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
-   * Triton Inference Server</a> because Graphcore provides a backend to
-   * it. See the <a
-   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
-   * Poplar Triton Backend</a> for more information.
+   * This method will first create a \c snap::Graph and compile the \c
+   * poplar::Executable. Next, it will export the executable and PopART metadata
+   * to the file. The exported file will be in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
+   * format. This means that the file can be used to run inference using the <a
+   * href="https://developer.nvidia.com/nvidia-triton-inference-server"> Triton
+   * Inference Server</a> with the Graphcore Triton backend. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/">
+   * Poplar Triton Backend User Guide</a> for more information.
    *
-   * \param filename Name of the file where the compiled executable and
-   *                 associated metadata will be saved.
+   * \param filename The name of the file where the compiled executable and
+   *      metadata will be saved.
    */
   void compileAndExport(const std::string &filename);
 
   /**
-   * Compiles the graph and exports it to the specified stream.
+   * Compile the graph and export it to a stream.
    *
-   * This will create a \c snap::Graph and compile the \c poplar::Executable.
-   * After that it will export the executable and metadata to
-   * the specified stream. The data will be streamed in the
-   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
-   * popef</a> format. This means that it can be used to run inference using the
-   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
-   * Triton Inference Server</a> because Graphcore provides a backend to
-   * it. See the <a
-   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
-   * Poplar Triton Backend</a> for more information.
+   * This method will first create a \c snap::Graph and compile the \c
+   * poplar::Executable. Next, it will export the executable and PopART metadata
+   * to the stream. The data will be streamed in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
+   * format. This means that the file can be used to run inference using the <a
+   * href="https://developer.nvidia.com/nvidia-triton-inference-server"> Triton
+   * Inference Server</a> with the Graphcore Triton backend. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/">
+   * Poplar Triton Backend User Guide</a> for more information.
    *
-   * \param out Stream where the compiled executable and
-   *            associated metadata will be written to.
+   * This method automatically creates folders as needed if \p filename is
+   * located in a folder which does not exist.
+   *
+   * \param out The stream that the compiled executable and metadata will be
+   *      written to.
    */
   void compileAndExport(std::ostream &out);
 
   /**
-   * Save a compiled graph to the specified path.
+   * Save a compiled graph to a file.
    *
-   * The file will be in the
-   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
-   * popef</a> format. This means that it can be used to run inference using the
-   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
-   * Triton Inference Server</a> because Graphcore provides a backend to
-   * it. See the <a
-   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
-   * Poplar Triton Backend</a> for more information.
+   * The file will be in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
+   * format. This means that the file can be used to run inference using the <a
+   * href="https://developer.nvidia.com/nvidia-triton-inference-server"> Triton
+   * Inference Server</a> with the Graphcore Triton backend. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/">
+   * Poplar Triton Backend User Guide</a> for more information.
+   *
+   * This method automatically creates folders as needed if \p filename is
+   * located in a folder which does not exist.
    *
    * \pre prepareDevice() must have been called.
    *
-   * \param filename Name of the file where the compiled executable and
-   *                 associated metadata will be saved.
-   *
-   * This method automatically creates folders as needed
-   * if filename is located in a folder which doesn't exist.
+   * \param filename The name of the file where the compiled executable and
+   *        metadata will be saved.
    */
   void saveExecutableToFile(const std::string &filename);
 
   /**
-   * Save a compiled graph to the specified stream.
+   * Save a compiled graph to a stream.
    *
-   * The data will be streamed in the
-   * <a href="https://docs.graphcore.ai/projects/popef/en/latest/index.html">
-   * popef</a> format. This means that it can be used to run inference using the
-   * <a href="https://developer.nvidia.com/nvidia-triton-inference-server">
-   * Triton Inference Server</a> because Graphcore provides a backend to
-   * it. See the <a
-   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html">
-   * Poplar Triton Backend</a> for more information.
+   * The data will be streamed in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/"> PopEF</a>
+   * format. This means that the file can be used to run inference using the <a
+   * href="https://developer.nvidia.com/nvidia-triton-inference-server"> Triton
+   * Inference Server</a> with the Graphcore Triton backend. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/">
+   * Poplar Triton Backend User Guide</a> for more information.
    *
    * \pre prepareDevice() must have been called.
    *
-   * \param out Stream where the compiled executable and
-   *            associated metadata will be written to.
+   * \param out The stream where the compiled executable and
+   *      metadata will be written to.
    */
   void saveExecutableToStream(std::ostream &out);
 
   /**
-   * Create an \c aliasModel for each graph and run the poprithms ambiguity
-   * checker on it. This throws an error if the graph has an inplacing ambiguity
-   * and will prompt the user to check the inplacing.
+   * Check for potential inplacing ambiguities.
    *
-   * See \c poprithms::memory::inplace::Graph::AmbiguityStatus for more info on
-   * what constitutes an ambiguity.
+   * This method creates an \c AliasModel object for each graph and runs the
+   * Poprithms ambiguity checker on it.
+
+   * Throws an error if the graph has an inplacing ambiguity and will prompt the
+   * user to check the inplacing.
+   *
+   * See \c poprithms::memory::inplace::Graph::AmbiguityStatus on the <a
+   * href="https://github.com/graphcore/poprithms">Poprithms GitHub repo</a> for
+   * more on what constitutes an ambiguity.
    */
   void checkInplacingAmbiguity() const;
 
   /**
-   * Load the \c poplar::Executable and the PopART metadata from the given
-   * file. The file must have been created with compileAndExport()
+   * Load the compiled executable and metadata from a file.
    *
-   * \param filename Name of the file to load the executable from.
+   * The file must have been created with compileAndExport(const std::string).
+   *
+   * \param filename The name of the file to load the executable and metadata
+   *      from.
    */
   void loadExecutableFromFile(const std::string &filename);
 
   /**
-   * Load the \c poplar::Executable and the PopART metadata from the given
-   * stream. The stream must have been created with compileAndExport()
+   * Load the compiled executable and from a stream.
    *
-   * \param in Shared pointer to the std stream to load the executable from.
+   * The stream must have been created with compileAndExport(std::ostream).
+   *
+   * \param in The shared pointer to the stream to load the executable from.
    */
   void loadExecutableFromStream(std::shared_ptr<std::istream> in);
 
@@ -208,13 +228,13 @@ public:
    *
    * This will create the \c snap::Graph and \c poplar::Engine.
    *
-   * \param loadEngine Load the engine and connect the streams once
-   *                   the device is ready.
+   * \param loadEngine If `true`, load the engine and connect the streams once
+   *      the device is ready.
    */
   void prepareDevice(bool loadEngine = true);
 
   /**
-   * Load the engine on the device and connect the streams
+   * Load the engine on the device and connect the streams.
    *
    * This will set up the \c poplar::Streams.
    *
@@ -224,40 +244,66 @@ public:
   void loadEngineAndConnectStreams();
 
   /**
-   * Write weights from host to the device.
+   * Copy weights from the host to the device.
    */
   void weightsFromHost();
 
   /**
-   * Copy the weights to host from the device.
+   * Copy the weights from the device to the host steam memory.
    */
   void weightsToHost();
 
   /**
-   * Copy the cycle count tensor to host from the device.
+   * Copy the cycle count tensor from the device to the host.
+   *
+   * \param id The identifier of the cycle count tensor.
    */
   uint64_t getCycleCount(std::string id = "");
 
   /**
-   * Connect Poplar stream callbacks. In conjunction with
-   * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
-   * host to perform collective operations after which the variables can be
-   * streamed back after they have been updated to the device.
-   * \p index referes to the replica index when using replicated graphs.
+   * Connect a Poplar stream with a callback.
+   *
+   *  This method will be called whenever the stream will be read or was written
+   *  to by the device. The memory location will only be valid for reading or
+   *  writing for the duration of the callback.
+   *
+   * \param streamHandle The name of the stream to connect to.
+   * \param callback The callback to be called whenever the stream is to be read
+   *      or was written to by the device.
+   * \param index The replica index to connect to, when using replicated
+   *      graphs. Default=0.
    */
   void connectStreamToCallback(const std::string &streamHandle,
                                std::function<void(void *)> callback,
                                unsigned index = 0);
 
   /**
-   * Connect a given poplar stream handle with a buffer to copy the memory to or
-   * from IPU.
+   * Connect a Poplar stream with a fixed location in memory.
+   *
+   * Each time data is copied to the stream, this location will be read and each
+   * time data is copied from the stream, this location will be written.
+   *
+   * \param streamHandle The handle of the stream to connect to.
+   * \param buffer The pointer to the memory location.
    */
   void connectStream(const std::string &streamHandle, void *buffer);
 
   /**
-   * Connect Poplar host function callbacks.
-   * \p index referes to the replica index when using replicated graphs.
+   * Connect a host function to a callback.
+   *
+   * The callback takes two arguments, which point to the locations in memory
+   * for each of the function's input and output arguments, respectively.
+   * During a host function call, first the device transfers the input data to
+   * the host, then the callback is invoked, and finally the output data is
+   * copied back to the device.
+   * The memory pointed to by the callback arguments must only be accessed
+   * during the duration of the callback.
+   *
+   * \param functionHandle The name of the host function.
+   * \param callback The function to be called whenever new input data is
+   *      available.
+   * \param index The replica index to connect to, when using replicated
+   *      graphs. Default=0.
    */
   void connectHostFunction(
       const std::string &functionHandle,
@@ -266,58 +312,73 @@ public:
       unsigned index = 0);
 
   /**
-   * Perform one step.
+   * Run one step.
    *
-   * Read input data from address in \c stepIO.in.
-   * Write the output data to addresses in \c stepIO.out.
+   * Read input data from address in \p stepIO.in.
    *
-   * \param stepIO Input and output data.
-   * \param debugName Debug string to identify this run in logs.
+   * Write the output data to addresses in \p stepIO.out.
+   *
+   * \param stepIO The input and output data.
+   * \param debugName A debug string to identify this run in logs.
    */
   void run(IStepIO &stepIO, std::string debugName = "");
 
   /**
-   * Update the tensor locations of the tensors in the Session's ONNX model.
-   * The new file will be created at this point, and written to when the ONNX
-   * model is saved with a subsequent call to modelToHost.
-   * \param fromLocation All externally saved tensors with location fromLocation
-   *                     will have their location updated to toLocation.
-   * \param toLocation The updated location. Must not already exist.
+   * Update the tensor locations of tensors in the session's ONNX model.
+   *
+   * A new file will be created at this point, and written to when the ONNX
+   * model is saved with a subsequent call to modelToHost().
+   *
+   * \param fromLocation All externally saved tensors with location \p
+   *      fromLocation will have their location updated to \p toLocation.
+   * \param toLocation The updated tensor locations. This must not already
+   *      exist.
    */
   void updateExternallySavedTensorLocations(const std::string &fromLocation,
                                             const std::string &toLocation);
 
   /**
-   * Write current model to ONNX file.
+   * Write the current model to an ONNX file.
    *
-   * \param fn Path to file. Can be absolute or relative. If you plan to run
-   *           your program in multiple processes simultaneously, you should
-   *           avoid possible race conditions by writing to different files, for
-   *           example by using temporary files.
+   * \param fn The path to file. The path can be absolute or relative. If you
+   *      plan to run your program in multiple processes simultaneously, you
+   *      should avoid possible race conditions by writing to different files,
+   *      for example by using temporary files.
    */
   void modelToHost(const std::string &fn);
 
   /**
-   * Get the TensorInfo on a Tensor.
+   * Get the tensor information for a tensor.
+   *
+   * \param TensorId The identifier of the tensor to get the tensor information
+   *      for.
+   *
+   * \returns The tensor information for the tensor.
    */
   TensorInfo getInfo(TensorId) const;
 
   /**
-   * Returns whether or not a the tensor for the specified ID has info.
+   * Check whether a tensor has information.
    *
-   * If the return value is false, you will be unable to obtain an instance of
-   * TensorInfo using getInfo.
+   * \param TensorId The identifier of the tensor to get the tensor information
+   *      for.
+   *
+   * \returns `true` if the tensor with identifier TensorId has tensor
+   *      information and `false` if not.
    */
   bool hasInfo(TensorId) const;
 
   /**
-   * Retrieve the summary from from the \c poplar::Engine.
+   * Retrieve the summary report from the \c poplar::Engine.
    *
-   * The options which were given to the constructor will influence the
-   * information in the report.
+   * The options which were passed to the Session constructor will influence
+   * the information in the report.
    *
-   * This may only be called after the prepareDevice() call has been made.
-   * \param resetProfile Resets the execution profile.
+   * This method may only be called after prepareDevice() has been called.
+   *
+   * \param resetProfile If `true`, resets the execution profile. Default =
+   *      `true`.
+   *
    * \return A string containing the report.
    */
   std::string getSummaryReport(bool resetProfile = true) const;
@@ -327,7 +388,7 @@ public:
    *
    * A JSON format report is produced.
    *
-   * This may only be called after the prepareDevice() call has been made.
+   * This method may only be called after prepareDevice() has been called.
    *
    * \return A string containing the serialized graph.
    */
@@ -336,42 +397,51 @@ public:
   /**
    * Retrieve the graph report from the \c poplar::Engine.
    *
-   * The options which were given to the constructor will influence the
-   * information in the report.
+   * The options which were passed to the Session constructor will influence
+   * the information in the report.
    *
-   * This may only be called after the prepareDevice() call has been made.
+   * This method may only be called after prepareDevice() has been called.
    *
-   * \return The pva report object
+   * \return The PopVision Analysis report object.
    */
   pva::Report getReport() const;
 
   /**
-   * Reset the weights with the weights in an ONNX model that differs from the
-   * current model only in weights. This only updates the weights on the host;
-   * the user still needs to call weightsFromHost() after this to update the
-   * weights on the device.
+   * Reset weights with weights in an ONNX model.
    *
-   * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf.
-   * \param ignoreWeightsInModelWithoutCorrespondingHostWeight If true, do
-   *        not error if there are initializers in the ONNX model with no
-   *        corresponding initializer tensor in the session's IR.
+   * Note that the only differences between the ONNX model and the current model
+   * must be the weights. No other differences are allowed.
+   *
+   * This method only updates the weights on the host. weightsFromHost() must
+   * be called after this method to update the weights on the device.
+   *
+   * \param model An ONNX model protobuf, or the name of a file containing an
+   *      ONNX model protobuf.
+   * \param ignoreWeightsInModelWithoutCorrespondingHostWeight If `true`, do not
+   *      throw an error if there are initializers in the ONNX model without
+   *      corresponding initializer tensor(s) in the session's IR.
    */
   void resetHostWeights(
       const std::string &model,
       const bool ignoreWeightsInModelWithoutCorrespondingHostWeight = false);
 
   /**
-   * Read the weights. Must have called weightsToHost() first.
+   * Read the weights from the host stream memory and write to the host.
    *
-   * The weight data is written to the addresses in \c weightsIo.out.
+   * This method may only be called after weightsToHost() has been called.
+   *
+   * \param weightsIo The weight data that is read from the host stream memory
+   *      is written to the addresses in \p weightsIo.out.
    */
   void readWeights(const IWeightsIO &weightsIo);
 
   /**
-   * Write the weights. Must call weightsFromHost() after this.
+   * Write the weights from the host to the IR tensor memory.
    *
-   * The weight data is written to the addresses in \c weightsIo.out.
+   * This method may only be called after weightsFromHost() has been called.
+   *
+   * \param weightsIo The weight data is written to the addresses in \p
+   *      weightsIo.out.
    */
   void writeWeights(const IWeightsIO &weightsIo);
 
@@ -382,45 +452,66 @@ public:
    */
   std::string serializeIr(IrSerializationFormat format);
 
+  /**
+   * Get the IR associated with the Session.
+   */
   const Ir &getIr() const { return *ir; }
+
+  /**
+   * Get the device associated with the Session.
+   */
   const popx::Devicex &getDevice() const { return *device_; }
+
+  /**
+   * Get the device associated with the Session.
+   */
   popx::Devicex &getDevice() { return *device_; }
+
+  /**
+   * Get the IR lowering associated with the Session.
+   */
   const popx::IrLowering &getIrLowering() const { return *lowering_; }
+
+  /**
+   * Get the executable associated with the Session.
+   */
   const popx::Executablex &getExecutable() const { return *executable_; }
 
 protected:
   /**
    * Select a device type.
    *
-   * \param deviceInfo Defines the type of device to work on.
+   * \param deviceInfo The type of device that this session uses.
    */
   void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
 
   /**
-   * Attempts to load a serialized executable. If successful then IR
-   * preparation and \c snap::Graph compilation are skipped.
+   * Attempt to load a serialized executable.
+   *
+   * If successful then IR preparation and \c snap::Graph compilation are
+   * skipped.
    */
   bool tryLoadExecutable();
 
   /**
-   * Throws an error if there is no executable.
+   * Throw an error if there is no executable.
    */
   void assertExecutableLoaded() const;
 
   /**
-   * Throws an error if the device cannot be used for offline compilation.
+   * Throw an error if the device cannot be used for offline compilation.
    */
   void assertDeviceCanCompileOffline() const;
 
   /**
-   * Initializes the progress logger to zero
+   * Initialize the progress logger to zero.
    */
   void initProgressLogger(const SessionOptions &userOptions);
 
   /**
    * Abstraction of the computation. The Ir is where
-   * all the compute graph optimisations, backwards pass construction,
-   * re-computation growing etc. happens.
+   * all the computational graph optimisations, backwards pass construction,
+   * re-computation growing and so on happens.
    *
    * This is a shared_ptr rather than a unique_ptr as when binding using pybind,
    * it is impossible to use unique_ptrs as function arguments (see
@@ -434,21 +525,21 @@ protected:
   std::shared_ptr<Ir> ir;
 
   /**
-   * Implementation of the computation. For the IPU back-end this is
-   * where calls to Poplar are made.
+   * Implementation of the computation.
+   *
+   * For the IPU back-end,  this is where calls to Poplar are made.
    */
   std::unique_ptr<popx::Devicex> device_;
 
   /**
-   * Implementation of the lowering of the PopART Ir to the
-   * Poplar Graph.
+   * Implementation of the lowering of the PopART Ir to the Poplar Graph.
    */
   std::unique_ptr<popx::IrLowering> lowering_;
 
   /**
-   * The final executable which contains all the data, metadata
-   * and configuration parameters necessary to start running
-   * the program on the device.
+   * The final executable which contains all the data, metadata and
+   * configuration parameters necessary to start running the program on the
+   * device.
    */
   std::unique_ptr<popx::Executablex> executable_;
 
@@ -458,22 +549,22 @@ protected:
   std::shared_ptr<DeviceInfo> deviceInfo_;
 
   /**
-   * Flag to indicate if weightsFromHost() has been called
+   * Check if weightsFromHost() has been called.
    */
   bool weightsFromHostCalled = false;
 
   /**
-   * Flag to indicate if run() has been called.
+   * Check if run() has been called.
    */
   bool runCalled = false;
 
   /**
-   * Map of hashes / filenames of cached executables.
+   * The map of hashes or filenames of cached executables.
    */
   HashesMap cacheEntries;
 
   /**
-   *  The name of the session
+   *  The name of the session.
    */
   std::string name;
 };
@@ -488,25 +579,36 @@ class InferenceSession : public Session {
   using Session::Session;
 
 public:
+  /**
+   * Destructor for the InferenceSession class.
+   */
   ~InferenceSession() override;
 
+  /**
+   * Create a session for inference from an IR.
+   *
+   * \param ir The IR to create the session from.
+   * \param deviceInfo The type of device that this session uses.
+   * \param name The name of this inference session. Default: "inference".
+   */
   static std::unique_ptr<InferenceSession>
   createFromIr(std::shared_ptr<Ir> ir,
                std::shared_ptr<DeviceInfo> deviceInfo,
                const std::string name = DefaultInferenceSessionName);
 
-  /** Create a runtime class for executing an ONNX graph on a set of IPU
-   *  hardware for inference.
+  /**
+   * Create a session for inference from an ONNX model.
    *
-   * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf.
-   * \param inputShapeInfo Information about the shapes of input and output
-   *                       tensors.
+   * \param model An ONNX model protobuf, or the name of a file containing an
+   *      ONNX model protobuf.
    * \param dataFlow Configuration for the data feeds and fetches.
-   * \param userOptions String to configure session options.
-   * \param patterns Optimization patterns to apply.
+   * \param deviceInfo The type of device that this session uses.
+   * \param inputShapeInfo A compilation of information that is know about the
+   *      tensors in the IR.
+   * \param userOptions The user configuration options for the Session class.
+   * \param patterns The optimization patterns to apply.
+   * \param name The name of this inference session. Default: "inference".
    */
-
   static std::unique_ptr<InferenceSession>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
@@ -519,36 +621,47 @@ public:
 
 /**
  * TrainingSession is a runtime instance that provides an interface for
- * executing ONNX graphs on IPU hardware with training provided by optimizing
- * the specified loss tensor using the specified optimizer and automatic
- * differentiation (backpropagation)
+ * executing ONNX graphs on IPU hardware with training provided by optimizing a
+ * loss tensor using an optimizer and automatic differentiation
+ * (backpropagation).
  */
 class TrainingSession : public Session {
 
   using Session::Session;
 
 public:
+  /**
+   * Destructor for the TrainingSession class.
+   */
   ~TrainingSession() override;
 
+  /**
+   * Create a session for training from an IR.
+   *
+   * \param ir The IR to create the session from.
+   * \param deviceInfo The type of device that this session uses.
+   * \param name The name of this training session. Default: "training".
+   */
   static std::unique_ptr<TrainingSession>
   createFromIr(std::shared_ptr<Ir> ir,
                std::shared_ptr<DeviceInfo> deviceInfo,
                const std::string name = DefaultTrainingSessionName);
 
-  /** Create a runtime class for executing an ONNX graph on a set of IPU
-   *  hardware for training.
+  /**
+   * Create a session for inference from an ONNX model.
    *
-   * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf.
-   * \param inputShapeInfo Information about the shapes of input and output
-   *                       tensors.
+   * \param model An ONNX model protobuf, or the name of a file containing an
+   *      ONNX model protobuf.
    * \param dataFlow Configuration for the data feeds and fetches.
-   * \param loss The TensorId of the final scalar loss tensor for training.
+   * \param loss The identifier of the final scalar loss tensor for training.
    * \param optimizer The name of an optimizer to use when training.
-   * \param userOptions String to configure session options.
-   * \param patterns Optimization patterns to apply.
+   * \param deviceInfo The type of device that this session uses.
+   * \param inputShapeInfo The information about the shapes of the input
+   *      and output tensors.
+   * \param userOptions The user configuration options for the Session class.
+   * \param patterns The optimization patterns to apply.
+   * \param name The name of this inference session. Default: "training".
    */
-
   static std::unique_ptr<TrainingSession>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
@@ -561,23 +674,32 @@ public:
                       const std::string name = DefaultTrainingSessionName);
 
   /**
-   * Update the optimizer and the associated hyperparameters but not the
-   * optimizer state tensors.
+   * Update the optimizer from the host.
+   *
+   * This method updates the optimizer and the associated hyperparameters but
+   * not the optimizer state tensors.
    *
    * **NOTE**: The optimizer parameter has to be compatible with the optimizer
-   * passed to the constructor. For example, you cannot call this function
-   * with an SDG1 optimizer if you created the session with an SDG0 optimizer.
-   * The reason for this is that it is not possible to change the IR after
-   * it has been constructed.
+   * passed to the TrainingSession constructor. For example, you cannot call
+   * this function with an `SDG1` optimizer if you created the session with an
+   * `SDG0` optimizer. This is because it is not possible to change the IR after
+   * a session has been constructed.
    *
    * \param optimizer A pointer to a popart::Optimizer.
    */
   void updateOptimizerFromHost(const Optimizer *optimizer);
 
   /**
-   * Read from a RemoteBuffer object into a user space pointer \p w.
-   * This can be useful when we run larger models with host side
-   * reductions since HEXOPT is currently limited to 128 MB.
+   * Copy from a remote butter into a user buffer.
+   *
+   * This can be useful when we run larger models with host side reductions
+   * since HEXOPT is currently limited to 128 MB.
+   *
+   * \param buffer The name of the remote buffer to copy from.
+   * \param w Pointer to a user buffer to copy to.
+   * \param repeat_index The index in the remote buffer to copy from.
+   * \param replication_index The replicated graph index when using replicated
+   * graphs. Default=0.
    */
   void copyFromRemoteBuffer(const std::string &buffer,
                             void *w,
@@ -585,9 +707,16 @@ public:
                             unsigned replication_index = 0);
 
   /**
-   * Write to a RemoteBuffer object from a user space pointer \p w.
-   * This can be useful when we run larger models with host side
-   * reductions since HEXOPT is currently limited to 128 MB.
+   * Copy from a user buffer to a remote buffer.
+   *
+   * This can be useful when we run larger models with host side reductions
+   * since HEXOPT is currently limited to 128 MB.
+   *
+   * \param w Pointer to a user buffer to copy from.
+   * \param buffer The remote buffer to copy to.
+   * \param repeat_index The index in the remote buffer to copy to.
+   * \param replication_index The replicated graph index when using replicated
+   * graphs. Default=0.
    */
   void copyToRemoteBuffer(void *w,
                           const std::string &buffer,
