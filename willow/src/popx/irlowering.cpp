@@ -710,7 +710,7 @@ TaskId IrLowering::taskWhichPopulates(TensorId id) const {
 
 PriTask
 IrLowering::getDependencyFreeInitTensorCreatorTask(const TensorId &tensorID) {
-  const Tensor *tensor = ir().getTensor(tensorID);
+  Tensor *tensor = ir().getTensor(tensorID);
   return initTensorTask(
       getInitTensorCreators(tensor, RequireParallelWritable::Yes, true));
 }
@@ -1042,9 +1042,9 @@ IrLowering::getTensorCreators(const Tensor *tensor, bool dependencyFree) const {
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
 InitTensorPtrs IrLowering::getInitTensorCreators(
-    const Tensor *tensor,
+    Tensor *tensor,
     RequireParallelWritable requireParallelWritable,
-    bool dependencyFree) const {
+    bool dependencyFree) {
   auto candidates = getTensorCreators(tensor, dependencyFree);
 
   // 1. A unique candidate creator will create the tensor
@@ -1081,6 +1081,9 @@ InitTensorPtrs IrLowering::getInitTensorCreators(
 
       auto &tracer = getReplicatedTensorShardingBundle()
                          .getReplicatedTensorShardingTracer();
+      if (!tracer.hasGroup(tensor->id)) {
+        tracer.trace({tensor});
+      }
       auto group = tracer.getGroup(tensor->id);
 
       InitTensorPtrs creators;

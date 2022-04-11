@@ -237,9 +237,9 @@ private:
   // having been created. This can be (sparingly) used to resolve cyclic
   // dependencies
   InitTensorPtrs
-  getInitTensorCreators(const Tensor *,
+  getInitTensorCreators(Tensor *,
                         RequireParallelWritable requireParallelWritable,
-                        bool dependencyFree = false) const;
+                        bool dependencyFree = false);
 
   // Task to create a snap::Tensor with methods defined by InitTensorPtrs
   PriTask initTensorTask(InitTensorPtrs inits);
