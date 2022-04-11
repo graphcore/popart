@@ -4,12 +4,14 @@
 #include <snap/popops/ElementWise.hpp>
 #include <poplin/MatMul.hpp>
 #include <popops/ElementWise.hpp>
+#include <popops/Fill.hpp>
 #include <popops/Pad.hpp>
 #include <popops/Zero.hpp>
 
 #include <popart/logging.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/popx/op/resizex.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
 namespace popart {
@@ -485,28 +487,40 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
                                             const snap::Tensor &input,
                                             int dimension,
                                             float scale) const {
-  auto slices = split(input, dimension);
 
-  std::map<int, snap::Tensor> resultMap;
-  for (int i = 0; i < slices.size(); i++) {
-    int idx = static_cast<int>(std::floor(i * scale));
-    if (resultMap.find(idx) == resultMap.end()) {
-      resultMap[idx] = slices[i];
-    } else {
-      resultMap[idx] = snap::popops::map(graph(),
-                                         popops::expr::BinaryOpType::ADD,
-                                         resultMap[idx],
-                                         slices[i],
-                                         prog,
-                                         debugContext());
-    }
-  }
+  auto &op      = getOp<ResizeGradOp>();
+  auto outShape = op.outShape(ResizeGradOp::getOutIndex());
+  auto one      = graph().getPoplarGraph().addConstant(
+      input.elementType(), {}, 1.0f, debugContext("const_one"));
+  graph().getPoplarGraph().setTileMapping(one, 0);
 
-  std::vector<snap::Tensor> toConcat;
-  for (int i = 0; i < resultMap.size(); i++) {
-    toConcat.push_back(resultMap.at(i));
+  std::vector<size_t> resultShape = input.shape();
+  resultShape.at(dimension)       = outShape.at(dimension);
+  auto size                       = input.getPoplarTensor().dim(dimension);
+  auto result                     = graph().addLinearlyMappedVariable(input.elementType(),
+                                    resultShape,
+                                    debugContext("reduceDimResult"));
+  popops::fill(graph().getPoplarGraph(),
+               result.getPoplarTensor(),
+               prog.getPoplarSequence(),
+               0.0f,
+               debugContext("resultFill"));
+  std::vector<unsigned int> offsets;
+  offsets.reserve(size);
+  for (int i = 0; i < size; i++) {
+    offsets.push_back(static_cast<unsigned int>(std::floor(i * scale)));
   }
-  return snap::concat(toConcat, dimension);
+  popops::multiUpdateAdd(graph().getPoplarGraph(),
+                         result.getPoplarTensor(),
+                         input.getPoplarTensor()
+                             .dimRoll(static_cast<unsigned>(dimension))
+                             .expand({static_cast<unsigned>(dimension + 1)}),
+                         offsets,
+                         one,
+                         static_cast<size_t>(dimension),
+                         prog.getPoplarSequence(),
+                         debugContext("reduceDimAdd"));
+  return result;
 }
 
 snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
@@ -516,10 +530,9 @@ snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
                                          float scale) const {
   auto slices = split(input, dimension);
   auto paddingTensor =
-      graph().addVariable(input.elementType(),
-                          slices.at(0).shape(),
-                          poplar::VariableMappingMethod::LINEAR,
-                          debugContext());
+      graph().addLinearlyMappedVariable(input.elementType(),
+                                        slices.at(0).shape(),
+                                        debugContext());
   popops::zero(graph().getPoplarGraph(),
                paddingTensor.getPoplarTensor(),
                prog.getPoplarSequence(),
