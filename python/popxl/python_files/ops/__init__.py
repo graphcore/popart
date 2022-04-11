@@ -33,7 +33,7 @@ from .logical_not import logical_not
 from .logical_or import logical_or
 from .logsum import logsum
 from .logsumexp import logsumexp
-from .matmul import matmul, SerialiseMode
+from .matmul import matmul
 from .max import max
 from .mean import mean
 from .median import median
@@ -148,7 +148,6 @@ __all__ = [
     "logsumexp",
     # matmul.py
     "matmul",
-    "SerialiseMode",
     # max.py
     "max",
     # mean.py
