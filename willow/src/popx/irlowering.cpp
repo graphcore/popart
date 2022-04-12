@@ -3768,9 +3768,6 @@ PriTask IrLowering::initBatchCounterTensorsTask(snap::program::Sequence &sq) {
 
       getConst(graph(), poplar::INT, {}, N, "batchCounter");
 
-      snap::poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
-      snap::poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
-
       // Set the initial values of the tensors_.
       popops::zero(graph().getPoplarGraph(),
                    batchCountingTensors[N].getPoplarTensor(),
