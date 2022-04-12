@@ -66,8 +66,8 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
-  auto zero = getScalarVariable(in.elementType(), "zero").getPoplarTensor();
-  graph().getPoplarGraph().setInitialValue(zero, 0);
+  auto zero = getScalarVariable(in.elementType(), "zero");
+  graph().getPoplarGraph().setInitialValue(zero.getPoplarTensor(), 0);
 
   // Create an 0'ed tensor to be a tensor of the right size
   auto output = zero;
@@ -80,8 +80,9 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // Copy the zero-view tensor into a new tensor and remap
-  auto outTensor = cloneNcopy(prog, snap::Tensor{output, graph()});
-  snap::poputil::mapTensorLinearly(graph(), outTensor);
+  auto outTensor = graph().addLinearlyMappedVariable(
+      output.elementType(), output.shape(), debugContext());
+  prog.add(snap::program::Copy(output, outTensor, false, debugContext()));
 
   // Create a subsample view of the output
   auto ss_output = subsample(outTensor, gradOp.strides_u32());

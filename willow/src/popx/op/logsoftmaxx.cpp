@@ -40,8 +40,8 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
                       g.getTarget().getNumWorkerContexts();
 
     // Create the tensor.
-    outTensor = g.clone(t, d, poplar::TensorCloneMethod::CREATE_NEW_ORDER);
-    snap::poputil::mapTensorLinearly(g, outTensor, 0, grain_size);
+    outTensor = g.addLinearlyMappedVariable(
+        t.elementType(), t.shape(), 0, grain_size, d);
 
     // Copy the values to it.
     p.add(snap::program::Copy(t,
