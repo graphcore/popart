@@ -222,11 +222,14 @@ Data flow
 .. doxygenenum:: popart::AnchorReturnTypeId
 
 .. doxygenclass:: popart::AnchorReturnType
-   :members:
+   :members: AnchorReturnType, str, tileSet, exchangeStrategy
+
 
 .. doxygenclass:: popart::DataFlow
-   :members:
+   :members: DataFlow, setBatchesPerStep
 
+.. doxygenclass:: popart::InputSettings
+   :members:
 
 Device manager
 --------------
