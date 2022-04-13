@@ -410,8 +410,7 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
 
   auto device = popart::createTestDevice(TestDeviceType::Hw);
 
-  auto opts          = SessionOptions();
-  opts.compileEngine = false;
+  auto opts = SessionOptions();
 
   // training info
   auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
@@ -433,7 +432,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
   const auto &executable           = session->getExecutable();
   {
     std::ofstream out(executablePath);
-    popx::serialization::serializeEngineExecutable(out, session->getDevice());
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -476,7 +476,6 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
   auto opts                       = SessionOptions();
   opts.enableGradientAccumulation = true;
   opts.accumulationFactor         = 10;
-  opts.compileEngine              = false;
 
   // training info
   auto optimizer = Adam(
@@ -511,7 +510,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
   const auto &executable           = session->getExecutable();
   {
     std::ofstream out(executablePath);
-    popx::serialization::serializeEngineExecutable(out, session->getDevice());
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -551,7 +551,6 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
   auto opts                       = SessionOptions();
   opts.enableGradientAccumulation = true;
   opts.accumulationFactor         = 10;
-  opts.compileEngine              = false;
 
   // training info
   auto optimizer = Adam(
@@ -586,7 +585,8 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize_adam_pre_prepared_ir) {
   const auto &executable           = session->getExecutable();
   {
     std::ofstream out(executablePath);
-    popx::serialization::serializeEngineExecutable(out, session->getDevice());
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -632,7 +632,6 @@ BOOST_AUTO_TEST_CASE(
   auto opts                       = SessionOptions();
   opts.enableGradientAccumulation = true;
   opts.accumulationFactor         = 10;
-  opts.compileEngine              = false;
 
   // training info
   auto optimizer = Adam(
@@ -667,7 +666,8 @@ BOOST_AUTO_TEST_CASE(
   const auto &executable           = session->getExecutable();
   {
     std::ofstream out(executablePath);
-    popx::serialization::serializeEngineExecutable(out, session->getDevice());
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {
@@ -803,7 +803,6 @@ BOOST_AUTO_TEST_CASE(
   opts.virtualGraphMode              = VirtualGraphMode::ExecutionPhases;
   opts.explicitRecomputation         = true;
   opts.executionPhaseSettings.phases = 2;
-  opts.compileEngine                 = false;
 
   // training info
   float learnRate = 0.321;
@@ -828,7 +827,8 @@ BOOST_AUTO_TEST_CASE(
   const auto &executable           = session->getExecutable();
   {
     std::ofstream out(executablePath);
-    popx::serialization::serializeEngineExecutable(out, session->getDevice());
+    popx::serialization::serializeEngineExecutable(
+        out, nullptr, &executable, 0);
   }
 
   {

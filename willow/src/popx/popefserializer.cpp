@@ -46,13 +46,8 @@ namespace popx {
 namespace serialization {
 namespace {
 
-using RngStateBufferType = std::map<uint16_t, std::vector<uint32_t>>;
-
 const std::string popartOpaqueName("popart");
 
-/**
- * \return \c popef::DataType casted from \c popart::DataType.
- */
 popef::DataType toPopefDataType(popart::DataType type) {
   switch (type) {
   case popart::DataType::BOOL:
@@ -86,15 +81,10 @@ popef::DataType toPopefDataType(popart::DataType type) {
   }
 }
 
-/**
- * \param deviceInfo Represents a target device of the model.
- * \return The ipu version that has been declared by the user for compilation
- *         the model.
- */
-int getIpuVersion(const DeviceInfo &deviceInfo) {
+int getIpuVersion(const IrLowering &ir_lowering) {
   const std::string targetArchStr = "ipu";
   const std::string archVersionStr =
-      deviceInfo.getTarget().getTargetArchString();
+      ir_lowering.getDeviceInfo()->getTarget().getTargetArchString();
   const size_t pos           = archVersionStr.find(targetArchStr);
   const bool ipuIsUsed       = pos != std::string::npos;
   const size_t ipuVersionPos = ipuIsUsed ? pos + targetArchStr.size() : pos;
@@ -103,30 +93,20 @@ int getIpuVersion(const DeviceInfo &deviceInfo) {
     const std::string ipuVersionStr = archVersionStr.substr(ipuVersionPos);
     return std::atoi(ipuVersionStr.c_str());
   } catch (...) {
-    throw error("Cannot get ipu version from target architecture string {}"
+    throw error("Cannot get ipu version from target architecture string " +
+                archVersionStr +
                 ". Expected the target architecture string to contain a "
-                "substring of the form ^ipu[digits]$",
-                archVersionStr);
+                "substring of the form ^ipu[digits]$");
   }
 }
 
-/**
- * \param deviceInfo Represents a target device of the model.
- * \return The information if the target runtime system is POD.
- */
-bool isPOD(const DeviceInfo &deviceInfo) {
+bool isPOD(const IrLowering &ir_lowering) {
   const std::string targetSystemStr = "POD";
   const std::string systemVersionStr =
-      deviceInfo.getTarget().getTargetSystemString();
+      ir_lowering.getDeviceInfo()->getTarget().getTargetSystemString();
   return systemVersionStr.find(targetSystemStr) != std::string::npos;
 }
 
-/**
- * \param optFlags A set of option and value
- *        string flags.
- * \return vector of \c popef::Option casted from vector of
- *         \c poplar::OptionFlags.
- */
 std::vector<popef::Option>
 convertOptionFlagsToOptions(const poplar::OptionFlags &optFlags) {
   std::vector<popef::Option> opts;
@@ -139,66 +119,35 @@ convertOptionFlagsToOptions(const poplar::OptionFlags &optFlags) {
   return opts;
 }
 
-/**
- * \param dt The tensor data type.
- * \param shape The tensor shape.
- * \return Creates \c popef::TensorInfo
- */
-popef::TensorInfo createTensorInfo(const popef::DataType dt,
-                                   const std::vector<int64_t> &shape) {
+popef::TensorInfo createTensorInfo(const popart::Tensor &tensor) {
   popef::TensorInfo tensorInfo;
-  tensorInfo.setDataType(dt);
-  tensorInfo.setShape(shape);
+  tensorInfo.setDataType(
+      toPopefDataType(tensor.info.getDataTypeInfo()->type()));
+  tensorInfo.setShape(tensor.info.shape());
   return tensorInfo;
 }
 
-/**
- * \param info Object that contains information about tensor.
- * \return \c popef::TensorInfo casted from \c popart::TensorInfo.
- */
-popef::TensorInfo createTensorInfo(const popart::TensorInfo &info) {
-  popef::TensorInfo tensorInfo;
-  const popef::DataType dt = toPopefDataType(info.getDataTypeInfo()->type());
-  return createTensorInfo(dt, info.shape());
-}
-
-/**
- * Creates \c popef::Anchor and inserts it to anchors vector
- * in \c popef::Metadata.
- *
- * \param name Tensor name.
- * \param handle A string key that connects the callback with the tensor.
- * \param isPerReplica Information if this tensor should have separate
- *                     data for each replica
- * \param tensorType Information if this is input or output tensor.
- * \param TensorInfo Object that contains information about tensor.
- * \param metadata Data needed to run a model using Model Runtime.
- * \return \c popef::Anchor that was inserted to the \c popef::Metadata.
- */
-popef::Anchor putAnchorToMetadata(const std::string &name,
-                                  const PopStreamId &handle,
-                                  const bool isPerReplica,
-                                  const popef::TensorType tensorType,
-                                  const popef::TensorInfo &tensorInfo,
-                                  popef::Metadata &metadata) {
+const popef::Anchor &putAnchorToMetadata(const popart::Tensor &tensor,
+                                         const bool isPerReplica,
+                                         const popef::TensorType tensorType,
+                                         nonstd::optional<bool> isAnchorStream,
+                                         popef::Metadata &metadata) {
   popef::Anchor anchor;
-  anchor.setName(name);
-  anchor.setHandle(handle);
-  anchor.setTensorInfo(tensorInfo);
+  anchor.setName(tensor.id);
+  anchor.setTensorInfo(createTensorInfo(tensor));
   anchor.setIsPerReplica(isPerReplica);
   anchor.setType(tensorType);
+
+  if (tensorType == popef::TensorType::INPUT) {
+    anchor.setHandle(IrLowering::h2dId(tensor.id));
+  } else if (tensorType == popef::TensorType::OUTPUT) {
+    anchor.setHandle(IrLowering::d2hId(tensor.id, *isAnchorStream));
+  }
 
   metadata.anchors().push_back(anchor);
   return metadata.anchors().back();
 }
 
-/**
- * Serializes content of the tensor to the popef file as TensorBlob.
- *
- * \param tensor Popart tensor.
- * \param tensorInfo Object that contains information about tensor.
- * \param writer Write popef blobs to a given stream.
- */
 void serializePopefTensor(const popart::Tensor &tensor,
                           const popef::TensorInfo &tensorInfo,
                           popef::Writer &writer) {
@@ -213,80 +162,10 @@ void serializePopefTensor(const popart::Tensor &tensor,
   tensorWriter->stream.write(dataPtr, tensor.info.nbytes());
 }
 
-/**
- * Serializes content of the rng state buffer to the popef file
- * as TensorBlob.
- *
- * \param tensorName The rng state buffer name.
- * \param repFactor Number of replicas.
- * \param dt The element data type of rng state buffer.
- * \param shape The rng state bufffer shape.
- * \param rngBuffer Content of rng state buffer for all replicas.
- * \param writer Write popef blobs to a given stream.
- * \return Info if buffer was serialized.
- */
-bool serializeRngStateAsPopefTensor(const std::string &tensorName,
-                                    const int repFactor,
-                                    const popef::DataType dt,
-                                    const popart::Shape &shape,
-                                    const RngStateBufferType &rngBuffer,
-                                    popef::Writer &writer) {
-  if (!rngBuffer.empty()) {
-    if (rngBuffer.size() != repFactor) {
-      throw error("RNG State buffer does not have data for all replicas. "
-                  "Devicex did not allocate data for all replicas.");
-    }
-
-    popart::Shape shapeWithReplicas(shape);
-    shapeWithReplicas.insert(shapeWithReplicas.begin(), repFactor);
-
-    popef::TensorDataInfo tensorDataInfo;
-    tensorDataInfo.setName(tensorName);
-    tensorDataInfo.setTensorInfo(createTensorInfo(dt, shapeWithReplicas));
-    const int64_t nbytes = tensorDataInfo.tensorInfo().sizeInBytes();
-    std::shared_ptr<popef::BlobWriter> tensorWriter =
-        writer.createTensorData(tensorDataInfo);
-
-    for (int i = 0; i < repFactor; i++) {
-      const auto rngStateIt = rngBuffer.find(i);
-      if (rngStateIt == rngBuffer.end()) {
-        throw error("RNGState data for replica {} does not exist. Devicex "
-                    "should allocate it.",
-                    i);
-      }
-      try {
-        const char *dataPtr =
-            reinterpret_cast<const char *>(rngStateIt->second.data());
-        tensorWriter->stream.write(dataPtr, nbytes / repFactor);
-      } catch (...) {
-        throw error("RNGState data for replica {} does not have enough data.",
-                    i);
-      }
-    }
-
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Serializes weights as popef anchors(metadata about in or out tensors) and its
- * data as TensorBlobs.
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializeWeightsAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    popef::Metadata &metadata,
-    popef::Writer &writer) {
-  const auto &ir = executablex.lowering().ir();
-
-  for (auto *tensor : executablex.getWeightTensors()) {
+void serializePopefAnchors(const popart::popx::Executablex &popartMetadata,
+                           popef::Metadata &metadata,
+                           popef::Writer &writer) {
+  for (auto *tensor : popartMetadata.getWeightTensors()) {
     if (tensor->hasProducer()) {
       throw error("Weights are tensors of variable type that do not"
                   "have producers.");
@@ -294,306 +173,82 @@ void serializeWeightsAsPopefAnchors(
 
     static constexpr bool isPerReplica   = false;
     static constexpr bool isAnchorStream = false;
-    const popef::TensorInfo tensorInfo   = createTensorInfo(tensor->info);
+    const popef::Anchor *anchor_ptr      = nullptr;
 
+    auto &ir = popartMetadata.lowering().ir();
     if (!ir.streamingIsDisabledForTensor(tensor)) {
-      // Tensor has to be handled as an input and output stream
-      // as there are programs responsible for loading and storing
-      // weights.
-      const popef::Anchor anchor =
-          putAnchorToMetadata(tensor->id,
-                              IrLowering::h2dId(tensor->id),
-                              isPerReplica,
-                              popef::TensorType::INPUT,
-                              tensorInfo,
-                              metadata);
-      putAnchorToMetadata(tensor->id,
-                          IrLowering::d2hId(tensor->id, isAnchorStream),
+      // Tensor has to be handled as an input and output stream.
+      // Add the input anchor
+      putAnchorToMetadata(*tensor,
                           isPerReplica,
-                          popef::TensorType::OUTPUT,
-                          tensorInfo,
+                          popef::TensorType::INPUT,
+                          nonstd::nullopt,
                           metadata);
-      serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
+      // Add the output anchor
+      anchor_ptr = &putAnchorToMetadata(*tensor,
+                                        isPerReplica,
+                                        popef::TensorType::OUTPUT,
+                                        isAnchorStream,
+                                        metadata);
     } else {
-      const popef::Anchor anchor =
-          putAnchorToMetadata(tensor->id,
-                              "",
-                              isPerReplica,
-                              popef::TensorType::UNKNOWN,
-                              tensorInfo,
-                              metadata);
-      serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
+      anchor_ptr = &putAnchorToMetadata(*tensor,
+                                        isPerReplica,
+                                        popef::TensorType::UNKNOWN,
+                                        nonstd::nullopt,
+                                        metadata);
     }
+    serializePopefTensor(*tensor, anchor_ptr->tensorInfo(), writer);
   }
-}
 
-/**
- * Serializes optimizer tensors as popef anchors(metadata about in or out
- * tensor) and its data as TensorBlobs. Note: The optimizer parameter tensors
- * are e.g. learning rate(s), momentum(s), weight decay factor(s), loss scaling.
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializeOptimizersAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    popef::Metadata &metadata,
-    popef::Writer &writer) {
-  for (auto *tensor : executablex.getOptimizerTensors()) {
-    static constexpr bool isPerReplica = false;
-    const popef::Anchor anchor =
-        putAnchorToMetadata(tensor->id,
-                            IrLowering::h2dId(tensor->id),
-                            isPerReplica,
-                            popef::TensorType::INPUT,
-                            createTensorInfo(tensor->info),
-                            metadata);
-    serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
-  }
-}
-
-/**
- * Serializes data stream(user inputs) tensors as popef anchors(metadata about
- * in or out tensors).
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- */
-void serializeDataStreamsAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    popef::Metadata &metadata) {
-  for (Tensor *tensor : executablex.getDataStreamTensors()) {
-    static constexpr bool isPerReplica = true;
-    putAnchorToMetadata(tensor->id,
-                        IrLowering::h2dId(tensor->id),
-                        isPerReplica,
-                        popef::TensorType::INPUT,
-                        createTensorInfo(tensor->info),
-                        metadata);
-  }
-}
-
-/**
- * Serializes anchor(outputs) tensors as popef anchors(metadata about in or out
- * tensor).
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- */
-void serializeAnchorsAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    popef::Metadata &metadata) {
-  for (Tensor *tensor : executablex.getAnchorTensors()) {
+  for (Tensor *tensor : popartMetadata.getAnchorTensors()) {
     static constexpr bool isPerReplica   = true;
     static constexpr bool isAnchorStream = true;
-    putAnchorToMetadata(tensor->id,
-                        IrLowering::d2hId(tensor->id, isAnchorStream),
+    putAnchorToMetadata(*tensor,
                         isPerReplica,
                         popef::TensorType::OUTPUT,
-                        createTensorInfo(tensor->info),
+                        isAnchorStream,
                         metadata);
   }
-}
 
-/**
- * Serializes rng state buffer as popef anchors(metadata about in or out
- * tensor) and its data as TensorBlobs.
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializeRngStateAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    const RngStateBufferType &rngBuffer,
-    popef::Metadata &metadata,
-    popef::Writer &writer) {
-  static constexpr bool isPerReplica      = true;
-  static constexpr const char *tensorName = "rngStateTensor";
-  const int repFactor                     = metadata.replicationFactor();
-
-  const auto &ir         = executablex.lowering().ir();
-  const auto *deviceInfo = executablex.lowering().getDeviceInfo();
-
-  const popef::DataType dt = popef::DataType::U32;
-  const std::vector<size_t> tensorShape =
-      RngStateLowering::getCombinedRngStateTensorShape(deviceInfo->getTarget());
-  const popart::Shape shape(tensorShape.begin(), tensorShape.end());
-  const popef::TensorInfo tensorInfo = createTensorInfo(dt, shape);
-
-  // Tensor has to be handled as an input and output stream
-  // as there are programs responsible for loading and storing
-  // rng state.
-  putAnchorToMetadata(tensorName,
-                      IrLowering::h2dId(tensorName),
-                      isPerReplica,
-                      popef::TensorType::INPUT,
-                      tensorInfo,
-                      metadata);
-  putAnchorToMetadata(tensorName,
-                      std::string("d2h_") + tensorName,
-                      isPerReplica,
-                      popef::TensorType::OUTPUT,
-                      tensorInfo,
-                      metadata);
-
-  const bool serializationResult = serializeRngStateAsPopefTensor(
-      tensorName, repFactor, dt, shape, rngBuffer, writer);
-  if (!serializationResult) {
-    std::string warningMessage = "Rng state buffer was not serialized.";
-    if (deviceInfo->getType() == DeviceType::OfflineIpu) {
-      warningMessage += "You used \"enableLoadAndOffloadRNGState\" option and "
-                        "\"OfflineIPU\" mode during compilation.";
-    } else if (!ir.getSessionOptions().compileEngine)
-      warningMessage += "You did not compile poplar Engine.";
-    else {
-      warningMessage += "You did not load poplar Engine.";
-    }
-    warningMessage =
-        "Remember that if you would like to run the model using the model "
-        "runtime then you have to create your own buffer and callback in your "
-        "model runtime application for {}.";
-    logging::session::warn(warningMessage, tensorName);
-  }
-}
-
-/**
- * Serializes random related tensors and buffers(random seed, rng state) as
- * popef anchors(metadata about in or out tensors) and its data as TensorBlobs.
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param rngBuffer Content of rng state buffer for all replicas.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializeRandomTensorsAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    const RngStateBufferType &rngBuffer,
-    popef::Metadata &metadata,
-    popef::Writer &writer) {
-  const auto &ir = executablex.lowering().ir();
-
-  if (ir.getRequiresRandomSeed() && !ir.useSyntheticData()) {
-    if (executablex.getSeedTensor() == nullptr) {
-      throw error("Seed tensor does not exist.");
-    }
-
-    // Tensor has to be handled as an input and output stream
-    // as there are programs responsible for loading and storing
-    // random seed.
+  if (popartMetadata.getSeedTensor() != nullptr) {
     static constexpr bool isPerReplica = false;
-    const popart::Tensor &tensor       = *executablex.getSeedTensor();
-    const popef::TensorInfo tensorInfo = createTensorInfo(tensor.info);
-    const popef::Anchor anchor =
-        putAnchorToMetadata(tensor.id,
-                            IrLowering::h2dId(tensor.id),
+    const popef::Anchor &anchor =
+        putAnchorToMetadata(*popartMetadata.getSeedTensor(),
                             isPerReplica,
                             popef::TensorType::INPUT,
-                            tensorInfo,
+                            nonstd::nullopt,
                             metadata);
     metadata.setSeedHandle(anchor.handle());
-    putAnchorToMetadata(tensor.id,
-                        "d2h_randomSeed",
-                        isPerReplica,
-                        popef::TensorType::OUTPUT,
-                        tensorInfo,
-                        metadata);
-
-    serializePopefTensor(tensor, anchor.tensorInfo(), writer);
-
-    if (ir.getSessionOptions().enableLoadAndOffloadRNGState) {
-      serializeRngStateAsPopefAnchors(executablex, rngBuffer, metadata, writer);
-    }
+    serializePopefTensor(
+        *popartMetadata.getSeedTensor(), anchor.tensorInfo(), writer);
   }
-}
 
-/**
- * Serializes cycle counters(tensors that contains e.g. the number of device
- * cycles (of a single tile, on a single IPU) that your main program takes to
- * execute.) as popef anchors(metadata about in or out tensors).
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param metadata Data needed to run a model using Model Runtime.
- */
-void serializeCycleCountersAsPopefAnchors(
-    const popart::popx::Executablex &executablex,
-    popef::Metadata &metadata) {
-  const auto &ir = executablex.lowering().ir();
+  for (auto *tensor : popartMetadata.getOptimizerTensors()) {
+    static constexpr bool isPerReplica = false;
+    const popef::Anchor &anchor        = putAnchorToMetadata(*tensor,
+                                                      isPerReplica,
+                                                      popef::TensorType::INPUT,
+                                                      nonstd::nullopt,
+                                                      metadata);
+    serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
+  }
 
-  if (ir.getSessionOptions().instrumentWithHardwareCycleCounter) {
+  for (Tensor *tensor : popartMetadata.getDataStreamTensors()) {
     static constexpr bool isPerReplica = true;
-    const auto cycleCountIds = executablex.lowering().getCycleCountIds();
-    const popef::DataType dt = popef::DataType::U64;
-    const popart::Shape shape(1, 0);
-    for (const auto &tid : cycleCountIds) {
-      putAnchorToMetadata(tid,
-                          IrLowering::cycleCountStreamId(tid),
-                          isPerReplica,
-                          popef::TensorType::OUTPUT,
-                          createTensorInfo(dt, shape),
-                          metadata);
-    }
+    putAnchorToMetadata(*tensor,
+                        isPerReplica,
+                        popef::TensorType::INPUT,
+                        nonstd::nullopt,
+                        metadata);
   }
 }
 
-/**
- * Serializes needed tensors to the popef file from popart program data.
- * It serializes metadata related to these tensors(anchors in popef metadata)
- * and tensor contents(if needed) as tensor blobs.
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param rngBuffer Content of rng state buffer for all replicas.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializePopefAnchors(const popart::popx::Executablex &executablex,
-                           const RngStateBufferType &rngBuffer,
-                           popef::Metadata &metadata,
-                           popef::Writer &writer) {
-  serializeWeightsAsPopefAnchors(executablex, metadata, writer);
-  serializeOptimizersAsPopefAnchors(executablex, metadata, writer);
-  serializeDataStreamsAsPopefAnchors(executablex, metadata);
-  serializeAnchorsAsPopefAnchors(executablex, metadata);
-  serializeRandomTensorsAsPopefAnchors(
-      executablex, rngBuffer, metadata, writer);
-  serializeCycleCountersAsPopefAnchors(executablex, metadata);
-}
-
-/**
- * Serializes needed data to run poplar executable created by popart
- * using Model Runtime. Data mainly comes from executablex object with
- * one minor exception: rngBuffer which comes from devicex object.
- * This includes: popef::Metadata, tensor blobs(content of the tensors).
- *
- * \param executablex The final executable which contains all the data, metadata
- *                    and configuration parameters necessary to start running
- *                    the program on the device.
- * \param rngBuffer Content of rng state buffer for all replicas.
- * \param metadata Data needed to run a model using Model Runtime.
- * \param writer Write popef blobs to a given stream.
- */
-void serializePopefMetadata(const popart::popx::Executablex &executablex,
-                            const RngStateBufferType &rngBuffer,
+void serializePopefMetadata(const popart::popx::Executablex &popartMetadata,
                             const std::string &programHash,
                             popef::Writer &writer) {
-  const auto &ir_lowering = executablex.lowering();
-  const auto &ir          = ir_lowering.ir();
-  const auto &opts        = ir.getSessionOptions();
+  auto &ir_lowering = popartMetadata.lowering();
+  auto &ir          = ir_lowering.ir();
+  auto &opts        = ir.getSessionOptions();
 
   const bool isInference =
       ir.getExecutionMode() == Ir::ExecutionMode::Inference;
@@ -603,9 +258,9 @@ void serializePopefMetadata(const popart::popx::Executablex &executablex,
   popef::Metadata metadata;
   metadata.setReplicationFactor(ir_lowering.getReplicationFactor());
   metadata.setNumIpus(ir_lowering.getDeviceInfo()->getNumIpus());
-  metadata.setIpuVersion(getIpuVersion(*ir_lowering.getDeviceInfo()));
+  metadata.setIpuVersion(getIpuVersion(ir_lowering));
   metadata.setExecutable(programHash);
-  metadata.setIsPOD(isPOD(*ir_lowering.getDeviceInfo()));
+  metadata.setIsPOD(isPOD(ir_lowering));
   metadata.setNumProcesses(numProcs);
   metadata.setIsInference(isInference);
   metadata.setEngineOptions(
@@ -613,70 +268,56 @@ void serializePopefMetadata(const popart::popx::Executablex &executablex,
   metadata.setDeviceOptions(convertOptionFlagsToOptions(
       ir_lowering.getDeviceInfo()->getOptionFlags()));
 
-  serializePopefAnchors(executablex, rngBuffer, metadata, writer);
-
-  std::vector<int64_t> loadPrograms{
-      PopPrograms::ProgramIndex::WeightsFromHost,
-      PopPrograms::ProgramIndex::OptimizerFromHost};
-  std::vector<int64_t> mainPrograms{PopPrograms::ProgramIndex::Program};
-  std::vector<int64_t> savePrograms{PopPrograms::ProgramIndex::WeightsToHost};
-
-  if (!metadata.seedHandle().empty()) {
-    loadPrograms.push_back(PopPrograms::ProgramIndex::RandomSeedFromHost);
-    savePrograms.push_back(PopPrograms::ProgramIndex::RandomSeedToHost);
-
-    if (ir.getSessionOptions().enableLoadAndOffloadRNGState) {
-      loadPrograms.push_back(PopPrograms::ProgramIndex::RngStateFromHost);
-      savePrograms.push_back(PopPrograms::ProgramIndex::RngStateToHost);
-    }
-  }
-
-  if (ir.getSessionOptions().instrumentWithHardwareCycleCounter) {
-    savePrograms.push_back(PopPrograms::ProgramIndex::CycleCountTensorToHost);
-  }
+  serializePopefAnchors(popartMetadata, metadata, writer);
 
   popef::ProgramFlow flow;
-  flow.setLoad(loadPrograms);
-  flow.setMain(mainPrograms);
-  flow.setSave(savePrograms);
+  flow.setLoad({PopPrograms::ProgramIndex::WeightsFromHost,
+                PopPrograms::ProgramIndex::OptimizerFromHost,
+                PopPrograms::ProgramIndex::RandomSeedFromHost,
+                PopPrograms::ProgramIndex::RngStateFromHost});
+  flow.setMain({PopPrograms::ProgramIndex::Program});
+  flow.setSave({PopPrograms::ProgramIndex::WeightsToHost,
+                PopPrograms::ProgramIndex::RandomSeedToHost,
+                PopPrograms::ProgramIndex::RngStateToHost,
+                PopPrograms::ProgramIndex::CycleCountTensorToHost});
   metadata.setProgramFlow(flow);
 
   writer.write(metadata);
 }
 } // namespace
 
-/** To see description go to the function declaration. */
 void serializeEngineExecutable(std::ostream &out,
-                               const popart::popx::Devicex &device) {
-  const std::string programHash = std::to_string(device.ir().getHash());
+                               const poplar::Engine *poplarEngine,
+                               const popart::popx::Executablex *executable,
+                               size_t hash) {
+  const std::string programHash = std::to_string(hash);
   popef::Writer popefWriter(out);
 
-  // Export Popart specific data.
-  std::shared_ptr<popef::BlobWriter> popefOpaque =
-      popefWriter.createOpaqueBlob(popartOpaqueName, programHash);
-  serializePopartExecutable(popefOpaque->stream, device.executable_);
+  // Export Popart specific data
+  if (executable) {
+    std::shared_ptr<popef::BlobWriter> popefOpaque =
+        popefWriter.createOpaqueBlob(popartOpaqueName, programHash);
+    serializePopartExecutable(popefOpaque->stream, *executable);
 
-  try {
-    // Export popef metadata and tensor contents.
-    serializePopefMetadata(
-        device.executable_, device.rngBuffer, programHash, popefWriter);
-  } catch (const std::exception &e) {
-    logging::session::warn(
-        "Serializing popef metadata ended with failure due to {}. The popef "
-        "file cannot be used to run model using model_runtime",
-        e.what());
+    try {
+      serializePopefMetadata(*executable, programHash, popefWriter);
+    } catch (const std::exception &e) {
+      logging::session::warn(
+          "Serializing popef metadata ended with failure due to {}. The popef "
+          "file cannot be used to run model using model_runtime",
+          e.what());
+    }
   }
 
-  // Export Poplar engine's executable.
-  if (device.pEngine.get()) {
+  // Export Poplar engine's executable
+  if (poplarEngine) {
     static constexpr bool compress = false;
     std::shared_ptr<popef::BlobWriter> popefExe =
         popefWriter.createExecutable(programHash, compress);
-    device.pEngine.get()->serializeExecutable(popefExe->stream);
+    poplarEngine->serializeExecutable(popefExe->stream);
   }
 }
 
-/** Implementation of Reader class. */
 class ReaderImpl {
 public:
   template <typename T>
@@ -692,46 +333,35 @@ public:
   using TensorReaderIt = std::vector<popef::TensorReader>::const_iterator;
 
   ReaderImpl(std::shared_ptr<std::istream> in)
-      : popefReader(setupReader(in)), popartOpaque(findPopartOpaque()),
+      : popefReader(setupReader(in)), popartMetadata(findPopartMetadata()),
         poplarExecutable(findPoplarExecutable()),
         popefMetadata(findPopefMetadata()), tensorData(findPopefTensors()),
         hash(getExecutableHash()) {}
 
   popef::Reader popefReader;
-  const OpaqueReaderOpt popartOpaque;
+  const OpaqueReaderOpt popartMetadata;
   const ExecReaderOpt poplarExecutable;
   const MetadataOpt popefMetadata;
   const TensorReaderVec tensorData;
   const size_t hash;
 
 private:
-  /**
-   * Creates \c popef::Reader object and parses stream that contains
-   * popef file.
-   *
-   * \param in Stream to be parsed that contains popef file.
-   * \return Object of \c popef::Reader class with parsed popef stream.
-   */
   popef::Reader setupReader(std::shared_ptr<std::istream> in) {
     popef::Reader reader;
     reader.parseStream(in);
     return reader;
   }
 
-  /**
-   * \return Opaque blob which contains serialized popart specific data.
-   */
-  OpaqueReaderOpt findPopartOpaque() {
+  OpaqueReaderOpt findPopartMetadata() {
     auto popartOpaqueMatcher = [](const popef::OpaqueReader &opaque) {
       return opaque.name.find(popartOpaqueName) != std::string::npos;
     };
 
     const std::vector<popef::OpaqueReader> &opaques = popefReader.opaqueBlobs();
-    const int numOfMatchedPopartOpaques =
+    const int numOfMatchedPopartMetadata =
         std::count_if(opaques.begin(), opaques.end(), popartOpaqueMatcher);
-    if (numOfMatchedPopartOpaques > 1) {
-      throw error("The file contains more than one Popart related opaque in "
-                  "the popef file.");
+    if (numOfMatchedPopartMetadata > 1) {
+      throw error("Contains more than one Popart metadata");
     }
     OpaqueReaderIt opaqueIt =
         std::find_if(opaques.begin(), opaques.end(), popartOpaqueMatcher);
@@ -742,18 +372,15 @@ private:
     return opaqueReader;
   }
 
-  /**
-   * \return Poplar executable blob.
-   */
   ExecReaderOpt findPoplarExecutable() {
     const std::vector<popef::ExecutableReader> &execs =
         popefReader.executables();
 
     ExecReaderIt execIt = execs.end();
-    if (popartOpaque.has_value()) {
+    if (popartMetadata.has_value()) {
       auto poplarExecMatcher =
           [this](const popef::ExecutableReader &executable) {
-            return executable.name == popartOpaque->get().executable;
+            return executable.name == popartMetadata->get().executable;
           };
 
       const int numOfMatchedPoplarExecs =
@@ -780,21 +407,18 @@ private:
     return execReader;
   }
 
-  /**
-   * \return Popef metadata.
-   */
   MetadataOpt findPopefMetadata() {
     auto metadataMatcher = [this](const popef::Metadata &metadata) {
-      if (!popartOpaque.has_value())
+      if (!popartMetadata.has_value())
         return false;
-      return metadata.executable() == popartOpaque->get().executable;
+      return metadata.executable() == popartMetadata->get().executable;
     };
 
     const std::vector<popef::Metadata> &metadataVec = popefReader.metadata();
     const int numOfMatchedPopefMetadata =
         std::count_if(metadataVec.begin(), metadataVec.end(), metadataMatcher);
     if (numOfMatchedPopefMetadata > 1) {
-      throw error("The file contains more than one Popef metadata");
+      throw error("Contains more than one Popef metadata");
     }
     MetadataIt metadataIt =
         std::find_if(metadataVec.begin(), metadataVec.end(), metadataMatcher);
@@ -803,9 +427,6 @@ private:
     return metadataExists ? MetadataOpt(*metadataIt) : nonstd::nullopt;
   }
 
-  /**
-   * \return All tensor blobs associated with anchors from popef metadata.
-   */
   TensorReaderVec findPopefTensors() {
     auto tensorMatcher = [this](const popef::TensorReader &tensor) {
       if (!popefMetadata.has_value())
@@ -830,17 +451,13 @@ private:
     return tensors;
   }
 
-  /**
-   * \return The executable hash or 0 if the stream contains
-   *         corrupted data.
-   */
   size_t getExecutableHash() const {
     size_t hash = 0;
 
-    if (poplarExecutable.has_value() || popartOpaque.has_value()) {
+    if (poplarExecutable.has_value() || popartMetadata.has_value()) {
       const std::string &hashString = poplarExecutable.has_value()
                                           ? poplarExecutable->get().name
-                                          : popartOpaque->get().executable;
+                                          : popartMetadata->get().executable;
       std::stringstream ss(hashString);
       ss >> hash;
       if (ss.fail()) {
@@ -853,31 +470,25 @@ private:
   }
 };
 
-/** To see description go to the function declaration. */
 Reader::Reader(std::shared_ptr<std::istream> in)
     : _impl(std::make_unique<ReaderImpl>(in)) {}
 Reader::Reader(Reader &&reader) : _impl(std::move(reader._impl)) {}
 Reader::~Reader() = default;
 
-/** To see description go to the function declaration. */
 size_t Reader::readExecutableHash() const { return _impl->hash; }
 
-/** To see description go to the function declaration. */
 bool Reader::containsPoplarExecutable() const {
   return _impl->poplarExecutable.has_value();
 }
 
-/** To see description go to the function declaration. */
 bool Reader::containsExecutable() const {
-  return _impl->popartOpaque.has_value();
+  return _impl->popartMetadata.has_value();
 }
 
-/** To see description go to the function declaration. */
 bool Reader::containsPopefMetadata() {
   return _impl->popefMetadata.has_value();
 }
 
-/** To see description go to the function declaration. */
 poplar::Executable Reader::deserializePoplarExecutable() const {
   if (!containsPoplarExecutable()) {
     throw error("The file does not contain poplar executable.");
@@ -888,7 +499,6 @@ poplar::Executable Reader::deserializePoplarExecutable() const {
       exeReader.getStandaloneExecutableStream());
 }
 
-/** To see description go to the function declaration. */
 std::unique_ptr<popart::popx::Executablex>
 Reader::deserializeExecutable(popart::Ir &ir,
                               popart::popx::IrLowering &lowering) const {
@@ -896,12 +506,13 @@ Reader::deserializeExecutable(popart::Ir &ir,
     throw error("The file does not contain popart metadata.");
   }
 
-  const popef::OpaqueReader &opaqueReader = _impl->popartOpaque->get();
-  std::unique_ptr<std::istream> opaqueStream(
-      opaqueReader.getStandaloneDataStream());
-  auto executablex = deserializePopartExecutable(*opaqueStream, ir, lowering);
+  const popef::OpaqueReader &metadataReader = _impl->popartMetadata->get();
+  std::unique_ptr<std::istream> opaque_stream(
+      metadataReader.getStandaloneDataStream());
+  auto popartMetadata =
+      deserializePopartExecutable(*opaque_stream, ir, lowering);
 
-  return executablex;
+  return popartMetadata;
 }
 
 } // namespace serialization
