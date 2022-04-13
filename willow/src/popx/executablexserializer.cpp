@@ -530,9 +530,10 @@ void serializePopartExecutable(std::ostream &out,
           ir_lowering.getReplicationFactor());
 
       rearrangementBuilder.setTotalElementsPerReplica(
-          hostRearrangement.totalElementsPerReplica);
+          hostRearrangement.getTotalElementsPerReplica());
 
-      const auto &gatheredToRefSlices = hostRearrangement.gatheredToRefSlices;
+      const auto &gatheredToRefSlices =
+          hostRearrangement.getGatheredToRefSlices();
       auto gatheredToRefSlicesBuilder =
           rearrangementBuilder.initGatheredToRefSlices(
               gatheredToRefSlices.size());
@@ -679,16 +680,19 @@ deserializePopartExecutable(std::istream &in,
       auto rearrangementReader          = cbr.getRearrangement();
 
       gcl::CollectiveBalancedHostRearrangement cbhr;
-      cbhr.replicationFactor = rearrangementReader.getReplicationFactor();
-      cbhr.totalElementsPerReplica =
-          rearrangementReader.getTotalElementsPerReplica();
+      cbhr.setReplicationFactor(rearrangementReader.getReplicationFactor());
+      cbhr.setTotalElementsPerReplica(
+          rearrangementReader.getTotalElementsPerReplica());
 
-      auto gatheredToRefSlicesReader =
-          rearrangementReader.getGatheredToRefSlices();
-      cbhr.gatheredToRefSlices.reserve(gatheredToRefSlicesReader.size());
-      for (const auto s : gatheredToRefSlicesReader) {
-        cbhr.gatheredToRefSlices.push_back(
-            poplar::Interval(s.getBegin(), s.getEnd()));
+      {
+        auto gatheredToRefSlicesReader =
+            rearrangementReader.getGatheredToRefSlices();
+        std::vector<poplar::Interval> slices;
+        slices.reserve(gatheredToRefSlicesReader.size());
+        for (const auto s : gatheredToRefSlicesReader) {
+          slices.push_back(poplar::Interval(s.getBegin(), s.getEnd()));
+        }
+        cbhr.setGatheredToRefSlices(std::move(slices));
       }
 
       cbrHostRearrangements[cbrId] = cbhr;
