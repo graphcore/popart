@@ -34,7 +34,7 @@ from .logical_or import logical_or
 from .logsum import logsum
 from .logsumexp import logsumexp
 from .matmul import matmul
-from .max import max
+from .max import max, maximum
 from .mean import mean
 from .median import median
 from .min import min
@@ -55,6 +55,7 @@ from .scatter import scatter
 from .slice import slice, slice_
 from .softmax import softmax
 from .split import split
+from .sqrt import sqrt
 from .squeeze import squeeze
 from .sub import sub
 from .sum import sum
@@ -150,6 +151,7 @@ __all__ = [
     "matmul",
     # max.py
     "max",
+    "maximum",
     # mean.py
     "mean",
     # median.py
@@ -199,6 +201,8 @@ __all__ = [
     "softmax",
     # split.py
     "split",
+    # sqrt.py
+    "sqrt",
     # squeeze.py
     "squeeze",
     # sub.py

@@ -86,6 +86,8 @@ list(
   ${popart_op_headers_dir}/reduceprod.hpp
   ${popart_op_headers_dir}/reducesum.hpp
   ${popart_op_headers_dir}/reducesumsquare.hpp
+  ${popart_op_headers_dir}/max.hpp
+  ${popart_op_headers_dir}/sqrt.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
