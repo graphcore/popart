@@ -210,14 +210,8 @@ class Session:
             np.ndarray: The data for the tensor in question, with type and shape the same as the
             device tensor.
         """
-        if not isinstance(tensor, (Constant, Variable)):
-            raise TypeError(
-                f"Tensor {tensor.id} is not of type Constant or Variable. get_tensor_data is not"
-                "supported for this type.")
-        if isinstance(tensor, Variable):
-            self._pb_session.copyToTensorData()
 
-        return _popxl_to_numpy(tensor)
+        return self.get_tensors_data([tensor])[tensor]
 
     def get_tensors_data(self, tensors: Iterable[Union[Variable, Constant]]
                          ) -> Dict[Union[Constant, Variable], np.ndarray]:
@@ -233,10 +227,27 @@ class Session:
             Dict[Union[Constant, Variable], np.ndarray]: A dictionary of tensors and the
             corresponding data arrays returned.
         """
-        return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {}
-        self._pb_session.copyToTensorData()
-        for tensor in tensors:
-            return_tensors[tensor] = _popxl_to_numpy(tensor)
+
+        # Guard against bad argument.
+        any_variable = False
+        for obj in tensors:
+            if not isinstance(obj, (Constant, Variable)):
+                raise TypeError(
+                    f"{obj} is not of type Constant or Variable. get_tensor_data is not"
+                    "supported for this type.")
+            if isinstance(obj, Variable):
+                any_variable = True
+
+        # Fetch weights from device into tensor data buffers. Constants cannot
+        # have been updated by definition, so elide this step unless any of the
+        # tensors were variables.
+        if any_variable:
+            self._pb_session.copyToTensorData()
+
+        return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {
+            tensor: _popxl_to_numpy(tensor)
+            for tensor in tensors
+        }
 
         return return_tensors
 

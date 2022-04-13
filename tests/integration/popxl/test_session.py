@@ -7,6 +7,11 @@ import popxl
 import popxl.ops as ops
 from popxl.tensor import Tensor, graph_input
 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
 
 def test_session():
     w_input = [2.]
@@ -126,3 +131,39 @@ def run_session(ir, input_tensors, input_d2hs, num_host_transfers):
     # Could also do `outputs = session.create_host_outputs()`
     # session.run_with_outputs(inputs, outputs)
     return session, inputs, outputs
+
+
+def test_get_tensor_data_bad_argument_type():
+    ir = popxl.Ir()
+    mg = ir.main_graph
+
+    with mg:
+        c = popxl.constant(1.)
+        w = popxl.variable(2.)
+        h2d = popxl.h2d_stream(w.shape, w.dtype)
+        x = ops.host_load(h2d)
+
+        w2 = ops.var_updates.accumulate_(w, x)
+        ops.var_updates.accumulate_(w2, c)
+
+    session = popxl.Session(ir)
+    session.device = tu.create_test_device(numIpus=1)
+
+    session.run({h2d: np.array(1.)})
+
+    # Variable permitted.
+    session.get_tensor_data(w)
+    session.get_tensors_data([w])
+    # Constant permitted.
+    session.get_tensor_data(c)
+    session.get_tensors_data([c])
+    # ActGrad tensor not permitted.
+    with pytest.raises(TypeError):
+        session.get_tensor_data(x)
+    with pytest.raises(TypeError):
+        session.get_tensors_data([x])
+    # Stream object not permitted.
+    with pytest.raises(TypeError):
+        session.get_tensor_data(h2d)
+    with pytest.raises(TypeError):
+        session.get_tensors_data([h2d])

@@ -58,7 +58,7 @@ class TestData:
         session = popxl.Session(ir, device_desc="ipu_model")
         with pytest.raises(TypeError) as e_info:
             retrieved_array = session.get_tensor_data(b)
-        assert e_info.value.args[0].startswith(f"Tensor {b.id} is not of type")
+        assert "is not of type Constant or Variable" in e_info.value.args[0]
 
     def test_write_data_constant(self, shape, np_dtype):
         ir = popxl.Ir()
