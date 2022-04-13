@@ -26,11 +26,7 @@ public:
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override {
-    if (isOptimizerOp()) {
-      return {{{CastOp::getInIndex()}, {CastOp::getOutIndex()}}};
-    } else {
-      return {};
-    }
+    return {{{CastOp::getInIndex()}, {CastOp::getOutIndex()}}};
   }
 
   bool canBeReplacedByIdentity() const override;
