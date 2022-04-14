@@ -26,22 +26,19 @@ public:
 
   /**
    * Construct PipelineInfo
-   * \param _batchesPerStep   Batches per step
-   * \param _gradAcclFactor   Gradient accumulation factor
-   * \param _maxPipelineStage The last pipeline stage
-   * \param _doTraining       Optimizers are going to be applied (not inference)
-   * \param _doGradAccl       Gradients are accumulated rather than applied to
-   *                          the weights directly.
+   * \param batchesPerStep     Batches per step
+   * \param gradAcclFactor     Gradient accumulation factor
+   * \param numPipelineStages  The number of pipeline stages
+   * \param doGradAccl         Gradients are accumulated rather than applied to
+   *                           the weights directly.
    */
-  PipelineInfo(int64_t _batchesPerStep,
-               int64_t _gradAcclFactor,
-               int64_t _maxPipelineStage,
-               bool _doTraining,
-               bool _doGradAccl);
+  PipelineInfo(int64_t batchesPerStep,
+               int64_t gradAcclFactor,
+               int64_t maxPipelineStage,
+               bool doGradAccl);
 
   int64_t numStages;
 
-  bool doTraining;
   bool doGradAccl;
 
   /**

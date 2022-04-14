@@ -339,8 +339,9 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
   // For each graph input
   for (auto tid : graph.getInputIds()) {
-    auto tensor  = graph.getTensors().get(tid);
-    auto fromIpu = tensor->getVirtualGraphIdUnsafe();
+    auto tensor             = graph.getTensors().get(tid);
+    auto fromIpu            = tensor->getVirtualGraphIdUnsafe();
+    auto fromPipelineStages = tensor->getPipelineStages();
 
     // For each consumer op of the tensor
     // but, take a copy of the map as we will be modifying it.
@@ -356,9 +357,18 @@ bool InterIpuCopy::apply(Graph &graph) const {
         std::set<OpId> visited;
         VGraphId toIpu =
             to->getIntrospectionInVirtualGraphId(toInIdx, visited).first;
+        OptionalPipelineStage toPipelineStage = to->getOptionalPipelineStage();
 
-        // If the ops are not on the same ipu
-        if (fromIpu != toIpu) {
+        bool implicitPipelineFwdOnlyCopy =
+            (graph.getIr()
+                 .getSessionOptions()
+                 .createImplicitPipeliningFwdOnlyProgram &&
+             toPipelineStage && fromPipelineStages.size() &&
+             (*toPipelineStage == (*fromPipelineStages.begin()) + 1));
+
+        // If the ops are not on the same ipu, or adjacent pipeline stages
+        // with implicitPipelineFwdOnlyCopy
+        if (fromIpu != toIpu || implicitPipelineFwdOnlyCopy) {
 
           bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 
@@ -410,6 +420,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
         Tensor *tensor = t.second;
         VGraphId fromIpu =
             from->getIntrospectionOutVirtualGraphId(t.first).first;
+        OptionalPipelineStage fromPipelineStage =
+            from->getOptionalPipelineStage();
 
         // For each consumer op of the tensor
         // but, take a copy of the map as we will be modifying it.
@@ -423,9 +435,19 @@ bool InterIpuCopy::apply(Graph &graph) const {
             // Get which ipu the tensor is supposed to be on
             VGraphId toIpu =
                 to->getIntrospectionInVirtualGraphId(toInIdx).first;
+            OptionalPipelineStage toPipelineStage =
+                to->getOptionalPipelineStage();
 
-            // If the ops are not on the same ipu
-            if (fromIpu != toIpu) {
+            bool implicitPipelineFwdOnlyCopy =
+                (graph.getIr()
+                     .getSessionOptions()
+                     .createImplicitPipeliningFwdOnlyProgram &&
+                 (fromPipelineStage && toPipelineStage &&
+                  *toPipelineStage == *fromPipelineStage + 1));
+
+            // If the ops are not on the same ipu, or adjacent pipeline stages
+            // with implicitPipelineFwdOnlyCopy
+            if (fromIpu != toIpu || implicitPipelineFwdOnlyCopy) {
 
               bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 

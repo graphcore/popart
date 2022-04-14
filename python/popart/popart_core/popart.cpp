@@ -1616,6 +1616,10 @@ PYBIND11_MODULE(popart_core, m) {
             DOC(popart, SessionOptions, getGlobalReplicationFactor));
     cls.def_readwrite("enableInplaceAmbiguityChecking",
                       &SessionOptions::enableInplaceAmbiguityChecking);
+    cls.def_readwrite(
+        "createImplicitPipeliningFwdOnlyProgram",
+        &SessionOptions::createImplicitPipeliningFwdOnlyProgram,
+        DOC(popart, SessionOptions, createImplicitPipeliningFwdOnlyProgram));
   }
   {
     py::enum_<PatternsLevel> en(m, "PatternsLevel", DOC(popart, PatternsLevel));
@@ -1957,7 +1961,15 @@ PYBIND11_MODULE(popart_core, m) {
             &InferenceSession::writeWeights,
             DOC(popart, Session, writeWeights));
     cls.def("run",
-            &InferenceSession::run,
+            py::overload_cast<IStepIO &, std::string>(&InferenceSession::run),
+            py::arg("stepio"),
+            py::arg("debugName") = "",
+            DOC(popart, Session, run),
+            py::call_guard<py::gil_scoped_release>());
+    cls.def("run",
+            py::overload_cast<std::string, IStepIO &, std::string>(
+                &InferenceSession::run),
+            py::arg("programHandle"),
             py::arg("stepio"),
             py::arg("debugName") = "",
             DOC(popart, Session, run),
@@ -2108,7 +2120,15 @@ PYBIND11_MODULE(popart_core, m) {
                 &TrainingSession::updateOptimizerFromHost),
             DOC(popart, TrainingSession, updateOptimizerFromHost));
     cls.def("run",
-            &TrainingSession::run,
+            py::overload_cast<IStepIO &, std::string>(&TrainingSession::run),
+            py::arg("stepio"),
+            py::arg("debugName") = "",
+            DOC(popart, Session, run),
+            py::call_guard<py::gil_scoped_release>());
+    cls.def("run",
+            py::overload_cast<std::string, IStepIO &, std::string>(
+                &TrainingSession::run),
+            py::arg("programHandle"),
             py::arg("stepio"),
             py::arg("debugName") = "",
             DOC(popart, Session, run),

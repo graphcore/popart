@@ -486,6 +486,36 @@ void Session::run(IStepIO &stepio, std::string debugName) {
   }
 }
 
+void Session::run(std::string programHandle,
+                  IStepIO &stepio,
+                  std::string debugName) {
+  POPART_TRACEPOINT();
+  logging::session::trace("Session::run {}", debugName);
+
+  if (device_->getDeviceInfo()->getConnectionType() ==
+      DeviceConnectionType::Never) {
+    throw runtime_error("Offline IPU device is not configured for execution");
+  }
+  if (!ir->canInfer()) {
+    throw runtime_error("Trying to infer when not in inference mode");
+  }
+
+  if (weightsFromHostCalled == false && ir->containsInitialisers() &&
+      ir->isTraining()) {
+    throw runtime_error(
+        "Must call weightsFromHost before run as the model has initializers "
+        "and the session has been created in training mode");
+  }
+  device_->run(programHandle, stepio, debugName);
+
+  runCalled = true;
+
+  // Host weights now out of sync with IPU
+  for (auto t : executable_->getWeightTensors()) {
+    t->tensorData()->setIsSyncedWithIPU(false);
+  }
+}
+
 void Session::updateExternallySavedTensorLocations(
     const std::string &fromLocation,
     const std::string &toLocation) {

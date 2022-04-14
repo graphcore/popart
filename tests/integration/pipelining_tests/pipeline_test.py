@@ -966,3 +966,67 @@ def test_bad_auto_staging(explicit):
     #     print()
 
     #     assert np.allclose(result[i], refResult)
+
+
+@tu.requires_ipu_model
+@pytest.mark.parametrize("mode", ["nopipeline", "explicit", "accumulate"])
+def test_pipeline_fwd_only_program_errors(mode):
+    """
+    In this test we check that an error is thrown when trying to use
+    createImplicitPipeliningFwdOnlyProgram with explicit pipelining or
+    without gradient accumulation
+    """
+    builder = popart.Builder()
+    shape_d = [10]
+    shape_l = [1]
+    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
+    d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
+    op0_out = builder.aiOnnx.sin([d0], "s0")
+    op1_out = builder.aiOnnx.exp([d1], "r0")
+    op2_out = builder.aiOnnx.mul([op0_out, op1_out], "m0")
+    builder.addOutputTensor(op2_out)
+    opts = popart.SessionOptions()
+    opts.enablePipelining = mode != "nopipeline"
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    # Setting under test
+    opts.createImplicitPipeliningFwdOnlyProgram = True
+
+    # Trigger error with combination of the next two options
+    if mode == "explicit":
+        opts.enableExplicitIR(True)
+
+    if mode != "accumulate":
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = 5
+
+    builder.pipelineStage(op0_out, 0)
+    builder.virtualGraph(op0_out, 0)
+    builder.pipelineStage(op1_out, 1)
+    builder.virtualGraph(op1_out, 1)
+    builder.pipelineStage(op2_out, 2)
+    builder.virtualGraph(op2_out, 2)
+
+    with tu.create_test_device(numIpus=3) as device:
+        with pytest.raises(popart.popart_exception) as e_info:
+            session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                             dataFlow=popart.DataFlow(
+                                                 10, [op2_out, "loss"]),
+                                             loss=op2_out,
+                                             optimizer=popart.ConstSGD(1),
+                                             userOptions=opts,
+                                             deviceInfo=device)
+            session.prepareDevice()
+
+        if mode == "nopipeline":
+            assert e_info.value.args[0].startswith(
+                "Implicit pipelining forward-only program is not supported "
+                "without implicit pipelining.")
+        if mode == "explicit":
+            assert e_info.value.args[0].startswith(
+                "Implicit pipelining forward-only program is not supported "
+                "with explicit pipelining.")
+        if mode == "accumulate":
+            assert e_info.value.args[0].startswith(
+                "Implicit pipelining forward-only program is not supported "
+                "without gradient accumulation.")

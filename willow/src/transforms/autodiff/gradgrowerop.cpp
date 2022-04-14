@@ -25,9 +25,7 @@ GradGrowerOp::growGradOps(Graph &bwdGraph,
 
   PipelineStage maxPipelineStage = 0;
   if (ir.getSessionOptions().enablePipelining) {
-    // the last fwd pass pipeline stage is also the first bwd pass pipeline
-    // stage.
-    maxPipelineStage = ir.getFinalLossPipelineStage() * 2;
+    maxPipelineStage = ir.getMaxPipelineStage();
   }
 
   OpId nonGradOpId  = nonGradOp->id;

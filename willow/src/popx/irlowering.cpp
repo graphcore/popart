@@ -3385,6 +3385,18 @@ void IrLowering::prepareGraph() {
   logging::devicex::debug(getContextOpString(
       ExecutionContext::OptimizerFromHostFragment, taskOrder));
 
+  if (ir().getSessionOptions().implicitPipeliningEnabled()) {
+    // Create pipeline functions once, reuse for implicitPipeliningFwdOnly and
+    // the full training pipeline
+    progs_.createPipelineFunctions();
+  }
+
+  if (ir().getSessionOptions().createImplicitPipeliningFwdOnlyProgram) {
+    auto index = progs_.addCustomProgram(
+        progs_.getFullProgramFromPipelineFragments(true));
+    programHandleIndexMap["implicitPipeliningFwdOnly"] = index;
+  }
+
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);

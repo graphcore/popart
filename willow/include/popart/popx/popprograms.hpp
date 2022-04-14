@@ -11,6 +11,7 @@
 
 #include <popart/names.hpp>
 #include <popart/popx/pritask.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 namespace popart {
 
@@ -175,11 +176,17 @@ public:
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
   snap::program::Sequence &pipelineIpuCopyFragment(const std::string &desc);
 
-  void addPipelineCycle(
-      PipelineCycle pCycle,
-      snap::program::Sequence &sq,
-      std::ostringstream &ss,
-      std::map<PipelineStage, snap::Function> &mainFunctions) const;
+  void addPipelineCycle(PipelineInfo pInfo,
+                        PipelineCycle pCycle,
+                        snap::program::Sequence &sq,
+                        std::ostringstream &ss) const;
+
+  /**
+   * Add a custom program
+   * \param program       Program to add
+   * \return              Index of the popart/snap/poplar program
+   */
+  unsigned addCustomProgram(const snap::program::Program &program);
 
   IrLowering *ir_lowering_p;
 
@@ -207,10 +214,21 @@ private:
   std::unique_ptr<snap::program::Sequence> pipelineIpuCopySeq;
   std::string pipelineIpuCopyDesc;
 
+  // Implicit pipeline functions
+  snap::Function zeroPipelineIndexFunction;
+  std::map<PipelineStage, snap::Function> mainPipelineFunctions;
+
+  // Custom programs
+  std::vector<snap::program::Program> customPrograms;
+
 public:
   void initWithSnapGraph(snap::Graph &);
 
-private:
+  /**
+   * Turn pipeline sequences into callable pipeline functions
+   */
+  void createPipelineFunctions();
+
   /**
    * Return the program based on the pipeline fragments.
    *
@@ -219,8 +237,10 @@ private:
    *
    * \return The program based on the pipeline fragments
    **/
-  snap::program::Sequence getFullProgramFromPipelineFragments() const;
+  snap::program::Sequence
+  getFullProgramFromPipelineFragments(bool fwdOnly) const;
 
+private:
   std::set<std::pair<OpId, ExecutionPhase>> beenRecomputed;
 
   snap::program::Sequence weightsFromHost() const;

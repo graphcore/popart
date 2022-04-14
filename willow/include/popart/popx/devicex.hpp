@@ -93,6 +93,7 @@ public:
 
   std::map<std::string, std::vector<uint64_t>> cycleCountTensorToHost();
   void run(IStepIO &, std::string debugName = "");
+  void run(std::string programHandle, IStepIO &, std::string debugName = "");
 
   // device -> host stream
   void weightsToHost();
@@ -304,7 +305,7 @@ private:
 
   // Wrapper function that checks the calling devicex was the
   // last to have loaded its engine to deviceInfo's device
-  void run(PopPrograms::ProgramIndex ind, std::string debugName);
+  void run(unsigned ind, std::string debugName);
 
   /** Copy from the host end of a d2h stream, to some final host memory.
    * This is the step which follows a copy from device to host.

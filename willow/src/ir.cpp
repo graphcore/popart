@@ -1,3 +1,4 @@
+
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <array>
@@ -486,97 +487,115 @@ void Ir::verifyPipelineSettings() const {
         op->setPipelineStage({});
       }
     }
+  } else {
 
-    return;
-  }
-
-  if (getSessionOptions().implicitPipeliningEnabled() &&
-      (!virtualGraphsEnabled() || getNumVirtualGraphIds() == 1)) {
-    throw error("Pipelining requires more than 1 IPU (currently {}) and the "
-                "'virtualGraphMode' session option "
-                "to not be VirtualGraphMode::Off (currently {}).",
-                getNumVirtualGraphIds(),
-                getSessionOptions().virtualGraphMode);
-  }
-
-  auto getPipelineStage = [](auto x) -> PipelineStage {
-    if (x->hasPipelineStage()) {
-      return x->getPipelineStage();
-    } else {
-      return unusedPipelineStage;
+    if (getSessionOptions().implicitPipeliningEnabled() &&
+        (!virtualGraphsEnabled() || getNumVirtualGraphIds() == 1)) {
+      throw error("Pipelining requires more than 1 IPU (currently {}) and the "
+                  "'virtualGraphMode' session option "
+                  "to not be VirtualGraphMode::Off (currently {}).",
+                  getNumVirtualGraphIds(),
+                  getSessionOptions().virtualGraphMode);
     }
-  };
 
-  auto getVirtualGraphId = [](auto x) -> VGraphId {
-    if (x->hasVirtualGraphId()) {
-      return x->getVirtualGraphId();
-    } else {
-      return unusedVGraphId;
-    }
-  };
+    auto getPipelineStage = [](auto x) -> PipelineStage {
+      if (x->hasPipelineStage()) {
+        return x->getPipelineStage();
+      } else {
+        return unusedPipelineStage;
+      }
+    };
 
-  // collect a set of vgraph ids for each pipeline stage
-  std::map<PipelineStage, std::vector<Op *>> pipelineStages;
-  std::map<VGraphId, std::set<PipelineStage>> pipelineStagesPerVGraph;
+    auto getVirtualGraphId = [](auto x) -> VGraphId {
+      if (x->hasVirtualGraphId()) {
+        return x->getVirtualGraphId();
+      } else {
+        return unusedVGraphId;
+      }
+    };
 
-  for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
-    if (!op->isConvertibleTo<IpuCopyOp>()) {
-      auto ps = getPipelineStage(op);
-      pipelineStages[ps].push_back(op);
+    // collect a set of vgraph ids for each pipeline stage
+    std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+    std::map<VGraphId, std::set<PipelineStage>> pipelineStagesPerVGraph;
 
-      auto vgraph = getVirtualGraphId(op);
-      pipelineStagesPerVGraph[vgraph].insert(ps);
-    }
-  }
-
-  // if no ops have had the pipeline stage attribute set, the virtual graph id
-  // will be used.
-
-  // some ops have not had the pipeline stage attribute set
-  if (pipelineStages.count(-1) != 0 && pipelineStages.size() > 1) {
-    std::stringstream ss;
-    ss << "Only some ops have had their pipeline stage set. Ops missing the "
-          "pipeline stage:";
     for (auto &id_op : getMainGraph().getOps()) {
       auto op = id_op.second.get();
       if (!op->isConvertibleTo<IpuCopyOp>()) {
-        if (getPipelineStage(op) == -1) {
-          ss << logging::format("\n  {}", op->debugName());
+        auto ps = getPipelineStage(op);
+        pipelineStages[ps].push_back(op);
+
+        auto vgraph = getVirtualGraphId(op);
+        pipelineStagesPerVGraph[vgraph].insert(ps);
+      }
+    }
+
+    // if no ops have had the pipeline stage attribute set, the virtual graph id
+    // will be used.
+
+    // some ops have not had the pipeline stage attribute set
+    if (pipelineStages.count(-1) != 0 && pipelineStages.size() > 1) {
+      std::stringstream ss;
+      ss << "Only some ops have had their pipeline stage set. Ops missing the "
+            "pipeline stage:";
+      for (auto &id_op : getMainGraph().getOps()) {
+        auto op = id_op.second.get();
+        if (!op->isConvertibleTo<IpuCopyOp>()) {
+          if (getPipelineStage(op) == -1) {
+            ss << logging::format("\n  {}", op->debugName());
+          }
+        }
+      }
+      throw error(ss.str());
+    }
+    // all ops have had the pipeline stage attribute set
+    else if (pipelineStages.count(-1) == 0) {
+
+      // check that all ops in a pipeline stage have the same virtualGraph
+      for (auto &ps_ops : pipelineStages) {
+        auto ps   = ps_ops.first;
+        auto &ops = ps_ops.second;
+
+        std::set<VGraphId> vgraphs;
+        for (auto op : ops) {
+          // ops may not have a virtual graph id yet as the virtualGraphMode may
+          // be Auto. In this case getVirtualGraphId returns -1 and we just
+          // check that all ops in the pipeline stage are on virtual graph -1
+          vgraphs.insert(getVirtualGraphId(op));
+        }
+
+        if (vgraphs.size() > 1) {
+          std::vector<std::string> opNames;
+          for (auto op : ops) {
+            opNames.push_back(op->debugName());
+          }
+
+          throw error("Ops {} have the same pipeline stage {}, but different "
+                      "virtual graph ids {}. All ops with the same pipeline "
+                      "stage must also have the same virtual graph id",
+                      opNames,
+                      ps,
+                      vgraphs);
         }
       }
     }
-    throw error(ss.str());
   }
-  // all ops have had the pipeline stage attribute set
-  else if (pipelineStages.count(-1) == 0) {
 
-    // check that all ops in a pipeline stage have the same virtualGraph
-    for (auto &ps_ops : pipelineStages) {
-      auto ps   = ps_ops.first;
-      auto &ops = ps_ops.second;
+  if (getSessionOptions().createImplicitPipeliningFwdOnlyProgram) {
+    logging::ir::warn("Implicit pipelining forward-only program is deprecated "
+                      "and will be removed in future releases.");
 
-      std::set<VGraphId> vgraphs;
-      for (auto op : ops) {
-        // ops may not have a virtual graph id yet as the virtualGraphMode may
-        // be Auto. In this case getVirtualGraphId returns -1 and we just check
-        // that all ops in the pipeline stage are on virtual graph -1
-        vgraphs.insert(getVirtualGraphId(op));
-      }
-
-      if (vgraphs.size() > 1) {
-        std::vector<std::string> opNames;
-        for (auto op : ops) {
-          opNames.push_back(op->debugName());
-        }
-
-        throw error("Ops {} have the same pipeline stage {}, but different "
-                    "virtual graph ids {}. All ops with the same pipeline "
-                    "stage must also have the same virtual graph id",
-                    opNames,
-                    ps,
-                    vgraphs);
-      }
+    if (getSessionOptions().explicitPipeliningEnabled()) {
+      throw error("Implicit pipelining forward-only program is not supported "
+                  "with explicit pipelining.");
+    }
+    if (!getSessionOptions().implicitPipeliningEnabled()) {
+      throw error("Implicit pipelining forward-only program is not supported "
+                  "without implicit pipelining.");
+    }
+    if (!getSessionOptions().enableGradientAccumulation ||
+        getSessionOptions().accumulationFactor < 1) {
+      throw error("Implicit pipelining forward-only program is not supported "
+                  "without gradient accumulation.");
     }
   }
 }
@@ -2614,6 +2633,18 @@ PipelineStage Ir::getFinalLossPipelineStage() const {
   }
 }
 
+PipelineStage Ir::getMaxPipelineStage() const {
+  auto finalLossStage = getFinalLossPipelineStage();
+  if (getSessionOptions().createImplicitPipeliningFwdOnlyProgram) {
+    // Separate first backward stage from last forward stage when using
+    // a shared training and inference graph in order to cleanly separate
+    // forward and backward pass (and thereby stages)
+    return 2 * finalLossStage + 1;
+  }
+  // First backward stage shared with last forward stage
+  return 2 * finalLossStage;
+}
+
 int64_t Ir::getNumPipelineStages() const {
   std::set<PipelineStage> pStages;
 
@@ -2642,7 +2673,6 @@ PipelineInfo Ir::pipelineInfo() const {
     pInfo = PipelineInfo(static_cast<int64_t>(getDataFlow().batchesPerStep()),
                          getSessionOptions().accumulationFactor,
                          getNumPipelineStages(),
-                         canTrain(),
                          getSessionOptions().enableGradientAccumulation);
   }
   return pInfo;

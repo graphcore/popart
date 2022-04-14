@@ -502,6 +502,13 @@ void chainCopiesTransform(Graph &graph) {
 }
 
 void mergeConsecutivePipelineStages(Graph &graph) {
+  if (graph.getIr()
+          .getSessionOptions()
+          .createImplicitPipeliningFwdOnlyProgram) {
+    // Do not re-merge last forward and first backward stage
+    return;
+  }
+
   std::map<PipelineStage, VGraphId> stageMap;
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
@@ -2147,10 +2154,8 @@ RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph,
 PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
                            int64_t _gradAcclFactor,
                            int64_t _numPipelineStages,
-                           bool _doTraining,
                            bool _doGradAccl)
-    : numStages(_numPipelineStages), doTraining(_doTraining),
-      doGradAccl(_doGradAccl) {
+    : numStages(_numPipelineStages), doGradAccl(_doGradAccl) {
 
   auto fillFlushPhaseCycles = _numPipelineStages - 1;
   fillPhase.start           = 0;
@@ -2176,10 +2181,11 @@ PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
 }
 
 bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
+  bool doStageAtAll = pStage < numStages;
   bool doStageLower = (pCycle >= pStage);
   bool doStageUpper = (pCycle < pStage + flushPhase.start);
 
-  return (doStageLower && doStageUpper);
+  return (doStageAtAll && doStageLower && doStageUpper);
 }
 
 namespace {
