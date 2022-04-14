@@ -1,7 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <fstream>
+#include <sstream>
 
 #include <google/protobuf/text_format.h>
+#include <poprithms/logging/timepartitionlogger.hpp>
 
 #include <boost/filesystem.hpp>
 
@@ -353,13 +355,33 @@ MutableVoidData getMutableData(ONNX_NAMESPACE::TensorProto &tp) {
   return mv_data;
 }
 
-ONNX_NAMESPACE::ModelProto
-getModelProto(const std::string &modelProtoOrFilename) {
+ONNX_NAMESPACE::ModelProto getModelProto(
+    const std::string &modelProtoOrFilename,
+    nonstd::optional<
+        std::reference_wrapper<poprithms::logging::TimePartitionLogger>>
+        timePartitionLogger) {
+  using namespace poprithms::logging;
+
   ONNX_NAMESPACE::ModelProto modelProto;
   if (io::isRegularFile(modelProtoOrFilename)) {
-    modelProto = io::getModelFromFile(modelProtoOrFilename);
+    if (timePartitionLogger) {
+      std::stringstream ss;
+      ss << "Get ModelProto from file (\"" << modelProtoOrFilename << "\")";
+      const auto timer = timePartitionLogger->get().scopedStopwatch(ss.str());
+      modelProto       = io::getModelFromFile(modelProtoOrFilename);
+    } else {
+      modelProto = io::getModelFromFile(modelProtoOrFilename);
+    }
   } else {
-    modelProto = io::getModelFromString(modelProtoOrFilename);
+    if (timePartitionLogger) {
+      std::stringstream ss;
+      ss << "Get ModelProto from string (" << modelProtoOrFilename.size()
+         << " bytes)";
+      const auto timer = timePartitionLogger->get().scopedStopwatch(ss.str());
+      modelProto       = io::getModelFromString(modelProtoOrFilename);
+    } else {
+      modelProto = io::getModelFromString(modelProtoOrFilename);
+    }
   }
 
   return modelProto;

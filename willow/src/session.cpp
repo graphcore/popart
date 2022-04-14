@@ -3,6 +3,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <poprithms/logging/timepartitionlogger.hpp>
+
 #include <filereader.hpp>
 #include <onnxutil.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
@@ -728,23 +730,35 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
   logging::session::trace("Session::configureFromOnnx");
   initProgressLogger(userOptions);
 
-  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
+  auto &timePartitionLogger = ir->timePartitionLogger();
+  auto modelProto =
+      onnxutil::getModelProto(modelProtoOrFilename, timePartitionLogger);
 
   if (userOptions.enableEngineCaching) {
+    const auto cacheTimer =
+        timePartitionLogger.scopedStopwatch("Retrieving cache entries");
     cacheEntries = getCacheEntries(userOptions.cachePath);
   }
 
-  ir->prepare({modelProto,
-               perk,
-               df,
-               lossIn,
-               optimizerIn,
-               *deviceInfo,
-               userOptions,
-               patterns,
-               name},
-              cacheEntries);
-  setDevice(deviceInfo);
+  {
+    const auto prepareTimer =
+        timePartitionLogger.scopedStopwatch("Preparing IR");
+    ir->prepare({modelProto,
+                 perk,
+                 df,
+                 lossIn,
+                 optimizerIn,
+                 *deviceInfo,
+                 userOptions,
+                 patterns,
+                 name},
+                cacheEntries);
+  }
+  {
+    const auto setDeviceTimer =
+        timePartitionLogger.scopedStopwatch("Setting device");
+    setDevice(deviceInfo);
+  }
 }
 
 InferenceSession::~InferenceSession() = default;

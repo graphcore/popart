@@ -2,10 +2,20 @@
 #ifndef GUARD_NEURALNET_ONNXUTIL_HPP
 #define GUARD_NEURALNET_ONNXUTIL_HPP
 
+#include <memory>
+
 #include <onnx/onnx_pb.h>
 #include <popart/tensordata.hpp>
 #include <popart/voiddata.hpp>
 
+#include <popart/vendored/optional.hpp>
+
+namespace poprithms {
+namespace logging {
+class TimePartitionLogger;
+}
+
+} // namespace poprithms
 namespace popart {
 namespace onnxutil {
 
@@ -49,8 +59,11 @@ void saveInitializersExternally(ONNX_NAMESPACE::ModelProto &model,
                                 bool updateExistingExternalInfo = false);
 
 // Get an ONNX model protobuf, either from a file, or the string directly
-ONNX_NAMESPACE::ModelProto
-getModelProto(const std::string &modelProtoOrFilename);
+ONNX_NAMESPACE::ModelProto getModelProto(
+    const std::string &modelProtoOrFilename,
+    nonstd::optional<
+        std::reference_wrapper<poprithms::logging::TimePartitionLogger>>
+        timePartitionLogger = nonstd::nullopt);
 
 // From a specified ModelProto, get a TensorProto by its name
 const ONNX_NAMESPACE::TensorProto &
