@@ -26,6 +26,7 @@ from .ipu_copy import ipu_copy
 from .l1 import l1
 from .l2 import l2
 from .lamb import lamb_square
+from .graph_copy import graph_copy
 from .logical_and import logical_and
 from .logical_not import logical_not
 from .logical_or import logical_or
