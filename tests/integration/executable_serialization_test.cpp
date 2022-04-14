@@ -1729,6 +1729,67 @@ BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_inference) {
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
+BOOST_AUTO_TEST_CASE(reserializationToTheSameFile) {
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  // Define tensor info for input tensor.
+  const popart::TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{2}};
+
+  // Define model and its output.
+  const popart::TensorId input  = builder->addInputTensor(inputInfo);
+  const popart::TensorId output = aiOnnx.relu({input});
+  builder->addOutputTensor(output);
+
+  // Create the session and run a session.
+  const popart::DataFlow dataFlow(1,
+                                  {{output, popart::AnchorReturnType("All")}});
+
+  auto device = popart::createTestDevice(TestDeviceType::OfflineIpu);
+
+  const std::string testDir   = createDirForTest();
+  const std::string cachePath = getCachePath(testDir);
+
+  auto opts                     = SessionOptions();
+  opts.enableEngineCaching      = true;
+  opts.cachePath                = cachePath;
+  opts.enableStochasticRounding = true;
+
+  std::string cacheFile1, cacheFile2;
+  {
+    auto session =
+        popart::InferenceSession::createFromOnnxModel(builder->getModelProto(),
+                                                      dataFlow,
+                                                      device,
+                                                      popart::InputShapeInfo(),
+                                                      opts);
+    session->prepareDevice(false);
+
+    BOOST_CHECK(session->getExecutable().isDeserialized() == false);
+    BOOST_CHECK(session->getIrLowering().usingCachedExecutable() == false);
+    BOOST_CHECK(session->getIr().hashMatched() == false);
+
+    cacheFile1 = session->getExecutable().getCachePath(cachePath);
+  }
+
+  {
+    BOOST_CHECK(boost::filesystem::exists(cacheFile1));
+    auto session =
+        popart::InferenceSession::createFromOnnxModel(builder->getModelProto(),
+                                                      dataFlow,
+                                                      device,
+                                                      popart::InputShapeInfo(),
+                                                      opts);
+    session->prepareDevice(false);
+    session->saveExecutableToFile(cacheFile1);
+    cacheFile2 = session->getExecutable().getCachePath(cachePath);
+    BOOST_CHECK(boost::filesystem::exists(cacheFile1));
+    BOOST_CHECK_EQUAL(cacheFile1, cacheFile2);
+  }
+
+  BOOST_CHECK(boost::filesystem::remove_all(testDir));
+}
+
 BOOST_AUTO_TEST_CASE(session_run_from_serialized_exe_random_seed) {
   // the dimensions of the matrices
   int K = 6;

@@ -486,9 +486,8 @@ void serializePopartExecutable(std::ostream &out,
     }
 
     if (ir.getRequiresRandomSeed()) {
-      TensorId seedId    = GetRandomSeedOp::getStreamedSeedTensorId();
-      Tensor *seedTensor = ir.getTensor(seedId);
-      auto tensorBuilder = tensors[i];
+      const Tensor *seedTensor = executable.getSeedTensor();
+      auto tensorBuilder       = tensors[i];
       serializeTensor(seedTensor, tensorBuilder, true);
       ++i;
     }
