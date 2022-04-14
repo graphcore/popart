@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op/manualbindops.hpp"
 #include "bindings/basicoptionals.hpp"
+#include "bindings/op/argminmax.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
 #include "bindings/op/pool.hpp"
@@ -18,6 +19,8 @@
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/adamupdater.hpp>
+#include <popart/op/argmax.hpp>
+#include <popart/op/argmin.hpp>
 #include <popart/op/averagepool.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
@@ -145,6 +148,32 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("kernelShape"),
         py::arg("storageOrder"),
         py::arg("attributes"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // ArgMax
+  g.def("createOp_ArgMaxOp",
+        &Graph::createOp<ArgMaxOp,
+                         const OperatorIdentifier &,
+                         int64_t,
+                         int64_t,
+                         const Op::Settings &>,
+        py::arg("opid"),
+        py::arg("axis"),
+        py::arg("keepdims"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // ArgMin
+  g.def("createOp_ArgMinOp",
+        &Graph::createOp<ArgMinOp,
+                         const OperatorIdentifier &,
+                         int64_t,
+                         int64_t,
+                         const Op::Settings &>,
+        py::arg("opid"),
+        py::arg("axis"),
+        py::arg("keepdims"),
         py::arg("settings"),
         py::return_value_policy::reference);
 
@@ -452,6 +481,36 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("kernelShape"),
         py::arg("storageOrder"),
         py::arg("attributes"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // ArgMax
+  g.def("createConnectedOp_ArgMaxOp",
+        &Graph::createConnectedOp<ArgMaxOp,
+                                  const OperatorIdentifier &,
+                                  int64_t,
+                                  int64_t,
+                                  const Op::Settings &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("axis"),
+        py::arg("keepdims"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // ArgMin
+  g.def("createConnectedOp_ArgMinOp",
+        &Graph::createConnectedOp<ArgMinOp,
+                                  const OperatorIdentifier &,
+                                  int64_t,
+                                  int64_t,
+                                  const Op::Settings &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("axis"),
+        py::arg("keepdims"),
         py::arg("settings"),
         py::return_value_policy::reference);
 

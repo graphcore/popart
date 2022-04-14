@@ -12,6 +12,7 @@
 #include "bindings/op/accumulatorscale.hpp"
 #include "bindings/op/accumulatorzero.hpp"
 #include "bindings/op/adamupdater.hpp"
+#include "bindings/op/argminmax.hpp"
 #include "bindings/op/call.hpp"
 #include "bindings/op/concat.hpp"
 #include "bindings/op/conv.hpp"
@@ -97,6 +98,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindConv(m);
     op::bindRoiAlign(m);
     op::bindPool(m);
+    op::bindArgMinMax(m);
   }
   // Transforms
   {

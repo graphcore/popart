@@ -6,6 +6,7 @@ from .cast import cast
 from .concat import concat, concat_
 from .conv import conv2d
 from .roialign import roi_align
+from .argminmax import argmin, argmax
 from .detach import detach, detach_
 from .div import div
 from .dropout import dropout
@@ -67,6 +68,9 @@ __all__ = [
     # add.py
     "add",
     "add_",
+    #argminmax.py
+    "argmax",
+    "argmin",
     # pool.py
     "average_pool2d",
     "max_pool2d",
