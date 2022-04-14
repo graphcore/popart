@@ -156,12 +156,22 @@ std::string appendDirFn(const std::string &dir, const std::string &fn) {
 
 bool isRegularFile(const std::string &filename) {
   boost::system::error_code ec;
-  auto isRegularFile = boost::filesystem::is_regular_file(filename, ec);
-  // If the file system API reports an error then we assume that this is not a
-  // regular file.
-  // See
-  // https://www.boost.org/doc/libs/1_45_0/libs/filesystem/v3/doc/reference.html#status
-  return ec ? false : isRegularFile;
+  // We sometimes pass a whole serialised model as a filename in here, so
+  // filename can be huge (1.2B chars). To protect ourselves against
+  // implementations of is_regular_file that are expensive in the filename
+  // length we put a sanity check first to assume something is not a file
+  // if the filename is insanely huge.
+  constexpr std::string::size_type filenameSizeAssumedUpperBound = 10000;
+  if (filename.size() > filenameSizeAssumedUpperBound) {
+    return false;
+  } else {
+    auto isRegularFile = boost::filesystem::is_regular_file(filename, ec);
+    // If the file system API reports an error then we assume that this is not a
+    // regular file.
+    // See
+    // https://www.boost.org/doc/libs/1_45_0/libs/filesystem/v3/doc/reference.html#status
+    return ec ? false : isRegularFile;
+  }
 }
 
 void confirmRegularFile(const std::string &filename) {
@@ -267,11 +277,9 @@ ONNX_NAMESPACE::ModelProto getModelFromString(const std::string &stringProto) {
   // As suggested at developers.google.com/protocol-buffers/docs/cpptutorial
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  std::stringstream input(stringProto);
-
   ONNX_NAMESPACE::ModelProto modelProto;
 
-  if (!getModelFromStream(input, modelProto)) {
+  if (!modelProto.ParseFromString(stringProto)) {
     throw error(
         "Failed to load a ModelProto from the string '{}'.\nCheck "
         "that it is either a valid path to an existing onnx model file, "
