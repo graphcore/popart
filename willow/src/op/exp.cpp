@@ -25,6 +25,9 @@ ExpInplaceOp::ExpInplaceOp(const ExpOp &exp_op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ExpInplace,
                                 exp_op.getSettings()) {}
 
+ExpInplaceOp::ExpInplaceOp(const Settings &settings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ExpInplace, settings) {}
+
 std::unique_ptr<Op> ExpInplaceOp::clone() const {
   return std::make_unique<ExpInplaceOp>(*this);
 }

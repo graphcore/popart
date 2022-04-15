@@ -19,6 +19,7 @@ public:
 class ExpInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ExpInplaceOp(const ExpOp &);
+  ExpInplaceOp(const Op::Settings &opSettings);
   std::unique_ptr<Op> clone() const final;
 };
 

@@ -13,6 +13,7 @@ from .dropout import dropout
 from .dynamic_slice import dynamic_slice
 from .dynamic_update import dynamic_update, dynamic_update_
 from .equal import equal
+from .exp import exp, exp_
 from .fmod import fmod
 from .gather import gather, tied_gather
 from .gelu import gelu, gelu_
@@ -102,6 +103,9 @@ __all__ = [
     "dynamic_update_",
     # equal.py
     "equal",
+    # exp.py
+    "exp",
+    "exp_",
     # fmod.py
     "fmod",
     # gather.py
