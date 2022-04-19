@@ -346,6 +346,14 @@ public:
    */
   void finalizeSchedule();
 
+  // Remove isolated tensors
+  void removeIsolatedTensors(bool retainIoTensors    = false,
+                             bool retainVarTensors   = false,
+                             bool retainConstTensors = false) {
+    up_tensors->removeIsolated(
+        retainIoTensors, retainVarTensors, retainConstTensors);
+  }
+
 private:
   std::vector<Op *>
   growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);

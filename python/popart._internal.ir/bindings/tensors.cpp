@@ -98,7 +98,11 @@ void bindTensors(py::module_ &m) {
       //      py::return_value_policy::reference)
       // TODO add test, see T42141, requires VectorAndSet bindings for testing
       // .def("insertConstId", &Tensors::insertConstId)
-      .def("removeIsolated", &Tensors::removeIsolated)
+      .def("removeIsolated",
+           &Tensors::removeIsolated,
+           py::arg("retainIoTensors")    = false,
+           py::arg("retainVarTensors")   = false,
+           py::arg("retainConstTensors") = false)
       // Not sure we can do this from the python api
       // TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
       ;

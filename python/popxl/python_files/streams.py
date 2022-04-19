@@ -111,6 +111,7 @@ def d2h_stream(shape: Iterable[int], dtype: dtype,
                name: Optional[str] = None) -> DeviceToHostStream:
     g = gcg()
     mg = gmg()
+    ir_ = mg.ir._pb_ir
 
     if g.name != mg.name:
         raise ValueError(
@@ -126,5 +127,6 @@ def d2h_stream(shape: Iterable[int], dtype: dtype,
     pb_mg.addActGrad(name)
     pb_t = pb_mg.getTensor(name)
     pb_t.info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
+    ir_.addAnchor(pb_t.id)
 
     return DeviceToHostStream._from_tensor(Tensor._from_pb_tensor(pb_t))

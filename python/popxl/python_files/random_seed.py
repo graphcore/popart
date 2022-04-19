@@ -53,7 +53,7 @@ def uint64_to_two_uint32(num: int) -> Tuple[int, int]:
     num_bin = f"{num:064b}"
     if num < 0 or len(num_bin) != 64:
         raise ValueError(
-            f"Number is not positive or can be represented as a uint64: {num}")
+            f"Number is negative or cannot be represented as a uint64: {num}")
     a = int(num_bin[:32], 2)
     b = int(num_bin[32:], 2)
     return a, b
@@ -65,7 +65,7 @@ def two_uint32_to_uint64(a: int, b: int) -> int:
     b_bin = f"{b:032b}"
     if len(a_bin) != 32 or len(b_bin) != 32 or a < 0 or b < 0:
         raise ValueError(
-            f"Either `a` or `b` are not positive or cannot be represented as a uint32: {a}, {b}"
+            f"Either `a` or `b` are negative or cannot be represented as a uint32: {a}, {b}"
         )
     num = int(a_bin + b_bin, 2)
     return num

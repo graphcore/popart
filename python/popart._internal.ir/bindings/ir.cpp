@@ -63,7 +63,11 @@ void bindIr(py::module &m) {
            &Ir::getRemoteBufferInfo,
            py::return_value_policy::reference)
       .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
-      .def("removeIsolatedTensors", &Ir::removeIsolatedTensors)
+      .def("removeIsolatedTensors",
+           &Ir::removeIsolatedTensors,
+           py::arg("retainIoTensors")    = false,
+           py::arg("retainVarTensors")   = false,
+           py::arg("retainConstTensors") = false)
       .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)
       .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo)
       .def("dataStreamTensors",
@@ -77,7 +81,8 @@ void bindIr(py::module &m) {
            &Ir::getHostLoadTensors,
            py::return_value_policy::reference)
       .def("getTensor", &Ir::getTensor, py::return_value_policy::reference)
-      .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo);
+      .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo)
+      .def("addAnchor", &Ir::addAnchor);
 }
 
 } // namespace ir

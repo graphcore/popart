@@ -168,7 +168,12 @@ void bindGraph(py::module &m) {
       .def("getCalledGraphs",
            &Graph::getCalledGraphs,
            py::return_value_policy::reference)
-      .def("getAllVirtualGraphIds", &Graph::getAllVirtualGraphIds);
+      .def("getAllVirtualGraphIds", &Graph::getAllVirtualGraphIds)
+      .def("removeIsolatedTensors",
+           &Graph::removeIsolatedTensors,
+           py::arg("retainIoTensors")    = false,
+           py::arg("retainVarTensors")   = false,
+           py::arg("retainConstTensors") = false);
 
   bindCreateOpFunctionToGraphClass(g);
 

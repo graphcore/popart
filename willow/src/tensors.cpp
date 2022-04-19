@@ -45,18 +45,27 @@ std::vector<Tensor *> Tensors::getAll() const {
 }
 
 // remove all Tensors with no producer and no consumers
-void Tensors::removeIsolated(bool retainIoTensors) {
+void Tensors::removeIsolated(bool retainIoTensors,
+                             bool retainVarTensors,
+                             bool retainConstTensors) {
   auto hostLoadTensors = graph.getIr().getHostLoadTensors();
   for (auto &id : getAllTensorIds()) {
     Tensor *tensor = M[id].get();
-    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0 &&
-        !(retainIoTensors &&
-          (tensor->tensorLocationInfo.isRemote() || tensor->isAnchored() ||
-           tensor->isRootAnchor() ||
-           (tensor->tensorType() == TensorType::Stream &&
-            hostLoadTensors.find(tensor->id) != hostLoadTensors.end())))) {
-      M.erase(id);
-      logging::ir::debug("Removing isolated Tensor {}", id);
+    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0) {
+      bool isIoTensor =
+          tensor->tensorLocationInfo.isRemote() || tensor->isAnchored() ||
+          tensor->isRootAnchor() ||
+          (tensor->tensorType() == TensorType::Stream &&
+           hostLoadTensors.find(tensor->id) != hostLoadTensors.end());
+      bool isVarTensor   = tensor->tensorType() == TensorType::Variable;
+      bool isConstTensor = tensor->tensorType() == TensorType::Const;
+      if (!(retainIoTensors && isIoTensor) &&
+          !(retainVarTensors && isVarTensor) &&
+          !(retainConstTensors && isConstTensor)) {
+        M.erase(id);
+        logging::ir::debug(
+            "Removing isolated Tensor::{} {}", tensor->tensor_type(), id);
+      }
     }
   }
 }

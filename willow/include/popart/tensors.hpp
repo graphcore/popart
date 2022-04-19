@@ -98,7 +98,9 @@ public:
   const VectorAndSet<TensorId> &getConstIds() const { return constIds; }
   void insertConstId(const std::string &);
   // remove all Tensors which have no producer and no consumers
-  void removeIsolated(bool retainRemote);
+  void removeIsolated(bool retainIoTensors    = false,
+                      bool retainVarTensors   = false,
+                      bool retainConstTensors = false);
 
   TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
 

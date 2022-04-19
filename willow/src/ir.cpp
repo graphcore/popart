@@ -412,10 +412,13 @@ bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
   }
 }
 
-void Ir::removeIsolatedTensors(bool retainIoTensors) {
+void Ir::removeIsolatedTensors(bool retainIoTensors,
+                               bool retainVarTensors,
+                               bool retainConstTensors) {
   auto scopedStopwatch =
       timePartitionLogger().scopedStopwatch("Removing isolated Tensors");
-  getTensors().removeIsolated(retainIoTensors);
+  getTensors().removeIsolated(
+      retainIoTensors, retainVarTensors, retainConstTensors);
 }
 
 void Ir::removeIsolatedGraphs() {
@@ -2478,6 +2481,8 @@ void Ir::remapAnchor(const TensorId &from, const TensorId &to) {
   anchorRemap.remapLeft(from, to);
 }
 
+void Ir::addAnchor(const TensorId &t) { anchorRemap.insert(t, t); }
+
 const BiMap<TensorId, TensorId> &Ir::getAnchorRemap() const {
   return anchorRemap;
 }
@@ -4180,8 +4185,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
