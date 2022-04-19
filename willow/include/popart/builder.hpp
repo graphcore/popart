@@ -52,6 +52,7 @@ class CommGroup;
 enum class DataType;
 enum class RecomputeType;
 
+/// Class that represents the AI ONNX ML opset.
 class AiOnnxMlOpset1 : public DomainOpSet {
 
 protected:
@@ -60,9 +61,15 @@ protected:
   int getOpsetVersion() const override { return 1; }
 
 public:
+  /**
+   * Constructor for the AiOnnxMlOpset1 class.
+   *
+   * \param impl_ A pointer to an implementation of the Builder class.
+   */
   AiOnnxMlOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
 };
 
+/// Class that represents the AI Graphcore opset.
 class AiGraphcoreOpset1 : public DomainOpSet {
   // Builds an op for specified bitwise operator id.
   TensorId bitwiseGenericOp(const OperatorIdentifier &opid,
@@ -75,19 +82,26 @@ protected:
   int getOpsetVersion() const override { return 1; }
 
 public:
+  /**
+   * Constructor for the AiGraphcoreOpset1 class.
+   *
+   * \param impl_ A pointer to an implementation of the Builder class.
+   */
   AiGraphcoreOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
 
   /**
-   * Copies a tensor to an initalised tensor (variable)
+   * Copies a tensor to an initalised tensor (variable).
    *
    * This is used to update an initalised tensor (a variable created using
-   * addInitializedInputTensor) which retains its value between iterations, by
+   * addInitializedInputTensor()) which retains its value between iterations, by
    * setting the value to the value of another tensor (the updater). The purpose
    * is to manually update the tensor in use cases for variables other than
    * trained parameters (weights) or tensors used by other ops.
    *
-   * \param args A vector of the input tensors [tensor to update, updater]
-   * \param debugContext Optional debug context.
+   * \param args A vector of the input tensor ids containing the tensor to be
+   *      updated, `tensor` and the tensor containing the values for the update,
+   *      `updater` as [`tensor`, `updater`].
+   * \param debugContext Optional debug information.
    * \return An alias to the updated variable: to ensure correct ordering of
    *   the updated variable, you should use this variable for any op which
    *   should operate on the updated variable.
@@ -102,11 +116,13 @@ public:
    *
    * The group will be created from a strided input.
    *
-   * \param args A vector of input tensors: [x, scale, bias].
+   * \param args A vector of input tensor ids for input data `x`, scale `scale`,
+   *      and bias `bias` as [`x`, `scale`, `bias`].
    * \param num_groups The number of groups to separate the channels into.
    * \param epsilon The epsilon value to use to avoid division by zero.
-   * \param debugContext Optional debug context.
-   * \return A vector of tensors: [y, mean, var].
+   * \param debugContext Optional debug information.
+   * \return A vector of output tensor ids for output data `y`, the mean `mean`
+   * and the variance `var` as [`y`, `mean`, `var`].
    */
   std::vector<TensorId>
   groupnormalization(const std::vector<TensorId> &args,
@@ -117,7 +133,7 @@ public:
   // clang-format off
 // Need long lines for URLs
   /**
-   * Add a multi-convolution to the model.
+   * Add a multi-convolution operation to the model.
    *
    * Using this multi-convolution API ensures that the convolutions are
    * executed in parallel on the device.
@@ -127,25 +143,25 @@ public:
    * calling the single-convolution API (conv) once for each argument.
    *
    * For example, calling:
-   *
+   * ```
    *     A0 = conv({X0, W0, B0})
    *     A1 = conv({X1, W1})
-   *
-   * Is functionally equivalent to calling:
-   *
+   *```
+   * is functionally equivalent to calling:
+   *```
    *     {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
-   *
+   *```
    * It is possible that any two convolutions cannot be executed in parallel
    * due to topological constraints. For example, the following:
-   *
+   *```
    *     B = conv({A, W0});
    *     C = B + A
    *     D = conv({C, W1});
-   *
-   * Cannot be converted to:
-   *
+   *```
+   * cannot be converted to:
+   *```
    *     {B, D} = multiconv({{A, W0}, {C, W1}}).
-   *
+   *```
    * Note that it is not possible to create such a cycle by adding a
    * multi-convolution with this API.
    *
@@ -156,27 +172,29 @@ public:
    * the number of convolutions. Note that groups for each convolution are
    * automatically inferred from the shapes of the data and weight inputs.
    *
-   * \param tensors List of [DataId, WeightId, BiasId (optional)] for each
-   *        convolution.
+   * \param tensors List of tensor ids for input tensors for data, weights and
+   *      biases as [`data`, `weight`,`bias`] for each convolution. `bias` is
+   *      optional.
    * \param dilations The dilations attributes for each convolution.
    * \param inDilations The input dilations attributes for each convolution.
    * \param pads The pads for each convolution.
    * \param outPads The output padding for each convolution.
    * \param strides The strides for each convolution.
-   * \param availableMemoryProportions The available memory proportions per conv, each [0, 1).
+   * \param availableMemoryProportions The available memory proportions per
+   *     convolution, each [0, 1).
    * \param partialsTypes The partials type per convolution.
    * \param planType Run convolutions in parallel or series.
-   * \param perConvReservedTiles Tiles to reserve per convolution when planning.
+   * \param perConvReservedTiles The number of tiles to reserve per convolution
+   *     when planning.
    * \param cycleBackOff Cycle back-off proportion, [0, 1).
    * \param enableConvDithering Enable convolution dithering per convolution. If
-   *        true, then convolutions with different parameters will be laid out
-   *        from different tiles in an effort to improve tile balance in models.
-   * \param debugContext Optional debug context.
+   *     `true`, then convolutions with different parameters will be laid out
+   *     from different tiles in an effort to improve tile balance in models.
+   * \param debugContext Optional debug information.
    *
-   * \return The TensorId of the output tensor from each convolution.
+   * \return A vector of tensor ids of the output tensor from each convolution.
    *
-   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
-   *
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`.
    */
   // clang-format on
   std::vector<TensorId>
@@ -199,12 +217,12 @@ public:
    *
    * This is a Poplar extension.
    *
-   * If multiple tensors are provided that strides will applied to them all.
+   * If multiple tensors are provided, the strides will be applied to them all.
    *
-   * \param args Vector of tensor ids to sub-sample.
+   * \param args A vector of tensor ids to sub-sample.
    * \param strides The strides to use.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId subsample(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &strides,
@@ -215,11 +233,14 @@ public:
    *
    * This is a Poplar extension.
    *
-   * \param args Vector of tensor ids to print.
-   * \param print_gradient
-   * \param debugContext Optional debug context.
-   * \param title
-   * \return The name of the result tensor.
+   * \param args A vector of tensor ids to print.
+   * \param print_gradient Indicates whether the gradient tensor(s) associated
+   *      with the input tensor(s) are also printed. If 1, the gradient
+   *      tensor(s) are also printed, otherwise the gradient tensor(s) are not
+   *      printed.
+   * \param debugContext Optional debug information.
+   * \param title An optional title to print.
+   * \return The tensor id of the result tensor.
    */
   TensorId printtensor(const std::vector<TensorId> &args,
                        int64_t print_gradient           = 1,
@@ -229,9 +250,9 @@ public:
   /**
    * Add a no-op operation to the model.
    *
-   * \param args Vector of input tensor ids.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId nop(const std::vector<TensorId> &args,
                const DebugContext &debugContext = {});
@@ -241,10 +262,10 @@ public:
    *
    * This is a Poplar extension.
    *
-   * \param args Vector of input tensor ids.
+   * \param args A vector of input tensor ids.
    * \param scale The scale to apply.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId scale(const std::vector<TensorId> &args,
                  float scale,
@@ -252,13 +273,18 @@ public:
   /**
    * Add a scaled add operation to the model.
    *
-   *     X = scale0 * T0 + scale1 * T1
+   * The scaled add operation takes the form:
+   * ```
+   *  X = scale0 * T0 + scale1 * T1
+   * ```
+   * where \c scale0 is the scale factor to be applied to tensor \T0 and
+   * \c scale1 is the scale factor to be applied to tensor \T1.
    *
-   * \param args Vector of input tensor ids: [T0, T1, scale0, scale1].
+   * \param args A vector of input tensor ids: [T0, T1, scale0, scale1].
    * \param scale0 The scale to apply (if no \c scale0 tensor is supplied).
    * \param scale1 The scale to apply (if no \c scale1 tensor is supplied).
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId scaledadd(const std::vector<TensorId> &args,
                      float scale0,
@@ -273,9 +299,9 @@ public:
    *
    * This is a Poplar extension.
    *
-   * \param args Vector of input tensor ids.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId gelu(const std::vector<TensorId> &args,
                 const DebugContext &debugContext = {});
@@ -283,62 +309,74 @@ public:
   /**
    * Add a detach operation to the model.
    *
-   *
-   * \param args Vector of input tensor ids.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId detach(const std::vector<TensorId> &args,
                   const DebugContext &debugContext = {});
 
+  // clang-format off
   /**
-   * Add the \c DepthToSpace to the model.
-   * (This allows DepthToSpace_11 to be targeted from earlier opsets.)
+   * Add a depth-to-space operation to the model.
    *
-   * The purpose of Depth to Space, also known as pixel shuffling, is to
-   * rearrange data from the depth (channels) dimension into the spacial (width
-   * and height) dimensions. It is an efficient means of learning upsampling
-   * alongside mixing convolution with bilinear interpolation and using
-   * transpose convolution.
+   * This allows DepthToSpace_11 to be targeted from earlier opsets.
    *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+   * The purpose of a depth-to-space operation, also known as pixel shuffling,
+   * is to rearrange data from the depth (channels) dimension into the spatial
+   * (width and height) dimensions. It is an efficient means of learning
+   * upsampling alongside mixing convolution with bilinear interpolation and
+   * using transpose convolution.
    *
-   * \param args Vector containing single tensor input id.
-   * \param blocksize Indicates the scale factor: if the input is [N, C, H, W]
-   *     and the blocksize is B, the output will be [N, C/(B*B), H*B, W*B].
+   * \sa <a href="https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace">ONNX DepthToSpace operator</a>.
+   *
+   * \param args A vector containing a single tensor id of the input tensor
+   *      of shape [`N`,`C`,`H`,`W`], where `N` is the batch axis, `C` is the
+   *      channel or depth, `H` is the height and `W` is the width.
+   * \param blocksize The size of the blocks to be moved. If the input is
+   *      [`N`, `C`, `H`, `W`] and the blocksize is `B`, the output will be
+   *      [`N`, `C/(B*B)`, `H*B`, `W*B`].
    * \param mode Specifies how the data is rearranged:
-   *    * "DCR": depth-column-row order
+   *    * "DCR" (Default): depth-column-row order
    *    * "CRD": column-row-depth order
-   * \param debugContext Optional debug context.
+   * \param debugContext Optional debug information.
    * \return A tensor which is a rearrangement of the input tensor.
    */
+  // clang-format on
   TensorId depthtospace(const std::vector<TensorId> &args,
                         int64_t blocksize,
                         const std::string &mode          = "DCR",
                         const DebugContext &debugContext = {});
 
+  // clang-format off
+  // Need long lines for URL
   /**
-   * Add a \c Round operation to the model.
-   * (This allows \c Round_11 to be targeted from earlier opsets.)
+   * Add a rounding operation to the model.
    *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round
+   * This allows \c Round_11 to be targeted from earlier opsets.
    *
-   * \param args Vector of input tensor ids.
-   * \param debugContext Optional debug context.
+   * \sa <a href="https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round">ONNX Round operator</a>.
+   *
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
    * \return The normalized output tensor ids.
    */
+  // clang-format on
   TensorId round(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
 
   /**
    * Add an init operation to the model.
    *
-   * \param shape Shape of the tensor to initialise.
-   * \param data_type Data type to initialise tensor with.
-   * \param init_type Mode of tensor initialisations.
-   * \param batch_axis Axis relative to batch size.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param shape The shape of the tensor to initialise.
+   * \param data_type The data type to initialise tensor with. The value is the
+   *      integer attribute taken from the DataType enum.
+   * \param init_type The mode of the tensor initialisation. The value is the
+   *      integer attribute taken from the InitType enum.
+   * \param batch_axis Batch axis specifies the axis that the batches are split
+   *      along and is a literal integer.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId init(Attributes::Ints shape,
                 Attributes::Int data_type,
@@ -349,11 +387,13 @@ public:
   /**
    * Add an init operation to the model.
    *
-   * \param shape Shape of the tensor to initialise.
-   * \param data_type Data type to initialise tensor with.
-   * \param init_type Mode of tensor initialisations.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param shape The shape of the tensor to initialise.
+   * \param data_type The data type to initialise tensor with. The value is the
+   *      integer attribute taken from the DataType enum.
+   * \param init_type The mode of the tensor initialisation. The value is the
+   *      integer attribute taken from the InitType enum.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId init(Attributes::Ints shape,
                 Attributes::Int data_type,
@@ -363,16 +403,19 @@ public:
   /**
    * Add a dynamic slice operation to the model.
    *
-   * Creates a new slice tensor.
+   * Creates a new slice tensor, \c slice, at offset position, \c offset, in a
+   * tensor, \c tensor.
    * For example:
-   *
-   *     slice = tensor[offset]
-   *
-   * \param args Vector of input tensor ids: [tensor, offset].
-   * \param axes Axes along which to slice.
-   * \param sizes Size of the slice in each axis.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * ```
+   *  slice = tensor[offset]
+   *```
+   * \param args A vector of input tensor ids: [tensor, offset].
+   * \param axes The axes along which to slice.
+   * \param sizes The size of the slice along each axis.
+   * \param noOverlap Indicates whether the slice regions overlap or not. If 1,
+   *      slice regions do not overlap, otherwise they do overlap.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId dynamicslice(const std::vector<TensorId> &args,
                         Attributes::Ints axes,
@@ -382,16 +425,21 @@ public:
   /**
    * Add a dynamic update operation to the model.
    *
-   * Creates a copy of a \c tensor with a \c slice inserted at \c offset.
+   * Creates a copy of a tensor, \c tensor, and updates the elements of the
+   * copied tensor at offset position, \c offset, with the elements contained
+   * in the slice tensor, \c slice,
    * For example:
-   *
-   *     out = tensor, out[offset] = slice
-   *
-   * \param args Vector of input tensor ids: [tensor, offset, slice].
-   * \param axes Axes along which to update.
-   * \param sizes Size of the slice in each axis.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * ```
+   *  out = tensor
+   *  out[offset] = slice
+   *```
+   * \param args A vector of input tensor ids: [tensor, offset, slice].
+   * \param axes The axes along which to update.
+   * \param sizes The size of the slice along each axis.
+   * \param noOverlap Indicates whether the updates overlap or not. If 1,
+   *      the updates do not overlap, otherwise they do overlap.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId dynamicupdate(const std::vector<TensorId> &args,
                          Attributes::Ints axes,
@@ -401,16 +449,18 @@ public:
   /**
    * Add a dynamic zero operation to the model.
    *
-   * Creates a copy of \c tensor with a slice at \c offset set to zero.
+   * Creates a copy of a tensor, \c tensor, with a slice tensor at offset
+   * position, \c offset set to zero.
    * For example:
-   *
-   *     out = tensor, out[offset] = 0.0
-   *
-   * \param args Vector of input tensor ids [tensor, offset].
-   * \param axes Axes along which to erase.
-   * \param sizes Size of the slice in each axis.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * ```
+   *  out = tensor
+   *  out[offset] = 0.0
+   * ```
+   * \param args A vector of input tensor ids: [tensor, offset].
+   * \param axes The axes along which to zero elements.
+   * \param sizes The size of the slice along each axis.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId dynamiczero(const std::vector<TensorId> &args,
                        Attributes::Ints axes,
@@ -419,16 +469,18 @@ public:
   /**
    * Add a dynamic add operation to the model.
    *
-   * Creates a copy of \c tensor with \c slice added at \c offset.
+   * Creates a copy of a tensor, \c tensor, with a slice tensor, \c slice,
+   * added at an offset position, \c offset.
    * For example:
-   *
-   *     out = tensor, out[offset] += slice
-   *
-   * \param args Vector of input tensor ids: [tensor, offset, slice].
-   * \param axes Axes along which to add.
-   * \param sizes Size of the slice in each axis.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   *```
+   *  out = tensor
+   *  out[offset] += slice
+   *```
+   * \param args A vector of input tensor ids: [`tensor`, `offset`, `slice`].
+   * \param axes The axes along which to add the slice.
+   * \param sizes The size of the slice along each axis.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId dynamicadd(const std::vector<TensorId> &args,
                       Attributes::Ints axes,
@@ -436,34 +488,55 @@ public:
                       const DebugContext &debugContext = {});
 
   /**
-   * Slice a 2D tensor based on offsets specified by a tensor.
+   * Slice a 2D tensor based on offsets.
    *
-   * The outermost dimension is sliced;
-   * tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
-   * for each entry in tN/tInOffset/tOutOffset; entries after the first tN==0
-   * may be ignored. Unreferenced elements of tOut are zeroed if zeroUnused is
+   * The outermost dimension is sliced. For the following:
+   *  * `source` is the source tensor.
+   *  * `destination` is the destination tensor.
+   *  * `N` is the number of elements to copy.
+   *  * `sourceOffset` is the first element read from the source tensor.
+   *  * `destinationOffset` is the first element written to in the destination
+   *     tensor.
+   * Then, for each entry in `N`, `sourceOffset` and `destinationOffset`:
+   *```
+   * destination[destinationOffset:destinationOffset+N][...] =
+   * source[sourceOffset:sourceOffset+N][...]
+   * ```
+   * Entries after the first `N==0` may be ignored.
+   * Unreferenced elements of `destination` are zeroed if `zeroUnused` is
    * set. The same output element should not be written by multiple inputs.
    *
-   * tIn and tOut must have rank greater than or equal to 2. The outer dimension
-   * is sliced; the product of the inner dimensions must match. tInOffset,
-   * tOutOffset and tN must be 1d and the same size. \param [source,
-   * destination, N, sourceOffset, destinationOffset] \param zeroUnused Whether
-   * to zero unreferenced tOut elements. \param debugContext     Optional debug
-   * context.
+   * `source` and `destination` must have rank greater than or equal to 2. The
+   * outer dimension
+   * is sliced; the product of the inner dimensions must match. `sourceOffset`,
+   * `destinationOffset` and `N` must be 1-dimensional and of the same size.
+   * For example:
+   *
+   *```
+   * N = [1, 1, 1]
+   * sourceOffset = [0, 2, 4]
+   * destinationOffset = [0, 1, 2]
+   *```
+   * \param args A vector of input tensor ids for the following tensors
+   *      [`source`, `destination`, `N`, `sourceOffset`, `destinationOffset`].
+   * \param zeroUnused Determines whether to zero unreferenced `destination`
+   *      elements. If 1, the unreferenced elements are zeroed, otherwise they
+   *      are not zeroed.
+   * \param debugContext Optional debug information.
    */
   TensorId sequenceslice(const std::vector<TensorId> &args,
                          Attributes::Int zeroUnused,
                          const DebugContext &debugContext = {});
 
   /**
-   * Add a call operation to the model
+   * Add a call operation to the model.
    *
    * This is a Poplar extension, to expose manual code re-use to
    * the builder.
    *
-   * \param args Vector of input tensor ids.
+   * \param args A vector of input tensor ids.
    * \param callee The subgraph to call into.
-   * \param debugContext Optional debug context.
+   * \param debugContext Optional debug information.
    * \return A vector of tensors; the subgraph outputs.
    */
   std::vector<TensorId> call(const std::vector<TensorId> &args,
@@ -472,15 +545,15 @@ public:
                              const DebugContext &debugContext = {});
 
   /**
-   * DEPRECATED: Add a replicated all-reduce operation to the model.
+   * DEPRECATED: Add a replicated allreduce operation to the model.
    *
    * This is a Poplar extension, to expose manual code re-use to
    * the builder.
    *
-   * \param args Vector of input tensor ids to reduce across.
+   * \param args A vector of input tensor ids to reduce across.
    * \param commGroup GCL CommGroup parameter.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId replicatedallreduce(
       const std::vector<TensorId> &args,
@@ -488,16 +561,17 @@ public:
       const DebugContext &debugContext                        = {});
 
   /**
-   * Add a replicated all-reduce operation to the model
+   * Add a replicated allreduce operation to the model.
    *
    * This is a Poplar extension, to expose manual code re-use to
-   * the builder
+   * the builder.
    *
-   * \param args               Vector of input tensor ids to reduce across
-   * \param collectiveOperator GCL collective operator
-   * \param commGroup          GCL CommGroup parameter
-   * \param debugContext       Optional debug context
-   * \return                   The name of the result tensor
+   * \param args A vector of input tensor ids to reduce across
+   * \param collectiveOperator A Graphcore Communication Library (GCL)
+   *      collective operator.
+   * \param commGroup A GCL CommGroup parameter.
+   * \param debugContext Optional debug information
+   * \return The tensor id of the result tensor.
    */
   TensorId replicatedallreduce(
       const std::vector<TensorId> &args,
@@ -507,16 +581,17 @@ public:
       const DebugContext &debugContext             = {});
 
   /**
-   * Add a replicated reduce-scatter operation to the model
+   * Add a replicated reduce-scatter operation to the model.
    *
    * This is a Poplar extension, to expose manual code re-use to
-   * the builder
+   * the builder.
    *
-   * \param args               Vector of input tensor ids to reduce across
-   * \param collectiveOperator GCL collective operator
-   * \param commGroup          GCL CommGroup parameter
-   * \param debugContext       Optional debug context
-   * \return                   The name of the result tensor
+   * \param args A vector of input tensor ids to reduce across.
+   * \param collectiveOperator A Graphcore Communication Library (GCL)
+   *      collective operator.
+   * \param commGroup A GCL CommGroup parameter.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId replicatedreducescatter(
       const std::vector<TensorId> &args,
@@ -531,11 +606,11 @@ public:
    * Calculates the mean absolute error between each element in the input with
    * a zero target.
    *
-   * \param args Vector of input tensor ids.
-   * \param lambda Scale factor of L1 loss.
-   * \param reduction Type of reduction to perform on the individual losses.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param lambda The scale factor of the L1 loss.
+   * \param reduction The type of reduction to perform on the individual losses.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId l1loss(const std::vector<TensorId> &args,
                   const float lambda,
@@ -545,17 +620,16 @@ public:
   /**
    * Add a negative log-likelihood loss operation to the model.
    *
-   * Calculates the nll loss given a probability tensor over classes, and
-   * a target tensor containing class labels.
+   * Calculates the negative log likelihood (NLL) loss given a probability
+   * tensor over classes, and a target tensor containing class labels.
    *
-   * \param args Vector of input tensor ids: probability and tensor.
-   * \param reduction Type of reduction to perform on the individual losses.
+   * \param args A vector of input tensor ids: probability and tensor.
+   * \param reduction The type of reduction to perform on the individual losses.
    * \param ignoreIndex Optional class index to ignore in loss calculation.
-   * \param inputIsLogProbability Specifies if the input tensor contains
-   *                              log-probabilities or raw probabilities
-   *                              (false, default).
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor.
+   * \param inputIsLogProbability If `true` the input tensor contains
+   *     log-probabilities, otherwise raw probabilities. Default = `false`.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
 
   TensorId nllloss(const std::vector<TensorId> &args,
@@ -569,38 +643,30 @@ public:
    *
    * Calculates the loss using the identity operator.
    *
-   * \param args Vector of input tensor ids.
-   * \param reduction Type of reduction to perform on the individual losses.
-   * \param debugContext Optional debug context.
-   * \return The name of the result tensor
+   * \param args A vector of input tensor ids.
+   * \param reduction The type of reduction to perform on the individual losses.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId identityloss(const std::vector<TensorId> &args,
                         const ReductionType reduction    = ReductionType::Mean,
                         const DebugContext &debugContext = {});
 
   /**
-   * Add a tensor remap operation to the model
+   * Add a tensor remap operation to the model.
    *
    * Changes the tensor layout to conform to the downstream consumers, which
    * means the consumers can read the tensor without having to rearrange it.
    *
-   * \param args      [tensor_to_remap] Single tensor that should be copied
-   *                  to a new tensor with a tensor layout conforming to the
-   *                  downstream consumer.
-   * \param remapType Type of remap to perform on the forward/backward pass.
-   *                  (backward pass remapping requires the Op to exist in the
-   *                  IR  before autodiff).
-   *                  FwdBwdReverse: Remap the tensor in the forward pass,
-   *                                 reverse-apply the remapping in the
-   *                                 backward pass. That means the gradient
-   *                                 tensor of the input to this Op will have
-   *                                 the same layout as the input tensor itself.
-   *                  FwdBwd:        Remap the tensor in the forward pass and
-   *                                 backward pass independently.
-   *                  Fwd:           Only remap the tensor in the forward pass,
-   *                                 use identity for the backward pass.
-   * \param name      Optional identifier for operation
-   * \return          The name of the result tensor
+   * \param args The tensor id of the tensor to remap. This is a single tensor
+   *      that should be copied to a new tensor with a tensor layout conforming
+   *      to the downstream consumer.
+   * \param remap_type The type of remap to perform on the forward/backward
+   *      pass. Backward pass remapping requires the op to exist in the
+   *      IR before autodiff. The value is the integer attribute value of the
+   *      enum TensorRemapType.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId tensorremap(const std::vector<TensorId> &args,
                        Attributes::Int remap_type,
@@ -610,23 +676,26 @@ public:
    * Add a connectionist temporal classification (CTC) loss operation to the
    * model.
    *
-   * With T being maximum input length, N being batch size, C being number of
-   * classes, S being a maximum target length, this op calculates the CTC loss
-   * for a logarithmised probabilities tensor with shape [T, N, C], a class
-   * target tensor with shape [N, S], an input lengths tensor [N] and a target
-   * lengths tensor [N].
+   * With maximum input length `T`, batch size `N`, number of classes `C` and
+   * maximum target length `S`, this op calculates the CTC loss for a
+   * logarithmised probabilities tensor with shape [`T`, `N`, `C`], a class
+   * target tensor with shape [`N`, `S`], an input lengths tensor [`N`] and a
+   * target lengths tensor [`N`].
    *
-   * Note that C includes a blank class (default=0). The probabilities tensor
-   * is padded as required. Target sequences are also padded and are
-   * populated with values less than equal to C, not including the blank class,
-   * up to their respective target lengths. Note that target lengths cannot
-   * exceed input lengths.
+   * Note that `C` includes a blank class (default=0). The probabilities tensor
+   * is padded as required. Target sequences are also padded and are populated
+   * with values less than or equal to `C`, not including the blank class, up to
+   * their respective target lengths. Note that target lengths cannot exceed
+   * input lengths.
    *
-   * \param args [log_probs,targets,input_lengths,target_lengths]
-   * \param reduction Type of reduction to perform on the individual losses
+   * \param args A vector of input tensor ids [`log_probs`,`targets`,
+   *      `input_lengths`, `target_lengths`].
+   * \param reduction The type of reduction to perform on the individual losses.
    * \param blank The integer representing the blank class.
-   * \param debugContext Optional debug context
-   * \return The name of the result tensor
+   * \param outDataType The data type of the output tensors. Default =
+   *      `UNDEFINED`.
+   * \param debugContext Optional debug information
+   * \return The tensor id of the result tensor.
    */
   TensorId ctcloss(const std::vector<TensorId> &args,
                    const ReductionType reduction    = ReductionType::Mean,
@@ -652,18 +721,21 @@ public:
    * Calculate the most likely \p topPaths labels and their probabilities given
    * the input \p logProbs with lengths \p dataLengths.
    *
-   * \param args Vector of input tensor ids. These are [logProbs, dataLengths],
-   *     where logProbs is of shape [maxTime, batchSize, numClasses], and
-   *     dataLengths is of shape [batchSize].
+   * \param args A vector of input tensor ids. These are [`logProbs`,
+   *     `dataLengths`], where `logProbs` is of shape [`maxTime`, `batchSize`, *
+   *     `numClasses`], and `dataLengths` is of shape [`batchSize`].
    * \param blank The integer representing the blank class.
    * \param beamWidth The number of beams to use when decoding.
    * \param topPaths The number of most likely decoded paths to return, must be
-   *     less than or equal to \p beamWidth.
-   * \param debugContext Optional debug context.
-   * \return The names of the result tensors. These are [labelProbs,
-   *     labelLengths, decodedLabels], where labelProbs is of shape [batchSize,
-   *     topPaths], labelLengths is of shape [batchSize, topPaths], and
-   *     decodedLabels is of shape [batchSize, topPaths, maxTime].
+   *      less than or equal to \p beamWidth.
+   * \param  debugContext Optional debug information.
+   *
+   * \return The names of the result tensors. These are [`labelProbs,
+   *      `labelLengths`, `decodedLabels`], where
+   *      `labelProbs` is of shape
+   *      [`batchSize`, `topPaths`], `labelLengths` is of shape [`batchSize`,
+   *      `topPaths`], and `decodedLabels` is of shape [`batchSize`,
+   *      `topPaths`, `maxTime`].
    */
   std::vector<TensorId>
   ctcbeamsearchdecoder(const std::vector<TensorId> &args,
@@ -679,13 +751,14 @@ public:
    * shape parameter that is used to define the shape of the dropout mask so
    * that strongly correlated features in the input tensor can be preserved.
    * The provided shape must be broadcastable to the input tensor.  Note that
-   * this operation targets the poprand library function of the same name.
+   * this operation targets the `poprand` library function of the same name.
    *
-   * \param args Vector of input tensor ids.
-   * \param shape Shape of dropout mask. Must be broadcastable to the input.
-   * \param ratio Probability of dropping an input feature (default = 0.5).
-   * \param name Optional identifier for operation.
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param shape The shape of dropout mask. This must be broadcastable to the
+   *      input.
+   * \param ratio The probability of dropping an input feature. Default = 0.5.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId shapeddropout(const std::vector<TensorId> &args,
                          const std::vector<int64_t> &shape,
@@ -695,69 +768,72 @@ public:
   /**
    * Add an \c atan2 operation to the model.
    *
-   * Returns the element-wise angle theta as a tensor, -pi < theta <= pi, such
-   * that for two input tensors x and y and given r != 0,
-   * x = r cos theta, and
-   * y = r sin theta, element-wise.
+   * Returns the element-wise angle theta as a tensor.
+   * For \f$ -\pi < \theta \le \pi \f$, such
+   * that for two input tensors \f$x\f$ and \f$y\f$ and given \f$ r \ne 0 \f$,
+   * then \f$ x = r \cos\theta \f$, and \f$ y = r \sin\theta \f$, element-wise.
    *
-   * In the case of x > 0, theta = arctan(y/x).
+   * In the case of \f$ x > 0 \f$ , \f$ \theta = arctan(y/x)\f$ .
    *
-   * \param args Vector of input tensor ids: [y, x].
-   * \param name Optional identifier for operation.
-   * \return The name of the result tensor containing element wise theta values.
+   * \param args A vector of input tensor ids: [`y`, `x`].
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId atan2(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
 
   /**
-   * Add \c expm1 operation to the model.
-   * It computes exp(x) - 1.
-   * Calculates the element-wise exponential of the input tensor and
-   * subtracts one.
+   * Add a \c expm1 operation to the model.
    *
-   * \param args Vector of input tensor ids.
-   * \param name Optional identifier for operation.
-   * \return The name of the result tensor.
+   * This calculates the element-wise exponential of the input tensor and
+   * subtracts one: \f$ exp(x) - 1 \f$.
+   *
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId expm1(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
 
   /**
-   * Add \c log1p operation to the model.
-   * It computes log(x + 1).
-   * This calculates the element-wise logarithm of the
-   * input tensor plus one.
+   * Add a \c log1p operation to the model.
    *
-   * \param args Vector of input tensor ids.
+   * This calculates the element-wise logarithm of the input tensor plus one:
+   * \f$ log(x + 1) \f$.
+   *
+   * \param args A vector of input tensor ids.
    * \param name Optional identifier for operation.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId log1p(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
 
   /**
-   * Add reshape operation to the model.
-   * Reshape the input tensor.
-   * This reshape takes the shape to reshape into as an attribute
-   * instead of a tensor input as the ONNX reshape op.
+   * Add a reshape operation to the model.
    *
-   * \param arg Vector with single input tensor id.
-   * \param shape The shape of the output Tensor. The output Tensor
-   *     must contain the same number of elements as the input Tensor.
-   * \param name Optional identifier for operation.
-   * \return The name of the result tensor.
+   * This reshapes an input tensor.
+   * This reshape takes the target shape as an attribute
+   * instead of a tensor input as for the ONNX reshape op.
+   *
+   * \param arg The tensor id of the input tensor.
+   * \param shape The shape of the output tensor. The output tensor
+   *     must contain the same number of elements as the input tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId reshape(const TensorId &arg,
                    const Attributes::Ints &shape,
                    const DebugContext &debugContext = {});
 
   /**
-   * Add fmod operation to the model.
+   * Add an `fmod` operation to the model.
    *
-   * This is equivalent to C's fmod function. The result has the same sign as
-   * the dividend.
+   * This is equivalent to the C `fmod` function. The result has the same sign
+   * as the dividend.
    *
-   * \param args Input tensors.
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
    * \return Computes the element-wise remainder of division. The remainder has
    *     the same sign as the dividend.
    */
@@ -765,11 +841,12 @@ public:
                 const DebugContext &debugContext = {});
 
   /**
-   * Add remainder operation to the model.
+   * Add a remainder operation to the model.
    *
-   * This is equivalent to Python's modulo operator %. The result has the same
+   * This is equivalent to Python's modulo operator `%`. The result has the same
    * sign as the divisor.
-   * \param args Input tensors.
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
    * \return Computes the element-wise remainder of division. The remainder has
    *     the same sign as the divisor.
    */
@@ -779,29 +856,31 @@ public:
   /**
    * Add a reverse operator to the model.
    *
-   * Reverse, or 'flip', the tensor along the specified dimensions
+   * This reverses or flips the tensor along the specified dimensions.
    *
-   * \param args Input tensors.
-   * \param dimensions Dimensions along which to reverse the tensor. If this is
-   *        empty then this is equivalent to the identity operator
-   * \return The name of the result tensor.
+   * \param args A vector of input tensor ids.
+   * \param dimensions The dimensions along which to reverse the tensor. If
+   *      this is empty then this is equivalent to the identity operator.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the reversed tensor.
    */
   TensorId reverse(const std::vector<TensorId> &args,
                    const std::vector<int64_t> &dimensions,
                    const DebugContext &debugContext = {});
 
   /**
-   * Add a slice to the model
-   * This version of slice takes the starts, the ends and the axes as attributes
-   * rather than tensor inputs. This reduces the amount of ops as constant
+   * Add a slice to the model.
+   *
+   * This version of slice uses the `starts`, `ends` and `axes` attributes
+   * rather than tensor inputs. This reduces the number of ops as constant
    * tensors are treated as ops while attributes are not.
    *
-   * \param args List of input tensor ids
-   * \param axes The 'axes' attribute
-   * \param ends The 'ends' attribute
-   * \param starts The 'starts' attribute
-   * \param name Optional identifier for the operation
-   * \return The normalized output tensor ids
+   * \param args A vector of input tensor ids.
+   * \param ends The `ends` attribute.
+   * \param starts The `starts` attribute.
+   * \param axes The `axes` attribute.
+   * \param debugContext Optional debug information.
+   * \return The normalized output tensor id.
    */
   TensorId slice(const std::vector<TensorId> &args,
                  const std::vector<int64_t> &ends,
@@ -812,19 +891,19 @@ public:
   /**
    * Add a packedDataBlock operator to the model.
    *
-   * Unpack packed sequences of data according to lengths and offsets tensors,
-   * and call the callback on the unpacked sequences.
+   * Unpack packed sequences of data and call the callback function on the
+   * unpacked sequences.
    *
-   * \param args Input tensors.
+   * \param args A vector of input tensor ids.
    * \param maxSequenceLengths The maximum length of a sequence in each of the
-   *        data inputs.
+   *     data inputs.
    * \param resultSize The size of the first dimension of the
-   *        result tensor.
+   *     result tensor.
    * \param callbackBatchSize The number of batches to pass
-   *        to the callback.
+   *     to the callback.
    * \param callback The callback function.
    * \param debugContext Optional debug information.
-   * \return The name of the result tensor.
+   * \return The tensor id of the result tensor.
    */
   TensorId packedDataBlock(const std::vector<TensorId> &args,
                            const std::vector<int64_t> &maxSequenceLengths,
@@ -834,10 +913,11 @@ public:
                            const DebugContext &debugContext = {});
 
   /**
-   * Add abort operation to the model.
+   * Add an abort operation to the model.
    *
    * The operation can be conditional or unconditional.
-   * \param args Optional input tensor to test condition
+   * \param args A vector of input tensor ids.
+   * \param debugContext Optional debug information.
    */
   void abort(const std::vector<TensorId> &args,
              const DebugContext &debugContext = {});
@@ -845,9 +925,10 @@ public:
   /**
    * Add a bitwise NOT operation to the model.
    *
-   * The operation computes the bitwise NOT of a given integer tensor.
-   * \param args Input tensor of type integer.
-   * \return The name of the result tensor.
+   * The operation computes the bitwise NOT of an integer tensor.
+   * \param args An input tensor of type integer.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId bitwisenot(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
@@ -855,9 +936,10 @@ public:
   /**
    * Add a bitwise AND operation to the model.
    *
-   * The operation computes the bitwise AND of given two integer tensors.
+   * The operation computes the bitwise AND of two integer tensors.
    * \param args Two broadcastable input tensors of type integer.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId bitwiseand(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
@@ -865,9 +947,10 @@ public:
   /**
    * Add a bitwise OR operation to the model.
    *
-   * The operation computes the bitwise OR of given two integer tensors.
+   * The operation computes the bitwise OR of two integer tensors.
    * \param args Two broadcastable input tensors of type integer.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId bitwiseor(const std::vector<TensorId> &args,
                      const DebugContext &debugContext = {});
@@ -875,9 +958,10 @@ public:
   /**
    * Add a bitwise XOR operation to the model.
    *
-   * The operation computes the bitwise XOR of given two integer tensors.
+   * The operation computes the bitwise XOR of two integer tensors.
    * \param args Two broadcastable input tensors of type integer.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId bitwisexor(const std::vector<TensorId> &args,
                       const DebugContext &debugContext = {});
@@ -885,33 +969,35 @@ public:
   /**
    * Add a bitwise XNOR operation to the model.
    *
-   * The operation computes the bitwise XNOR of given two integer tensors.
+   * The operation computes the bitwise XNOR of two integer tensors.
    * \param args Two broadcastable input tensors of type integer.
-   * \return The name of the result tensor.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId bitwisexnor(const std::vector<TensorId> &args,
                        const DebugContext &debugContext = {});
 
-  /*
+  /**
    * Add reducemedian operation to the model.
    *
-   * It computes the median values along the specified axes. In the case of even
-   * number of elements, the lower of the two medians is selected. By default,
-   * the input tensor is reduced over all axes. Additionally, the operation also
-   * returns the indices of found median values in the reduction axis. If
-   * reduction is performed over multiple axes, the indices is a flattened index
-   * over the reduced axes, similar to numpy.ndarray.flat. The index may not be
-   * the first occurrence of the median value found in the input tensor.
+   * This method computes the median values along the specified axes. In the
+   * case of an even number of elements, the lower of the two medians is
+   * selected. By default, the input tensor is reduced over all axes.
+   * Additionally, the operation also returns the indices of found median values
+   * in the reduction axis. If reduction is performed over multiple axes, the
+   * indices are "flattened" over the reduced axes, similar to
+   * `numpy.ndarray.flat`. The index may not be the first occurrence of the
+   * median value found in the input tensor.
    *
-   * \param args Vector with single input tensor id.
-   * \param axes Axes over which the reduction is performed.
-   * \param keepdims If true, the result tensors are of equal size as the input,
-   *        but with reduction axes of size 1. Otherwise, the reduction
-   *        axes are squeezed and the result tensors have fewer dimensions
-   *        compared to the input.
+   * \param args A vector with a single input tensor id.
+   * \param axes The axes over which the reduction is performed.
+   * \param keepdims If 1, the result tensors are of equal size as the
+   *      input, but with reduction axes of size 1. Otherwise, the reduction
+   *      axes are squeezed and the result tensors have fewer dimensions
+   *      compared to the input. Default = 1.
    * \param debugContext Optional debug information.
    * \return The names of the two result tensors, one for median values and one
-   *         for indices.
+   *     for indices.
    */
   std::vector<TensorId> reducemedian(
       const std::vector<TensorId> &args,
@@ -920,23 +1006,27 @@ public:
       const DebugContext &debugContext                   = {});
 
   /**
-   * Add a scatterreduce operation to the model
+   * Add a scatterreduce operation to the model.
    *
-   * Reduces all the values from the src tensor at the indices specified along
-   * the given axis. Generally, src and index tensors are required to have the
-   * same shape, however, for two-dimensional inputs they can be different if
-   * the following requirements are met: src is of shape [N, M], index is of
-   * shape [N, 1] and reduction axis is 0. The result in such cases is the same
-   * as if the index tensor was broadcasted to [N, M].
+   * Reduces all the values from the source tensor` `src`` at the indices
+   * specified along the given axis by `index`. Generally, the `src` and `index`
+   * tensors are required to have the same shape. However, for two-dimensional
+   * inputs they can be different if the following requirements are met: `src`
+   * is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0.
+   * The result in such cases is the same as if the index tensor was broadcasted
+   * to [N, M].
    *
+   * ```
    *  for i in range(axis_size):
    *      output[i] = reduce(src[index == i])
-   *
-   * \param args list of [src, index] tensors
-   * \param axis_size Size in the reduced axis
-   * \param axis Axis to reduce along (default = -1)
-   * \param reduction The type of reduction to apply (default = "sum")
-   * \return The name of the result tensor.
+   * ```
+   * \param args A vector of tensor ids as [`src`, `index`].
+   * \param axis_size The size of the reduced axis.
+   * \param axis The axis to reduce along. Default = -1.
+   * \param reduction The type of reduction to apply. Default =
+   *      `ScatterReduction::Sum`.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId scatterreduce(const std::vector<TensorId> &args,
                          Attributes::Int axis_size,
@@ -950,19 +1040,23 @@ public:
    * The operation computes the swish activation function, also known
    * as the SiLU activation.
    *
-   * \param args Vector with single input tensor id.
-   * \return The name of the result tensor.
+   * \param args A vector with a single input tensor id.
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId swish(const std::vector<TensorId> &args,
                  const DebugContext &debugContext = {});
 
   /**
-   * Add an incrementmod (y = (x + increment) % modulus) operation to the model.
+   * Add an incrementmod operation to the model.
    *
-   * \param args Vector with single input tensor id.
-   * \param increment Scalar increment
-   * \param modulus Scalar modulus
-   * \return The name of the result tensor.
+   * The operation is of the form `y = (x + increment) % modulus`.
+   *
+   * \param args A vector with a single input tensor id.
+   * \param increment A scalar increment
+   * \param modulus A scalar modulus
+   * \param debugContext Optional debug information.
+   * \return The tensor id of the result tensor.
    */
   TensorId incrementmod(const std::vector<TensorId> &args,
                         Attributes::Float increment,
@@ -974,13 +1068,13 @@ public:
  * An interface for a Builder, used for creating ONNX graphs.
  */
 class Builder {
+  /// Constructor for the Builder class.
   Builder();
 
 public:
   /**
-   * Return a Builder for a graph which is nested inside this Builder's graph.
+   * Create a builder for a graph which is nested inside this builder's graph.
    */
-
   Builder &createSubgraphBuilder();
 
   /**
@@ -993,58 +1087,56 @@ public:
    * and validates it.
    *
    * \param modelProtoOrFilename Either an ONNX model protobuf, or the name of a
-   *                             file containing an ONNX model protobuf.
+   *      file containing an ONNX model protobuf.
    */
   static std::unique_ptr<Builder>
   createFromOnnxModel(const std::string &modelProtoOrFilename);
 
+  /// Destructor for the Builder class.
   ~Builder();
 
   /**
-   * Add a new input tensor to the model (with \p TensorInfo).
+   * Add a new input tensor to the model.
    *
-   * \param tensorInfo The shape and type of the input tensor.
+   * \param tensorInfo The shape and data type of the input tensor.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId addInputTensor(const TensorInfo &tensorInfo,
                           const popart::DebugContext &debugContext = {});
 
   /**
-   * Add a new input tensor to the model (with data type and shape).
+   * Add a new input tensor to the model.
    *
-   * \param dataType The type of the input tensor.
+   * \param dataType The data type of the input tensor.
    * \param shape The shape of the input tensor.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId addInputTensor(const std::string &dataType,
                           const Shape &shape,
                           const popart::DebugContext &debugContext = {});
 
   /**
-   * Add a new input tensor to the model (with \p TensorInfo and additional
-   * settings for \p TileSet and \p ExchangeStrategy).
+   * Add a new input tensor to the model.
    *
-   * \param tensorInfo The shape and type of the input tensor.
-   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy
+   * \param tensorInfo The shape and data type of the input tensor.
+   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId addInputTensor(const TensorInfo &tensorInfo,
                           const InputSettings &settings,
                           const popart::DebugContext &debugContext = {});
 
   /**
-   * Add a new input tensor to the model (with data type and shape,
-   * with \p TensorInfo and additional settings for \p TileSet and
-   * \p ExchangeStrategy).
+   * Add a new input tensor to the model.
    *
-   * \param dataType The type of the input tensor.
+   * \param dataType The data type of the input tensor.
    * \param shape The shape of the input tensor.
-   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy
+   * \param InputSettings Settings for \p TileSet and \p ExchangeStrategy.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId addInputTensor(const std::string &dataType,
                           const Shape &shape,
@@ -1055,16 +1147,16 @@ public:
    * Add a new input tensor without a type or shape to the model.
    *
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId addUntypedInputTensor(const popart::DebugContext &debugContext = {});
 
   /**
-   * Add a new named input tensor to the model.
+   * Add a new named input tensor (from the parent graph) to the model.
    *
    * \param tensorId The identifier string of the input tensor. This identifier
-   *     must already exist in the parent GraphProto's name scope and must
-   *     appear topologically before this sub-graph.
+   *      must already exist in the name scope of the parent `GraphProto` and
+   *      must appear topologically before this sub-graph.
    */
   void addInputTensorFromParentGraph(const TensorId &tensorId);
 
@@ -1073,7 +1165,7 @@ public:
    *
    * \param initData The initial data of the input tensor.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId
   addInitializedInputTensor(const ConstVoidData &initData,
@@ -1083,9 +1175,10 @@ public:
    * Add a new pre-initialized input tensor to the model.
    *
    * \param initData The initial data of the input tensor.
-   * \param variableSettings
+   * \param variableSettings The settings that determine how variables are
+   *      retrieved from replicas.
    * \param debugContext Optional debug information.
-   * \return The unique name of the input tensor.
+   * \return The tensor id of the input tensor.
    */
   TensorId
   addInitializedInputTensor(const ConstVoidData &initData,
@@ -1093,8 +1186,10 @@ public:
                             const popart::DebugContext &debugContext = {});
 
   /**
-   * Adds one of the outputs from a node in the graph into the list of output
+   * Add an output tensor from a node in the graph into the list of output
    * tensors.
+   *
+   * \param arg0 The tensor id of the output tensor to be added.
    */
   void addOutputTensor(const TensorId &arg0);
 
@@ -1109,7 +1204,7 @@ public:
   AiOnnxOpset7 aiOnnxOpset7() { return AiOnnxOpset7(this->impl_); }
 
   /**
-   * Return the builder interface for ai.onnx opset 7.
+   * Return the builder interface for ai.onnx opset 8.
    */
   AiOnnxOpset8 aiOnnxOpset8() { return AiOnnxOpset8(this->impl_); }
 
@@ -1140,8 +1235,17 @@ public:
     return AiGraphcoreOpset1(this->impl_);
   }
 
-  // Add a custom op to the model
-  // TODO : Think of a better name
+  /**
+   * Return the output tensors from a custom op added to the model.
+   *
+   *\param opid The id of the operator.
+   *\param opsetVersion The version of the opset.
+   *\param inputs The tensor ids of the A vector of input tensor ids.
+   *\param numOutputs The number of output tensors.
+   *\param attributes The map of attributes and their values to be added.
+   *\param debugContext Optional debug information.
+   * \returns The output tensors.
+   */
   std::vector<TensorId>
   customOp(const OperatorIdentifier &opid,
            int opsetVersion,
@@ -1150,8 +1254,16 @@ public:
            const std::map<std::string, popart::any> &attributes,
            const DebugContext &debugContext = {});
 
-  // Add a custom op to the model
-  // provide the name of the output tensors to use
+  /**
+   * Add a custom op to the model.
+   *
+   *\param opid The id of the operator.
+   *\param opsetVersion The version of the opset.
+   *\param inputs The tensor ids of the A vector of input tensor ids.
+   *\param outputs The tensor ids of the output tensors.
+   *\param attributes The map of attributes and their values to be added.
+   *\param debugContext Optional debug information.
+   */
   void customOp(const OperatorIdentifier &opid,
                 int opsetVersion,
                 const std::vector<TensorId> &inputs,
@@ -1160,8 +1272,13 @@ public:
                 const DebugContext &debugContext = {});
 
   /**
-   * This is a helper function that will add a constant and a reshape using the
-   * provided domain.
+   * Add a constant and a reshape a tensor using the provided domain.
+   *
+   *\param t The builder interface.
+   *\param args The tensor ids of the tensors to be updated.
+   *\param shape The shape information to be used.
+   *\param name (Optional) The name of the updated tensor. Default: None.
+   * \return The tensor id of the updated tensor.
    */
   template <class T>
   TensorId reshape_const(T &t,
@@ -1174,12 +1291,24 @@ public:
     return t.reshape({args[0], newShape}, name);
   }
 
+  /**
+   * Set a value for the output tensor location attribute.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param value The location of the tensor.
+   */
   void outputTensorLocation(const TensorId &nodeOutputName,
                             TensorLocation value) {
     addNodeAttribute(
         sOutputTensorLocationAttribute, value.serialize(), {nodeOutputName});
   }
 
+  /**
+   * Enable recomputation of the output of the node in the backward pass.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param value (Optional) The type of the recompute.
+   */
   void recomputeOutput(const TensorId &nodeOutputName, RecomputeType value) {
     addNodeAttribute(sRecomputeOutputAttribute,
                      static_cast<int64_t>(value),
@@ -1187,11 +1316,12 @@ public:
   }
 
   /**
-   * Enable/disable recomputation of the output of the node in the backward
+   * Enable or disable recomputation of the output of the node in the backward
    * pass.
    *
-   * \param nodeOutputName Name of the output tensor of the ONNX node.
-   * \param value If the recompute is enabled/disabled.
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param value (Optional) The type of the recompute. Default:
+   *      `RecomputeType::Recompute`.
    */
   void recomputeOutputInBackwardPass(
       const TensorId &nodeOutputName,
@@ -1202,11 +1332,13 @@ public:
   }
 
   /**
-   * Enable/disable recomputation of the output of the node in the backward
+   * Enable or disable recomputation of the output of the node in the backward
    * pass.
    *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node.
-   * \param value If the recompute is enabled/disabled.
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node.
+   * \param value (Optional) The type of the recompute. Default:
+   *      `RecomputeType::Recompute`.
    */
   void recomputeOutputInBackwardPass(
       const std::set<TensorId> &nodeOutputNames,
@@ -1217,22 +1349,22 @@ public:
   }
 
   /**
-   * Return whether the given node will have its output recomputed in the
-   * backward pass.
+   * Check if a node will have its output recomputed in the backward pass.
    *
-   * \param nodeOutputName Name of the output tensor of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
+   * \returns `true` if the output will be recomputed; `false` otherwise.
    */
   bool getRecomputeOutputInBackwardPass(const TensorId &nodeOutputName) {
     return getBoolNodeAttribute(sRecomputeOutputAttribute, {nodeOutputName});
   }
 
   /**
-   * Return whether the given node will have its output recomputed in the
-   * backward pass.
+   * Check if a node will have its output recomputed in the backward pass.
    *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
+   * \returns `true` if the output will be recomputed; `false` otherwise.
    */
   bool
   getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
@@ -1242,21 +1374,24 @@ public:
   /**
    * Add checkpoint operations to the model.
    *
-   * This is the same as an identity but is recomputeType Checkpoint by default.
+   * This is the same as an identity op but RecomputeType is `Checkpoint`
+   * by default.
    * Use this to checkpoint a subset of an operation's output tensors.
    *
-   * \param nodeOutputNames Tensors to checkpoint.
+   * \param nodeOutputNames The tensors to checkpoint.
    * \return The checkpointed tensors.
    */
   std::vector<TensorId>
   checkpointOutput(const std::vector<TensorId> &nodeOutputNames);
 
   /**
-   * Set the virtual graph that computes the given node.  Applies when creating
-   * a graph for a multi-IPU configuration.
+   * Set the virtual graph that computes the given node.
+   *
+   * Applies when creating a graph for a multi-IPU configuration.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node.
    * \param value The index of the virtual graph that computes this node.
+   *      Default=0.
    */
   void virtualGraph(const TensorId &nodeOutputName, int64_t value = 0) {
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
@@ -1264,43 +1399,74 @@ public:
 
   /**
    * Set the execution phase that computes the given node.
-   * \param nodeOutputName Name of the output tensor of the ONNX node.
+   *
+   * Applies when creating a graph for a multi-IPU configuration.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
    * \param value The index of the virtual graph that computes this node.
+   *      Default=0.
    */
   void executionPhase(const TensorId &nodeOutputName, int64_t value = 0) {
     addNodeAttribute(sExecutionPhaseAttribute, value, {nodeOutputName});
   }
 
+  /**
+   * Set the value on the pipeline stage attribute.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param value The value to be set.
+   */
   void pipelineStage(const TensorId &nodeOutputName, int64_t value) {
     addNodeAttribute(sPipelineStageAttribute, value, {nodeOutputName});
   }
 
+  /**
+   * Set the value on the pipeline stage attribute.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node.
+   * \param value The value to be set.
+   */
   void pipelineStage(const std::set<TensorId> &nodeOutputNames, int64_t value) {
     addNodeAttribute(sPipelineStageAttribute, value, nodeOutputNames);
   }
 
+  /**
+   * Set the patterns to be excluded.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param patternNames The vector of pattern names to be excluded.
+   */
   void excludePatterns(const TensorId &nodeOutputName,
                        const std::vector<std::string> &patternNames) {
     addNodeAttribute(sExcludePatternsAttribute, patternNames, {nodeOutputName});
   }
 
+  /**
+   * Set the patterns to be excluded.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node.
+   * \param patternNames The vector of pattern names to be excluded.
+   */
   void excludePatterns(const std::set<TensorId> &nodeOutputNames,
                        const std::vector<std::string> &patternNames) {
     addNodeAttribute(sExcludePatternsAttribute, patternNames, nodeOutputNames);
   }
 
   /**
-   * Set the settings for matmuls that should be serialized. This option
-   * will split a matmul into separate smaller matmuls that will be executed in
-   * series. This will also serialize the grad operations if training.
+   * Set the settings for matmuls that should be serialized.
    *
+   * This option will split a matmul into separate smaller matmuls that will be
+   * executed in series. This will also serialize the grad operations during
+   * training.
    *
-   * \param nodeOutputNames Name of the output matmul tensors of the ONNX node.
-   * \param mode Which dimension of the mat mul to serialize on (choose from
-   *     'input_channels', 'output_channels', 'reducing_dim', 'none').
-   * \param factor The number of serialised matmuls, must be a factor of the
-   *     dimensions to serialise on.
-   *
+   * \param nodeOutputNames The tensor ids of the output matmul tensors of the
+   *      ONNX node.
+   * \param mode The dimension of the matmul to serialize on. Options
+   *      are: 'input_channels', 'output_channels', 'reducing_dim', 'none'.
+   * \param factor The number of serialised matmuls. This must be a factor of
+   *      the dimensions to serialise on.
    */
   void setSerializeMatMul(const std::set<TensorId> &nodeOutputNames,
                           std::string mode,
@@ -1327,10 +1493,13 @@ public:
   }
 
   /**
-   * Set the partials type for the given node. Used on the convolution op.
+   * Set the partials type for the given node.
+   *
+   * This is used in the convolution op.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node.
-   * \param partialsType The type for the partials. Can be either FLOAT or HALF.
+   * \param partialsType The type for the partials. Options are: `FLOAT` or
+   * `HALF`.
    */
   void setPartialsType(const TensorId &nodeOutputName,
                        const std::string partialsType);
@@ -1338,15 +1507,17 @@ public:
   /**
    * Enable convolution dithering.
    *
-   * \param nodeOutputName Name of the output tensor of the ONNX node.
-   * \param value 1, if convolution dithering should be enabled. 0, otherwise.
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \param value The value to enable convolution. This should be 1 to enable
+   *     convolution dithering and 0 otherwise.
    */
   void setEnableConvDithering(const TensorId &nodeOutputName, int64_t value);
 
   /**
    * Get the partials type for the given node.
    *
-   * \param nodeOutputName Name of the output tensor of the ONNX node.
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node.
+   * \returns The partials type.
    */
   std::string getPartialsType(const TensorId &nodeOutputName);
   void setInplacePreferences(const TensorId &nodeOutputName,
@@ -1365,10 +1536,11 @@ public:
   // clang-format off
   // Need long lines for URL
   /**
-   * Set the available memory for the given node. Used on the convolution op.
+   * Set the available memory proportion for the given node.
    *
-   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
-
+   * This is used in the convolution op.
+   *
+   * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node.
    * \param availableMemoryProportion The available memory proportion [0, 1).
@@ -1380,12 +1552,15 @@ public:
   // clang-format off
   // Need long lines for URL
   /**
-   * Set the available memory for the given node. Used on the convolution op.
+   * Set the available memory proportion for the given node.
+   *
+   * This is used in the convolution op.
    *
    * \sa <a href="https://docs.graphcore.ai/projects/available-memory/">Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU</a> for some practical examples of using `availableMemoryProportion`
 
    *
-   * \param nodeOutputNames Names of all the output tensors of the ONNX node.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \param availableMemoryProportion The available memory proportion [0, 1).
    */
   // clang-format on
@@ -1393,52 +1568,81 @@ public:
                                     const float availableMemoryProportion);
 
   /**
-   * Set an attribute that will be set on all subsequent operations.
+   * Set the value of an attribute that will be set on all subsequent
+   * operations.
+   *
+   * \param attribute The name of the attribute to set.
+   * \param value The value to set on the attribute.
    */
   void setAttribute(const std::string &attribute, popart::any value);
 
   /**
    * Get an attribute that has been set for all subsequent operations.
+   *
+   * \param attribute The name of the attribute to get.
+   * \returns The attribute.
    */
   popart::any getAttribute(const std::string attribute) const;
 
+  /**
+   * Check if an attribute exists.
+   *
+   * \param attribute The name of the attribute to check.
+   * \returns `true` if the attribute exists; `false` otherwise.
+   */
   bool hasAttribute(const std::string &attribute) const;
 
   /**
    * Unset an attribute that will be set on all subsequent operations.
+   *
+   * \param attribute The name of the attribute to unset.
    */
   void clearAttribute(const std::string &attribute);
 
   /**
    * Check if an attribute is set.
+   *
+   * \param attribute The name of the attribute to check.
+   * \returns `true` if the attribute is set; `false` otherwise.
    */
   bool hasAttribute(const std::string &attribute);
 
   /**
-   * Get the current attribute value.
+   * Get the attribute value.
+   *
+   * \param attribute The name of the attribute.
+   * \returns The value of the attribute.
    */
   popart::any getAttribute(const std::string &attribute);
 
   /**
-   * A convenience function for getting the pipeline stage attribute.
+   * Get the pipeline stage attribute.
+   *
+   * \returns The pipeline stage.
    */
   int64_t getPipelineStage() const;
 
   /**
-   * A convenience function for getting the execution phase attribute.
+   * Get the execution phase attribute.
+   *
+   * \returns The execution phase.
    */
   int64_t getExecutionPhase() const;
 
   /**
-   * A convenience function for getting the virtual graph attribute.
+   * Get the virtual graph attribute.
+   *
+   * \returns The virtual graph.
    */
   int64_t getVirtualGraph() const;
 
   /**
-   * Set the virtual graph that computes the given node.  Applies when creating
-   * a graph for a multi-IPU configuration.
+   * Set the virtual graph that computes the given node.
    *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node.
+   * Applies when creating a graph for a multi-IPU configuration.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \param value The index of the virtual graph that computes this node.
    */
   void virtualGraph(const std::set<TensorId> &nodeOutputNames,
@@ -1446,6 +1650,15 @@ public:
     addNodeAttribute(sVirtualGraphAttribute, value, nodeOutputNames);
   }
 
+  /**
+   * Set the execution phase.
+   *
+   * Applies when creating a graph for a multi-IPU configuration.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
+   * \param value The index of the virtual graph that computes this node.
+   */
   void executionPhase(const std::set<TensorId> &nodeOutputNames,
                       int64_t value = 0) {
     addNodeAttribute(sExecutionPhaseAttribute, value, nodeOutputNames);
@@ -1453,14 +1666,15 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue An \c int64_t value of the attribute to add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
@@ -1468,15 +1682,16 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A \c std::vector<int64_t> value of the attribute to
-   *                       add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   *      add.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const std::vector<int64_t> &attributeValue,
@@ -1484,14 +1699,15 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A \c float value of the attribute to add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const float &attributeValue,
@@ -1499,15 +1715,16 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue The \c std::vector<float> value of the attribute to
-   *                       add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   *      add.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const std::vector<float> &attributeValue,
@@ -1515,34 +1732,48 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A \c std::string value of the attribute to add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const std::string &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue A \c char value of the attribute to add.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
+   */
   void addNodeAttribute(const std::string &attributeName,
                         const char *attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A \c std::vector<std::string> value of the attribute
-   *                       to add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   *      to add.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const std::vector<std::string> &attributeValue,
@@ -1550,14 +1781,15 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A bool value of the attribute to add.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const bool attributeValue,
@@ -1565,14 +1797,15 @@ public:
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
-   * outputs.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute already exists.
+   * output tensors.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute already exists.
    *
    * \param attributeName The name of the attribute to add.
    * \param attributeValue A constant tensor initializer.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    */
   void addNodeAttribute(const std::string &attributeName,
                         const ConstVoidData &attributeValue,
@@ -1580,39 +1813,45 @@ public:
 
   /**
    * Check whether the ONNX node has an attribute set.
-   * This functions will throw an exception if it can't find the unique
+   *
+   * This function will throw an exception if it cannot find the unique
    * node.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
+   * \return `true` if the node has an attribute set; `false` otherwise.
    */
   bool nodeHasAttribute(const std::string &attributeName,
                         const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c int64_t value of the attribute for the ONNX node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist or it has not been set to the
+   * Get the value of an attribute for the ONNX node where the value is a
+   * \c int64_t.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute does not exist or if it has not been set to the
    * \c int64_t type.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   int64_t getInt64NodeAttribute(const std::string &attributeName,
                                 const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c std::vector<int64_t> value of the attribute for the ONNX node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist or it has not been set to the
+   * Get the value of an attribute for the ONNX node where the value is a
+   * \c std::vector<int64_t>.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute does not exist or if it has not been set to the
    * \c std::vector<int64_t> type.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   std::vector<int64_t>
@@ -1620,27 +1859,31 @@ public:
                               const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c float value of the attribute for the ONNX node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist or it has not been set to the
+   * Get the value of an attribute for the ONNX node where the value is a
+   * \c float.
+   *
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute does not exist or if it has not been set to the
    * \c float type.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   float getFloatNodeAttribute(const std::string &attributeName,
                               const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c std::vector<float> value of the attribute for the ONNX node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist.
+   * Get the value of an attribute for the ONNX node where the value is a \c
+   * std::vector<float>.
+   *
+   * This function will throw an exception if it cannot find
+   * the unique node or if the attribute does not exist.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   std::vector<float>
@@ -1648,86 +1891,135 @@ public:
                               const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c std::string value of the attribute for the ONNX node.
-   * This functions will throw an exception if it can't find the unique
+   * Get the value of an attribute for the ONNX node where the value is a
+   * string.
+   *
+   * This function will throw an exception if it cannot find the unique
    * node or the attribute does not exist or it has not been set to the
    * \c std::string type.
    *
-   * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param attributeName The name of the attribute for which the value is
+   *     required.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *      ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   std::string getStringNodeAttribute(const std::string &attributeName,
                                      const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the \c std::vector<std::string> value of the attribute for the ONNX
-   * node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist.
+   * Get the value of an attribute for the ONNX node where the value is a vector
+   * of strings.
    *
-   * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute does not exist.
+   *
+   * \param attributeName The name of the attribute for which the value is
+   *     required.
+   * \param nodeOutputNames The tensor ids of the output tensors of the
+   *     ONNX node used to find the node in the ONNX model.
    * \return Value of the attribute.
    */
   std::vector<std::string>
   getStringVectorNodeAttribute(const std::string &attributeName,
                                const std::set<TensorId> &nodeOutputNames);
 
+  /**
+   * Get the value of an attribute for the ONNX node where the value is a
+   * boolean.
+   *
+   * This function will throw an exception if it cannot find the unique node or
+   * if the attribute does not exist.
+   *
+   * \param attributeName The name of the attribute for which the value is
+   *     required.
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *     node used to find the node in the ONNX model.
+   * \return Value of the attribute.
+   */
   bool getBoolNodeAttribute(const std::string &attributeName,
                             const std::set<TensorId> &nodeOutputNames);
 
   /**
    * Remove an attribute from the ONNX node.
-   * This functions will throw an exception if it can't find the unique
-   * node or the attribute does not exist.
+   * This function will throw an exception if it cannot find the unique
+   * node or if the attribute does not exist.
    *
    * \param attributeName The name of the attribute to find.
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *     node used to find the node in the ONNX model.
    */
   void removeNodeAttribute(const std::string &attributeName,
                            const std::set<TensorId> &nodeOutputNames);
 
   /**
    * Get all the attribute names from the ONNX node.
-   * This functions will throw an exception if it can't find the unique
+   * This function will throw an exception if it cannot find the unique
    * node.
    *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node used to find the node in the ONNX model.
+   * \return The attribute names associated with the ONNX node.
    */
   std::vector<std::string>
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the index of the virtual graph that computes this node. This applies
-   * in a multi IPU system.
+   * Get the index of the virtual graph that computes this node.
+   * This applies in a multi IPU system.
    *
-   * \param nodeOutputName Name of the output tensor of the ONNX node used to
-   *                       find the node in the ONNX model.
+   * This function will throw an exception if the virtual graph has not been set
+   * in the current scope.
+   *
+   * \param nodeOutputName The tensor id of the output tensor of the ONNX node
+   *      used to find the node in the ONNX model.
+   * \return The virtual graph associated with the ONNX node.
    */
   int64_t getVirtualGraph(const TensorId &nodeOutputName) {
     return getInt64NodeAttribute(sVirtualGraphAttribute, {nodeOutputName});
   }
 
   /**
-   * Get the index of the virtual graph that computes this node. This applies
-   * in a multi IPU system.
+   * Get the index of the virtual graph that computes this node based on
+   * multiple output tensors. This applies in a multi IPU system.
    *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
+   * This function will throw an exception if the virtual graph has not been set
+   * in the current scope.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node used to find the node in the ONNX model.
+   * \return The virtual graph associated with the ONNX node.
    */
   int64_t getVirtualGraph(const std::set<TensorId> &nodeOutputNames) {
     return getInt64NodeAttribute(sVirtualGraphAttribute, nodeOutputNames);
   }
 
+  /**
+   * Get the execution phase for a single output tensor.
+   * This only applies to a multi-IPU system.
+   *
+   * This function will throw an exception if the execution phase has not been
+   * set in the current scope.
+   *
+   * \param nodeOutputNames The tensor id of the output tensor of the ONNX node
+   *      used to find the node in the ONNX model.
+   * \return The execution phase associated with the ONNX node.
+   */
   int64_t getExecutionPhase(const TensorId &nodeOutputName) {
     return getInt64NodeAttribute(sExecutionPhaseAttribute, {nodeOutputName});
   }
 
+  /**
+   * Get the execution phase for a set of output tensors.
+   * This only applies to a multi-IPU system.
+   *
+   * This function will throw an exception if the execution phase has not been
+   * set in the current scope.
+   *
+   * \param nodeOutputNames The tensor ids of the output tensors of the ONNX
+   *      node used to find the node in the ONNX model.
+   * \return The execution phase associated with the ONNX node.
+   */
   int64_t getExecutionPhase(const std::set<TensorId> &nodeOutputNames) {
     return getInt64NodeAttribute(sExecutionPhaseAttribute, nodeOutputNames);
   }
@@ -1755,11 +2047,11 @@ public:
    * message. To avoid this, for large models ONNX tensor data can be
    * saved separately.
    *
-   * \param ids The names of tensors whose data is to be saved externally.
+   * \param ids The names of tensors for which data is to be saved externally.
    * \param fn The name of a file containing the binary tensor data. This
-   *        can be an absolute or relative path. If a relative path, when
-   *        the ONNX model is saved, external tensor data will be written
-   *        to a path relative to your current working directory.
+   *     can be an absolute or relative path. If a relative path, when
+   *     the ONNX model is saved, external tensor data will be written
+   *     to a path relative to the current working directory.
    */
   void saveInitializersExternally(const std::vector<TensorId> &ids,
                                   const std::string &fn);
@@ -1767,14 +2059,14 @@ public:
   /**
    * Return a list of ONNX graph input tensor ids.
    *
-   * \return A vector of input tensor names.
+   * \return A vector of input tensor ids.
    */
   std::vector<TensorId> getInputTensorIds() const;
 
   /**
    * Return a list of ONNX graph output tensor ids.
    *
-   * \return A vector of output tensor names.
+   * \return A vector of output tensor ids.
    */
   std::vector<TensorId> getOutputTensorIds() const;
 
@@ -1782,9 +2074,9 @@ public:
    * Return a list of ONNX graph value tensor ids.
    *
    * These tensors are stored in the `value_info` section
-   * of the ONNX GraphProto structure.
+   * of the ONNX `GraphProto` structure.
    *
-   * \return A vector of output tensor names.
+   * \return A vector of value tensor names.
    */
   std::vector<TensorId> getValueTensorIds() const;
 
@@ -1792,55 +2084,55 @@ public:
    * Return a list of ONNX graph initialized tensor ids.
    *
    * These tensors are stored in the `initialized` section of the ONNX
-   * GraphProto structure..
+   * `GraphProto` structure..
    *
-   * \return A vector of tensor names.
+   * \return A vector of names of initialized tensors.
    */
   std::vector<TensorId> getTrainableTensorIds() const;
 
   /**
-   * Return whether or not the specified tensor has value info
+   * Check if a tensor has value info.
    *
-   * A tensor may not have value info if has simply does not exist or if
-   * shape inference  failed
+   * A tensor may not have value info if this either does not exist or if
+   * shape inference has failed.
    *
-   * \return A boolean.
+   * \return `True` if the tensor has value info; `false` otherwise..
    */
   bool hasValueInfo(const TensorId &id) const;
 
   /**
-   * Return an ONNX graph tensor shape, from either the input,
-   * output, or value_info lists in the GraphProto.
+   * Return an ONNX graph tensor shape, from either the `input`,
+   * `output`, or `value_info` lists in `GraphProto`.
    *
-   * \param id Tensor id.
-   * \return A vector of tensor dimensions.
+   * \param id The id of the tensor for which dimensions are required.
+   * \return A vector of the tensor dimensions.
    */
   std::vector<int64_t> getTensorShape(const TensorId id);
 
   /**
-   * Returns true if the ONNX tensor is in the initializer list
-   * of the GraphProto.
+   * Check if the ONNX tensor is in the initializer list
+   * of `GraphProto`.
    *
-   * \param id Tensor id.
-   * \return A boolean.
+   * \param id A tensor id.
+   * \return `True` if the tensor is in the initializer list; `false` otherwise.
    */
   bool isInitializer(const TensorId id) const;
 
   /**
    * Return an ONNX graph tensor type as a lower case string, from either
-   * the input, output, or value_info lists in the GraphProto.
+   * the `input`, `output`, or `value_info` lists in `GraphProto`.
    *
-   * \param id Tensor id.
-   * \return A lower case string of tensor type.
+   * \param id The id of the tensor for which the type is required.
+   * \return A lower case string of the tensor data type.
    */
   std::string getTensorDtypeString(const TensorId id);
 
   /**
    * Return a tensor type from either
-   * the input, output, or value_info lists in the GraphProto.
+   * the `input`, `output`, or `value_info` lists in `GraphProto`.
    *
-   * \param id Tensor id.
-   * \return A tensor type.
+   * \param id The id of tensor id for which the type is required.
+   * \return The data type of the tensor.
    */
   DataType getTensorDataType(const TensorId id);
 
@@ -1848,7 +2140,8 @@ public:
    * Push a name onto the name scope stack.
    *
    * The names of tensors and nodes added to the ONNX graph will be prefixed
-   * with a concatenation of the names in the name stack.
+   * with a concatenation of the names in the name scope stack.
+   * \param name The tensor name to be pushed onto the name scope stack.
    */
   void pushNameScope(const std::string &name);
 
@@ -1858,34 +2151,37 @@ public:
   void popNameScope();
 
   /**
-   * Get the current namescope stack using the default delimiter.
+   * Get the current name scope stack using the default delimiter.
    *
-   * \param name Optional string to concatenate to the end of the stack
-   * \return A string of the concatenated namescope stack.
+   * \param name (Optional) A string to concatenate to the end of the stack.
+   * \return A string of the concatenated name scope stack.
    */
   std::string getNameScope(const std::string &name = "") const;
 
   /**
-   * Specifies a graph name.
+   * Set a graph name.
    *
-   * \param name String to name the graph.
+   * \param name The string to name the graph.
    */
   void setGraphName(const std::string &name);
 
   /**
-   * Sets the parent graph of this builder.
+   * Set the parent graph of this builder.
    *
-   * \param parent the builder to become a parent.
+   * \param parent The builder to set as the parent of this builder.
    */
   void setParent(Builder *parent);
 
   /**
-   * Returns the parent graph of this graph or null if there is no parent.
+   * Return the parent graph of this builder or null if there is no parent.
    */
   Builder *getParent() const;
 
   /**
-   * Returns true if this builder represents a subgraph.
+   * Check if this builder represents a subgraph.
+   *
+   * \returns If `true` then the builder represents a subgraph. If `false` then
+   *      the builder does not represent a subgraph.
    */
   bool hasParent() const { return parent == nullptr; }
 
@@ -1903,8 +2199,8 @@ private:
   /**
    * Load a serialized ONNX ModelProto into the builder and validate it.
    *
-   * \param modelProtoOrFilename Either an ONNX model protobuf, or the name of a
-   *                             file containing an ONNX model protobuf.
+   * \param modelProtoOrFilename An ONNX model protobuf, or the name of a
+   *     file containing an ONNX model protobuf.
    */
   void loadModelProto(const std::string &modelProtoOrFilename);
 

@@ -208,6 +208,9 @@ Builder
 .. doxygenclass:: popart::Graph
    :members:
 
+.. doxygenclass:: popart::AiOnnxMlOpset1
+   :members:
+
 .. doxygenclass:: popart::AiGraphcoreOpset1
    :members:
 
@@ -270,6 +273,8 @@ Op definition for PopART IR
 
 .. doxygenclass:: popart::Op
    :members:
+
+.. doxygenenum:: popart::RecomputeType
 
 .. code-block:: cpp
 
