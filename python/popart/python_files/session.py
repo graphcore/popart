@@ -10,16 +10,17 @@ from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
                       ) -> Dict[str, np.array]:
-    """Create the anchor arrays to feed data back into Python with.
+    """Create the anchor arrays to feed data back into Python.
 
     Args:
         sess (Union["InferenceSession", "TrainingSession"]): PopART session.
 
     Raises:
-        RuntimeError: If the anchor period does not divide batchesPerStep
+        RuntimeError: If the anchor period is not divisible by
+            ``batchesPerStep``.
 
     Returns:
-        Dict[str, np.array]: Dict of anchor names and their relevant np arrays.
+        Dict[str, np.array]: Dictionary of anchor tensor names and their relevant NumPy arrays.
     """
 
     anchorArrays = {}
@@ -49,7 +50,7 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
         elif artId == popart.AnchorReturnTypeId.EveryN:
             if batchesPerStep % sess.dataFlow.art(anchor).rp() != 0:
                 raise RuntimeError(
-                    "Invalid anchor period, does not divide batchesPerStep")
+                    "Invalid anchor period, is not divisble by batchesPerStep")
 
             arp = sess.dataFlow.art(anchor).rp()
             anchorArrayShape.insert(0, sess.accumulationFactor)
@@ -65,8 +66,10 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
 
 
 class OutOfMemoryException(popart.popart_exception):
+    """Represent out of memory exceptions that that occur during runtime."""
+
     def __init__(self, e: popart.popart_exception) -> None:
-        """Class initializer.
+        """Construct the ``OutOfMemoryException`` class.
 
         Arguments:
             e: PopART exception to be thrown.
@@ -78,15 +81,19 @@ class OutOfMemoryException(popart.popart_exception):
         """Get the summary report.
 
         Returns:
-            The summary report string.
+            str: The summary report string.
         """
         return self.error.getSummaryReport()
 
     def getProfilePath(self) -> str:
-        """Get the absolute path of the profile file (profile.pop).
+        """Get the absolute path of the profile file.
+
+           The profile file is named `profile.pop` and contains full details of
+           the exception.
 
         Returns:
-            The absolute path of profile.pop, or an empty string if not created.
+            str: The absolute path of `profile.pop`, or an empty string if the
+                file does not exist.
         """
         return self.error.getProfilePath()
 
@@ -100,30 +107,9 @@ def makedirsAndCheckWritable(path):
 
 class InferenceSession(_InferenceSessionCore):
     """
-    Create a runtime class for executing an ONNX graph on a set of IPU hardware for inference.
-
-    A wrapper around the ``Session`` C++ class, renamed ``SessionCore`` in pybind,
-    to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
-
-    Arguments:
-        fnModel: ONNX model proto. Usually a loaded ONNX model, or from
-            ``builder.getModelProto()``.
-        dataFlow: Configuration for the data feeds and fetches.
-        deviceInfo: ``DeviceInfo`` object specifying device type.
-            (one of ``IPU``, ``IPUModel`` or ``CPU``) and count.
-        inputShapeInfo: Information about the shapes of input and output
-            tensors. Default: ``popart.InputShapeInfo()``.
-        patterns: Patterns to be run for optimization etc.
-            Note: default for patterns must not be ``popart.Patterns()``.
-            When ``import popart`` is run, the default arguments are created.
-            If the user then loads a custom pattern using
-            ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)``
-            then the already constructed ``popart.Patterns`` will
-            not include the custom pattern. Default ``None``.
-        userOptions: Session options to apply.
-            Default: ``popart.SessionOptions()``.
-        name: Session name used in debug to identify this session
-            Default: ``inference``
+    ``InferenceSession`` is a runtime instance that provides an interface for
+    executing ONNX graphs on IPU hardware, without any automatic differentiation
+    (backpropagation).
     """
 
     def __init__(
@@ -135,6 +121,37 @@ class InferenceSession(_InferenceSessionCore):
             patterns: popart.Patterns = None,
             userOptions: popart.SessionOptions = popart.SessionOptions(),
             name: str = "inference") -> None:
+        """Construct the ``InferenceSession`` class.
+
+            Arguments:
+                fnModel: ONNX model proto. Usually a loaded ONNX model, or from
+                    :py:func:`~popart.builder.getModelProto()`.
+                dataFlow: Configuration for the data feeds and fetches.
+                deviceInfo: :py:class:`~popart.DeviceInfo` object specifying
+                    the device type (``IPU``, ``IPUModel`` or ``CPU``) and
+                    number of each type.
+                inputShapeInfo: (Optional) The sizes and dtypes of the input
+                    tensors. This is used to specify the sizes of the input
+                    tensors in the case that the ONNX model does not include
+                    this information. The Poplar graph programmming framework
+                    uses statically allocated memory buffers and so it needs to
+                    know the size of tensors before the compilation. Default:
+                    :py:class:`~popart.InputShapeInfo()`.
+                patterns: (Optional) A user-selected set of graph transformation
+                    patterns which will be applied to the graph. If this is not
+                    specified, a default set of optimisation transformations
+                    will be applied. Default ``None``. Note: The default for
+                    patterns must not be :py:class:`~popart.Patterns()`. When
+                    ``import popart`` is run, the default arguments are created.
+                    If the user then loads a custom pattern using
+                    ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)`` then the
+                    already constructed ``popart.Patterns`` will not include the
+                    custom pattern. Default ``None``.
+                userOptions: (Optional) The user configuration options for the
+                    Session class. Default::py:class:`~popart.SessionOptions()`.
+                name: (Optional) The name of this inference session. Default:
+                    "inference".
+        """
 
         if patterns == None:
             patterns = popart.Patterns()
@@ -145,45 +162,54 @@ class InferenceSession(_InferenceSessionCore):
 
     @property
     def dataFlow(self):
+        """Get the configuration for the data feeds and fetches."""
         return self._getDataFlow()
 
     @property
     def replicationFactor(self):
+        """Get the replication factor."""
         return self._replicationFactor()
 
     @property
     def accumulationFactor(self):
+        """Get the gradient accumulation factor."""
         return self._accumulationFactor()
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
-        """Create the anchor arrays to feed data back into Python with.
+        """Create the anchor arrays to feed data back into Python.
 
         Returns:
-            Dict of anchor names and their relevant np arrays.
+            Dict[str, np.array]: Dictionary of anchor tensor names and their
+                relevant NumPy arrays.
         """
         return _initAnchorArrays(self)
 
     def compileAndExport(self, filename: str) -> None:
-        """Compiles the graph and exports it to the specified file.
+        """Compile the graph and export it to a file.
 
-        This will form the snap::Graph and compile the polar::Executable.
-        After that it will export the executable and metadata
-        to the specified path. The exported file will be in the
-        `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`__
-        format. This means that it can be used to run inference using the
-        `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`__
-        because Graphcore provides a backend to it. See the
-        `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
+        This method will first create :cpp:class:`snap::Graph` and compile
+        :cpp:class:`poplar::Executable`. Next, it will export the executable and
+        metadata to the file. The exported file will be in the :doc:`PopEF
+        <popef:index>` format. This means that the file can be used to
+        run inference using the `Triton Inference Server
+        <https://developer.nvidia.com/nvidia-triton-inference-server>`__ with
+        the Graphcore Triton backend. See the `Poplar Triton Backend User Guide
+        <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
         for more information.
 
+        This method raises an:py:class:`popart.OutOfMemoryException` error if an
+        out of memory event occurs. In addition, it raises an ``OSError`` if
+        there are any file system related errors.
+
         Args:
-            filename (str): Where to save the executable and metadata.
-                If it does not exist, it will be created.
+            filename (str): The name of the file where the compiled executable
+                and metadata will be saved. If it does not exist, the file will
+                be created.
 
         Raises:
-            popart.OutOfMemoryException: If an out of memory event occurs
-            OSError: Thrown in the event of any file system related errors
-                     during the export
+            popart.OutOfMemoryException: If an out of memory event occurs.
+            OSError: If there are any file system related errors during the
+                export.
 
         """
         filename = os.path.expanduser(filename)
@@ -201,15 +227,17 @@ class InferenceSession(_InferenceSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create the ``snap::Graph`` and ``poplar::Engine``, and set up
-        ``poplar::Streams``.
+        This will create :cpp:class:`snap::Graph` and
+        :cpp:class:`poplar::Engine`, and set up
+        :cpp:class:`poplar::Streams`.
 
         Arguments:
-            loadEngine: Load the engine and connect the streams once
-                        the device is ready.
+            loadEngine: If ``true``, load the engine and connect the streams
+                once the device is ready.
 
         Raises:
-            popart.OutOfMemoryException: If an out of memory event occurs
+           :py:class:`popart.OutOfMemoryException`: If an out of memory event
+                occurs.
         """
 
         err = popart.OutOfMemoryError()
@@ -221,6 +249,18 @@ class InferenceSession(_InferenceSessionCore):
     @classmethod
     def fromIr(cls, ir, deviceInfo: popart.DeviceInfo,
                name: str = "fromIr") -> 'InferenceSession':
+        """Create a session for inference from an IR.
+
+        Arguments:
+            ir: The IR to create the session from.
+            deviceInfo::py:class:`~popart.DeviceInfo` object specifying the
+                device type (``IPU``, ``IPUModel`` or ``CPU``) and number of
+                each type.
+            name: The name of this inference session. Default: "fromIr".
+
+        Returns:
+            InferenceSession: An inference session.
+        """
         self = super().__new__(cls)
         super(InferenceSession, self).__init__(ir=ir,
                                                deviceInfo=deviceInfo,
@@ -231,27 +271,10 @@ class InferenceSession(_InferenceSessionCore):
 
 class TrainingSession(_TrainingSessionCore):
     """
-    Create a runtime class for executing an ONNX graph on a set of IPU hardware for training.
-
-    A wrapper around the ``Session C++`` class, renamed ``SessionCore`` in pybind,
-    to enable more Pythonic use. See ``session.hpp`` for parameter descriptions.
-
-    Arguments:
-        fnModel: ONNX model proto. Usually a loaded ONNX model,
-            or from ``builder.getModelProto()``.
-        dataFlow: Configuration for the data feeds and fetches.
-        loss: A TensorId of the final scalar loss to use when training.
-        optimizer: The type of optimizer to use when training
-            and it's properties.
-        deviceInfo: DeviceInfo object specifying device type
-            (IPU, IPUModel, CPU) and count.
-        inputShapeInfo: Information about the shapes of
-            input and output tensors. Default: ``popart.InputShapeInfo()``.
-        patterns: Optimization patterns to apply. Default: ``None``.
-        userOptions: Session options to apply.
-            Default: ``popart.SessionOptions()``.
-        name: Session name used in debug to identify this session
-            Default: ``training``
+    ``TrainingSession`` is a runtime instance that provides an interface for
+    executing ONNX graphs on IPU hardware with training provided by optimizing a
+    loss tensor using an optimizer and automatic differentiation
+    (backpropagation).
     """
 
     def __init__(
@@ -265,6 +288,32 @@ class TrainingSession(_TrainingSessionCore):
             patterns: popart.Patterns = None,
             userOptions: popart.SessionOptions = popart.SessionOptions(),
             name: str = "training") -> None:
+        """Construct the ``TrainingSession`` class.
+
+            Arguments:
+                fnModel: ONNX model proto. Usually a loaded ONNX model, or from
+                    :py:func:`~popart.Builder.getModelProto()`.
+                dataFlow: Configuration for the data feeds and fetches.
+                loss: The identifier of the final scalar loss tensor for
+                    training.
+                optimizer: The name of an optimizer to use when training.
+                deviceInfo::py:class:`~popart.DeviceInfo` object specifying the
+                    device type (``IPU``, ``IPUModel`` or ``CPU``) and number
+                    of each type.
+                inputShapeInfo: (Optional) The sizes and dtypes of the input
+                    tensors. This is used to specify the sizes of the input
+                    tensors in the case that the ONNX model does not include
+                    this information. The Poplar graph programmming framework
+                    uses statically allocated memory buffers and so it needs to
+                    know the size of tensors before the compilation. Default:
+                    :py:class:`~popart.InputShapeInfo()`.
+                patterns: (Optional) The optimization patterns to apply.
+                    Default: ``None``.
+                userOptions: The user configuration options for the Session
+                    class. Default: :py:class:`~popart.SessionOptions()`.
+                name: (Optional) The name of this training session. Default:
+                    ``training``
+        """
 
         if patterns is None:
             patterns = popart.Patterns()
@@ -275,46 +324,54 @@ class TrainingSession(_TrainingSessionCore):
 
     @property
     def dataFlow(self):
+        """Get the configuration for the data feeds and fetches."""
         return self._getDataFlow()
 
     @property
     def replicationFactor(self):
+        """Get the replication factor."""
         return self._replicationFactor()
 
     @property
     def accumulationFactor(self):
+        """Get the gradient accumulation factor."""
         return self._accumulationFactor()
 
     def initAnchorArrays(self) -> Dict[str, np.array]:
-        """Create the anchor arrays to feed data back into Python with.
+        """Create the anchor arrays to feed data back into Python.
 
         Returns:
-            Dict of anchor names and their relevant np arrays.
+            Dict[str, np.array]: Dictionary of anchor tensor names and their
+               relevant NumPy arrays.
         """
         return _initAnchorArrays(self)
 
     def compileAndExport(self, filename: str) -> None:
-        """Compiles the graph and exports it to the specified file.
+        """Compile the graph and export it to a file.
 
-        This will form the snap::Graph and compile the polar::Executable.
-        After that it will export the executable and metadata
-        to the specified path. The exported file will be in the
-        `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`__
-        format. This means that it can be used to run inference using the
-        `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`__
-        because Graphcore provides a backend to it. See the
-        `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
+        This method will first create :cpp:class:`snap::Graph` and compile
+        :cpp:class:`poplar::Executable`. Next, it will export the executable and
+        metadata to the file. The exported file will be in the :doc:`PopEF
+        <popef:index>` format. This means that the file can be used to
+        run inference using the `Triton Inference Server
+        <https://developer.nvidia.com/nvidia-triton-inference-server>`__ with
+        the Graphcore Triton backend. See the `Poplar Triton Backend User Guide
+        <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`__
         for more information.
 
+        This method raises an :py:class:`popart.OutOfMemoryException` error if
+        an out of memory event occurs. In addition, it raises an ``OSError`` if
+        there are any file system related errors.
+
         Args:
-            filename (str): Where to save the executable and metadata.
-                If it does not exist, it will be created.
+            filename (str): The name of the file where the compiled executable
+                and metadata will be saved. If it does not exist, the file will
+                be created.
 
         Raises:
-            popart.OutOfMemoryException: If an out of memory event occurs
-            OSError: Thrown in the event of any file system related errors
-                     during the export
-
+            popart.OutOfMemoryException: If an out of memory event occurs.
+            OSError: If there are any file system related errors during the
+                export.
         """
         filename = os.path.expanduser(filename)
         if os.path.isdir(filename):
@@ -331,15 +388,16 @@ class TrainingSession(_TrainingSessionCore):
     def prepareDevice(self, loadEngine: bool = True) -> None:
         """Prepare the network for execution.
 
-        This will create the ``snap::Graph`` and ``poplar::Engine``, and set up
-        ``poplar::Streams``.
+        This will create :cpp:class:`snap::Graph` and
+        :cpp:class:`poplar::Engine`, and set up :cpp:class:`poplar::Streams`.
 
         Arguments:
-            loadEngine: Load the engine and connect the streams once
-                        the device is ready.
+            loadEngine: If ``true``, load the engine and connect the streams
+                once the device is ready.
 
         Raises:
-            popart.OutOfMemoryException: If an out of memory event occurs
+            :py:class:`popart.OutOfMemoryException`: If an out of memory event
+                occurs.
         """
 
         err = popart.OutOfMemoryError()

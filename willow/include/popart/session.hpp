@@ -625,11 +625,21 @@ public:
    *      ONNX model protobuf.
    * \param dataFlow Configuration for the data feeds and fetches.
    * \param deviceInfo The type of device that this session uses.
-   * \param inputShapeInfo A compilation of information that is know about the
-   *      tensors in the IR.
-   * \param userOptions The user configuration options for the Session class.
-   * \param patterns The optimization patterns to apply.
-   * \param name The name of this inference session. Default: "inference".
+   * \param inputShapeInfo (Optional) The sizes and dtypes of the input
+   *      tensors. This
+   *      is used to specify the sizes of the input tensors in the case that
+   *      the ONNX model does not include this information. The Poplar graph
+   *      programmming framework uses statically allocated memory buffers and
+   *      so it needs to know the size of tensors before the compilation.
+   *      Default: InputShapeInfo().
+   * \param userOptions (Optional) The user configuration options for the
+   *      Session class. Default: SessionOptions().
+   * \param patterns (Optional) A user-selected set of graph transformation
+   *      patterns which will be applied to the graph. If this is not
+   *      specified, a default set of optimisation transformations will be
+   *      applied. Default: Patterns().
+   * \param name (Optional) The name of this inference session. Default:
+   *      "inference".
    */
   static std::unique_ptr<InferenceSession>
   createFromOnnxModel(const std::string &model,
@@ -678,11 +688,21 @@ public:
    * \param loss The identifier of the final scalar loss tensor for training.
    * \param optimizer The name of an optimizer to use when training.
    * \param deviceInfo The type of device that this session uses.
-   * \param inputShapeInfo The information about the shapes of the input
-   *      and output tensors.
-   * \param userOptions The user configuration options for the Session class.
-   * \param patterns The optimization patterns to apply.
-   * \param name The name of this inference session. Default: "training".
+   * \param inputShapeInfo (Optional) The sizes and dtypes of the input
+   *      tensors. This
+   *      is used to specify the sizes of the input tensors in the case that
+   *      the ONNX model does not include this information. The Poplar graph
+   *      programmming framework uses statically allocated memory buffers and
+   *      so it needs to know the size of tensors before the compilation.
+   *      Default: InputShapeInfo().
+   * \param userOptions (Optional) The user configuration options for the
+   *      Session class. Default: SessionOptions().
+   * \param patterns (Optional) A user-selected set of graph transformation
+   *      patterns which will be applied to the graph. If this is not
+   *      specified, a default set of optimisation transformations will be
+   *      applied. Default: Patterns().
+   * \param name (Optional) The name of this inference session. Default:
+   *      "training".
    */
   static std::unique_ptr<TrainingSession>
   createFromOnnxModel(const std::string &model,

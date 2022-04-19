@@ -4,6 +4,11 @@ PopART Python API
 Sessions
 --------
 
+.. autoclass:: popart.OutOfMemoryException
+    :members:
+    :undoc-members:
+
+
 Training session
 ^^^^^^^^^^^^^^^^
 
@@ -31,6 +36,11 @@ Data input and output
 .. autoclass:: popart.PyStepIOCallback
     :special-members: __init__
     :members:
+
+.. autoclass:: popart.InputShapeInfo
+    :special-members: __init__
+    :members:
+
 
 Builder
 --------
