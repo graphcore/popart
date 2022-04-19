@@ -27,7 +27,16 @@ Autodiff
 -----------
 
 In PopXL you can use :py:func:`popxl.transforms.autodiff` to perform automatic differentiation on a per-graph basis. This transform creates a graph (the *gradient graph*) to compute
-the gradients of a forward graph. It is declared as:
+the gradients of a forward graph (:numref:`fig-autodiff_overview`).
+
+
+.. figure:: images/autodiff_overview.png
+   :name: fig-autodiff_overview
+   :width: 80%
+
+   Overview of the ``autodiff`` transform.
+
+It is declared as:
 
 .. code-block:: python
 
@@ -82,8 +91,16 @@ You can find how to use them in the application example in :numref:`sec_grad_exa
  -  ``expected_inputs``: the tensors from ``forward_graph`` that are required as inputs to the gradient graph.
  -  ``expected_outputs``: the tensors from the forward graph that have gradients as outputs of the gradient ``graph``.
  -  ``inputs_dict(fwd_call_info)``: the inputs to call the gradient graph.
- -  ``fwd_graph_ins_to_grad_parent_outs(grad_call_info)``: the mapping between forward subgraph tensors and gradient call site tensors. Note that ``grad_call_info`` is the call site information of the gradient gradient graph.
- -  ``fwd_parent_ins_to_grad_parent_outs(fwd_call_info, grad_call_info)``: the mapping between forward call site inputs and gradient call site outputs. It can be used to get the gradient with respect to a specific input.
+ -  ``fwd_graph_ins_to_grad_parent_outs(grad_call_info)``: the mapping between forward subgraph tensors and gradient call site tensors. Note that ``grad_call_info`` is the call site information of the gradient gradient graph (:numref:`fig-fwd_graph_ins_vs_fwd_parent_ins`).
+ -  ``fwd_parent_ins_to_grad_parent_outs(fwd_call_info, grad_call_info)``: the mapping between forward call site inputs and gradient call site outputs. It can be used to get the gradient with respect to a specific input (:numref:`fig-fwd_graph_ins_vs_fwd_parent_ins`).
+
+
+.. figure:: images/autodiff_fwd_graph_ins_vs_fwd_parent_ins.png
+   :name: fig-fwd_graph_ins_vs_fwd_parent_ins
+   :width: 80%
+
+   The difference between the mappings returned by ``fwd_graph_ins_to_grad_parent_outs`` (left) and ``fwd_parent_ins_to_grad_parent_outs`` (right) for an example graph ``Linear``.
+
 
 You can then use the information for the gradient graph returned by ``autodiff`` to get the required gradients.
 The partial derivatives of the loss with respect to the graph outputs of the forward graph are
@@ -105,3 +122,6 @@ the first inputs of the gradient graph. :numref:`code-autodiff-example` shows ho
 .. only:: html
 
     :download:`Download autodiff.py <files/autodiff.py>`
+
+
+The MNIST application example (:numref:`sec_application_example_mnist`) demonstrates how ``autodiff`` is used.
