@@ -14,6 +14,9 @@ from .dynamic_slice import dynamic_slice
 from .dynamic_update import dynamic_update, dynamic_update_
 from .equal import equal
 from .exp import exp, exp_
+from .log import log
+from .onehot import onehot
+from .topk import topk
 from .fmod import fmod
 from .gather import gather, tied_gather
 from .gelu import gelu, gelu_
@@ -108,6 +111,12 @@ __all__ = [
     # exp.py
     "exp",
     "exp_",
+    # log.py
+    "log",
+    # onehot.py
+    "onehot",
+    # topk.py
+    "topk",
     # fmod.py
     "fmod",
     # gather.py
