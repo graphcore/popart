@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_REMOTESETUP_HPP
 #define GUARD_NEURALNET_REMOTESETUP_HPP
 
-#include <popart/op.hpp>
+#include <cstddef>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
 #include <popart/transforms/transform.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 struct POpIntCmp;
+class Graph;
+class Op;
 
 using RemoteArgOpMap =
     std::map<TensorId, std::set<std::pair<Op *, InIndex>, POpIntCmp>>;

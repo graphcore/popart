@@ -64,16 +64,16 @@ This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; fo
 
 static const char *__doc_popart_argmax_opset11 =
     R"doc(
-Computes the indices of the max elements of the input tensor's element along the 
+Computes the indices of the max elements of the input tensor's element along the
 provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
-If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
+If keepdims equal 0, then the resulted tensor have the reduced dimension pruned.
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_argmin_opset11 =
     R"doc(
-Computes the indices of the min elements of the input tensor's element along the 
+Computes the indices of the min elements of the input tensor's element along the
 provided axis. The resulted tensor has the same rank as the input if keepdims equal 1.
-If keepdims equal 0, then the resulted tensor have the reduced dimension pruned. 
+If keepdims equal 0, then the resulted tensor have the reduced dimension pruned.
 The type of the output tensor is integer.)doc";
 
 static const char *__doc_popart_asin_opset11 =
@@ -152,7 +152,7 @@ Bitwise shift operator performs element-wise operation. For each input element, 
  Y specifies the amounts of shifting. For example, if "direction" is "Right", X is [1, 4],
  and S is [1, 1], the corresponding output Z would be [0, 2]. If "direction" is "LEFT" with
  X=[1, 2] and S=[1, 2], the corresponding output Y would be [2, 8].
- 
+
  Because this operator supports Numpy-style broadcasting, X's and Y's shapes are
  not necessarily identical.
 This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; for more details please check [the doc](Broadcasting.md).)doc";
@@ -170,8 +170,8 @@ result 100. There are some string literals reserved for special floating-point v
 "+INF" (and "INF"), "-INF", and "NaN" are positive infinity, negative infinity, and not-a-number, respectively.
 Any string which can exactly match "+INF" in a case-insensitive way would be mapped to positive infinite. Similarly,
 this case-insensitive rule is applied to "INF" and "NaN". When casting from numeric tensors
-to string tensors, plain floating-point representation (such as "314.15926") would be used. 
-Converting non-numerical-literal string such as "Hello World!" is an undefined behavior. Cases 
+to string tensors, plain floating-point representation (such as "314.15926") would be used.
+Converting non-numerical-literal string such as "Hello World!" is an undefined behavior. Cases
 of converting string representing floating-point arithmetic value, such as "2.718", to INT is an undefined behavior.
 
 Conversion from a numerical type to any numerical type is always allowed.
@@ -587,7 +587,7 @@ Its output shape is the same as the shape of `indices` and consists of one value
 (gathered from the `data`) for each element in `indices`.
 
 For instance, in the 3-D case (r = 3), the output produced is determined
-by the following equations: 
+by the following equations:
 ```
   out[i][j][k] = input[index[i][j][k]][j][k] if axis = 0,
   out[i][j][k] = input[i][index[i][j][k]][k] if axis = 1,
@@ -637,17 +637,17 @@ Example 2:
 
 static const char *__doc_popart_gathernd_opset11 =
     R"doc(
-Given `data` tensor of rank `r` >= 1, and `indices` tensor of rank `q` >= 1, this operator gathers 
+Given `data` tensor of rank `r` >= 1, and `indices` tensor of rank `q` >= 1, this operator gathers
 slices of `data` into an output tensor of rank `q + r - indices_shape[-1] - 1`.
 
-`indices` is an q-dimensional integer tensor, best thought of as a `(q-1)`-dimensional tensor of index-tuples into `data`, 
+`indices` is an q-dimensional integer tensor, best thought of as a `(q-1)`-dimensional tensor of index-tuples into `data`,
 where each element defines a slice of `data`
 
 Some salient points about the inputs' rank and shape:
- 
+
 1) r >= 1 and q >= 1 are to be honored. There is no dependency condition to be met between ranks `r` and `q`
 
-2) The `indices_shape[-1]` should have a value between 1 (inclusive) and rank `r` (inclusive) 
+2) The `indices_shape[-1]` should have a value between 1 (inclusive) and rank `r` (inclusive)
 
 3) All values in `indices` are expected to be within bounds [-s, s-1] along axis of size `s` (i.e.) `-data_shape[i] <= indices[...,i] <= data_shape[i] - 1`.
    It is an error if any of the index values are out of bounds.
@@ -655,17 +655,17 @@ Some salient points about the inputs' rank and shape:
 The output is computed as follows:
 
 The output tensor is obtained by mapping each index-tuple in the `indices` tensor to the corresponding slice of the input `data`.
- 
+
 1) If `indices_shape[-1] > r` => error condition
 
 2) If `indices_shape[-1] == r`, since the rank of `indices` is `q`, `indices` can be thought of as a `(q-1)`-dimensional tensor
-   containing 1-D tensors of dimension `r`. Let us think of each such `r` ranked tensor as `indices_slice`. 
-   Each *scalar value* corresponding to `data[indices_slice]` is filled into the corresponding location of the `(q-1)`-dimensional tensor 
+   containing 1-D tensors of dimension `r`. Let us think of each such `r` ranked tensor as `indices_slice`.
+   Each *scalar value* corresponding to `data[indices_slice]` is filled into the corresponding location of the `(q-1)`-dimensional tensor
    to form the `output` tensor (Example 1 below)
 
 3) If `indices_shape[-1] < r`, since the rank of `indices` is `q`, `indices` can be thought of as a `(q-1)`-dimensional tensor
-   containing 1-D tensors of dimension `< r`. Let us think of each such tensors as `indices_slice`. 
-   Each *tensor slice* corresponding to `data[indices_slice , :]` is filled into the corresponding location of the `(q-1)`-dimensional tensor 
+   containing 1-D tensors of dimension `< r`. Let us think of each such tensors as `indices_slice`.
+   Each *tensor slice* corresponding to `data[indices_slice , :]` is filled into the corresponding location of the `(q-1)`-dimensional tensor
    to form the `output` tensor (Examples 2, 3, and 4 below)
 
 This operator is the inverse of `ScatterND`.
@@ -692,7 +692,7 @@ This operator is the inverse of `ScatterND`.
 
   indices = [[0,1],[1,0]]                 # indices_shape = [2, 2]
 
-  output  = [[2,3],[4,5]]                 # output_shape = [2, 2]   
+  output  = [[2,3],[4,5]]                 # output_shape = [2, 2]
 
 `Example 4`
 
@@ -700,7 +700,7 @@ This operator is the inverse of `ScatterND`.
 
   indices = [[[0,1]],[[1,0]]]             # indices_shape = [2, 1, 2]
 
-  output  = [[[2,3]],[[4,5]]]             # output_shape = [2, 1, 2] 
+  output  = [[[2,3]],[[4,5]]]             # output_shape = [2, 1, 2]
 
 )doc";
 
@@ -989,15 +989,15 @@ C-style code:
     }
 
     graph body-net (
-      %i[INT32, scalar]
-      %keepgoing[BOOL, scalar]
-      %b[INT32, scalar]
+      %i[INT32, scalar]           // iteration number
+      %keepgoing_in[BOOL, scalar] // incoming loop-termination-condition; not used
+      %b_in[INT32, scalar]        // incoming value of loop-carried-dependency b
     ) {
-      %my_local = Add(%a, %b)
-      %b_out = Sub(%a, %b)
-      %keepgoing_out = Greater(%my_local, %b_out)
-      %user_defined_vals = Add(%b, %b)
-      return %keepgoing_out, %b_out, %user_defined_vals
+      %my_local = Add(%a, %b_in)
+      %b_out = Sub(%a, %b_in) // outgoing value of loop-carried-dependency b
+      %keepgoing_out = Greater(%my_local, %b_out) // outgoing loop-termination-condition
+      %user_defined_val = Add(%b_in, %b_in) // scan-output value to be accumulated
+      return %keepgoing_out, %b_out, %user_defined_val
     }
 
 *Sample equivalent C code*
@@ -1012,29 +1012,49 @@ C-style code:
       const int max_trip_count = 10; // Analogous to input M
       int user_defined_vals[]; // Imagine this is resizable
       /* End implicitly-defined code */
-      for (int i=0; i < max_trip_count && keepgoing; ++i) {
-        /* User-defined code (loop body) */
-        int my_local = a + b; // Reading values in the enclosing scope is fine
-        b = a - b; // writes fine if we specify b as a loop-carried dependency
-        keepgoing = my_local > b; // keepgoing is a loop-carried dependency
-        user_defined_vals[i] = b + b;
-        /* End user-defined code */
-      }
-      // my_local = 123; // Can't do this. my_local was defined in the the body
+      /* initialize loop-carried variables and scan-output variables */
+      bool keepgoing_out = keepgoing
+      int b_out = b
 
-      // These below values are live-out from the loop and therefore accessible
-      b_out; user_defined_vals; keepgoing_out;
+      for (int i=0; i < max_trip_count && keepgoing_out; ++i) {
+        /* Implicitly-defined code: bind actual parameter values
+           to formal parameter variables of loop-body */
+        bool keepgoing_in = keepgoing_out;
+        bool b_in = b_out;
+
+        /* User-defined code (loop body) */
+        int my_local = a + b_in; // Reading value "a" from the enclosing scope is fine
+        b_out = a - b_in;
+        keepgoing_out = my_local > b_out;
+        user_defined_val = b_in + b_in; // b_in and b_out are different variables
+        /* End user-defined code */
+
+        /* Implicitly defined-code */
+        user_defined_vals[i] = user_defined_val // accumulate scan-output values
+      }
+      // int t = my_local; // Can't do this. my_local is not accessible here.
+
+      // The values below are bound to the output variables of the loop and therefore accessible
+      // b_out; user_defined_vals; keepgoing_out;
     }
 
 There are several things of note in this code snippet:
 
-1) Values from the enclosing scope (i.e. variable a here) are in scope and can
+1) Values from the enclosing scope (i.e. variable "a" here) are in scope and can
    be referenced in the inputs of the loop.
-2) Any variables which you wish to make available in the enclosing scope (i.e.
-   the variables b and keepgoing) must be declared as either loop-carried
-   dependencies (both at the op inputs and output and at the body net input and
-   output) or scan_outputs.
-3) Values created in the body cannot be accessed in the enclosing scope.
+2) Any values computed in the loop body that needs to be used in a subsequent
+   iteration or after the loop are modelled using a pair of variables in the loop-body,
+   consisting of an input variable (eg., b_in) and an output variable (eg., b_out).
+   These are referred to as loop-carried dependences. The loop operation node
+   supplies the input value of the input variable for the first iteration, and
+   returns the output value of the output variable produced by the final
+   iteration.
+3) Scan_output variables are used to implicitly concatenate values computed across
+   all the iterations. In the above example, the value of user_defined_val computed
+   over all iterations are concatenated and returned as the value of user_defined_vals
+   after the loop.
+4) Values created in the body cannot be accessed in the enclosing scope,
+   except using the mechanism described above.
 
 Note that the semantics of this op support "diagonal" or "wavefront" execution.
 (See Step 3 here for an example:
@@ -1158,16 +1178,16 @@ This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; fo
 
 static const char *__doc_popart_mod_opset11 =
     R"doc(
-  Performs element-wise binary modulus (with Numpy-style broadcasting support). 
+  Performs element-wise binary modulus (with Numpy-style broadcasting support).
     The sign of the remainder is the same as that of the Divisor.
-  
-    Mod operator can also behave like C fmod() or numpy.fmod. In this case, the sign of the remainder however, will be the same as the Dividend 
+
+    Mod operator can also behave like C fmod() or numpy.fmod. In this case, the sign of the remainder however, will be the same as the Dividend
     (in contrast to integer mod). To force a behavior like numpy.fmod() an 'fmod' Attribute is provided.
-    This attribute is set to 0 by default causing the behavior to be like integer mod. 
+    This attribute is set to 0 by default causing the behavior to be like integer mod.
     Setting this attribute to 1 causes the remainder to be calculated similar to that of numpy.fmod().
 
     If the input type is floating point, then `fmod` attribute must be set to 1.
-  
+
     In case of dividend being zero, the results will be platform dependent.
 
   This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; for more details please check [the doc](Broadcasting.md).
@@ -1257,7 +1277,7 @@ This operator supports **unidirectional broadcasting** (tensor slope should be u
 
 static const char *__doc_popart_pad_opset11 =
     R"doc(
-Given a tensor containing the data to be padded (`data`), a tensor containing the number of start and end pad values for axis (`pads`), (optionally) a `mode`, and (optionally) `constant_value`, 
+Given a tensor containing the data to be padded (`data`), a tensor containing the number of start and end pad values for axis (`pads`), (optionally) a `mode`, and (optionally) `constant_value`,
 a padded tensor (`output`) is generated.
 
 The three supported `modes` are (similar to corresponding modes supported by `numpy.pad`):
@@ -1272,12 +1292,12 @@ The three supported `modes` are (similar to corresponding modes supported by `nu
 Example 1 (`constant` mode):
   Insert 0 pads to the beginning of the second dimension.
 
-  data = 
+  data =
   [
       [1.0, 1.2],
       [2.3, 3.4],
       [4.5, 5.7],
-  ] 
+  ]
 
   pads = [0, 2, 0, 0]
 
@@ -1285,7 +1305,7 @@ Example 1 (`constant` mode):
 
   constant_value = 0.0
 
-  output = 
+  output =
   [
       [
           [0.0, 0.0, 1.0, 1.2],
@@ -1296,18 +1316,18 @@ Example 1 (`constant` mode):
 
 
 Example 2 (`reflect` mode):
-  data = 
+  data =
   [
       [1.0, 1.2],
       [2.3, 3.4],
       [4.5, 5.7],
-  ] 
+  ]
 
   pads = [0, 2, 0, 0]
 
   mode = 'reflect'
 
-  output = 
+  output =
   [
       [
           [1.0, 1.2, 1.0, 1.2],
@@ -1318,18 +1338,18 @@ Example 2 (`reflect` mode):
 
 
 Example 3 (`edge` mode):
-  data = 
+  data =
   [
       [1.0, 1.2],
       [2.3, 3.4],
       [4.5, 5.7],
-  ] 
+  ]
 
   pads = [0, 2, 0, 0]
 
   mode = 'edge'
 
-  output = 
+  output =
   [
       [
           [1.0, 1.0, 1.0, 1.2],
@@ -1485,7 +1505,7 @@ TensorProto message and be valid as an output type.
 
 static const char *__doc_popart_range_opset11 =
     R"doc(
-Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta` 
+Generate a tensor containing a sequence of numbers that begin at `start` and extends by increments of `delta`
 up to `limit` (exclusive).
 
 The number of elements in the output of range is computed as below-
@@ -1497,10 +1517,10 @@ The pseudocode determining the contents of the output is shown below-
 `for(int i=0; i<number_of_elements; ++i)`
 
 `{`
-   
-`    output[i] =  start + (i * delta);  ` 
 
-`}`	
+`    output[i] =  start + (i * delta);  `
+
+`}`
 
 `Example 1`
 Inputs: start = 3, limit = 9, delta = 3
@@ -1800,7 +1820,7 @@ be encoded as a ScanLoop. Note that the loop-body is a nested graph, and it dire
 values are computed in the outer graph, they need to be passed in as extra state_variables.
 
     graph rnn-encoding {
-      %H_0 = ... 
+      %H_0 = ...
       %X = ...
       %Y_h, %Y = Scan[body = <graph rnn-cell-1>, num_scan_inputs=1](%H_0, %X)
       return %Y, %Y_h
@@ -1846,7 +1866,7 @@ index of the entry itself.
 For instance, in a 2-D tensor case, the update corresponding to the [i][j] entry
 is performed as below:
 ```
-  output[indices[i][j]][j] = updates[i][j] if axis = 0, 
+  output[indices[i][j]][j] = updates[i][j] if axis = 0,
   output[i][indices[i][j]] = updates[i][j] if axis = 1,
 ```
 
@@ -1901,7 +1921,7 @@ index of the entry itself.
 For instance, in a 2-D tensor case, the update corresponding to the [i][j] entry
 is performed as below:
 ```
-  output[indices[i][j]][j] = updates[i][j] if axis = 0, 
+  output[indices[i][j]][j] = updates[i][j] if axis = 0,
   output[i][indices[i][j]] = updates[i][j] if axis = 1,
 ```
 
@@ -2303,16 +2323,16 @@ will be (2, 1, 3).
 
 static const char *__doc_popart_unique_opset11 =
     R"doc(
-Find the unique elements of a tensor. When an optional attribute 'axis' is provided, unique subtensors sliced along the 'axis' are returned. 
-Otherwise the input tensor is flattened and unique values of the flattened tensor are returned. 
+Find the unique elements of a tensor. When an optional attribute 'axis' is provided, unique subtensors sliced along the 'axis' are returned.
+Otherwise the input tensor is flattened and unique values of the flattened tensor are returned.
 
-This operator returns the unique values or sliced unique subtensors of the input tensor and three optional outputs. 
-The first output tensor 'Y' contains all unique values or subtensors of the input. 
-The second optional output tensor 'indices' contains indices of 'Y' elements' first occurance in 'X'.. 
-The third optional output tensor 'inverse_indices' contains, for elements of 'X', its corresponding indices in 'Y'. ". 
-The fourth optional output tensor 'counts' contains the count of each element of 'Y' in the input. 
+This operator returns the unique values or sliced unique subtensors of the input tensor and three optional outputs.
+The first output tensor 'Y' contains all unique values or subtensors of the input.
+The second optional output tensor 'indices' contains indices of 'Y' elements' first occurance in 'X'..
+The third optional output tensor 'inverse_indices' contains, for elements of 'X', its corresponding indices in 'Y'. ".
+The fourth optional output tensor 'counts' contains the count of each element of 'Y' in the input.
 
-Outputs are either sorted in ascending order or optionally in the order of the first occurrence of the values in the input. 
+Outputs are either sorted in ascending order or optionally in the order of the first occurrence of the values in the input.
 
 https://docs.scipy.org/doc/numpy/reference/generated/numpy.unique.html
 
@@ -2344,36 +2364,36 @@ Example 3:
   output_counts = [2, 1]
 
 Example 4:
-  input_x = [[[1., 1.], [0., 1.], [2., 1.], [0., 1.]], 
+  input_x = [[[1., 1.], [0., 1.], [2., 1.], [0., 1.]],
              [[1., 1.], [0., 1.], [2., 1.], [0., 1.]]]
   attribute_sorted = 1
   attribute_axis = 1
 
-  intermediate data are presented below for better understanding: 
-  
+  intermediate data are presented below for better understanding:
+
   there are 4 subtensors sliced along axis 1 of input_x (shape = (2, 4, 2)):
-  A: [[1, 1], [1, 1]], 
-     [[0, 1], [0, 1]], 
-     [[2, 1], [2, 1]], 
+  A: [[1, 1], [1, 1]],
+     [[0, 1], [0, 1]],
+     [[2, 1], [2, 1]],
      [[0, 1], [0, 1]].
-  
-  there are 3 unique subtensors: 
-  [[1, 1], [1, 1]], 
-  [[0, 1], [0, 1]], 
+
+  there are 3 unique subtensors:
+  [[1, 1], [1, 1]],
+  [[0, 1], [0, 1]],
   [[2, 1], [2, 1]].
-  
+
   sorted unique subtensors:
-  B: [[0, 1], [0, 1]], 
-     [[1, 1], [1, 1]], 
+  B: [[0, 1], [0, 1]],
+     [[1, 1], [1, 1]],
      [[2, 1], [2, 1]].
-  
+
   output_Y is constructed from B:
-  [[[0. 1.], [1. 1.], [2. 1.]], 
+  [[[0. 1.], [1. 1.], [2. 1.]],
    [[0. 1.], [1. 1.], [2. 1.]]]
 
   output_indices is to map from B to A:
   [1, 0, 2]
-  
+
   output_inverse_indices is to map from A to B:
   [1, 0, 2, 0]
 
@@ -2391,8 +2411,8 @@ For example:
 
 The attribute `axes` should not contain any duplicate entries. It is an error if it contains duplicates.
 The rank of the output tensor (`output_rank`) is the rank of the input tensor (`data`) plus the number of values in `axes`.
-Each value in `axes` should be within the (inclusive) range [-output_rank , output_rank - 1]. 
-The order of values in `axes` does not matter and can come in any order. 
+Each value in `axes` should be within the (inclusive) range [-output_rank , output_rank - 1].
+The order of values in `axes` does not matter and can come in any order.
 
 )doc";
 

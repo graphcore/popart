@@ -1,8 +1,19 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <map>
 #include <memory>
 #include <queue>
+#include <set>
+#include <string>
+#include <tuple>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
-#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -10,7 +21,6 @@
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/pointercomparators.hpp>
@@ -20,6 +30,20 @@
 #include <popart/transforms/mergeloops.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/util.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/operators.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vectorandset.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
 
 namespace popart {
 

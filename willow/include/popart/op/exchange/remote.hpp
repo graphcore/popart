@@ -2,10 +2,19 @@
 #ifndef GUARD_NEURALNET_REMOTE_HPP
 #define GUARD_NEURALNET_REMOTE_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 #include <popart/op/exchange/remotebase.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op/exchange/exchange.hpp"
+
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 /**
  * Remote Store Op

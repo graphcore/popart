@@ -1,6 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <ostream>
 #include <poprithms/ndarray/dtype.hpp>
 #include <poprithmshosttensor.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

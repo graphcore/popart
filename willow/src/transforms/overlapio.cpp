@@ -1,26 +1,30 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <popart/error.hpp>
+#include <cstddef>
+#include <map>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/concat.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
-#include <popart/op/exchange/remote.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/init.hpp>
-#include <popart/op/iotilecopy.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/reshape.hpp>
-#include <popart/op/slice.hpp>
-#include <popart/opsharding.hpp>
-#include <popart/shardingplan.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
 #include <popart/transforms/decomposeloops.hpp>
 #include <popart/transforms/overlapio.hpp>
+
+#include "popart/dataflow.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/op/loop.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/transforms/mainloops.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

@@ -2,9 +2,22 @@
 #ifndef GUARD_NEURALNET_REPLICATEDALLREDUCE_HPP
 #define GUARD_NEURALNET_REPLICATEDALLREDUCE_HPP
 
+#include <memory>
+#include <tuple>
 #include <popart/op/collectives/collectives.hpp>
 
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+class AliasModel;
+class CommGroup;
+class OpSerialiserBase;
+class ReplicaEqualAnalysisProxy;
+class Tensor;
+struct OperatorIdentifier;
 
 class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:

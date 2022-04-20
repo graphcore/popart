@@ -2,13 +2,14 @@
 #define BOOST_TEST_MODULE RngMappingTest
 
 #include <boost/test/unit_test.hpp>
-
-#include <poplar/Target.hpp>
-
 #include <snap/Graph.hpp>
 #include <snap/Tensor.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Target.hpp>
 
 #include "../../willow/src/popx/rng/rngstatelowering.hpp"
+#include "popart/error.hpp"
+#include "popart/util.hpp" // IWYU pragma: keep
 
 // This is the function that was previously in rngstatelowering, for setting the
 // layout of the RNG state tensors.

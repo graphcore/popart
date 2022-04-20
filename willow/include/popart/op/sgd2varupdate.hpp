@@ -2,9 +2,11 @@
 #ifndef GUARD_NEURALNET_SGD2VARUPDATE_HPP
 #define GUARD_NEURALNET_SGD2VARUPDATE_HPP
 
+#include <memory>
 #include <popart/op/sgd1varupdate.hpp>
 
 namespace popart {
+class Op;
 
 /**
  * This Op is by design exactly equivalent to an SGD1VarUpdateOp. Any logic

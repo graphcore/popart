@@ -2,18 +2,18 @@
 #ifndef GUARD_NEURALNET_COMPOUND_SCALAR_HELPERS_HPP
 #define GUARD_NEURALNET_COMPOUND_SCALAR_HELPERS_HPP
 
-#include <memory>
-#include <popart/names.hpp>
+#include <string>
 #include <popart/optimizervalue.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 
 class SGD;
 class Adam;
 class Adaptive;
+class Tensor;
 
 // Base helper class for scalars composed of other scalars
 template <class T> class CompoundScalarHelper {

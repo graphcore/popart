@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_BASESORT_HPP
 #define GUARD_NEURALNET_BASESORT_HPP
 
+#include <cstdint>
+#include <memory>
 #include <popart/op.hpp>
 
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class BaseSortOp : public Op {
 public:

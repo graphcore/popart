@@ -1,18 +1,35 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <array>
-#include <boost/test/unit_test.hpp>
+#include <cassert>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <map>
-#include <random>
+#include <memory>
+#include <string>
 #include <tuple>
+#include <typeinfo>
 #include <vector>
+
+#include "popart/builder.gen.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define protected public
-#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -20,16 +37,10 @@
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/restore.hpp>
-#include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/stash.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
+
 #undef protected
 
 // TODO T12595 : put the implemenations below into a .cpp file

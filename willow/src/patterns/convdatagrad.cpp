@@ -1,14 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/addbias.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/patterns/convdatagrad.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
-#include <popart/util.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/convbase.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

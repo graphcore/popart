@@ -3,9 +3,9 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <vector>
-#include <popart/logging.hpp>
 #include <popart/subgraph/match.hpp>
+
+#include "popart/subgraph/subgraphnames.hpp"
 
 using namespace fwtools::subgraph;
 

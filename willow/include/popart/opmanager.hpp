@@ -2,18 +2,32 @@
 #ifndef GUARD_NEURALNET_OPMANAGER_HPP
 #define GUARD_NEURALNET_OPMANAGER_HPP
 
+#include <cstdint>
 #include <functional>
+#include <iosfwd>
 #include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
 #include <popart/attributes.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/vendored/any.hpp>
-
-#include <popart/tensordata.hpp>
+#include <popart/tensordata.hpp> // IWYU pragma: keep
 #include <popart/tensorinfo.hpp>
 
+#include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/half.hpp"
+#include "popart/operatoridentifier.hpp"
+
 namespace popart {
+class Graph;
+class Scope;
+class Tensor;
+class any;
 
 class OpDefinition {
 public:

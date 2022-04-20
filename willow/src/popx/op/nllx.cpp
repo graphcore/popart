@@ -1,26 +1,35 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/logging.hpp"
-#include <memory>
-#include <popart/error.hpp>
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
-#include <popart/op/nll.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/op/nllx.hpp>
-#include <popart/popx/opxmanager.hpp>
-
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
+#include <popart/names.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/popx/op/nllx.hpp>
+#include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+class Devicex;
 
 NllOpx::NllOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<NllOp>(op, Onnx::CustomOperators::Nll);

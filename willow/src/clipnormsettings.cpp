@@ -4,6 +4,8 @@
 #include <popart/logging.hpp>
 #include <popart/util.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
 
 ClipNormSettings::ClipNormSettings(const std::vector<TensorId> &weightIds_,

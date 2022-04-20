@@ -2,12 +2,21 @@
 #ifndef GUARD_NEURALNET_RESIZEX_HPP
 #define GUARD_NEURALNET_RESIZEX_HPP
 
-#include <popart/names.hpp>
+#include <cstdint>
+#include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 class ResizeOpx : public PopOpx {
 public:

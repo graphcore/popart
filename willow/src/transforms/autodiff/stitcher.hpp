@@ -2,18 +2,19 @@
 #ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_STITCHER_HPP
 #define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_STITCHER_HPP
 
-#include <popart/bwdgraphinfo.hpp>
-
 #include <transforms/autodiff/autodiffhelper.hpp>
-#include <transforms/autodiff/autodiffirinterface.hpp>
 #include <transforms/autodiff/stitcherinterface.hpp>
+#include <vector>
+#include <popart/bwdgraphinfo.hpp>
+#include <popart/vendored/optional.hpp> // IWYU pragma: keep
 
-#include <popart/vendored/optional.hpp>
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
 
 // Forward declarations.
-class Op;
+class AutodiffIrInterface;
 
 /**
  * A "stitcher" is an object that changes the IR so that all non-gradient inputs

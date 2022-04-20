@@ -2,10 +2,14 @@
 #ifndef GUARD_NEURALNET_DECOMPOSEGRADSUM_HPP
 #define GUARD_NEURALNET_DECOMPOSEGRADSUM_HPP
 
-#include <popart/op.hpp>
+#include <cstddef>
+#include <string>
+#include <vector>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+class Graph;
+class Op;
 
 class DecomposeGradSum : public Transform {
 public:

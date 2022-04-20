@@ -1,12 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/op/split.hpp>
 #include <popart/popx/op/splitx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 SplitOpx::SplitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SplitOp>(op, {Onnx::Operators::Split_2, Onnx::Operators::Split_11});

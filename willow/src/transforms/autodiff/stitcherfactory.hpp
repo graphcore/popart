@@ -5,13 +5,13 @@
 
 #include <memory>
 
-#include <transforms/autodiff/stitcherinterface.hpp>
-#include <popart/transforms/autodiff.hpp>
+#include "popart/sessionoptions.hpp"
 
 namespace popart {
 
 // Forward declarations.
-class Ir;
+class AutodiffIrInterface;
+class StitcherInterface;
 
 /**
  * A factory class for stitchers.

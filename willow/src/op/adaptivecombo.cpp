@@ -1,8 +1,20 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
-#include <popart/ir.hpp>
+#include <set>
+#include <string>
 #include <popart/op/adaptivecombo.hpp>
 #include <popart/opserialiser.hpp>
+
+#include "popart/adaptive.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/optimizer.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

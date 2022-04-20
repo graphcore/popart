@@ -6,16 +6,15 @@
 #include <list>
 #include <map>
 #include <set>
-
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
-
 #include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 // Forward declarations.
 class Op;
+class Graph;
 
 class OpGradRegistry {
 public:

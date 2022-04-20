@@ -1,13 +1,25 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <popnn/NonLinearity.hpp>
+#include <popnn/NonLinearityDef.hpp>
+#include <popops/Rearrange.hpp>
 #include <popart/op/swish.hpp>
 #include <popart/popx/op/swishx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popnn/NonLinearity.hpp>
-#include <popops/Rearrange.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 SwishOpx::SwishOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOutplaceOpx(op, devicex, SwishComputex::get()) {

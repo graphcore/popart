@@ -2,11 +2,15 @@
 #ifndef GUARD_NEURALNET_NP_UTILS_HPP
 #define GUARD_NEURALNET_NP_UTILS_HPP
 
+#include <map>
+#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <string>
 #include <popart/tensorinfo.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/vendored/optional.hpp" // IWYU pragma: keep
 
 // The following code allow nonstd::optional to be used in the C++
 // interface and map to python types

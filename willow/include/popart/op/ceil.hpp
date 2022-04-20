@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_CEIL_HPP
 #define GUARD_NEURALNET_CEIL_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/onewayunary.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class CeilOp : public OneWayUnaryOp {
 public:

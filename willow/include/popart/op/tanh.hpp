@@ -2,9 +2,16 @@
 #ifndef GUARD_NEURALNET_TANH_HPP
 #define GUARD_NEURALNET_TANH_HPP
 
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class TanhOp : public ElementWiseUnaryOp {
 public:

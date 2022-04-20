@@ -1,18 +1,28 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/op/scatter.hpp>
-#include <popart/popx/op/scatterutilx.hpp>
-#include <popart/popx/op/sliceplanx.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/util.hpp>
-
+#include "popart/popx/debugcontextx.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popops/Cast.hpp>
+#include <vector>
+#include <poplar/ArrayRef.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
-#include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
-#include <poputil/TileMapping.hpp>
+#include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/op/sliceplanx.hpp>
+
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 namespace popx {

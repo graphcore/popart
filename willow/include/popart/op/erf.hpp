@@ -2,9 +2,14 @@
 #ifndef GUARD_NEURALNET_ERF_HPP
 #define GUARD_NEURALNET_ERF_HPP
 
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class ErfOp : public ElementWiseUnaryOp {
 public:

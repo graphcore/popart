@@ -1,6 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <vector>
 #include <popart/names.hpp>
-#include <popart/operators.hpp>
+
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

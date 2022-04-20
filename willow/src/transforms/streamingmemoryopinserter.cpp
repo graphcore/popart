@@ -1,7 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <transforms/streamingmemoryopinserter.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
-#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
@@ -12,14 +16,29 @@
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/lamb.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/remotesetup.hpp>
 
-#include <transforms/streamingmemoryopinserter.hpp>
+#include "popart/commgroup.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/op/copyvarupdate.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/util.hpp"
+#include "popart/variablesettings.hpp"
 
 namespace popart {
 

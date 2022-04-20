@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_EXPM1_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_EXPM1_GRAD_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replace a Expm1GradOp with
 // grad_out = grad_in * (fwd_out + 1) = grad_in * exp(x)

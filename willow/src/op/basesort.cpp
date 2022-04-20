@@ -1,9 +1,16 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <memory>
+#include <stdint.h>
+#include <vector>
 #include <popart/op/basesort.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 BaseSortOp::BaseSortOp(const OperatorIdentifier &_opid,
                        int64_t axis_,

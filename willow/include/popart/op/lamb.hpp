@@ -2,10 +2,13 @@
 #ifndef GUARD_NEURALNET_LAMBOP_HPP
 #define GUARD_NEURALNET_LAMBOP_HPP
 
-#include <popart/op/varupdate.hpp>
-#include <popart/optimizervalue.hpp>
+#include <memory>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
+class CommGroup;
 
 class LambSquareOp : public Op {
 public:

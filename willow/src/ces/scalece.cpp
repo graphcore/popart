@@ -1,10 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <onnxutil.hpp>
+#include <vector>
+#include <poprithms/compute/host/tensor.hpp>
 #include <poprithms/compute/host/usings.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/scalece.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

@@ -2,11 +2,25 @@
 #ifndef POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP
 #define POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP
 
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/clipnormsettings.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+
+namespace popart {
+class Tensor;
+} // namespace popart
 
 namespace _detail {
 using namespace popart;

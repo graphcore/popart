@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_BINARY_CONST_SCALAR_HPP
 #define GUARD_NEURALNET_BINARY_CONST_SCALAR_HPP
 
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 /**
  * A unary Op, which performs a binary operation (Mul, Div, etc) between its

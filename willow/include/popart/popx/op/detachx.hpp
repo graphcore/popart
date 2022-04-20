@@ -2,15 +2,19 @@
 #ifndef GUARD_NEURALNET_DETACHX_HPP
 #define GUARD_NEURALNET_DETACHX_HPP
 
-#include <popart/names.hpp>
-#include <popart/op/detach.hpp>
 #include <popart/popx/op/elementwisex.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/popx/popopx.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 class DetachOpx : public ElementWiseUnaryOpx {
 

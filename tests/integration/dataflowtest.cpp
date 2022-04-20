@@ -2,10 +2,16 @@
 
 #define BOOST_TEST_MODULE DataFlowTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <string>
+#include <vector>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
+
+#include "popart/dataflow.hpp"
+#include "popart/erroruid.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 

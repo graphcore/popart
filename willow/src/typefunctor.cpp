@@ -1,7 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <popart/typefunctor.hpp>
 
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+
 namespace popart {
+class Half;
+
 namespace typefunctor {
 
 template <> int64_t Int64FromVoid::operator()<popart::Half>(void *) {

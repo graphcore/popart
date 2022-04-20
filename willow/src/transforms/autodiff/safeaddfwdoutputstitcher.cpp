@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <functional>
 #include <transforms/autodiff/safeaddfwdoutputstitcher.hpp>
-
-#include <list>
-
 #include <popart/graph.hpp>
-#include <popart/logging.hpp>
-#include <popart/op/call.hpp>
 
-#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
+#include "popart/error.hpp"
+#include "transforms/autodiff/addfwdoutputstitcher.hpp"
+#include "transforms/autodiff/autodiffirinterface.hpp"
+#include "transforms/autodiff/recomputestitcher.hpp"
+#include "transforms/autodiff/stitcher.hpp"
 
 namespace popart {
 

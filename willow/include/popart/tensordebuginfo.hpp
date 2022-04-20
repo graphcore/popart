@@ -2,12 +2,14 @@
 #ifndef GUARD_NEURALNET_TENSOR_DEBUGINFO_HPP
 #define GUARD_NEURALNET_TENSOR_DEBUGINFO_HPP
 
+#include <string>
 #include <popart/debugcontext.hpp>
 
 namespace popart {
 
 using TensorId = std::string;
 class TensorInfo;
+
 enum class TensorType;
 
 class TensorDebugInfo : public DebugInfo {

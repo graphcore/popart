@@ -3,12 +3,19 @@
 #ifndef GUARD_NEURALNET_RANDOMSETUP_HPP
 #define GUARD_NEURALNET_RANDOMSETUP_HPP
 
-#include <popart/op.hpp>
-#include <popart/transforms/transform.hpp>
-
-#include <popart/vendored/optional.hpp>
-
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <popart/pointercomparators.hpp>
+#include <popart/transforms/transform.hpp>
+#include <popart/vendored/optional.hpp> // IWYU pragma: keep
+
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
 // There are a number of operations that exhibit random behaviour in PopART.
@@ -197,6 +204,10 @@ namespace popart {
 // Forward declarations.
 class RandomBaseOp;
 class SubgraphOp;
+class Graph;
+class Ir;
+class Op;
+class TensorInfo;
 
 class RandomSetup : public Transform {
 public:

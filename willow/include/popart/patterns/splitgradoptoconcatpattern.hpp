@@ -2,10 +2,12 @@
 #ifndef GUARD_NEURALNET_SPLIT_GRAD_OP_TO_CONCAT_PATTERN_HPP
 #define GUARD_NEURALNET_SPLIT_GRAD_OP_TO_CONCAT_PATTERN_HPP
 
-#include <popart/patterns/pattern.hpp>
+#include <memory>
+#include <vector>
 #include <popart/patterns/sequenceexpander.hpp>
 
 namespace popart {
+class Op;
 
 // Replace ops that return their only input unchanged with an identity op
 class SplitGradOpToConcatPattern : public SequenceExpander {

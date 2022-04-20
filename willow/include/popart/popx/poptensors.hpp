@@ -2,15 +2,19 @@
 #ifndef GUARD_NEURALNET_POPTENSORS_HPP
 #define GUARD_NEURALNET_POPTENSORS_HPP
 
-#include <set>
-
+#include <map>
+#include <memory>
 #include <popart/names.hpp>
 #include <popart/popx/preparedtensor.hpp>
 #include <popart/popx/viewchangers.hpp>
 
-#include <snap/Tensor.hpp>
+namespace snap {
+class Tensor;
+} // namespace snap
 
 namespace popart {
+class Ir;
+
 namespace popx {
 
 class PopTensors {

@@ -1,18 +1,35 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
 #include <popart/op/clip.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/clipx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/Cast.hpp>
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+class Devicex;
 
 snap::Tensor ClipComputex::getClipTensor(float val,
                                          const poplar::Type &type,

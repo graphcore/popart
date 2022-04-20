@@ -1,5 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <utility>
+#include <vector>
 #include <popart/subgraph/algo0.hpp>
+
+#include "popart/subgraph/match.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/subgraph/subgraphutil.hpp"
 
 namespace fwtools {
 namespace subgraph {

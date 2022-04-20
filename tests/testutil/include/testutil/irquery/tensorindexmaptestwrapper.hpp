@@ -2,21 +2,21 @@
 #ifndef TEST_UTILS_IR_QUERY_TENSOR_INDEX_MAP_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_TENSOR_INDEX_MAP_TEST_WRAPPER_HPP
 
-#include <functional>
-
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
-#include <popart/op.hpp>
-
+#include "require.hpp"
+#include "testutil/irquery/testwrapper.hpp"
+#include <map>
+#include <string>
+#include <vector>
 #include <popart/vendored/optional.hpp>
 
-#include <testutil/irquery/require.hpp>
-#include <testutil/irquery/tensorindextestwrapper.hpp>
-#include <testutil/irquery/testwrapper.hpp>
+#include "popart/names.hpp"
 
 namespace popart {
-namespace irquery {
+class Ir;
+class Tensor;
 
+namespace irquery {
+class TensorIndexTestWrapper;
 /**
  * Object that can be used to execute test queries over a mapping from indices
  * to tensor IDs (e.g. op inputs or outputs, or graph inputs or outputs).

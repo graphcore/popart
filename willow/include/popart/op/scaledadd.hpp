@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_SCALEDADD_HPP
 #define GUARD_NEURALNET_SCALEDADD_HPP
 
-#include <popart/op/elementwise.hpp>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
 
 class OpSerialiserBase;
+class AliasModel;
+struct OperatorIdentifier;
 
 // z = a * x + b * y
 class ScaledAddOp : public Op {

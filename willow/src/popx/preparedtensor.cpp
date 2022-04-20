@@ -2,6 +2,8 @@
 
 #include <popart/popx/preparedtensor.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
 namespace popx {
 

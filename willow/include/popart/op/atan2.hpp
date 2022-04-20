@@ -2,7 +2,14 @@
 #ifndef GUARD_NEURALNET_ATAN2_HPP
 #define GUARD_NEURALNET_ATAN2_HPP
 
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

@@ -2,16 +2,17 @@
 #ifndef GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 #define GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HPP
 
-#include <popart/bwdgraphinfo.hpp>
-
-#include <popart/vendored/optional.hpp>
-
 #include <transforms/autodiff/autodiffhelper.hpp>
+#include <vector>
+#include <popart/bwdgraphinfo.hpp>
+#include <popart/vendored/optional.hpp> // IWYU pragma: keep
+
+#include "popart/names.hpp"
 
 namespace popart {
 
 // Forward declaration.
-class Op;
+
 class Graph;
 class GraphId;
 class AutodiffIrInterface;

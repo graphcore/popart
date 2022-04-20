@@ -1,53 +1,28 @@
 
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <array>
-#include <fstream>
-#include <iomanip>
-#include <map>
-#include <random>
-#include <sstream>
-#include <string>
-#include <unordered_set>
-#include <vector>
-
-#include <boost/filesystem.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/random/normal_distribution.hpp>
-#include <poprithms/logging/timepartitionlogger.hpp>
-
 #include <builder_impl.hpp>
-#include <filereader.hpp>
 #include <graphfromlosstolossupdater.hpp>
 #include <onnxutil.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
-#include <popart/builder.hpp>
 #include <popart/ces/constexpr.hpp>
-#include <popart/ces/onnxconstexpr.hpp>
-#include <popart/chains.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/intervals.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxdebuginfo.hpp>
-#include <popart/op/call.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
-#include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/loss.hpp>
-#include <popart/op/pad.hpp>
-#include <popart/op/scale.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/replicatedstreammode.hpp>
-#include <popart/scheduler.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
@@ -59,8 +34,31 @@
 #include <popart/util.hpp>
 #include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
-
 // The transformations
+#include <onnx/onnx_pb.h>
+#include <stochasticroundingassumptionverifier.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/StringRef.hpp>
+#include <poprithms/memory/inplace/allowmultigatealias.hpp>
+#include <poprithms/memory/inplace/checkparallelwriteable.hpp>
+#include <poprithms/memory/inplace/constraint.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
+#include <poprithms/memory/inplace/result.hpp>
+#include <poprithms/util/typedinteger.hpp>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/dotvisualizer.hpp>
+#include <popart/op/copyvarupdate.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/placeholder.hpp>
+#include <popart/patterns/adamdecompose.hpp>
+#include <popart/patterns/adaptivedecompose.hpp>
+#include <popart/patterns/inplace.hpp>
+#include <popart/patterns/sgd0decompose.hpp>
+#include <popart/patterns/sgd1decompose.hpp>
+#include <popart/patterns/sgd2decompose.hpp>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/patterns/viewsimplifypattern.hpp>
 #include <popart/recompute.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
@@ -94,37 +92,50 @@
 #include <popart/transforms/stochasticrounding.hpp>
 #include <popart/transforms/streamingmemory.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
-
-// The layers required to construct the backwards pass
-#include <popart/op/batchnorm.hpp>
-#include <popart/op/copyvarupdate.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/modifyrandomseed.hpp>
-#include <popart/op/placeholder.hpp>
-#include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/sum.hpp>
-
-#include <popart/patterns/adamdecompose.hpp>
-#include <popart/patterns/adaptivedecompose.hpp>
-#include <popart/patterns/inplace.hpp>
-#include <popart/patterns/sgd0decompose.hpp>
-#include <popart/patterns/sgd1decompose.hpp>
-#include <popart/patterns/sgd2decompose.hpp>
-#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
-#include <popart/patterns/viewsimplifypattern.hpp>
-
-#include <popart/dotvisualizer.hpp>
-
-// used for float to half conversion
-#include <poplar/Target.hpp>
 // used to get the packageHash()
-#include <poplar/Graph.hpp>
-#include <poprithms/memory/inplace/allowmultigatealias.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <functional>
+#include <initializer_list>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <random>
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
-
-#include <stochasticroundingassumptionverifier.hpp>
+#include "popart/attributes.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/bimap.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/graphid.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/op/subgraph.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/pattern.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/region.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/scope.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/vertex.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 

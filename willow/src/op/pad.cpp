@@ -1,14 +1,38 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <map>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <poprithms/common/multiout/ioindices.hpp>
+#include <poprithms/common/multiout/tensorid.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/padgrad.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/slice.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/region.hpp"
+#include "popart/slicestruct.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

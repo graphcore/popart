@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_TRANSPOSE_TO_IDENTITY_OR_RESHAPE_PATTERN_HPP
 #define GUARD_NEURALNET_TRANSPOSE_TO_IDENTITY_OR_RESHAPE_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replaces:
 //  Transpose -> {Identity/Reshape} -> Transpose

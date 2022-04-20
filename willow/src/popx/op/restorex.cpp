@@ -1,18 +1,25 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/names.hpp>
+#include <cstdint>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <poplar/ArrayRef.hpp>
+#include <poplar/Type.hpp>
+#include <popops/DynamicSlice.hpp>
+#include <popops/ElementWise.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/restorex.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 template <typename Derived>

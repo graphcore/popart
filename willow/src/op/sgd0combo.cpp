@@ -1,9 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
-#include <popart/ir.hpp>
+#include <set>
+#include <string>
+#include <utility>
 #include <popart/op/sgd0combo.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/optimizer.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

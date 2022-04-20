@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_SOFTPLUS_HPP
 #define GUARD_NEURALNET_SOFTPLUS_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class SoftPlusOp : public ElementWiseUnaryOp {
 public:

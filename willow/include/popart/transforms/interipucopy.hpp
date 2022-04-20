@@ -2,10 +2,16 @@
 #ifndef GUARD_NEURALNET_INTERIPUCOPY_HPP
 #define GUARD_NEURALNET_INTERIPUCOPY_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
 #include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
 
 class InterIpuCopy : public Transform {
 public:

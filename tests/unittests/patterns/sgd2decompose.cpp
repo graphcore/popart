@@ -1,9 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TestPatternsSGD2Decompose
 #include <boost/test/unit_test.hpp>
-
-#include <popart/patterns/sgd2decompose.hpp>
-
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sgd1combo.hpp>
@@ -11,6 +8,11 @@
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/patterns/sgd2decompose.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/op.hpp"
 
 using namespace popart;
 

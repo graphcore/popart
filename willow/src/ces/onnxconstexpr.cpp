@@ -1,7 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <memory>
 #include <onnx/onnx_pb.h>
-
 #include <onnxutil.hpp>
+#include <string>
+#include <vector>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -10,7 +14,17 @@
 #include <popart/tensors.hpp>
 #include <popart/util.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
 namespace popart {
+class Op;
 
 bool OnnxConstExprUtil::isConst(const ONNX_NAMESPACE::NodeProto &node) {
   return node.op_type() == "Constant" || node.op_type() == "Shape" ||

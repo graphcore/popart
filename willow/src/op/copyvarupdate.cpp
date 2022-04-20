@@ -1,9 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/opmanager.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/region.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 CopyVarUpdateOp::CopyVarUpdateOp(const Op::Settings &settings_)
     : VarUpdateWithUpdaterOp(Onnx::CustomOperators::CopyVarUpdate, settings_) {}

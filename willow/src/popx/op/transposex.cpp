@@ -1,12 +1,28 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
+#include <algorithm>
+#include <iterator>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/popx/op/transposex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
 namespace popx {
+class Devicex;
 
 TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TransposeOp>(op);

@@ -1,8 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Pow0InplaceTest
 
+#include <algorithm>
+#include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <string>
+
 #include "elementwisebinary_testcase.hpp"
-#include <popart/op/pow.hpp>
+#include "popart/builder.gen.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 

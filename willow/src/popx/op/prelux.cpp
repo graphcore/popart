@@ -1,14 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popnn/NonLinearity.hpp>
-
-#include <popart/logging.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/op/prelu.hpp>
 #include <popart/popx/op/prelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 namespace pe = popops::expr;
 

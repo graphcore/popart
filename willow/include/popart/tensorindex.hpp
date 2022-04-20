@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_TENSORINDEXMAP_HPP
 #define GUARD_NEURALNET_TENSORINDEXMAP_HPP
 
-#include <popart/tensor.hpp>
+#include <iosfwd>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "popart/names.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 
-struct PTensorCmp;
+class Tensor;
+class TensorInfo;
 
 // Inputs and outputs to Ops will use this class.
 // inputs (outputs) enter (leave) at certain indices

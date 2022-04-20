@@ -1,9 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/tensors.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 namespace graphFromLossToLossUpdater {

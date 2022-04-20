@@ -1,10 +1,21 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Willow_Op_Call
 #include <boost/test/unit_test.hpp>
-
+#include <map>
+#include <string>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graph.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 using namespace popart;
 

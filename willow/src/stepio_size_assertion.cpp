@@ -1,9 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <cstdint>
 #include <sstream>
+#include <string>
 #include <popart/error.hpp>
+#include <popart/replicatedstreammode.hpp>
 #include <popart/stepio_size_assertion.hpp>
 
-#include <popart/replicatedstreammode.hpp>
+#include "popart/dataflow.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/popx/executablex.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 namespace iosizecheck {

@@ -1,8 +1,23 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE StepIOTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <initializer_list>
+#include <list>
+#include <memory>
 #include <stepiosplitter.hpp>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include "popart/datatype.hpp"
+#include "popart/istepio.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

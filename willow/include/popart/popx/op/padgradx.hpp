@@ -5,8 +5,10 @@
 #include <popart/popx/op/slicex.hpp>
 
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 class PadGradOpx : public SliceOpx {
 public:

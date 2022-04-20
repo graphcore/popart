@@ -4,11 +4,11 @@
 
 #include <cstddef>
 #include <string>
-
-#include <popart/graph.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+class Graph;
+
 /**
  * A transform that annotates tensors in the forward graph, so that their
  * gradients can be tracked in automatic loss scaling.

@@ -1,23 +1,28 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <functional>
+#include <map>
+#include <transforms/autodiff/gradgrower.hpp>
 #include <transforms/autodiff/gradgrowermaingraph.hpp>
-
+#include <utility>
+#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/tensornames.hpp>
 
-#include <transforms/autodiff/backwardsgraphcreator.hpp>
-#include <transforms/autodiff/gradgrower.hpp>
-#include <transforms/autodiff/gradnongradpair.hpp>
-#include <transforms/autodiff/opgradregistry.hpp>
-#include <transforms/autodiff/recomputestitcher.hpp>
-#include <transforms/autodiff/tensorgradregistry.hpp>
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/vendored/optional.hpp"
+#include "transforms/autodiff/autodiffirinterface.hpp"
+#include "transforms/autodiff/gradgrowergraph.hpp"
+#include "transforms/autodiff/gradgrowerloss.hpp"
+#include "transforms/autodiff/gradgrowerop.hpp"
 
 namespace popart {
+class GradGrowerSumOpInterface;
 
 GradGrowerMainGraph::GradGrowerMainGraph(
     AutodiffIrInterface &dep,

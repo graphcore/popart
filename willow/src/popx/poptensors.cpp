@@ -1,8 +1,27 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/Type.hpp>
 #include <popart/ir.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/poptensors.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/popx/preparedtensor.hpp"
+#include "popart/popx/viewchangers.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 namespace popx {

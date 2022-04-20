@@ -1,19 +1,39 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
+#include <poplar/Target.hpp>
+#include <popnn/LogSoftmax.hpp>
+#include <popnn/NonLinearity.hpp>
+#include <popnn/NonLinearityDef.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Reduce.hpp>
+#include <poputil/VarStructure.hpp>
 #include <popart/error.hpp>
 #include <popart/op/logsoftmax.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/logsoftmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popnn/LogSoftmax.hpp>
-#include <popnn/NonLinearity.hpp>
-#include <popops/Expr.hpp>
-#include <popops/Reduce.hpp>
-#include <poputil/VarStructure.hpp>
-
-#include <snap/poputil/TileMapping.hpp>
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace pe = popops::expr;
 

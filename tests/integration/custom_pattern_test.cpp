@@ -2,7 +2,11 @@
 #define BOOST_TEST_MODULE CustomPatternTest
 
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -12,6 +16,21 @@
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
+namespace popart {
+class IArray;
+class Tensor;
+} // namespace popart
 
 using namespace popart;
 

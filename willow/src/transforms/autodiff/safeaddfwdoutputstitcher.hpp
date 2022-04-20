@@ -2,13 +2,18 @@
 #ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
 #define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
 
-#include <vector>
-
 #include <transforms/autodiff/addfwdoutputstitcher.hpp>
 #include <transforms/autodiff/recomputestitcher.hpp>
 #include <transforms/autodiff/stitcher.hpp>
+#include <vector>
+
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/vendored/optional.hpp" // IWYU pragma: keep
 
 namespace popart {
+class AutodiffIrInterface;
 
 /**
  * Helper class for growing gradient ops.

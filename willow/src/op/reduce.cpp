@@ -1,12 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <numeric>
+#include <vector>
 #include <popart/op/reduce.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
                    const nonstd::optional<std::vector<int64_t>> &axes_,

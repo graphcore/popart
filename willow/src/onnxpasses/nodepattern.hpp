@@ -3,17 +3,16 @@
 #define GUARD_NEURALNET_ONNXTOONNX_NODEPATTERN_HPP
 
 #include <array>
-#include <onnx/onnx_pb.h>
+#include <cstdint>
+#include <memory>
 #include <onnxpasses/onnxnames.hpp>
 #include <onnxpasses/patterntarget.hpp>
 #include <string>
+#include <vector>
 #include <poprithms/ndarray/shape.hpp>
-#include <poprithmshosttensor.hpp>
 
 namespace popart {
 namespace onnxpasses {
-
-class PatternTarget;
 
 enum class ScalarInIndex { Zero, One };
 

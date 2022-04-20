@@ -2,11 +2,26 @@
 #ifndef GUARD_NEURALNET_THRESHOLDEDRELUX_HPP
 #define GUARD_NEURALNET_THRESHOLDEDRELUX_HPP
 
-#include <popart/names.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <memory>
+#include <string>
 #include <popart/popx/op/elementwisex.hpp>
 
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+class Graph;
+class Tensor;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class ThresholdedReluComputex : public EwuComputex {
 public:

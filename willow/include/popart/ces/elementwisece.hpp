@@ -2,9 +2,11 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_ELEMENTWISECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_ELEMENTWISECE_HPP
 
+#include <vector>
 #include <popart/ces/constexpr.hpp>
 
 namespace popart {
+class Op;
 
 class ConstExprAdd : public ConstExprOp {
 public:

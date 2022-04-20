@@ -2,9 +2,18 @@
 #ifndef GUARD_NEURALNET_SHAPEDDROPOUT_HPP
 #define GUARD_NEURALNET_SHAPEDDROPOUT_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/dropoutbase.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class ShapedDropoutOp : public DropoutBaseOp {
 public:

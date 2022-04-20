@@ -2,9 +2,12 @@
 #ifndef GUARD_NEURALNET_INIT_ACCUMULATE_PATTERN_HPP
 #define GUARD_NEURALNET_INIT_ACCUMULATE_PATTERN_HPP
 
+#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Looks for this pattern where just one of the arguments to an
 // ElementWiseBinaryOp is produced by an InitOp and where the

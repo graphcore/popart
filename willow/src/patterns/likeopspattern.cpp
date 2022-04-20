@@ -1,5 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <string>
+#include <vector>
 #include <popart/op/randomnormal.hpp>
 #include <popart/op/randomuniform.hpp>
 #include <popart/op/zeros.hpp>

@@ -1,11 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <memory>
-#include <popart/graph.hpp>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <popart/op/sinh.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/region.hpp>
-#include <popart/tensor.hpp>
-#include <popart/util.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
 

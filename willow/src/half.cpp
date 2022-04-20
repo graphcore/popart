@@ -1,8 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/half.hpp>
-
+#include <cstdint>
+#include <iosfwd>
 #include <poplar/Target.hpp>
+#include <popart/half.hpp>
 
 namespace popart {
 

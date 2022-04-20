@@ -3,11 +3,19 @@
 #define GUARD_NEURALNET_BITWISEX_HPP
 
 #include <popops/ExprOp.hpp>
-#include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class BitwiseNotOpx : public ElementWiseUnaryOpx {
 public:

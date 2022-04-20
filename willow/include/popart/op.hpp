@@ -2,36 +2,46 @@
 #ifndef GUARD_NEURALNET_OP_HPP
 #define GUARD_NEURALNET_OP_HPP
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <iosfwd>
+#include <map>
 #include <memory>
 #include <set>
+#include <string>
+#include <tuple>
 #include <unordered_set>
+#include <utility>
 #include <vector>
-
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/analysis/replicaequal/replicaequalanalysisproxy.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/attributes.hpp>
 #include <popart/basicoptionals.hpp>
 #include <popart/bwdgraphinfo.hpp>
-#include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 #include <popart/opdebuginfo.hpp>
-#include <popart/operators.hpp>
-#include <popart/region.hpp>
 #include <popart/scope.hpp>
 #include <popart/subgraph/subgraphnames.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
-#include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
-#include <popart/vendored/any.hpp>
-
-#include <poprithms/memory/inplace/proposal.hpp>
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 
-class Aliases;
+class AliasModel;
+class CommGroup;
+class Graph;
+class Ir;
+class Pattern;
+class ReplicaEqualAnalysisProxy;
+class Tensor;
+class TensorIndexMap;
+class any;
 
 enum class RecomputeType { Undefined = 0, Checkpoint, Recompute, Recomputed };
 
@@ -70,7 +80,6 @@ std::ostream &operator<<(std::ostream &, const ExecutionContext &);
 std::ostream &operator<<(std::ostream &, const ReductionType &);
 
 class OpSerialiserBase;
-
 class ShardingPlan;
 
 /// The relationship between the input tensor of a grad-op and the

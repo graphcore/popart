@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_GEMM_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_GEMM_HPP
 
+#include <memory>
 #include <onnxpasses/nodepattern.hpp>
+#include <string>
+
+#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
+class PatternTarget;
 
 // Gemm(A, B, C) = alpha * transpose(A) * transpose(B) + beta * C.
 // A, B, C are tensors. C is optional. alpha and beta are values.

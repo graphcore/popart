@@ -1,10 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/op.hpp>
-
+#include <string>
 #include <testutil/irquery/opstestwrapper.hpp>
-#include <testutil/irquery/testfailuretriggerer.hpp>
+#include <vector>
+
+#include "testutil/irquery/irquery.hpp"
 
 namespace popart {
+class Ir;
+class Op;
+
 namespace irquery {
 
 OpsTestWrapper::OpsTestWrapper(Ir &ir,

@@ -2,17 +2,30 @@
 #define BOOST_TEST_MODULE ExecutionPhaseInitOpAccumulatorTest
 
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
 #include <iostream>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/datatype.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 using namespace std;

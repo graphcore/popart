@@ -1,10 +1,20 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <filereader.hpp>
+#include <map>
+#include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/numerics.hpp>
 
-#include <cmath>
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 namespace numerics {

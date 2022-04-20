@@ -1,8 +1,18 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <boost/functional/hash.hpp>
+#include <cstddef>
+#include <iosfwd>
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/inputshapeinfo.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

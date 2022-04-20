@@ -1,18 +1,36 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <chrono>
-#include <fstream>
-
-#include <boost/filesystem.hpp>
-
-#include <popart/popx/executablex.hpp>
-#include <popart/popx/irlowering.hpp>
-
+#include <cstddef>
+#include <cstdint>
+#include <gcl/CollectiveBalancedReorder.hpp>
+#include <map>
+#include <memory>
+#include <onnx/onnx_pb.h>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/popx/executablex.hpp>
+#include <popart/popx/irlowering.hpp>
 
-#include <onnx/onnx_pb.h>
+#include "popart/devicemanager.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/replicatedtensorshardingbundle.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/variablesettings.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 namespace popx {

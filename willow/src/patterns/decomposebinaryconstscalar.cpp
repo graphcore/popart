@@ -1,20 +1,23 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cmath>
-
 #include <map>
-#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/add.hpp>
 #include <popart/op/binaryconstscalar.hpp>
-#include <popart/op/div.hpp>
-#include <popart/op/log.hpp>
-#include <popart/op/mul.hpp>
-#include <popart/op/subtract.hpp>
 #include <popart/patterns/decomposebinaryconstscalar.hpp>
-#include <popart/patterns/pattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/half.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

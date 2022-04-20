@@ -1,18 +1,31 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
-#include <sstream>
+#include <string>
+#include <vector>
 #include <popart/error.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/ctc.hpp>
-#include <popart/op/mean.hpp>
-#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/loss.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+
+namespace popart {
+struct OperatorIdentifier;
+} // namespace popart
 
 static size_t batchSizeDimension       = 1;
 static size_t maxInputLengthDimension  = 0;

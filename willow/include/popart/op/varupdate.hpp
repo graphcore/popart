@@ -5,10 +5,14 @@
 #ifndef GUARD_NEURALNET_VARUPDATE_HPP
 #define GUARD_NEURALNET_VARUPDATE_HPP
 
+#include <map>
+#include <memory>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 /**
  *  Base class used to define PopART ops that update variable tensors.

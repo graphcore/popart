@@ -1,8 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <builderdebuginfo.hpp>
+#include <cstdint>
+#include <ostream>
+#include <typeinfo>
+#include <utility>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/vendored/any.hpp"
 
 namespace {
 using namespace popart;

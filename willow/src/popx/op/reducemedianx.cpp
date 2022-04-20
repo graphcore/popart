@@ -1,6 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <cmath>
-
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/VariableMappingMethod.hpp>
 #include <popops/Sort.hpp>
 #include <popops/Zero.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -9,8 +17,18 @@
 #include <popart/popx/op/sortutilx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op/reducemedian.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ReduceMedianOpx::ReduceMedianOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {

@@ -1,15 +1,35 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE HistogramOpTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
-#include <filereader.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/histogram.hpp>
-#include <popart/operators.hpp>
 #include <popart/session.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/dataflow.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/half.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/any.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

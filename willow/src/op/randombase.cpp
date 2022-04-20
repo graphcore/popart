@@ -1,8 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popart/ir.hpp>
+#include <memory>
+#include <vector>
 #include <popart/op/randombase.hpp>
 #include <popart/opserialiser.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/op/shapeorlike.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

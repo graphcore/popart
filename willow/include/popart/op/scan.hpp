@@ -2,11 +2,20 @@
 #ifndef GUARD_NEURALNET_SCAN_HPP
 #define GUARD_NEURALNET_SCAN_HPP
 
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Graph;
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // Scan operation construct
 //

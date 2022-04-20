@@ -1,12 +1,25 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <functional>
+#include <map>
 #include <onnxutil.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
-#include <popart/half.hpp>
-#include <popart/ir.hpp>
 #include <popart/stepio.hpp>
-#include <popart/stepio_size_assertion.hpp>
 #include <popart/tensordata.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace onnx {
+class TensorProto;
+} // namespace onnx
 
 namespace popart {
 

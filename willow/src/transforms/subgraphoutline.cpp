@@ -2,16 +2,24 @@
 #include <algorithm>
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
-#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <map>
 #include <memory>
+#include <set>
 #include <sstream>
-
-#include <poplar/Target.hpp>
-
+#include <string>
+#include <subgraph/wrappedop.hpp>
+#include <tuple>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
@@ -20,8 +28,9 @@
 #include <popart/op/dropout.hpp>
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/op/expand.hpp>
-#include <popart/op/init.hpp>
+#include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/nop.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/subgraph/match.hpp>
@@ -33,10 +42,32 @@
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include <popart/op/if.hpp>
-#include <popart/op/nop.hpp>
+#include "popart/aliases.hpp"
+#include "popart/analysis/replicaequal/replicaequalanalysis.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/chains.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/opdebuginfo.hpp"
+#include "popart/operators.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/scope.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
+#include "popart/vertex.hpp"
 
-#include <subgraph/wrappedop.hpp>
+namespace popart {
+class AliasModel;
+} // namespace popart
 
 using boost::find;
 using boost::algorithm::any_of;

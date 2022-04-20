@@ -2,21 +2,22 @@
 #ifndef GUARD_PRITASK_HPP
 #define GUARD_PRITASK_HPP
 
+#include <cstddef>
 #include <functional>
+#include <iosfwd>
+#include <map>
 #include <queue>
 #include <set>
-#include <string>
+#include <snap/Program.hpp>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <poplar/Program.hpp>
-
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-
-#include <popart/names.hpp>
 #include <popart/taskid.hpp>
+
+namespace snap {
+class Graph;
+} // namespace snap
 
 namespace popart {
 

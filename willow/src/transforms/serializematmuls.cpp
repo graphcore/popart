@@ -1,6 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -8,27 +16,29 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/cast.hpp>
-#include <popart/op/concat.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/op/varupdate.hpp>
-#include <popart/vendored/optional.hpp>
-
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-#include <popart/util.hpp>
-
 #include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/transformbuilder.hpp>
-
-#include <boost/optional/optional_io.hpp>
-#include <boost/range/algorithm_ext.hpp>
+#include <popart/util.hpp>
 #include <popart/vendored/any.hpp>
+#include <popart/vendored/optional.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/transform.hpp"
 
 // X = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
 // W = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]
@@ -938,30 +948,30 @@ std::string phaseToString(MatMulOp::Phase phase) {
 }
 // clang-format off
 /**
- *                                                                                                                                                                                                                                                
-                                                                    Phase                                                  
-                                                                                                                           
-                                       FWD                         BWD LHS                    BWD RHS                      
- serialization            +------------------------------|----------------------------------------------------+            
-                          | LHSInputChannelsIdx = 1      | LHSInputChannelsIdx = 1  | LHSInputChannelsIdx = 2 |            
-                          |                              |                          |                         |            
-         InputChannels    |                              |                          | RHSInputChannelsIdx = 1 |            
-                          |                              |                          |                         |            
-                          | Concat                       | Concat                   | sumByAddInplace         |            
-                          |---------------------------------------------------------------------------------- |            
-                          | LHSReducingIdx = 2           | RHSReducingIdx = 2       | LHSReducingIdx = 1      |            
-                          |                              |                          |                         |            
-         ReducingDim      | RHSReducingIdx = 1           |                          |                         |            
-                          |                              |                          |                         |            
-                          | sumByAddInplace              | Concat                   | serializeVarUpdate      |            
-                          |-----------------------------------------------------------------------------------|            
-                          |RHSOutputChannelsIdx = 2      |LHSOutputChannelsIdx = 2  |RHSOutputChannelsIdx = 2 |            
-                          |                              |                          |                         |            
-         OutputChannels   |                              |RHSOutputChannelsIdx = 1  |                         |            
-                          |                              |                          |                         |            
-                          |Concat                        |sumByAddInplace           |serializeVarUpdate       |            
-                          +-----------------------------------------------------------------------------------+            
-**/                                                                                                               
+ *
+                                                                    Phase
+
+                                       FWD                         BWD LHS                    BWD RHS
+ serialization            +------------------------------|----------------------------------------------------+
+                          | LHSInputChannelsIdx = 1      | LHSInputChannelsIdx = 1  | LHSInputChannelsIdx = 2 |
+                          |                              |                          |                         |
+         InputChannels    |                              |                          | RHSInputChannelsIdx = 1 |
+                          |                              |                          |                         |
+                          | Concat                       | Concat                   | sumByAddInplace         |
+                          |---------------------------------------------------------------------------------- |
+                          | LHSReducingIdx = 2           | RHSReducingIdx = 2       | LHSReducingIdx = 1      |
+                          |                              |                          |                         |
+         ReducingDim      | RHSReducingIdx = 1           |                          |                         |
+                          |                              |                          |                         |
+                          | sumByAddInplace              | Concat                   | serializeVarUpdate      |
+                          |-----------------------------------------------------------------------------------|
+                          |RHSOutputChannelsIdx = 2      |LHSOutputChannelsIdx = 2  |RHSOutputChannelsIdx = 2 |
+                          |                              |                          |                         |
+         OutputChannels   |                              |RHSOutputChannelsIdx = 1  |                         |
+                          |                              |                          |                         |
+                          |Concat                        |sumByAddInplace           |serializeVarUpdate       |
+                          +-----------------------------------------------------------------------------------+
+**/
 Indices getAndCheckIndices(MatMulBaseOp *matmul,
                            Tensor *lhs,
                            Tensor *rhs,

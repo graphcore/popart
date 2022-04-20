@@ -1,8 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <poputil/TileMapping.hpp>
-#include <popart/popx/op/sortutilx.hpp>
-
+#include "popart/popx/debugcontextx.hpp"
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/poputil/TileMapping.hpp>
+#include <utility>
+#include <vector>
+#include <poplar/ArrayRef.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
+#include <poplar/Type.hpp>
+#include <popart/popx/op/sortutilx.hpp>
 
 namespace popart {
 namespace popx {

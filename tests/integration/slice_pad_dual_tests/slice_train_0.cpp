@@ -3,8 +3,13 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <iostream>
 #include <map>
+#include <memory>
 #include <random>
+#include <string>
+#include <utility>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
@@ -12,6 +17,22 @@
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 BOOST_AUTO_TEST_CASE(SliceTrain0) {
 

@@ -1,14 +1,24 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/cast.hpp>
-#include <popart/op/softmax.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/patterns/removeunnecessarylossgradcastpattern.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/ensurefp32lossscale.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

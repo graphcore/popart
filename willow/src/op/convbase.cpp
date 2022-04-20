@@ -1,10 +1,32 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <poprithms/util/stringutil.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/opserialiser.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 // These are utility functions that are need by the Ir Conv.
 namespace popx {

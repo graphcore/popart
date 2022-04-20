@@ -1,11 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <onnxutil.hpp>
+
+#include <vector>
+#include <poprithms/compute/host/tensor.hpp>
+#include <poprithms/ndarray/shape.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/reduceprodce.hpp>
 #include <popart/op/reduceprod.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/ces/constexpr.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+class Op;
 
 ConstExprReduceProd::ConstExprReduceProd(Op *op_) : ConstExprOp(op_) {}
 

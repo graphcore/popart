@@ -1,13 +1,25 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
-#include <popart/graph.hpp>
+#include <string>
+#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/dropout.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/dropoutbase.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 DropoutOp::DropoutOp(const OperatorIdentifier &opid_,
                      float ratio_,

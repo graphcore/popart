@@ -1,4 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
+#include <string>
+
 #include "bindings/basicoptionals.hpp"
 #include "bindings/bwdgraphinfo.hpp"
 #include "bindings/commgroup.hpp"
@@ -19,7 +23,6 @@
 #include "bindings/op/enums.hpp"
 #include "bindings/op/ipucopy.hpp"
 #include "bindings/op/loop.hpp"
-#include "bindings/op/manualbindops.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optimizervalue.hpp"
 #include "bindings/op/optional.hpp"
@@ -46,9 +49,6 @@
 #include "bindings/patterns/pattern.hpp"
 #include "bindings/patterns/patterns.hpp"
 
-#include <pybind11/pybind11.h>
-
-#include <popart/ir.hpp>
 namespace popart {
 namespace _internal {
 namespace ir {

@@ -2,11 +2,25 @@
 #ifndef GUARD_NEURALNET_SIGNX_HPP
 #define GUARD_NEURALNET_SIGNX_HPP
 
-#include <popart/names.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <memory>
+#include <snap/Tensor.hpp>
+#include <string>
 #include <popart/popx/op/elementwisex.hpp>
 
+namespace snap {
+class Graph;
+
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class SignComputex : public EwuComputex {
 

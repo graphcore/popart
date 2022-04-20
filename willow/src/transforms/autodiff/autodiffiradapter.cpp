@@ -1,10 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/autodiffiradapter.hpp>
-
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 
+#include "popart/tensordebuginfo.hpp"
+
 namespace popart {
+class Optimizer;
+class Tensors;
+struct SessionOptions;
 
 AutodiffIrAdapter::AutodiffIrAdapter(Ir &ir_) : ir(ir_) {}
 

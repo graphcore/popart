@@ -1,13 +1,27 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <vector>
+#include <popops/ExprOp.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/popx/op/subtractx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/op/reducesumx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
     : ElementWiseBinaryOpx(op, devicex) {

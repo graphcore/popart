@@ -4,10 +4,14 @@
 
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/preparedtensor.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class SubgraphOpx : public PopOpx {
 public:

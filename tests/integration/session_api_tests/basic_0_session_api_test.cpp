@@ -2,23 +2,30 @@
 #define BOOST_TEST_MODULE Basic0SessionApiTest
 
 #include <boost/test/unit_test.hpp>
-#include <filereader.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include <algorithm>
-#include <map>
-#include <random>
-#include <tuple>
-#include <vector>
+#include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 bool prePrepCallError(const popart::error &ex) {
   std::string what = ex.what();

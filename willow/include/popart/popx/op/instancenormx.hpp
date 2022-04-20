@@ -2,12 +2,19 @@
 #ifndef GUARD_NEURALNET_INSTANCENORMX_HPP
 #define GUARD_NEURALNET_INSTANCENORMX_HPP
 
-#include <popart/names.hpp>
 #include <popart/popx/op/normx.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 class InstanceNormOpx : public NormOpx {
 public:

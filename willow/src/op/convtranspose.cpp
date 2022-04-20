@@ -1,9 +1,27 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/convtranspose.hpp>
 #include <popart/opmanager.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/convbase.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 ConvTransposeOp::ConvTransposeOp(const OperatorIdentifier &_opid,
                                  const Settings &settings_,

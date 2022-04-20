@@ -2,15 +2,23 @@
 #ifndef GUARD_NEURALNET_MERGELOOPS_HPP
 #define GUARD_NEURALNET_MERGELOOPS_HPP
 
-#include <popart/op/loop.hpp>
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <string>
+#include <vector>
 #include <popart/transforms/transform.hpp>
+
+#include "popart/names.hpp"
 
 // MergeLoops:
 // Transform that merges multiple compatible loops together
 namespace popart {
 
 // Forward declaration.
-class ReplicaEqualAnalysis;
+class Graph;
+class LoopOp;
+class Op;
 
 class MergeLoops : public Transform {
 public:

@@ -2,12 +2,21 @@
 #ifndef GUARD_NEURALNET_RNN_HPP
 #define GUARD_NEURALNET_RNN_HPP
 
+#include <cstdint>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/lstmutil.hpp>
 #include <popart/op/rnnbase.hpp>
 #include <popart/vendored/optional.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 /**
  * This op applies a single-layer Elman RNN with a non-linearity to a batch of

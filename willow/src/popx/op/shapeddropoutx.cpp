@@ -1,12 +1,23 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/VariableMappingMethod.hpp>
 #include <poprand/RandomGen.hpp>
-
-#include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/shapeddropout.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/shapeddropoutx.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 namespace popx {

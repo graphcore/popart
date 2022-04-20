@@ -3,12 +3,16 @@
 #define GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
 
 #include <fstream>
+#include <map>
+#include <set>
 #include <string>
 #include <popart/names.hpp>
-#include <popart/sessionoptions.hpp>
 
 namespace popart {
 class Ir;
+class Op;
+class Tensor;
+
 class DotVisualizer {
 public:
   DotVisualizer(std::string _check_);

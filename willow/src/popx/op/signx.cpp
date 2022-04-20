@@ -1,14 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
 #include <popops/ElementWise.hpp>
-#include <popart/op/sign.hpp>
-#include <popart/popx/devicex.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/signx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class Op;
+class SignInplaceOp;
+class SignOp;
+
 namespace popx {
+class Devicex;
 
 snap::Tensor SignComputex::outplace(snap::program::Sequence &prog,
                                     snap::Graph &graph,

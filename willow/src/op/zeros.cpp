@@ -1,10 +1,24 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <popart/ir.hpp>
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/zeros.hpp>
 #include <popart/opmanager.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/shapeorlike.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 ZerosBaseOp::ZerosBaseOp(const OperatorIdentifier &opid_,
                          const OptionalDataType &dataType_,

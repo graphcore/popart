@@ -1,16 +1,21 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/op/dynamic/dynamicadd.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/op/dynamic/dynamicaddx.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-
+#include <cstddef>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
 #include <popops/DynamicSlice.hpp>
-#include <popops/Zero.hpp>
+#include <popops/ExprOp.hpp>
+#include <popart/popx/op/dynamic/dynamicaddx.hpp>
+#include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op/dynamic/dynamicbase.hpp"
 
 namespace popart {
 namespace popx {

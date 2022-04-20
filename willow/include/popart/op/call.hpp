@@ -2,10 +2,21 @@
 #ifndef GUARD_NEURALNET_CALL_HPP
 #define GUARD_NEURALNET_CALL_HPP
 
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/subgraph.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class AliasModel;
+class Graph;
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class CallOp : public SubgraphOp {
 public:

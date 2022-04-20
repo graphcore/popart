@@ -2,12 +2,19 @@
 #define BOOST_TEST_MODULE Test_Session_createFromIr
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-
-#include <popart/devicemanager.hpp>
-#include <popart/session.hpp>
-#include <popart/util.hpp>
-
+#include <functional>
+#include <memory>
 #include <string>
+#include <utility>
+#include <popart/session.hpp>
+
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+
+namespace popart {
+class DeviceInfo;
+class Ir;
+} // namespace popart
 
 using namespace popart;
 

@@ -1,6 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <iosfwd>
+#include <string>
+#include <vector>
 #include <popart/tensor.hpp>
 #include <popart/tensordebuginfo.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
 
 namespace {
 using namespace popart;

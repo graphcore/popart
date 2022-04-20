@@ -1,6 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <memory>
 #include <sstream>
+#include <vector>
 #include <popart/subgraph/match.hpp>
 #include <popart/subgraph/subgraphnames.hpp>
 

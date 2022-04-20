@@ -1,9 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Op_Conv
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <string>
+#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graph.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/convbase.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
 
 using namespace popart;
 

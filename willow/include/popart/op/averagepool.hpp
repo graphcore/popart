@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_AVERAGEPOOL_HPP
 #define GUARD_NEURALNET_AVERAGEPOOL_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/receptive.hpp>
 
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // c++ note : the conditions are suitable here
 // for the compiler to generate defaults for

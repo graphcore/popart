@@ -2,9 +2,16 @@
 #ifndef GUARD_NEURALNET_RESTORE_HPP
 #define GUARD_NEURALNET_RESTORE_HPP
 
+#include <cstdint>
+#include <memory>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class AliasModel;
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class RestoreOp : public Op {
 public:

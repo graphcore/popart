@@ -2,25 +2,30 @@
 #ifndef GUARD_BUILDER_IMPL_HPP
 #define GUARD_BUILDER_IMPL_HPP
 
-#include <map>
-#include <string>
-#include <popart/builder.hpp>
+#include <onnx/onnx_pb.h>
 #include <popart/dataflow.hpp>
 #include <popart/names.hpp>
-#include <popart/operators.hpp>
 #include <popart/variablesettings.hpp>
-
 #include <popart/vendored/any.hpp>
-
 // The BuilderImpl class has an ONNX_NAMESPACE::ModelProto, so we cannot
 // use the forward declarations in names.hpp at this point
-#include <onnx/onnx_pb.h>
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
 
-namespace onnx {
-class NodeProto;
-}
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
+class ConstVoidData;
+class TensorInfo;
 
 /**
  * An implementation of a Builder

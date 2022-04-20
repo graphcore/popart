@@ -1,12 +1,19 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Op_SGD2Combo
 #include <boost/test/unit_test.hpp>
-
-#include <popart/error.hpp>
-#include <popart/graph.hpp>
+#include <functional>
 #include <popart/ir.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/optimizer.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
+namespace popart {
+class Graph;
+class error;
+} // namespace popart
 
 using namespace popart;
 

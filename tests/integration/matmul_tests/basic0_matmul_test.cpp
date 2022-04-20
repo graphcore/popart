@@ -1,12 +1,29 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MatMulTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <onnx/onnx_pb.h>
+#include <map>
+#include <memory>
+#include <typeinfo>
+#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
-#include <popart/popx/op/matmulx.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class error;
+} // namespace popart
 
 using namespace popart;
 

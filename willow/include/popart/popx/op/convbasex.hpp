@@ -2,15 +2,35 @@
 #ifndef GUARD_NEURALNET_CONVBASEX_HPP
 #define GUARD_NEURALNET_CONVBASEX_HPP
 
-#include <poplin/Convolution.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <cstddef>
+#include <set>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplin/ConvParams.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/popx/popopx.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 
 // class MultiConvBaseOp;
 
 namespace popx {
+class Devicex;
 
 class MultiConvBaseOpx : public PopOpx {
 public:

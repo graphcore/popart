@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_ONEHOT_HPP
 #define GUARD_NEURALNET_ONEHOT_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // This Op is based on the ONNX Operator described at
 // github.com/onnx/onnx/blob/master/docs/Operators.md#Onehot

@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_SUM_HPP
 #define GUARD_NEURALNET_SUM_HPP
 
+#include <memory>
+#include <vector>
 #include <popart/op/variadic.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class SumOp : public VariadicOp {
 public:

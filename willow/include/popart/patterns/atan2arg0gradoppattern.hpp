@@ -3,7 +3,12 @@
 #define GUARD_NEURALNET_ATAN2_ARG_0_GRAD_OP_PATTERN_HPP
 #include <popart/patterns/binarygradoppattern.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Ir;
+class Op;
+class Tensor;
 
 // Replace a Atan2Arg0GradOp with x/(x^2+y^2)
 // {(fwd_in_y)} -> [Square] -> (tmp1)

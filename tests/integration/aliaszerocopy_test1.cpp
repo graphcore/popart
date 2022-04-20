@@ -1,24 +1,34 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AliasZeroCopyTest
 
-#include "random_util.hpp"
-#include <boost/filesystem.hpp>
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <memory>
+#include <utility>
+#include <vector>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/call.hpp>
-#include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/subgraphcopyingstrategy.hpp>
 #include <popart/util.hpp>
 
-#include <algorithm>
-#include <map>
-#include <tuple>
-#include <vector>
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+
+namespace popart {
+class Tensor;
+} // namespace popart
 
 using namespace popart;
 using namespace liveness;

@@ -1,19 +1,29 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <fstream>
-
+#include <algorithm>
 #include <boost/filesystem.hpp>
 
 #include <poprithms/logging/timepartitionlogger.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <filereader.hpp>
+#include <fstream>
+#include <functional>
+#include <map>
+#include <memory>
+#include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
+#include <pva/pva.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poprithms/memory/inplace/graph.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/dotvisualizer.hpp>
 #include <popart/error.hpp>
-#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/popefserializer.hpp>
@@ -21,16 +31,23 @@
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
-#include <popart/tensors.hpp>
-#include <popart/transforms/randomsetup.hpp>
-#include <popart/util.hpp>
 #include <popart/version.hpp>
-
 #include <poparttracepoint.hpp>
 
-#include <popx/rng/rngstatelowering.hpp>
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/popx/irlowering.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
+class IStepIO;
+class IWeightsIO;
+class InputShapeInfo;
+class Optimizer;
 
 namespace {
 HashesMap getCacheEntries(const std::string &cachePath) {

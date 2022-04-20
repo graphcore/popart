@@ -1,19 +1,29 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <cstdint>
 #include <memory>
+#include <set>
+#include <string>
 #include <vector>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/lstmutil.hpp>
 #include <popart/op/rnn.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/rnnbase.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp" // IWYU pragma: keep
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 RNNOp::RNNOp(const OperatorIdentifier &_opid,
              ActivationFunction activation,

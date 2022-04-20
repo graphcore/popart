@@ -1,10 +1,18 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <parsedtensorid.hpp>
+#include <algorithm>
 #include <sstream>
+#include <string>
+#include <vector>
 #include <popart/logging.hpp>
 #include <popart/tensornames.hpp>
 
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/util.hpp"
+
 namespace popart {
+class Graph;
+
 TensorId fwdIdToBwdGradId(const Graph &fwdGraph,
                           const Graph &bwdGraph,
                           const TensorId &fwdId) {

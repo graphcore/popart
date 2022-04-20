@@ -1,15 +1,24 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <popops/ScaledAdd.hpp>
 #include <popart/op/scaledadd.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/scaledaddx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popops/ScaledAdd.hpp>
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ScaledAddOpx::ScaledAddOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ScaledAddOp>(op,

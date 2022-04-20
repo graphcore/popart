@@ -1,25 +1,36 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot0Test
 
-#include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
+#include <cassert>
+#include <cstdint>
 #include <filereader.hpp>
+#include <initializer_list>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/session.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
 
-#include <chrono>
-#include <complex>
-#include <iostream>
-#include <random>
+#include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

@@ -3,9 +3,6 @@
 #define POPART__INTERNAL_IR_BINDINGS_TRANSFORM_AUTODIFF_HPP
 
 #include <pybind11/pybind11.h>
-#include <popart/bwdgraphinfo.hpp>
-#include <popart/transforms/autodiff.hpp>
-#include <popart/transforms/transform.hpp>
 
 namespace py = pybind11;
 

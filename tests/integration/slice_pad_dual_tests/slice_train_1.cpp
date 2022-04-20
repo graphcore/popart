@@ -3,8 +3,30 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 #include <map>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
 #include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Interval.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/voiddata.hpp"
 
 // This trick is required to access the Devicex's poplar::Tensors.
 
@@ -21,6 +43,8 @@
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/popx/poptensors.hpp"
 
 #undef private
 #undef protected

@@ -2,9 +2,18 @@
 #ifndef GUARD_NEURALNET_GROUPNORM_HPP
 #define GUARD_NEURALNET_GROUPNORM_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class GroupNormOp : public Op {
 public:

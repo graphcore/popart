@@ -2,9 +2,19 @@
 #ifndef GUARD_NEURALNET_LOGSOFTMAX_HPP
 #define GUARD_NEURALNET_LOGSOFTMAX_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class LogSoftmaxOp : public ElementWiseUnaryOp {
 public:

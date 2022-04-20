@@ -2,9 +2,22 @@
 #ifndef GUARD_NEURALNET_CONCAT_HPP
 #define GUARD_NEURALNET_CONCAT_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class AliasModel;
+class OpSerialiserBase;
 
 class ConcatOp : public Op {
 public:

@@ -1,11 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <boost/lexical_cast.hpp>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
-#include <poprithms/ndarray/shape.hpp>
+#include <map>
+#include <memory>
+#include <parsedtensorid.hpp>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <vector>
 #include <poprithms/util/printiter.hpp>
-#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
@@ -17,9 +25,15 @@
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
-#include <parsedtensorid.hpp>
-
-#include <boost/lexical_cast.hpp>
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graph.hpp"
+#include "popart/graphid.hpp"
+#include "popart/half.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/any.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace std {
 

@@ -1,17 +1,27 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string/case_conv.hpp>
-
 #include <popart/op/scatterreduce.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 std::string ScatterReduceOp::reductionToString(ScatterReduction reduction) {
   if (reduction == ScatterReduction::Sum) {

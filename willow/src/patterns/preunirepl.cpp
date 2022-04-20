@@ -1,5 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/patterns/patterns.hpp>
@@ -7,6 +9,10 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
 

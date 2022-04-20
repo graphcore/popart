@@ -1,11 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <popart/ir.hpp>
+#include <string>
 #include <popart/op/isinf.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
+class Ir;
 
 IsInf::IsInf(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryBooleanOp(_opid, settings_) {}

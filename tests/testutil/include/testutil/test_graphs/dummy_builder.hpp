@@ -2,12 +2,19 @@
 #ifndef GUARD_POPART_TEST_GRAPHS_DUMMY_BUILDER_HPP
 #define GUARD_POPART_TEST_GRAPHS_DUMMY_BUILDER_HPP
 
-#include <popart/graph.hpp>
-#include <popart/op.hpp>
-#include <popart/tensorinfo.hpp>
-
 #include <map>
+#include <memory>
+#include <unordered_map>
 #include <vector>
+
+#include "popart/names.hpp"
+
+namespace popart {
+class Graph;
+class Op;
+class Tensor;
+class TensorInfo;
+} // namespace popart
 
 namespace test_graphs {
 namespace dummy_builder {

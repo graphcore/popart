@@ -1,8 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <vector>
 #include <popart/chains.hpp>
 #include <popart/error.hpp>
-#include <popart/util.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/region.hpp"
 
 namespace popart {
 namespace view {

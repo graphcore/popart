@@ -2,6 +2,10 @@
 #ifndef GUARD_NEURALNET_PADGRAD_HPP
 #define GUARD_NEURALNET_PADGRAD_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/slice.hpp>
 
 // The PadGradOp has been moved out of the pad.hpp due to a
@@ -9,6 +13,9 @@
 // and SliceGradOp inheriting from PadOp
 
 namespace popart {
+class GradInOutMapper;
+class Op;
+class PadOp;
 
 class PadGradOp : public SliceOp {
 public:

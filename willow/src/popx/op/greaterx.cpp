@@ -1,16 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popops/Cast.hpp>
-#include <popart/error.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <vector>
+#include <popops/ExprOp.hpp>
 #include <popart/op/greater.hpp>
-#include <popart/popx/devicex.hpp>
-
 #include <popart/popx/op/greaterx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
     : BinaryComparisonOpx(op, devicex) {

@@ -1,8 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <ostream>
 #include <stepiosplitter.hpp>
+#include <string>
+#include <utility>
 #include <popart/error.hpp>
 
+#include "popart/istepio.hpp"
+#include "popart/logging.hpp"
+
 namespace popart {
+class TensorInfo;
+
 namespace popx {
 class Executablex;
 }

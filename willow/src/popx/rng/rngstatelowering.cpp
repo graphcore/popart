@@ -2,19 +2,34 @@
 #ifndef GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP
 #define GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP
 
-#include <poplar/CSRFunctions.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <vector>
+#include <poplar/Graph.hpp>
 #include <poplar/RandomSeed.hpp>
-
-#include <snap/poputil/TileMapping.hpp>
-
-#include <poprand/RandomGen.hpp>
-
+#include <poplar/ReplicatedStreamMode.hpp>
+#include <poplar/Target.hpp>
+#include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
-
+#include <poprand/RandomGen.hpp>
 #include <popx/rng/rngstatelowering.hpp>
-
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/pritask.hpp>
+
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/irlowering.hpp"
+#include "popart/popx/linearmapper.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/popprograms.hpp"
+#include "popart/popx/poptensors.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/taskid.hpp"
 
 namespace popart {
 namespace popx {

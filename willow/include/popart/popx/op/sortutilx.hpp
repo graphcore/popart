@@ -2,12 +2,16 @@
 #ifndef GUARD_NEURALNET_SORTUTILS_HPP
 #define GUARD_NEURALNET_SORTUTILS_HPP
 
-#include <poplar/DebugContext.hpp>
-#include <poplar/Program.hpp>
-
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
+#include "popart/popx/debugcontextx.hpp"
 #include <snap/Tensor.hpp>
+
+namespace snap {
+class Graph;
+
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 namespace popx {

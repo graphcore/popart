@@ -2,12 +2,19 @@
 #ifndef GUARD_NEURALNET_ACCUMULATEOP_HPP
 #define GUARD_NEURALNET_ACCUMULATEOP_HPP
 
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
-#include <ostream>
+#include "popart/names.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // accum = getVarToUpdateInIndex
 // g     = getUpdaterInIndex

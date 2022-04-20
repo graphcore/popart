@@ -2,10 +2,12 @@
 #ifndef GUARD_NEURALNET_ADAPTIVEDECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_ADAPTIVEDECOMPOSE_PATTERN_HPP
 
+#include <vector>
 #include <popart/patterns/optimizerdecompose.hpp>
-#include <popart/patterns/patterns.hpp>
 
 namespace popart {
+class Op;
+class Tensor;
 
 class AdaptiveDecompose : public OptimizerDecompose {
 public:

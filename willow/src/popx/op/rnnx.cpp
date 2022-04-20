@@ -1,30 +1,45 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <memory>
-
-#include <snap/poputil/TileMapping.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
+#include <poplar/VariableMappingMethod.hpp>
+#include <poplin/MatMul.hpp>
+#include <popnn/NonLinearity.hpp>
+#include <popops/DynamicSlice.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/Fill.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Rearrange.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/rnn.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
 #include <popart/popx/op/rnnx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/util.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popnn/NonLinearity.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Fill.hpp>
-#include <popops/Rearrange.hpp>
-#include <popops/Reduce.hpp>
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 RNNOpx::RNNOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

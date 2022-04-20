@@ -1,12 +1,18 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <memory>
+#include <string>
 #include <popart/graph.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/patterns/softmaxgraddirect.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 // NLLGRAD (0) -> x -> SOFTMAXGRAD.
 const OperatorIdentifier &SoftmaxGradDirect::get0() const {

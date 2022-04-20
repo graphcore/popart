@@ -2,11 +2,24 @@
 #ifndef GUARD_NEURALNET_LOOPX_HPP
 #define GUARD_NEURALNET_LOOPX_HPP
 
+#include <snap/Tensor.hpp>
+#include <vector>
 #include <popart/popx/op/subgraphx.hpp>
 #include <popart/popx/popopx.hpp>
 
+#include "popart/names.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class LoopOpx : public SubgraphOpx {
 public:

@@ -1,16 +1,20 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/names.hpp"
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/concat.hpp>
 #include <popart/op/lstm.hpp>
-#include <popart/op/split.hpp>
-#include <popart/op/transpose.hpp>
 #include <popart/patterns/lstmoppattern.hpp>
 #include <popart/patterns/patterns.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transformbuilder.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

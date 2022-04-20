@@ -2,9 +2,14 @@
 #ifndef GUARD_NEURALNET_ISINF_HPP
 #define GUARD_NEURALNET_ISINF_HPP
 
+#include <memory>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+
 namespace popart {
+class Ir;
 
 class IsInf : public ElementWiseUnaryBooleanOp {
 public:

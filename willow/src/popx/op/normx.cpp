@@ -1,16 +1,23 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/ir.hpp>
-#include <popart/op.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/op/normx.hpp>
-#include <popart/popx/opxmanager.hpp>
-
-#include <poplar/Tensor.hpp>
-#include <poplin/Norms.hpp>
-#include <popnn/GroupNorm.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popart/popx/op/normx.hpp>
+
+#include "popart/popx/popopx.hpp"
+
+namespace popart {
+class Op;
+namespace popx {
+class Devicex;
+} // namespace popx
+} // namespace popart
 
 namespace poplar {
 using Shape = std::vector<std::size_t>;

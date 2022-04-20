@@ -1,11 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
 #include <popnn/Loss.hpp>
-
-#include <popart/error.hpp>
-#include <popart/op/argmax.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/argmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
 namespace popx {

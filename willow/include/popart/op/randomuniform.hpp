@@ -2,11 +2,17 @@
 #ifndef GUARD_NEURALNET_RANDOMUNIFORM_HPP
 #define GUARD_NEURALNET_RANDOMUNIFORM_HPP
 
+#include <cstdint>
+#include <memory>
 #include <vector>
 #include <popart/op.hpp>
 #include <popart/op/randombase.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class RandomUniformOp : public RandomUniformBaseOp {
 public:

@@ -1,14 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
-
-#include <popart/error.hpp>
 #include <popart/op/argextrema.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/argextremax.hpp>
-#include <popart/popx/opxmanager.hpp>
+
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ArgExtremaOp>(op);

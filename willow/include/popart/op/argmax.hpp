@@ -2,9 +2,11 @@
 #ifndef GUARD_NEURALNET_ARGMAX_HPP
 #define GUARD_NEURALNET_ARGMAX_HPP
 
+#include <memory>
 #include <popart/op/argextrema.hpp>
 
 namespace popart {
+class Op;
 
 class ArgMaxOp : public ArgExtremaOp {
 public:

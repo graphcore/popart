@@ -1,8 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/error.hpp>
-
 #include <popart/logging.hpp>
+
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
 

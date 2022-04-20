@@ -1,13 +1,38 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <gcl/CollectiveBalancedReorder.hpp>
 #include <gcl/Collectives.hpp>
-
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <memory>
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <poplar/Tensor.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/replicatedallgatherx.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/popx/linearmapper.hpp"
+#include "popart/popx/op/collectives/collectivesx.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/viewchangers.hpp"
+#include "popart/region.hpp"
+#include "popart/replicatedtensorsharding.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
+namespace poplar {
+class OptionFlags;
+} // namespace poplar
 
 namespace popart {
 namespace popx {

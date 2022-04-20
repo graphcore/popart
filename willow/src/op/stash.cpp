@@ -1,13 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/stash.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 StashOp::StashOp(const OperatorIdentifier &_opid,
                  int64_t stashSize_,

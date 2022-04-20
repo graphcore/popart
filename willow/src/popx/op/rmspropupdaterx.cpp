@@ -1,19 +1,32 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <algorithm>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popops/ScaledAdd.hpp>
-#include <popart/error.hpp>
-#include <popart/ir.hpp>
+#include <vector>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/op/rmspropupdater.hpp>
-#include <popart/op/varupdate.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/rmspropupdaterx.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace pe = popops::expr;
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 RMSPropUpdaterOpx::RMSPropUpdaterOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {

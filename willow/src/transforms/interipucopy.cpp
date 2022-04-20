@@ -1,8 +1,16 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
-#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -11,10 +19,21 @@
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
+#include <popart/transforms/interipucopy.hpp>
 #include <popart/util.hpp>
 
-#include <popart/transforms/automaticlossscaling.hpp>
-#include <popart/transforms/interipucopy.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/opdebuginfo.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 

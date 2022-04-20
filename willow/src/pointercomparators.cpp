@@ -1,11 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <popart/error.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <string>
+#include <utility>
 #include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

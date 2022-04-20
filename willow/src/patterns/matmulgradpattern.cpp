@@ -1,6 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <numeric>
+#include <string>
+#include <utility>
+#include <vector>
 #include <poprithms/ndarray/shape.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -10,9 +15,20 @@
 #include <popart/patterns/matmulgradpattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-#include <popart/util.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/matmul.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 

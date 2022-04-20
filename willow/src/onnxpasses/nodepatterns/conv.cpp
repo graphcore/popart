@@ -1,10 +1,11 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include <algorithm>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/conv.hpp>
-#include <onnxpasses/suffixer.hpp>
 #include <string>
+#include <vector>
 #include <popart/error.hpp>
+#include <popart/region.hpp> // IWYU pragma: keep
 
 namespace popart {
 namespace onnxpasses {

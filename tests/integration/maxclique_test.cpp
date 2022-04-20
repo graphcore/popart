@@ -1,8 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MaxCliqueTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <memory>
+#include <vector>
 #include <popart/maxclique.hpp>
 
 using namespace popart;

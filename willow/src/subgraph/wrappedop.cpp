@@ -1,12 +1,19 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <subgraph/wrappedop.hpp>
-
 #include <algorithm>
+#include <cstddef>
 #include <functional>
-
+#include <iterator>
+#include <subgraph/wrappedop.hpp>
+#include <utility>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/placeholder.hpp>
+
+#include "popart/analysis/replicaequal/replicaequalanalysis.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
 
 using namespace popart;
 

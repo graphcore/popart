@@ -2,13 +2,15 @@
 #ifndef GUARD_NEURALNET_MULTICONV_HPP
 #define GUARD_NEURALNET_MULTICONV_HPP
 
-#include <cmath>
-
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/convbase.hpp>
-#include <popart/util.hpp>
-#include <popart/vendored/optional.hpp>
 
 namespace popart {
+class Op;
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class MultiConvOp : public MultiConvBaseOp {
 public:

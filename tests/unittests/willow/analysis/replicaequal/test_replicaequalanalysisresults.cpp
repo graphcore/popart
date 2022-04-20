@@ -1,10 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_ReplicaEqualAnalysis
-#include <boost/test/unit_test.hpp>
-
-#include <testutil/test_graphs/graph_test_models.hpp>
-
 #include <analysis/replicaequal/replicaequalanalysisresults.hpp>
+#include <boost/test/unit_test.hpp>
+#include <iostream>
+#include <map>
+#include <testutil/test_graphs/graph_test_models.hpp>
+#include <vector>
+
+#include "popart/graph.hpp"
+#include "popart/graphid.hpp"
+#include "popart/ir.hpp"
+#include "popart/replicatedstreammode.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class Op;
+class internal_error;
+} // namespace popart
 
 using namespace popart;
 

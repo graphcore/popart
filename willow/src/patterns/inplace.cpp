@@ -1,17 +1,25 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <popart/chains.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/inplace.hpp>
 #include <popart/patterns/patterns.hpp>
-#include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-#include <popart/util.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/patterns/pattern.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

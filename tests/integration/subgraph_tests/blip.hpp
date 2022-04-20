@@ -2,12 +2,14 @@
 #ifndef GUARD_NEURALNET_BLIP_HPP
 #define GUARD_NEURALNET_BLIP_HPP
 
+#include <cstdint>
 #include <map>
 #include <set>
+#include <string>
+#include <tuple>
 #include <vector>
-#include <popart/subgraph/algo0.hpp>
-#include <popart/subgraph/algo1.hpp>
-#include <popart/subgraph/outliner.hpp>
+
+#include "popart/subgraph/subgraphnames.hpp"
 
 namespace blip {
 

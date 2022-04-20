@@ -2,7 +2,11 @@
 #define BOOST_TEST_MODULE Test_StepIO_DeonnxingRegressionTests
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -11,8 +15,17 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
-#include <popart/util.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/error.hpp"
+#include "popart/popx/executablex.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

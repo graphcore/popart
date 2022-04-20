@@ -2,12 +2,26 @@
 #ifndef GUARD_NEURALNET_IF_HPP
 #define GUARD_NEURALNET_IF_HPP
 
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/names.hpp"
+
 namespace popart {
+class AliasModel;
+class Graph;
+class ReplicaEqualAnalysisProxy;
+class Scope;
+struct OperatorIdentifier;
 
 struct BranchInfo {
   BranchInfo(const GraphId &,

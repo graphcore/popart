@@ -1,15 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <cstdint>
+#include <memory>
+#include <string>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/region.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 RestoreOp::RestoreOp(const OperatorIdentifier &_opid,
                      int64_t stashSize_,

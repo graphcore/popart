@@ -2,13 +2,17 @@
 #ifndef GUARD_NEURALNET_ONNXUTIL_HPP
 #define GUARD_NEURALNET_ONNXUTIL_HPP
 
-#include <memory>
-
+#include <cstdint>
+#include <functional>
 #include <onnx/onnx_pb.h>
-#include <popart/tensordata.hpp>
+#include <set>
+#include <string>
+#include <vector>
+#include <popart/vendored/optional.hpp>
 #include <popart/voiddata.hpp>
 
-#include <popart/vendored/optional.hpp>
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
 
 namespace poprithms {
 namespace logging {
@@ -16,6 +20,7 @@ class TimePartitionLogger;
 }
 
 } // namespace poprithms
+
 namespace popart {
 namespace onnxutil {
 

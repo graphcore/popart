@@ -1,13 +1,24 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
+#include <cstdint>
 #include <memory>
-#include <onnxutil.hpp>
-#include <popart/ir.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/randomnormal.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/op/randombase.hpp"
+#include "popart/op/shapeorlike.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 RandomNormalOp::RandomNormalOp(const OperatorIdentifier &opid_,
                                const std::vector<int64_t> &shape_,

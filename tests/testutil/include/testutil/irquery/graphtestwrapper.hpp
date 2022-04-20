@@ -2,14 +2,17 @@
 #ifndef TEST_UTILS_IR_QUERY_GRAPH_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_GRAPH_TEST_WRAPPER_HPP
 
-#include <popart/graph.hpp>
+#include "testutil/irquery/opstestwrapper.hpp"
+#include "testutil/irquery/tensorindexmaptestwrapper.hpp"
+#include "testutil/irquery/testwrapper.hpp"
+#include <functional>
 
-#include <testutil/irquery/opstestwrapper.hpp>
-#include <testutil/irquery/require.hpp>
-#include <testutil/irquery/tensorindexmaptestwrapper.hpp>
-#include <testutil/irquery/testwrapper.hpp>
+#include "popart/graphid.hpp"
 
 namespace popart {
+class Graph;
+class Ir;
+
 namespace irquery {
 
 /**

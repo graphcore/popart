@@ -1,13 +1,31 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplin/ConvParams.hpp>
+#include <poplin/Convolution.hpp>
+#include <poplin/MultiConvolution.hpp>
 #include <popart/op/multiconv.hpp>
 #include <popart/popx/devicex.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/multiconvx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op/convbase.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/convbasex.hpp"
 
 namespace popart {
+class Op;
 
 namespace popx {
 

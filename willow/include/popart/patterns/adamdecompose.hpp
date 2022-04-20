@@ -2,11 +2,17 @@
 #ifndef GUARD_NEURALNET_ADAMDECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_ADAMDECOMPOSE_PATTERN_HPP
 
-#include <popart/op/adamcombo.hpp>
+#include <utility>
+#include <vector>
 #include <popart/patterns/optimizerdecompose.hpp>
-#include <popart/patterns/patterns.hpp>
+
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
+class AdamComboOp;
+class Graph;
+class Op;
+class Tensor;
 
 class AdamDecompose : public OptimizerDecompose {
 public:

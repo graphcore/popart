@@ -1,17 +1,17 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <boost/functional/hash.hpp>
-
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <typeindex>
+#include <typeinfo>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include <popart/logging.hpp>
-#include <popart/patterns/patterns.hpp>
-
-#include <popart/op/abs.hpp>
-#include <popart/op/cos.hpp>
-#include <popart/op/randomnormal.hpp>
-#include <popart/op/randomuniform.hpp>
-#include <popart/op/sign.hpp>
-#include <popart/op/sin.hpp>
-#include <popart/op/zeros.hpp>
-
 #include <popart/patterns/atan2arg0gradoppattern.hpp>
 #include <popart/patterns/atan2arg1gradoppattern.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
@@ -29,7 +29,6 @@
 #include <popart/patterns/expm1gradoppattern.hpp>
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
-#include <popart/patterns/inplace.hpp>
 #include <popart/patterns/lambserialisedweight.hpp>
 #include <popart/patterns/likeopspattern.hpp>
 #include <popart/patterns/log1pgradoppattern.hpp>
@@ -42,12 +41,12 @@
 #include <popart/patterns/optoidentitypattern.hpp>
 #include <popart/patterns/padsum.hpp>
 #include <popart/patterns/pattern.hpp>
+#include <popart/patterns/patterns.hpp>
 #include <popart/patterns/postnrepl.hpp>
 #include <popart/patterns/powarg0gradoppattern.hpp>
 #include <popart/patterns/powarg1gradoppattern.hpp>
 #include <popart/patterns/preunirepl.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
-#include <popart/patterns/sequenceexpander.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/softmaxgraddirect.hpp>
 #include <popart/patterns/splitgather.hpp>
@@ -57,10 +56,19 @@
 #include <popart/patterns/subtractarg1gradoppattern.hpp>
 #include <popart/patterns/sumtoaddpattern.hpp>
 #include <popart/patterns/tiedgatherpattern.hpp>
-#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/patterns/upsampletoresizepattern.hpp>
 
+#include "popart/error.hpp"
+#include "popart/vendored/optional.hpp"
+
 namespace popart {
+class AbsGradOp;
+class CosOp;
+class RandomNormalLikeOp;
+class RandomUniformLikeOp;
+class SignOp;
+class SinGradOp;
+class ZerosLikeOp;
 
 void PatternNames::addName(const std::type_info &patternInfo,
                            const std::string &name) {
@@ -698,8 +706,8 @@ bool Patterns::operator==(const Patterns &p) const {
 } // namespace popart
 
 namespace std {
-std::size_t std::hash<popart::Patterns>::
-operator()(const popart::Patterns &patterns) const {
+std::size_t std::hash<popart::Patterns>::operator()(
+    const popart::Patterns &patterns) const {
   std::size_t seed = 0;
   for (const auto &kv : patterns.getSettings()) {
     boost::hash_combine(seed, kv.first);

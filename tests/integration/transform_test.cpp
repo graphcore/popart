@@ -8,7 +8,15 @@
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
+#include <cstddef>
+#include <string>
+#include <typeinfo>
 #include <popart/ir.hpp>
+
+namespace popart {
+class Graph;
+} // namespace popart
+
 #undef private
 
 using namespace popart;

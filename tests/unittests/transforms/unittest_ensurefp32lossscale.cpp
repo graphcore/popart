@@ -1,7 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TestEnsureFp32LossScaleTransform
 #include <boost/test/unit_test.hpp>
-
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/cast.hpp>
@@ -12,11 +17,25 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/scale.hpp>
-#include <popart/operators.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
 #include <popart/transforms/ensurefp32lossscale.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class error;
+} // namespace popart
 
 using namespace popart;
 

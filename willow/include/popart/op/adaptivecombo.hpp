@@ -2,12 +2,21 @@
 #ifndef GUARD_NEURALNET_ADAPTIVECOMBOOP_HPP
 #define GUARD_NEURALNET_ADAPTIVECOMBOOP_HPP
 
+#include <map>
+#include <memory>
+#include <set>
 #include <popart/adaptive.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensordebuginfo.hpp"
+
 namespace popart {
+class OpSerialiserBase;
 
 // The "Combo" in the name signifies that this Op will be decomposed into
 // smaller Ops.

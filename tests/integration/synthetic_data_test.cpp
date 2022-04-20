@@ -1,8 +1,20 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE SyntheticDataTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
 #include <vector>
+
+#include "popart/builder.gen.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 // Hack to allow the test to view the private data of classes
 #ifdef __clang__
@@ -20,15 +32,13 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/irlowering.hpp>
 
 using namespace popart;
 

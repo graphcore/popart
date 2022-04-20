@@ -1,12 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <vector>
 #include <popops/ElementWise.hpp>
-#include <popart/op/ceil.hpp>
-#include <popart/popx/devicex.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/ceilx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class CeilInplaceOp;
+class CeilOp;
+class Op;
+
 namespace popx {
+class Devicex;
 
 snap::Tensor CeilComputex::outplace(snap::program::Sequence &prog,
                                     snap::Graph &graph,

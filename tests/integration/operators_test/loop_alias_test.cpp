@@ -1,9 +1,13 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE LoopAliasTest0
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -15,6 +19,24 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/tensors.hpp"
+#include "popart/util.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

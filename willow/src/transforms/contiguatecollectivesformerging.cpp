@@ -1,5 +1,27 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <cstddef>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <vector>
 #include <popart/transforms/contiguatecollectivesformerging.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graph.hpp"
+#include "popart/graphutils.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/op/collectives/replicatedallgather.hpp"
+#include "popart/op/collectives/replicatedallreduce.hpp"
+#include "popart/op/collectives/replicatedreducescatter.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/topocons.hpp" // IWYU pragma: keep
+#include "popart/transforms/transform.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 std::size_t ContiguateCollectivesTransform::id() {

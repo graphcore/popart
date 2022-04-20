@@ -1,12 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/patterns/viewsimplifypattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

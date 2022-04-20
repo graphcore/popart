@@ -1,4 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <transforms/streamingmemoryopinserter.hpp>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
@@ -6,26 +16,24 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/boundary.hpp>
-#include <popart/op/collectives/replicatedallgather.hpp>
-#include <popart/op/collectives/replicatedallreduce.hpp>
-#include <popart/op/collectives/replicatedreducescatter.hpp>
-#include <popart/op/exchange/remote.hpp>
 #include <popart/op/getrandomseed.hpp>
-#include <popart/op/init.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/lamb.hpp>
-#include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/varupdate.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/streamingmemory.hpp>
-#include <popart/vendored/optional.hpp>
 
-#include <transforms/streamingmemoryopinserter.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

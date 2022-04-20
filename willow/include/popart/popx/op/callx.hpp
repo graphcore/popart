@@ -2,12 +2,23 @@
 #ifndef GUARD_NEURALNET_CALLX_HPP
 #define GUARD_NEURALNET_CALLX_HPP
 
+#include <vector>
 #include <popart/popx/op/subgraphx.hpp>
 #include <popart/popx/popopx.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/names.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class CallOpx : public SubgraphOpx {
 public:

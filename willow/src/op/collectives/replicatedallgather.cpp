@@ -1,14 +1,27 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <popart/graph.hpp>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
+#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
                                              CommGroup group_,

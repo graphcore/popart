@@ -1,10 +1,16 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "builder_helper.hpp"
+
+#include <algorithm>
 #include <builder_impl.hpp>
-#include <builderdebuginfo.hpp>
-#include <filereader.hpp>
-#include <onnxutil.hpp>
+#include <cstdint>
 #include <popart/op/receptive.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vendored/any.hpp"
 
 namespace popart {
 

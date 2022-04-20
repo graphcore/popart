@@ -1,11 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/Program.hpp>
+#include <string>
+#include <poplar/StringRef.hpp>
 #include <popart/op/printtensor.hpp>
 #include <popart/popx/op/printtensorx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/vertex.hpp"
+
 namespace popart {
 namespace popx {
+class Devicex;
 
 PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<PrintTensorOp>(op, Onnx::CustomOperators::PrintTensor_1);

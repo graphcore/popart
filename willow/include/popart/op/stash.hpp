@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_STASH_HPP
 #define GUARD_NEURALNET_STASH_HPP
 
+#include <cstdint>
+#include <memory>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class StashOp : public Op {
 public:

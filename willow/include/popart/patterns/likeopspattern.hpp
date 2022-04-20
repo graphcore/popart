@@ -2,10 +2,14 @@
 #ifndef GUARD_NEURALNET_LIKEOPSPATTERN_HPP
 #define GUARD_NEURALNET_LIKEOPSPATTERN_HPP
 
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/patterns/pattern.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+class Tensor;
 
 // Templated pattern that replaces a _LikeOp with the equivalent _Op
 template <class L> class LikeOpsPattern : public PreAliasPattern {

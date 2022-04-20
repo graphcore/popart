@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_PRELU_HPP
 #define GUARD_NEURALNET_PRELU_HPP
 
+#include <memory>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class PReluOp : public ElementWiseBinaryOp {
 public:

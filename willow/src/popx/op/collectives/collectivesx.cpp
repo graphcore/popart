@@ -1,26 +1,40 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <boost/integer/common_factor.hpp>
+#include <gcl/CollectiveBalancedReorder.hpp>
+#include <gcl/Collectives.hpp>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Tensor.hpp>
+#include <utility>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Target.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popart/error.hpp>
-#include <popart/graph.hpp>
-#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
-#include <popart/liveness.hpp>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/op/collectives/replicatedallgather.hpp>
-#include <popart/op/collectives/replicatedreducescatter.hpp>
-#include <popart/op/subgraph.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
-#include <popart/popx/opxmanager.hpp>
 #include <popart/popx/replicatedtensorshardingbundle.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
-#include <poputil/Util.hpp>
-
-#include <boost/math/common_factor.hpp>
+#include "popart/commgroup.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
 
 namespace popart {
+class Tensor;
+
 namespace popx {
 
 gcl::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op) {
@@ -128,8 +142,8 @@ unsigned numGrainElements(const poplar::Target &target,
   const auto exchangeBytesPerCycle = target.getExchangeBytesPerCycle();
   const auto typeSize              = target.getTypeSize(type);
   const auto vecWidth              = target.getVectorWidth(type);
-  return boost::math::lcm<unsigned>(exchangeBytesPerCycle,
-                                    vecWidth * typeSize) /
+  return boost::integer::lcm<unsigned>(exchangeBytesPerCycle,
+                                       vecWidth * typeSize) /
          typeSize;
 }
 } // namespace

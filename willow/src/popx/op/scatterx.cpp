@@ -1,20 +1,36 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Type.hpp>
+#include <popops/DynamicSlice.hpp>
+#include <popops/Fill.hpp>
 #include <popart/error.hpp>
 #include <popart/op/scatter.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
 #include <popart/popx/op/scatterx.hpp>
 #include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/util.hpp>
 
-#include <popops/Cast.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Fill.hpp>
-#include <popops/Gather.hpp>
-#include <popops/Scatter.hpp>
-#include <poputil/TileMapping.hpp>
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
+
+namespace popart {
+class Op;
+namespace popx {
+class Devicex;
+} // namespace popx
+} // namespace popart
 
 namespace {
 snap::Tensor scatter(const popart::popx::PopOpx &opx,

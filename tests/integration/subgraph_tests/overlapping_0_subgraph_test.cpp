@@ -11,11 +11,18 @@
 // splitting non-isomorphic matches might eliminate overlaps before
 // matches are (unnecessarily) split for containing overlapping sequences
 
-#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <memory>
+#include <ostream>
 #include <vector>
 #include <popart/logging.hpp>
+
+#include "blip.hpp"
+#include "popart/subgraph/algo0.hpp"
+#include "popart/subgraph/match.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/subgraph/subgraphutil.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

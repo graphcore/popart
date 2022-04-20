@@ -4,7 +4,11 @@
 
 #include <popart/patterns/fuser.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Op;
+struct OperatorIdentifier;
 
 // consider,
 // (label), (probs), (d_in) -> [NLLGrad]

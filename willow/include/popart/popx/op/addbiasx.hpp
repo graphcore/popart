@@ -2,13 +2,24 @@
 #ifndef GUARD_NEURALNET_ADD_BIASX_HPP
 #define GUARD_NEURALNET_ADD_BIASX_HPP
 
+#include "popart/popx/debugcontextx.hpp"
+#include <set>
+#include <snap/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/op/identityx.hpp>
 #include <popart/popx/op/reducesumx.hpp>
 #include <popart/popx/popopx.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class AddBiasOpx : public PopOpx {
 public:

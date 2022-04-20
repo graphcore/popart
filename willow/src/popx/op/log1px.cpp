@@ -1,13 +1,25 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
 #include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
-#include <popart/op/log1p.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/log1px.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class Log1pInplaceOp;
+class Log1pOp;
+class Op;
+
 namespace popx {
+class Devicex;
 
 Log1pInplaceOpx::Log1pInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(op, devicex, Log1pComputex::get()) {

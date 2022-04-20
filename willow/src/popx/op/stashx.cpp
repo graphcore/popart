@@ -1,18 +1,28 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <poplar/ArrayRef.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/Type.hpp>
+#include <popops/DynamicSlice.hpp>
+#include <popops/ElementWise.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/stashx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 void StashOpx::growStaticStashUpdate(snap::program::Sequence &prog,

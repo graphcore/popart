@@ -2,27 +2,40 @@
 
 #define BOOST_TEST_MODULE DebugInfoTest
 
+#include <algorithm>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/test/unit_test.hpp>
 #include <builderdebuginfo.hpp>
+#include <cstdint>
+#include <cstdio>
+#include <fstream>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <onnx/onnx_pb.h>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxdebuginfo.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
-#include <popart/operators.hpp>
 #include <popart/tensordebuginfo.hpp>
-
-#include <iostream>
-#include <stdio.h>
-#include <poplar/DebugContext.hpp>
-
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-
-#include <popart/builder.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include <onnx/onnx_pb.h>
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/any.hpp"
 
 class TemporaryFileManager {
 

@@ -2,6 +2,7 @@
 #ifndef NEURALNET_VERTEX_HPP
 #define NEURALNET_VERTEX_HPP
 
+#include <iosfwd>
 #include <string>
 
 namespace popart {

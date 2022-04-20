@@ -1,11 +1,17 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 [
   # Should only be included through operators.hpp
-  { include: ["@[\"<]popart/onnxoperators.gen.hpp[\">]", "private", "\"popart/operators.hpp\"", "public"]},
+  { include: ["<popart/onnxoperators.gen.hpp>", "private", "\"popart/operators.hpp\"", "public"]},
+  { include: ["\"popart/onnxoperators.gen.hpp\"", "private", "\"popart/operators.hpp\"", "public"]},
 
   # Does not need to be included if operators.hpp is
-  { include: ["@[\"<]popart/graphcoreoperators.hpp[\">]", "public", "\"popart/operators.hpp\"", "public"]},
+  { include: ["<popart/graphcoreoperators.hpp>", "public", "\"popart/operators.hpp\"", "public"]},
+  { include: ["\"popart/graphcoreoperators.hpp\"", "public", "\"popart/operators.hpp\"", "public"]},
 
   # Replace any occurrences of popart/opidentifier.hpp by popart/operators.hpp
-  { include: ["@[\"<]popart/opidentifier.hpp[\">]", "private", "\"popart/operators.hpp\"", "public"]}
+  { include: ["<popart/opidentifier.hpp>", "private", "\"popart/operators.hpp\"", "public"]},
+  { include: ["\"popart/opidentifier.hpp\"", "private", "\"popart/operators.hpp\"", "public"]},
+
+  # Replace any occurrences of poplar/DebugContext.hpp by popart/debugcontextx.hpp
+  { include: ["<poplar/DebugContext.hpp>", "private", "\"popart/popx/debugcontextx.hpp\"", "public"]},
 ]

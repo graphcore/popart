@@ -2,6 +2,7 @@
 #include <transforms/autodiff/gradnongradpair.hpp>
 
 namespace popart {
+class Op;
 
 GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 

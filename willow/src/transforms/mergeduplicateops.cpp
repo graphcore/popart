@@ -1,4 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -8,6 +19,14 @@
 #include <popart/tensorindex.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/mergeduplicateops.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
 
 namespace popart {
 

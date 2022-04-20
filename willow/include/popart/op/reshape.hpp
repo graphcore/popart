@@ -2,9 +2,20 @@
 #ifndef GUARD_NEURALNET_RESHAPE_HPP
 #define GUARD_NEURALNET_RESHAPE_HPP
 
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+
 namespace popart {
+class AliasModel;
 
 // TODO: merge Reshape and Squeeze functionality (T5886)
 

@@ -1,9 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/patterns/convflipweightsgradoppattern.hpp>
-#include <popart/tensorinfo.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensor.hpp"
 
 namespace popart {
 

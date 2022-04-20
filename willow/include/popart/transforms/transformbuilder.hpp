@@ -2,11 +2,23 @@
 #ifndef GUARD_NEURALNET_TRANSFORM_BUILDER_HPP
 #define GUARD_NEURALNET_TRANSFORM_BUILDER_HPP
 
-#include <popart/graph.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include <popart/vendored/any.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
+class Graph;
+class Op;
+class any;
+struct OperatorIdentifier;
 
 class TransformBuilder {
   Graph &graph;

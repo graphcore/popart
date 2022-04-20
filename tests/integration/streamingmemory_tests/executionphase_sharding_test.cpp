@@ -1,23 +1,32 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ExecutionPhaseShardingTest
 
-#include "../test_runner.hpp"
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <set>
 #include <string>
-#include <popart/builder.hpp>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/ir.hpp>
-#include <popart/op/add.hpp>
 #include <popart/op/exchange/remote.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/matmul.hpp>
-#include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/transforms/streamingmemory.hpp>
+
+#include "../test_runner.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vertex.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

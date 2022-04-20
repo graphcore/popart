@@ -6,8 +6,9 @@
 // Instead create a wrapper for pointer & length
 // #include <string_view>
 
-#include <assert.h>
+#include <cstddef>
 #include <pvti/pvti.hpp>
+#include <string>
 
 namespace popart {
 

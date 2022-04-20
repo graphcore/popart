@@ -2,15 +2,30 @@
 #ifndef GUARD_NEURALNET_POPX_RNG_RNG_STATE_LOWERING_HPP
 #define GUARD_NEURALNET_POPX_RNG_RNG_STATE_LOWERING_HPP
 
-#include <popart/op.hpp>
-#include <popart/popx/irlowering.hpp>
+#include <functional>
+#include <snap/Tensor.hpp>
+#include <stddef.h>
+#include <string>
+#include <vector>
+#include <poplar/Target.hpp>
 
-#include <poplar/Program.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/pritask.hpp"
 
-#include <snap/Graph.hpp>
+namespace snap {
+class Graph;
+
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class TaskId;
+
 namespace popx {
+class IrLowering;
+class PopOpx;
 
 /**
  * This class is responsible for lowering RNG/SR related Poplar calls to Poplar

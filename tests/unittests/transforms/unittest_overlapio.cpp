@@ -1,11 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE overlapio_unittest
 
-#include <testutil/irquery/irquery.hpp>
-#include <testutil/test_graphs/graph_test_models.hpp>
-
 #include <boost/test/unit_test.hpp>
-#include <popart/dataflow.hpp>
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <testutil/test_graphs/graph_test_models.hpp>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -15,8 +16,15 @@
 #include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/loop.hpp>
-#include <popart/tensor.hpp>
 #include <popart/transforms/overlapio.hpp>
+
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/transforms/mainloops.hpp"
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/irquery.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

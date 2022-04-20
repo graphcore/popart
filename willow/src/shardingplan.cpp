@@ -1,7 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <cstddef>
+#include <map>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/shardingplan.hpp>
+
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

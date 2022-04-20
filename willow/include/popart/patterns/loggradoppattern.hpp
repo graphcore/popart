@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_LOG_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_LOG_GRAD_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replace a LogGradOp with
 // {(grad_in), (fwd_in)} -> [Div] -> (grad_out)

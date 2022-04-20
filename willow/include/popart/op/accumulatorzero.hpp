@@ -2,8 +2,11 @@
 #ifndef GUARD_NEURALNET_ACCUMULATORZEROOP_HPP
 #define GUARD_NEURALNET_ACCUMULATORZEROOP_HPP
 
+#include <memory>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/optimizervalue.hpp>
+
+#include "popart/op.hpp"
 
 namespace popart {
 

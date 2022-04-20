@@ -1,20 +1,34 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op.hpp"
-#include "bindings/ir.hpp"
 
-#include <iostream>
-#include <pybind11/operators.h>
+#include <algorithm>
+#include <cstdint>
+#include <initializer_list>
+#include <iterator>
+#include <map>
+#include <pybind11/attr.h>
+#include <pybind11/operators.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <set>
 #include <string>
+#include <utility>
 #include <popart/basicoptionals.hpp>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/shardingplan.hpp>
-#include <popart/vertex.hpp>
+
+#include "popart/error.hpp"
+#include "popart/ir.hpp" // IWYU pragma: keep
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/scope.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
 
 namespace py = pybind11;
 

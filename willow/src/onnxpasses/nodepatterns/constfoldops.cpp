@@ -1,7 +1,28 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <numeric>
+#include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/constfoldops.hpp>
 #include <onnxutil.hpp>
+#include <ostream>
+#include <vector>
+#include <poprithms/compute/host/tensor.hpp>
+#include <poprithms/ndarray/accessors.hpp>
+#include <poprithms/ndarray/dtype.hpp>
+#include <poprithms/ndarray/shape.hpp>
+#include <poprithms/util/permutation.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/voiddata.hpp"
+#include "poprithmshosttensor.hpp"
 
 namespace popart {
 namespace onnxpasses {

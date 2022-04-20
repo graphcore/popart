@@ -2,14 +2,15 @@
 #ifndef GUARD_NEURALNET_TIED_GATHER_PATTERN_HPP
 #define GUARD_NEURALNET_TIED_GATHER_PATTERN_HPP
 
+#include <vector>
 #include <popart/patterns/pattern.hpp>
 
-#include <map>
+#include "popart/names.hpp"
 
 namespace popart {
 
 class Op;
-class MatMulBaseOp;
+class Tensor;
 
 class TiedGatherPattern : public PreAliasPattern {
 public:

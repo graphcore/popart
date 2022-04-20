@@ -1,18 +1,16 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <memory>
-#include <popart/ir.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/concat.hpp>
-#include <popart/op/gather.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/pad.hpp>
-#include <popart/op/reducesum.hpp>
-#include <popart/op/scale.hpp>
 #include <popart/op/split.hpp>
-#include <popart/op/subsample.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/patterns/splitgradoptoconcatpattern.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
 
 namespace popart {
 

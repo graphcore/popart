@@ -2,10 +2,8 @@
 #ifndef GUARD_NEURALNET_GRAD_NON_GRAD_PAIR_HPP
 #define GUARD_NEURALNET_GRAD_NON_GRAD_PAIR_HPP
 
-#include <popart/names.hpp>
-#include <popart/tensor.hpp>
-
 namespace popart {
+class Op;
 
 // helper class used during backwards pass construction.
 // This class helps to decouple the non-grad op from a

@@ -1,13 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

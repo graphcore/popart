@@ -3,7 +3,7 @@
 #define GUARD_NEURALNET_NUMERICS_HPP
 
 #include <cmath>
-
+#include <map>
 #include <sstream>
 #include <string>
 #include <popart/names.hpp>

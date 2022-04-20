@@ -1,17 +1,22 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <fstream>
-#include <sstream>
-
-#include <google/protobuf/text_format.h>
-#include <poprithms/logging/timepartitionlogger.hpp>
-
+#include <algorithm>
 #include <boost/filesystem.hpp>
-
 #include <filereader.hpp>
+#include <fstream>
+#include <google/protobuf/stubs/port.h>
+#include <google/protobuf/text_format.h>
+#include <memory>
 #include <onnxutil.hpp>
+#include <utility>
+#include <poprithms/logging/logging.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/attributes.hpp>
 #include <popart/error.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 namespace onnxutil {

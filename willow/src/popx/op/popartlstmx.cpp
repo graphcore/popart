@@ -1,22 +1,32 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <tuple>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
+#include <popnn/Lstm.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/lstm.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/popartlstmx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/util.hpp>
 
-#include <popnn/Lstm.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Zero.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 namespace {

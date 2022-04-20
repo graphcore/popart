@@ -1,21 +1,43 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cassert>
 #include <cmath>
-
-#include <snap/popops/ElementWise.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <tuple>
+#include <utility>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
+#include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Fill.hpp>
 #include <popops/Pad.hpp>
 #include <popops/Zero.hpp>
-
 #include <popart/logging.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/popx/op/resizex.hpp>
-#include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/util.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 namespace {
 
@@ -497,9 +519,8 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
   std::vector<size_t> resultShape = input.shape();
   resultShape.at(dimension)       = outShape.at(dimension);
   auto size                       = input.getPoplarTensor().dim(dimension);
-  auto result                     = graph().addLinearlyMappedVariable(input.elementType(),
-                                    resultShape,
-                                    debugContext("reduceDimResult"));
+  auto result                     = graph().addLinearlyMappedVariable(
+      input.elementType(), resultShape, debugContext("reduceDimResult"));
   popops::fill(graph().getPoplarGraph(),
                result.getPoplarTensor(),
                prog.getPoplarSequence(),
@@ -528,11 +549,9 @@ snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
                                          int dimension,
                                          int64_t newSize,
                                          float scale) const {
-  auto slices = split(input, dimension);
-  auto paddingTensor =
-      graph().addLinearlyMappedVariable(input.elementType(),
-                                        slices.at(0).shape(),
-                                        debugContext());
+  auto slices        = split(input, dimension);
+  auto paddingTensor = graph().addLinearlyMappedVariable(
+      input.elementType(), slices.at(0).shape(), debugContext());
   popops::zero(graph().getPoplarGraph(),
                paddingTensor.getPoplarTensor(),
                prog.getPoplarSequence(),

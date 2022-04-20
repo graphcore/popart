@@ -1,13 +1,26 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <popops/ExprOp.hpp>
 #include <popart/op/fmod.hpp>
 #include <popart/popx/op/fmodx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 FmodOpx::FmodOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
   verifyOp<FmodOp>(op, {Onnx::AiGraphcore::OpSet1::Fmod});

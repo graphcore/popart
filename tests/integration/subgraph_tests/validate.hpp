@@ -5,9 +5,12 @@
 #include <algorithm>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <vector>
 #include <popart/subgraph/isomorphic.hpp>
 #include <popart/subgraph/match.hpp>
+
+#include "popart/subgraph/subgraphnames.hpp"
 
 template <typename T>
 bool isValid(const std::vector<fwtools::subgraph::Match> &matches,

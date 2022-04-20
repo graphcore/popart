@@ -1,6 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <map>
 #include <memory>
-#include <popart/error.hpp>
+#include <ostream>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
@@ -11,10 +19,17 @@
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-
 #include <popart/transforms/mergeexchange.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

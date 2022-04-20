@@ -1,23 +1,33 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <iterator>
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <vector>
-
-#include <popart/error.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/op/reducemean.hpp>
 #include <popart/popx/op/reducemeanx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
 #include <popart/util.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/Reduce.hpp>
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReduceMeanOp>(op);

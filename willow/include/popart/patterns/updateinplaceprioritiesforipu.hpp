@@ -5,6 +5,7 @@
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
+class Op;
 
 /**
  * \brief For AddOps, prioritise the inplace variant for the branch(es) that

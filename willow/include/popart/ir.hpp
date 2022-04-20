@@ -3,22 +3,38 @@
 #ifndef GUARD_NEURALNET_WILLOWIR_HPP
 #define GUARD_NEURALNET_WILLOWIR_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <set>
-
-#include <popart/alias/aliasmodel.hpp>
+#include <string>
+#include <typeindex>
+#include <vector>
 #include <popart/bimap.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/names.hpp>
-#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
-#include <popart/scheduler_requireoptimal.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/tensorindex.hpp>
 #include <popart/transforms/pipeline.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/graphid.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace onnx {
+class GraphProto;
+class ModelProto;
+class TensorProto;
+} // namespace onnx
 
 namespace poprithms {
 namespace logging {
@@ -28,7 +44,16 @@ class TimePartitionLogger;
 
 namespace popart {
 
-struct PTensorCmp;
+class AliasModel;
+class DeviceInfo;
+class Graph;
+class Op;
+class Optimizer;
+class PreAliasPattern;
+class Scope;
+class Tensors;
+struct OperatorIdentifier;
+
 enum class RequireOptimalSchedule; /*
   Yes = true,
   No = false

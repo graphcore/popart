@@ -1,20 +1,30 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TiedGatherTests
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <map>
+#include <string>
 #include <typeindex>
-
-#include <popart/patterns/tiedgatherpattern.hpp>
-
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/transpose.hpp>
-#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
-#include <popart/tensor.hpp>
+#include <popart/patterns/tiedgatherpattern.hpp>
 #include <popart/tensors.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

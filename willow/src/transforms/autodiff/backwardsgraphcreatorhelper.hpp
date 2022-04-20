@@ -2,24 +2,20 @@
 #ifndef GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HELPER_HPP
 #define GUARD_NEURALNET_BACKWARDS_GRAPH_CREATOR_HELPER_HPP
 
+#include <map>
+#include <vector>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/names.hpp>
 
-#include <popart/graph.hpp>
-#include <popart/patterns/patterns.hpp>
-
-#include <transforms/autodiff/tensorgradmapregister.hpp>
-
-#include <map>
-#include <memory>
-#include <vector>
+#include "popart/tensordebuginfo.hpp"
+#include "popart/vendored/optional.hpp" // IWYU pragma: keep
 
 namespace popart {
 
 // Forward declaration.
 class Op;
-class CopyInputMarkings;
-class CopyOutputMarkings;
+class GradInOutMapper;
+class Graph;
 
 /**
  * Class to help populate a backwards graphs. This helper is supposed to be

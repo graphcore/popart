@@ -1,13 +1,25 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
 #include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
-#include <popart/op/exp.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/expx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class ExpInplaceOp;
+class ExpOp;
+class Op;
+
 namespace popx {
+class Devicex;
 
 ExpInplaceOpx::ExpInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(op, devicex, ExpComputex::get()) {

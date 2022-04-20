@@ -1,15 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/ir.hpp>
+#include <cstddef>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/getrandomseedx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/transforms/randomsetup.hpp>
 
-#include <snap/popops/ElementWise.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 namespace popx {

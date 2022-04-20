@@ -1,21 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <testutil/test_graphs/builder.hpp>
-
-#include <filereader.hpp>
-#include <popart/error.hpp>
-#include <popart/graph.hpp>
-#include <popart/graphid.hpp>
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
-#include <popart/op.hpp>
-#include <popart/scheduler.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/topocons.hpp>
-
+#include <algorithm>
+#include <iterator>
 #include <map>
 #include <memory>
+#include <string>
+#include <testutil/test_graphs/builder.hpp>
 #include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/topocons.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

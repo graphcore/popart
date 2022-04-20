@@ -1,9 +1,26 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <cstdint>
+#include <functional>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/opdebuginfo.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/debugcontext.hpp"
+#include "popart/graphid.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/scope.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace {
 using namespace popart;

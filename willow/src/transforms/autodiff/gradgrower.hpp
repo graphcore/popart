@@ -2,21 +2,19 @@
 #ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_GRADGROWER_HPP
 #define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_GRADGROWER_HPP
 
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/op.hpp>
-#include <popart/tensor.hpp>
-
-#include <transforms/autodiff/autodiffhelper.hpp>
-#include <transforms/autodiff/autodiffirinterface.hpp>
-#include <transforms/autodiff/gradgrowergraph.hpp>
-#include <transforms/autodiff/gradgrowerop.hpp>
-#include <transforms/autodiff/gradgrowersumop.hpp>
-
-// Cant forward declare STL containers.
-#include <map>
+#include <functional>
+#include <utility>
 #include <vector>
 
+#include "popart/bwdgraphinfo.hpp"
+
 namespace popart {
+class AliasModel;
+class GradGrowerOpInterface;
+class GradGrowerSumOpInterface;
+class Graph;
+class Op;
+class Tensor;
 
 using GradOpsOfNonGradOp = std::pair<std::vector<Op *>, Op *>;
 using GradNonGradTensor  = std::pair<Tensor *, Tensor *>;

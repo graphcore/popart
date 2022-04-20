@@ -2,12 +2,23 @@
 #define BOOST_TEST_MODULE unittest_backwardsgraphcreator
 
 #include <boost/test/unit_test.hpp>
-
+#include <transforms/autodiff/autodiffiradapter.hpp>
+#include <transforms/autodiff/backwardsgraphcreator.hpp>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 
-#include <transforms/autodiff/autodiffiradapter.hpp>
-#include <transforms/autodiff/backwardsgraphcreator.hpp>
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace popart {
+class internal_error;
+} // namespace popart
 
 using namespace popart;
 

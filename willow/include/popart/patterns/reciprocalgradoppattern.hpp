@@ -2,9 +2,12 @@
 #ifndef GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include "popart/patterns/pattern.hpp"
+#include <vector>
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replace a ReciprocalGradOp with [Square] -> [Reciprocal] -> [Negate]
 class ReciprocalGradOpPattern : public PreAliasPattern {

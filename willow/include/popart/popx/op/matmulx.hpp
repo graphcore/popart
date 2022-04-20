@@ -2,13 +2,33 @@
 #ifndef GUARD_NEURALNET_MATMULX_HPP
 #define GUARD_NEURALNET_MATMULX_HPP
 
+#include "popart/popx/debugcontextx.hpp"
+#include <cstddef>
+#include <set>
+#include <snap/Tensor.hpp>
+#include <utility>
+#include <vector>
+#include <poplar/Type.hpp>
 #include <popart/names.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popopx.hpp>
+
+namespace poplar {
+class OptionFlags;
+} // namespace poplar
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 class MatMulOp;
 class MatMulBaseOp;
+class Op;
+namespace popx {
+class Devicex;
+} // namespace popx
+
 enum class MatMulPartialsType;
 namespace popx {
 

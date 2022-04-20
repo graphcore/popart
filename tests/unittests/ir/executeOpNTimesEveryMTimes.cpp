@@ -1,15 +1,21 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Ir_executeOpNTimesEveryMTimesTests
 
+#include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/atan.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/sin.hpp>
@@ -18,6 +24,22 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
+
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 
@@ -633,5 +655,4 @@ BOOST_AUTO_TEST_CASE(TestExecuteOpNTimesEveryMTimesTypes) {
                                           10),
                           error,
                           checkErrorFn8);
-
 }

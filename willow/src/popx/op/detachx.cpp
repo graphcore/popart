@@ -1,13 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <popart/names.hpp>
 #include <popart/op/detach.hpp>
 #include <popart/popx/op/detachx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 DetachOpx::DetachOpx(popart::Op *op, popart::popx::Devicex *devicex)
     : popart::popx::ElementWiseUnaryOpx(op, devicex) {

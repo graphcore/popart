@@ -2,11 +2,23 @@
 #ifndef GUARD_NEURALNET_BATCHSERIALSCHEDULER_HPP
 #define GUARD_NEURALNET_BATCHSERIALSCHEDULER_HPP
 
+#include <cstdint>
+#include <functional>
+#include <map>
 #include <queue> // we use a priority_queue
-#include <popart/op.hpp>
-#include <popart/transforms/transform.hpp>
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
 
 struct BatchSerialTensorContext {
 public:

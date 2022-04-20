@@ -1,16 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <snap/Program.hpp>
 #include <popart/op/abort.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/abortx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <poplar/Program.hpp>
-
-#include <snap/Program.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 AbortOpx::AbortOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AbortOp>(op, Onnx::CustomOperators::Abort);

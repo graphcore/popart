@@ -1,21 +1,37 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
-#include <popart/error.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <queue>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <vector>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/popx/op/meanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/Reduce.hpp>
-
-#include <queue>
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+class Devicex;
 
 MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<MeanOp>(op, {Onnx::Operators::Mean_8, Onnx::Operators::Mean_6});

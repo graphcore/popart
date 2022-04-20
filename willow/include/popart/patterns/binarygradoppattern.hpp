@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_BINARY_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_BINARY_GRAD_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/names.hpp"
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Ir;
+class Op;
+class Tensor;
 
 // Base op pattern for replacing a binary op gradient op with a series of ops
 class BinaryGradOpPattern : public PreAliasPattern {

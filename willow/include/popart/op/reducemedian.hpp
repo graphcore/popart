@@ -2,11 +2,22 @@
 #ifndef GUARD_NEURALNET_REDUCEMEDIAN_HPP
 #define GUARD_NEURALNET_REDUCEMEDIAN_HPP
 
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/reduce.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
+namespace nonstd {
+namespace optional_lite {
+template <typename T> class optional;
+} // namespace optional_lite
+} // namespace nonstd
 
 namespace popart {
+struct OperatorIdentifier;
 
 class ReduceMedianOp : public ReduceOp {
 public:

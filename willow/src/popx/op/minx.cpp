@@ -1,19 +1,39 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popart/error.hpp>
+#include <string>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/op/min.hpp>
 #include <popart/popx/op/minx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
-#include <popops/Expr.hpp>
-#include <popops/Reduce.hpp>
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/tensorinfo.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+
 namespace popx {
+class Devicex;
 
 MinOpx::MinOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<MinOp>(op, {Onnx::Operators::Min_8, Onnx::Operators::Min_6});

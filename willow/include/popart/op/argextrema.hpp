@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_ARGEXTREMA_HPP
 #define GUARD_NEURALNET_ARGEXTREMA_HPP
 
+#include <cstdint>
+#include <memory>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // The base class for an op that wants to choose some extreme values from an
 // input tensor.

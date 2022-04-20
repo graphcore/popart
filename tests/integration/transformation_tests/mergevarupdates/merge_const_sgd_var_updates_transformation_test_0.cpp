@@ -1,27 +1,32 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MergeConstSgdVarUpdatesTransformation0
 
-#include "../../random_util.hpp"
+#include <algorithm>
+#include <array>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
-#include <popart/ndarraywrapper.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
+#include "../../random_util.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/ir.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

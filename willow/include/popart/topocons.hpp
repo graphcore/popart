@@ -2,11 +2,16 @@
 #ifndef GUARD_NEURALNET_TOPOCONS_HPP
 #define GUARD_NEURALNET_TOPOCONS_HPP
 
+#include <iosfwd>
+#include <map>
+#include <set>
+#include <vector>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
 
 namespace popart {
+class Tensor;
 // Topological constraints
 //
 // A topological constraint is a single edge between

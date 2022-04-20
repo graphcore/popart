@@ -1,14 +1,31 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OpsetCheckTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
-#include <popart/operators.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/session.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/any.hpp"
+
+namespace popart {
+struct OperatorIdentifier;
+} // namespace popart
 
 using namespace popart;
 

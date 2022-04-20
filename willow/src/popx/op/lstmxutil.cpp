@@ -1,6 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <popnn/NonLinearityDef.hpp>
 #include <popart/error.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/op/lstmutil.hpp"
 
 namespace popart {
 namespace popx {

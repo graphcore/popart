@@ -1,10 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/logging.hpp"
+#include <memory>
 #include <transforms/autodiff/opgradregistry.hpp>
-
+#include <utility>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/tensor.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 

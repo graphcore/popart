@@ -1,19 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+
+#include <pybind11/stl.h> // IWYU pragma: keep
+
 #include "bindings/patterns/pattern.hpp"
-#include "bindings/ir.hpp"
 
-#include <iostream>
-#include <pybind11/functional.h>
-#include <pybind11/operators.h>
+#include <initializer_list>
+#include <memory>
+#include <vector>
+
+#include <pybind11/functional.h> // IWYU pragma: keep
+#include <pybind11/operators.h>  // IWYU pragma: keep
+
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-#include <string>
-#include <popart/basicoptionals.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <popart/op.hpp> // IWYU pragma: keep
 #include <popart/patterns/pattern.hpp>
-#include <popart/tensor.hpp>
+#include <popart/tensor.hpp> // IWYU pragma: keep
 
 namespace py = pybind11;
 

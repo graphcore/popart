@@ -1,6 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <popart/op/sync.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
 
 SyncOp::SyncOp(const Op::Settings &settings_, poplar::SyncType syncType)

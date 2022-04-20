@@ -1,10 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/square.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 SquareOp::SquareOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)

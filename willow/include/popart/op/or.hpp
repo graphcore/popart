@@ -2,10 +2,13 @@
 #ifndef GUARD_NEURALNET_OR_HPP
 #define GUARD_NEURALNET_OR_HPP
 
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
+struct OperatorIdentifier;
 
 class OrOp : public BinaryComparisonOp {
 public:

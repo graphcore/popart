@@ -2,10 +2,13 @@
 #ifndef GUARD_NEURALNET_RECIPROCAL_HPP
 #define GUARD_NEURALNET_RECIPROCAL_HPP
 
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
+struct OperatorIdentifier;
 
 class ReciprocalOp : public ElementWiseUnaryOp {
 public:

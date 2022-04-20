@@ -1,19 +1,29 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/logging.hpp"
 #include "popart/pointercomparators.hpp"
+#include "popart/util.hpp"
+
 #define BOOST_TEST_MODULE GraphUtilsTest
 
-#include <testutil/test_graphs/graph_test_models.hpp>
-
 #include <boost/test/unit_test.hpp>
-#include <popart/dataflow.hpp>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <testutil/test_graphs/graph_test_models.hpp>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 using namespace graphutils;

@@ -3,44 +3,27 @@
 #define GUARD_NEURALNET_TENSORINFO_HPP
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
 #include <numeric>
 #include <sstream>
+#include <string>
 #include <vector>
-#include <popart/basicoptionals.hpp>
+#include <popart/datatype.hpp>
 #include <popart/error.hpp>
-#include <popart/half.hpp>
 #include <popart/names.hpp>
 
+#include "popart/logging.hpp"
+
+namespace onnx {
+class TensorProto;
+class TypeProto;
+} // namespace onnx
+
 namespace popart {
-
-/// There is a one-to-one correspondence
-/// between \c popart::DataTypes
-/// and \c ONNX_NAMESPACE::TensorProto_DataTypes, or
-/// \c decltype(ONNX_NAMESPACE::TensorProto().data_type()).
-enum class DataType {
-  // fixed point types
-  UINT8 = 0,
-  INT8,
-  UINT16,
-  INT16,
-  INT32,
-  INT64,
-  UINT32,
-  UINT64,
-  BOOL,
-  // floating point types
-  FLOAT,
-  FLOAT16,
-  BFLOAT16,
-  DOUBLE,
-  COMPLEX64,
-  COMPLEX128,
-  // other types
-  STRING,
-  UNDEFINED,
-};
-
-using OptionalDataType = BasicOptional<DataType, 0>;
+class Half;
 
 template <typename T> DataType getDataType();
 template <> DataType getDataType<int8_t>();

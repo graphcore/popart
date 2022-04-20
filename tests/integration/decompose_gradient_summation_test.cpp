@@ -1,24 +1,36 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE DecomposeGradientSummationTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
-#include "test_runner.hpp"
-
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/op/matmul.hpp>
-#include <popart/op/mean.hpp>
-#include <popart/op/mul.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 
-#include <string>
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/voiddata.hpp"
+#include "test_runner.hpp"
 
 using namespace popart;
 

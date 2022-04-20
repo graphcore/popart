@@ -2,11 +2,21 @@
 #ifndef GUARD_NEURALNET_ADAPTIVEVARUPDATEX_HPP
 #define GUARD_NEURALNET_ADAPTIVEVARUPDATEX_HPP
 
+#include <snap/Tensor.hpp>
 #include <popart/popx/op/varupdatex.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 class ScaledVarUpdateOp;
+class Op;
+
 namespace popx {
+class Devicex;
 
 class ScaledVarUpdateOpx : public VarUpdateOpx {
 public:

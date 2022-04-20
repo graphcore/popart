@@ -1,11 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
 #include <vector>
 #include <popart/op/equal.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 EqualOp::EqualOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : BinaryComparisonOp(_opid, settings_) {}

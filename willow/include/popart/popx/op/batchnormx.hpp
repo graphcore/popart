@@ -2,17 +2,25 @@
 #ifndef GUARD_NEURALNET_BATCHNORMX_HPP
 #define GUARD_NEURALNET_BATCHNORMX_HPP
 
-#include <popart/names.hpp>
+#include <snap/Tensor.hpp>
+#include <tuple>
 #include <popart/popx/op/normx.hpp>
-
 #include <popart/vendored/optional.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 
 class BatchNormOp;
 class BatchNormGradOp;
+class Op;
 
 namespace popx {
+class Devicex;
 
 class BatchNormOpx : public NormOpx {
 public:

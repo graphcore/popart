@@ -1,14 +1,44 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include "popart/popx/debugcontextx.hpp"
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplin/ConvParams.hpp>
+#include <poplin/ConvUtil.hpp>
+#include <poplin/Convolution.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/convbasex.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
 
-#include <poplin/ConvUtil.hpp>
-#include <poplin/Convolution.hpp>
+#include "popart/error.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vertex.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 

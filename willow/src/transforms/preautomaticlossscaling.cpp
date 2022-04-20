@@ -1,17 +1,31 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <ostream>
-#include <type_traits>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <typeinfo>
 #include <unordered_set>
 #include <vector>
-
 #include <popart/alias/aliasmodelgrower.hpp>
-#include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/transforms/preautomaticlossscaling.hpp>
+
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/graph.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

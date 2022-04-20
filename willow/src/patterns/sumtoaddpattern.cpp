@@ -1,12 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/patterns/sumtoaddpattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/tensorinfo.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

@@ -1,11 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/ir.hpp"
 
+#include <initializer_list>
+#include <iosfwd>
+#include <memory>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-#include <popart/graph.hpp>
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <string>
+#include <popart/devicemanager.hpp> // IWYU pragma: keep
 #include <popart/ir.hpp>
+
+#include "popart/graph.hpp" // IWYU pragma: keep
+#include "popart/graphid.hpp"
 
 namespace py = pybind11;
 

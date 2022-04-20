@@ -1,18 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <limits>
-
-#include <poplar/Tensor.hpp>
-
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <poplar/Type.hpp>
+#include <popops/Cast.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/lossscaleupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/util.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/Cast.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Zero.hpp>
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorindex.hpp"
 
 namespace popart {
 namespace popx {

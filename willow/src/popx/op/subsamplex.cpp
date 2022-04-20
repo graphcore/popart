@@ -1,18 +1,23 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Graph.hpp>
 #include <popart/op/subsample.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/subsamplex.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
 
-#include <ostream>
-
-#include <snap/poputil/TileMapping.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 static snap::Tensor subsample(const snap::Tensor &t,
                               const std::vector<uint32_t> &strides) {

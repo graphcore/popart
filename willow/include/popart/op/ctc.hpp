@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_CTC_HPP
 #define GUARD_NEURALNET_CTC_HPP
 
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 //
 // This op implements the connectionist temporal classification (CTC) loss

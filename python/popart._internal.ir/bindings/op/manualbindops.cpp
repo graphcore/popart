@@ -1,20 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "bindings/op/manualbindops.hpp"
-#include "bindings/basicoptionals.hpp"
-#include "bindings/op/argminmax.hpp"
-#include "bindings/op/matmul.hpp"
-#include "bindings/op/optional.hpp"
-#include "bindings/op/pool.hpp"
-#include "bindings/op/roialign.hpp"
-#include "bindings/op/varupdate.hpp"
 
-#include <pybind11/numpy.h>
-#include <pybind11/operators.h>
+#include <cstdint>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <pybind11/cast.h>
+#include <pybind11/numpy.h>     // IWYU pragma: keep
+#include <pybind11/operators.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <utility>
 #include <vector>
-#include <popart/basicoptionals.hpp>
-
 #include <popart/op/accumulate.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/accumulatorzero.hpp>
@@ -24,15 +20,38 @@
 #include <popart/op/averagepool.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/conv.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/loop.hpp>
-#include <popart/op/matmul.hpp>
-#include <popart/op/maxpool.hpp>
-#include <popart/op/roialign.hpp>
-#include <popart/op/varupdate.hpp>
+#include <popart/op/conv.hpp>     // IWYU pragma: keep
+#include <popart/op/ipucopy.hpp>  // IWYU pragma: keep
+#include <popart/op/loop.hpp>     // IWYU pragma: keep
+#include <popart/op/matmul.hpp>   // IWYU pragma: keep
+#include <popart/op/maxpool.hpp>  // IWYU pragma: keep
+#include <popart/op/roialign.hpp> // IWYU pragma: keep
+
+#include "bindings/basicoptionals.hpp"
+#include "bindings/op/argminmax.hpp"
+#include "bindings/op/manualbindops.hpp"
+#include "bindings/op/matmul.hpp"
+#include "bindings/op/optional.hpp"
+#include "bindings/op/pool.hpp"
+#include "bindings/op/roialign.hpp"
+#include "bindings/op/varupdate.hpp"
+#include "popart/adam.hpp"
+#include "popart/alias/aliasmodel.hpp" // IWYU pragma: keep
+#include "popart/datatype.hpp"
+#include "popart/graph.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+class MultiConvOptions;
 namespace _internal {
 namespace ir {
 
@@ -105,9 +124,9 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         &Graph::createOp<ConvOp,
                          const OperatorIdentifier &,
                          const Op::Settings &,
-                         std::vector<int64_t>,
-                         std::vector<int64_t>,
-                         std::vector<int64_t>,
+                         std::vector<int64_t> &,
+                         std::vector<int64_t> &,
+                         std::vector<int64_t> &,
                          int64_t,
                          const AutoPad &,
                          const MultiConvOptions &>,
@@ -430,9 +449,9 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         &Graph::createConnectedOp<ConvOp,
                                   const OperatorIdentifier &,
                                   const Op::Settings &,
-                                  std::vector<int64_t>,
-                                  std::vector<int64_t>,
-                                  std::vector<int64_t>,
+                                  std::vector<int64_t> &,
+                                  std::vector<int64_t> &,
+                                  std::vector<int64_t> &,
                                   int64_t,
                                   const AutoPad &,
                                   const MultiConvOptions &>,

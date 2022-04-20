@@ -2,20 +2,26 @@
 #ifndef POPART__INTERNAL_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
 #define POPART__INTERNAL_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
 
-#include <popart/basicoptionals.hpp>
-#include <popart/graph.hpp>
-#include <popart/op/custom/parameterizedop.hpp>
-#include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/popx/opxmanager.hpp>
+#include <map>
+#include <memory>
+#include <type_traits>
 
-#include <pybind11/numpy.h>
-#include <pybind11/operators.h>
+#include <pybind11/cast.h>
+#include <pybind11/numpy.h>     // IWYU pragma: keep
+#include <pybind11/operators.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensordebuginfo.hpp"
+
 namespace py = pybind11;
 
 namespace popart {
+class Graph;
+struct OperatorIdentifier;
+
 namespace _internal {
 namespace ir {
 namespace op {

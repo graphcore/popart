@@ -2,11 +2,18 @@
 #ifndef GUARD_POPART_TEST_GRAPHS_BUILDER_HPP
 #define GUARD_POPART_TEST_GRAPHS_BUILDER_HPP
 
-#include <popart/graph.hpp>
-#include <popart/op.hpp>
-#include <popart/tensor.hpp>
-
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace popart {
+class Graph;
+class Op;
+} // namespace popart
 
 namespace test_graphs {
 namespace builder {

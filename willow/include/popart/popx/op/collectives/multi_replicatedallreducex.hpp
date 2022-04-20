@@ -1,11 +1,23 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_MULTIREPLICATEDALLREDUCEX_HPP
 #define GUARD_NEURALNET_MULTIREPLICATEDALLREDUCEX_HPP
-#include <popart/op/collectives/multi_replicatedallreduce.hpp>
+#include <snap/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class MultiReplicatedAllReduceOpx : public MultiCollectiveBaseOpx {
 public:
