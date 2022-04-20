@@ -12,15 +12,24 @@ sys.path.append(Path(__file__).resolve().parent.parent)
 import test_util as tu
 
 
-@pytest.mark.parametrize("npSrcType,npDstType,builderDstType",
-                         [(np.int32, np.float32, "FLOAT"),
-                          (np.int8, np.float16, "FLOAT16"),
-                          (np.float32, np.float16, "FLOAT16"),
-                          (np.float16, np.int8, "INT8"),
-                          (np.uint8, np.float16, "FLOAT16"),
-                          (np.float16, np.uint8, "UINT8"),
-                          (np.int32, np.int32, "INT32")])
-def test_cast(op_tester, npSrcType, npDstType, builderDstType):
+@pytest.mark.parametrize("npSrcType,npDstType,builderDstType,reducePrecision",
+                         [(np.int32, np.float32, "FLOAT", False),
+                          (np.float32, np.int32, "INT32", False),
+                          (np.int16, np.float32, "FLOAT", False),
+                          (np.float32, np.int16, "INT16", False),
+                          (np.int16, np.float16, "FLOAT16", False),
+                          (np.float16, np.int16, "INT16", False),
+                          (np.uint16, np.float16, "FLOAT16", False),
+                          (np.float16, np.uint16, "UINT16", False),
+                          (np.int8, np.float16, "FLOAT16", False),
+                          (np.float16, np.int8, "INT8", False),
+                          (np.uint8, np.float16, "FLOAT16", False),
+                          (np.float16, np.uint8, "UINT8", False),
+                          (np.float32, np.float16, "FLOAT16", True),
+                          (np.float16, np.float32, "FLOAT", False),
+                          (np.int32, np.int32, "INT32", False)])
+def test_cast(op_tester, npSrcType, npDstType, builderDstType,
+              reducePrecision):
     d1 = np.random.uniform(0, 20, 5).astype(npSrcType)
 
     def init_builder(builder):
@@ -35,6 +44,9 @@ def test_cast(op_tester, npSrcType, npDstType, builderDstType):
 
     if npSrcType in (np.int8, np.uint8):
         op_tester.options.opxModifyChecking = False
+
+    if reducePrecision:  # Some downcasts change values enough to fail for 1e-8
+        op_tester.atol = 1e-2
 
     op_tester.run(init_builder, reference, 'infer')
 
@@ -68,28 +80,14 @@ def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
         d_i1 = c.grad.numpy().astype(npSrcType)
         return [out, d_i1, d_o]
 
-    if npSrcType in (np.int8, np.uint8):
-        op_tester.options.opxModifyChecking = False
-
     op_tester.setPatterns(['PreUniRepl', 'PostNRepl', 'SqrtGradOp'],
                           enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
 
 
-@pytest.mark.parametrize("npSrcType,builderDstType", [
-    (np.int8, "FLOAT"),
-    (np.int16, "FLOAT"),
-    (np.int32, "FLOAT"),
-    (np.uint8, "FLOAT"),
-    (np.uint16, "FLOAT"),
-    (np.uint32, "FLOAT"),
-    (np.int8, "FLOAT16"),
-    (np.int16, "FLOAT16"),
-    (np.int32, "FLOAT16"),
-    (np.uint8, "FLOAT16"),
-    (np.uint16, "FLOAT16"),
-    (np.uint32, "FLOAT16"),
-])
+@pytest.mark.parametrize(
+    "npSrcType", [np.int8, np.int16, np.int32, np.uint8, np.uint16, np.uint32])
+@pytest.mark.parametrize("builderDstType", ["FLOAT", "FLOAT16"])
 def test_cast_no_grad(npSrcType, builderDstType):
     """Check that CastOp, doesn't return gradient Op when casted-from type is
     not float/half.
@@ -136,7 +134,7 @@ def test_cast_no_grad(npSrcType, builderDstType):
 
 
 def test_cast_no_grad_branch(op_tester):
-    """Check if CastOp from INT32 stops the gradient propagation in a graph.
+    r"""Check if CastOp from INT32 stops the gradient propagation in a graph.
 
     The following example is used:
 

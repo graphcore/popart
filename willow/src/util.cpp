@@ -247,6 +247,14 @@ std::vector<char> convertFloatToDataType(DataType dtype, float data) {
     return convertUnsignedIntTo<uint32_t>(roundToUnsigned(data));
   }
 
+  else if (dtype == DataType::INT16) {
+    return convertIntTo<int16_t>(roundToInt(data));
+  }
+
+  else if (dtype == DataType::UINT16) {
+    return convertUnsignedIntTo<uint16_t>(roundToUnsigned(data));
+  }
+
   else if (dtype == DataType::INT8) {
     return convertIntTo<int8_t>(roundToInt(data));
   }

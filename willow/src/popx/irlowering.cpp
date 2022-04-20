@@ -1280,6 +1280,14 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
       setInitVal<uint32_t>(tensor);
       break;
     }
+    case DataType::INT16: {
+      setInitVal<int16_t>(tensor);
+      break;
+    }
+    case DataType::UINT16: {
+      setInitVal<uint16_t>(tensor);
+      break;
+    }
     case DataType::INT8: {
       setInitVal<int8_t>(tensor);
       break;
@@ -1290,8 +1298,6 @@ PriTask IrLowering::setInitTensorValTask(Tensor *tensor) {
     }
     case DataType::UNDEFINED:
     case DataType::INT64:
-    case DataType::UINT16:
-    case DataType::INT16:
     case DataType::STRING:
     case DataType::DOUBLE:
     case DataType::UINT64:
@@ -4064,6 +4070,12 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::UINT32: {
     return poplar::UNSIGNED_INT;
   }
+  case DataType::INT16: {
+    return poplar::SHORT;
+  }
+  case DataType::UINT16: {
+    return poplar::UNSIGNED_SHORT;
+  }
   case DataType::INT8: {
     return poplar::SIGNED_CHAR;
   }
@@ -4072,8 +4084,6 @@ poplar::Type popType(const TensorInfo &info) {
   }
 
   case DataType::UNDEFINED:
-  case DataType::UINT16:
-  case DataType::INT16:
   case DataType::INT64:
   case DataType::STRING:
   case DataType::BFLOAT16:
