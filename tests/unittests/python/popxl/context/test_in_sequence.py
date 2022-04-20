@@ -86,7 +86,7 @@ def test_none_not_allowed():
     with pytest.raises(TypeError) as excinfo:
         with popxl.in_sequence(None):
             pass
-    assert "None cannot be passed to" in str(excinfo.value)
+    assert "`None` cannot be passed to" in str(excinfo.value)
 
 
 def test_in_sequence_false_first():
@@ -123,3 +123,29 @@ def test_in_sequence_execution_context():
 
     # If a topocon is created between (x+1) and (x-1) then a scheduling error will occur
     g._pb_graph.getOpSchedule()
+
+
+def test_in_sequence_pass():
+    """test `pass` mode.
+    4 ops are created but only ops 1, 3, and 4 (not 2) have topological constraints applied"""
+    ir = popxl.Ir()
+    g = ir.main_graph
+
+    with g:
+        x = popxl.variable(np.ones((2, 2), np.float32), name='big')
+
+        with popxl.in_sequence(True):
+            x = x - 1
+
+            with popxl.in_sequence('pass'):
+                x = x * 1
+
+            x = x + 1
+            x = x / 1
+
+    ops = g._pb_graph.getOpSchedule()
+    assert (is_sequence_of_ops(
+        ops, [_ir.op.SubtractOp, _ir.op.MulOp, _ir.op.AddOp, _ir.op.DivOp])
+            or is_sequence_of_ops(
+                ops,
+                [_ir.op.SubtractOp, _ir.op.AddOp, _ir.op.DivOp, _ir.op.MulOp]))

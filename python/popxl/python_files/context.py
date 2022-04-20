@@ -1,5 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Iterable, List, Optional, Tuple, TypeVar, Union, overload
+from typing_extensions import Literal
 import inspect
 import os
 from collections import defaultdict
@@ -163,13 +164,13 @@ class Context:
     def _add_in_sequence_topocons(self, op: _ir.Op):
         """Add topocons to ensure operations are executed in sequence.
 
-            If #op is added in an `in_sequence(True)` context then
+            If ``op`` is added in an ``in_sequence(True)`` context then
                 add a topocon from the Ops in the previous ops.
-                Then set the previous ops to only #op.
-            If #op is added in an `in_sequence(False)` context then
+                Then set the previous ops to only ``op``.
+            If ``op`` is added in an ``in_sequence(False)`` context then
                 add a topocon from the last op added in a True context.
-                Then append #op to previous ops.
-            The above behaviour results in Ops in a False context to be executed in
+                Then append ``op`` to previous ops.
+            The above behavior results in Ops in a False context to be executed in
             any order. But if the False context is nested inside a True context
             then all Ops within the False context will be treated as a single Op for the purpose
             of the outer True context. For example:
@@ -192,7 +193,7 @@ class Context:
             if before_id != op.id and before_id in ops:
                 g.topoCons().insert(g.getOp(before_id), op, False)
 
-        if self._in_sequence is not None:
+        if isinstance(self._in_sequence, bool):
             previous_ops = self._previous_ops[(
                 g.id, op.getSettings().executionContext)]
             if self._in_sequence:
@@ -205,7 +206,18 @@ class Context:
                     insert_topocon(prev_ops[0])
                 else:
                     prev_ops.append(-1)
+
+            # Mutates value in self._previous_ops as `previous_ops` is same reference
             previous_ops.append(op.id)
+
+        elif self.in_sequence is None:
+            # `pass` is converted to None
+            pass
+
+        else:
+            raise ValueError(
+                f"`in_sequence` mode not understood: {self.in_sequence}. "
+                "Must be one of `True`, `False`, `'pass'`.")
 
 
 _CURRENT_CONTEXT = Context()
@@ -263,18 +275,46 @@ def ipu(ipu: int):
 
 
 @contextmanager
-def in_sequence(enabled: bool = True):
-    """Force ops created in this context to execute in the order that they are created."""
+def in_sequence(mode: Union[bool, Literal['pass']] = True):
+    """Force ops created in this context to execute in the order that they are created.
+    
+    This is achieved by adding topological constraints (topocons) to the scheduling graph.
+    
+    Args:
+        mode:
+            - ``True``: Ensure each op within the context is executed in a linear schedule
+                in the same order as created.
+            - ``False``: Do not apply linear schedule constraint. If nested within an outer
+                ``in_sequence(True)`` context, the inner context as a whole will be scheduled
+                linearly with respect to ops in the outter context. For example:
+
+            .. code-block:: python
+
+                with in_sequence(True):
+                    OpA()
+                    with in_sequence(False)
+                        OpB()
+                        OpC()
+                    OpD()
+
+            OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
+
+            - ``'pass'``: Do nothing when an op is created. Useful for transforms that want to
+                delay adding topocons to the graph
+    """
 
     # We use `None` to specify an empty scope. It must not be passed here:
-    if enabled is None:
+    if mode is None:
         raise TypeError(
-            "None cannot be passed to 'in_sequence'. Try False instead.")
+            "`None` cannot be passed to `in_sequence`. Try `False` instead.")
+
+    if mode == 'pass':
+        mode = None
 
     ctx = get_current_context()
     prev = ctx.in_sequence
-    ctx.in_sequence = enabled
-    yield enabled
+    ctx.in_sequence = mode
+    yield mode
     ctx.in_sequence = prev  # type: ignore
 
 
