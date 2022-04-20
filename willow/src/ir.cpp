@@ -637,9 +637,8 @@ void Ir::verifyExecutionPhaseSettings() const {
 
 void Ir::verifyAliasZeroCopySettings() const {
   if (userOptions.aliasZeroCopy) {
-    if (userOptions.enablePipelining) {
-      throw error(
-          "Alias zero copy is currently not supported with pipelining.");
+    if (userOptions.implicitPipeliningEnabled()) {
+      throw error("Alias zero copy is not supported with implicit pipelining.");
     }
     if (!userOptions.explicitRecomputation) {
       throw error("Alias zero copy is currently not supported with implicit "
