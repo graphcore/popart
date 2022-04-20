@@ -3734,7 +3734,7 @@ void Ir::applyInplacePattern(Graph &graph) {
       // constraints
       const bool isPhased =
           (userOptions.virtualGraphMode == VirtualGraphMode::ExecutionPhases);
-      if (!graph.isSchedulable(newTopoCons, isPhased)) {
+      if (!newTopoCons.empty() && !graph.isSchedulable(newTopoCons, isPhased)) {
         std::ostringstream oss;
         oss << "[Inplacing] The new topological constraints prevent Op "
             << op->id << " from being inplaced, as they would created a cycle ";
