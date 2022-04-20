@@ -377,6 +377,15 @@ configs = [
         "commSize": '4',
         "retrieval": "AllReplicas",
         "locations": ["On-Chip"]
+    },
+    {  # test to verify all-replicas work with group-size 2
+        "c.idx": '10',  # Debug Config ID
+        "ipus": '1',  # Number of IPUs to run on
+        "repl": '4',  # Replication Factor
+        "commType": "Consecutive",
+        "commSize": '2',
+        "retrieval": "AllReplicas",
+        "locations": ["On-Chip"]
     }
 ]
 session_types = ["training", "inference"]

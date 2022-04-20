@@ -224,8 +224,8 @@ void Tensors::addVarInit(const TensorId &name,
   init->info   = info;
 
   bool iflock =
-      vs.numReplicasReturningVariable(
-          graph.getIr().getSessionOptions().replicatedGraphCount) != 1;
+      vs.groupCount(graph.getIr().getSessionOptions().replicatedGraphCount) !=
+      1;
 
   logging::debug("addVarInit({}) --({})-->", name, init->info.shape());
 
@@ -234,12 +234,12 @@ void Tensors::addVarInit(const TensorId &name,
     // tensor data (what the host interacts with and is streamed to the IPUs)
     // has an additional dimension compared to the shape of the tensor residing
     // on the IPU/replica.
-    Shape expanded_shape;
-    expanded_shape.push_back(vs.numReplicasReturningVariable(
-        graph.getIr().getSessionOptions().replicatedGraphCount));
-    for (auto i = 0; i < info.shape().size(); i++) {
-      expanded_shape.push_back(info.shape()[i]);
-    }
+    Shape expanded_shape(info.shape().size() + 1);
+    expanded_shape[0] =
+        vs.groupCount(graph.getIr().getSessionOptions().replicatedGraphCount);
+
+    expanded_shape.insert(
+        expanded_shape.begin() + 1, info.shape().begin(), info.shape().end());
 
     TensorInfo re_info(info.dataType(), expanded_shape);
 
@@ -260,9 +260,11 @@ void Tensors::addVarInitWithLeadingGroupDim(const TensorId &name,
       "addVarInitWithLeadingGroupDim.info {}, {}", name, info.shape());
   insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
   Tensor *init = get(name);
+
   bool iflock =
       vs.numReplicasReturningVariable(
           graph.getIr().getSessionOptions().replicatedGraphCount) != 1;
+
   if (iflock) {
     Shape contracted_shape;
     for (auto i = 1; i < info.shape().size(); i++) {
