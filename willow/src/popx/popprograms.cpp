@@ -21,6 +21,59 @@
 namespace popart {
 namespace popx {
 
+std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex);
+
+const std::unordered_map<int64_t, std::string> PopPrograms::commonPrograms =
+    []() {
+      std::unordered_map<int64_t, std::string> out;
+
+      for (int i = 0; i < PopPrograms::ProgramIndex::N; i++) {
+        std::stringstream ss;
+        ss << static_cast<PopPrograms::ProgramIndex>(i);
+        out[i] = ss.str();
+      }
+
+      return out;
+    }();
+
+std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex index) {
+  switch (index) {
+  case PopPrograms::ProgramIndex::WeightsFromHost:
+    out << "WeightsFromHost";
+    break;
+  case PopPrograms::ProgramIndex::OptimizerFromHost:
+    out << "OptimizerFromHost";
+    break;
+  case PopPrograms::ProgramIndex::RandomSeedFromHost:
+    out << "RandomSeedFromHost";
+    break;
+  case PopPrograms::ProgramIndex::RandomSeedToHost:
+    out << "RandomSeedToHost";
+    break;
+  case PopPrograms::ProgramIndex::RngStateFromHost:
+    out << "RngStateFromHost";
+    break;
+  case PopPrograms::ProgramIndex::Program:
+    out << "Program";
+    break;
+  case PopPrograms::ProgramIndex::RngStateToHost:
+    out << "RngStateToHost";
+    break;
+  case PopPrograms::ProgramIndex::WeightsToHost:
+    out << "WeightsToHost";
+    break;
+  case PopPrograms::ProgramIndex::CycleCountTensorToHost:
+    out << "CycleCountTensorToHost";
+    break;
+  case PopPrograms::ProgramIndex::N:
+    out << "N";
+    break;
+  default: { throw internal_error("Invalid value for ProgramIndex"); }
+  };
+
+  return out;
+}
+
 std::ostream &operator<<(std::ostream &out,
                          PopPrograms::ProgramFragmentIndex index) {
   switch (index) {
@@ -84,9 +137,7 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: {
-    throw internal_error("Invalid value for ProgramFragmentIndex");
-  }
+  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
   };
   return out;
 }

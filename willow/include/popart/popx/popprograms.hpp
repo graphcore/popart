@@ -54,6 +54,8 @@ public:
     N // The number of programs
   };
 
+  static const std::unordered_map<int64_t, std::string> commonPrograms;
+
   // Order of these enums is used for scheduling
   enum class ProgramFragmentIndex {
     StreamWeightsFromHost = 0,

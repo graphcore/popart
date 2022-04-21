@@ -180,6 +180,7 @@ popef::Anchor putAnchorToMetadata(const std::string &name,
                                   const bool isPerReplica,
                                   const popef::TensorType tensorType,
                                   const popef::TensorInfo &tensorInfo,
+                                  const std::vector<int64_t> &programs,
                                   popef::Metadata &metadata) {
   popef::Anchor anchor;
   anchor.setName(name);
@@ -187,6 +188,7 @@ popef::Anchor putAnchorToMetadata(const std::string &name,
   anchor.setTensorInfo(tensorInfo);
   anchor.setIsPerReplica(isPerReplica);
   anchor.setType(tensorType);
+  anchor.setPrograms(programs);
 
   metadata.anchors().push_back(anchor);
   return metadata.anchors().back();
@@ -306,12 +308,14 @@ void serializeWeightsAsPopefAnchors(
                               isPerReplica,
                               popef::TensorType::INPUT,
                               tensorInfo,
+                              {PopPrograms::ProgramIndex::WeightsFromHost},
                               metadata);
       putAnchorToMetadata(tensor->id,
                           IrLowering::d2hId(tensor->id, isAnchorStream),
                           isPerReplica,
                           popef::TensorType::OUTPUT,
                           tensorInfo,
+                          {PopPrograms::ProgramIndex::WeightsToHost},
                           metadata);
       serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
     } else {
@@ -321,6 +325,7 @@ void serializeWeightsAsPopefAnchors(
                               isPerReplica,
                               popef::TensorType::UNKNOWN,
                               tensorInfo,
+                              {},
                               metadata);
       serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
     }
@@ -350,6 +355,7 @@ void serializeOptimizersAsPopefAnchors(
                             isPerReplica,
                             popef::TensorType::INPUT,
                             createTensorInfo(tensor->info),
+                            {PopPrograms::ProgramIndex::OptimizerFromHost},
                             metadata);
     serializePopefTensor(*tensor, anchor.tensorInfo(), writer);
   }
@@ -374,6 +380,7 @@ void serializeDataStreamsAsPopefAnchors(
                         isPerReplica,
                         popef::TensorType::INPUT,
                         createTensorInfo(tensor->info),
+                        {PopPrograms::ProgramIndex::Program},
                         metadata);
   }
 }
@@ -398,6 +405,7 @@ void serializeAnchorsAsPopefAnchors(
                         isPerReplica,
                         popef::TensorType::OUTPUT,
                         createTensorInfo(tensor->info),
+                        {PopPrograms::ProgramIndex::Program},
                         metadata);
   }
 }
@@ -438,12 +446,14 @@ void serializeRngStateAsPopefAnchors(
                       isPerReplica,
                       popef::TensorType::INPUT,
                       tensorInfo,
+                      {PopPrograms::ProgramIndex::RngStateFromHost},
                       metadata);
   putAnchorToMetadata(tensorName,
                       std::string("d2h_") + tensorName,
                       isPerReplica,
                       popef::TensorType::OUTPUT,
                       tensorInfo,
+                      {PopPrograms::ProgramIndex::RngStateToHost},
                       metadata);
 
   const bool serializationResult = serializeRngStateAsPopefTensor(
@@ -501,6 +511,7 @@ void serializeRandomTensorsAsPopefAnchors(
                             isPerReplica,
                             popef::TensorType::INPUT,
                             tensorInfo,
+                            {PopPrograms::ProgramIndex::RandomSeedFromHost},
                             metadata);
     metadata.setSeedHandle(anchor.handle());
     putAnchorToMetadata(tensor.id,
@@ -508,6 +519,7 @@ void serializeRandomTensorsAsPopefAnchors(
                         isPerReplica,
                         popef::TensorType::OUTPUT,
                         tensorInfo,
+                        {PopPrograms::ProgramIndex::RandomSeedToHost},
                         metadata);
 
     serializePopefTensor(tensor, anchor.tensorInfo(), writer);
@@ -544,6 +556,7 @@ void serializeCycleCountersAsPopefAnchors(
                           isPerReplica,
                           popef::TensorType::OUTPUT,
                           createTensorInfo(dt, shape),
+                          {PopPrograms::ProgramIndex::CycleCountTensorToHost},
                           metadata);
     }
   }
@@ -572,6 +585,26 @@ void serializePopefAnchors(const popart::popx::Executablex &executablex,
   serializeRandomTensorsAsPopefAnchors(
       executablex, rngBuffer, metadata, writer);
   serializeCycleCountersAsPopefAnchors(executablex, metadata);
+}
+
+static const std::unordered_map<int64_t, std::string> &
+programsMap(const popart::popx::Executablex &executablex) {
+  const auto &customPrograms =
+      executablex.lowering().getProgramHandleIndexMap();
+  if (customPrograms.empty())
+    return PopPrograms::commonPrograms;
+
+  static std::unordered_map<int64_t, std::string> out(
+      PopPrograms::commonPrograms);
+
+  std::transform(customPrograms.cbegin(),
+                 customPrograms.cend(),
+                 std::inserter(out, out.end()),
+                 [](const std::pair<std::string, unsigned> &p) {
+                   return std::make_pair(p.second, p.first);
+                 });
+
+  return out;
 }
 
 /**
@@ -640,6 +673,8 @@ void serializePopefMetadata(const popart::popx::Executablex &executablex,
   flow.setMain(mainPrograms);
   flow.setSave(savePrograms);
   metadata.setProgramFlow(flow);
+
+  metadata.setProgramsMap(programsMap(executablex));
 
   writer.write(metadata);
 }
