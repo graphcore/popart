@@ -12,6 +12,8 @@ def fmod(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
+    See also `PyTorch Tensor.fmod <https://pytorch.org/docs/stable/generated/torch.Tensor.fmod.html>`__, `NumPy fmod <https://numpy.org/doc/stable/reference/generated/numpy.fmod.html>`__.
+
     Args:
         lhs, rhs: Tensor
             Tensors to be modded.

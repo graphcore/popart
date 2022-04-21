@@ -13,7 +13,7 @@ def max(t: Tensor,
     """
     Compute the maximum of elements in a tensor along specified axes.
 
-    This is similar to :onnxop:`Max`.
+    See also `PyTorch Tensor.max <https://pytorch.org/docs/stable/generated/torch.Tensor.max.html>`__, `ONNX Max <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Max>`__.
 
     Args:
         t (Tensor):

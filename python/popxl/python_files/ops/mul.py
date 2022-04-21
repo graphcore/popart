@@ -13,7 +13,7 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Arguments must have the same dtype.
 
-    This is similar to :onnxop:`Mul`.
+    See also `PyTorch Tensor.mul <https://pytorch.org/docs/stable/generated/torch.Tensor.mul.html>`__, `ONNX Mul <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Mul>`__.
 
     Args:
         lhs, rhs: Tensor

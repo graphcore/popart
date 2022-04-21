@@ -16,7 +16,7 @@ def dropout(t: Tensor, seed_tensor: Tensor, p: float):
 
     The user needs to manage updating the `seed_tensor` for each forward pass and replica.
 
-    This is similar to :onnxop:`Dropout`.
+    See also `ONNX Dropout <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Dropout>`__.
 
     Args:
         t (Tensor):

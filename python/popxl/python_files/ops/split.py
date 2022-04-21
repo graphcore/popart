@@ -11,7 +11,7 @@ def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
     """Split a tensor (along an axis) into a list of tensors.
 
-    This is similar to :onnxop:`Split`.
+    See also `PyTorch Tensor.split <https://pytorch.org/docs/stable/generated/torch.Tensor.split.html>`__, `NumPy split <https://numpy.org/doc/stable/reference/generated/numpy.split.html>`__, `ONNX Split <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Split>`__.
 
     Args:
         t (Tensor): Tensor to be split.

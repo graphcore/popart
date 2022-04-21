@@ -13,7 +13,7 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
 
     This operation casts tensor `t` to data type `data_type`.
 
-    This is similar to :onnxop:`Cast`.
+    See also `ONNX Cast <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast>`__.
 
     Args:
         t (Tensor):

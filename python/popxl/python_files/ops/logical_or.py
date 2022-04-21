@@ -14,7 +14,7 @@ def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Inputs will be cast to bool if needed.
 
-    This is similar to :onnxop:`Or`.
+    See also `PyTorch Tensor.logical_or <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_or.html>`__, `NumPy logical_or <https://numpy.org/doc/stable/reference/generated/numpy.logical_or.html>`__.
 
     Args:
         lhs, rhs: Tensor

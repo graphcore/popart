@@ -13,7 +13,7 @@ def logical_not(t: Tensor) -> Tensor:
 
     Inputs will be cast to bool if needed.
 
-    This is similar to :onnxop:`Not`.
+    See also `PyTorch Tensor.logical_not <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_not.html>`__, `NumPy logical_not <https://numpy.org/doc/stable/reference/generated/numpy.logical_not.html>`__.
 
     Args:
         t: Tensor

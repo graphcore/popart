@@ -22,7 +22,7 @@ def matmul(lhs: Tensor,
     Arguments must have the same dtype. Shapes must be compatible as defined by the
     NumPy matrix multiplication rules.
 
-    This is similar to :onnxop:`MatMul`.
+    See also `PyTorch Tensor.matmul <https://pytorch.org/docs/stable/generated/torch.Tensor.matmul.html>`__, `NumPy matmul <https://numpy.org/doc/stable/reference/generated/numpy.matmul.html>`__, `ONNX MatMul <https://github.com/onnx/onnx/blob/main/docs/Operators.md#MatMul>`__.
 
     Args:
         lhs (Tensor): Left hand side of matrix multiplication.

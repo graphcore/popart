@@ -14,7 +14,7 @@ def transpose(t: Tensor,
 
     By default this operation reverses the axes of `t`.
 
-    This is similar to :onnxop:`Transpose`.
+    See also `PyTorch Tensor.transpose <https://pytorch.org/docs/stable/generated/torch.Tensor.transpose.html>`__, `NumPy transpose <https://numpy.org/doc/stable/reference/generated/numpy.transpose.html>`__, `ONNX Transpose <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Transpose>`__.
 
     Args:
         t (Tensor): Tensor to be transposed.
@@ -56,7 +56,7 @@ def transpose_(t: Tensor,
     This is the in-place version of :func:`~ops.transpose`. The behaviour is the same, but it modifies the
     tensor in place.
 
-    This is similar to :onnxop:`Transpose`.
+    See also `PyTorch Tensor.transpose_ <https://pytorch.org/docs/stable/generated/torch.Tensor.transpose_.html>`__.
 
     Args:
         t (Tensor): Tensor to be transposed.

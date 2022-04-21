@@ -12,7 +12,7 @@ def relu(t: Tensor) -> Tensor:
 
     For more details, refer to `Rectifier (neural networks) <https://en.wikipedia.org/wiki/Rectifier_(neural_networks)>`__.
 
-    This is similar to :onnxop:`Relu`.
+    See also `ONNX Relu <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Relu>`__.
 
     Args:
         t: Tensor
@@ -41,8 +41,6 @@ def relu_(t: Tensor) -> Tensor:
     Compute the ReLU activation of a tensor (in-place).
 
     For more details, refer to `Rectifier (neural networks) <https://en.wikipedia.org/wiki/Rectifier_(neural_networks)>`__.
-
-    This is similar to :onnxop:`Relu`.
 
     Args:
         t: Tensor

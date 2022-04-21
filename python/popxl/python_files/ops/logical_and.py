@@ -14,7 +14,7 @@ def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     Follows NumPy broadcasting rules.
     Inputs will be cast to bool if needed.
 
-    This is similar to :onnxop:`And`.
+    See also `PyTorch Tensor.logical_and <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_and.html>`__, `NumPy logical_and <https://numpy.org/doc/stable/reference/generated/numpy.logical_and.html>`__.
 
     Args:
         lhs, rhs: Tensor

@@ -12,7 +12,7 @@ def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
-    This is similar to :onnxop:`Sub`.
+    See also `PyTorch Tensor.sub <https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html>`__, `ONNX Sub <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Sub>`__.
 
         Args:
             lhs, rhs: Tensor

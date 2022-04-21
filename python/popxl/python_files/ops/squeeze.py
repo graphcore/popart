@@ -16,7 +16,7 @@ def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
     If an axis is selected with shape entry not equal to one, an error is raised.
     Implemented using `reshape` under the hood.
 
-    This is similar to :onnxop:`Squeeze`.
+    See also `PyTorch Tensor.squeeze <https://pytorch.org/docs/stable/generated/torch.Tensor.squeeze.html>`__, `NumPy squeeze <https://numpy.org/doc/stable/reference/generated/numpy.squeeze.html>`__, `ONNX Squeeze <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Squeeze>`__.
 
     Args:
         t (Tensor): Tensor to be squeezed.

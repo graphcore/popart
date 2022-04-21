@@ -13,7 +13,7 @@ def sum(t: Tensor,
     """
     Sum elements over an axis.
 
-    This is similar to :onnxop:`Sum`.
+    See also `PyTorch Tensor.sum <https://pytorch.org/docs/stable/generated/torch.Tensor.sum.html>`__, `NumPy sum <https://numpy.org/doc/stable/reference/generated/numpy.sum.html>`__, `ONNX Sum <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Sum>`__.
 
     Args:
         t (Tensor):

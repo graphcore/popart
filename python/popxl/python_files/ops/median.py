@@ -13,6 +13,8 @@ def median(t: Tensor,
     """
     Compute the median of elements in a tensor along axes.
 
+    See also `PyTorch Tensor.median <https://pytorch.org/docs/stable/generated/torch.Tensor.median.html>`__, `NumPy median <https://numpy.org/doc/stable/reference/generated/numpy.median.html>`__.
+
     Args:
         t (Tensor):
             Tensor to compute median.

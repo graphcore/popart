@@ -34,6 +34,8 @@ def slice(t: Tensor,
         slice(t, stop=-2)           # Slice axis 0 upto second last element (exclusive)
         slice(t, stop=3, step=-1)   # Slice backwards from last element (inclusive) to third last element (exclusive)
 
+    See also `ONNX Slice <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Slice>`__.
+
     Args:
         t (Tensor): Tensor to slice
         start: Index of first element (inclusive) or `None` which defaults to 0.
@@ -83,8 +85,6 @@ def slice_(t: Tensor,
     Select elements from a tensor using a slice or multiple slices (in-place).
 
     This is the in-place version of :func:`~ops.slice`. The functionality is the same, but the tensor is sliced in place.
-
-    This is similar to :onnxop:`Slice`.
 
     Args:
         t (Tensor): Tensor to slice

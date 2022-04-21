@@ -41,7 +41,7 @@ def gather(
         #   [[ 4,  5,  6,  7],
         #    [ 8,  9, 10, 11]]]
 
-    This is similar to :onnxop:`Gather`.
+    See also `PyTorch Tensor.gather <https://pytorch.org/docs/stable/generated/torch.Tensor.gather.html>`__, `ONNX Gather <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Gather>`__.
 
     Args:
         t (Tensor):
@@ -128,8 +128,6 @@ def tied_gather(
         #    [ 4,  5,  6,  7]],
         #   [[ 4,  5,  6,  7],
         #    [ 8,  9, 10, 11]]]
-
-    This is similar to :onnxop:`Gather`.
 
     Args:
         t (Tensor):

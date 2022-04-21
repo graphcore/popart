@@ -13,7 +13,7 @@ def min(t: Tensor,
     """
     Compute the minimum of the elements of a tensor along axes.
 
-    This is similar to :onnxop:`Min`.
+    See also `PyTorch Tensor.min <https://pytorch.org/docs/stable/generated/torch.Tensor.min.html>`__, `ONNX Min <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Min>`__.
 
     Args:
         t (Tensor):

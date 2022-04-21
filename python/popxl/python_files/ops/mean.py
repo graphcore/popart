@@ -13,7 +13,7 @@ def mean(t: Tensor,
     """
     Compute the arithmetic mean of elements in a tensor along axes.
 
-    This is similar to :onnxop:`Mean`.
+    See also `PyTorch Tensor.mean <https://pytorch.org/docs/stable/generated/torch.Tensor.mean.html>`__, `NumPy mean <https://numpy.org/doc/stable/reference/generated/numpy.mean.html>`__, `ONNX Mean <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Mean>`__.
 
     Args:
         t (Tensor):

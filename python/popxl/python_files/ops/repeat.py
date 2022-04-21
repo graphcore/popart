@@ -57,6 +57,8 @@ def repeat(graph: Graph,
                                 x0,
                                 inputs_dict={add_weight0.w: w0})
 
+    See also `PyTorch Tensor.repeat <https://pytorch.org/docs/stable/generated/torch.Tensor.repeat.html>`__, `NumPy repeat <https://numpy.org/doc/stable/reference/generated/numpy.repeat.html>`__.
+
     Args:
         graph (Graph): User defined graph to repeat `repeat_count` times.
         repeat_count (int): Number of times to repeat calling the graph.

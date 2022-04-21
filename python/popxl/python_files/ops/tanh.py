@@ -10,7 +10,7 @@ def tanh(t: Tensor) -> Tensor:
     """
     Compute the hyperbolic tangent function element-wise on a Tensor.
 
-    This is similar to :onnxop:`Tanh`.
+    See also `PyTorch Tensor.tanh <https://pytorch.org/docs/stable/generated/torch.Tensor.tanh.html>`__, `NumPy tanh <https://numpy.org/doc/stable/reference/generated/numpy.tanh.html>`__, `ONNX Tanh <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Tanh>`__.
 
     Args:
         t: Tensor

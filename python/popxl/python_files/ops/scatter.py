@@ -42,7 +42,7 @@ def scatter(t: Tensor,
         x[3] = -3
         x1 == x2
 
-    This is similar to :onnxop:`Scatter`.
+    See also `PyTorch Tensor.scatter <https://pytorch.org/docs/stable/generated/torch.Tensor.scatter.html>`__.
 
     Args:
         t: Tensor

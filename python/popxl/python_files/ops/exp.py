@@ -10,7 +10,7 @@ def exp(t: Tensor) -> Tensor:
     """
     Compute the exponential of the elements of input tensor.
 
-    This is similar to :onnxop:`Exp`.
+    See also `PyTorch Tensor.exp <https://pytorch.org/docs/stable/generated/torch.Tensor.exp.html>`__, `NumPy exp <https://numpy.org/doc/stable/reference/generated/numpy.exp.html>`__, `ONNX Exp <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Exp>`__.
 
     Args:
         t: Tensor
@@ -38,7 +38,7 @@ def exp_(t: Tensor) -> Tensor:
     """
     Compute the exponential of the elements of input tensor (in-place).
 
-    This is similar to :onnxop:`Exp`.
+    See also `PyTorch Tensor.exp_ <https://pytorch.org/docs/stable/generated/torch.Tensor.exp_.html>`__.
 
     Args:
         t: Tensor

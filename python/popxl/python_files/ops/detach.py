@@ -12,6 +12,8 @@ def detach(t: Tensor) -> Tensor:
 
     This operations is numerically equivlent to the identity op.
 
+    See also `PyTorch Tensor.detach <https://pytorch.org/docs/stable/generated/torch.Tensor.detach.html>`__.
+
     Args:
         t: Tensor
             Input tensor.
@@ -44,6 +46,8 @@ def detach_(t: Tensor) -> Tensor:
 
     The in-place version of :func:`~ops.detach`. The functionality is the same, but this
     blocks gradient propagation in-place on the input tensor.
+
+    See also `PyTorch Tensor.detach_ <https://pytorch.org/docs/stable/generated/torch.Tensor.detach_.html>`__.
 
     Args:
         t: Tensor

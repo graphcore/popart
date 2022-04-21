@@ -13,6 +13,8 @@ def prod(t: Tensor,
     """
     Compute the product of elements over an axis.
 
+    See also `PyTorch Tensor.prod <https://pytorch.org/docs/stable/generated/torch.Tensor.prod.html>`__, `NumPy prod <https://numpy.org/doc/stable/reference/generated/numpy.prod.html>`__.
+
     Args:
         t (Tensor):
             Tensor to compute product of.

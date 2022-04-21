@@ -15,6 +15,8 @@ def logsumexp(t: Tensor,
 
     Supported dtypes: floats.
 
+    See also `PyTorch Tensor.logsumexp <https://pytorch.org/docs/stable/generated/torch.Tensor.logsumexp.html>`__.
+
     Args:
         t (Tensor):
             Tensor to compute the log of the summed exponentials of.

@@ -21,8 +21,6 @@ def random_uniform(seed_tensor: Tensor,
 
     Note: not compatible with `IPUModel`.
 
-    This is similar to :onnxop:`RandomUniform` and :onnxop:`RandomUniformLike`.
-
     Args:
         seed_tensor (Tensor):
             Used to seed the probability distribution. Must have data type uint32 and shape (2,).
@@ -74,8 +72,6 @@ def random_normal(seed_tensor: Tensor,
     The mean and standard deviation of the distribution is specified by `mean` and `std` respectively.
 
     Note: not compatible with `IPUModel`.
-
-    This is similar to :onnxop:`RandomNormal` and :onnxop:`RandomNormalLike`.
 
     Args:
         seed_tensor (Tensor):

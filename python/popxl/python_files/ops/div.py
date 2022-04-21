@@ -14,7 +14,7 @@ def div(lhs: Tensor, rhs: Tensor) -> Tensor:
     Output will be the same dtype as the inputs.
     With integer values, floor division is used.
 
-    This is similar to :onnxop:`Div`.
+    See also `PyTorch Tensor.div <https://pytorch.org/docs/stable/generated/torch.Tensor.div.html>`__, `ONNX Div <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Div>`__.
 
     Args:
         lhs: Tensor

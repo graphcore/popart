@@ -14,7 +14,7 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     Chooses elements from `lhs` or `rhs` depending on whether the corresponding element in `condition` is satisfied or not.
     The operator supports multi-directional broadcasting (NumPy-style).
 
-    This is similar to :onnxop:`Where`.
+    See also `PyTorch Tensor.where <https://pytorch.org/docs/stable/generated/torch.Tensor.where.html>`__, `NumPy where <https://numpy.org/doc/stable/reference/generated/numpy.where.html>`__, `ONNX Where <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Where>`__.
 
     Args:
         condition (Tensor):

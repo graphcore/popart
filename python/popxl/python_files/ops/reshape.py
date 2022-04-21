@@ -18,11 +18,11 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
     Reshape a tensor.
 
+    See also `PyTorch Tensor.reshape <https://pytorch.org/docs/stable/generated/torch.Tensor.reshape.html>`__, `NumPy reshape <https://numpy.org/doc/stable/reference/generated/numpy.reshape.html>`__, `ONNX Reshape <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Reshape>`__.
+
     Args:
         t (Tensor): The tensor to be reshaped.
         shape (Tuple[int, ...]): Tuple containing the shape of the output.
-
-    This is similar to :onnxop:`Reshape`.
 
     Raises:
         ValueError: A ValueError will be raised if:
@@ -69,8 +69,6 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
         t (Tensor): The tensor to be reshaped.
         shape (Tuple[int, ...]): Tuple containing the shape of the output.
 
-    This is similar to :onnxop:`Reshape`.
-
     Raises:
         ValueError: A ValueError will be raised if:
             - An invalid value is encountered in the shape.
@@ -112,7 +110,7 @@ def flatten(t: Tensor) -> Tensor:
 
     Internally this uses :func:`~ops.reshape`.
 
-    This is similar to :onnxop:`Flatten`.
+    See also `PyTorch Tensor.flatten <https://pytorch.org/docs/stable/generated/torch.Tensor.flatten.html>`__, `ONNX Flatten <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Flatten>`__.
 
     Args:
         t (Tensor): The tensor to be flattened.
@@ -131,8 +129,6 @@ def flatten_(t: Tensor) -> Tensor:
     Internally this uses :func:`~ops.reshape`.
 
     This is the in-place version of :func:`~ops.flatten`
-
-    This is similar to :onnxop:`Flatten`.
 
     Args:
         t (Tensor): The tensor to be flattened.

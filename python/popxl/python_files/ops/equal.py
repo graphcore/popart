@@ -12,7 +12,7 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules.
 
-    This is similar to :onnxop:`Equal`.
+    See also `PyTorch Tensor.equal <https://pytorch.org/docs/stable/generated/torch.Tensor.equal.html>`__, `NumPy equal <https://numpy.org/doc/stable/reference/generated/numpy.equal.html>`__, `ONNX Equal <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Equal>`__.
 
     Args:
         lhs, rhs: Tensor

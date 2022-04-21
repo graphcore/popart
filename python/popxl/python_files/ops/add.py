@@ -12,7 +12,7 @@ def add(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
-    This is similar to :onnxop:`Add`.
+    See also `PyTorch Tensor.add <https://pytorch.org/docs/stable/generated/torch.Tensor.add.html>`__, `NumPy add <https://numpy.org/doc/stable/reference/generated/numpy.add.html>`__, `ONNX Add <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Add>`__.
 
     Args:
         lhs, rhs: Tensor
@@ -54,6 +54,8 @@ def add_(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     Note: There is no add_rhs_inplace_ op, please use add_lhs_inplace_(rhs, lhs) or rhs += lhs for
         the same functionality.
+
+    See also `PyTorch Tensor.add_ <https://pytorch.org/docs/stable/generated/torch.Tensor.add_.html>`__.
 
     Args:
         lhs, rhs: Tensor
