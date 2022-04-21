@@ -2,30 +2,25 @@
 #define BOOST_TEST_MODULE unittest_irquery_tensortestwrapper
 
 #include <boost/test/unit_test.hpp>
+#include <boost/trompeloeil.hpp>
+
+#include <iostream>
+#include <sstream>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
+#include <testutil/irquery/irquery.hpp>
 #undef private
 
-#include <algorithm>
-#include <map>
-#include <set>
-#include <string>
+#include <testutil/irquery/mock_testfailuretriggerer.hpp>
 #include <testutil/irquery/testop.hpp>
-#include <vector>
-
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
-#include "testutil/irquery/irquery.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

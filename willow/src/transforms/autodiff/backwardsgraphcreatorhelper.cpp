@@ -1,31 +1,24 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <boost/range/algorithm/find.hpp>
-#include <graphfromlosstolossupdater.hpp>
-#include <memory>
-#include <numeric>
-#include <set>
-#include <transforms/autodiff/autodiffiradapter.hpp>
 #include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
+
+#include <graphfromlosstolossupdater.hpp>
+#include <transforms/autodiff/autodiffiradapter.hpp>
 #include <transforms/autodiff/gradgrower.hpp>
 #include <transforms/autodiff/gradgrowerop.hpp>
 #include <transforms/autodiff/gradgrowersumop.hpp>
-#include <utility>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensordata.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vertex.hpp"
+#include <boost/range/algorithm/find.hpp>
 
 namespace popart {
 

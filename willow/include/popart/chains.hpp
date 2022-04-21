@@ -2,8 +2,7 @@
 #ifndef GUARD_NEURALNET_CHAINS_HPP
 #define GUARD_NEURALNET_CHAINS_HPP
 
-#include <functional>
-#include <iosfwd>
+#include <memory>
 #include <string>
 #include <vector>
 #include <popart/names.hpp>

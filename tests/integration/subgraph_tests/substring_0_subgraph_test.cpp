@@ -5,17 +5,11 @@
 // first step in the sub-graph matching algorithm, and
 // is a pure string matching algorithm
 
+#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <memory>
-#include <ostream>
 #include <vector>
 #include <popart/logging.hpp>
-
-#include "blip.hpp"
-#include "popart/subgraph/algo0.hpp"
-#include "popart/subgraph/match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

@@ -1,20 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <map>
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/attributes.hpp>
 #include <popart/error.hpp>
 #include <popart/util.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
 
 namespace popart {
 

@@ -2,8 +2,13 @@
 #ifndef GUARD_NEURALNET_VOIDDATA_HPP_HPP
 #define GUARD_NEURALNET_VOIDDATA_HPP_HPP
 
-#include <vector>
+#include <popart/error.hpp>
+#include <popart/iarray.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include <functional>
+#include <numeric>
+#include <ostream>
 
 namespace popart {
 

@@ -2,38 +2,21 @@
 #define BOOST_TEST_MODULE PipelineTopoConTest0
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/error.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vertex.hpp"
-#include "popart/voiddata.hpp"
 
 void prepareIr1(popart::Ir &ir) {
 

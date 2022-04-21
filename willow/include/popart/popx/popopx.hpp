@@ -2,45 +2,28 @@
 #ifndef GUARD_NEURALNET_POPOPX_HPP
 #define GUARD_NEURALNET_POPOPX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <ostream>
-#include <set>
+#include <poplar/DeviceManager.hpp>
+#include <poplar/Engine.hpp>
+#include <poplar/IPUModel.hpp>
+
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
-#include <string>
-#include <typeinfo>
-#include <vector>
-#include <poplar/Type.hpp>
+
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/popx/preparedtensor.hpp>
 
-#include "popart/operatoridentifier.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 
 class TensorInfo;
-class DebugInfo;
-class Tensor;
 
 namespace popx {
 
 class ICreatorCandidate;
-
 using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 struct UnwindEndpoint;
-
 using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 
 class Devicex;

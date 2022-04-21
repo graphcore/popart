@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_COS_HPP
 #define GUARD_NEURALNET_COS_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-
 namespace popart {
-class Ir;
 
 class CosOp : public ElementWiseUnaryOp {
 public:

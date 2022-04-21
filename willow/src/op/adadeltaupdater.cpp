@@ -1,13 +1,12 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <limits>
 #include <memory>
+#include <popart/ir.hpp>
 #include <popart/op/adadeltaupdater.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/region.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 

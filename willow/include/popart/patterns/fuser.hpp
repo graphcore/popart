@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_FUSER_HPP
 #define GUARD_NEURALNET_FUSER_HPP
 
-#include <vector>
 #include <popart/patterns/pattern.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Op;
-class Tensor;
-struct OperatorIdentifier;
 
 // {(a),    (b), (c)} ->     [op0] ->          (out0)
 // {(out0), (e), (f)} ->     [op1] ->          {(g), (h)}

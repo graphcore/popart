@@ -1,31 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
+#include <popops/ElementWise.hpp>
+#include <popart/error.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/popx/op/concatx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 namespace popx {
-class Devicex;
 
 BaseConcatOpx::BaseConcatOpx(Op *op_, Devicex *devicex)
     : PopOpx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {}

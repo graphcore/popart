@@ -2,21 +2,12 @@
 #ifndef GUARD_NEURALNET_OPTIMIZERDECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_OPTIMIZERDECOMPOSE_PATTERN_HPP
 
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/op/accumulate.hpp>
 #include <popart/optimizervalue.hpp>
+#include <popart/patterns/patterns.hpp>
 #include <popart/variablesettings.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/patterns/pattern.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class Graph;
-class Op;
 
 class OptimizerDecompose : public PreAliasPattern {
 protected:

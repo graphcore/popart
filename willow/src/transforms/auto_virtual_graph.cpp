@@ -1,30 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <set>
-#include <typeinfo>
-#include <utility>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
-
-#include "popart/devicemanager.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/vertex.hpp"
 
 using SubgraphId = int;
 

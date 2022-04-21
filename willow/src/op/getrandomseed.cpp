@@ -1,15 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include <popart/ir.hpp>
 #include <popart/op/getrandomseed.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
-
 GetRandomSeedOp::GetRandomSeedOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)
     : Op(_opid, settings_) {}

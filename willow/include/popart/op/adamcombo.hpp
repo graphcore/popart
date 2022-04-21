@@ -2,21 +2,12 @@
 #ifndef GUARD_NEURALNET_ADAMCOMBOOP_HPP
 #define GUARD_NEURALNET_ADAMCOMBOOP_HPP
 
-#include <map>
-#include <memory>
-#include <set>
 #include <popart/adam.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
 
 // The "Combo" in the name signfies that this Op will be decomposed into
 // smaller Ops :

@@ -1,8 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
+#include <onnx/onnx_pb.h>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -10,15 +7,10 @@
 #include <popart/opmanager.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scope.hpp"
+#include <popart/tensornames.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 int PreAliasPattern::tensor_counter = 0;
 

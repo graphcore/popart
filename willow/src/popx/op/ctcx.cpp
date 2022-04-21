@@ -1,21 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <cstddef>
 #include <memory>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Type.hpp>
-#include <popnn/CTCLoss.hpp>
-#include <popnn/CTCPlan.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/OperationDef.hpp>
-#include <popops/Reduce.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
@@ -24,15 +8,10 @@
 #include <popart/popx/op/ctcx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
+#include <snap/popops/ElementWise.hpp>
+#include <popnn/CTCLoss.hpp>
+#include <popops/Expr.hpp>
+#include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 

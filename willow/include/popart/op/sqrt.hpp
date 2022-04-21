@@ -2,16 +2,10 @@
 #ifndef GUARD_NEURALNET_SQRT_HPP
 #define GUARD_NEURALNET_SQRT_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // y = sqrt(x)
 class SqrtOp : public ElementWiseUnaryOp {

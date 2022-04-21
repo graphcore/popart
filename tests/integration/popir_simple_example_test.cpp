@@ -8,28 +8,23 @@
 // always disable this test temporarily.
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
+#include <filereader.hpp>
+#include <vector>
+
 #include <snap/Graph.hpp>
 #include <snap/Tensor.hpp>
-#include <stdexcept>
-#include <string>
-#include <vector>
-#include <poplar/Target.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
-namespace poplar {
-class Graph;
-class Tensor;
-} // namespace poplar
 
 class GetPoplarTensorError : public std::runtime_error {
 public:

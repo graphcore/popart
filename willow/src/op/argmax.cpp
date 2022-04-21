@@ -1,14 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstdint>
+#include <algorithm>
+#include <vector>
+
 #include <memory>
-#include <string>
 #include <popart/op/argmax.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

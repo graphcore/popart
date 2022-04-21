@@ -2,25 +2,23 @@
 #define BOOST_TEST_MODULE unittest_irquery_optestwrapper
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
+#include <boost/trompeloeil.hpp>
+
 #include <iostream>
-#include <map>
-#include <string>
+#include <sstream>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
+#include <popart/op.hpp>
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
-#include <testutil/irquery/irquery.hpp> // IWYU pragma: keep
+#include <testutil/irquery/irquery.hpp>
 #undef private
 
+#include <testutil/irquery/mock_testfailuretriggerer.hpp>
 #include <testutil/irquery/testop.hpp>
 
 using namespace popart;

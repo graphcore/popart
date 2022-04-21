@@ -1,16 +1,27 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PoprithmsTransitiveClosureTest
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <map>
-#include <testutil/test_graphs/ready_made.hpp>
-#include <tuple>
-#include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
+
 #include <poprithmstransitiveclosure.hpp>
+
+#include <filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/operators.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/topocons.hpp>
+
+#include <testutil/test_graphs/ready_made.hpp>
+
+#include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
+
+#include <memory>
+#include <tuple>
+#include <vector>
 
 using namespace popart;
 namespace rithmic = poprithms::schedule::transitiveclosure;

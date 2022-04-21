@@ -5,14 +5,7 @@
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
 
-namespace onnx {
-class TensorProto;
-class ValueInfoProto;
-} // namespace onnx
-
 namespace popart {
-class TensorInfo;
-
 class OnnxOpDebugInfo : public DebugInfo {
 public:
   OnnxOpDebugInfo(const DebugContext &debugContext, const Node &node);

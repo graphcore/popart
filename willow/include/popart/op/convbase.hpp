@@ -3,25 +3,13 @@
 #define GUARD_NEURALNET_MULTICONVBASE_HPP
 
 #include <cmath>
-#include <cstdint>
-#include <iosfwd>
-#include <map>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <vector>
+
 #include <popart/op.hpp>
 #include <popart/op/receptive.hpp>
+#include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // The detailed conv parameters at the ir level
 struct ConvParameters {

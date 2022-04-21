@@ -2,17 +2,10 @@
 #ifndef GUARD_NEURALNET_SHARDINGPLAN_HPP
 #define GUARD_NEURALNET_SHARDINGPLAN_HPP
 
-#include <cstdint>
-#include <map>
-#include <string>
-#include <vector>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class Graph;
 
 /**
  * Enum type that specifies how an Op should be sharded.

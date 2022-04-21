@@ -1,17 +1,14 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <string>
-#include <vector>
+#include <memory>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/op/sqrt.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/sqrtgradoppattern.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
+#include <popart/tensorinfo.hpp>
 
 namespace popart {
 

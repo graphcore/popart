@@ -2,10 +2,7 @@
 #define BOOST_TEST_MODULE ExceptionTest
 
 #include <boost/test/unit_test.hpp>
-#include <string>
 #include <popart/error.hpp>
-
-#include "popart/logging.hpp"
 
 void test_function1() { throw popart::error("Test {} {} {}", 1, 2, 3); }
 

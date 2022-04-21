@@ -1,23 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <cstdint>
 #include <cstring>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
 #include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <poprithms/common/multiout/tensorid.hpp>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/range/algorithm.hpp>
+
+#include <onnxutil.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <poprithms/memory/inplace/graph.hpp>
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/ces/constexpr.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -30,30 +20,17 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/restore.hpp>
-#include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/topocons.hpp>
 #include <popart/util.hpp>
 #include <popart/variablesettings.hpp>
 
-#include "popart/aliases.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/chains.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/op/subgraph.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/region.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vertex.hpp"
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/pointercomparators.hpp>
 
 namespace popart {
 

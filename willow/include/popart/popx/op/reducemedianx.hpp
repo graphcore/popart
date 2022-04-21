@@ -2,23 +2,12 @@
 #ifndef GUARD_NEURALNET_REDUCEMEDIANX_HPP
 #define GUARD_NEURALNET_REDUCEMEDIANX_HPP
 
-#include <cstdint>
-#include <vector>
+#include <snap/Tensor.hpp>
+#include <popart/op/reducemedian.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include "popart/names.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ReduceMedianOpx : public PopOpx {
 public:

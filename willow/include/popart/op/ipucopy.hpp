@@ -2,26 +2,11 @@
 #ifndef GUARD_NEURALNET_IPUCOPY_HPP
 #define GUARD_NEURALNET_IPUCOPY_HPP
 
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorlocation.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-class Tensor;
-struct OperatorIdentifier;
 
 using SourceIpuMap    = std::map<TensorId, VGraphId>;
 using SourceTensorMap = std::map<VGraphId, std::vector<TensorId>>;

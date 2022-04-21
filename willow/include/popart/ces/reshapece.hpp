@@ -5,7 +5,6 @@
 #include <popart/ces/identityce.hpp>
 
 namespace popart {
-class Op;
 
 class ConstExprReshape : public ConstExprIdentity {
 public:

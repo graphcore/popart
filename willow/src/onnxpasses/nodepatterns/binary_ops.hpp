@@ -2,15 +2,10 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_BINARY_OPS_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_BINARY_OPS_HPP
 
-#include <memory>
 #include <onnxpasses/nodepattern.hpp>
-#include <utility>
-
-#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
-class PatternTarget;
 
 // Replace 'ai.graphcore.remainder' with:
 //   ai.graphcore.fmod(arg1 + ai.graphcore.fmod(arg0, arg1), arg1)

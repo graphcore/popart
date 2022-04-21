@@ -2,14 +2,9 @@
 #ifndef GUARD_NEURALNET_COSH_HPP
 #define GUARD_NEURALNET_COSH_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // TODO T8611 : make UnaryOp
 class CoshOp : public Op {

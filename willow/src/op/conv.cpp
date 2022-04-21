@@ -1,30 +1,15 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/convbase.hpp"
-#include "popart/op/receptive.hpp"
-#include "popart/operators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
                const Settings &settings_,

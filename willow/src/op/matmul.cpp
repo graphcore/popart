@@ -1,33 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <ctype.h>
-#include <iosfwd>
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
-
-struct OperatorIdentifier;
 
 MatMulBaseOp::MatMulBaseOp(
     const OperatorIdentifier &_opid,

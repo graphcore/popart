@@ -1,52 +1,33 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+#include <onnx/onnx_pb.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/div.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/elementwise.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/reshape.hpp>
+#include <popart/op/restore.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opsharding.hpp>
 #include <popart/shardingplan.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/vertex.hpp"
 
 namespace popart {
 

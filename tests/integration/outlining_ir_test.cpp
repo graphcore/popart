@@ -2,29 +2,18 @@
 #define BOOST_TEST_MODULE OutliningIrTest
 
 #include "test_runner.hpp"
-
-#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <iostream>
-#include <map>
-#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
+#include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
+#include <popart/tensornames.hpp>
 
 std::map<GraphId, size_t> getNumCallsToSubgraph(Ir &ir) {
   std::map<GraphId, size_t> numCallsToSubgraph;

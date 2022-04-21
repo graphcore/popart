@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
 #define GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
 
-#include <memory>
 #include <popart/op.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-class AliasModel;
-struct OperatorIdentifier;
 
 // This op takes as inputs:
 // - The loss scale update factor, used to update the loss scale tensor and

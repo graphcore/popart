@@ -1,18 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/variadic.hpp"
-#include "popart/operators.hpp"
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 SumOp::SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {

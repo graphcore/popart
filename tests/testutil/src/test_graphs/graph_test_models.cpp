@@ -1,12 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <string>
 #include <testutil/test_graphs/graph_test_models.hpp>
-#include <vector>
+
 #include <popart/adam.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/clipnormsettings.hpp>
@@ -18,6 +12,7 @@
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/concat.hpp>
@@ -38,46 +33,19 @@
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/patterns/adamdecompose.hpp>
+#include <popart/patterns/optimizerdecompose.hpp>
 #include <popart/patterns/sgd0decompose.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/sgd2decompose.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/autodiff.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/util.hpp>
 
-#include "popart/aliases.hpp"
-#include "popart/bimap.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/datatype.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/region.hpp"
-#include "popart/replicatedstreammode.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
-#include "popart/transforms/mainloops.hpp"
-#include "popart/vendored/optional.hpp"
-
-// Not sure why IWYU tries to include this
-// IWYU pragma: no_forward_declare GraphTestModel6::GTM6GradOp
-
-namespace popart {
-class OptimizerDecompose;
-} // namespace popart
+#include <poplar/ReplicatedStreamMode.hpp>
 
 using namespace popart;
 

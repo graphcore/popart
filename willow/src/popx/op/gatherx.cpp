@@ -1,43 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <limits>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <tuple>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popops/Cast.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/op/gather.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/gatherx.hpp>
 #include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popops/Cast.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Gather.hpp>
+#include <popops/Zero.hpp>
+#include <poputil/TileMapping.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 GatherBaseOpx::GatherBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 

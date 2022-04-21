@@ -2,15 +2,15 @@
 #define BOOST_TEST_MODULE AapiBasicInferenceCallOpTest
 
 #include <algorithm>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/test/unit_test.hpp>
-#include <functional>
-#include <map>
+#include <cstdlib>
 #include <memory>
 #include <random>
 #include <string>
-#include <utility>
 #include <vector>
+
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/test/unit_test.hpp>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -23,24 +23,6 @@
 #include <popart/testdevice.hpp>
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>
-
-#include "popart/bimap.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
 
 namespace ublas = boost::numeric::ublas;
 

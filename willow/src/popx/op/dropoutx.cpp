@@ -1,35 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <utility>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <popops/Cast.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
 #include <poprand/RandomGen.hpp>
+
+#include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dropout.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/dropoutx.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorindex.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 namespace {
 

@@ -3,16 +3,18 @@
 #ifndef GUARD_NEURALNET_GRAD_GROWER_MAIN_GRAPH_HPP
 #define GUARD_NEURALNET_GRAD_GROWER_MAIN_GRAPH_HPP
 
+#include <functional>
 #include <memory>
+
+#include <popart/names.hpp>
+
+#include <transforms/autodiff/autodiffirinterface.hpp>
 #include <transforms/autodiff/gradgrowergraph.hpp>
 #include <transforms/autodiff/gradgrowerloss.hpp>
 #include <transforms/autodiff/gradgrowerop.hpp>
 #include <transforms/autodiff/gradgrowersumop.hpp>
 
-#include "transforms/autodiff/autodiffhelper.hpp"
-
 namespace popart {
-class AutodiffIrInterface;
 
 /**
  * Interface for GradGrowerMainGraph.

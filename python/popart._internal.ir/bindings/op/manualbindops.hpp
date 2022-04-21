@@ -4,11 +4,11 @@
 
 #include <pybind11/pybind11.h>
 
+#include <popart/graph.hpp>
+
 namespace py = pybind11;
 
 namespace popart {
-class Graph;
-
 namespace _internal {
 namespace ir {
 

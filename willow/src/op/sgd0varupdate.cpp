@@ -1,22 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <map>
+#include <limits>
 #include <memory>
-#include <set>
-#include <string>
 #include <popart/ir.hpp>
 #include <popart/op/sgd0varupdate.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/region.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 void SGD0VarUpdateOpBase::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);

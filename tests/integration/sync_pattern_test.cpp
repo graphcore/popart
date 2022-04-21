@@ -2,19 +2,10 @@
 #define BOOST_TEST_MODULE SyncPatternTest
 
 #include <boost/test/unit_test.hpp>
-#include <memory>
-#include <snap/Graph.hpp>
-#include <utility>
-#include <poplar/Device.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/Program.hpp>
+
 #include <popart/devicemanager.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/testdevice.hpp>
-
-namespace poplar {
-struct poplar_error;
-} // namespace poplar
 
 using namespace popart;
 using namespace popart::popx;

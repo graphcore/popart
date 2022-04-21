@@ -1,40 +1,25 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/graph.hpp"
+#include "bindings/op.hpp"
+#include "bindings/op/manualbindops.hpp"
 
 #include <algorithm>
-#include <initializer_list>
 #include <iterator>
-#include <map>
-#include <memory>
-#include <pybind11/buffer_info.h>
-#include <pybind11/cast.h>
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // ITYU pragma: keep
-#include <set>
-#include <string>
-#include <vector>
-#include <popart/graph.hpp>
-#include <popart/graphid.hpp>
+#include <pybind11/stl.h>
 
 #include "../../popart/shared_cpp/np_utils.hpp"
-#include "bindings/op/manualbindops.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/ir.hpp" // IWYU pragma: keep
-#include "popart/names.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/topocons.hpp" // IWYU pragma: keep
-#include "popart/variablesettings.hpp"
+#include <popart/graph.hpp>
+#include <popart/graphid.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/call.hpp>
+#include <popart/topocons.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class Op;
-class TensorInfo;
-
 namespace _internal {
 namespace ir {
 

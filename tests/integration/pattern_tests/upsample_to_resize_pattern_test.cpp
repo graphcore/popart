@@ -1,25 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE UpsampleToResizePatternTest
 
+#include <functional>
+
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
 
 BOOST_AUTO_TEST_CASE(UpsampleToResizeTest0) {
 

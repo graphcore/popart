@@ -1,11 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <ostream>
-#include <string>
 #include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
@@ -21,19 +16,6 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
 
 namespace popart {
 

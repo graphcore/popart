@@ -2,11 +2,9 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_TRANSPOSECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_TRANSPOSECE_HPP
 
-#include <vector>
 #include <popart/ces/constexpr.hpp>
 
 namespace popart {
-class Op;
 
 class ConstExprTranspose : public ConstExprOp {
 public:

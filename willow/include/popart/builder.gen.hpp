@@ -7,8 +7,6 @@
 #ifndef GUARD_NEURALNET_BUILDER_GEN_HPP
 #define GUARD_NEURALNET_BUILDER_GEN_HPP
 
-#include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -19,9 +17,6 @@
 
 namespace popart {
 class Builder;
-class BuilderImpl;
-class ConstVoidData;
-
 class AiOnnxOpset6 : private DomainOpSet {
 
 protected:

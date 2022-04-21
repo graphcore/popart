@@ -2,20 +2,13 @@
 #ifndef GUARD_NEURALNET_PARAMETERIZEDOP_HPP
 #define GUARD_NEURALNET_PARAMETERIZEDOP_HPP
 
-#include <map>
+#include <cstdio>
 #include <memory>
-#include <utility>
-#include <popart/graph.hpp> // IWYU pragma: keep
+#include <popart/basicoptionals.hpp>
+#include <popart/graph.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensordebuginfo.hpp"
-
-namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
-} // namespace popart
+#include <popart/opserialiser.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 // make unique mask
 template <typename T, typename... Args>

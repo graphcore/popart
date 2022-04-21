@@ -2,22 +2,10 @@
 #ifndef GUARD_NEURALNET_REVERSEX_HPP
 #define GUARD_NEURALNET_REVERSEX_HPP
 
-#include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include "popart/names.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ReverseBaseOpx : public PopOpx {
 public:

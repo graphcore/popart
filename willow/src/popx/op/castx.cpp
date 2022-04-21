@@ -1,18 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
 #include <popops/Cast.hpp>
+#include <popart/error.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/castx.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
 
 namespace popart {
 namespace popx {

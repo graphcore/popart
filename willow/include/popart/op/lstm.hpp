@@ -2,23 +2,14 @@
 #ifndef GUARD_NEURALNET_LSTM_HPP
 #define GUARD_NEURALNET_LSTM_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/lstmutil.hpp>
 #include <popart/op/rnnbase.hpp>
+
 #include <popart/vendored/optional.hpp>
 
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 /**
  * This op applies a single-layer LSTM with a non-linearity to a batch of

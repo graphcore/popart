@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_SEQUENCE_EXPANDER_HPP
 #define GUARD_NEURALNET_SEQUENCE_EXPANDER_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 class SequenceExpander : public PreAliasPattern {
 public:

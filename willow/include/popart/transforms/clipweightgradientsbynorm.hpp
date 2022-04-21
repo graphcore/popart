@@ -2,15 +2,12 @@
 #ifndef GUARD_NEURALNET_CLIPBYNORMTRANSFORM_HPP
 #define GUARD_NEURALNET_CLIPBYNORMTRANSFORM_HPP
 
-#include <cstddef>
-#include <string>
 #include <vector>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
 
 class Op;
-class Graph;
 
 class ClipWeightGradientsByNorm : public Transform {
 public:

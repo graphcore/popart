@@ -1,22 +1,11 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <cstdint>
-#include <memory>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/reducesum.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/patterns/binarygradoppattern.hpp>
-
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
 
 namespace popart {
 

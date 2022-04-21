@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_NAMES_HPP
 #define GUARD_NEURALNET_NAMES_HPP
 
-#include <cstddef>
 // TODO T7106 : determine what the cost of including these
 // in every compilation unit is, consider moving to another header
 #include <cstdint>
@@ -10,8 +9,6 @@
 #include <map>
 #include <set>
 #include <string>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 // forward declaring onnx classes, done to
@@ -21,6 +18,10 @@ namespace onnx {
 class NodeProto;
 class TensorProto;
 class AttributeProto;
+class GraphProto;
+class ValueInfoProto;
+class ModelProto;
+class TypeProto;
 } // namespace onnx
 
 namespace google {
@@ -167,18 +168,39 @@ using MultiConvPads      = std::vector<ConvPads>;
 using MultiConvStrides   = std::vector<ConvStrides>;
 
 // forward declaring several popart classes
+class DataFlow;
+class InputShapeInfo;
+class Ir;
+class Loss;
 class Op;
+class Optimizer;
+class Pattern;
+class Tensor;
+class Tensors;
+class Scheduler;
+class TensorIndexMap;
+class TensorInfo;
+class ConstVoidData;
+class MutableOutData;
+class IStepIO;
+class IWeightsIO;
+class GradInOutMapper;
+class InputMapWrapper;
+class OutputMapWrapper;
+class Vertex;
+class TopoCons;
+class Scope;
 class Graph;
-
+class GraphId;
 enum class TensorType;
 struct POpCmp;
 
 namespace view {
 class Region;
-
 using Regions = std::vector<Region>;
 using RegMap  = std::function<Regions(const Region &)>;
-
+class Link;
+class Chains;
 using LowBounds = std::vector<int64_t>;
 using UppBounds = std::vector<int64_t>;
 } // namespace view

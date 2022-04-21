@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_LOG1P_HPP
 #define GUARD_NEURALNET_LOG1P_HPP
 
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // Compute log(x + 1).
 

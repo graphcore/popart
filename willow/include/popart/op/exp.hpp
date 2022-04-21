@@ -2,17 +2,9 @@
 #ifndef GUARD_NEURALNET_EXP_HPP
 #define GUARD_NEURALNET_EXP_HPP
 
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class ExpOp : public ElementWiseUnaryOp {
 public:

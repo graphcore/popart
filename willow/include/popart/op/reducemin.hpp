@@ -2,22 +2,11 @@
 #ifndef GUARD_NEURALNET_REDUCEMIN_HPP
 #define GUARD_NEURALNET_REDUCEMIN_HPP
 
-#include <cstdint>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/reduce.hpp>
-
-#include "popart/names.hpp"
-
-namespace nonstd {
-namespace optional_lite {
-template <typename T> class optional;
-} // namespace optional_lite
-} // namespace nonstd
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 class ReduceMinOp : public ReduceOp {
 public:

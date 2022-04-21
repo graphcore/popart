@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_CONVFLIPWEIGHT_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_CONVFLIPWEIGHT_GRAD_OP_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // These ASCII diagrams show the steps before this pattern as well as the effect
 // of this pattern.

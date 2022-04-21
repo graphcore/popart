@@ -2,12 +2,17 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHS_HPP
 #define GUARD_NEURALNET_SUBGRAPHS_HPP
 
+#include <algorithm>
 #include <functional>
 #include <map>
+#include <numeric>
+#include <set>
+#include <sstream>
+#include <string>
+#include <tuple>
 #include <vector>
-#include <popart/subgraph/match.hpp>
 
-#include "popart/subgraph/subgraphnames.hpp"
+#include <popart/subgraph/match.hpp>
 
 namespace fwtools {
 namespace subgraph {

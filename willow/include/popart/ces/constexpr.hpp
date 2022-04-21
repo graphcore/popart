@@ -2,24 +2,16 @@
 #ifndef GUARD_NEURALNET_CONSTEXPR_HPP
 #define GUARD_NEURALNET_CONSTEXPR_HPP
 
-#include <functional>
 #include <map>
 #include <memory>
-#include <string>
-#include <typeinfo>
-#include <utility>
-#include <vector>
+#include <popart/attributes.hpp>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/tensorinfo.hpp>
 #include <popart/typefunctor.hpp>
 
-#include "popart/datatype.hpp"
-
 namespace popart {
-class Graph;
-class Tensor;
-class TensorInfo;
 
 // Base class for processing Ops as constant expressions
 class ConstExprOp {

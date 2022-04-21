@@ -1,17 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <functional>
-#include <memory>
-#include <ostream>
 #include <testutil/irquery/graphtestwrapper.hpp>
 #include <testutil/irquery/irtestwrapper.hpp>
 #include <testutil/irquery/testfailuretriggerer.hpp>
-
-#include "popart/graphid.hpp"
-#include "popart/ir.hpp"
-#include "popart/vendored/optional.hpp"
-#include "testutil/irquery/require.hpp"
-#include "testutil/irquery/testwrapper.hpp"
-#include "testutil/irquery/testwrapper_impl.hpp"
 
 namespace popart {
 namespace irquery {

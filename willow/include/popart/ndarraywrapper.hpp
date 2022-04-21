@@ -1,18 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_NDARRAYWRAPPER_HPP
 #define GUARD_NEURALNET_NDARRAYWRAPPER_HPP
-#include <cstddef>
-#include <cstdint>
-#include <ostream>
-#include <vector>
 #include <popart/iarray.hpp>
 #include <popart/ndindices.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
 
 namespace popart {
 

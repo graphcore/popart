@@ -2,21 +2,11 @@
 #ifndef GUARD_NEURALNET_ADDBIAS_HPP
 #define GUARD_NEURALNET_ADDBIAS_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/reducesum.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class AliasModel;
-struct OperatorIdentifier;
 
 // A special purpose add operation used to add a bias to the output of a
 // convolution operation.

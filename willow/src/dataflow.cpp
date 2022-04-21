@@ -1,23 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstddef>
-#include <functional>
-#include <map>
-#include <ostream>
-#include <set>
-#include <string>
-#include <utility>
 #include <vector>
 #include <poprithms/util/stringutil.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/replicatedstreammode.hpp>
 #include <popart/sessionoptions.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/tensorlocation.hpp"
 
 namespace popart {
 

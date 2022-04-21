@@ -1,18 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <functional>
-#include <transforms/autodiff/autodiffirinterface.hpp>
 #include <transforms/autodiff/backwardsgraphcreator.hpp>
-#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
+
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
-#include "transforms/autodiff/autodiffhelper.hpp"
+#include <transforms/autodiff/autodiffirinterface.hpp>
+#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 
 namespace popart {
 

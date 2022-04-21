@@ -8,33 +8,15 @@
 #endif
 #define protected public
 #include <popart/patterns/adamdecompose.hpp>
-
 #undef protected
 
-#include <limits>
-#include <map>
-#include <string>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adamcombo.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/optimizervalue.hpp>
-
-#include "popart/adam.hpp"
-#include "popart/datatype.hpp"
-#include "popart/half.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
+#include <popart/patterns/patterns.hpp>
 
 using namespace popart;
 

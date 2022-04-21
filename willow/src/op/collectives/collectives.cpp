@@ -1,32 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <array>
-#include <cstdint>
-#include <limits>
+#include <gcl/Collectives.hpp>
 #include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <type_traits>
-#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/util.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 CollectivesBaseOp::CollectivesBaseOp(const OperatorIdentifier &_opid,
                                      CommGroup group,

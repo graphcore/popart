@@ -1,23 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Op_ReduceGrad
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <map>
-#include <string>
-#include <vector>
+
 #include <popart/ir.hpp>
 #include <popart/op/reducesum.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graph.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

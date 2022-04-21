@@ -507,21 +507,16 @@ def genBuilderHpp(filename: str, schema: Schema) -> None:
 
         addHeader(f, None)
         f.write("""
-#include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "popart/debugcontext.hpp"
-#include "popart/domainopset.hpp"
 #include "popart/names.hpp"
+#include "popart/domainopset.hpp"
 #include "popart/vendored/optional.hpp"
 
 namespace popart {
 class Builder;
-class BuilderImpl;
-class ConstVoidData;
-
 """)
 
         for k, v, in schema.domains.items():
@@ -679,32 +674,10 @@ def genBuilderCpp(filename: str, schema: Schema):
         addHeader(f, None)
 
         f.write("""
-#include "popart/builder.gen.hpp"
-
-#include <cstdint>
-#include <cstdlib>
-#include <limits>
-#include <map>
-#include <onnx/onnx_pb.h>
-
 #include "builder_helper.hpp"
-#include "builder_impl.hpp"
 #include "builderdebuginfo.hpp"
-#include "filereader.hpp"
-#include "onnxutil.hpp"
-#include "popart/builder.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/any.hpp"
-#include "poparttracepoint.hpp"
-
+#include "popart/builder.gen.hpp"
 namespace popart {
-class ConstVoidData;
-
 """)
 
         for k, v, in schema.domains.items():
@@ -920,27 +893,18 @@ def genPythonBuilderBinds(schema: Schema) -> None:
             with io.open(filename, 'w') as f:
                 addHeader(f, opset_version)
                 # Add the include file.
-                f.write(f"""#include <cstdint>
-                #include <initializer_list>
-                #include <pybind11/buffer_info.h> // IWYU pragma: keep
-                #include <pybind11/cast.h> // IWYU pragma: keep
-                #include <pybind11/functional.h> // IWYU pragma: keep
-                #include <pybind11/numpy.h> // IWYU pragma: keep
-                #include <pybind11/pybind11.h> // IWYU pragma: keep
-                #include <pybind11/stl.h> // IWYU pragma: keep
-                #include <pybind11/pytypes.h> // IWYU pragma: keep
-                #include <string>
-                #include <vector>
+                f.write(f"""#include <pybind11/functional.h>
+
+                #include <pybind11/numpy.h>
+                #include <pybind11/pybind11.h>
+                #include <pybind11/stl.h>
 
                 #include "../shared_cpp/np_utils.hpp"
-                #include "popart/builder.gen.hpp"
-                #include "popart/builder.hpp" // IWYU pragma: keep
-                #include "popart/debugcontext.hpp"
-                #include "popart/names.hpp"
-                #include "popart/tensordebuginfo.hpp"
-                #include "popart/tensorinfo.hpp"
-                #include "popart/vendored/optional.hpp"
-                #include "popart/voiddata.hpp"
+                #include "../shared_cpp/pyarray_accessor.hpp"
+
+                #include "popart/builder.hpp"
+                #include "popart/tensors.hpp"
+                #include "popart/version.hpp"
 
                 namespace py = pybind11;
                 using namespace popart;
@@ -1160,6 +1124,9 @@ def genOpIdentifiersHpp(filename: str, schema: Schema) -> None:
     with io.open(filename, 'w') as f:
         addHeader(f, None)
         f.write("""
+#include "popart/attributes.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 
 namespace popart {
@@ -1269,11 +1236,7 @@ def genOpsetsHpp(filename: str, schema: Schema) -> None:
 
         f.write("""
 #include <map>
-#include <string>
-#include <utility>
-
 #include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
 #include "popart/operators.hpp"
 
 namespace popart {

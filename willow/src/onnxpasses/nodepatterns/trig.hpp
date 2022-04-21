@@ -2,14 +2,10 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_TRIG_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_TRIG_HPP
 
-#include <memory>
 #include <onnxpasses/nodepattern.hpp>
-
-#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
-class PatternTarget;
 
 // Replace tan(x) with div(sin(x),cos(x))
 class Tan : public NodePattern {

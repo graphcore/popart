@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_LOOP_SCAN_OUT_PATTERN_HPP
 #define GUARD_NEURALNET_LOOP_SCAN_OUT_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replaces implicit scan outputs in loops with explicit dynamic updates
 // Implicit scan outputs are outputs added to the LoopOp which do not correspond

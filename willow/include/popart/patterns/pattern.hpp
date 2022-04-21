@@ -2,14 +2,12 @@
 #ifndef GUARD_NEURALNET_PATTERN_HPP
 #define GUARD_NEURALNET_PATTERN_HPP
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <map>
+#include <popart/names.hpp>
+#include <popart/operators.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
-struct OperatorIdentifier;
 
 // Definition: A tensor is "touched" by a Pattern if
 // its state is different at any point in the execution of the

@@ -1,37 +1,26 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE DirectViewChangeTest
 
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <filereader.hpp>
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
+
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/util.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
-
-namespace popart {
-class error;
-} // namespace popart
 
 using namespace popart;
 

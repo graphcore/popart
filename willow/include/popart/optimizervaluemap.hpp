@@ -2,12 +2,11 @@
 #ifndef GUARD_NEURALNET_OPTIMIZERVALUEMAP_HPP
 #define GUARD_NEURALNET_OPTIMIZERVALUEMAP_HPP
 
-#include <cstddef>
-#include <functional>
-#include <map>
-#include <string>
+#include <memory>
 #include <popart/names.hpp>
 #include <popart/optimizervalue.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 

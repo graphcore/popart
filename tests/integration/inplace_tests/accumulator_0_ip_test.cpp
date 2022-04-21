@@ -1,40 +1,31 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BatchSerializeIrTest
 
-#include <algorithm>
+#include "../random_util.hpp"
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
-
-// Hack to allow the test to view the private data of classes
-#ifdef __clang__
-#pragma clang diagnostic ignored "-Wkeyword-macro"
-#endif
-#define private public
-#define protected public
-
 #include <popart/adam.hpp>
+#include <popart/builder.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/graph.hpp>
+#include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/init.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/op/mean.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include "../test_runner.hpp"
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/voiddata.hpp"
+#define protected public
+#include <popart/session.hpp>
+#undef protected
 
 using namespace popart;
 

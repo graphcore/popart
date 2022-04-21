@@ -1,20 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/alias/aliasmodel.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicbase.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 

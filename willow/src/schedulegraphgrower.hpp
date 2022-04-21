@@ -2,29 +2,14 @@
 #ifndef GUARD_NEURALNET_SCHEDULEGRAPHGROWER_HPP
 #define GUARD_NEURALNET_SCHEDULEGRAPHGROWER_HPP
 
-#include <cstdint>
-#include <string>
 #include <unordered_map>
-#include <vector>
-#include <poprithms/schedule/shift/graph.hpp>
+#include <poprithms/schedule/shift/schedulecache.hpp>
 #include <poprithms/schedule/shift/scheduledgraph.hpp>
-#include <poprithms/schedule/shift/settings.hpp>
-#include <poprithms/schedule/shift/shiftusings.hpp>
 #include <popart/names.hpp>
-
-namespace poprithms {
-namespace schedule {
-namespace shift {
-class ScheduleCache;
-} // namespace shift
-} // namespace schedule
-} // namespace poprithms
 
 namespace popart {
 
 class Graph;
-class Op;
-class Tensor;
 
 /**
  * A class for creating a poprithms::schedule::shift::Graph, and the handles

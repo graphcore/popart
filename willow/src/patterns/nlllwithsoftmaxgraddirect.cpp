@@ -1,16 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/graph.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
 #include <popart/patterns/nlllwithsoftmaxgraddirect.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
+#include <popart/tensors.hpp>
 
 namespace popart {
 

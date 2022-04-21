@@ -1,12 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <functional>
-#include <map>
 #include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+#include <onnx/onnx_pb.h>
+#include <onnxutil.hpp>
+#include <popart/attributes.hpp>
 #include <popart/ces/castce.hpp>
 #include <popart/ces/concatce.hpp>
 #include <popart/ces/constexpr.hpp>
@@ -24,20 +20,12 @@
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-
 namespace popart {
-
-class TensorInfo;
 
 ConstExprOp::ConstExprOp(Op *op_) : op(op_) {}
 

@@ -2,25 +2,12 @@
 #ifndef GUARD_NEURALNET_TOPKX_HPP
 #define GUARD_NEURALNET_TOPKX_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+#include <popart/names.hpp>
 #include <popart/popx/op/basesortx.hpp>
 
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
 
 namespace popx {
-class Devicex;
 
 class TopKOpx : public BaseSortOpx {
 public:

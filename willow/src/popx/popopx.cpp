@@ -1,46 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
 #include <popart/popx/viewchangers.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/debugcontext.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/opdebuginfo.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/poptensors.hpp"
-#include "popart/popx/preparedtensor.hpp"
-#include "popart/region.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/subgraphpartitioner.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 namespace popx {

@@ -1,47 +1,30 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
 #include <transforms/batchserialscheduler.hpp>
-#include <typeinfo>
-#include <utility>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/dynamic/dynamicslice.hpp>
+#include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/opsharding.hpp>
 #include <popart/shardingplan.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/batchserialize.hpp>
 #include <popart/transforms/decomposeloops.hpp>
 #include <popart/transforms/mergeloops.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/util.hpp"
-#include "popart/vertex.hpp"
+#include <popart/transforms/prune.hpp>
 
 namespace popart {
 

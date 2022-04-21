@@ -1,23 +1,16 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
 #include <popart/op/abs.hpp>
 #include <popart/popx/op/absx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<AbsOp>(op, {Onnx::Operators::Abs_6});

@@ -2,16 +2,17 @@
 #ifndef POPART__INTERNAL_IR_BINDINGS_PATTERN_HPP
 #define POPART__INTERNAL_IR_BINDINGS_PATTERN_HPP
 
+#include <pybind11/functional.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <vector>
+#include <pybind11/stl.h>
+#include <popart/op.hpp>
 #include <popart/patterns/pattern.hpp>
-#include <popart/tensor.hpp> // IWYU pragma: keep
+#include <popart/tensor.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class Op;
-
 namespace _internal {
 namespace ir {
 namespace patterns {

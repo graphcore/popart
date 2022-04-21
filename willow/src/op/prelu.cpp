@@ -1,16 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <string>
 #include <popart/op/prelu.hpp>
 #include <popart/opmanager.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operators.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 PReluOp::PReluOp(const OperatorIdentifier &opid_, const Op::Settings &settings_)
     : ElementWiseBinaryOp(opid_, settings_) {}

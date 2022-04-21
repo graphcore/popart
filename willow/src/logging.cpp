@@ -1,32 +1,24 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <boost/exception/diagnostic_information.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <cstddef>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
+#include <popart/error.hpp>
+#include <popart/logging.hpp>
+#include <popart/util.hpp>
+
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/ansicolor_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
+
+#include <boost/exception/diagnostic_information.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
+#include <iostream>
 #include <string>
-#include <utility>
-#include <popart/error.hpp>
-#include <popart/logging.hpp>
-#include <popart/util.hpp>
 
-#include "popart/vendored/optional.hpp"
-
-namespace spdlog {
-namespace sinks {
-class sink;
-} // namespace sinks
-} // namespace spdlog
+#include <stdio.h>
+#include <string.h>
 
 namespace popart {
 namespace logging {

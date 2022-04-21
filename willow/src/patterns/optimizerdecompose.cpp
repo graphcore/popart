@@ -1,13 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <limits>
-#include <map>
-#include <memory>
 #include <onnxutil.hpp>
-#include <ostream>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
@@ -21,23 +14,6 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
-
-#include "popart/commgroup.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/half.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
-#include "popart/variablesettings.hpp"
 
 namespace popart {
 

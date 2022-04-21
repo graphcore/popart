@@ -2,21 +2,15 @@
 
 #define BOOST_TEST_MODULE ReplicatedTensorMutableVoidInfoVerifier
 
+#include <boost/format.hpp>
 #include <boost/test/unit_test.hpp>
-#include <stdexcept>
-#include <string>
-#include <vector>
+
 #include <popart/commgroup.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/variablesettings.hpp>
-
-#include "popart/datatype.hpp"
-
-namespace popart {
-class internal_error;
-} // namespace popart
 
 using namespace popart;
 

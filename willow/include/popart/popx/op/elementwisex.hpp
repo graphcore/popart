@@ -2,30 +2,11 @@
 #ifndef GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
 #define GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstdint>
-#include <memory>
-#include <set>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
+#include <popart/popx/debugcontextx.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include "popart/names.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 // A base class with functions for computing in-place and
 // out-of place element-wise unary operations

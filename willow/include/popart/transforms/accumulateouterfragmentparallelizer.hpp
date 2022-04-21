@@ -2,21 +2,16 @@
 #ifndef GUARD_NEURALNET_SCHEDULE_ACCUMULATEOUTERFRAGMENTPARALLELIZER_HPP
 #define GUARD_NEURALNET_SCHEDULE_ACCUMULATEOUTERFRAGMENTPARALLELIZER_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <list>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
+#include <popart/graph.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/tensordebuginfo.hpp"
+#include <list>
+#include <set>
+#include <vector>
 
 namespace popart {
-class Graph;
-class Op;
 
 class AccumulateOuterFragmentParallelizer : public Transform {
 public:

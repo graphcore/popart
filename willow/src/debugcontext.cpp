@@ -1,13 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/ProfileValue.hpp>
-#include <poplar/StringRef.hpp>
 #include <popart/debugcontext.hpp>
+#include <popart/popx/debugcontextx.hpp>
 //#include <popart/names.hpp>
 
 namespace popart {

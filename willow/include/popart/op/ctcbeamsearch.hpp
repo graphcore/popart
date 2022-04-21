@@ -2,16 +2,9 @@
 #ifndef GUARD_NEURALNET_CTCBEAMSEARCH_HPP
 #define GUARD_NEURALNET_CTCBEAMSEARCH_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
-
 class CtcBeamSearchDecoderOp : public Op {
 public:
   CtcBeamSearchDecoderOp(const popart::OperatorIdentifier &_opid,

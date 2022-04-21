@@ -1,22 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE SubgraphPartitioningTest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <filereader.hpp>
-#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <string>
-#include <tuple>
+#include <sstream>
 #include <utility>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -25,18 +17,6 @@
 #include <popart/sessionoptions.hpp>
 #include <popart/subgraphcopyingstrategy.hpp>
 #include <popart/subgraphpartitioner.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
 
 using namespace popart;
 using LivenessNode = liveness::LivenessNode;

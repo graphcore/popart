@@ -1,20 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/allreduce.hpp>
 #include <popart/patterns/allreducetoidentitypattern.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
+#include <popart/tensorinfo.hpp>
 
 namespace popart {
-class Tensor;
 
 bool AllReduceToIdentityPattern::matches(Op *op) const {
   // Only match after autodiff for onnx models

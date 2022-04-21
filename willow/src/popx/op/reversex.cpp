@@ -1,27 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
 #include <popart/op/reverse.hpp>
 #include <popart/popx/op/reversex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 ReverseBaseOpx::ReverseBaseOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ReverseBaseOp>(op);

@@ -1,10 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include "binary_ops.hpp"
 
-#include <algorithm>
-#include <onnx/onnx_pb.h>
-#include <string>
-
 namespace popart {
 namespace onnxpasses {
 bool Remainder::go(const NodeProto &node) {

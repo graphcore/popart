@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_POSTNREPL_HPP
 #define GUARD_NEURALNET_POSTNREPL_HPP
 
-#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
-
 // consider,
 // (ori) -> [*] -> {(rep1), (rep2), (rep3)}
 // where rep1 = ori, rep2 = ori, rep3 = ori

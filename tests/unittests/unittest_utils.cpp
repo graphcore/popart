@@ -1,19 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE UnittestUtils
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/test/unit_test.hpp>
 #include <sstream>
 #include <string>
-#include <tuple>
-#include <type_traits>
-#include <utility>
+#include <vector>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/test/unit_test.hpp>
+
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/scope.hpp>
 #include <popart/util.hpp>
-
-#include "popart/error.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace {
 /**

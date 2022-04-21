@@ -1,25 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
+#include <popart/error.hpp>
 #include <popart/op/isinf.hpp>
 #include <popart/popx/op/isinfx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 IsInfx::IsInfx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IsInf>(op, Onnx::Operators::IsInf_10);

@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_ASIN_HPP
 #define GUARD_NEURALNET_ASIN_HPP
 
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class AsinOp : public ElementWiseUnaryOp {
 public:

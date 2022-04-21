@@ -2,14 +2,11 @@
 #ifndef GUARD_NEURALNET_AUPGRPAH_PRUNE_PRUNEMATCHES_HPP
 #define GUARD_NEURALNET_AUPGRPAH_PRUNE_PRUNEMATCHES_HPP
 
+#include "match.hpp"
 #include <algorithm>
-#include <cstdint>
 #include <map>
 #include <set>
 #include <vector>
-
-#include "match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
 
 namespace fwtools {
 namespace subgraph {

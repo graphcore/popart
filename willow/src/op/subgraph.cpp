@@ -1,42 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <iterator>
-#include <map>
+#include <functional>
 #include <memory>
 #include <onnx/onnx_pb.h>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/subgraph.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/scope.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/bwdgraphinfo.hpp"
-#include "popart/chains.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensors.hpp"
-#include "popart/transforms/autodiff/calledgraphgradophelper.hpp"
-#include "popart/util.hpp"
-
 namespace popart {
-
-class AliasModel;
-struct OperatorIdentifier;
 
 bool SubgraphOp::existsInBodyInputs(std::vector<std::string> &bodyInputIds,
                                     TensorId &tensorId) {

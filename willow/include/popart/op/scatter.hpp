@@ -2,18 +2,10 @@
 #ifndef GUARD_NEURALNET_SCATTER_HPP
 #define GUARD_NEURALNET_SCATTER_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class ScatterOp : public Op {
 public:

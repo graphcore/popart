@@ -2,20 +2,20 @@
 #ifndef GUARD_NEURALNET_SUBGRAPH_WRAPPED_OP_HPP
 #define GUARD_NEURALNET_SUBGRAPH_WRAPPED_OP_HPP
 
-#include <functional>
 #include <map>
-#include <memory>
 #include <set>
 #include <string>
-#include <tuple>
 #include <vector>
-#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
+
 #include <popart/subgraph/subgraphnames.hpp>
+
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 
 namespace popart {
 // Forward declarations.
 class Op;
 class Ir;
+class ReplicaEqualAnalysis;
 } // namespace popart
 
 namespace fwtools {

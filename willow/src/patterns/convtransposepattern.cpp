@@ -1,7 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <string>
-#include <vector>
+#include <memory>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/conv.hpp>
@@ -9,14 +7,8 @@
 #include <popart/patterns/convtransposepattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/op/convbase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 

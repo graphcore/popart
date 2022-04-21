@@ -1,35 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <type_traits>
-#include <utility>
-#include <vector>
+#include <functional>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/liveness.hpp>
+#include <popart/op/if.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/scheduler_requireoptimal.hpp>
-#include <popart/subgraphcopyingstrategy.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/subgraphcopyingstrategy.hpp>
 
 namespace popart {
 namespace liveness {

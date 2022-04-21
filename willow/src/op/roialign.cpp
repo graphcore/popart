@@ -1,24 +1,8 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/roialign.hpp>
 #include <popart/opserialiser.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/opmanager.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 RoiAlignOp::RoiAlignOp(const OperatorIdentifier &opid_,
                        const Op::Settings &settings_,

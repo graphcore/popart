@@ -1,13 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
-#include <map>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/boollogic.hpp>
 #include <popart/error.hpp>
 #include <popart/logging.hpp>

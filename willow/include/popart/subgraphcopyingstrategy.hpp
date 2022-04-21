@@ -2,24 +2,20 @@
 #ifndef GUARD_NEURALNET_SUBGRAPH_COPYING_STRATEGY_HPP
 #define GUARD_NEURALNET_SUBGRAPH_COPYING_STRATEGY_HPP
 
-#include <cstddef>
 #include <deque>
+#include <iostream>
 #include <map>
-#include <set>
-#include <string>
 #include <vector>
+
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/liveness.hpp>
-
-#include "popart/graphid.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/names.hpp>
 
 namespace popart {
 
 class Ir;
 class Op;
-class Graph;
-class Tensor;
+class CallOp;
 
 namespace liveness {
 

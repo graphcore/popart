@@ -2,24 +2,12 @@
 #ifndef GUARD_NEURALNET_HOSTX_HPP
 #define GUARD_NEURALNET_HOSTX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include "popart/names.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
 
 namespace popx {
-class Devicex;
 
 class HostBaseOpx : public ExchangeBaseOpx {
 public:

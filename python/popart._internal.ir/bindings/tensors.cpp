@@ -1,30 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/tensors.hpp"
 
-#include <initializer_list>
-#include <pybind11/buffer_info.h>
-#include <pybind11/cast.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
-#include <string>
-#include <vector>
+#include <pybind11/stl.h>
+
+#include <popart/graph.hpp>
 #include <popart/tensors.hpp>
 
 #include "../../popart/shared_cpp/np_utils.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/graph.hpp" // IWYU pragma: keep
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace py = pybind11;
 
 namespace popart {
-class InputSettings;
-class Scope;
-class TensorInfo;
-
 namespace _internal {
 namespace ir {
 

@@ -2,22 +2,10 @@
 #ifndef GUARD_NEURALNET_PACKEDDATABLOCK_HPP
 #define GUARD_NEURALNET_PACKEDDATABLOCK_HPP
 
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <set>
-#include <vector>
 #include <popart/op.hpp>
-
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/op/subgraph.hpp>
 
 namespace popart {
-class Graph;
-class OpSerialiserBase;
-class Tensor;
-class TensorInfo;
-struct OperatorIdentifier;
 
 // 3 tensors make up a packed sequence.
 // `data` is a tensor of sequences packed back to back in the first dimension.

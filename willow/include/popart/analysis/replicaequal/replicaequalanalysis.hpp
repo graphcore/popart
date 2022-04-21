@@ -2,20 +2,17 @@
 #ifndef NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_HPP
 #define NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_HPP
 
-#include <map>
 #include <memory>
-#include <string>
+#include <vector>
 
-#include "popart/names.hpp"
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/ir.hpp>
 
 namespace popart {
 
 // Forward declaration.
 class Op;
 class ReplicaEqualAnalysisImpl;
-class AliasModel;
-class Ir;
-class any;
 
 /**
  * This class determines for each tensor in the IR whether or not it's value

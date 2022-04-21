@@ -1,25 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <vector>
-#include <popops/ElementWise.hpp>
-#include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
 #include <popart/op/bitwise.hpp>
+#include <popart/popx/devicex.hpp>
+
 #include <popart/popx/op/bitwisex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/popx/op/elementwisex.hpp"
+#include <snap/popops/ElementWise.hpp>
+#include <popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 BitwiseNotOpx::BitwiseNotOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOpx(op, devicex) {

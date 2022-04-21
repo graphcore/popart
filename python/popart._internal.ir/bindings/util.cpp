@@ -1,10 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/util.hpp"
 
-#include <initializer_list>
 #include <pybind11/pybind11.h>
-#include <popart/graph.hpp> // IWYU pragma: keep
-#include <popart/util.hpp>  // IWYU pragma: keep
+#include <popart/graph.hpp>
+#include <popart/util.hpp>
 
 namespace py = pybind11;
 

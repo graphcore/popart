@@ -2,32 +2,15 @@
 #ifndef GUARD_NEURALNET_GRUX_HPP
 #define GUARD_NEURALNET_GRUX_HPP
 
-#include <memory>
-#include <set>
-#include <snap/Tensor.hpp>
 #include <popnn/Gru.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/vendored/optional.hpp"
-
-namespace poplar {
-class Tensor;
-} // namespace poplar
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 
-class Op;
+class GRUOp;
 
 namespace popx {
-class Devicex;
 
 class GRUOpx : public PopOpx {
 public:

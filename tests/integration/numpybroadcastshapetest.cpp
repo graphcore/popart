@@ -1,10 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumpyBroadcastShape
 
+#include <sstream>
+
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <string>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/tensorinfo.hpp>
 

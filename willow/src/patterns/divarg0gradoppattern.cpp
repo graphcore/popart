@@ -1,15 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <string>
+#include <popart/graph.hpp>
 #include <popart/op/div.hpp>
 #include <popart/patterns/divarg0gradoppattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/ir.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

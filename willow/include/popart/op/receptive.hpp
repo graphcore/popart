@@ -2,19 +2,9 @@
 #ifndef GUARD_NEURALNET_VOLE_HPP
 #define GUARD_NEURALNET_VOLE_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 enum class AutoPad { NOTSET = 0, SAME_UPPER, SAME_LOWER, VALID };
 

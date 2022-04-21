@@ -1,21 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
 #include <popart/op/not.hpp>
+#include <popart/popx/devicex.hpp>
+
 #include <popart/popx/op/notx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
+#include <popops/ElementWise.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 NotOpx::NotOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<NotOp>(op, {Onnx::Operators::Not_1});

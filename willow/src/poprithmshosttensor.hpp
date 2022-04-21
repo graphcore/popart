@@ -3,13 +3,9 @@
 #define GUARD_NEURALNET_POPRITHMSHOSTTENSOR_HPP
 
 #include <poprithms/compute/host/tensor.hpp>
-#include <poprithms/ndarray/dtype.hpp>
-
-#include "popart/datatype.hpp"
-
+#include <popart/half.hpp>
+#include <popart/tensor.hpp>
 namespace popart {
-class Half;
-class Tensor;
 
 template <typename T> inline poprithms::ndarray::DType getPoprithmsDType() {
   return poprithms::ndarray::get<T>();

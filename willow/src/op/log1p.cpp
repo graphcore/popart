@@ -1,17 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <memory>
-#include <string>
-#include <tuple>
-#include <vector>
 #include <popart/op/log1p.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operatoridentifier.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

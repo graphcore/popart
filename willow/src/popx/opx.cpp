@@ -1,30 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Program.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
-
-#include "popart/error.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 namespace popx {

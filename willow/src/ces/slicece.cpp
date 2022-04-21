@@ -1,15 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <array>
+#include <algorithm>
+#include <onnx/onnx_pb.h>
 #include <vector>
-#include <poprithms/compute/host/tensor.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/slicece.hpp>
+#include <popart/ndarraywrapper.hpp>
 #include <popart/op/slice.hpp>
-
-#include "popart/ces/constexpr.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Op;
 
 ConstExprSlice::ConstExprSlice(Op *op_) : ConstExprOp(op_) {}
 

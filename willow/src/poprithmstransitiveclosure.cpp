@@ -1,13 +1,12 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <cassert>
-#include <map>
-#include <memory>
 #include <unordered_set>
-#include <utility>
 #include <vector>
-#include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
+
 #include <poprithmstransitiveclosure.hpp>
 #include <popart/graph.hpp>
+
+#include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
 
 namespace rithmic = poprithms::schedule::transitiveclosure;
 

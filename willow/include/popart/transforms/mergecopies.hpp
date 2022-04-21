@@ -2,12 +2,9 @@
 #ifndef GUARD_NEURALNET_MERGECOPIES_HPP
 #define GUARD_NEURALNET_MERGECOPIES_HPP
 
-#include <cstddef>
-#include <string>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
-class Graph;
 
 class MergeCopies : public Transform {
 public:

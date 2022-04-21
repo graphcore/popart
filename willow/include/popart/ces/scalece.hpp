@@ -2,11 +2,9 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_SCALECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_SCALECE_HPP
 
-#include <vector>
 #include <popart/ces/constexpr.hpp>
 
 namespace popart {
-class Op;
 
 class ConstExprScale : public ConstExprOp {
 public:

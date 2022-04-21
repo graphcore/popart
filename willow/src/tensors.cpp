@@ -1,38 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include <poplar/Target.hpp>
-#include <popart/graph.hpp> // IWYU pragma: keep
+#include <onnxutil.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
+#include <popart/chains.hpp>
+#include <popart/commgroup.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordebuginfo.hpp>
+#include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/variablesettings.hpp>
 
-#include "popart/dataflow.hpp"
-#include "popart/datatype.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-#include "popart/vectorandset.hpp"
-
-namespace onnx {
-
-class TensorProto;
-} // namespace onnx
+#include <poplar/Target.hpp>
 
 namespace popart {
 

@@ -3,23 +3,22 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/trompeloeil.hpp>
+
+#include <iostream>
+#include <sstream>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op.hpp>
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
+#include <testutil/irquery/irquery.hpp>
 #undef private
 
-#include "testutil/irquery/mock_testfailuretriggerer.hpp"
-#include <functional>
-#include <memory>
-#include <type_traits>
-
-#include "popart/graphid.hpp"
-#include "popart/vendored/optional.hpp"
-#include "testutil/irquery/irquery.hpp"
+#include <testutil/irquery/mock_testfailuretriggerer.hpp>
 
 using namespace popart;
 using namespace popart::irquery;

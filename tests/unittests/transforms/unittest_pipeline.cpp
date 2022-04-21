@@ -2,48 +2,29 @@
 #define BOOST_TEST_MODULE pipeline_unittest
 
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <testutil/test_graphs/graph_test_models.hpp>
-#include <utility>
-#include <vector>
+
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/exchange/exchange.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/incrementmod.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/sgd0combo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/transforms/pipeline.hpp>
 
-#include "popart/basicoptionals.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/loop.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vertex.hpp"
+#include <popart/graphutils.hpp>
 
-namespace popart {
-class internal_error;
-} // namespace popart
+#include <testutil/test_graphs/graph_test_models.hpp>
 
 using namespace popart;
 

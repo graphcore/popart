@@ -1,29 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TensorTest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
 #include <testutil/test_graphs/graph_test_models.hpp>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
 #include <popart/aliasesmap.hpp>
+#include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
+#include <popart/op.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/region.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensors.hpp"
-#include "popart/util.hpp"
-
-namespace popart {
-
-class Op;
-} // namespace popart
 
 using namespace popart;
 using namespace graphutils;

@@ -2,10 +2,7 @@
 #ifndef GUARD_NEURALNET_BOUNDARY_HPP
 #define GUARD_NEURALNET_BOUNDARY_HPP
 
-#include <memory>
 #include <popart/op.hpp>
-
-#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

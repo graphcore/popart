@@ -3,24 +3,12 @@
 
 // tests of final greedy selection of sub-graphs
 
+#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <initializer_list>
 #include <iostream>
-#include <map>
-#include <memory>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <utility>
 #include <vector>
 #include <popart/logging.hpp>
-#include <popart/subgraph/outliner.hpp>
-
-#include "blip.hpp"
-#include "popart/subgraph/match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

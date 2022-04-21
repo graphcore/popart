@@ -1,29 +1,21 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <boost/range/algorithm/find.hpp>
-#include <cctype>
-#include <cstdint>
-#include <map>
+
+#include <popart/popx/devicexmanager.hpp>
+
 #include <memory>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/defaulttilecount.hpp>
+#include <popart/util.hpp>
+
 #include <poplar/Device.hpp>
-#include <poplar/DeviceManager.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <poplar/StringRef.hpp>
 #include <poplar/Target.hpp>
-#include <poplar/TargetType.hpp>
 #include <poplar/exceptions.hpp>
-#include <popart/defaulttilecount.hpp>
-#include <popart/popx/devicexmanager.hpp>
 
-#include "popart/devicemanager.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/util.hpp" // IWYU pragma: keep
+#include <algorithm>
+#include <sstream>
 
 using boost::find;
 

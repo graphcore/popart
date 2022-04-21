@@ -1,14 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <testutil/test_graphs/op/dummy.hpp>
+
+#include <filereader.hpp>
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/operators.hpp>
+#include <popart/scheduler.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/logging.hpp"
-
-namespace popart {
-class Graph;
-} // namespace popart
+#include <popart/topocons.hpp>
 
 using namespace popart;
 

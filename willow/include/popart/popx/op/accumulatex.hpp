@@ -2,28 +2,14 @@
 #ifndef GUARD_NEURALNET_ACCUMULATEX_HPP
 #define GUARD_NEURALNET_ACCUMULATEX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <set>
-#include <snap/Tensor.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
 
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <poplar/OptionFlags.hpp>
+#include <popops/DynamicSlice.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
-class ViewChangers;
 
 class AccumulateBaseOpx : public VarUpdateOpx {
 public:

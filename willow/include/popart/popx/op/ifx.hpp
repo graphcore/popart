@@ -2,23 +2,12 @@
 #ifndef GUARD_NEURALNET_IFX_HPP
 #define GUARD_NEURALNET_IFX_HPP
 
-#include <vector>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/preparedtensor.hpp>
 
-namespace snap {
-class Tensor;
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Graph;
-class Op;
 
 namespace popx {
-class Devicex;
 
 class IfOpx : public PopOpx {
 public:

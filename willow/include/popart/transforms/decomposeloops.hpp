@@ -2,29 +2,13 @@
 #ifndef GUARD_NEURALNET_DECOMPOSELOOPS_HPP
 #define GUARD_NEURALNET_DECOMPOSELOOPS_HPP
 
-#include <cstddef>
-#include <iosfwd>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/graph.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/transforms/transform.hpp>
 #include <popart/util.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-class Graph;
-class Ir;
-class LoopOp;
-class Op;
-class Tensor;
 
 using LoopIteration = int;
 using LoopTensorMap = std::map<std::pair<TensorId, LoopIteration>, TensorId>;

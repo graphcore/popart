@@ -2,32 +2,17 @@
 #define BOOST_TEST_MODULE RunningMeanCounter
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 #include <popart/adam.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
-#include "popart/voiddata.hpp"
 
 BOOST_AUTO_TEST_CASE(Default) {
 

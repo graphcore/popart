@@ -1,6 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <map>
 #include <memory>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/graph.hpp>

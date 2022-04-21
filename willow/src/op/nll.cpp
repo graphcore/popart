@@ -1,28 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
+#include <sstream>
 #include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/mean.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/loss.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 std::unique_ptr<Op> NllOp::clone() const {
   return std::make_unique<NllOp>(*this);

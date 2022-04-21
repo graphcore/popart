@@ -1,10 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
+#include <numeric>
+#include <onnx/onnx_pb.h>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/tile.hpp>
@@ -13,16 +10,7 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // This will be used by TileGradOp
 TileOp::TileOp(const OperatorIdentifier &_opid,

@@ -1,22 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "bindings/op/argminmax.hpp"
+#include "bindings/op.hpp"
+#include "bindings/op/optional.hpp"
 
-#include <initializer_list>
-#include <memory>
-#include <pybind11/cast.h>
+#include "bindings/basicoptionals.hpp"
+#include <pybind11/numpy.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <stdint.h>
-
-#include "popart/op.hpp"
-#include "popart/op/argextrema.hpp"
-#include "popart/op/argmax.hpp"
-#include "popart/op/argmin.hpp"
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace popart {
-struct OperatorIdentifier;
-
 namespace _internal {
 namespace ir {
 namespace op {

@@ -1,19 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
-#include <iterator>
 #include <parsedtensorid.hpp>
-#include <set>
+#include <regex>
 #include <string>
-#include <utility>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensornames.hpp>
-
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
+#include <popart/util.hpp>
 
 namespace popart {
 

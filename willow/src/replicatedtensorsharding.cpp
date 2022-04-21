@@ -1,34 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/op/exchange/hostcopy.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/replicatedtensorsharding.hpp>
-
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/graphutils.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/op/subgraph.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/util.hpp"
-#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

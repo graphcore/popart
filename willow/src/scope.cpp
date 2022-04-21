@@ -1,8 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <sstream>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/scope.hpp>
 

@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_SCAN_TO_LOOP_PATTERN_HPP
 #define GUARD_NEURALNET_SCAN_TO_LOOP_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replace a ScanOp with LoopOp
 class ScanToLoopPattern : public PreAliasPattern {

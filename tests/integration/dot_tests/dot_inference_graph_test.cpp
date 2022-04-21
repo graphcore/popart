@@ -3,31 +3,30 @@
 // as a .dot file which can be compiled into a .pdf file.
 #define BOOST_TEST_MODULE dot_inference_graph_test
 
-#include <algorithm>
+#include "../random_util.hpp"
 #include <boost/filesystem.hpp>
+
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <cstdlib>
 #include <filereader.hpp>
 #include <iostream>
-#include <memory>
-#include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
-#include <set>
-#include <string>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "../random_util.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/patterns/patterns.hpp"
+#include <popart/tensornames.hpp>
+#include <popart/testdevice.hpp>
 
 using namespace popart;
 

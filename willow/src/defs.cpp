@@ -1,19 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <numeric>
-#include <onnx/defs/schema.h>
-#include <onnx/defs/shape_inference.h>
-#include <string>
-#include <vector>
+#include <functional>
+
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/op/receptive.hpp>
+#include <popart/operators.hpp>
 
-#include "onnx/onnx_pb.h"
-#include "popart/operatoridentifier.hpp"
-#include "popart/util.hpp"
+#include <onnx/defs/schema.h>
+#include <onnx/defs/shape_inference.h>
 
 /*
  * This registers ONNX operators and shape inference for the Graphcore custom
@@ -748,7 +742,6 @@ static const char groupnormalizationDoc[] =
     "input";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     GroupNormalization,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -777,7 +770,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(GroupNormalizationShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Subsample,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -798,7 +790,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(SubsampleShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     PrintTensor,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -829,7 +820,6 @@ static const char scaleDoc[] =
     "element-wise.";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Scale,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -847,7 +837,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ScaleShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     LSTM,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -873,7 +862,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(LSTMShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Gelu,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -893,7 +881,6 @@ static const char detachDoc[] =
     "disconnect the flow of gradients when creating the backwards pass";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Detach,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -912,7 +899,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(DetachShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Call,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -949,7 +935,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CallShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     DynamicUpdate,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -982,7 +967,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(DynamicUpdateShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     DynamicSlice,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1014,7 +998,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(DynamicSliceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     DynamicZero,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1043,7 +1026,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(DynamicZeroShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     DynamicAdd,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1072,7 +1054,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(DynamicAddShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     SequenceSlice,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1108,7 +1089,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(SequenceSliceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     L1,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1142,7 +1122,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(LossShapeInference<0>))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Nll,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1185,7 +1164,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(LossShapeInference<1>))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     IdentityLoss,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1219,7 +1197,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(LossShapeInference<0>))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     MultiConv,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1283,7 +1260,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(MultiConvShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Nop,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1300,7 +1276,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(NopShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     ShapedDropout,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1325,7 +1300,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ShapedDropoutShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Atan2,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1342,7 +1316,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(Atan2ShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     DepthToSpace,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1367,7 +1340,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               std::string("DCR")))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Expm1,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1383,7 +1355,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(Expm1ShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Log1p,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1399,7 +1370,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(Log1pShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Reshape,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1427,7 +1397,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ReshapeShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Reverse,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1533,7 +1502,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ScatterReduceShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Init,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1567,7 +1535,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(InitShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Remainder,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1588,7 +1555,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(RemainderShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Fmod,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1609,7 +1575,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(FmodShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     BitwiseNot,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1625,7 +1590,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(BitwiseNotShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Round,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1642,7 +1606,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(RoundShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     CtcBeamSearchDecoder,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1682,7 +1645,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CtcBeamSearchDecoderShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Ctc,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1728,7 +1690,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CtcLossShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     ReduceMedian,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1759,7 +1720,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(ReduceMedianShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     BitwiseAnd,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1776,7 +1736,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     BitwiseOr,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1793,7 +1752,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     BitwiseXor,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1810,7 +1768,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     BitwiseXnor,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1827,7 +1784,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(BidirectionalBroadcastShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     CopyVarUpdate,
     AiGraphcore,
     popart::Domain::ai_graphcore,
@@ -1847,7 +1803,6 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .TypeAndShapeInferenceFunction(CopyVarUpdateShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     Swish,
     AiGraphcore,
     popart::Domain::ai_graphcore,

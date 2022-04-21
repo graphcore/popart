@@ -1,39 +1,26 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <memory>
 #include <onnxutil.hpp>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/ces/concatce.hpp>
+#include <popart/ces/flattence.hpp>
+#include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adamcombo.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/adamvarupdate.hpp>
+#include <popart/op/cast.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/lamb.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/patterns/adamdecompose.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
-
-#include "popart/adam.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
-#include "popart/variablesettings.hpp"
 
 namespace popart {
 

@@ -1,33 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <popops/Expr.hpp>
 #include <popart/error.hpp>
 #include <popart/op/incrementmod.hpp>
 #include <popart/popx/op/incrementmodx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/tensorinfo.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 namespace {
 

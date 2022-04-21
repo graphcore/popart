@@ -1,31 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <ostream>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <popops/OperationDef.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 #include <popart/error.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/popx/op/expandx.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/util.hpp"
-
+#include <popart/tensorindex.hpp>
 namespace popart {
 namespace popx {
-class Devicex;
 
 BaseExpandOpx::BaseExpandOpx(Op *op_, Devicex *devicex)
     : PopOpx(op_, devicex), op(static_cast<ExpandOp *>(op_)) {}

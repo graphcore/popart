@@ -2,17 +2,10 @@
 #ifndef GUARD_NEURALNET_SGD1VARUPDATEACCLUPDATEOPOP_HPP
 #define GUARD_NEURALNET_SGD1VARUPDATEACCLUPDATEOPOP_HPP
 
-#include <map>
-#include <memory>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 /**
  * @brief Performs the part of the SGD1 velocity update equation that is

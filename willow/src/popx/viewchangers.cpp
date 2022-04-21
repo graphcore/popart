@@ -1,9 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <cstddef>
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <vector>
 #include <popart/popx/viewchangers.hpp>
 
 namespace popart {

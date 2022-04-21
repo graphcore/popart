@@ -2,16 +2,12 @@
 #ifndef GUARD_NEURALNET_ELEMENTWISEGRADOPPATTERN_HPP
 #define GUARD_NEURALNET_ELEMENTWISEGRADOPPATTERN_HPP
 
-#include <vector>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp> // IWYU pragma: keep
+#include <popart/ir.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/patterns/pattern.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-class Tensor;
 
 // Generalized pattern to replace a GradOp with the Derivative of the Op and a
 // Mul

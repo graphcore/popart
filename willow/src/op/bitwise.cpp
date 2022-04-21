@@ -1,20 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "popart/op/bitwise.hpp"
-
 #include <memory>
-#include <string>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
-
 BitwiseNotOp::BitwiseNotOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

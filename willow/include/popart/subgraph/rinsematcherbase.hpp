@@ -2,13 +2,18 @@
 #ifndef GUARD_NEURALNET_RINSEMATCHERBASE_HPP
 #define GUARD_NEURALNET_RINSEMATCHERBASE_HPP
 
-#include <map>
-#include <vector>
-
 #include "isomorphic.hpp"
 #include "match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
 #include "subgraphutil.hpp"
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <numeric>
+#include <set>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <vector>
 
 namespace fwtools {
 namespace subgraph {

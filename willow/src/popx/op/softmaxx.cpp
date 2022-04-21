@@ -1,35 +1,21 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <popnn/NonLinearity.hpp>
-#include <popnn/NonLinearityDef.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/OperationDef.hpp>
-#include <popops/Reduce.hpp>
+#include <iterator>
+#include <memory>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/softmax.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/nllx.hpp>
 #include <popart/popx/op/softmaxx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
+#include <snap/popops/ElementWise.hpp>
+#include <popnn/NonLinearity.hpp>
+#include <popops/Encoding.hpp>
+#include <popops/Expr.hpp>
+#include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 

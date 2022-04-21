@@ -1,23 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE recompute_unittest
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/recompute.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vertex.hpp"
 
 using namespace popart;
 

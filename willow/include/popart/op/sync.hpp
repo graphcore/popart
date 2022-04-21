@@ -2,9 +2,9 @@
 #ifndef GUARD_NEURALNET_SYNC_HPP
 #define GUARD_NEURALNET_SYNC_HPP
 
-#include <memory>
-#include <poplar/SyncType.hpp>
 #include <popart/op.hpp>
+
+#include <poplar/SyncType.hpp>
 
 namespace popart {
 

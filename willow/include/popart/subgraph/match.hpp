@@ -2,8 +2,8 @@
 #ifndef GUARD_NEURALNET_SUBGRAPH_MATCH_HPP
 #define GUARD_NEURALNET_SUBGRAPH_MATCH_HPP
 
-#include <iosfwd>
 #include <vector>
+
 #include <popart/subgraph/subgraphnames.hpp>
 
 namespace fwtools {

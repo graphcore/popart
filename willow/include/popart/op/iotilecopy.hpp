@@ -3,15 +3,9 @@
 #ifndef GUARD_NEURALNET_IOTILECOPY_HPP
 #define GUARD_NEURALNET_IOTILECOPY_HPP
 
-#include <memory>
-#include <set>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class IoTileCopyOp : public Op {
 public:

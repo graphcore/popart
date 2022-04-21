@@ -1,23 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op/adamupdater.hpp"
+#include "bindings/op.hpp"
+#include "bindings/op/optional.hpp"
 
-#include <initializer_list>
-#include <memory>
-#include <pybind11/cast.h>
-#include <pybind11/numpy.h>     // IWYU pragma: keep
-#include <pybind11/operators.h> // IWYU pragma: keep
+#include "bindings/basicoptionals.hpp"
+#include <pybind11/numpy.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
+#include <pybind11/stl.h>
 
-#include "popart/adam.hpp"
-#include "popart/op.hpp"
-#include "popart/op/adamupdater.hpp"
+#include <popart/op/accumulate.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class OptimizerValue;
-
 namespace _internal {
 namespace ir {
 namespace op {

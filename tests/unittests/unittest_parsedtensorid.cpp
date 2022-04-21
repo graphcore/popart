@@ -3,16 +3,14 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <map>
-#include <parsedtensorid.hpp>
-#include <string>
-#include <utility>
+
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/scope.hpp>
 #include <popart/tensornames.hpp>
+
+#include <parsedtensorid.hpp>
 
 struct ParsedTensorIdFixture {
   // Fixture available in all fixtured tests

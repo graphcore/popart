@@ -2,15 +2,10 @@
 #define BOOST_TEST_MODULE Namescope1LogicalIf
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
+#include <popart/inputshapeinfo.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/error.hpp"
-#include "popart/names.hpp"
+#include <popart/tensornames.hpp>
 
 bool invalidHigherInput(const popart::error &ex) {
   std::string what = ex.what();

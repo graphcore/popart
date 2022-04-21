@@ -4,6 +4,8 @@
 
 #include <pybind11/pybind11.h>
 
+#include <popart/topocons.hpp>
+
 namespace py = pybind11;
 
 namespace popart {

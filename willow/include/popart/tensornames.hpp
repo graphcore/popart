@@ -7,7 +7,6 @@
 #include <popart/names.hpp>
 
 namespace popart {
-class Graph;
 
 /**
  * Given the id of a tensor \p fwdId in a graph #fwdGraph, and its corresponding

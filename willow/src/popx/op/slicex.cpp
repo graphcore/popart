@@ -1,29 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
+#include <algorithm>
+
+#include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/op/slice.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/slicex.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensornames.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/slicestruct.hpp"
+#include <popart/ir.hpp>
+#include <popart/tensors.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popops/Pad.hpp>
+#include <popops/Zero.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 BaseSliceOpx::BaseSliceOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 

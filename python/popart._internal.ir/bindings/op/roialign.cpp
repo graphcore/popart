@@ -1,23 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "bindings/op/roialign.hpp"
+#include "bindings/op.hpp"
+#include "bindings/op/optional.hpp"
 
-#include <initializer_list>
-#include <memory>
-#include <pybind11/cast.h>
-#include <pybind11/numpy.h>     // IWYU pragma: keep
-#include <pybind11/operators.h> // IWYU pragma: keep
+#include "bindings/basicoptionals.hpp"
+#include <pybind11/numpy.h>
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
-#include <stdint.h>
-
-#include "popart/op.hpp"
-#include "popart/op/roialign.hpp"
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
 namespace popart {
-struct OperatorIdentifier;
-
 namespace _internal {
 namespace ir {
 namespace op {

@@ -1,50 +1,33 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineQuadraticEpsilonTesto0
 
+#include "../random_util.hpp"
 #include <algorithm>
 #include <boost/filesystem.hpp>
-#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <cstdlib>
-#include <iostream>
 #include <map>
-#include <memory>
-#include <set>
-#include <string>
+#include <tuple>
 #include <vector>
-
-#include "../random_util.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vertex.hpp"
-#include "popart/voiddata.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define protected public
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
 #undef protected
 
 #include <popart/session.hpp>

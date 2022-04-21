@@ -2,17 +2,12 @@
 #ifndef GUARD_NEURALNET_TENSOR_GRAD_REGISTRY_HPP
 #define GUARD_NEURALNET_TENSOR_GRAD_REGISTRY_HPP
 
-#include <functional>
-#include <map>
-#include <vector>
+#include <popart/names.hpp>
+#include <popart/tensor.hpp>
+
 #include <popart/vendored/optional.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-class Graph;
-class Tensor;
 
 // The gradient of a tensor is the sum of 1 or several tensors,
 // 1 for each of the nodes which consumed it. This class is for

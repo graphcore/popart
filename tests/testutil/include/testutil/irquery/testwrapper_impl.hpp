@@ -2,14 +2,11 @@
 #ifndef TEST_UTILS_IR_QUERY_TEST_WRAPPER_IMPL_HPP
 #define TEST_UTILS_IR_QUERY_TEST_WRAPPER_IMPL_HPP
 
-#include "testutil/irquery/testwrapper.hpp"
 #include <memory>
+#include <testutil/irquery/testwrapper.hpp>
 
 namespace popart {
-class Ir;
-
 namespace irquery {
-class TestFailureTriggerer;
 
 // Implementation of TestWrapper::TestWrapper.
 template <typename T>

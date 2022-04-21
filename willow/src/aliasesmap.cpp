@@ -1,26 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/aliasesmap.hpp>
 
-#include "popart/aliases.hpp"
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/graphid.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
+#include <poprithms/logging/timepartitionlogger.hpp>
 
 namespace popart {
 

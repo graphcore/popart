@@ -2,18 +2,11 @@
 #ifndef GUARD_NEURALNET_NLL_HPP
 #define GUARD_NEURALNET_NLL_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class NllOp : public LossOp {
 public:

@@ -1,10 +1,10 @@
 
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <map>
-#include <memory>
 #include <transforms/autodiff/gradgrowersumop.hpp>
-#include <utility>
+
+#include <memory>
+
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/op/sum.hpp>
@@ -12,13 +12,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
-#include "popart/names.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "transforms/autodiff/autodiffhelper.hpp"
-
 namespace popart {
-class AutodiffIrInterface;
 
 GradGrowerSumOp::GradGrowerSumOp(AutodiffIrInterface &dep)
     : GradGrowerSumOpInterface(), AutodiffHelper(dep) {}

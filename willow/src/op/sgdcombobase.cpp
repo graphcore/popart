@@ -1,19 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <map>
-#include <set>
-#include <string>
-#include <utility>
+#include <memory>
+#include <popart/ir.hpp>
 #include <popart/op/sgdcombobase.hpp>
 #include <popart/opserialiser.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 SGDMComboBaseOp::SGDMComboBaseOp(const OperatorIdentifier &opid,
                                  OptimizerValue initialSmm1,

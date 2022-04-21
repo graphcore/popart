@@ -2,19 +2,10 @@
 #ifndef NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 #define NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <popart/names.hpp>
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popops {
 class SlicePlan;
@@ -22,10 +13,8 @@ class SlicePlan;
 
 namespace popart {
 class TensorInfo;
-
 namespace popx {
 class PopOpx;
-
 namespace scatterutilx {
 
 // poplin::linspace only supports float or half, this is for int

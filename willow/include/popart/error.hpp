@@ -3,12 +3,13 @@
 #ifndef GUARD_NEURALNET_ERROR_HPP
 #define GUARD_NEURALNET_ERROR_HPP
 
-#include <exception>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <popart/erroruid.hpp>
 #include <popart/logging.hpp>
+#include <popart/names.hpp>
 
 namespace popart {
 

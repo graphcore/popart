@@ -2,16 +2,10 @@
 #ifndef GUARD_NEURALNET_SGD1VARUPDATE_HPP
 #define GUARD_NEURALNET_SGD1VARUPDATE_HPP
 
-#include <map>
-#include <memory>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
 
 /**
  * @brief Performs the SGD1 weight update equation.

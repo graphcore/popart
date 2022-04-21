@@ -1,9 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/graphid.hpp"
 
-#include <initializer_list>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
+
+#include <functional>
+#include <sstream>
 #include <string>
 #include <popart/graphid.hpp>
 

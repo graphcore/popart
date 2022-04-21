@@ -2,14 +2,9 @@
 #ifndef GUARD_NEURALNET_NOP_HPP
 #define GUARD_NEURALNET_NOP_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // The NopOp is functionally the same as the IdentityOp.
 // The difference is that it will not be removed by patterns.

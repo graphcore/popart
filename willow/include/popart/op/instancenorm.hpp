@@ -2,16 +2,9 @@
 #ifndef GUARD_NEURALNET_INSTANCENORM_HPP
 #define GUARD_NEURALNET_INSTANCENORM_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class InstanceNormOp : public Op {
 public:

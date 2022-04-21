@@ -3,15 +3,8 @@
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/op.hpp>
 #include <popart/sgd.hpp>
-
-#include "popart/error.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/optimizervaluemap.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

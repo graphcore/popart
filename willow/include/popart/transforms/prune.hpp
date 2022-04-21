@@ -2,9 +2,7 @@
 #ifndef GUARD_NEURALNET_PRUNE_HPP
 #define GUARD_NEURALNET_PRUNE_HPP
 
-#include <cstddef>
 #include <set>
-#include <string>
 #include <vector>
 #include <popart/transforms/transform.hpp>
 
@@ -12,7 +10,6 @@ namespace popart {
 
 class Tensor;
 class Op;
-class Graph;
 
 class PruneHelper {
 public:

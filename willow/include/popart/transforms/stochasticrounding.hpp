@@ -2,12 +2,12 @@
 #ifndef GUARD_NEURALNET_STOCHASTIC_ROUNDING_HPP
 #define GUARD_NEURALNET_STOCHASTIC_ROUNDING_HPP
 
-#include <cstddef>
-#include <string>
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
+#include <popart/vendored/optional.hpp>
+
 namespace popart {
-class Graph;
 
 // Set Op::Settings::stochasticRoundingMethod for all ops. Note that currently
 // this transform sets the method to `StochasticRoundingMethod::IdenticalSeeds`.

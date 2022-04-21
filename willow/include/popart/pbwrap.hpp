@@ -3,7 +3,7 @@
 #define GUARD_PBWRAP_GRAPH_HPP
 
 #include <map>
-#include <string>
+#include <ostream>
 #include <vector>
 #include <popart/names.hpp>
 

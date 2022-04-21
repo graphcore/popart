@@ -2,21 +2,11 @@
 #ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_ADD_FWD_OUTPUT_STITCHER_HPP
 #define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_ADD_FWD_OUTPUT_STITCHER_HPP
 
-#include <transforms/autodiff/stitcher.hpp>
 #include <vector>
 
-#include "popart/bwdgraphinfo.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-
-namespace nonstd {
-namespace optional_lite {
-template <typename T> class optional;
-} // namespace optional_lite
-} // namespace nonstd
+#include <transforms/autodiff/stitcher.hpp>
 
 namespace popart {
-class AutodiffIrInterface;
 
 /**
  * Helper class for growing gradient ops.

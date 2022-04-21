@@ -1,20 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/mean.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/variadic.hpp"
-#include "popart/operators.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 MeanOp::MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}

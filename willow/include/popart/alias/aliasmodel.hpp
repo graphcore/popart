@@ -3,18 +3,20 @@
 #define GUARD_NEURALNET_ALIASMODEL_HPP
 
 #include <map>
-#include <vector>
-#include <poprithms/common/multiout/opid.hpp>
-#include <poprithms/common/multiout/tensorid.hpp>
-#include <poprithms/memory/inplace/graph.hpp>
 
-#include "popart/names.hpp"
+#include <poprithms/memory/inplace/crosslink.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
+#include <poprithms/memory/inplace/result.hpp>
+#include <poprithms/memory/inplace/tensor.hpp>
+#include <poprithms/memory/inplace/tensormap.hpp>
+
+#include <popart/operators.hpp>
 
 namespace popart {
 
 // Forward declaration.
 class Op;
-class Tensor;
 
 /**
  * A container for the poprithms::memory::inplace::Graph which corresponds to a

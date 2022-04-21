@@ -1,15 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <analysis/replicaequal/replicaequalanalysisresults.hpp>
-#include <cassert>
-#include <iterator>
-#include <string>
-#include <utility>
-
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/op.hpp"
-#include "popart/tensor.hpp"
 
 namespace popart {
 

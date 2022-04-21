@@ -2,21 +2,11 @@
 #ifndef GUARD_NEURALNET_RINSEMATCHER_ALGO1_HPP
 #define GUARD_NEURALNET_RINSEMATCHER_ALGO1_HPP
 
-#include <array>
-#include <cstddef>
-#include <map>
-#include <memory>
-#include <queue>
-#include <set>
-#include <tuple>
-#include <utility>
-#include <vector>
-
 #include "match.hpp"
-#include "popart/subgraph/isomorphic.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
-#include "popart/subgraph/subgraphutil.hpp"
 #include "rinsematcherbase.hpp"
+
+#include <array>
+#include <queue>
 
 namespace fwtools {
 namespace subgraph {

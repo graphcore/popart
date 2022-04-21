@@ -1,18 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <map>
-#include <memory>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Type.hpp>
-#include <popops/Expr.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/loop.hpp>
@@ -22,25 +9,9 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/aliaszerocopy.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/popx/op/subgraphx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
+#include <snap/poputil/TileMapping.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
-
 namespace popx {
 
 LoopOpx::LoopOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {

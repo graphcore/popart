@@ -1,25 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
+#include <popart/error.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/popx/op/reshapex.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensorinfo.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popart/tensor.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 // Test note : scale by 1.0001 in grad op makes the test fail. Good.
 void ReshapeOpx::grow(snap::program::Sequence &prog) const {

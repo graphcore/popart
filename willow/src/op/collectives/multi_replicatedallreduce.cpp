@@ -1,29 +1,7 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <set>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/op/collectives/multi_replicatedallreduce.hpp>
 
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/region.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-
 namespace popart {
-class AliasModel;
-class Tensor;
 
 MultiReplicatedAllReduceOp::MultiReplicatedAllReduceOp(
     CollectiveOperator op_,

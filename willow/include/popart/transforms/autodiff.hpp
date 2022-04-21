@@ -2,25 +2,22 @@
 #ifndef GUARD_NEURALNET_AUTODIFF_HPP
 #define GUARD_NEURALNET_AUTODIFF_HPP
 
-#include <cstddef>
+#include <map>
 #include <memory>
-#include <string>
-#include <vector>
+
 #include <popart/bwdgraphinfo.hpp>
+#include <popart/graph.hpp>
 #include <popart/names.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/transforms/transform.hpp>
-#include <popart/vendored/optional.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 
 // Forward declarations.
+class AutodiffIrInterface;
 class StitcherFactory;
-class Graph;
-class Ir;
 
 /**
  * Class responsible for the automatic differentiation (autodiff) transform.

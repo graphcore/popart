@@ -2,26 +2,18 @@
 #ifndef GUARD_NEURALNET_POPPROGRAMS_HPP
 #define GUARD_NEURALNET_POPPROGRAMS_HPP
 
-#include <iosfwd>
-#include <map>
-#include <memory>
 #include <set>
-#include <snap/Function.hpp>
-#include <snap/Program.hpp>
-#include <string>
 #include <unordered_map>
-#include <utility>
-#include <vector>
+
+#include <poplar/Program.hpp>
+
+#include <snap/Program.hpp>
+
 #include <popart/names.hpp>
 #include <popart/popx/pritask.hpp>
-
-namespace snap {
-class Graph;
-} // namespace snap
+#include <popart/transforms/pipeline.hpp>
 
 namespace popart {
-class Graph;
-class PipelineInfo;
 
 enum class ScheduledPreLoss;
 

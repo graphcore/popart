@@ -2,25 +2,18 @@
 #ifndef GUARD_NEURALNET_LIVENESS_HPP
 #define GUARD_NEURALNET_LIVENESS_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <iosfwd>
-#include <map>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
+
 #include <popart/graphid.hpp>
 #include <popart/op.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
 
 class Graph;
-class Ir;
+class SubgraphOp;
 
 namespace liveness {
 

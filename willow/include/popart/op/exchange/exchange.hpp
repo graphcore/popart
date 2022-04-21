@@ -2,19 +2,10 @@
 #ifndef GUARD_NEURALNET_EXCHANGE_HPP
 #define GUARD_NEURALNET_EXCHANGE_HPP
 
-#include <iosfwd>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/op.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/op/elementwise.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 /**
  * Enum type to specify an exchange strategy
@@ -113,7 +104,6 @@ enum class ExchangeStrategy {
   /// Number of values
   N = 4
 };
-std::ostream &operator<<(std::ostream &, const ExchangeStrategy &);
 
 /**
  * Enum type to specify an exchange direction
@@ -126,7 +116,8 @@ enum class ExchangeDirection {
   /// Number of values
   N = 2
 };
-std::ostream &operator<<(std::ostream &, const ExchangeDirection &);
+
+std::ostream &operator<<(std::ostream &, const ExchangeStrategy &);
 
 /**
  * Class describing an external exchanges from IPUs
@@ -222,8 +213,6 @@ private:
   /// Whether a remote loaded tensor should be inplaced
   bool inplace;
 };
-
-std::ostream &operator<<(std::ostream &, const ExchangeDescriptor &);
 
 class ExchangeBaseOp : public Op {
 public:

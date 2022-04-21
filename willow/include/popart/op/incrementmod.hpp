@@ -2,20 +2,16 @@
 #ifndef GUARD_NEURALNET_INCREMENTMOD_HPP
 #define GUARD_NEURALNET_INCREMENTMOD_HPP
 
-#include <memory>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 /**
  * Increment Modulo Op
  *
- * This Op takes one Tensor as input (as indicated in \see
- *graphcoreoperators.hpp)
+ * This Op takes one Tensor as input (as indicated in \see graphcoreoperators.hpp)
  * 1. The Tensor to increment (modulo)
  * The output is the tensor  y = (x + increment) % modulus
  *
@@ -43,8 +39,7 @@ private:
 /**
  * Increment Modulo Op
  *
- * This Op takes one Tensor as input (as indicated in \see
- *graphcoreoperators.hpp)
+ * This Op takes one Tensor as input (as indicated in \see graphcoreoperators.hpp)
  * 1. The Tensor to increment (modulo)
  * The output is the tensor  x = (x + increment) % modulus
  *

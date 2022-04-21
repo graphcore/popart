@@ -1,31 +1,22 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PrePlanConvolutionsTest
 
-#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
+#include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
+
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
-#include <popart/sgd.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 

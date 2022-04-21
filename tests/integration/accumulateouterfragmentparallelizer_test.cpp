@@ -1,35 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AccumulateOuterFragmentParallelizerTest
 
-#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+
+#include "test_runner.hpp"
+
 #include <popart/names.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/builder.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/devicemanager.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/voiddata.hpp"
-#include "test_runner.hpp"
+#include <popart/op/exchange/remote.hpp>
+#include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
+#include <popart/transforms/transform.hpp>
 
 using namespace popart;
 

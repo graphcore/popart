@@ -5,52 +5,27 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
 #include <filereader.hpp>
-#include <initializer_list>
-#include <iostream>
-#include <map>
 #include <memory>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <subgraph/wrappedop.hpp>
-#include <utility>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/relu.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/subgraph/outliner.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 
-#include "popart/analysis/replicaequal/replicaequalanalysis.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/graph.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/subgraph/match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
-#include "popart/subgraph/subgraphutil.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
+#include <subgraph/wrappedop.hpp>
 
 namespace {
 

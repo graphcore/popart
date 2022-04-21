@@ -1,36 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
+#include <iterator>
 #include <vector>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/op/atan.hpp>
 #include <popart/popx/op/atanx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 AtanInplaceOpx::AtanInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(op, devicex, AtanComputex::get()) {

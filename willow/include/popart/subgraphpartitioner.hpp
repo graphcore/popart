@@ -2,21 +2,15 @@
 #ifndef GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
 #define GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
 
-#include <cstddef>
 #include <iostream>
 #include <map>
-#include <set>
-#include <string>
-#include <tuple>
-#include <vector>
+
 #include <popart/names.hpp>
 
 namespace popart {
 
 class Op;
 class CallOp;
-class Graph;
-class Ir;
 
 namespace liveness {
 

@@ -2,18 +2,13 @@
 #ifndef GUARD_NEURALNET_SGD0VARUPDATECOMBOOP_HPP
 #define GUARD_NEURALNET_SGD0VARUPDATECOMBOOP_HPP
 
-#include <map>
-#include <memory>
-#include <set>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/varupdate.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/optimizervalue.hpp"
+#include <popart/operators.hpp>
+#include <popart/optimizervaluemap.hpp>
 
 namespace popart {
-class OpSerialiserBase;
 
 enum class OptimizerReductionType;
 

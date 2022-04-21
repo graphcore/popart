@@ -1,21 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <functional>
 #include <transforms/autodiff/addfwdoutputstitcher.hpp>
+
+#include <list>
+
 #include <popart/graph.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/call.hpp>
 
-#include "popart/error.hpp"
-#include "popart/op.hpp"
-#include "popart/util.hpp"
-#include "transforms/autodiff/autodiffirinterface.hpp"
-#include "transforms/autodiff/stitcher.hpp"
-
-namespace nonstd {
-namespace optional_lite {
-template <typename T> class optional;
-} // namespace optional_lite
-} // namespace nonstd
+#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 
 namespace popart {
 

@@ -2,21 +2,14 @@
 #ifndef GUARD_NEURALNET_POPOPXMANAGER_HPP
 #define GUARD_NEURALNET_POPOPXMANAGER_HPP
 
-#include <functional>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/error.hpp>
-
-#include "popart/operatoridentifier.hpp"
+#include <popart/names.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
-class Op;
 
 namespace popx {
-class Devicex;
-class PopOpx;
 
 class OpxManager {
 

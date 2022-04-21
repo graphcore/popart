@@ -1,20 +1,12 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE OpxTensorAliasingTest
 
-#include <algorithm>
-#include <boost/random/uniform_real_distribution.hpp>
+#include "random_util.hpp"
+
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
+
 #include <filereader.hpp>
-#include <map>
-#include <memory>
-#include <snap/Graph.hpp>
 #include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <vector>
-#include <poplar/exceptions.hpp>
 #include <popops/ElementWise.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -25,25 +17,13 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include "popart/error.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/any.hpp"
-#include "random_util.hpp"
-
-namespace popart {
-class IArray;
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
+#include <vector>
 
 using namespace popart;
 

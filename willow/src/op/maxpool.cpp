@@ -1,26 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <numeric>
-#include <string>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/op/maxpool.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/receptive.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

@@ -3,14 +3,10 @@
 #define GUARD_NEURALNET_SWISH_HPP
 
 #include <memory>
-#include <tuple>
-#include <vector>
+
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class SwishOp : public ElementWiseUnaryOp {
 public:

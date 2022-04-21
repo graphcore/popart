@@ -1,33 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <map>
-#include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplin/Convolution.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/convx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/popx/poplaroptionsx.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/convbase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/op/convbasex.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class Op;
 
 namespace popx {
 

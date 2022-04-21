@@ -2,17 +2,11 @@
 #define BOOST_TEST_MODULE Builder0LogicalIf
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
+#include <popart/inputshapeinfo.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/names.hpp"
+#include <popart/tensornames.hpp>
 
 using namespace popart;
 

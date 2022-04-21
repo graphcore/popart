@@ -1,5 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cstdlib>
+#include <cstring>
 #include <type_traits>
 #include <popart/version.hpp>
 

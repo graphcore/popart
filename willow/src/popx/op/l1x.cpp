@@ -1,35 +1,22 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <vector>
-#include <poplar/Type.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/OperationDef.hpp>
-#include <popops/Reduce.hpp>
+#include <numeric>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/l1x.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
+#include <snap/popops/ElementWise.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
+#include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
-
 namespace popx {
-class Devicex;
 
 L1Opx::L1Opx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<L1Op>(op, Onnx::CustomOperators::L1);

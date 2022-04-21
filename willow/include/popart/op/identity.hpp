@@ -3,18 +3,11 @@
 #ifndef GUARD_NEURALNET_IDENTITY_HPP
 #define GUARD_NEURALNET_IDENTITY_HPP
 
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/loss.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class IdentityOp : public ElementWiseUnaryOp {
 public:

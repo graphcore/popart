@@ -1,21 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/graphid.hpp"
-#include <functional>
-#include <map>
-#include <memory>
 #include <testutil/irquery/graphtestwrapper.hpp>
-#include <utility>
-#include <vector>
-
-#include "popart/graph.hpp"
-#include "popart/ir.hpp"
-#include "popart/tensors.hpp"
-#include "testutil/irquery/irquery.hpp"
 
 namespace popart {
-class Op;
-class Tensor;
-
 namespace irquery {
 
 GraphTestWrapper::GraphTestWrapper(Ir &ir_, const GraphId &id)

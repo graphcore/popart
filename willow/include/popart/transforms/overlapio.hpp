@@ -2,18 +2,11 @@
 #ifndef GUARD_NEURALNET_OVERLAPIO_HPP
 #define GUARD_NEURALNET_OVERLAPIO_HPP
 
-#include <cstddef>
 #include <map>
-#include <set>
-#include <string>
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Graph;
-class Ir;
 
 class OverlapIO : public Transform {
 public:

@@ -1,30 +1,18 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ExecutableXSerialisationUnittest
 
+#include <sstream>
+
 #include <boost/test/unit_test.hpp>
+
 #include <capnp/message.h>
 #include <capnp/serialize.h>
-#include <cstddef>
+
 #include <kj/std/iostream.h>
-#include <memory>
-#include <sstream>
-#include <vector>
+
 #include <popx/executablexserializer.hpp>
 #include <popart/ir.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/capnp/Ir.capnp.h"
-#include "popart/commgroup.hpp"
-#include "popart/datatype.hpp"
-#include "popart/tensordata.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/variablesettings.hpp"
-#include "popart/vendored/optional.hpp"
-
-namespace popart {
-class Graph;
-} // namespace popart
 
 using namespace popart;
 using namespace popart::popx::serialization;

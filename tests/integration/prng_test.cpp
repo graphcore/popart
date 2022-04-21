@@ -1,60 +1,31 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PrngTest
 
-#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <ostream>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Program.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popops/ElementWise.hpp>
-#include <poprand/RandomGen.hpp>
+
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/ndarraywrapper.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include "popart/builder.gen.hpp"
-#include "popart/datatype.hpp"
-#include "popart/half.hpp"
-#include "popart/iarray.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
-#include "random_util.hpp"
+#include <poplar/Graph.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
+#include <poprand/RandomGen.hpp>
 
-namespace popart {
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/popx/popopx.hpp>
+
+#include "random_util.hpp"
+#include <filereader.hpp>
 
 using namespace popart;
 using namespace popart::popx;

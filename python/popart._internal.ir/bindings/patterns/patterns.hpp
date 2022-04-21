@@ -3,6 +3,7 @@
 #define POPART__INTERNAL_IR_BINDINGS_PATTERNS_HPP
 
 #include <pybind11/pybind11.h>
+#include <popart/patterns/patterns.hpp>
 
 namespace py = pybind11;
 

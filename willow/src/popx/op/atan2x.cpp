@@ -1,28 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
+#include <popart/error.hpp>
 #include <popart/op/atan2.hpp>
 #include <popart/popx/op/atan2x.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-
-namespace snap {
-class Graph;
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
+#include <popops/ElementWise.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 Atan2Computex::Atan2Computex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 

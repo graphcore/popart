@@ -1,25 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

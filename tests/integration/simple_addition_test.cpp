@@ -8,28 +8,20 @@
 #define BOOST_TEST_MODULE simple_addition_test
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <iostream>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/logging.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
 #include <popart/session.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/names.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
+#include <popart/tensornames.hpp>
 
 using namespace popart;
 

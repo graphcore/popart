@@ -1,20 +1,24 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_MERGECOLLECTIVESTRANSFORM_HPP
 #define GUARD_NEURALNET_MERGECOLLECTIVESTRANSFORM_HPP
-#include <cstddef>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/collectives/multi_replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
+#include <popart/operators.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
-
 namespace popart {
-class Graph;
-class Op;
-class TensorInfo;
 
 /**
  * A transform for merging multiple compatible collective operations

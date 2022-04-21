@@ -1,41 +1,21 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <queue>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
 #include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
+
+#include <memory>
+#include <popart/error.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/popx/op/sumx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/variadic.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
+#include <queue>
 
 namespace pe = popops::expr;
 
 namespace popart {
-
 namespace popx {
-class Devicex;
 
 SumOpx::SumOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<SumOp>(op, {Onnx::Operators::Sum_6, Onnx::Operators::Sum_8});

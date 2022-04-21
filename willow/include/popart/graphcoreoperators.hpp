@@ -2,7 +2,8 @@
 #ifndef GUARD_NEURALNET_GRAPHCOREOPERATORS_HPP
 #define GUARD_NEURALNET_GRAPHCOREOPERATORS_HPP
 
-#include <cstdint>
+#include <popart/attributes.hpp>
+#include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/operatoridentifier.hpp>
 

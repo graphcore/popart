@@ -1,19 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 AutoLossScaleProxyOp::AutoLossScaleProxyOp(const OperatorIdentifier &_opid,
                                            const Op::Settings &settings_)

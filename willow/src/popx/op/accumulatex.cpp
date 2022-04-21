@@ -1,49 +1,28 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <limits>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <tuple>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popops/DynamicSlice.hpp>
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/Gather.hpp>
 #include <popops/ScaledAdd.hpp>
+#include <popops/Zero.hpp>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/accumulatex.hpp>
 #include <popart/popx/op/gatherx.hpp>
 #include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/varupdatex.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/viewchangers.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popops/DynamicSlice.hpp>
+#include <popops/Gather.hpp>
+
+#include <set>
 
 namespace pe = popops::expr;
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 /********** AccumulateBaseOpx **********/
 

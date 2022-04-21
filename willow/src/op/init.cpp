@@ -1,22 +1,13 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
+#include <algorithm>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/init.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 InitOp::InitOp(const OperatorIdentifier &_opid,
                const TensorInfo &tensor_info_,

@@ -2,19 +2,10 @@
 #ifndef GUARD_NEURALNET_SGD0VARUPDATE_HPP
 #define GUARD_NEURALNET_SGD0VARUPDATE_HPP
 
-#include <map>
-#include <memory>
-#include <set>
 #include <popart/op/varupdate.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/optimizer.hpp>
 
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class SGD0VarUpdateOpBase : public VarUpdateWithUpdaterOp {
 public:

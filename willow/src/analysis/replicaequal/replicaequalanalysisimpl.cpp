@@ -1,30 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
 #include <analysis/replicaequal/replicaequalanalysisimpl.hpp>
-#include <memory>
-#include <set>
-#include <utility>
+
 #include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/graph.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/pointercomparators.hpp>
-
-#include "analysis/replicaequal/replicaequalanalysisresults.hpp"
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/error.hpp"
-#include "popart/ir.hpp"
-#include "popart/op.hpp"
-#include "popart/replicatedstreammode.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

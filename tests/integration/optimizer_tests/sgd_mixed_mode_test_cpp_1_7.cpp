@@ -1,16 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE sgd_mixed_mode_test_7
 
-#include <array>
-#include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <iostream>
-#include <string>
-
 #include "get_results.hpp"
-#include "popart/half.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/sgd.hpp"
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_7_float_16,
                               TestConfig,

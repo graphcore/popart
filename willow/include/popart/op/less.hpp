@@ -2,13 +2,10 @@
 #ifndef GUARD_NEURALNET_LESS_HPP
 #define GUARD_NEURALNET_LESS_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 class LessOp : public BinaryComparisonOp {
 public:

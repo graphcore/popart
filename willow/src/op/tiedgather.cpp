@@ -1,14 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <stdint.h>
-#include <vector>
-#include <popart/error.hpp>
 #include <popart/op/tiedgather.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/op/gather.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/error.hpp>
+#include <popart/operators.hpp>
+
+#include <memory>
+#include <vector>
 
 namespace popart {
 

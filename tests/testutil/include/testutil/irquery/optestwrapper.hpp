@@ -2,13 +2,14 @@
 #ifndef TEST_UTILS_IR_QUERY_OP_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_OP_TEST_WRAPPER_HPP
 
-#include "testutil/irquery/testwrapper.hpp"
-#include <type_traits>
 #include <popart/op.hpp>
 
-namespace popart {
-class Ir;
+#include <testutil/irquery/require.hpp>
+#include <testutil/irquery/testwrapper.hpp>
 
+#include <type_traits>
+
+namespace popart {
 namespace irquery {
 
 // Forward declaration.

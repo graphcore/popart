@@ -2,23 +2,14 @@
 #ifndef GUARD_NEURALNET_RNNX_HPP
 #define GUARD_NEURALNET_RNNX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <poplar/Type.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace poplar {
-class Tensor;
-} // namespace poplar
-
 namespace popart {
-class Op;
+
+class RNNOp;
 
 namespace popx {
-class Devicex;
 
 class RNNOpx : public PopOpx {
 public:

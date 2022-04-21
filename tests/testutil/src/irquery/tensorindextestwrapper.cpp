@@ -1,18 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <functional>
-#include <string>
 #include <testutil/irquery/tensorindextestwrapper.hpp>
-#include <testutil/irquery/tensortestwrapper.hpp>
-#include <utility>
 
-#include "popart/names.hpp"
-#include "popart/tensor.hpp"
-#include "testutil/irquery/testwrapper.hpp"
-#include "testutil/irquery/testwrapper_impl.hpp"
+#include <testutil/irquery/tensortestwrapper.hpp>
 
 namespace popart {
-class Ir;
-
 namespace irquery {
 
 TensorIndexTestWrapper::TensorIndexTestWrapper(

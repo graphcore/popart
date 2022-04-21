@@ -1,46 +1,33 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
-#include <map>
-#include <memory>
+#include <popart/patterns/tiedgatherpattern.hpp>
+
 #include <patterns/tiedgatherutils/tgutils.hpp>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/accumulate.hpp>
+#include <popart/op/adamupdater.hpp>
+#include <popart/op/adamvarupdate.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
 #include <popart/op/detach.hpp>
 #include <popart/op/div.hpp>
+#include <popart/op/dropout.hpp>
 #include <popart/op/gather.hpp>
 #include <popart/op/matmul.hpp>
+#include <popart/op/mul.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/op/tiedgather.hpp>
 #include <popart/op/transpose.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
-#include <popart/patterns/tiedgatherpattern.hpp>
 #include <popart/topocons.hpp>
 
-#include "patterns/tiedgatherutils/tgutils_impl.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
+#include <queue>
+#include <vector>
 
 namespace popart {
 

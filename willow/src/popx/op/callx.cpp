@@ -1,16 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <cassert>
-#include <cstddef>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <tuple>
-#include <vector>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -19,25 +8,11 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/callx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/subgraphpartitioner.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/popx/op/subgraphx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/subgraphpartitioner.hpp>
 
 namespace popart {
-class Tensor;
-
 namespace popx {
 
 CallOpx::CallOpx(Op *op, Devicex *devicex) : SubgraphOpx(op, devicex) {

@@ -1,20 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 

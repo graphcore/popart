@@ -1,13 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <exception>
-#include <sstream>
-#include <string>
-#include <poplar/exceptions.hpp>
-#include <poputil/exceptions.hpp>
 #include <popart/error.hpp>
 #include <popart/logging.hpp>
 
-#include "popart/erroruid.hpp"
+#include <poplar/exceptions.hpp>
+#include <poputil/exceptions.hpp>
 
 #ifdef POPART_USE_STACKTRACE
 #include <boost/stacktrace.hpp>

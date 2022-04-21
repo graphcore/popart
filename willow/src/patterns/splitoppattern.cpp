@@ -1,11 +1,4 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -15,10 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/slicestruct.hpp"
-#include "popart/tensorinfo.hpp"
+#include <numeric>
 
 namespace popart {
 

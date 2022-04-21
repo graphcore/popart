@@ -1,14 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <cstdint>
-#include <ostream>
-#include <vector>
 #include <popart/commgroup.hpp>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/variablesettings.hpp>
-
-#include "popart/logging.hpp"
 
 namespace popart {
 

@@ -2,17 +2,11 @@
 #ifndef GUARD_NEURALNET_GLOBALMAXPOOL_HPP
 #define GUARD_NEURALNET_GLOBALMAXPOOL_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-
-#include "popart/tensorinfo.hpp"
+#include <popart/op/receptive.hpp>
 
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class GlobalMaxPoolOp : public Op {
 public:

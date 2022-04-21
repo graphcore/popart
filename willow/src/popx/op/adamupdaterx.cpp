@@ -1,36 +1,22 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <snap/Tensor.hpp>
+#include <cmath>
+
 #include <snap/popops/ElementWise.hpp>
-#include <vector>
-#include <poplar/Type.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
+#include <popops/Reduce.hpp>
+#include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/adamupdater.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/adamupdaterx.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/adam.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace pe = popops::expr;
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 AdamUpdaterOpx::AdamUpdaterOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AdamUpdaterOp>(op, Onnx::CustomOperators::AdamUpdater);

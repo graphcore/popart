@@ -2,17 +2,14 @@
 #define BOOST_TEST_MODULE pipeline_unittest
 
 #include <boost/test/unit_test.hpp>
-#include <map>
-#include <vector>
+
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
-
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/tensornames.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 using namespace popart;
 

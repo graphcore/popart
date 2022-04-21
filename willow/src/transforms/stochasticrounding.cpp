@@ -1,23 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <map>
-#include <memory>
-#include <typeinfo>
-#include <vector>
-#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/transforms/stochasticrounding.hpp>
 
-#include "popart/basicoptionals.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/util.hpp"
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
+
+#include <popart/util.hpp>
 
 namespace popart {
 

@@ -1,14 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <vector>
-#include <poprithms/compute/host/tensor.hpp>
+#include <onnxutil.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/castce.hpp>
-
-#include "popart/ces/constexpr.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/op/cast.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Op;
 
 ConstExprCast::ConstExprCast(Op *op_) : ConstExprOp(op_) {}
 

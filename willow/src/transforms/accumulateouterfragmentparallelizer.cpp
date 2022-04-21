@@ -1,37 +1,19 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <boost/algorithm/string.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
-#include <list>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <typeinfo>
-#include <utility>
-#include <vector>
+
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/reducesumsquare.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/accumulateouterfragmentparallelizer.hpp>
+#include <popart/transforms/clipweightgradientsbynorm.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/util.hpp"
+#include <algorithm>
 
 using namespace std;
 

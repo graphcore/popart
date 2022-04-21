@@ -2,29 +2,21 @@
 #define BOOST_TEST_MODULE HistogramOpTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <map>
-#include <string>
-#include <vector>
+
+#include <filereader.hpp>
+#include <popart/builder.hpp>
 #include <popart/graph.hpp>
+#include <popart/ndarraywrapper.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/init.hpp>
+#include <popart/operators.hpp>
+#include <popart/session.hpp>
 #include <popart/sessionoptions.hpp>
+#include <popart/testdevice.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
-#include "testutil/irquery/irquery.hpp"
+#include <testutil/irquery/irquery.hpp>
 
 using namespace popart;
 using namespace popart::irquery;

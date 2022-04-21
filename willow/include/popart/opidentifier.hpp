@@ -5,6 +5,6 @@
 #pragma message(                                                               \
     "The \"popart/opidentifier.hpp\" header has been deprecated. Please use \"popart/operators.hpp\" instead")
 
-#include "popart/operators.hpp" // IWYU pragma: keep
+#include "popart/operators.hpp"
 
 #endif

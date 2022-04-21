@@ -3,14 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/op/dropoutbase.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/op/randombase.hpp"
-#include "popart/operatoridentifier.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

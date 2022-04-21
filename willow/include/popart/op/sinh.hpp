@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_SINH_HPP
 #define GUARD_NEURALNET_SINH_HPP
 
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class SinhOp : public ElementWiseUnaryOp {
 public:

@@ -1,43 +1,45 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <popart/popx/popefserializer.hpp>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <functional>
-#include <istream>
 #include <iterator>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
 #include <popef/Reader.hpp>
 #include <popef/Types.hpp>
 #include <popef/Writer.hpp>
+
+#include <snap/Graph.hpp>
+
 #include <poplar/Engine.hpp>
 #include <poplar/Executable.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <poplar/StringRef.hpp>
 #include <poplar/Target.hpp>
 #include <popx/executablexserializer.hpp>
+#include <popx/rng/rngstatelowering.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/names.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
-#include <popart/popx/popefserializer.hpp>
 #include <popart/popx/popprograms.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/vendored/optional.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/popx/devicex.hpp"
-#include "popx/rng/rngstatelowering.hpp"
 
 namespace popart {
 namespace popx {

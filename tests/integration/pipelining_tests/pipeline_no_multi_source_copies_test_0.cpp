@@ -1,32 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineNoMultiSourceTest0
 
-#include <array>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <filereader.hpp>
-#include <iostream>
 #include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/op/stash.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
 
 // We confirm that a model which would normally have an IpuCopyOp
 // with multiple sources, can be pipelined as multi-source IpuCopyOps

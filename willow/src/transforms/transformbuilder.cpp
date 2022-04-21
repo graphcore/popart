@@ -1,33 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <map>
-#include <memory>
 #include <onnxutil.hpp>
-#include <ostream>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/ir.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/transforms/transformbuilder.hpp>
+
 #include <popart/op/add.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
-#include <popart/opmanager.hpp>
-#include <popart/transforms/transformbuilder.hpp>
+#include <popart/op/varupdate.hpp>
 #include <popart/vendored/any.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 

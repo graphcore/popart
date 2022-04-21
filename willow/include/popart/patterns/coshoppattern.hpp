@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_COSH_OP_PATTERN_HPP
 #define GUARD_NEURALNET_COSH_OP_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replace CoshOp
 // cosh(x) = (exp(x) + exp(-x))/2

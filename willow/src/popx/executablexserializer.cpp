@@ -1,19 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include "executablexserializer.hpp"
 
-#include <algorithm>
-#include <capnp/blob.h>
-#include <capnp/list.h>
-#include <capnp/message.h>
-#include <capnp/serialize.h>
 #include <cstdint>
 #include <cstdlib>
-#include <gcl/CollectiveBalancedReorder.hpp>
-#include <kj/common.h>
-#include <kj/std/iostream.h>
 #include <map>
 #include <memory>
-#include <onnxutil.hpp>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -21,6 +12,8 @@
 #include <vector>
 
 #include <capnp/blob.h>
+#include <capnp/list.h>
+#include <capnp/message.h>
 #include <capnp/serialize.h>
 
 #include <kj/common.h>
@@ -28,47 +21,31 @@
 
 #include <gcl/CollectiveBalancedReorder.hpp>
 
-#include <popef/Reader.hpp>
-#include <popef/Types.hpp>
-#include <popef/Writer.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/Executable.hpp>
 #include <poplar/Interval.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/StringRef.hpp>
-#include <poplar/Target.hpp>
+
+#include <popart/capnp/Executablex.capnp.h>
+#include <popart/capnp/Ir.capnp.h>
+#include <popart/capnp/IrLowering.capnp.h>
+#include <popart/commgroup.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphid.hpp>
 #include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/names.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/replicatedtensorshardingbundle.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
+#include <popart/tensordebuginfo.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/util.hpp>
 #include <popart/variablesettings.hpp>
 #include <popart/voiddata.hpp>
 
 #include <onnxutil.hpp>
-#include <popart/popx/irlowering.hpp>
-#include <popart/sessionoptions.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/vendored/optional.hpp>
-
-#include "popart/capnp/Executablex.capnp.h"
-#include "popart/capnp/Ir.capnp.h"
-#include "popart/capnp/IrLowering.capnp.h"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/popx/replicatedtensorshardingbundle.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/util.hpp"
-#include "popart/voiddata.hpp"
-#include <popart/vendored/any.hpp> // IWYU pragma: keep
 
 namespace popart {
 namespace popx {

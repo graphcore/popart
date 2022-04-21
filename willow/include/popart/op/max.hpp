@@ -2,14 +2,9 @@
 #ifndef GUARD_NEURALNET_MAX_HPP
 #define GUARD_NEURALNET_MAX_HPP
 
-#include <memory>
 #include <popart/op/variadic.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class MaxOp : public VariadicOp {
 public:

@@ -1,35 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PreAutomaticLossScaleTest
 #include <algorithm>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/test/unit_test.hpp>
-#include <functional>
-#include <initializer_list>
 #include <iterator>
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
+
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/test/unit_test.hpp>
+
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/transforms/preautomaticlossscaling.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/erroruid.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/util.hpp>
 
 using namespace popart;
 

@@ -2,14 +2,7 @@
 #include <popart/op/abort.hpp>
 #include <popart/opmanager.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 AbortOp::AbortOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(Onnx::CustomOperators::Abort, settings_) {}

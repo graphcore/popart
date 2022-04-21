@@ -1,16 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include "np_utils.hpp"
-
-#include <array>
-#include <cstdint>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-#include <utility>
-#include <vector>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
 
 namespace popart {
 

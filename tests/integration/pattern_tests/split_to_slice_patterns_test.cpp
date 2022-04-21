@@ -2,23 +2,11 @@
 #define BOOST_TEST_MODULE SplitToSlicePatternTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
 
 BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 

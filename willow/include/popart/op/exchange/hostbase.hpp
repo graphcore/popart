@@ -2,15 +2,10 @@
 #ifndef GUARD_NEURALNET_HOSTBASE_HPP
 #define GUARD_NEURALNET_HOSTBASE_HPP
 
-#include <memory>
 #include <popart/op.hpp>
 #include <popart/op/exchange/exchange.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class HostBaseOp : public ExchangeBaseOp {
 public:
@@ -24,8 +19,6 @@ public:
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
   bool canShard() const final { return false; }
-
-  std::unique_ptr<Op> clone() const override = 0;
 
   bool hasSideEffect() const override { return true; }
 

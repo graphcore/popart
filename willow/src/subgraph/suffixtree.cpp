@@ -23,15 +23,14 @@
 // This file has been modified by Graphcore Ltd.
 // =============================================================================
 
-#include <cstddef>
 #include <limits>
 #include <map>
 #include <memory>
-#include <utility>
+#include <sstream>
+#include <tuple>
 #include <vector>
-#include <popart/subgraph/suffixtree.hpp>
 
-#include "popart/subgraph/match.hpp"
+#include <popart/subgraph/suffixtree.hpp>
 
 namespace fwtools {
 namespace subgraph {

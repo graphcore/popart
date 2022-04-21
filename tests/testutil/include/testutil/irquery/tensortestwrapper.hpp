@@ -2,13 +2,15 @@
 #define TEST_UTILS_IR_QUERY_TENSOR_TEST_WRAPPER_HPP
 
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "testutil/irquery/opstestwrapper.hpp"
-#include "testutil/irquery/testwrapper.hpp"
+#include <popart/op.hpp>
+
+#include <popart/vendored/optional.hpp>
+
+#include <testutil/irquery/opstestwrapper.hpp>
+#include <testutil/irquery/require.hpp>
+#include <testutil/irquery/testwrapper.hpp>
 
 namespace popart {
-class Ir;
-class Tensor;
-
 namespace irquery {
 
 /**

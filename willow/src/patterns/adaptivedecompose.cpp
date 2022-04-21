@@ -1,36 +1,24 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/ces/concatce.hpp>
+#include <popart/ces/flattence.hpp>
+#include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adadeltaupdater.hpp>
 #include <popart/op/adaptivecombo.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/rmspropupdater.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/op/scaledvarupdate.hpp>
+#include <popart/op/slice.hpp>
 #include <popart/patterns/adaptivedecompose.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
-
-#include "popart/adaptive.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/variablesettings.hpp"
 
 namespace popart {
 

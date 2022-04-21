@@ -1,28 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <vector>
-#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
 #include <popart/op/div.hpp>
 #include <popart/popx/op/divx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
   verifyOp<DivOp>(op, {Onnx::Operators::Div_6, Onnx::Operators::Div_7});

@@ -1,10 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepattern.hpp>
-
-#include "onnxpasses/onnxnames.hpp"
-#include "onnxpasses/patterntarget.hpp"
-#include "onnxpasses/suffixer.hpp"
+#include <ostream>
+#include <popart/error.hpp>
 
 namespace popart {
 namespace onnxpasses {

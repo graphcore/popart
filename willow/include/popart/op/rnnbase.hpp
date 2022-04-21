@@ -2,21 +2,10 @@
 #ifndef GUARD_NEURALNET_RNNBASE_HPP
 #define GUARD_NEURALNET_RNNBASE_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // A base class for use by RNNOp, LSTMOp and GRUOp
 class BaseOnnxRNNOp : public Op {

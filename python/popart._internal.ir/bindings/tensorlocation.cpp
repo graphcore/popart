@@ -1,17 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/tensorlocation.hpp"
 
-#include <initializer_list>
-#include <pybind11/attr.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
+#include <pybind11/stl.h>
+
 #include <popart/tensorlocation.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class CommGroup;
-
 namespace _internal {
 namespace ir {
 

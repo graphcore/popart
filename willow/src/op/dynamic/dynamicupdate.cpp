@@ -1,22 +1,12 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <vector>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/dynamic/dynamicbase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 

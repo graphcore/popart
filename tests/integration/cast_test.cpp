@@ -1,15 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #define BOOST_TEST_MODULE CastTest
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <limits>
-#include <stdexcept>
-#include <vector>
-#include <popart/util.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
+#include <boost/test/unit_test.hpp>
+
+#include <popart/error.hpp>
+#include <popart/util.hpp>
 
 using namespace popart;
 

@@ -3,18 +3,12 @@
 #define GUARD_NEURALNET_ONNXTOONNX_CONSTFOLDER_HPP
 
 #include <map>
-#include <memory>
 #include <onnxpasses/nodepattern.hpp>
-#include <string>
-#include <tuple>
-
-#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
 
 class ConstFoldOp;
-class PatternTarget;
 
 // Constant fold ops if possible and cache results of the folding.
 class ConstFolder : public NodePattern {

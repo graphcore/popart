@@ -1,17 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
+#include <popart/ir.hpp>
 #include <popart/op/isnan.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Ir;
 
 IsNaN::IsNaN(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryBooleanOp(_opid, settings_) {}

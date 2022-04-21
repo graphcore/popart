@@ -1,22 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <vector>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <poprithms/ndarray/accessors.hpp>
 #include <poprithms/ndarray/shape.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/sliceplanx.hpp>
 
-#include "popart/error.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popops/DynamicSlice.hpp>
 
 namespace nd = poprithms::ndarray;
 

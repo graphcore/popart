@@ -2,12 +2,10 @@
 #ifndef GUARD_INITTENSOR_HPP
 #define GUARD_INITTENSOR_HPP
 
-#include <iosfwd>
-#include <memory>
 #include <set>
 #include <string>
-#include <type_traits>
-#include <utility>
+#include <vector>
+#include <poplar/Program.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/preparedtensor.hpp>
 
@@ -28,7 +26,6 @@ std::ostream &operator<<(std::ostream &os, const InitMethod &type);
 
 class IrLowering;
 class ICreatorCandidate;
-
 using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 
 /**

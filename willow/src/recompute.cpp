@@ -1,24 +1,20 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <array>
-#include <cstdint>
-#include <limits>
-#include <map>
-#include <memory>
-#include <set>
-#include <utility>
-#include <vector>
+#include <queue>
 #include <popart/graph.hpp>
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/op/call.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/op/groupnorm.hpp>
+#include <popart/pbwrap.hpp>
 #include <popart/recompute.hpp>
 #include <popart/scheduler_requireoptimal.hpp>
-
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/util.hpp"
-#include "popart/vertex.hpp"
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
 namespace popart {
 

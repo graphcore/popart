@@ -1,25 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/ctcbeamsearch.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-
 namespace popart {
-
-struct OperatorIdentifier;
-
 CtcBeamSearchDecoderOp::CtcBeamSearchDecoderOp(
     const popart::OperatorIdentifier &_opid,
     unsigned _blankClass,

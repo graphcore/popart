@@ -2,17 +2,13 @@
 #ifndef GUARD_NEURALNET_BUILDER_HELPER_HPP
 #define GUARD_NEURALNET_BUILDER_HELPER_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "popart/tensordebuginfo.hpp"
+#include <builder_impl.hpp>
+#include <builderdebuginfo.hpp>
+#include <filereader.hpp>
+#include <onnxutil.hpp>
+#include <popart/op/receptive.hpp>
 
 namespace popart {
-class BuilderImpl;
-class any;
 
 void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,
                             TensorId input,

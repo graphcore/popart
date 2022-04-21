@@ -1,22 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Op_Dropout
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <iostream>
-#include <map>
-#include <string>
+
 #include <popart/ir.hpp>
 #include <popart/op/dropout.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graph.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
 
 using namespace popart;
 

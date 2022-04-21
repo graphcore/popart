@@ -2,24 +2,16 @@
 #ifndef GUARD_NEURALNET_ATTRIBUTEHELPER_HPP
 #define GUARD_NEURALNET_ATTRIBUTEHELPER_HPP
 
-#include <cstdint>
-#include <iosfwd>
 #include <map>
 #include <set>
 #include <tuple>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
 
 namespace popart {
 
 class Ir;
 struct SessionOptions;
-class AliasModel;
-class Tensor;
 
 /**
  *  Helper class to set Op's placement attributes by inheriting them from

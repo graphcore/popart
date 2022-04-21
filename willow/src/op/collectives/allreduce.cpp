@@ -1,29 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
 #include <string>
 #include <vector>
+
+#include <memory>
 #include <popart/op.hpp>
 #include <popart/op/collectives/allreduce.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/util.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 AllReduceOp::AllReduceOp(const OperatorIdentifier &_opid,
                          const CollectiveOperator op_,

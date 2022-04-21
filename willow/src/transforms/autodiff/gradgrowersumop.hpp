@@ -3,9 +3,11 @@
 #ifndef GUARD_NEURALNET_GRAD_SUM_GROWER_OP_HPP
 #define GUARD_NEURALNET_GRAD_SUM_GROWER_OP_HPP
 
-#include <string>
+#include <memory>
+
 #include <transforms/autodiff/autodiffhelper.hpp>
-#include <vector>
+#include <transforms/autodiff/autodiffirinterface.hpp>
+#include <popart/names.hpp>
 
 namespace popart {
 
@@ -14,7 +16,6 @@ class Graph;
 class Op;
 class Tensor;
 class AliasModel;
-class AutodiffIrInterface;
 
 /**
  * Interface for GradGrowerSumOp.

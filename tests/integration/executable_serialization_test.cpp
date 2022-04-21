@@ -2,28 +2,18 @@
 #define BOOST_TEST_MODULE ExecutableSerializationTest
 
 #include <algorithm>
+#include <map>
+#include <tuple>
+#include <vector>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <filereader.hpp>
-#include <fstream>
-#include <gcl/CollectiveBalancedReorder.hpp>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+
 #include <popef/Reader.hpp>
-#include <popef/Types.hpp>
-#include <poplar/Interval.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/StringRef.hpp>
-#include <poplar/Target.hpp>
+
+#include "random_util.hpp"
+#include <filereader.hpp>
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
@@ -31,7 +21,9 @@
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -40,30 +32,6 @@
 #include <popart/sgd.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/clipnormsettings.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/vendored/any.hpp"
-#include "random_util.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
 
 using namespace popart;
 

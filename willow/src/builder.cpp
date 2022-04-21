@@ -1,47 +1,22 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
+#include "builder_helper.hpp"
+#include "popart/builder.gen.hpp"
 #include <algorithm>
 #include <builder_impl.hpp>
 #include <builderdebuginfo.hpp>
-#include <cstdint>
-#include <cstdlib>
 #include <filereader.hpp>
-#include <iterator>
-#include <limits>
-#include <map>
-#include <memory>
-#include <onnx/onnx_pb.h>
+#include <onnx/checker.h>
 #include <onnxutil.hpp>
-#include <set>
-#include <string>
-#include <vector>
 #include <popart/logging.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/receptive.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/variablesettings.hpp>
 #include <poparttracepoint.hpp>
 
-#include "builder_helper.hpp"
-#include "popart/attributes.hpp"
-#include "popart/builder.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/datatype.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/op/loss.hpp"
-#include "popart/op/scatterreduce.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/vendored/optional.hpp"
-
 namespace popart {
-class ConstVoidData;
-struct OperatorIdentifier;
 
 int64_t Builder::getPipelineStage() const {
   if (!impl_->hasAttribute(sPipelineStageAttribute)) {
@@ -63,6 +38,8 @@ int64_t Builder::getVirtualGraph() const {
   }
   return popart::any_cast<int64_t>(getAttribute(sVirtualGraphAttribute));
 }
+
+class TensorInfo;
 
 Builder::Builder() : impl_(new BuilderImpl()), parent(nullptr) {}
 

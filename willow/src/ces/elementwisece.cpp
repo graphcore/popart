@@ -1,13 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cmath>
 #include <vector>
-#include <poprithms/compute/host/tensor.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/elementwisece.hpp>
-
-#include "popart/ces/constexpr.hpp"
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/add.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Op;
 
 using namespace poprithms::compute;
 

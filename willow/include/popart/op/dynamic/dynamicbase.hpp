@@ -2,14 +2,7 @@
 #ifndef GUARD_NEURALNET_DYNAMICBASE_HPP
 #define GUARD_NEURALNET_DYNAMICBASE_HPP
 
-#include <cstdint>
-#include <memory>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
-
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
 
 // Class hierarchy
 // DynamicBaseOp
@@ -31,9 +24,6 @@
 //     DynamicZeroGradOp
 
 namespace popart {
-class AliasModel;
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 /**
  * Dynamic Base Op

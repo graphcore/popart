@@ -2,16 +2,9 @@
 #ifndef GUARD_NEURALNET_CAST_HPP
 #define GUARD_NEURALNET_CAST_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class CastOp : public Op {
 public:

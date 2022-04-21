@@ -1,33 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstdint>
 #include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/op/reduce.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/optional.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 ReduceSumSquareOp::ReduceSumSquareOp(
     const OperatorIdentifier &_opid,

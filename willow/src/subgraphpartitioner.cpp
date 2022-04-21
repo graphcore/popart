@@ -1,14 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <cassert>
-#include <cstddef>
-#include <map>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
+
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -16,11 +9,9 @@
 #include <popart/liveness.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
-#include <popart/subgraphpartitioner.hpp>
+#include <popart/op/if.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
+#include <popart/subgraphpartitioner.hpp>
 
 namespace popart {
 namespace liveness {

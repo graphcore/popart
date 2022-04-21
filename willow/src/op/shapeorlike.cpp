@@ -1,20 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <cstdint>
-#include <map>
 #include <onnxutil.hpp>
-#include <vector>
 #include <popart/op/shapeorlike.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/opmanager.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

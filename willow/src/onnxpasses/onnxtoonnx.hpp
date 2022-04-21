@@ -1,7 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_ONNXTOONNX_ONNXTOONNX_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_ONNXTOONNX_HPP
-
+#include <onnx/onnx_pb.h>
 #include <onnxpasses/onnxnames.hpp>
 
 namespace popart {

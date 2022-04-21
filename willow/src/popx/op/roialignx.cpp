@@ -1,25 +1,11 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <poplar/Tensor.hpp>
 #include <popnn/experimental/ROIAlign.hpp>
 #include <popart/op/roialign.hpp>
 #include <popart/popx/op/roialignx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/opx.hpp"
-
-namespace poplar {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace poplar
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 RoiAlignOpx::RoiAlignOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<RoiAlignOp>(op, {Onnx::Operators::RoiAlign_10});

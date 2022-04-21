@@ -1,17 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <iterator>
-#include <limits>
-#include <map>
 #include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <typeinfo>
-#include <utility>
-#include <vector>
+#include <queue>
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -31,25 +20,6 @@
 #include <popart/topocons.hpp>
 #include <popart/transforms/decomposeloops.hpp>
 #include <popart/util.hpp>
-
-#include "popart/aliases.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/region.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordata.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/vectorandset.hpp"
 
 namespace popart {
 
@@ -106,8 +76,8 @@ DecomposeLoopOpIOOverlapType::DecomposeLoopOpIOOverlapType(
     DecomposeLoopOpTypeEnum type_)
     : DecomposeLoopOpType(), type(type_) {}
 
-bool DecomposeLoopOpIOOverlapType::operator<(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator<(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() < castOther->getType();
@@ -115,8 +85,8 @@ bool DecomposeLoopOpIOOverlapType::operator<(
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::operator==(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator==(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() == castOther->getType();
@@ -124,8 +94,8 @@ bool DecomposeLoopOpIOOverlapType::operator==(
   return false;
 }
 
-bool DecomposeLoopOpIOOverlapType::operator!=(
-    const DecomposeLoopOpType &other) const {
+bool DecomposeLoopOpIOOverlapType::
+operator!=(const DecomposeLoopOpType &other) const {
   if (auto castOther =
           dynamic_cast<const DecomposeLoopOpIOOverlapType *>(&other)) {
     return this->getType() != castOther->getType();

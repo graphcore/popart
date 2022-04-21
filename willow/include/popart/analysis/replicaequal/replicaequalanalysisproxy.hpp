@@ -2,14 +2,12 @@
 #ifndef NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_PROXY_HPP
 #define NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_PROXY_HPP
 
-#include <tuple>
 #include <popart/names.hpp>
 
 namespace popart {
 
 // Forward declaration.
 class Op;
-class Graph;
 
 /**
  * Interface for object passed to `Op::fwdPropagateIsReplicaEqual`.

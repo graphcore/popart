@@ -3,20 +3,14 @@
 #ifndef GUARD_NEURALNET_MODIFYRANDOMSEEDX_HPP
 #define GUARD_NEURALNET_MODIFYRANDOMSEEDX_HPP
 
+#include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popart {
 
-class Op;
+class ModifyRandomSeedOp;
 
 namespace popx {
-class Devicex;
 
 class ModifyRandomSeedOpx : public PopOpx {
 public:

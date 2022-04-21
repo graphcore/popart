@@ -1,29 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ReplicateAndShardIrTest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <filereader.hpp>
-#include <map>
 #include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
 
 // In this test: with 8 IPUs, replication over 4 IPUs, we test that the
 // auto-sharder uses 2 IPUs per replica

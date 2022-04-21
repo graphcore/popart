@@ -1,34 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <gcl/Collectives.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/replicatedallreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/commgroup.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/popx/op/collectives/collectivesx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/util.hpp"
-
-namespace poplar {
-class OptionFlags;
-} // namespace poplar
+#include <gcl/Collectives.hpp>
+#include <type_traits>
 
 namespace popart {
-
-class Op;
-
 namespace popx {
 
 ReplicatedAllReduceOpx::ReplicatedAllReduceOpx(Op *op, Devicex *devicex)

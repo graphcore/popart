@@ -1,22 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <map>
+#include <limits>
 #include <memory>
-#include <ostream>
-#include <string>
+#include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/region.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 std::ostream &operator<<(std::ostream &os, const AccumulationType &at) {
   switch (at) {

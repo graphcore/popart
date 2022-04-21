@@ -2,17 +2,9 @@
 #ifndef GUARD_NEURALNET_CONVTRANSPOSE_HPP
 #define GUARD_NEURALNET_CONVTRANSPOSE_HPP
 
-#include <cstdint>
-#include <memory>
-#include <vector>
 #include <popart/op/convbase.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/receptive.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class ConvTransposeOp : public Op {
 public:

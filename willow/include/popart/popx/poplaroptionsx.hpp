@@ -2,9 +2,10 @@
 #ifndef GUARD_NEURALNET_POPLAROPTIONSX_HPP
 #define GUARD_NEURALNET_POPLAROPTIONSX_HPP
 
+#include <iterator>
 #include <map>
 #include <string>
-#include <utility>
+
 #include <poplar/OptionFlags.hpp>
 
 namespace popart {

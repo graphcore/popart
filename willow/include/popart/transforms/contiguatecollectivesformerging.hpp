@@ -1,17 +1,21 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_CONTIGUATECOLLECTIVESTRANSFORM_HPP
 #define GUARD_NEURALNET_CONTIGUATECOLLECTIVESTRANSFORM_HPP
-#include <cstddef>
-#include <set>
-#include <string>
-#include <vector>
+#include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/collectives/multi_replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
+#include <popart/operators.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Graph;
-class Op;
 
 /**
  * A transform that inserts topological constraints into the graph.

@@ -2,16 +2,16 @@
 #ifndef GUARD_NEURALNET_ALIASES_HPP
 #define GUARD_NEURALNET_ALIASES_HPP
 
-#include <set>
-#include <string>
 #include <unordered_map>
+#include <vector>
 #include <popart/chains.hpp>
 #include <popart/names.hpp>
+#include <popart/tensor.hpp>
+#include <popart/vectorandset.hpp>
 
 namespace popart {
 
 struct PTensorCmp;
-class Tensor;
 
 class Aliases {
 public:

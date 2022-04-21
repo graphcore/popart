@@ -1,24 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE explicitrecompute_unittest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <map>
-#include <string>
 #include <testutil/test_graphs/graph_test_models.hpp>
-#include <tuple>
-#include <utility>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
+#include <popart/tensor.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/prune.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/util.hpp"
 
 using namespace popart;
 using namespace graphutils;

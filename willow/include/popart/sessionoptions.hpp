@@ -2,20 +2,16 @@
 #ifndef GUARD_OPTION_FLAGS_HPP
 #define GUARD_OPTION_FLAGS_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <functional>
-#include <iosfwd>
+#include <iterator>
 #include <map>
 #include <set>
 #include <string>
-#include <vector>
+
 #include <popart/op.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/vendored/optional.hpp>
-
-#include "popart/names.hpp"
-#include "popart/util.hpp"
 
 // Note that comments in this file have to adhere to doxygen formatting. See
 // https://www.doxygen.nl/manual/.

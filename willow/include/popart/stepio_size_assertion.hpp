@@ -2,17 +2,12 @@
 #ifndef GUARD_NEURALNET_STEPIO_SIZE_ASSERT_HPP
 #define GUARD_NEURALNET_STEPIO_SIZE_ASSERT_HPP
 
-#include <cstdint>
-#include <string>
-#include <vector>
 #include <popart/ir.hpp>
-#include <popart/popx/executablex.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensors.hpp>
 
-#include "popart/dataflow.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/popx/executablex.hpp>
 
 // TODO(T15449) factorize out templates advance and get from StepIO and PyStepIO
 //

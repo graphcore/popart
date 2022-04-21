@@ -1,17 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <cstdint>
-#include <iterator>
-#include <limits>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
@@ -19,18 +7,6 @@
 #include <popart/opattributehelper.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/sessionoptions.hpp>
-
-#include "popart/alias/aliasmodel.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/util.hpp"
 
 namespace popart {
 

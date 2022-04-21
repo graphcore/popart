@@ -1,21 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <popops/ElementWise.hpp>
-#include <popops/ExprOp.hpp>
+#include <popart/error.hpp>
+#include <popart/op/square.hpp>
 #include <popart/popx/op/squarex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-
 namespace popart {
-class Op;
-class SquareOp;
-
 namespace popx {
-class Devicex;
 
 SquareOpx::SquareOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOpx(op, devicex) {

@@ -2,18 +2,19 @@
 #ifndef TEST_UTILS_IR_QUERY_IR_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_IR_TEST_WRAPPER_HPP
 
-#include "testutil/irquery/require.hpp"
-#include "testutil/irquery/testwrapper.hpp"
 #include <functional>
+
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+
 #include <popart/vendored/optional.hpp>
 
-#include "popart/graphid.hpp"
+#include <testutil/irquery/graphtestwrapper.hpp>
+#include <testutil/irquery/require.hpp>
+#include <testutil/irquery/testwrapper.hpp>
 
 namespace popart {
-class Ir;
-
 namespace irquery {
-class GraphTestWrapper;
 
 /**
  * This class wraps around an IR so as to make testing of it easier.

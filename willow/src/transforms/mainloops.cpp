@@ -1,13 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <map>
+#include "popart/pointercomparators.hpp"
 #include <memory>
-#include <set>
-#include <string>
-#include <typeinfo>
-#include <unordered_map>
-#include <utility>
+#include <queue>
 #include <vector>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/aliasesmap.hpp>
@@ -19,7 +13,10 @@
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/add.hpp>
+#include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/iotilecopy.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
@@ -28,22 +25,6 @@
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/util.hpp>
-
-#include "popart/alias/aliasmodel.hpp"
-#include "popart/aliases.hpp"
-#include "popart/bimap.hpp"
-#include "popart/chains.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/operators.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/region.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

@@ -3,11 +3,9 @@
 
 #include <popart/op/onewayunary.hpp>
 #include <popart/op/zeros.hpp>
-
-#include "popart/op/elementwise.hpp"
+#include <popart/opmanager.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 OneWayUnaryOp::OneWayUnaryOp(const OperatorIdentifier &_opid,
                              const Op::Settings &settings_)

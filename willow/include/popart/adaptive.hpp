@@ -2,28 +2,16 @@
 #ifndef GUARD_NEURALNET_ADAPTIVE_HPP
 #define GUARD_NEURALNET_ADAPTIVE_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/names.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/optimizervaluemap.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
-class Graph;
-class Op;
-class Tensor;
-class TensorInfo;
 
 /**
  * Enum class representing a type of adaptive optimizer.

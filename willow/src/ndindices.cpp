@@ -1,11 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/ndindices.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/logging.hpp"
 
 namespace popart {
 

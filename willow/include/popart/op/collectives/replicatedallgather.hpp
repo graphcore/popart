@@ -2,19 +2,9 @@
 #ifndef GUARD_NEURALNET_REPLICATEDALLGATHER_HPP
 #define GUARD_NEURALNET_REPLICATEDALLGATHER_HPP
 
-#include <memory>
-#include <tuple>
 #include <popart/op/collectives/collectives.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class AliasModel;
-class CommGroup;
-class ReplicaEqualAnalysisProxy;
-struct OperatorIdentifier;
 
 class ReplicatedAllGatherOp : public CollectivesBaseOp {
 public:

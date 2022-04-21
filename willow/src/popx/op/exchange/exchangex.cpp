@@ -1,38 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-
-#include <algorithm>
-#include <map>
-#include <memory>
-#include <snap/DataStream.hpp>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <poplar/TensorCloneMethod.hpp>
-#include <popops/HostSliceTensor.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
+#include <popart/popx/op/exchange/multiexchangex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/poptensors.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popops/HostSliceTensor.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
 
 namespace {

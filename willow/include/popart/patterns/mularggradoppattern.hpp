@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_MUL_ARG_GRAD_OP_PATTERN_HPP
 #define GUARD_NEURALNET_MUL_ARG_GRAD_OP_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replace a MulArgGradOp with a multiply followed by a reduce sum
 class MulArgGradOpPattern : public PreAliasPattern {

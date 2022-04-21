@@ -3,27 +3,21 @@
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <iostream>
 #include <map>
-#include <memory>
+#include <random>
 #include <string>
-#include <utility>
+#include <tuple>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
 
 using namespace popart;
 

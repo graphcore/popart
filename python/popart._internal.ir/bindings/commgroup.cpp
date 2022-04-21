@@ -1,10 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <initializer_list>
+#include "bindings/bwdgraphinfo.hpp"
 #include <pybind11/cast.h>
-#include <pybind11/functional.h> // IWYU pragma: keep
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
+#include <pybind11/stl.h>
+
 #include <popart/commgroup.hpp>
+
 #include <popart/docs/pydocs_popart_core.hpp>
 
 namespace py = pybind11;

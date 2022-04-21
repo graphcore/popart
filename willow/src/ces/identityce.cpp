@@ -1,16 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <vector>
+#include <onnx/onnx_pb.h>
 #include <popart/ces/identityce.hpp>
+#include <popart/op.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 
-#include "popart/ces/constexpr.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class Op;
 
 ConstExprIdentity::ConstExprIdentity(Op *op_) : ConstExprOp(op_) {}
 

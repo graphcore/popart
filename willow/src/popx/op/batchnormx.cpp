@@ -1,38 +1,20 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cmath>
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/batchnormx.hpp>
+#include <popart/popx/opxmanager.hpp>
+
 #include <snap/popops/ElementWise.hpp>
-#include <tuple>
-#include <vector>
-#include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
+#include <poplin/Norms.hpp>
 #include <popnn/BatchNorm.hpp>
 #include <popops/Cast.hpp>
 #include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <poprithms/logging/timepartitionlogger.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/batchnorm.hpp>
-#include <popart/popx/op/batchnormx.hpp>
-#include <popart/popx/op/normx.hpp>
-#include <popart/popx/opxmanager.hpp>
 
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/vendored/optional.hpp"
-
-namespace popart {
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
+#include <cmath>
 
 namespace poplar {
 using Shape = std::vector<std::size_t>;

@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_VIEW_SIMPLIFY_PATTERN_HPP
 #define GUARD_NEURALNET_VIEW_SIMPLIFY_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Simplify "chains" of view changing ops from:
 //  y = a(x)

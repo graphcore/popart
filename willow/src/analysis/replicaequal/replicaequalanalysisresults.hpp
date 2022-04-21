@@ -4,18 +4,17 @@
 
 #include <functional>
 #include <iostream>
-#include <map>
-#include <set>
+#include <memory>
 #include <vector>
 
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/vendored/optional.hpp" // IWYU pragma: keep
+#include <popart/ir.hpp>
+#include <popart/tensor.hpp>
+
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
+struct POpCmp;
+struct PTensorCmp;
 
 /**
  * This class stores replica-equal values for tensors.

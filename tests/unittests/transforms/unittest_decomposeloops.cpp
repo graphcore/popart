@@ -2,14 +2,7 @@
 #define BOOST_TEST_MODULE decomposeloops_unittest
 
 #include <boost/test/unit_test.hpp>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <testutil/test_graphs/graph_test_models.hpp>
-#include <utility>
-#include <vector>
-#include <popart/graphutils.hpp>
+
 #include <popart/logging.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/exchange/exchange.hpp>
@@ -18,18 +11,11 @@
 #include <popart/op/iotilecopy.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/matmul.hpp>
+
+#include <popart/graphutils.hpp>
 #include <popart/transforms/decomposeloops.hpp>
 
-#include "popart/dataflow.hpp"
-#include "popart/graph.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/loop.hpp"
-#include "popart/region.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
+#include <testutil/test_graphs/graph_test_models.hpp>
 
 using namespace popart;
 

@@ -2,31 +2,11 @@
 #ifndef GUARD_NEURALNET_EXCHANGEX_HPP
 #define GUARD_NEURALNET_EXCHANGEX_HPP
 
-#include <memory>
-#include <set>
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
 #include <popart/op/exchange/exchange.hpp>
-
-#include "popart/names.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popart/popx/opx.hpp>
 
 namespace popart {
-class Op;
-class TensorInfo;
-
 namespace popx {
-class Devicex;
 
 class ExchangeDescriptorx {
 public:

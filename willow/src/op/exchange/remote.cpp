@@ -1,28 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <memory>
-#include <set>
-#include <string>
-#include <tuple>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
+#include "popart/error.hpp"
+#include "popart/operators.hpp"
+#include <algorithm>
 #include <popart/alias/aliasmodel.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/exchange/remotebase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
 

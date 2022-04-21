@@ -2,25 +2,10 @@
 #ifndef GUARD_NEURALNET_REPLICATEDREDUCESCATTERX_HPP
 #define GUARD_NEURALNET_REPLICATEDREDUCESCATTERX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
-#include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/viewchangers.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ReplicatedReduceScatterOpx : public CollectivesBaseOpx {
 public:

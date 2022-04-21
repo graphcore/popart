@@ -2,14 +2,13 @@
 #ifndef TEST_UTILS_IR_QUERY_TEST_OP_HPP
 #define TEST_UTILS_IR_QUERY_TEST_OP_HPP
 
-#include <map>
-#include <memory>
-#include <utility>
+#include <boost/test/unit_test.hpp>
+#include <boost/trompeloeil.hpp>
+
 #include <popart/op.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensorinfo.hpp"
+#include <testutil/irquery/testfailuretriggerer.hpp>
 
 namespace popart {
 namespace irquery {

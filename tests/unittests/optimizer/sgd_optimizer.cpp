@@ -1,41 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_SGD_Optimizer
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <functional>
-#include <initializer_list>
-#include <map>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
+
+#include <popart/sgd.hpp>
+
 #include <popart/compoundscalarhelper.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/clipnormsettings.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/op/sgdcombobase.hpp"
-#include "popart/op/varupdate.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/optimizervaluemap.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensornames.hpp"
 #include "sgdtestcase.hpp"
-
-namespace popart {
-class Graph;
-class runtime_error;
-} // namespace popart
 
 using namespace popart;
 

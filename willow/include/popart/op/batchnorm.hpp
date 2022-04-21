@@ -2,19 +2,9 @@
 #ifndef GUARD_NEURALNET_BATCHNORM_HPP
 #define GUARD_NEURALNET_BATCHNORM_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class BatchNormOp : public Op {
 public:

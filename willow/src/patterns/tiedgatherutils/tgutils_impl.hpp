@@ -2,10 +2,10 @@
 #ifndef GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
 #define GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
 
-#include <memory>
-#include <string>
-#include <vector>
+#include "tgutils.hpp"
+#include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/adamvarupdate.hpp>
@@ -14,13 +14,10 @@
 #include <popart/op/dropout.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/mul.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "tgutils.hpp"
+#include <popart/op/slice.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/operators.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 namespace tgutil {

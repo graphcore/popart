@@ -1,31 +1,21 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-
-#include <cstdint>
-#include <initializer_list>
-#include <memory>
-#include <pybind11/attr.h>
-#include <pybind11/cast.h>
-#include <pybind11/numpy.h>     // IWYU pragma: keep
-#include <pybind11/operators.h> // IWYU pragma: keep
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // IWYU pragma: keep
-
 #include "bindings/op/matmul.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include <popart/op/matmul.hpp>
+#include "bindings/op.hpp"
+#include "bindings/op/manualbindops.hpp"
+#include "bindings/op/optional.hpp"
 
-namespace nonstd {
-namespace optional_lite {
-template <typename T> class optional;
-} // namespace optional_lite
-} // namespace nonstd
+#include "bindings/basicoptionals.hpp"
+#include <pybind11/numpy.h>
+#include <pybind11/operators.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+#include <popart/op/matmul.hpp>
+#include <popart/vendored/optional.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-struct OperatorIdentifier;
-
 namespace _internal {
 namespace ir {
 namespace op {

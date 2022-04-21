@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <boost/test/unit_test.hpp>
-#include <string>
+
 #include <testutil/irquery/testfailuretriggerer.hpp>
 
 namespace popart {

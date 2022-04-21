@@ -2,9 +2,8 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_ONNXNAMES_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_ONNXNAMES_HPP
 
-#include <map>
-#include <string>
-#include <poprithms/compute/host/tensor.hpp>
+#include <cstddef>
+#include <poprithmshosttensor.hpp>
 
 namespace ONNX_NAMESPACE {
 class GraphProto;

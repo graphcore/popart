@@ -2,12 +2,9 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_CONCATCE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_CONCATCE_HPP
 
-#include <cstdint>
-#include <vector>
 #include <popart/ces/constexpr.hpp>
 
 namespace popart {
-class Op;
 
 class ConstExprConcat : public ConstExprOp {
 public:

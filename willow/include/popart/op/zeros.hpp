@@ -2,18 +2,12 @@
 #ifndef GUARD_NEURALNET_ZEROS_HPP
 #define GUARD_NEURALNET_ZEROS_HPP
 
-#include <cstdint>
-#include <map>
 #include <memory>
 #include <vector>
+
 #include <popart/op/shapeorlike.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class ZerosBaseOp : public ShapeOrLikeOp {
 public:
@@ -56,6 +50,8 @@ public:
 
   std::unique_ptr<ZerosOp> foldInputTensor(const Op::Settings &) const;
 };
+
+class Op;
 
 // Sets the gradient of a zero grad op to zeros everywhere
 class UnaryZeroGradOp : public ZerosLikeOp {

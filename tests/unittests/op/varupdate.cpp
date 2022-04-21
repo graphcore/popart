@@ -1,25 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Op_VarUpdate
 #include <boost/test/unit_test.hpp>
-#include <limits>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
 
 using namespace popart;
 

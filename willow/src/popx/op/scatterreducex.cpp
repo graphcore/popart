@@ -1,34 +1,21 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <cstddef>
-#include <limits>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Type.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/Fill.hpp>
 #include <popart/error.hpp>
 #include <popart/op/scatterreduce.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/scatterreducex.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
 #include <popart/popx/op/sliceplanx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popops/ElementWise.hpp>
+#include <popops/Fill.hpp>
+#include <popops/Gather.hpp>
+#include <popops/Scatter.hpp>
+#include <poputil/TileMapping.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex), plan(), axis() {

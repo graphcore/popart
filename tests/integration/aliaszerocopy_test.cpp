@@ -1,55 +1,32 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AliasZeroCopyTest
 
-#include <algorithm>
-#include <boost/random/uniform_real_distribution.hpp>
+#include "random_util.hpp"
+#include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
 #include <filereader.hpp>
-#include <map>
-#include <memory>
-#include <set>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Tensor.hpp>
 #include <popart/aliaszerocopy.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include "popart/builder.gen.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/popx/poptensors.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/util.hpp"
-#include "random_util.hpp"
-
-namespace popart {
-
-class IArray;
-} // namespace popart
+#include <algorithm>
+#include <map>
+#include <tuple>
+#include <vector>
 
 using namespace popart;
 

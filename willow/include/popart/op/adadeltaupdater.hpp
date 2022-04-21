@@ -2,14 +2,10 @@
 #ifndef GUARD_NEURALNET_ADADELTAUPDATER_HPP
 #define GUARD_NEURALNET_ADADELTAUPDATER_HPP
 
-#include <memory>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizervalue.hpp"
+#include <popart/adaptive.hpp>
+#include <popart/op/varupdate.hpp>
 
 namespace popart {
-class OpSerialiserBase;
 
 class AdaDeltaUpdaterOp : public Op {
 

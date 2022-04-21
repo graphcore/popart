@@ -2,12 +2,13 @@
 #ifndef GUARD_NEURALNET_LOSS_HPP
 #define GUARD_NEURALNET_LOSS_HPP
 
-#include <memory>
-#include <string>
+#include <map>
+#include <popart/error.hpp>
+#include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/tensorinfo.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 class LossOp : public Op {
 public:

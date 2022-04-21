@@ -2,19 +2,11 @@
 #ifndef GUARD_NEURALNET_REDUCEMINX_HPP
 #define GUARD_NEURALNET_REDUCEMINX_HPP
 
+#include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ReduceMinOpx : public PopOpx {
 public:

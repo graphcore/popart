@@ -2,14 +2,10 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_MULTICONVWITHBIAS_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_MULTICONVWITHBIAS_HPP
 
-#include <memory>
 #include <onnxpasses/nodepattern.hpp>
-
-#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
-class PatternTarget;
 
 // Replace:
 //    [U1, ...] = MultiConv([X1, Y1, b1], ...)

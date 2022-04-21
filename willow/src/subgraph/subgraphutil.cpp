@@ -2,9 +2,7 @@
 #include "popart/subgraph/subgraphutil.hpp"
 
 #include <algorithm>
-#include <memory>
-
-#include "popart/subgraph/match.hpp"
+#include <tuple>
 
 namespace fwtools {
 namespace subgraph {

@@ -1,8 +1,4 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <map>
-#include <memory>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/fuser.hpp>
@@ -10,10 +6,6 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

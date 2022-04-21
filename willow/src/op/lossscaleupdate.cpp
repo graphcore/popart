@@ -1,25 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <onnxutil.hpp>
-#include <string>
-#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/op/lossscaleupdate.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
+#include <onnxutil.hpp>
 
 namespace popart {
 

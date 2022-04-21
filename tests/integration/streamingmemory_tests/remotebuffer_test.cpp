@@ -2,49 +2,36 @@
 // Test the RemoteStore, RemoteLoad and RemoteLoadInplace Ops
 #define BOOST_TEST_MODULE RemoteBufferTest
 
-#include <algorithm>
-#include <boost/random/uniform_real_distribution.hpp>
+#include "../random_util.hpp"
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
 #include <filereader.hpp>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/region.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include "../random_util.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/datatype.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
+#include <algorithm>
+#include <map>
+#include <tuple>
+#include <vector>
 
 using namespace popart;
 

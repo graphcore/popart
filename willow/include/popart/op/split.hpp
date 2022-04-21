@@ -2,17 +2,9 @@
 #ifndef GUARD_NEURALNET_SPLIT_HPP
 #define GUARD_NEURALNET_SPLIT_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class SplitOp : public Op {
 public:

@@ -2,10 +2,8 @@
 #ifndef GUARD_NEURALNET_REGIONIOMAP_HPP
 #define GUARD_NEURALNET_REGIONIOMAP_HPP
 
-#include <cstdint>
-#include <iosfwd>
+#include <memory>
 #include <set>
-#include <utility>
 #include <vector>
 #include <popart/names.hpp>
 
@@ -14,7 +12,6 @@
 
 namespace popart {
 namespace view {
-class Region;
 
 /// Describes what access an object has to the underlying tensor region.
 enum class AccessType { None = 0, Read = 1, Write = 2, ReadWrite = 3, N = 4 };

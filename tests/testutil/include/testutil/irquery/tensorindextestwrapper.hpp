@@ -2,16 +2,18 @@
 #ifndef TEST_UTILS_IR_QUERY_TENSOR_INDEX_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_TENSOR_INDEX_TEST_WRAPPER_HPP
 
-#include "testutil/irquery/testwrapper.hpp"
-#include <string>
-#include <utility>
+#include <functional>
 
-#include "popart/tensordebuginfo.hpp"
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
+
+#include <popart/vendored/optional.hpp>
+
+#include <testutil/irquery/require.hpp>
+#include <testutil/irquery/testwrapper.hpp>
 
 namespace popart {
-class Ir;
-class Tensor;
-
 namespace irquery {
 
 // Forward declaration.

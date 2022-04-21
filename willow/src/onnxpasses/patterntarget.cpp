@@ -1,17 +1,11 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <cstdint>
 #include <onnxpasses/patterntarget.hpp>
 #include <sstream>
 #include <string>
-#include <utility>
-#include <vector>
 #include <poprithms/ndarray/shape.hpp>
 #include <poprithms/util/printiter.hpp>
 #include <popart/error.hpp>
-
-#include "popart/logging.hpp"
 
 namespace popart {
 namespace onnxpasses {

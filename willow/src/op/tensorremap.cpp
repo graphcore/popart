@@ -1,22 +1,14 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/tensorremap.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 TensorRemapOp::TensorRemapOp(const OperatorIdentifier &_opid,
                              const TensorRemapType &remap_type_,

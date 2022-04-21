@@ -1,19 +1,11 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <memory>
-#include <string>
-#include <vector>
+#include <popart/ir.hpp>
 #include <popart/op/cos.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Ir;
 
 CosOp::CosOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

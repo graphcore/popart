@@ -2,32 +2,18 @@
 #ifndef GUARD_NEURALNET_LSTMX_HPP
 #define GUARD_NEURALNET_LSTMX_HPP
 
-#include <memory>
-#include <set>
 #include <snap/Tensor.hpp>
 #include <popnn/Lstm.hpp>
 #include <popart/names.hpp>
+#include <popart/op/lstm.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/popx/debugcontextx.hpp"
-
-namespace poplar {
-class Tensor;
-} // namespace poplar
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 
-class Op;
+class LSTMOp;
 
 namespace popx {
-class Devicex;
 
 class LSTMOpx : public PopOpx {
 public:

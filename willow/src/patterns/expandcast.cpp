@@ -1,19 +1,9 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <popart/logging.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/patterns/expandcast.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensor.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 
@@ -41,7 +31,7 @@ bool ExpandCastPattern::matches(Op *op) const {
 
   // Do not swap if output shape == input shape (a pointless expand)
   auto outElements = op->outInfo(ExpandOp::getOutIndex()).nelms();
-  auto inElements  = op->inInfo(ExpandOp::getInTensorIndex()).nelms();
+  auto inElements = op->inInfo(ExpandOp::getInTensorIndex()).nelms();
 
   if (outElements == inElements) {
     return false;

@@ -1,34 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
+#include <iterator>
+#include <memory>
 #include <popart/error.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/thresholdedrelu.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/thresholdedrelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 namespace {
 template <typename T> T *get_as(Op *op) {

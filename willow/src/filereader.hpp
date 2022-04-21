@@ -3,8 +3,7 @@
 #define GUARD_NEURALNET_FILEREADER_HPP
 
 #include <onnx/onnx_pb.h>
-#include <string>
-#include <vector>
+#include <sstream>
 #include <popart/names.hpp>
 
 namespace popart {

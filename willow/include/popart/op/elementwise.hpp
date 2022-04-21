@@ -2,25 +2,12 @@
 #ifndef GUARD_NEURALNET_ELEMENTWISEUNARY_HPP
 #define GUARD_NEURALNET_ELEMENTWISEUNARY_HPP
 
-#include <cstdint>
 #include <map>
 #include <memory>
-#include <tuple>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
-
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 class ElementWiseBinaryBaseOp;
-class AliasModel;
-
 view::RegMap binaryFwdRegMapImpl(const ElementWiseBinaryBaseOp &op,
                                  InIndex argIndex);
 

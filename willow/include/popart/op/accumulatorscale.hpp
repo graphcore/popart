@@ -2,16 +2,10 @@
 #ifndef GUARD_NEURALNET_ACCUMULATORSCALEOP_HPP
 #define GUARD_NEURALNET_ACCUMULATORSCALEOP_HPP
 
-#include <map>
-#include <memory>
 #include <popart/op/varupdate.hpp>
 #include <popart/optimizervalue.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
 
 /**
  * @brief Inplace multiplies a tensor by an OptimizerValue factor.

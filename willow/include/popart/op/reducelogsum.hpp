@@ -2,17 +2,11 @@
 #ifndef GUARD_NEURALNET_REDUCELOGSUM_HPP
 #define GUARD_NEURALNET_REDUCELOGSUM_HPP
 
-#include <cstdint>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/reduce.hpp>
-#include <popart/vendored/optional.hpp> // IWYU pragma: keep
-
-#include "popart/names.hpp"
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 class ReduceLogSumOp : public ReduceOp {
 public:

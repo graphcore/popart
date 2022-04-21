@@ -2,9 +2,8 @@
 #define BOOST_TEST_MODULE SplitGatherTestDefault
 
 #include <boost/test/unit_test.hpp>
+#include <vector>
 #include <popart/patterns/patterns.hpp>
-
-#include "popart/logging.hpp"
 
 BOOST_AUTO_TEST_CASE(SplitGatherTest1) {
 

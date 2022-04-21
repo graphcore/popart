@@ -1,18 +1,27 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PatternTest
 
-#include <boost/test/unit_test.hpp>
 #include <memory>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <vector>
 
-#include "popart/basicoptionals.hpp"
-#include "popart/graphid.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/pattern.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensorlocation.hpp"
+#include <boost/test/unit_test.hpp>
+
+#include <filereader.hpp>
+#include <popart/builder.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/graph.hpp>
+#include <popart/inputshapeinfo.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/testdevice.hpp>
+#include <popart/topocons.hpp>
 
 using namespace popart;
 

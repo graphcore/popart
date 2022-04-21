@@ -3,17 +3,12 @@
 
 // tests for isomorphism (I)
 
+#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <iostream>
-#include <memory>
 #include <vector>
 #include <popart/logging.hpp>
-
-#include "blip.hpp"
-#include "popart/subgraph/algo0.hpp"
-#include "popart/subgraph/match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
 
 BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
 

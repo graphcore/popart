@@ -2,17 +2,12 @@
 #ifndef POPART__INTERNAL_IR_BINDINGS_OP_HPP
 #define POPART__INTERNAL_IR_BINDINGS_OP_HPP
 
-#include <memory>
-#include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <popart/op.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-struct OperatorIdentifier;
-
 namespace _internal {
 namespace ir {
 

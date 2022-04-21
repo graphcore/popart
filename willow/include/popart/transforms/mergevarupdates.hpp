@@ -2,19 +2,14 @@
 #ifndef GUARD_NEURALNET_MERGECONSTSGDVARUPDATES_HPP
 #define GUARD_NEURALNET_MERGECONSTSGDVARUPDATES_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <map>
 #include <string>
-#include <tuple>
-#include <vector>
+#include <popart/op/varupdate.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
 
 class VarUpdateOp;
-class Graph;
-class Op;
 
 struct VarUpdateStartEnd {
 public:

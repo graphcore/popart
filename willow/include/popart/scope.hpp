@@ -2,8 +2,6 @@
 #ifndef GUARD_NEURALNET_SCOPE_HPP
 #define GUARD_NEURALNET_SCOPE_HPP
 
-#include <cstddef>
-#include <iosfwd>
 #include <string>
 #include <vector>
 #include <popart/names.hpp>

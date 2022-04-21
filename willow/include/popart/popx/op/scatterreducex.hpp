@@ -2,25 +2,13 @@
 #ifndef GUARD_NEURALNET_SCATTERREDUCEX_HPP
 #define GUARD_NEURALNET_SCATTERREDUCEX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstddef>
-#include <set>
-#include <snap/Tensor.hpp>
-#include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popops/DynamicSlice.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ScatterReduceOpx : public PopOpx {
 public:

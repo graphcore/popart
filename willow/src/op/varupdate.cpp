@@ -1,18 +1,16 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <limits>
+#include <memory>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/ir.hpp>
+#include <popart/logging.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensornames.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
-
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const Op::Settings &settings_)
     : Op(_opid, settings_) {

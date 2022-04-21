@@ -2,9 +2,7 @@
 #ifndef GUARD_NEURALNET_VIEWCHANGERS_HPP
 #define GUARD_NEURALNET_VIEWCHANGERS_HPP
 
-#include <memory>
 #include <snap/Tensor.hpp>
-#include <typeinfo>
 #include <vector>
 
 namespace popart {

@@ -1,17 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <boost/range/algorithm/copy.hpp>
-#include <functional>
-#include <iterator>
-#include <map>
+
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -23,23 +15,7 @@
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 #include <popart/util.hpp>
 
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/identity.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class AliasModel;
-struct OperatorIdentifier;
 
 namespace {
 

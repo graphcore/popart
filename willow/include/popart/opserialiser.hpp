@@ -1,15 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_OPSERIALISER_HPP
 #define GUARD_NEURALNET_OPSERIALISER_HPP
-#include <cstdint>
-#include <functional>
 #include <map>
 #include <sstream>
-#include <string>
-#include <vector>
 #include <popart/basicoptionals.hpp>
 #include <popart/names.hpp>
-#include <popart/vendored/optional.hpp> // IWYU pragma: keep
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
 

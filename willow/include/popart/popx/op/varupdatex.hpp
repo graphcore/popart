@@ -2,13 +2,12 @@
 #ifndef GUARD_NEURALNET_VARUPDATEX_HPP
 #define GUARD_NEURALNET_VARUPDATEX_HPP
 
+#include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
 namespace popart {
-class Op;
 
 namespace popx {
-class Devicex;
 
 class VarUpdateOpx : public PopOpx {
 public:

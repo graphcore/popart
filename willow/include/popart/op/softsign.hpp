@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_SOFTSIGN_HPP
 #define GUARD_NEURALNET_SOFTSIGN_HPP
 
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class SoftSignOp : public ElementWiseUnaryOp {
 public:

@@ -1,18 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <memory>
+#include <algorithm>
 #include <vector>
-#include <popart/op/argextrema.hpp>
-#include <popart/opserialiser.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorinfo.hpp"
+#include <memory>
+#include <popart/op/argextrema.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 ArgExtremaOp::ArgExtremaOp(const OperatorIdentifier &opid_,
                            int64_t axis_,

@@ -2,8 +2,6 @@
 #include <popart/basicoptionals.hpp>
 #include <popart/error.hpp>
 
-#include "popart/logging.hpp"
-
 namespace popart {
 [[noreturn]] void noValueBasicOptionalError() {
   throw error("No value set for this BasicOptional, cannot dereference it");

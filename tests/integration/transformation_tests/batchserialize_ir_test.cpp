@@ -1,56 +1,34 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BatchSerializeIrTest
 
-#include "../test_runner.hpp" // IWYU pragma: keep
-
-#include <algorithm>
-#include <array>
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/random/uniform_real_distribution.hpp>
+#include "../random_util.hpp"
+#include "../test_runner.hpp"
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <cstdlib>
-#include <functional>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
+#include <popart/op/matmul.hpp>
 #include <popart/op/mean.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/op/relu.hpp>
+#include <popart/op/reshape.hpp>
 #include <popart/op/sum.hpp>
+#include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#include "../random_util.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/ndarraywrapper.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sgd.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/voiddata.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
 
 using namespace popart;
 

@@ -1,12 +1,13 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Complement
 #include <boost/test/unit_test.hpp>
-#include <initializer_list>
+
 #include <popart/commgroup.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
 
-#include "popart/error.hpp"
+#include <popart/ir.hpp>
+
+#include <typeindex>
 
 using namespace popart;
 

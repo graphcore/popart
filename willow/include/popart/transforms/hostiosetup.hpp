@@ -2,14 +2,10 @@
 #ifndef GUARD_NEURALNET_HOSTIOSETUP_HPP
 #define GUARD_NEURALNET_HOSTIOSETUP_HPP
 
-#include <cstddef>
-#include <string>
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
-class AliasModel;
-class Graph;
-class Tensor;
 
 class HostIOSetup : public Transform {
 public:

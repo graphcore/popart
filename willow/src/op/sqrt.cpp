@@ -1,20 +1,10 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/sqrt.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 SqrtOp::SqrtOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

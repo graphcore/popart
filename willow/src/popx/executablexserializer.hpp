@@ -4,12 +4,12 @@
 
 #include <iostream>
 #include <memory>
+
 #include <popart/capnp/Ir.capnp.h>
 #include <popart/commgroup.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 #include <popart/variablesettings.hpp>
-
-#include "popart/datatype.hpp"
 
 namespace popart {
 

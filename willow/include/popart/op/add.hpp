@@ -2,17 +2,8 @@
 #ifndef GUARD_NEURALNET_ADD_HPP
 #define GUARD_NEURALNET_ADD_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/reducesum.hpp>
-
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

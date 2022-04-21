@@ -2,25 +2,13 @@
 #ifndef GUARD_NEURALNET_MULTIEXCHANGEX_HPP
 #define GUARD_NEURALNET_MULTIEXCHANGEX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <map>
-#include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
 #include <popart/popx/op/exchange/exchangex.hpp>
+#include <popart/popx/opx.hpp>
 #include <popart/popx/opxstate.hpp>
 
-#include "popart/names.hpp"
-#include "popart/popx/popopx.hpp"
-
 namespace popart {
-class Op;
-class Tensor;
 
 namespace popx {
-class Devicex;
 
 class MultiExchangeOpx : public ExchangeBaseOpx {
 public:

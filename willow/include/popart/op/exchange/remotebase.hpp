@@ -2,15 +2,10 @@
 #ifndef GUARD_NEURALNET_REMOTEBASE_HPP
 #define GUARD_NEURALNET_REMOTEBASE_HPP
 
-#include <memory>
 #include <popart/op.hpp>
 #include <popart/op/exchange/exchange.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class RemoteBaseOp : public ExchangeBaseOp {
 public:

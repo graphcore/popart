@@ -1,30 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <popops/ExprOp.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/ScaledAdd.hpp>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/copyvarupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
-
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/popx/op/varupdatex.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensordebuginfo.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
-class CopyVarUpdateOp;
-class Op;
-
 namespace popx {
-class Devicex;
 
 namespace {
 bool twoTensorsParallelWritable(const snap::Tensor &a, const snap::Tensor &b) {

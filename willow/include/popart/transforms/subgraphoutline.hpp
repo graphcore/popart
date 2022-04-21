@@ -2,23 +2,14 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHOUTLINE_HPP
 #define GUARD_NEURALNET_SUBGRAPHOUTLINE_HPP
 
-#include <cstddef>
-#include <map>
-#include <set>
-#include <string>
 #include <vector>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
-
 namespace popart {
 
 // Forward declaration.
 class AliasesMap;
-class AliasModel;
-class Graph;
-class Ir;
-class Op;
-class Tensor;
 
 /**
  * Class describing a group cluster of Ops belonging to the same Graph

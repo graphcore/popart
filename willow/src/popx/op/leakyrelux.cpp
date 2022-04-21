@@ -1,34 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <vector>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
+#include <iterator>
+#include <memory>
+
 #include <popart/error.hpp>
 #include <popart/op/leakyrelu.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/leakyrelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <snap/popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 namespace pe = popops::expr;
 

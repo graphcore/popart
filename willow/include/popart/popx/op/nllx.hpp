@@ -2,22 +2,12 @@
 #ifndef GUARD_NEURALNET_NLLX_HPP
 #define GUARD_NEURALNET_NLLX_HPP
 
-#include <cstdint>
-#include <snap/Tensor.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class NllOpx : public PopOpx {
 public:

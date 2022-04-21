@@ -2,17 +2,9 @@
 #ifndef GUARD_NEURALNET_INPLACE_HPP
 #define GUARD_NEURALNET_INPLACE_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/patterns/pattern.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Op;
-class Tensor;
-struct OperatorIdentifier;
 
 // A class for creating an Op and Tensors without inserting them
 // into the Ir. It is useful for testing what the effects of an

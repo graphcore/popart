@@ -1,19 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdlib>
-#include <iterator>
-#include <map>
-#include <queue>
-#include <set>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/logging.hpp>
 #include <popart/subgraph/algo1.hpp>
 #include <popart/subgraph/match.hpp>
 #include <popart/subgraph/suffixtree.hpp>
-
-#include "popart/subgraph/subgraphnames.hpp"
 
 namespace fwtools {
 namespace subgraph {

@@ -1,7 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <boost/test/unit_test.hpp>
-
 #define BOOST_TEST_MODULE sgd_mixed_mode_test_1_11
+
+#include "get_results.hpp"
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_11) {
 

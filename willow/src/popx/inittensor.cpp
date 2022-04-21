@@ -1,35 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
+#include <algorithm>
+
 #include <sstream>
-#include <string>
-#include <utility>
-#include <poplar/TensorCloneMethod.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <poputil/TileMapping.hpp>
+#include <popart/graph.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/inittensor.hpp>
 #include <popart/popx/irlowering.hpp>
-
-#include "popart/debugcontext.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/opdebuginfo.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/linearmapper.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/poptensors.hpp"
-#include "popart/popx/preparedtensor.hpp"
-#include "popart/popx/viewchangers.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
 
 namespace popart {
 namespace popx {

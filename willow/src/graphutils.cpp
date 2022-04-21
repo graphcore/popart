@@ -1,31 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <deque>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <utility>
-#include <vector>
+#include <queue>
+
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/subgraph.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vertex.hpp"
 
 namespace popart {
 namespace graphutils {

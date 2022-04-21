@@ -1,14 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <limits>
-#include <map>
-#include <memory>
-#include <set>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -16,28 +8,7 @@
 #include <popart/popx/op/exchange/multiexchangex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/util.hpp"
-
-namespace snap {
-
-class Graph;
-} // namespace snap
-
 namespace popart {
-
 namespace popx {
 
 namespace {

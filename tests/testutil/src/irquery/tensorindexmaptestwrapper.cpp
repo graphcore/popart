@@ -1,22 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <functional>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <set>
-#include <string>
-#include <testutil/irquery/irquery.hpp>
-#include <utility>
-#include <vector>
+#include <testutil/irquery/tensorindexmaptestwrapper.hpp>
 
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <testutil/irquery/testfailuretriggerer.hpp>
 
 namespace popart {
-class Ir;
-
 namespace irquery {
 
 namespace {

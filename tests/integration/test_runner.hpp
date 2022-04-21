@@ -2,12 +2,8 @@
 #ifndef GUARD_TEST_RUNNER_HPP
 #define GUARD_TEST_RUNNER_HPP
 
-#include <cassert>
-#include <cstdint>
 #include <filereader.hpp>
-#include <map>
 #include <memory>
-#include <string>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -23,24 +19,8 @@
 #define private public
 #define protected public
 #include <popart/session.hpp>
-
 #undef private
 #undef protected
-
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/iarray.hpp"
-#include "popart/logging.hpp"
-#include "popart/optimizer.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-
-namespace popart {
-class Ir;
-} // namespace popart
 
 using namespace popart;
 

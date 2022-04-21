@@ -3,13 +3,13 @@
 #define GUARD_NEURALNET_ALIASES_MAP_HPP
 
 #include <map>
+
 #include <popart/aliases.hpp>
+#include <popart/graph.hpp>
 #include <popart/graphid.hpp>
+#include <popart/ir.hpp>
 
 namespace popart {
-class Graph;
-class Ir;
-class Op;
 
 /**
  * This class manages a mapping from Graphs to Aliases.

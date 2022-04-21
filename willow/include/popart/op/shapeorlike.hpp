@@ -2,18 +2,11 @@
 #ifndef GUARD_NEURALNET_SHAPEORLIKEOP_HPP
 #define GUARD_NEURALNET_SHAPEORLIKEOP_HPP
 
-#include <memory>
 #include <vector>
 #include <popart/op.hpp>
 #include <popart/opmanager.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
-class TensorInfo;
 
 // Shared base class for ops with a shape or "-Like" version the latter being
 // ops which are ops which output a value in the same shape and datatype as an

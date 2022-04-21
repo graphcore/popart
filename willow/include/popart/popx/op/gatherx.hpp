@@ -2,27 +2,14 @@
 #ifndef GUARD_NEURALNET_GATHERX_HPP
 #define GUARD_NEURALNET_GATHERX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstdint>
-#include <set>
-#include <snap/Tensor.hpp>
 #include <tuple>
-#include <poplar/Tensor.hpp>
-#include <popops/DynamicSlice.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popops/DynamicSlice.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class GatherBaseOpx : public PopOpx {
 public:

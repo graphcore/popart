@@ -1,40 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstddef>
 #include <memory>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Interval.hpp>
-#include <poplar/Tensor.hpp>
-#include <popnn/Gru.hpp>
-#include <popnn/Rnn.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/Zero.hpp>
+
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/gru.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/grux.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <snap/popops/ElementWise.hpp>
+#include <popnn/Gru.hpp>
+#include <popops/Zero.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
 
 GRUOpx::GRUOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

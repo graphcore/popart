@@ -2,11 +2,9 @@
 #ifndef GUARD_NEURALNET_DEBUGCONTEXT_HPP
 #define GUARD_NEURALNET_DEBUGCONTEXT_HPP
 
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace popart {
@@ -60,6 +58,7 @@ public:
 
 class DebugContext;
 class DebugInfo;
+
 struct ProfileValueImpl;
 
 class ProfileValue {

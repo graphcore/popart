@@ -1,15 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <memory>
-#include <vector>
-#include <poprithms/compute/host/tensor.hpp>
+#include <onnx/onnx_pb.h>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/concatce.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/ndindices.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/ces/constexpr.hpp"
-#include "popart/op.hpp"
 
 namespace popart {
 

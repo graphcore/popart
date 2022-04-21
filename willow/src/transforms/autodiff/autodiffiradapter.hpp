@@ -3,19 +3,10 @@
 #define GUARD_NEURALNET_AUTODIFF_IR_ADAPTER_HPP
 
 #include <functional>
-#include <string>
-#include <transforms/autodiff/autodiffirinterface.hpp>
-#include <vector>
 
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
+#include <transforms/autodiff/autodiffirinterface.hpp>
 
 namespace popart {
-class Graph;
-class Ir;
-class Optimizer;
-class Tensors;
-struct SessionOptions;
 
 /**
  * Concrete class used to fulfill all dependencies for the autodiff classes.

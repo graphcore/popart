@@ -2,17 +2,15 @@
 #ifndef GUARD_PARSEDTENSORID_HPP
 #define GUARD_PARSEDTENSORID_HPP
 
-#include <cstddef>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+
 #include <deque>
-#include <map>
+#include <regex>
 #include <string>
 #include <vector>
 
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-class Ir;
-class Scope;
 
 /**
  * Parse a TensorId into scopes prefixes and names

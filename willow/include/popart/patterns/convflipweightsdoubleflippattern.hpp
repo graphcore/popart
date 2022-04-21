@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_CONVFLIPWEIGHTS_DOUBLE_FLIP_PATTERN_HPP
 #define GUARD_NEURALNET_CONVFLIPWEIGHTS_DOUBLE_FLIP_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // If two ConvFlipWeightsOps are connected to each other, they cancel each
 // other out and can be bypassed with the second op removed

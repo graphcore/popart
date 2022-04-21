@@ -1,27 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
 #include <poplin/Convolution.hpp>
+#include <popops/Reduce.hpp>
 #include <popart/error.hpp>
 #include <popart/op/addbias.hpp>
 #include <popart/popx/op/addbiasx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/popx/op/reducesumx.hpp"
-#include "popart/popx/popopx.hpp"
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AddBiasOp>(op);

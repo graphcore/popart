@@ -1,26 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/VariableMappingMethod.hpp>
 #include <poprand/RandomGen.hpp>
 #include <popart/op/randomuniform.hpp>
 #include <popart/popx/op/randomuniformx.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/devicex.hpp"
-#include "popart/popx/opxmanager.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-
 namespace popart {
-class Op;
-
 namespace popx {
 
 RandomUniformOpx::RandomUniformOpx(Op *op, Devicex *devicex)

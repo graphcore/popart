@@ -2,11 +2,6 @@
 #ifndef GUARD_NEURALNET_MERGEEXCHANGE_HPP
 #define GUARD_NEURALNET_MERGEEXCHANGE_HPP
 
-#include <cstddef>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -16,9 +11,6 @@
 
 namespace popart {
 class ExchangeBaseOp;
-class Graph;
-class Op;
-
 class MergeExchange : public Transform {
 public:
   static std::size_t id();

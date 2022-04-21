@@ -1,37 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
 #include <algorithm>
-#include <cstdint>
+#include <cctype>
 #include <cstring>
 #include <fstream>
-#include <functional>
-#include <limits>
-#include <map>
 #include <memory>
 #include <set>
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
-#include <poplar/ArrayRef.hpp>
-#include <poplar/Tensor.hpp>
+#include <snap/poputil/TileMapping.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/viewchangers.hpp"
-#include "popart/region.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
-#include "popart/vendored/optional.hpp"
 
 namespace popart {
 namespace popx {

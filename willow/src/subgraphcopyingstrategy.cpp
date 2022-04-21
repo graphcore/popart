@@ -1,31 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <deque>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/subgraphcopyingstrategy.hpp>
 #include <popart/subgraphpartitioner.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/alias/aliasmodel.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/liveness.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
 
 namespace popart {
 namespace liveness {

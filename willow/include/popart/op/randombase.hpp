@@ -2,17 +2,11 @@
 #ifndef GUARD_NEURALNET_RANDOMBASE_HPP
 #define GUARD_NEURALNET_RANDOMBASE_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op/shapeorlike.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
+#include <memory>
 
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // Shared base class for RNG ops
 class RandomBaseOp : public ShapeOrLikeOp {

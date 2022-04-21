@@ -1,6 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <string>
-#include <vector>
+#include <memory>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/expm1.hpp>
@@ -8,12 +7,6 @@
 #include <popart/patterns/expm1gradoppattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/op.hpp"
-#include "popart/opdebuginfo.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensors.hpp"
 
 namespace popart {
 

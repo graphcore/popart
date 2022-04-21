@@ -1,13 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <boost/integer/common_factor.hpp>
-#include <cstdint>
-#include <functional>
 #include <memory>
 #include <numeric>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
@@ -15,22 +8,16 @@
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/splitgather.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-#include "popart/basicoptionals.hpp"
-#include "popart/devicemanager.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <boost/integer/common_factor.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 // Private gather op class
 namespace {

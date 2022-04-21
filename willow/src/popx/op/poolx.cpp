@@ -1,14 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <iterator>
 #include <memory>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <popnn/Pooling.hpp>
-#include <popnn/PoolingDef.hpp>
+#include <popart/error.hpp>
 #include <popart/op.hpp>
 #include <popart/op/averagepool.hpp>
 #include <popart/op/globalaveragepool.hpp>
@@ -18,12 +10,7 @@
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/util.hpp"
+#include <popnn/Pooling.hpp>
 
 namespace popart {
 namespace popx {

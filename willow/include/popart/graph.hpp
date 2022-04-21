@@ -2,40 +2,24 @@
 #ifndef GUARD_NEURALNET_GRAPH_HPP
 #define GUARD_NEURALNET_GRAPH_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
-#include <string>
 #include <unordered_set>
-#include <utility>
 #include <vector>
+
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/scope.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/variablesettings.hpp"
-
-namespace onnx {
-class GraphProto;
-} // namespace onnx
 
 namespace popart {
 
 // Forward declare
-class InputMapWrapper;
-class Ir;
-class OutputMapWrapper;
-class Scheduler;
-class TensorInfo;
-class TopoCons;
+class BackwardsGraphCreatorHelper;
+class IpuCopyOp;
 
 namespace onnxpasses {
 class IOnnxToOnnx;

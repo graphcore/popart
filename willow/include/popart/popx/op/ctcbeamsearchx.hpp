@@ -4,13 +4,7 @@
 
 #include <memory>
 
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popart/popx/opxmanager.hpp>
 
 namespace popnn {
 namespace ctc {
@@ -19,11 +13,7 @@ class Plan;
 } // namespace popnn
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
-
 class CtcBeamSearchDecoderOpx : public PopOpx {
 public:
   CtcBeamSearchDecoderOpx(Op *op, Devicex *device);

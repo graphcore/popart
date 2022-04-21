@@ -1,28 +1,17 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #include "gradgrower.hpp"
 
-#include <map>
-#include <memory>
-#include <string>
-#include <transforms/autodiff/opgradregistry.hpp>
-#include <transforms/autodiff/tensorgradregistry.hpp>
-#include <popart/tensor.hpp>
+#include <popart/aliases.hpp>
+#include <popart/inputshapeinfo.hpp>
 #include <popart/tensorindex.hpp>
+
+#include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graph.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vendored/optional.hpp"
-#include "popart/vertex.hpp"
-#include "transforms/autodiff/gradgrowerop.hpp"
-#include "transforms/autodiff/gradgrowersumop.hpp"
+#include <transforms/autodiff/opgradregistry.hpp>
+#include <transforms/autodiff/tensorgradregistry.hpp>
 
 namespace popart {
-class AliasModel;
 
 GradGrower::GradGrower(Graph &fwdGraph_) : fwdGraph{fwdGraph_} {}
 

@@ -1,16 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Ir_DeonnxingRegressionTests
-#include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-#include <functional>
-#include <map>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
+
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
@@ -18,18 +10,9 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 
-#include "popart/builder.gen.hpp"
-#include "popart/datatype.hpp"
-#include "popart/erroruid.hpp"
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
+#include <onnx/onnx_pb.h>
+
+#include <string>
 
 using namespace popart;
 
@@ -218,10 +201,11 @@ BOOST_AUTO_TEST_CASE(TestGetOpSetVersionFromModelReturnsDefaultOpsetVersion) {
 }
 
 #include <onnxutil.hpp>
-#include <sstream>
 #include <popart/builder.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/identity.hpp>
+
+#include <sstream>
 
 BOOST_AUTO_TEST_CASE(TestSerialise) {
   /*

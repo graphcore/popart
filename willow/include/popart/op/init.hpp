@@ -2,16 +2,11 @@
 #ifndef GUARD_NEURALNET_INIT_HPP
 #define GUARD_NEURALNET_INIT_HPP
 
-#include <memory>
 #include <popart/op.hpp>
+#include <popart/op/elementwise.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // Initialisation behaviour has consequences for the liveness of tensors,
 // as well as their values before each new iteration.

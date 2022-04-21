@@ -1,28 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE CloneGraphTests
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <ctype.h>
-#include <map>
-#include <memory>
-#include <string>
 #include <testutil/test_graphs/graph_test_models.hpp>
-#include <utility>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordata.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/util.hpp"
 
 using namespace popart;
 

@@ -1,11 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/suffixer.hpp>
-#include <vector>
-
-#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {

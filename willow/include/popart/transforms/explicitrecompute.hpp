@@ -2,23 +2,11 @@
 #ifndef GUARD_NEURALNET_EXPLICITRECOMPUTE_HPP
 #define GUARD_NEURALNET_EXPLICITRECOMPUTE_HPP
 
-#include <cstddef>
-#include <map>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graphutils.hpp>
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/tensordebuginfo.hpp"
-
 namespace popart {
-class Graph;
-class Op;
 
 /**
  * Struct describing the context in which a Tensor or Op occurs.

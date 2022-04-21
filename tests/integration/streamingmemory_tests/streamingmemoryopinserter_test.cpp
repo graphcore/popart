@@ -3,34 +3,17 @@
 #define BOOST_TEST_MODULE StreamingMemoryOpInserterTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <map>
-#include <memory>
-#include <string>
-#include <transforms/streamingmemoryopinserter.hpp>
-#include <utility>
-#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/builder.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/topocons.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/tensornames.hpp"
-#include "popart/tensors.hpp"
-
-namespace popart {
-class Tensor;
-} // namespace popart
+#include <transforms/streamingmemoryopinserter.hpp>
 
 using namespace popart;
 using namespace popart::io;

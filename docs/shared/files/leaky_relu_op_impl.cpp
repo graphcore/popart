@@ -8,47 +8,13 @@
 // and `x * alpha` for any element `x < 0`, where `alpha` is provided as a
 // scalar attribute to the operator.
 
-#include <algorithm>
-#include <initializer_list>
-#include <map>
-#include <memory>
-#include <pybind11/cast.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-#include <string>
-#include <vector>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
 #include <popart/op/custom/parameterizedop.hpp>
 #include <popart/op/custom/parameterizedopbinder.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/popx/opx.hpp>
-#include <popart/popx/opxmanager.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/opmanager.hpp"
-#include "popart/tensorinfo.hpp"
-
-namespace poplar {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace poplar
 
 namespace py = pybind11;
 
 namespace popart {
-class LeakyReluOp;
-namespace popx {
-class Devicex;
-} // namespace popx
-
 /**
  * @brief Leaky relu custom op parameters.
  *

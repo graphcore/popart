@@ -1,14 +1,9 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE UnwindingTest0
 
-#include <algorithm>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
+
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -18,18 +13,6 @@
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensors.hpp"
-
-namespace popart {
-class IArray;
-} // namespace popart
 
 using namespace popart;
 

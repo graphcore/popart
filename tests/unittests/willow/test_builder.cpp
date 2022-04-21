@@ -3,39 +3,21 @@
 #define BOOST_TEST_MODULE BuilderTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
+
+#include <filereader.hpp>
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
+#include <popart/inputshapeinfo.hpp>
 #include <popart/names.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/shapeinference.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/util.hpp" // IWYU pragma: keep
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
-
-namespace popart {
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
-namespace poplar {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace poplar
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
 using namespace popart;
 

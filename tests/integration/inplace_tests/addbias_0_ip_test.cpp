@@ -1,20 +1,10 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE AddBias0InplaceTest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "../test_runner.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/builder.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/ir.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
+#include <boost/test/unit_test.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/tensors.hpp>
 
 using namespace popart;
 

@@ -2,17 +2,11 @@
 #ifndef GUARD_NEURALNET_RANDOMNORMAL_HPP
 #define GUARD_NEURALNET_RANDOMNORMAL_HPP
 
-#include <cstdint>
-#include <memory>
 #include <vector>
 #include <popart/op.hpp>
 #include <popart/op/randombase.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class RandomNormalOp : public RandomNormalBaseOp {
 public:

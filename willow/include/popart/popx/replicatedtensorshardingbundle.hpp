@@ -2,21 +2,10 @@
 #ifndef GUARD_NEURALNET_REPLICATEDTENSORSHARDINGBUNDLE_HPP
 #define GUARD_NEURALNET_REPLICATEDTENSORSHARDINGBUNDLE_HPP
 
-#include <map>
-#include <memory>
+#include <gcl/CollectiveBalancedReorder.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
-#include "popart/names.hpp"
-#include "popart/tensordebuginfo.hpp"
-
-namespace gcl {
-class CollectiveBalancedHostRearrangement;
-class CollectiveBalancedReorder;
-} // namespace gcl
-
 namespace popart {
-class Ir;
-
 namespace popx {
 
 /**

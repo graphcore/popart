@@ -2,7 +2,7 @@
 [
   # Allow C++ libraries to be used instead of the corresponding C libraries
   {include: ["<stddef.h>", "public", "<cstddef>", "public"]},
-  {include: ["<stdint.h>", "public", "<cstdint>", "public"]},
+  {include: ["<cstdint.h>", "public", "<cstdint>", "public"]},
   {include: ["<bits/std_abs.h>", "private", "<cstdlib>", "public"]},
   {include: ["<stdlib.h>", "public", "<cstdlib>", "public"]},
   {include: ["<assert.h>", "public", "<cassert>", "public"]},
@@ -10,13 +10,11 @@
   {include: ["<limits.h>", "public", "<climits>", "public"]},
   {include: ["<ctype.h>", "public", "<cctype>", "public"]},
 
-  # Avoid including some private or compiler-specific headers
+  # Avoid including a private header
   {include: ["<ext/alloc_traits.h>", "private", "<map>", "public"]},
   {include: ["<ext/alloc_traits.h>", "private", "<string>", "public"]},
   {include: ["<ext/alloc_traits.h>", "private", "<vector>", "public"]},
   {include: ["<ext/alloc_traits.h>", "private", "<set>", "public"]},
-  {include: ["<ext/cxxabi.h>", "private", "<thread>", "public"]},
-  {include: ["<bits/this_thread_sleep.h>", "private", "<thread>", "public"]},
 
   # spdlog mappings for willow/src/logging.cpp
   {include: ["<spdlog/common.h>", "public", "<spdlog/spdlog.h>", "public"]},

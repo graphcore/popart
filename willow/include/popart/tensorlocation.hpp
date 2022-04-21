@@ -2,11 +2,9 @@
 #ifndef GUARD_NEURALNET_TENSORLOCATION_HPP
 #define GUARD_NEURALNET_TENSORLOCATION_HPP
 
-#include <cstdint>
-#include <iosfwd>
-#include <set>
-#include <utility>
+#include <memory>
 #include <vector>
+
 #include <popart/commgroup.hpp>
 #include <popart/names.hpp>
 

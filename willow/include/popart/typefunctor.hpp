@@ -2,15 +2,10 @@
 #ifndef GUARD_TYPEFUNCTOR_HPP
 #define GUARD_TYPEFUNCTOR_HPP
 
-#include <cstdint>
-#include <map>
-#include <typeinfo>
-#include <utility>
 #include <popart/error.hpp>
 #include <popart/half.hpp>
+#include <popart/names.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/datatype.hpp"
 
 namespace popart {
 namespace typefunctor {

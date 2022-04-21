@@ -2,25 +2,14 @@
 #ifndef GUARD_NEURALNET_POPDEVICEXMANAGER_HPP
 #define GUARD_NEURALNET_POPDEVICEXMANAGER_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/Device.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Target.hpp>
-#include <poplar/TargetType.hpp>
+#include <poplar/DeviceManager.hpp>
+
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
-
-#include "popart/logging.hpp"
+#include <popart/popx/devicex.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 class DevicexManager : public popart::DeviceProvider {
 public:

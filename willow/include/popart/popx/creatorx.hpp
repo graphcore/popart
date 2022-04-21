@@ -2,32 +2,18 @@
 #ifndef GUARD_NEURALNET_CREATOR_HPP
 #define GUARD_NEURALNET_CREATOR_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <string>
 #include <utility>
-#include <vector>
 
-#include "popart/names.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/region.hpp"
+#include <popart/popx/opx.hpp>
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
-class Graph;
-class Tensor;
-
 namespace popx {
 
 class ICreatorCandidate;
-class PopOpx;
-class ViewChangers;
-
 using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 
 struct UnwindEndpoint;
-
 using UnwindEndpointPtr = std::shared_ptr<UnwindEndpoint>;
 
 struct TensorRegion {

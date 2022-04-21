@@ -3,12 +3,7 @@
 #define GUARD_NEURALNET_POW_ARG_1_GRAD_OP_PATTERN_HPP
 #include <popart/patterns/binarygradoppattern.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Ir;
-class Op;
-class Tensor;
 
 // Replace a PowArg1GradOp with
 // (fwd_in0) -> [Log] -> (tmp1)

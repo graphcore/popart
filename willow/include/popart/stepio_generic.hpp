@@ -2,18 +2,10 @@
 #ifndef GUARD_NEURALNET_STEPIO_GENERIC_HPP
 #define GUARD_NEURALNET_STEPIO_GENERIC_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <map>
-#include <string>
-#include <vector>
 #include <popart/error.hpp>
 #include <popart/istepio.hpp>
 #include <popart/stepio_size_assertion.hpp>
-
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
 
 namespace popart {
 namespace popx {

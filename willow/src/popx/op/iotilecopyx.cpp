@@ -1,29 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Target.hpp>
+#include <popart/error.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/iotilecopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
+#include <poputil/TileMapping.hpp>
 
 namespace popart {
-
 namespace popx {
 
 IoTileCopyOpx::IoTileCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

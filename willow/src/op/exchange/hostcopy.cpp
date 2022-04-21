@@ -1,33 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <map>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
+#include <algorithm>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/alias/aliasmodel.hpp"
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/op/exchange/hostbase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/region.hpp"
-#include "popart/replicatedstreammode.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

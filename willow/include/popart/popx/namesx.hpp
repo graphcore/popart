@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_NAMESX_HPP
 #define GUARD_NEURALNET_NAMESX_HPP
 
-#include <map>
-#include <utility>
+#include <snap/Tensor.hpp>
+#include <poplar/Graph.hpp>
 #include <popart/names.hpp>
-
-namespace snap {
-class Tensor;
-} // namespace snap
 
 namespace popart {
 namespace popx {

@@ -1,38 +1,33 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <algorithm>
+#include <array>
 #include <boost/filesystem.hpp>
-#include <cctype>
-#include <cstdint>
 #include <filereader.hpp>
-#include <map>
 #include <memory>
+#include <numeric>
+#include <queue>
 #include <schedulegraphgrower.hpp>
 #include <sstream>
-#include <string>
+#include <unordered_map>
 #include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <poprithms/schedule/shift/allocweight.hpp>
-#include <poprithms/schedule/shift/kahndecider.hpp>
-#include <poprithms/schedule/shift/rotationtermination.hpp>
-#include <poprithms/schedule/shift/schedulecache.hpp>
-#include <poprithms/schedule/shift/settings.hpp>
-#include <poprithms/schedule/shift/shiftusings.hpp>
-#include <poprithms/schedule/shift/transitiveclosureoptimizations.hpp>
+#include <poprithms/schedule/shift/scheduledgraph.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/scheduler.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-
-namespace popart {
-class Op;
-} // namespace popart
+#include <poprithms/logging/logging.hpp>
+#include <poprithms/logging/timepartitionlogger.hpp>
+#include <poprithms/schedule/shift/graph.hpp>
+#include <poprithms/schedule/shift/kahndecider.hpp>
+#include <poprithms/schedule/shift/rotationtermination.hpp>
+#include <poprithms/schedule/shift/schedulecache.hpp>
+#include <poprithms/schedule/shift/scheduledgraph.hpp>
+#include <poprithms/schedule/shift/settings.hpp>
+#include <poprithms/schedule/shift/transitiveclosureoptimizations.hpp>
+#include <poparttracepoint.hpp>
 
 namespace {
 

@@ -2,15 +2,12 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_PATTERNTARGET_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_PATTERNTARGET_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
+#include <array>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/suffixer.hpp>
 #include <string>
 #include <poprithms/ndarray/shape.hpp>
-
-#include "onnxpasses/onnxnames.hpp"
+#include <poprithmshosttensor.hpp>
 
 namespace popart {
 namespace onnxpasses {

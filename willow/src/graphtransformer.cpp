@@ -1,11 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <graphtransformer_impl.hpp>
-#include <memory>
-#include <string>
-#include <vector>
+#include <popart/error.hpp>
 #include <popart/graphtransformer.hpp>
-
-#include "popart/names.hpp"
 
 namespace popart {
 

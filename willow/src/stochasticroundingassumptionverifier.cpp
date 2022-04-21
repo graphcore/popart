@@ -1,12 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <stochasticroundingassumptionverifier.hpp>
-#include <vector>
-#include <popart/ir.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/sessionoptions.hpp"
+#include <popart/ir.hpp>
 
 namespace popart {
 

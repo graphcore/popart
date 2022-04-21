@@ -2,25 +2,19 @@
 #define BOOST_TEST_MODULE AllocatorTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <set>
-#include <string>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/executablex.hpp>
 #include <popart/popx/irlowering.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp" // IWYU pragma: keep
+#include <popart/session.hpp>
+#include <popart/tensordata.hpp>
 
 using namespace popart;
 

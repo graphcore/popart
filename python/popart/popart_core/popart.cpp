@@ -1,29 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <exception>
-#include <functional>
-#include <initializer_list>
-#include <iosfwd>
-#include <map>
-#include <memory>
-#include <pybind11/attr.h>
-#include <pybind11/buffer_info.h>
-#include <pybind11/cast.h>
-#include <pybind11/functional.h> // IWYU pragma: keep
+#include <pybind11/functional.h>
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <set>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/exceptions.hpp>
-#include <poputil/exceptions.hpp>
+
+#include "../shared_cpp/np_utils.hpp"
+#include "../shared_cpp/pyarray_accessor.hpp"
+
 #include <popart/adam.hpp>
 #include <popart/adaptive.hpp>
 #include <popart/builder.hpp>
@@ -36,11 +20,16 @@
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
 #include <popart/numerics.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/scatterreduce.hpp>
 #include <popart/op/tensorremap.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/optimizervalue.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/replicatedstreammode.hpp>
@@ -48,36 +37,19 @@
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
 #include <popart/stepio_generic.hpp>
+#include <popart/stepio_size_assertion.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
 #include <popart/variablesettings.hpp>
 #include <popart/vendored/optional.hpp>
 #include <popart/version.hpp>
 
-#include "../shared_cpp/np_utils.hpp"
-#include "../shared_cpp/pyarray_accessor.hpp"
-#include "object.h"
-#include "popart/attributes.hpp"
-#include "popart/clipnormsettings.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/istepio.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/collectives/collectives.hpp"
-#include "popart/op/exchange/exchange.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/optimizervaluemap.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/vendored/any.hpp"
-#include "popart/voiddata.hpp"
-#include "pyerrors.h"
+#include <stdexcept>
+#include <poplar/exceptions.hpp>
+#include <poputil/exceptions.hpp>
 
 namespace py = pybind11;
 using namespace popart;

@@ -1,27 +1,21 @@
 
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <functional>
-#include <memory>
-#include <string>
 #include <transforms/autodiff/gradgrowerloss.hpp>
-#include <utility>
-#include <vector>
+
+#include <memory>
+
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/pbwrap.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/optimizervalue.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "transforms/autodiff/autodiffhelper.hpp"
-#include "transforms/autodiff/autodiffirinterface.hpp"
+#include <poplar/Target.hpp>
 
 namespace popart {
 

@@ -1,17 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
 #include <memory>
-#include <string>
-#include <vector>
+#include <popart/ir.hpp>
 #include <popart/op/atan2.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
-#include "popart/operatoridentifier.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

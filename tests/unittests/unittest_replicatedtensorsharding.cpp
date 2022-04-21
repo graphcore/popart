@@ -1,28 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TensorIdTest
 
-#include <boost/test/unit_test.hpp>
-#include <map>
-#include <memory>
-#include <set>
+#include <testutil/irquery/irquery.hpp>
 #include <testutil/test_graphs/graph_test_models.hpp>
-#include <utility>
-#include <vector>
+
+#include <boost/test/unit_test.hpp>
+
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/replicatedtensorsharding.hpp>
-
-#include "popart/graph.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/vendored/optional.hpp"
-#include "testutil/irquery/irquery.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

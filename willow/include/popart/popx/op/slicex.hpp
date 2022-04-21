@@ -2,25 +2,14 @@
 #ifndef GUARD_NEURALNET_SLICEX_HPP
 #define GUARD_NEURALNET_SLICEX_HPP
 
-#include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
-
-#include "popart/names.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popart {
 
 class SliceOp;
 class SliceInplaceOp;
-class Op;
 
 namespace popx {
-class Devicex;
 
 class BaseSliceOpx : public PopOpx {
 public:

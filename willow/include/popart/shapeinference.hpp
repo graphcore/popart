@@ -1,16 +1,9 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_SHAPEINFERENCE_HPP
 #define GUARD_SHAPEINFERENCE_HPP
-#include <cstddef>
-#include <functional>
-#include <map>
-#include <string>
 #include <popart/attributes.hpp>
+#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

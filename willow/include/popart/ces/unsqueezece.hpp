@@ -5,7 +5,6 @@
 #include <popart/ces/identityce.hpp>
 
 namespace popart {
-class Op;
 
 class ConstExprUnsqueeze : public ConstExprIdentity {
 public:

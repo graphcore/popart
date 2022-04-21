@@ -1,18 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Namescope0LogicalIf
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
-#include <popart/builder.hpp>
-#include <popart/tensorinfo.hpp>
-
 #include "../test_runner.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/names.hpp"
+#include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
+#include <popart/builder.hpp>
+#include <popart/inputshapeinfo.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 
 using namespace popart;
 

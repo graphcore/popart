@@ -1,17 +1,8 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Mul0InplaceTest
 
-#include <algorithm>
-#include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <string>
-
 #include "elementwisebinary_testcase.hpp"
-#include "popart/builder.gen.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/op/mul.hpp>
 
 using namespace popart;
 

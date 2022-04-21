@@ -1,60 +1,47 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+
+#include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
 #include <onnx/onnx_pb.h>
-#include <onnxpasses/onnxtoonnx.hpp>
-#include <set>
-#include <string>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
+
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/onnxconstexpr.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
+#include <popart/util.hpp>
+#include <poparttracepoint.hpp>
+
+// Ops required for Graph::getCalledOps
+#include <popart/op/call.hpp>
+#include <popart/op/if.hpp>
+
+// The layers required to construct the backwards pass
+#include <popart/error.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/accumulatorscale.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
-#include <popart/opmanager.hpp>
-#include <popart/pbwrap.hpp>
 #include <popart/pointercomparators.hpp>
-#include <popart/scheduler.hpp>
-#include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
-#include <popart/util.hpp>
-#include <poparttracepoint.hpp>
 
-#include "onnxpasses/onnxnames.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/region.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/scope.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordata.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/variablesettings.hpp"
+#include <onnxpasses/onnxtoonnx.hpp>
+
+#include <transforms/autodiff/tensorgradmapregister.hpp>
 
 // Prototypes
 namespace {

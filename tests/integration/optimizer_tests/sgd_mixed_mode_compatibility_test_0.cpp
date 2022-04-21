@@ -2,15 +2,19 @@
 #define BOOST_TEST_MODULE SgdMixedModeCompatTest0
 
 #include <boost/test/unit_test.hpp>
+#include <filereader.hpp>
 #include <iostream>
-#include <string>
-#include <utility>
+#include <popart/builder.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/half.hpp>
+#include <popart/inputshapeinfo.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/l1.hpp>
 #include <popart/sgd.hpp>
-
-namespace popart {
-class error;
-} // namespace popart
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensors.hpp>
 
 using namespace popart;
 

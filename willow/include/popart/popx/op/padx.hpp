@@ -2,21 +2,11 @@
 #ifndef GUARD_NEURALNET_PADX_HPP
 #define GUARD_NEURALNET_PADX_HPP
 
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
 #include <popart/popx/popopx.hpp>
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
 
 namespace popart {
 
 class BasePadOp;
-class Op;
 
 // With padding, there are 4 cases to consider,
 //
@@ -58,7 +48,6 @@ class Op;
 //
 //
 namespace popx {
-class Devicex;
 
 class BasePadOpx : public PopOpx {
 public:

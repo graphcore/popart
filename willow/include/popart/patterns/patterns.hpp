@@ -2,25 +2,20 @@
 #ifndef GUARD_NEURALNET_PATTERNS_HPP
 #define GUARD_NEURALNET_PATTERNS_HPP
 
-#include <cstddef>
 #include <functional>
-#include <iosfwd>
+#include <initializer_list>
 #include <map>
-#include <memory>
 #include <string>
 #include <typeindex>
-#include <typeinfo>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 #include <popart/logging.hpp>
 #include <popart/patterns/pattern.hpp>
+#include <popart/util.hpp>
+
 #include <popart/vendored/optional.hpp>
 
-#include "popart/error.hpp"
-
 namespace popart {
-class Op;
 
 /// Class representing the pattern set to run.
 enum class PatternsLevel {

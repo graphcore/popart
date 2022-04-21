@@ -2,18 +2,9 @@
 #ifndef GUARD_NEURALNET_DYNAMICUPDATE_HPP
 #define GUARD_NEURALNET_DYNAMICUPDATE_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/dynamic/dynamicbase.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-class TensorInfo;
-struct OperatorIdentifier;
 
 /**
  * Dynamic Update Op

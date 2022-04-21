@@ -1,20 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <popops/SequenceSlice.hpp>
+#include <popart/error.hpp>
 #include <popart/op/sequenceslice.hpp>
+
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/sequenceslicex.hpp>
 #include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include <popops/ElementWise.hpp>
+#include <popops/SequenceSlice.hpp>
+#include <popops/Zero.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 namespace {
 

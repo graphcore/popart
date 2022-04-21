@@ -3,19 +3,11 @@
 
 // tests of value ordering of the matches
 
+#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <map>
-#include <memory>
-#include <ostream>
 #include <vector>
 #include <popart/logging.hpp>
-
-#include "blip.hpp"
-#include "popart/subgraph/algo0.hpp"
-#include "popart/subgraph/match.hpp"
-#include "popart/subgraph/subgraphnames.hpp"
-#include "popart/subgraph/subgraphutil.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

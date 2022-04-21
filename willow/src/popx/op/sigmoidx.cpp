@@ -1,23 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <string>
 #include <popnn/NonLinearity.hpp>
-#include <popnn/NonLinearityDef.hpp>
+#include <popart/error.hpp>
 #include <popart/op/sigmoid.hpp>
 #include <popart/popx/op/sigmoidx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/operators.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 SigmoidInplaceOpx::SigmoidInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(op, devicex, SigmoidComputex::get()) {

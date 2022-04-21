@@ -1,17 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <boost/numeric/interval.hpp>
-#include <boost/range/adaptors.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
-#include <boost/range/numeric.hpp>
-#include <cstdint>
-#include <iterator>
-#include <limits>
 #include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
@@ -22,15 +10,16 @@
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/region.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <boost/numeric/interval.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/range/numeric.hpp>
+
+#include <algorithm>
+#include <iterator>
 
 namespace popart {
 

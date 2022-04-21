@@ -3,17 +3,12 @@
 #define GUARD_NEURALNET_CALLED_GRAPH_GRAD_OP_HELPER_HPP
 
 #include <functional>
-#include <map>
-#include <vector>
+
 #include <popart/bwdgraphinfo.hpp>
+#include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class GradInOutMapper;
-class Graph;
-class Op;
 
 /**
  * Helper class that helps ops that have called subgraphs with handling for

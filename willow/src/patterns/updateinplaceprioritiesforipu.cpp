@@ -1,8 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <string>
-#include <tuple>
-#include <vector>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+
 #include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/dropoutbase.hpp>
@@ -10,16 +10,7 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

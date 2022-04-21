@@ -2,20 +2,11 @@
 #ifndef GUARD_NEURALNET_ALLREDUCE_HPP
 #define GUARD_NEURALNET_ALLREDUCE_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/collectives/collectives.hpp>
-
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/vendored/optional.hpp>
 
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class AllReduceOp : public Op {
 public:

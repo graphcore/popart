@@ -2,29 +2,12 @@
 #ifndef GUARD_NEURALNET_LOGSOFTMAXX_HPP
 #define GUARD_NEURALNET_LOGSOFTMAXX_HPP
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <vector>
+#include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/debugcontextx.hpp"
-
-namespace snap {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
 
 namespace popx {
-class Devicex;
 
 class LogSoftmaxComputex : public EwuComputex {
 

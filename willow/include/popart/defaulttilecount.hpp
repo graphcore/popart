@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_DEFAULTTILECOUNT_HPP
 #define GUARD_NEURALNET_DEFAULTTILECOUNT_HPP
 
+#include <cstddef>
+
 namespace popart {
 constexpr int defaultFewTiles{4};
 constexpr int defaultManyTiles{1216};

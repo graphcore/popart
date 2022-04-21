@@ -1,44 +1,18 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <memory>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <popops/Cast.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/OperationDef.hpp>
-#include <popops/Reduce.hpp>
 #include <popart/op/where.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/wherex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/error.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/popx/poptensors.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
+#include <snap/popops/ElementWise.hpp>
+#include <popops/Cast.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 
 namespace popart {
-
 namespace popx {
 
 BaseWhereOpx::BaseWhereOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}

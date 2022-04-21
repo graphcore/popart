@@ -2,16 +2,13 @@
 #define BOOST_TEST_MODULE DeprecatedSessionOptions
 
 #include <boost/filesystem.hpp>
+#include <boost/test/output_test_stream.hpp>
 #include <boost/test/unit_test.hpp>
 #include <cstdlib>
-#include <fstream>
-#include <map>
-#include <sstream>
-#include <string>
+
 #include <popart/sessionoptions.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
+#include <sstream>
 
 using namespace popart;
 

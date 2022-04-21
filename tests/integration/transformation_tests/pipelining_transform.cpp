@@ -2,30 +2,22 @@
 #define BOOST_TEST_MODULE Pipelining
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
 #include <filereader.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/nll.hpp>
 #include <popart/op/stash.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/session.hpp>
 #include <popart/sgd.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
-
-#include "popart/builder.gen.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/voiddata.hpp"
 
 using namespace popart;
 

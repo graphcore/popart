@@ -2,24 +2,12 @@
 #ifndef GUARD_NEURALNET_CONCATX_HPP
 #define GUARD_NEURALNET_CONCATX_HPP
 
-#include <cstddef>
-#include <snap/Tensor.hpp>
-#include <vector>
 #include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 class ExpandOp;
-class Op;
-
 namespace popx {
-class Devicex;
 
 class BaseExpandOpx : public PopOpx {
 protected:

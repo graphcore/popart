@@ -2,11 +2,7 @@
 #ifndef GUARD_NEURALNET_IARRAY_HPP
 #define GUARD_NEURALNET_IARRAY_HPP
 
-#include <cstddef>
-#include <cstdint>
-
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
+#include <popart/tensorinfo.hpp>
 
 namespace popart {
 

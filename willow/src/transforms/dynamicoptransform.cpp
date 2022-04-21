@@ -1,13 +1,4 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <map>
-#include <memory>
-#include <string>
-#include <tuple>
-#include <typeinfo>
-#include <utility>
-#include <vector>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -19,23 +10,15 @@
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/dynamic/dynamiczero.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
+#include <popart/patterns/inplace.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/dynamicoptransform.hpp>
-
-#include "popart/alias/aliasmodel.hpp"
-#include "popart/basicoptionals.hpp"
-#include "popart/logging.hpp"
-#include "popart/op/dynamic/dynamicbase.hpp"
-#include "popart/operators.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/transforms/transform.hpp"
-#include "popart/vertex.hpp"
 
 namespace popart {
 

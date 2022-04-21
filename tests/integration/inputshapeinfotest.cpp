@@ -2,17 +2,10 @@
 #define BOOST_TEST_MODULE EarlyUnfoTest
 
 #include <boost/test/unit_test.hpp>
-#include <cstdint>
-#include <string>
-#include <vector>
+
+#include <popart/error.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/tensorinfo.hpp>
-
-#include "popart/names.hpp"
-
-namespace popart {
-class error;
-} // namespace popart
 
 using namespace popart;
 

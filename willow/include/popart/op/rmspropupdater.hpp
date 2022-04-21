@@ -2,14 +2,10 @@
 #ifndef GUARD_NEURALNET_RMSPROPUPDATER_HPP
 #define GUARD_NEURALNET_RMSPROPUPDATER_HPP
 
-#include <memory>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/optimizervalue.hpp"
+#include <popart/adaptive.hpp>
+#include <popart/op/varupdate.hpp>
 
 namespace popart {
-class OpSerialiserBase;
 
 class RMSPropUpdaterOp : public Op {
 

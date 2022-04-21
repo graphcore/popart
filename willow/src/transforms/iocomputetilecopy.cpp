@@ -1,32 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <map>
 #include <memory>
-#include <set>
-#include <string>
-#include <transforms/streamingmemoryopinserter.hpp>
-#include <typeinfo>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/iotilecopy.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/iocomputetilecopy.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/transforms/transform.hpp"
+#include <transforms/streamingmemoryopinserter.hpp>
 
 namespace popart {
 

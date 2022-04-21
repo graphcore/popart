@@ -1,15 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <string>
+#include <popart/graph.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/atan2.hpp>
+#include <popart/op/div.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/op/square.hpp>
+#include <popart/operators.hpp>
 #include <popart/patterns/atan2arg0gradoppattern.hpp>
 
-#include "popart/ir.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <iostream>
 
 namespace popart {
 

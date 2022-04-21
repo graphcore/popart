@@ -2,12 +2,11 @@
 #ifndef GUARD_RANDOM_UTIL_HPP
 #define GUARD_RANDOM_UTIL_HPP
 
-#include <algorithm>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <limits>
+
+#include <algorithm>
+#include <functional>
 #include <random>
 #include <string>
 

@@ -2,16 +2,10 @@
 #ifndef GUARD_NEURALNET_BATCHSERIALIZE_HPP
 #define GUARD_NEURALNET_BATCHSERIALIZE_HPP
 
-#include <cstddef>
-#include <string>
-#include <vector>
+#include <queue> // we use a priority_queue
 #include <popart/op.hpp>
 #include <popart/shardingplan.hpp>
 #include <popart/transforms/transform.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
 
 // Batch serialization:
 // Serializes Ops in the forward pass along the batch dimension,
@@ -77,7 +71,6 @@
 //          Loss
 
 namespace popart {
-class Graph;
 
 class BatchSerializedTensorInfo {
 public:

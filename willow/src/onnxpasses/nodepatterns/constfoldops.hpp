@@ -2,9 +2,7 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_CONSTFOLDOPS_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_CONSTFOLDOPS_HPP
 
-#include <string>
-
-#include "onnxpasses/onnxnames.hpp"
+#include <onnxpasses/nodepattern.hpp>
 
 namespace popart {
 namespace onnxpasses {

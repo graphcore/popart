@@ -2,29 +2,21 @@
 #ifndef GUARD_NEURALNET_NET_HPP
 #define GUARD_NEURALNET_NET_HPP
 
-#include <cstddef>
-#include <cstdint>
 #include <functional>
-#include <iosfwd>
 #include <memory>
-#include <pva/pva.hpp>
-#include <string>
 #include <vector>
-#include <popart/ir.hpp>
-#include <popart/sessionoptions.hpp>
 
-#include "popart/dataflow.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <pva/pva.hpp>
+#include <poplar/DataStream.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/sessionoptions.hpp>
+#include <popart/stepio.hpp>
 
 namespace popart {
 
 class DeviceInfo;
-class IStepIO;
-class IWeightsIO;
-class InputShapeInfo;
-class Optimizer;
 
 namespace popx {
 class Devicex;

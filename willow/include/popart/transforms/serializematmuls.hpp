@@ -2,12 +2,9 @@
 #ifndef GUARD_NEURALNET_SERIALIZE_MATMULS_HPP
 #define GUARD_NEURALNET_SERIALIZE_MATMULS_HPP
 
-#include <cstddef>
-#include <string>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
-class Graph;
 
 class SerializeMatMuls : public Transform {
 public:

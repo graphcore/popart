@@ -2,20 +2,12 @@
 #ifndef GUARD_NEURALNET_DYNAMICADDX_HPP
 #define GUARD_NEURALNET_DYNAMICADDX_HPP
 
-#include <snap/Tensor.hpp>
+#include <popart/names.hpp>
 #include <popart/popx/op/dynamic/dynamicupdatex.hpp>
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
+#include <popart/popx/popopx.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class DynamicAddOpx : public DynamicUpdateOpx {
 public:

@@ -1,13 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/debugcontext.hpp"
 
-#include <initializer_list>
-#include <pybind11/attr.h>
 #include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
-#include <string>
+
 #include <popart/debugcontext.hpp>
 
 namespace py = pybind11;

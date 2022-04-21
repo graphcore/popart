@@ -2,12 +2,10 @@
 #ifndef GUARD_NEURALNET_CONTIGUATE_IP_COPY_INDICES_PATTERN_HPP
 #define GUARD_NEURALNET_CONTIGUATE_IP_COPY_INDICES_PATTERN_HPP
 
-#include <vector>
 #include <popart/patterns/pattern.hpp>
+#include <popart/patterns/sequenceexpander.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Note 1:
 // This Pattern is similar to SequenceExpander, but different enough to merit

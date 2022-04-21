@@ -1,13 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstddef>
-#include <map>
+
+#include <poputil/TileMapping.hpp>
+
 #include <snap/Graph.hpp>
 #include <snap/Tensor.hpp>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/Target.hpp>
-#include <poputil/TileMapping.hpp>
+
 #include <popart/popx/linearmapper.hpp>
 
 namespace popart {

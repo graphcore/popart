@@ -1,14 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <limits>
-#include <memory>
+#include <popart/graph.hpp>
 #include <popart/op.hpp>
+#include <popart/operators.hpp>
 
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-
-namespace popart {
-class Graph;
-} // namespace popart
+#include <memory>
 
 namespace test_graphs {
 

@@ -4,10 +4,10 @@
 
 #include <vector>
 
+#include <popart/subgraph/match.hpp>
+
 namespace fwtools {
 namespace subgraph {
-class Match;
-
 namespace suffixtree {
 
 std::vector<Match> getInternal(const std::vector<int> &s);

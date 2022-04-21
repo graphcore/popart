@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_TENSORREMAP_HPP
 #define GUARD_NEURALNET_TENSORREMAP_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 /**
  * Enum describing how the tensor layout should be remapped during the forward

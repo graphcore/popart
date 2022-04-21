@@ -1,13 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <array>
-#include <cstddef>
-#include <cstdint>
 #include <sstream>
-#include <vector>
+#include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
-
-#include "popart/names.hpp"
 
 namespace pipeline_recompute_util {
 

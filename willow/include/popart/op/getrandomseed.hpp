@@ -2,16 +2,10 @@
 #ifndef GUARD_NEURALNET_GETRANDOMSEED_HPP
 #define GUARD_NEURALNET_GETRANDOMSEED_HPP
 
-#include <memory>
-#include <string>
 #include <popart/op.hpp>
 #include <popart/tensornames.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class AliasModel;
-struct OperatorIdentifier;
 
 class GetRandomSeedOp : public Op {
 public:

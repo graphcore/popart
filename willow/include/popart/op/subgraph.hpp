@@ -2,32 +2,11 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHOP_HPP
 #define GUARD_NEURALNET_SUBGRAPHOP_HPP
 
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/chains.hpp>
 #include <popart/op.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 
-#include "popart/bwdgraphinfo.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
-
-namespace onnx {
-class GraphProto;
-} // namespace onnx
-
 namespace popart {
-class AliasModel;
-class Graph;
-class OpSerialiserBase;
-class ReplicaEqualAnalysisProxy;
-class TensorInfo;
-struct OperatorIdentifier;
 
 class SubgraphOp : public Op {
 public:

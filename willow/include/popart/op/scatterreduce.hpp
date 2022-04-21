@@ -2,19 +2,10 @@
 #ifndef GUARD_NEURALNET_SCATTERREDUCE_HPP
 #define GUARD_NEURALNET_SCATTERREDUCE_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // TODO(T35695): when poplibs supports it, add Mul, Min, Max, etc
 enum class ScatterReduction { Sum = 0 };

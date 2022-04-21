@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_UPSAMPLE_TO_RESIZE_PATTERN_HPP
 #define GUARD_NEURALNET_UPSAMPLE_TO_RESIZE_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replace Upsample with Resize.
 class UpsampleToResizePattern : public PreAliasPattern {

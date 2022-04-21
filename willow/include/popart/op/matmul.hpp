@@ -2,23 +2,11 @@
 #ifndef GUARD_NEURALNET_MATMUL_HPP
 #define GUARD_NEURALNET_MATMUL_HPP
 
-#include <cstdint>
-#include <iosfwd>
-#include <map>
-#include <memory>
 #include <string>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-class Tensor;
-struct OperatorIdentifier;
 
 enum class MatMulPartialsType { HALF, FLOAT };
 

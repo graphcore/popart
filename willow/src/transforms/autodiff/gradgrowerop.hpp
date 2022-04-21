@@ -3,16 +3,16 @@
 #ifndef GUARD_NEURALNET_GRAD_GROWER_OP_HPP
 #define GUARD_NEURALNET_GRAD_GROWER_OP_HPP
 
-#include <transforms/autodiff/autodiffhelper.hpp>
 #include <vector>
+
+#include <transforms/autodiff/autodiffhelper.hpp>
+#include <transforms/autodiff/autodiffirinterface.hpp>
 #include <popart/bwdgraphinfo.hpp>
 
 namespace popart {
 
 // Forward declarations.
 class Op;
-class AutodiffIrInterface;
-class Graph;
 
 /**
  * Interface for GradGrowerOp.

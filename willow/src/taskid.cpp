@@ -1,14 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <boost/functional/hash.hpp>
-#include <cstddef>
-#include <ostream>
-#include <string>
 #include <popart/taskid.hpp>
 
-#include "popart/error.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/vendored/optional.hpp"
+#include <boost/functional/hash.hpp>
 
 namespace popart {
 

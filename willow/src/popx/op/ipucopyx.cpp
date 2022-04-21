@@ -1,14 +1,5 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <map>
-#include <memory>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
-#include <poplar/Tensor.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <poputil/TileMapping.hpp>
 #include <popart/error.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/popx/devicex.hpp>
@@ -18,17 +9,9 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/ir.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensor.hpp"
+#include <poputil/TileMapping.hpp>
 
 namespace popart {
-
 namespace popx {
 
 IpuCopyOpx::IpuCopyOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

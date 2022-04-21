@@ -1,23 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popops/OperationDef.hpp>
-#include <popops/Reduce.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/lamb.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/lambx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/popx/popopx.hpp"
+#include <popops/Cast.hpp>
+#include <popops/Reduce.hpp>
 
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 LambSquareOpx::LambSquareOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<LambSquareOp>(op, Onnx::CustomOperators::LambSquare);

@@ -1,34 +1,25 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/transforms/autodiff.hpp"
+#include "bindings/transforms/transform.hpp"
 
-#include <array>
-#include <cstddef>
-#include <initializer_list>
-#include <map>
-#include <pybind11/attr.h>
 #include <pybind11/cast.h>
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
-#include <string>
-#include <vector>
+#include <pybind11/stl.h>
+
 #include <popart/bwdgraphinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/transforms/autodiff.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include "bindings/transforms/transform.hpp"
-#include "popart/graph.hpp" // IWYU pragma: keep
-#include "popart/graphid.hpp"
-#include "popart/ir.hpp" // IWYU pragma: keep
-#include "popart/tensordebuginfo.hpp"
-
-#include <pybind11/functional.h> // IWYU pragma: keep
-#include <pybind11/stl.h>        // IWYU pragma: keep
+#include <popart/transforms/transform.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class Transform;
-
 namespace _internal {
 namespace ir {
 namespace transforms {

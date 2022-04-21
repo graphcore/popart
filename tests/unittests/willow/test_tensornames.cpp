@@ -1,17 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE UnittestWillowTensorNames
 #include <boost/test/unit_test.hpp>
-#include <string>
-#include <popart/ir.hpp>
+
 #include <popart/tensornames.hpp>
 
-#include "popart/graphid.hpp"
-#include "popart/names.hpp"
-#include "popart/util.hpp"
-
-namespace popart {
-class Graph;
-} // namespace popart
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 
 using namespace popart;
 

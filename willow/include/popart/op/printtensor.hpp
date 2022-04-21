@@ -2,17 +2,9 @@
 #ifndef GUARD_NEURALNET_PRINTTENSOR_HPP
 #define GUARD_NEURALNET_PRINTTENSOR_HPP
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class PrintTensorOp : public ElementWiseUnaryOp {
 public:

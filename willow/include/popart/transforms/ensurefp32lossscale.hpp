@@ -2,18 +2,10 @@
 #ifndef GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
 #define GUARD_NEURALNET_ENSURE_FP32_LOSS_SCALE_HPP
 
-#include <cstddef>
-#include <string>
-#include <utility>
-#include <vector>
+#include <popart/op.hpp>
 #include <popart/transforms/transform.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class Graph;
-class Op;
-class Tensor;
 
 // This transform can be applied to graphs with an fp16 loss scale tensor.
 // It aims to keep the loss scale tensor in fp32 until as late as possible -

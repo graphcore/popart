@@ -1,31 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <string>
-#include <poplar/Graph.hpp>
-#include <poplar/Type.hpp>
-#include <popops/ExprOp.hpp>
 #include <popart/error.hpp>
 #include <popart/op/scale.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/scalex.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/debugcontextx.hpp"
-#include "popart/popx/op/elementwisex.hpp"
-
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
 namespace popx {
-class Devicex;
 
 snap::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
                                            snap::Graph &graph) const {

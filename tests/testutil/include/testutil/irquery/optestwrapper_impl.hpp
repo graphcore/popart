@@ -5,11 +5,7 @@
 #include <testutil/irquery/optestwrapper.hpp>
 #include <testutil/irquery/tensorindexmaptestwrapper.hpp>
 
-#include "testutil/irquery/testwrapper.hpp"
-
 namespace popart {
-class Ir;
-
 namespace irquery {
 
 template <typename OP, typename enableif>

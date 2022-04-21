@@ -1,23 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include "popart/popx/debugcontextx.hpp"
-#include <numeric>
-#include <set>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
-#include <popops/Sort.hpp>
 #include <popart/op/basesort.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/basesortx.hpp>
 #include <popart/popx/op/sortutilx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popops/Sort.hpp>
+#include <poputil/TileMapping.hpp>
+
+#include <snap/poputil/TileMapping.hpp>
 
 namespace popart {
 namespace popx {

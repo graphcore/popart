@@ -1,26 +1,27 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #define BOOST_ERROR_CODE_HEADER_ONLY
+// this ifdef suppresses the unused macro warning for
+// BOOST_ERROR_CODE_HEADER_ONLY
+#ifdef BOOST_ERROR_CODE_HEADER_ONLY
+#endif
 
-#include <algorithm>
-#include <boost/filesystem.hpp>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <errno.h>
 #include <filereader.hpp>
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/stubs/common.h>
-#include <iomanip>
-#include <limits>
-#include <sstream>
-#include <type_traits>
-#include <utility>
-#include <vector>
+
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 
-#include "popart/logging.hpp"
+#include <boost/filesystem.hpp>
+
+#include <cstdio>
+#include <fstream>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+#include <unistd.h>
+#include <vector>
+
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 
 namespace popart {
 namespace io {

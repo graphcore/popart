@@ -2,12 +2,10 @@
 #ifndef GUARD_NEURALNET_SCHEDULER_HPP
 #define GUARD_NEURALNET_SCHEDULER_HPP
 
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
 #include <vector>
 #include <popart/names.hpp>
+#include <popart/scheduler_requireoptimal.hpp>
 
 namespace poprithms {
 namespace schedule {
@@ -18,9 +16,6 @@ class ScheduleCache;
 } // namespace poprithms
 
 namespace popart {
-class Graph;
-class GraphId;
-class Op;
 
 enum class RequireOptimalSchedule; /*
   Yes = true,

@@ -1,15 +1,12 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <transforms/autodiff/addfwdoutputstitcher.hpp>
-#include <transforms/autodiff/recomputestitcher.hpp>
-#include <transforms/autodiff/safeaddfwdoutputstitcher.hpp>
 #include <transforms/autodiff/stitcherfactory.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "transforms/autodiff/stitcherinterface.hpp"
+#include <transforms/autodiff/addfwdoutputstitcher.hpp>
+#include <transforms/autodiff/autodiffiradapter.hpp>
+#include <transforms/autodiff/recomputestitcher.hpp>
+#include <transforms/autodiff/safeaddfwdoutputstitcher.hpp>
 
 namespace popart {
-class AutodiffIrInterface;
 
 std::unique_ptr<StitcherInterface>
 StitcherFactory::createStitcher(AutodiffIrInterface &ir,

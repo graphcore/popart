@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_DECOMPOSEBINARYCONSTSCALAR_HPP
 #define GUARD_NEURALNET_DECOMPOSEBINARYCONSTSCALAR_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 class DecomposeBinaryConstScalar : public PreAliasPattern {
 public:

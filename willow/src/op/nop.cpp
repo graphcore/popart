@@ -1,17 +1,11 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <vector>
+#include <popart/op/identity.hpp>
 #include <popart/op/nop.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/op.hpp"
-#include "popart/op/elementwise.hpp"
+#include <popart/opserialiser.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 NopOp::NopOp(const OperatorIdentifier &opid_, const Op::Settings &settings_)
     : ElementWiseUnaryOp(opid_, settings_) {}

@@ -1,16 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <tuple>
-#include <vector>
 #include <popart/op/floor.hpp>
+#include <popart/op/zeros.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/op.hpp"
-#include "popart/op/onewayunary.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
 
 namespace popart {
 

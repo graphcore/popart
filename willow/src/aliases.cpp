@@ -1,22 +1,14 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <functional>
-#include <ostream>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/aliases.hpp>
 #include <popart/chains.hpp>
+#include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
-
-#include "popart/error.hpp"
-#include "popart/region.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensorindex.hpp>
 
 namespace popart {
 

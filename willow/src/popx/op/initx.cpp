@@ -1,22 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
 #include <popops/Zero.hpp>
+
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/init.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/initx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/popx/popopx.hpp"
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 InitOpx::InitOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<InitOp>(op, Onnx::CustomOperators::Init_1);

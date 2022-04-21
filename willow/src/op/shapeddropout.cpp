@@ -1,24 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
 #include <memory>
-#include <string>
-#include <vector>
+#include <popart/ir.hpp>
 #include <popart/op/shapeddropout.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/op/dropoutbase.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
+#include <popart/tensor.hpp>
 
 namespace popart {
 

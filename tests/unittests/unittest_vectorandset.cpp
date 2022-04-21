@@ -1,11 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE VectorAndSetTest
 
-#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <popart/vectorandset.hpp>
+
 #include <vector>
 #include <popart/logging.hpp>
-#include <popart/vectorandset.hpp>
 
 BOOST_AUTO_TEST_CASE(test_vectorAndSetTest) {
   // T45403

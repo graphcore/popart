@@ -1,9 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/transforms/transform.hpp"
-
-#include <array>
-#include <initializer_list>
 #include <pybind11/pybind11.h>
+
+#include <popart/graph.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace py = pybind11;

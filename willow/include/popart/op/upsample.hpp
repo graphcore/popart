@@ -2,16 +2,9 @@
 #ifndef GUARD_NEURALNET_UPSAMPLE_HPP
 #define GUARD_NEURALNET_UPSAMPLE_HPP
 
-#include <iosfwd>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 enum class UpsampleMode { Nearest, Linear, N };
 std::string toString(const UpsampleMode &);

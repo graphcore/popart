@@ -2,22 +2,19 @@
 #ifndef GUARD_NEURALNET_GRAD_GROWER_GRAPH_HPP
 #define GUARD_NEURALNET_GRAD_GROWER_GRAPH_HPP
 
+#include <functional>
 #include <memory>
-#include <string>
-#include <transforms/autodiff/autodiffhelper.hpp>
-#include <vector>
 
-#include "popart/bwdgraphinfo.hpp"
-#include "popart/graphid.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/names.hpp>
+
+#include <popart/transforms/autodiff.hpp>
+
+#include <transforms/autodiff/autodiffhelper.hpp>
 
 namespace popart {
 
 // Forward declaration.
 class StitcherFactory;
-class AutodiffIrInterface;
 
 /**
  * Interface for GradGrowerSubgraph.

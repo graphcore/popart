@@ -1,19 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/constfolder.hpp>
 #include <onnxpasses/nodepatterns/constfoldops.hpp>
-#include <type_traits>
-#include <utility>
-#include <vector>
-
-#include "onnxpasses/nodepattern.hpp"
 
 namespace popart {
-
 namespace onnxpasses {
-
-class PatternTarget;
 
 using namespace ONNX_NAMESPACE;
 

@@ -2,17 +2,13 @@
 #ifndef GUARD_NEURALNET_DROPOUTBASE_HPP
 #define GUARD_NEURALNET_DROPOUTBASE_HPP
 
-#include <memory>
 #include <popart/op.hpp>
 #include <popart/op/randombase.hpp>
-
-#include "popart/names.hpp"
 
 namespace popart {
 
 // Forward declare for use in static function signature
 class OpCreatorInfo;
-struct OperatorIdentifier;
 
 // Base class for dropout ops
 class DropoutBaseOp : public RandomBaseOp {

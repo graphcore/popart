@@ -2,12 +2,10 @@
 #ifndef GUARD_NEURALNET_SGD1DECOMPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_SGD1DECOMPOSE_PATTERN_HPP
 
-#include <vector>
 #include <popart/patterns/optimizerdecompose.hpp>
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 /**
  * @brief Decomposes an SGD1ComboOp into the Ops and Tensors that implement the

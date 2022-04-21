@@ -2,21 +2,14 @@
 #ifndef GUARD_NEURALNET_REPLICATEDTENSORSHARDING_HPP
 #define GUARD_NEURALNET_REPLICATEDTENSORSHARDING_HPP
 
-#include <iosfwd>
-#include <map>
-#include <set>
-#include <vector>
-
-#include "popart/names.hpp"
-#include "popart/pointercomparators.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/optional.hpp"
+#include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
 
 namespace popart {
 
-class Ir;
-class Op;
-class Tensor;
+struct PTensorCmp;
+
 
 /**
  * Struct that describes which inputs/outputs of an Op belong to the

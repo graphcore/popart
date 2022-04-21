@@ -2,24 +2,10 @@
 #ifndef GUARD_NEURALNET_EXPAND_HPP
 #define GUARD_NEURALNET_EXPAND_HPP
 
-#include <cstddef>
-#include <map>
-#include <memory>
-#include <tuple>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 #include <popart/tensorindex.hpp>
 
-#include "popart/graphcoreoperators.hpp"
-#include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/region.hpp" // IWYU pragma: keep
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class AliasModel;
 
 class ExpandOp : public Op {
 public:

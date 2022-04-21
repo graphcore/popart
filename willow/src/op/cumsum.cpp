@@ -1,27 +1,12 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
 #include <vector>
+
 #include <popart/graph.hpp>
 #include <popart/op/cumsum.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
-
 namespace {
 void checkAttibs(int64_t exclusive_, int64_t reverse_) {
   if (exclusive_ < 0 || exclusive_ > 1) {

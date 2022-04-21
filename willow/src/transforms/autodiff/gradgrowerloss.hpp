@@ -3,13 +3,16 @@
 #ifndef GUARD_NEURALNET_GRAD_SUM_GROWER_LOSS_HPP
 #define GUARD_NEURALNET_GRAD_SUM_GROWER_LOSS_HPP
 
+#include <popart/names.hpp>
+
 #include <transforms/autodiff/autodiffhelper.hpp>
+#include <transforms/autodiff/autodiffirinterface.hpp>
 
 namespace popart {
 
 // Forward declarations.
+class Ir;
 class Op;
-class AutodiffIrInterface;
 
 /**
  * Interface for GradGrowerLoss.

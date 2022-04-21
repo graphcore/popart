@@ -2,32 +2,19 @@
 #ifndef GUARD_NEURALNET_OPTIMIZER_HPP
 #define GUARD_NEURALNET_OPTIMIZER_HPP
 
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <iosfwd>
-#include <map>
 #include <memory>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/clipnormsettings.hpp>
+#include <popart/compoundscalarhelper.hpp>
 #include <popart/error.hpp>
+#include <popart/names.hpp>
 #include <popart/optimizervalue.hpp>
-
-#include "popart/datatype.hpp"
-#include "popart/debugcontext.hpp"
-#include "popart/logging.hpp"
-#include "popart/tensordebuginfo.hpp"
+#include <popart/optimizervaluemap.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 
 struct SessionOptions;
-class Graph;
-class Op;
-class Tensor;
-class TensorInfo;
 
 /// Types of optimizers.
 enum class OptimizerType { SGD = 0, Adam, Adaptive, NTYPES };

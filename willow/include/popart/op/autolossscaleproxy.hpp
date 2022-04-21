@@ -3,14 +3,10 @@
 #ifndef GUARD_NEURALNET_AUTOLOSSSCALEPROXY_HPP
 #define GUARD_NEURALNET_AUTOLOSSSCALEPROXY_HPP
 
-#include <map>
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
-struct OperatorIdentifier;
 
 // This op labels the user provided forward tensors for automatic loss scaling.
 // This no-op helps to find the associated gradient tensors.

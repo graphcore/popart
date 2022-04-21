@@ -1,15 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
 #include <boost/math/special_functions/relative_difference.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 #include <popart/op/scale.hpp>
 #include <popart/patterns/negativeonescalepattern.hpp>
-
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
-#include "popart/patterns/patterns.hpp"
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
 using boost::math::epsilon_difference;
 

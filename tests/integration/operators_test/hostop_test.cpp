@@ -1,51 +1,35 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE HostOpTest
 
-#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-#include <poplar/Graph.hpp>
-#include <poplar/GraphElements.hpp>
-#include <poplar/Program.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <poplar/VariableMappingMethod.hpp>
+
+#include <filereader.hpp>
 #include <popart/builder.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
+#include <popart/operators.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/session.hpp>
 #include <popart/shapeinference.hpp>
+#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 
-#include "popart/attributes.hpp"
-#include "popart/dataflow.hpp"
-#include "popart/datatype.hpp"
-#include "popart/inputshapeinfo.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/patterns/patterns.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/stepio.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/vendored/any.hpp"
-
-namespace popart {
-class IArray;
-
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace {
 

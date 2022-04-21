@@ -2,15 +2,11 @@
 #ifndef GUARD_NEURALNET_FMOD_HPP
 #define GUARD_NEURALNET_FMOD_HPP
 
-#include <cstdint>
-#include <memory>
-#include <vector>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // Implements modulo operator. The result has the same sign as the dividend.
 class FmodOp : public ElementWiseBinaryOp {

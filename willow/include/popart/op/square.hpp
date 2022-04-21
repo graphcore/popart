@@ -2,14 +2,9 @@
 #ifndef GUARD_NEURALNET_SQUARE_HPP
 #define GUARD_NEURALNET_SQUARE_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 class SquareOp : public ElementWiseUnaryOp {
 public:

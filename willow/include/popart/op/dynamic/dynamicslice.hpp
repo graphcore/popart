@@ -2,22 +2,9 @@
 #ifndef GUARD_NEURALNET_DYNAMICSLICE_HPP
 #define GUARD_NEURALNET_DYNAMICSLICE_HPP
 
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <set>
-#include <tuple>
-#include <vector>
-#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op/dynamic/dynamicbase.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class AliasModel;
-struct OperatorIdentifier;
 
 /**
  * Dynamic Slice Op

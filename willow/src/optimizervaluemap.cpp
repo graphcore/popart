@@ -1,16 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <boost/functional/hash.hpp>
-#include <cstddef>
-#include <map>
-#include <ostream>
-#include <string>
-#include <utility>
 #include <popart/optimizervaluemap.hpp>
 
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/optimizervalue.hpp"
+#include <boost/functional/hash.hpp>
 
 namespace popart {
 

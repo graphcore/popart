@@ -1,13 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <vector>
-#include <poprithms/compute/host/tensor.hpp>
+#include <cmath>
+
+#include <onnxutil.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/floorce.hpp>
-
-#include "popart/ces/constexpr.hpp"
+#include <popart/op/floor.hpp>
+#include <popart/tensor.hpp>
 
 namespace popart {
-class Op;
 
 ConstExprFloor::ConstExprFloor(Op *op_) : ConstExprOp(op_) {}
 

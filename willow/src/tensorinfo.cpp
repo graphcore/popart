@@ -1,28 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <istream>
-#include <iterator>
-#include <map>
-#include <numeric>
 #include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
-#include <string>
-#include <tuple>
-#include <utility>
-#include <vector>
 #include <popart/error.hpp>
+#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 
-#include "popart/datatype.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-
 namespace popart {
-class Half;
 
 template <> DataType getDataType<int8_t>() { return DataType::INT8; }
 template <> DataType getDataType<int16_t>() { return DataType::INT16; }

@@ -1,22 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <boost/icl/interval.hpp>
-#include <boost/icl/interval_set.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <queue>
-#include <set>
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/aliaszerocopy.hpp>
@@ -27,23 +10,20 @@
 #include <popart/maxclique.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/loop.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/region.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
-#include "popart/aliases.hpp"
-#include "popart/graphid.hpp"
-#include "popart/liveness.hpp"
-#include "popart/logging.hpp"
-#include "popart/op/subgraph.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/util.hpp"
+#include <algorithm>
+#include <queue>
+
+#include <boost/icl/interval.hpp>
+#include <boost/icl/interval_set.hpp>
 
 namespace popart {
 namespace liveness {

@@ -1,19 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <boost/functional/hash.hpp>
-#include <cstddef>
-#include <cstdint>
-#include <map>
-#include <ostream>
-#include <string>
-#include <utility>
-#include <vector>
+#include <algorithm>
+#include <array>
+
+#include <boost/lexical_cast.hpp>
+
 #include <popart/error.hpp>
 #include <popart/sessionoptions.hpp>
 
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/tensorlocation.hpp"
-#include "popart/vendored/optional.hpp"
+#include <boost/functional/hash.hpp>
 
 namespace popart {
 

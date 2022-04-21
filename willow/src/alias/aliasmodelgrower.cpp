@@ -1,38 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
-#include <functional>
-#include <list>
-#include <map>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <unordered_set>
-#include <utility>
-#include <vector>
-#include <poprithms/common/multiout/tensorid.hpp>
-#include <poprithms/logging/timepartitionlogger.hpp>
-#include <poprithms/memory/inplace/graph.hpp>
-#include <poprithms/schedule/vanilla/types.hpp>
-#include <poprithms/schedule/vanilla/vanilla.hpp>
-#include <poprithms/util/typedinteger.hpp>
-#include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
+
+#include <list>
+
+#include <poprithms/logging/timepartitionlogger.hpp>
+#include <poprithms/schedule/vanilla/vanilla.hpp>
+
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/topocons.hpp>
 
-#include "popart/error.hpp"
-#include "popart/graphid.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/scheduler_requireoptimal.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensordebuginfo.hpp"
-#include "popart/tensorindex.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
+#include <popart/alias/aliasmodel.hpp>
 
 namespace popart {
 

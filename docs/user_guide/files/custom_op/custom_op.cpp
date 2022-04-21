@@ -6,39 +6,16 @@
 // alpha` for any element `x < 0`, where `alpha` is provided as a scalar
 // attribute to the operator.
 
-#include <map>
 #include <memory>
-#include <onnx/defs/schema.h>
-#include <onnx/defs/shape_inference.h>
-#include <string>
-#include <utility>
-#include <vector>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Tensor.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/ExprOp.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popart/attributes.hpp>
-#include <popart/datatype.hpp>
-#include <popart/op.hpp>
-#include <popart/operatoridentifier.hpp>
-#include <popart/tensorinfo.hpp>
+#include <popops/ElementWise.hpp>
 
-namespace popart {
-namespace popx {
-class Devicex;
-} // namespace popx
-} // namespace popart
-namespace poplar {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace poplar
+#include <onnx/defs/schema.h>
+#include <onnx/defs/shape_inference.h>
 
 namespace {
 
@@ -62,6 +39,8 @@ const popart::OperatorIdentifier LeakyReluGradId = {"custom.ops",
 //! [OpId end]
 
 class LeakyReluOp;
+class LeakyReluOpx;
+class LeakyReluGradOpx;
 
 //! [GradOp begin]
 class LeakyReluGradOp : public popart::Op {
@@ -278,7 +257,6 @@ static const char LeakyReluDoc[] =
     "See https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html .";
 
 ONNX_OPERATOR_SET_SCHEMA_EX(
-
     LeakyRelu,
     comAcme,
     "custom.ops",

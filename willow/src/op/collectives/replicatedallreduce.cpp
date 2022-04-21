@@ -1,7 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <string>
-#include <tuple>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
@@ -9,19 +7,8 @@
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
-
-#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
-#include "popart/attributes.hpp"
-#include "popart/commgroup.hpp"
-#include "popart/datatype.hpp"
-#include "popart/error.hpp"
-#include "popart/graphcoreoperators.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 

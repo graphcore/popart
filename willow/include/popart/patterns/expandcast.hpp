@@ -2,13 +2,9 @@
 #ifndef GUARD_NEURALNET_EXPAND_CAST_PATTERN_HPP
 #define GUARD_NEURALNET_EXPAND_CAST_PATTERN_HPP
 
-#include <vector>
-
-#include "popart/patterns/pattern.hpp"
+#include <popart/patterns/patterns.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Replaces an expand followed by a cast with a more efficient cast followed by
 // expand. As the cast always copies, the expand can generally always be

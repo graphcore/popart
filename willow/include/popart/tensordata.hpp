@@ -2,16 +2,15 @@
 #ifndef GUARD_NEURALNET_TENSORDATA_HPP
 #define GUARD_NEURALNET_TENSORDATA_HPP
 
-#include <cstddef>
-#include <vector>
+#include <functional>
+#include <numeric>
+#include <ostream>
 #include <popart/error.hpp>
-
-namespace onnx {
-class TensorProto;
-} // namespace onnx
+#include <popart/iarray.hpp>
+#include <popart/names.hpp>
+#include <popart/tensorinfo.hpp>
 
 namespace popart {
-class TensorInfo;
 
 // A class to hold data, used
 // within the popart::Tensor class.

@@ -2,36 +2,12 @@
 #ifndef GUARD_NEURALNET_POPOP_HPP
 #define GUARD_NEURALNET_POPOP_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <snap/Tensor.hpp>
-#include <string>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
+#include <poplar/Graph.hpp>
+
 #include <popart/popx/popopx.hpp>
 
-#include "popart/names.hpp"
-
-namespace poplar {
-class Graph;
-
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace poplar
-namespace snap {
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class Opx : public PopOpx {
 public:

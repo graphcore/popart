@@ -2,18 +2,20 @@
 #ifndef POPART__INTERNAL_IR_BINDINGS_VARUPDATE_HPP
 #define POPART__INTERNAL_IR_BINDINGS_VARUPDATE_HPP
 
-#include <map>
-#include <pybind11/pybind11.h>
-#include <popart/names.hpp>
-#include <popart/op/varupdate.hpp>
-
+#include "bindings/basicoptionals.hpp"
 #include "bindings/op.hpp"
+#include <pybind11/numpy.h>
+#include <pybind11/operators.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/varupdate.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
-class AliasModel;
-
 namespace _internal {
 namespace ir {
 namespace op {

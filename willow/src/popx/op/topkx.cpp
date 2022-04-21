@@ -1,33 +1,19 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstddef>
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
-#include <snap/Tensor.hpp>
-#include <utility>
-#include <vector>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popnn/Loss.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/ExprOp.hpp>
-#include <popops/Zero.hpp>
+#include <popart/error.hpp>
 #include <popart/op/topk.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/scatterutilx.hpp>
 #include <popart/popx/op/topkx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/operators.hpp"
-#include "popart/popx/op/basesortx.hpp"
-#include "popart/popx/popopx.hpp"
-#include "popart/tensorinfo.hpp"
+#include <popnn/Loss.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Zero.hpp>
+
+#include <snap/poputil/TileMapping.hpp>
 
 namespace popart {
 namespace popx {
-class Devicex;
 
 TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
   verifyOp<TopKOp>(op);

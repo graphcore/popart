@@ -1,18 +1,15 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <cstdint>
+#include <cstring>
+#include <memory>
 #include <vector>
-#include <poprithms/compute/host/tensor.hpp>
+#include <poprithms/ndarray/dtype.hpp>
 #include <poprithmshosttensor.hpp>
 #include <popart/ces/transposece.hpp>
+#include <popart/ndarraywrapper.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/tensor.hpp>
 
-#include "popart/ces/constexpr.hpp"
-#include "popart/tensorinfo.hpp"
-
 namespace popart {
-class Op;
 
 ConstExprTranspose::ConstExprTranspose(Op *op_) : ConstExprOp(op_) {}
 

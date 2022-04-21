@@ -2,26 +2,11 @@
 #ifndef GUARD_NEURALNET_RELUX_HPP
 #define GUARD_NEURALNET_RELUX_HPP
 
-#include "popart/popx/debugcontextx.hpp"
-#include <memory>
-#include <snap/Tensor.hpp>
-#include <string>
+#include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
 
-#include "popart/popx/popopx.hpp"
-
-namespace snap {
-class Graph;
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class ReluComputex : public EwuComputex {
 

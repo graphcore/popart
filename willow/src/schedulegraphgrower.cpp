@@ -1,42 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <algorithm>
-#include <array>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <numeric>
-#include <ostream>
+#include <boost/filesystem.hpp>
 #include <schedulegraphgrower.hpp>
-#include <tuple>
-#include <utility>
 #include <poprithms/logging/timepartitionlogger.hpp>
-#include <poprithms/schedule/shift/allocweight.hpp>
 #include <poprithms/schedule/shift/fromcache.hpp>
-#include <poprithms/schedule/shift/kahndecider.hpp>
-#include <poprithms/schedule/shift/rotationtermination.hpp>
-#include <poprithms/schedule/shift/schedulecache.hpp>
 #include <poprithms/schedule/shift/scheduledgraph.hpp>
 #include <poprithms/schedule/shift/summarywriter.hpp>
-#include <poprithms/schedule/shift/transitiveclosureoptimizations.hpp>
-#include <poprithms/schedule/vanilla/types.hpp>
 #include <poprithms/schedule/vanilla/vanilla.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/topocons.hpp>
 #include <poparttracepoint.hpp>
-
-#include "popart/basicoptionals.hpp"
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/sessionoptions.hpp"
-#include "popart/tensor.hpp"
-#include "popart/tensorinfo.hpp"
-#include "popart/tensors.hpp"
-#include "popart/vertex.hpp"
 
 namespace {
 

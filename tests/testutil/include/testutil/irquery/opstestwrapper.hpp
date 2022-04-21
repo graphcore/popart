@@ -1,21 +1,16 @@
-// Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_HPP
 
-#include "testutil/irquery/optestwrapper.hpp"
-#include "testutil/irquery/require.hpp"
-#include "testutil/irquery/testwrapper.hpp"
-#include <popart/op.hpp>
-#include <popart/vendored/optional.hpp>
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <functional>
-#include <string>
-#include <type_traits>
-#include <vector>
+#include <popart/op.hpp>
+
+#include <popart/vendored/optional.hpp>
+
+#include <testutil/irquery/optestwrapper.hpp>
+#include <testutil/irquery/require.hpp>
+#include <testutil/irquery/testwrapper.hpp>
 
 namespace popart {
-class Ir;
-
 namespace irquery {
 
 /**

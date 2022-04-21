@@ -2,21 +2,11 @@
 #ifndef GUARD_NEURALNET_STASHX_HPP
 #define GUARD_NEURALNET_STASHX_HPP
 
-#include <cstddef>
+#include <popart/names.hpp>
 #include <popart/popx/popopx.hpp>
 
-namespace snap {
-class Tensor;
-namespace program {
-class Sequence;
-} // namespace program
-} // namespace snap
-
 namespace popart {
-class Op;
-
 namespace popx {
-class Devicex;
 
 class StashOpx : public PopOpx {
 public:

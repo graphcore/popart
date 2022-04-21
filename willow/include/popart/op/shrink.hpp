@@ -2,16 +2,9 @@
 #ifndef GUARD_NEURALNET_SHRINK_HPP
 #define GUARD_NEURALNET_SHRINK_HPP
 
-#include <memory>
-#include <tuple>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 class ShrinkOp : public ElementWiseUnaryOp {
 public:

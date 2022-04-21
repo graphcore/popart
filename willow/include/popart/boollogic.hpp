@@ -2,7 +2,6 @@
 #ifndef GUARD_NEURALNET_BOOLLOGIC_HPP
 #define GUARD_NEURALNET_BOOLLOGIC_HPP
 
-#include <iosfwd>
 #include <map>
 #include <set>
 #include <string>

@@ -2,15 +2,9 @@
 #ifndef GUARD_NEURALNET_HISTOGRAM_HPP
 #define GUARD_NEURALNET_HISTOGRAM_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op.hpp>
 
-#include "popart/names.hpp"
-
 namespace popart {
-class OpSerialiserBase;
-struct OperatorIdentifier;
 
 // This Op gathers a histogram representing the statistics of an input tensor.
 // It sorts each element of the input tensor into bins, the edges of which are

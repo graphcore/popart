@@ -2,14 +2,9 @@
 #ifndef GUARD_NEURALNET_ONEWAYUNARY_HPP
 #define GUARD_NEURALNET_ONEWAYUNARY_HPP
 
-#include <memory>
-#include <vector>
 #include <popart/op/elementwise.hpp>
 
-#include "popart/op.hpp"
-
 namespace popart {
-struct OperatorIdentifier;
 
 // A unary op which always returns a zero gradient
 

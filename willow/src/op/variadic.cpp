@@ -1,16 +1,8 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <memory>
-#include <vector>
 #include <popart/op/variadic.hpp>
+#include <popart/opmanager.hpp>
 #include <popart/tensorindex.hpp>
-
-#include "popart/error.hpp"
-#include "popart/logging.hpp"
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operatoridentifier.hpp"
-#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

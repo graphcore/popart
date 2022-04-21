@@ -2,12 +2,9 @@
 #ifndef GUARD_NEURALNET_CONVTRANSPOSE_PATTERN_HPP
 #define GUARD_NEURALNET_CONVTRANSPOSE_PATTERN_HPP
 
-#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
-class Op;
-class Tensor;
 
 // Expand convolution the conv data grad to a X/Y flip of the weights and then a
 // convolution

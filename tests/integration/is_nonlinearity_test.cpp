@@ -2,13 +2,8 @@
 #define BOOST_TEST_MODULE IsNonLinearityTest
 
 #include <boost/test/unit_test.hpp>
-#include <memory>
 #include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
-
-#include "popart/names.hpp"
-#include "popart/op.hpp"
-#include "popart/operators.hpp"
 
 using namespace popart;
 

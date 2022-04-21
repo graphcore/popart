@@ -3,12 +3,12 @@
 #ifndef GUARD_LOGGING_HPP
 #define GUARD_LOGGING_HPP
 
-#include <cstddef>
 #include <map>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-#include <utility>
+
+#include <stdio.h>
+#include <string.h>
 
 /*
  *
