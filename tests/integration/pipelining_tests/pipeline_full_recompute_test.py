@@ -440,3 +440,104 @@ def test_implicit_pipelining_custom_fwd_only():
 
     for i in range(len(run0)):
         compare(run0[i], run1[i])
+
+
+@tu.requires_ipu_model
+def test_implicit_pipelining_custom_fwd_only_no_copy():
+    """Test if running inference within the training session does not add weight
+    view copies between forward and backward pass
+    """
+
+    hidden_size = 5
+    batches_per_step = 2
+    accumulation_factor = 4
+    input_shape = [hidden_size, hidden_size]
+
+    data = np.random.normal(0, 0.02,
+                            [hidden_size * hidden_size]).astype(np.float32)
+
+    input_data = np.random.normal(
+        0, 0.02, [batches_per_step, accumulation_factor] + input_shape).astype(
+            np.float32)
+
+    builder = popart.Builder(opsets={
+        "ai.onnx": 9,
+        "ai.onnx.ml": 1,
+        "ai.graphcore": 1
+    })
+
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
+                                  "x_in")
+
+    w0 = builder.addInitializedInputTensor(data, "w0")
+    w1 = builder.addInitializedInputTensor(data, "w1")
+
+    w0r_shape = builder.aiOnnx.constant(
+        np.array([hidden_size, hidden_size]).astype(np.int64))
+    w1r_shape = builder.aiOnnx.constant(
+        np.array([hidden_size, hidden_size]).astype(np.int64))
+
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        # Introduce infamous fake (outplace!) weight view change
+        w0r = builder.aiOnnx.reshape([w0, w0r_shape])
+        o = builder.aiOnnx.matmul([x_in, w0r])
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        # Introduce infamous fake (outplace!) weight view change
+        w1r = builder.aiOnnx.reshape([w1, w1r_shape])
+        o = builder.aiOnnx.matmul([o, w1r])
+        l1 = builder.aiGraphcore.l1loss([o], 0.1)
+
+    proto = builder.getModelProto()
+    onnxproto = onnx.load_model_from_string(proto)
+
+    dataFlow = popart.DataFlow(batches_per_step, {
+        o: popart.AnchorReturnType("All"),
+        l1: popart.AnchorReturnType("All")
+    })
+
+    infDataFlow = popart.DataFlow(batches_per_step * accumulation_factor, {
+        o: popart.AnchorReturnType("All"),
+        l1: popart.AnchorReturnType("All")
+    })
+
+    opts = popart.SessionOptions()
+    # Disable outlining to make debugging easier
+    opts.enableOutlining = False
+    opts.enablePipelining = True
+    opts.enableGradientAccumulation = True
+    opts.accumulationFactor = accumulation_factor
+    opts.autoRecomputation = popart.RecomputationType.Pipeline
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    # Option under test
+    opts.createImplicitPipeliningFwdOnlyProgram = True
+
+    pat = popart.Patterns(popart.PatternsLevel.Default)
+
+    with tu.create_test_device(numIpus=3, opts={"compileIPUCode":
+                                                False}) as device0:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(1),
+                                         patterns=pat,
+                                         deviceInfo=device0)
+
+        session.prepareDevice()
+
+        # Check that there are only 4 copies
+        # (regular activations and gradients being passed between the 4 pipeline
+        # stages) between pipeline stages.
+        # Without interipucopy.cpp::isWeightOrConstView, there would be 5 (an
+        # additional copy that copies the view of the weight between the
+        # last forward and first backward stage).
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        copies = [
+            op for graph in ir for op in ir[graph] if (op["type"] == "IpuCopy")
+        ]
+
+        assert len(copies) == 4

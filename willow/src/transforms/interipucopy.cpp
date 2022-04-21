@@ -4,10 +4,15 @@
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/transpose.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
@@ -60,6 +65,37 @@ public:
 };
 
 namespace {
+
+// Checks if a tensor is a "view" of a weight. Not technically correct, since
+// we also check outplace operations, but this is necessary to avoid copies
+// when e.g. matmul serialisation leads to outplace copies of weights.
+// Could be avoided if weights were properly aliased by using inplace view
+// changes from the start (model definition and IR transformations)
+bool isWeightOrConstView(Tensor *t) {
+  bool is;
+  graphutils::traverse(
+      {t},
+      [&is](Tensor *t0) {
+        is |= (t0->tensorType() == TensorType::Variable ||
+               t0->tensorType() == TensorType::Const);
+        return true;
+      },
+      [](Op *op, Tensor *t0, Tensor *t1) {
+        return op->isConvertibleTo<ReshapeBaseOp>() ||
+               op->isConvertibleTo<TransposeBaseOp>() ||
+               op->isConvertibleTo<SliceOp>() ||
+               op->isConvertibleTo<SliceInplaceOp>() ||
+               op->isConvertibleTo<SliceGradOp>() ||
+               op->isConvertibleTo<ConcatOp>() ||
+               op->isConvertibleTo<ConcatInplaceOp>() ||
+               op->isConvertibleTo<ConcatGradOp>();
+      },
+      graphutils::TraversalType::DepthFirst,
+      graphutils::VisitType::Pre,
+      graphutils::TraversalDirection::Backward,
+      graphutils::TraverseCallSites::Current);
+  return is;
+}
 
 struct PipelineStageAndVGraphIdLtCmp {
   bool operator()(std::pair<PipelineStage, VGraphId> const &a,
@@ -364,7 +400,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
                  .getSessionOptions()
                  .createImplicitPipeliningFwdOnlyProgram &&
              toPipelineStage && fromPipelineStages.size() &&
-             (*toPipelineStage == (*fromPipelineStages.begin()) + 1));
+             (*toPipelineStage == (*fromPipelineStages.begin()) + 1) &&
+             !isWeightOrConstView(tensor));
 
         // If the ops are not on the same ipu, or adjacent pipeline stages
         // with implicitPipelineFwdOnlyCopy
@@ -443,7 +480,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
                      .getSessionOptions()
                      .createImplicitPipeliningFwdOnlyProgram &&
                  (fromPipelineStage && toPipelineStage &&
-                  *toPipelineStage == *fromPipelineStage + 1));
+                  *toPipelineStage == *fromPipelineStage + 1) &&
+                 !isWeightOrConstView(tensor));
 
             // If the ops are not on the same ipu, or adjacent pipeline stages
             // with implicitPipelineFwdOnlyCopy

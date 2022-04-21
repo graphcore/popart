@@ -343,11 +343,13 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // 2.
   if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
       pipelineSeqs.end()) {
-    for (auto &stage_seq :
+    for (const auto &stage_seq :
          pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
-        sq.add(stage_seq.second);
+        sq.add(
+            snap::program::Call(ir_lowering_p->graph(),
+                                toDeviceStreamFunctions.at(stage_seq.first)));
       }
     }
   } else {
@@ -359,7 +361,7 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   }
 
   // 3.
-  for (auto &stage_seq : mainPipelineFunctions) {
+  for (const auto &stage_seq : mainPipelineFunctions) {
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
       ss << "\n  ps" << stage << " : Main";
@@ -370,10 +372,13 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // 4.
   if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
       pipelineSeqs.end()) {
-    for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
+    for (const auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToHostStream";
-        sq.add(stage_seq.second);
+        sq.add(
+            snap::program::Call(ir_lowering_p->graph(),
+                                fromDeviceStreamFunctions.at(stage_seq.first)));
       }
     }
   }
@@ -382,12 +387,12 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // Note: Always do all the copies. This is ensure that ALL copies are
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
-  sq.add(*pipelineIpuCopySeq.get());
+  sq.add(snap::program::Call(ir_lowering_p->graph(), pipelineIpuCopyFunction));
 }
 
 unsigned PopPrograms::addCustomProgram(const snap::program::Program &program) {
   customPrograms.push_back(program);
-  return ProgramIndex::N + customPrograms.size() - 1;
+  return ProgramIndex::CustomProgramsStart + customPrograms.size() - 1;
 }
 
 void PopPrograms::createPipelineFunctions() {
@@ -409,11 +414,34 @@ void PopPrograms::createPipelineFunctions() {
     zeroPipelineIndexFunction = ir_lowering_p->graph().addFunction(sequence);
   }
 
-  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
+  for (const auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
     // fwdOnly: Skip stages containing backward pass only
     const snap::program::Sequence &sequence = stage_seq.second;
     mainPipelineFunctions.insert(
         {stage_seq.first, ir_lowering_p->graph().addFunction(sequence)});
+  }
+
+  pipelineIpuCopyFunction =
+      ir_lowering_p->graph().addFunction(*pipelineIpuCopySeq.get());
+  toHostFinalCopyFunction =
+      ir_lowering_p->graph().addFunction(toHostFinalCopyFragment());
+
+  if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
+      pipelineSeqs.end()) {
+    for (const auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
+      toDeviceStreamFunctions[stage_seq.first] =
+          ir_lowering_p->graph().addFunction(stage_seq.second);
+    }
+  }
+
+  if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
+      pipelineSeqs.end()) {
+    for (const auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
+      fromDeviceStreamFunctions[stage_seq.first] =
+          ir_lowering_p->graph().addFunction(stage_seq.second);
+    }
   }
 }
 
@@ -522,7 +550,8 @@ PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
     outer.add(inner);
   }
 
-  outer.add(toHostFinalCopyFragment());
+  outer.add(
+      snap::program::Call(ir_lowering_p->graph(), toHostFinalCopyFunction));
 
   return outer;
 }
@@ -608,7 +637,7 @@ snap::program::Sequence PopPrograms::weightsToHost() const {
 }
 
 const std::vector<snap::program::Program> PopPrograms::progs() const {
-  std::vector<snap::program::Program> ps(ProgramIndex::N +
+  std::vector<snap::program::Program> ps(ProgramIndex::CustomProgramsStart +
                                          customPrograms.size());
 
   ps[ProgramIndex::WeightsFromHost]        = weightsFromHost();
@@ -622,8 +651,10 @@ const std::vector<snap::program::Program> PopPrograms::progs() const {
   ps[ProgramIndex::CycleCountTensorToHost] = cycleCountTensorToHost();
 
   // Add custom programs
-  for (auto customProgram : customPrograms) {
-    ps[ProgramIndex::N] = customProgram;
+  size_t i = 0;
+  for (const auto &customProgram : customPrograms) {
+    ps[ProgramIndex::CustomProgramsStart + i] = customProgram;
+    ++i;
   }
 
   return ps;

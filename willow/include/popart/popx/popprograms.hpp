@@ -51,7 +51,8 @@ public:
     RngStateToHost,
     WeightsToHost,
     CycleCountTensorToHost,
-    N // The number of programs
+    CustomProgramsStart,
+    N // The number of enums
   };
 
   static const std::unordered_map<int64_t, std::string> commonPrograms;
@@ -218,7 +219,23 @@ private:
 
   // Implicit pipeline functions
   snap::Function zeroPipelineIndexFunction;
+
+  // Functions containing the pipeline stages
   std::map<PipelineStage, snap::Function> mainPipelineFunctions;
+
+  // Functions containing the implicit stream copies from host to device
+  std::map<PipelineStage, snap::Function> toDeviceStreamFunctions;
+
+  // Functions containing the implicit stream copies from device to host
+  std::map<PipelineStage, snap::Function> fromDeviceStreamFunctions;
+
+  // Function copying all required tensors between consecutive pipeline stages
+  snap::Function pipelineIpuCopyFunction;
+
+  // Function containig the implicit stream copies from device to host for
+  // tensors only streamed once for the whole program run
+  // (see AnchorReturnTypeId::Final)
+  snap::Function toHostFinalCopyFunction;
 
   // Custom programs
   std::vector<snap::program::Program> customPrograms;
