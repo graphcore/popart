@@ -65,10 +65,15 @@ std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex index) {
   case PopPrograms::ProgramIndex::CycleCountTensorToHost:
     out << "CycleCountTensorToHost";
     break;
+  case PopPrograms::ProgramIndex::CustomProgramsStart:
+    out << "CustomProgramsStart";
+    break;
   case PopPrograms::ProgramIndex::N:
     out << "N";
     break;
-  default: { throw internal_error("Invalid value for ProgramIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramIndex");
+  }
   };
 
   return out;
@@ -137,7 +142,9 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramFragmentIndex");
+  }
   };
   return out;
 }
