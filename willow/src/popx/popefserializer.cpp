@@ -428,11 +428,16 @@ void serializeRngStateAsPopefAnchors(
   const int repFactor                     = metadata.replicationFactor();
 
   const auto &ir         = executablex.lowering().ir();
-  const auto *deviceInfo = executablex.lowering().getDeviceInfo();
+  const auto &deviceInfo = *executablex.lowering().getDeviceInfo();
 
-  const popef::DataType dt = popef::DataType::U32;
+  // popart::DeviceInfo object is used to calculate rng state tensor shape
+  // (instead of snap::Graph) because snap::Graph might not exist when
+  // we are using deserialized executable. Note that poplar::Target in
+  // DeviceInfo contains info about all replicas and poplar::Target in
+  // snap::Graph about one replica.
   const std::vector<size_t> tensorShape =
-      RngStateLowering::getCombinedRngStateTensorShape(deviceInfo->getTarget());
+      RngStateLowering::getCombinedRngStateTensorShape(deviceInfo, repFactor);
+  const popef::DataType dt = popef::DataType::U32;
   const popart::Shape shape(tensorShape.begin(), tensorShape.end());
   const popef::TensorInfo tensorInfo = createTensorInfo(dt, shape);
 
@@ -458,7 +463,7 @@ void serializeRngStateAsPopefAnchors(
       tensorName, repFactor, dt, shape, rngBuffer, writer);
   if (!serializationResult) {
     std::string warningMessage = "Rng state buffer was not serialized.";
-    if (deviceInfo->getType() == DeviceType::OfflineIpu) {
+    if (deviceInfo.getType() == DeviceType::OfflineIpu) {
       warningMessage += "You used \"enableLoadAndOffloadRNGState\" option and "
                         "\"OfflineIPU\" mode during compilation.";
     } else if (!ir.getSessionOptions().compileEngine)

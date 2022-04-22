@@ -904,10 +904,16 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::connectRngStateStream() {
-  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
-      lowering().getDeviceInfo()->getTarget());
-  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
-       ++replicaId) {
+  // popart::DeviceInfo object is used to calculate rng state tensor size
+  // (instead of snap::Graph) because snap::Graph might not exist when
+  // we are using deserialized executable. Note that poplar::Target in
+  // DeviceInfo contains info about all replicas and poplar::Target in
+  // snap::Graph about one replica.
+  const unsigned repFactor = getReplicationFactor();
+  const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
+      *lowering().getDeviceInfo(), repFactor);
+
+  for (uint16_t replicaId = 0; replicaId < repFactor; ++replicaId) {
     rngBuffer[replicaId] = std::vector<uint32_t>(rngSize);
 
     auto h2d_callback = [this, replicaId, rngSize](void *ptr) {
@@ -959,8 +965,16 @@ void Devicex::setRngStateFromHost() {
 std::vector<uint32_t> Devicex::getRngStateToHost() {
   // Reset the buffer
   logging::devicex::debug("Cleaning the rng buffer before receiving data");
-  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
-      lowering().getDeviceInfo()->getTarget());
+
+  // popart::DeviceInfo object is used to calculate rng state tensor size
+  // (instead of snap::Graph) because snap::Graph might not exist when
+  // we are using deserialized executable. Note that poplar::Target in
+  // DeviceInfo contains info about all replicas and poplar::Target in
+  // snap::Graph about one replica.
+  const unsigned repFactor = getReplicationFactor();
+  const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
+      *lowering().getDeviceInfo(), repFactor);
+
   for (auto &buffer : rngBuffer) {
     buffer.second = std::vector<uint32_t>(rngSize);
   }
@@ -968,8 +982,7 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
   run(PopPrograms::ProgramIndex::RngStateToHost, "GetRngState");
   logging::devicex::debug("Copying data to host");
   std::vector<uint32_t> rngState;
-  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
-       ++replicaId) {
+  for (uint16_t replicaId = 0; replicaId < repFactor; ++replicaId) {
     rngState.insert(rngState.end(),
                     rngBuffer[replicaId].begin(),
                     rngBuffer[replicaId].end());
@@ -978,17 +991,23 @@ std::vector<uint32_t> Devicex::getRngStateToHost() {
 }
 
 void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
-  const size_t rngSize = RngStateLowering::getCombinedRngStateTensorSize(
-      lowering().getDeviceInfo()->getTarget());
-  if (rngState.size() != rngSize * getReplicationFactor()) {
+  // popart::DeviceInfo object is used to calculate rng state tensor size
+  // (instead of snap::Graph) because snap::Graph might not exist when
+  // we are using deserialized executable. Note that poplar::Target in
+  // DeviceInfo contains info about all replicas and poplar::Target in
+  // snap::Graph about one replica.
+  const unsigned repFactor = getReplicationFactor();
+  const size_t rngSize     = RngStateLowering::getCombinedRngStateTensorSize(
+      *lowering().getDeviceInfo(), repFactor);
+
+  if (rngState.size() != rngSize * repFactor) {
     throw runtime_error("Devicex::setRngStateValue received rngState of size "
                         "{}; was expecting size {}",
                         rngState.size(),
                         rngSize * getReplicationFactor());
   }
   const uint32_t *seed_ptr = rngState.data();
-  for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
-       ++replicaId) {
+  for (uint16_t replicaId = 0; replicaId < repFactor; ++replicaId) {
     rngBuffer[replicaId].assign(seed_ptr, seed_ptr + rngSize);
     seed_ptr += rngSize;
   }

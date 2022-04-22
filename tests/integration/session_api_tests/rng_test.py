@@ -11,28 +11,29 @@ import test_util as tu
 
 
 @tu.requires_ipu
-def test_rng_set_and_get():
+@pytest.mark.parametrize("enableReplicatedGraphs", [True, False])
+def test_rng_set_and_get(enableReplicatedGraphs):
     """
-    1. Create a training and validation session 
+    1. Create a training and validation session
         with the option to enable rng set/get.
     2. Get the initial RNG state values
     3. Step 1 : do 5 runs of the training session, twice
-    4. Step 2 : 
+    4. Step 2 :
         - reset the RNG to the initial state
-        - do 5 runs of the training session 
+        - do 5 runs of the training session
         - capture the rng state
         - do 1 run of the validation session
         - restore the rng
         - do 5 runs of the training session again
     5. Step 3 :
         - Reset the RNG to the initial state
-        - do 5 runs of the training session, 
+        - do 5 runs of the training session,
         - do 1 run of the validation session
         - do 5 runs of the training session again
     6. Results comparison:
         Steps 1 and 2 must have the same outputs
         after the series of 5 runs.
-        Step 3 must have a different output after the second 
+        Step 3 must have a different output after the second
         series of 5 runs, due to session overwritting RNG state.
     """
 
@@ -47,7 +48,10 @@ def test_rng_set_and_get():
     out = builder.aiOnnx.matmul([i0, w0])
     loss = builder.aiGraphcore.l1loss([out], 0.1)
 
-    with tu.create_test_device(1) as device:
+    numOfRuns = 5
+    numOfReplicas = 2 if enableReplicatedGraphs else 1
+
+    with tu.create_test_device(numOfReplicas) as device:
 
         # Enable the options
         options = popart.SessionOptions()
@@ -55,6 +59,9 @@ def test_rng_set_and_get():
         options.enableStochasticRounding = True
         options.constantWeights = False
         options._enableRngStateManagement = True
+        if enableReplicatedGraphs:
+            options.enableReplicatedGraphs = True
+            options.replicatedGraphCount = numOfReplicas
 
         # Training session
         bps = 5
@@ -81,7 +88,8 @@ def test_rng_set_and_get():
         inf_anchors = interfering_session.initAnchorArrays()
 
         # Input data
-        data_a = np.random.rand(5, 100, 100).astype(np.float16)
+        data_a = np.random.rand(numOfRuns * numOfReplicas, 100,
+                                100).astype(np.float16)
 
         def run_session(session):
             stepio = popart.PyStepIO({i0: data_a}, anchors)

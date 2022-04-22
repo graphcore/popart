@@ -22,6 +22,7 @@ class Sequence;
 
 namespace popart {
 class TaskId;
+class DeviceInfo;
 
 namespace popx {
 class IrLowering;
@@ -145,9 +146,58 @@ public:
    */
   PriTask rngStateToHost();
 
+  /**
+   * @param graph This object represents a graph program to be
+   * executed on the IPU. We need poplar::Target from it. Note that
+   * poplar::Target from graph contains target for single replicas.
+   * @return Shape for combined rng state tensor. It looks as follows:
+   * - First dim: The number of rng state tensors. Currently we have
+   *   two rng state tensors: identicalSeedsRngStateTensor,
+   *   differingSeedsRngStateTensor
+   * - Second dim: The number of tiles used by single replica.
+   * - Third dim: The number of workers existing on a single tile.
+   * - Fourth dim: Size of single RNG state in bytes
+   */
   static std::vector<size_t>
-  getCombinedRngStateTensorShape(const poplar::Target &target);
-  static size_t getCombinedRngStateTensorSize(const poplar::Target &target);
+  getCombinedRngStateTensorShape(const snap::Graph &graph);
+
+  /**
+   * @param graph This object represents a graph program to be
+   * executed on the IPU. We need poplar::Target from it. Note that
+   * poplar::Target from graph contains target for single replicas.
+   * @return Flattened size of combined rng state tensor.
+   */
+  static size_t getCombinedRngStateTensorSize(const snap::Graph &graph);
+
+  /**
+   * @param deviceInfo Information about the device which session
+   * uses. We need poplar::Target from it. Note that poplar::Target
+   * from deviceInfo contains target for all replicas.
+   * @param replicationFactor is the number of replicas and the
+   * value is defined by SessionOptions::replicatedGraphCount.
+   * @return Shape for combined rng state tensor. It looks as follows:
+   * - First dim: The number of rng state tensors. Currently we have
+   *   two rng state tensors: identicalSeedsRngStateTensor,
+   *   differingSeedsRngStateTensor
+   * - Second dim: The number of tiles used by single replica.
+   * - Third dim: The number of workers existing on a single tile.
+   * - Fourth dim: Size of single RNG state in bytes
+   */
+  static std::vector<size_t>
+  getCombinedRngStateTensorShape(const popart::DeviceInfo &deviceInfo,
+                                 const unsigned replicationFactor);
+
+  /**
+   * @param deviceInfo Information about the device which session
+   * uses. We need poplar::Target from it. Note that poplar::Target
+   * from deviceInfo contains target for all replicas.
+   * @param replicationFactor is the number of replicas and the
+   * value is defined by SessionOptions::replicatedGraphCount.
+   * @return Flattened size of combined rng state tensor.
+   */
+  static size_t
+  getCombinedRngStateTensorSize(const popart::DeviceInfo &deviceInfo,
+                                const unsigned replicationFactor);
 
   // 2 tensors: identicalSeedsRngStateTensor and differingSeedsRngStateTensor
   static const unsigned numRngStateTensors = 2;
@@ -170,11 +220,31 @@ private:
                                snap::Tensor &rngState,
                                const poplar::DebugContext &dbgCtx) const;
 
-  // Functions for commonly accessed values
-  static unsigned getNumWorkersPerTile(const poplar::Target &target);
-  static unsigned getNumTiles(const poplar::Target &target);
+  /**
+   * @param graph This object represents a graph program to be
+   * executed on the IPU. We need poplar::Target from it. Note that
+   * poplar::Target from graph contains target for single replicas.
+   * @return Shape for combined rng state tensor. It looks as follows:
+   * - First dim: The number of tiles used by single replica.
+   * - Second dim: The number of workers existing on a single tile.
+   * - Third dim: Size of single RNG state in bytes
+   */
+  static std::vector<size_t> getRngStateTensorShape(const snap::Graph &graph);
+
+  /**
+   * @param deviceInfo Information about the device which session
+   * uses. We need poplar::Target from it. Note that poplar::Target
+   * from deviceInfo contains target for all replicas.
+   * @param replicationFactor is the number of replicas and the
+   * value is defined by SessionOptions::replicatedGraphCount.
+   * @return Shape for combined rng state tensor. It looks as follows:
+   * - First dim: The number of tiles used by single replica.
+   * - Second dim: The number of workers existing on a single tile.
+   * - Third dim: Size of single RNG state in bytes
+   */
   static std::vector<size_t>
-  getRngStateTensorShape(const poplar::Target &target);
+  getRngStateTensorShape(const popart::DeviceInfo &deviceInfo,
+                         const unsigned replicationFactor);
 
   // Reference to IR.
   std::reference_wrapper<IrLowering> irLowering;

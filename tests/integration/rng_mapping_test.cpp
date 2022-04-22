@@ -7,6 +7,8 @@
 #include <poplar/Graph.hpp>
 #include <poplar/Target.hpp>
 
+#include <popart/testdevice.hpp>
+
 #include "../../willow/src/popx/rng/rngstatelowering.hpp"
 #include "popart/error.hpp"
 #include "popart/util.hpp" // IWYU pragma: keep
@@ -61,4 +63,36 @@ BOOST_AUTO_TEST_CASE(TestRngMapping) {
       graph.getPoplarGraph().getTileMapping(t.getPoplarTensor());
 
   BOOST_REQUIRE_EQUAL(actualLayout, expectedLayout);
+}
+
+BOOST_AUTO_TEST_CASE(RngStateTensorSizeAndShapeConsistencyTest) {
+  static constexpr unsigned numIpus   = 4;
+  static constexpr unsigned repFactor = 5;
+
+  const auto target =
+      poplar::Target::createIPUTarget(numIpus * repFactor, "ipu2");
+  const snap::Graph graph(target, poplar::replication_factor(repFactor));
+
+  BOOST_CHECK_EQUAL(numIpus * repFactor, target.getNumIPUs());
+  BOOST_CHECK_EQUAL(numIpus, graph.getTarget().getNumIPUs());
+
+  const auto deviceInfo =
+      popart::createTestDevice(popart::TestDeviceType::IpuModel,
+                               target.getNumIPUs(),
+                               target.getTilesPerIPU());
+
+  const auto shapeGraph =
+      popart::popx::RngStateLowering::getCombinedRngStateTensorShape(graph);
+  const auto shapeDeviceInfo =
+      popart::popx::RngStateLowering::getCombinedRngStateTensorShape(
+          *deviceInfo, repFactor);
+
+  const auto sizeGraph =
+      popart::popx::RngStateLowering::getCombinedRngStateTensorSize(graph);
+  const auto sizeDeviceInfo =
+      popart::popx::RngStateLowering::getCombinedRngStateTensorSize(*deviceInfo,
+                                                                    repFactor);
+
+  BOOST_CHECK_EQUAL(shapeGraph, shapeDeviceInfo);
+  BOOST_CHECK_EQUAL(sizeGraph, sizeDeviceInfo);
 }

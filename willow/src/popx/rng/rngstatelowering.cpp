@@ -19,6 +19,7 @@
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/pritask.hpp>
 
+#include "popart/devicemanager.hpp"
 #include "popart/ir.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
@@ -144,9 +145,8 @@ void RngStateLowering::lowerGetRngState(snap::program::Sequence &seq,
 
 snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
                                                     const std::string &name) {
-  auto &target = graph.getTarget();
-  std::vector<size_t> rngStateTensorShape =
-      getRngStateTensorShape(graph.getTarget());
+  auto &target                            = graph.getTarget();
+  std::vector<size_t> rngStateTensorShape = getRngStateTensorShape(graph);
   // Create tensor with specific mapping to avoid exchanges.
   unsigned minElementsPerTile =
       target.getNumWorkerContexts() * rngStateSizePerWorker;
@@ -183,13 +183,8 @@ PriTask RngStateLowering::initRngStateTensor() {
   auto initRngStateTensorTask = [this]() {
     SequenceMap seqs(graph.get());
 
-    // Get combined rng state tensor shape for a single replica. The target
-    // is taken intentionally from the graph, not from the deviceInfo.
-    // The graph contains the target for a single replica whereas deviceInfo
-    // for all replicas.
-    const auto &target = graph.get().getTarget();
     std::vector<size_t> combinedRngStateTensorShape =
-        getCombinedRngStateTensorShape(target);
+        getCombinedRngStateTensorShape(graph.get());
     combinedRngStateTensor =
         graph.get().addVariable(poplar::UNSIGNED_INT,
                                 combinedRngStateTensorShape,
@@ -230,12 +225,8 @@ PriTask RngStateLowering::randomSeedToHost() {
 
 PriTask RngStateLowering::rngStateFromHost() {
   auto rngStateFromHostTask = [this]() {
-    // Get combined rng state tensor size for a single replica. The target
-    // is taken intentionally from the graph, not from the deviceInfo.
-    // The graph contains the target for a single replica whereas deviceInfo
-    // for all replicas.
-    const auto &target                 = graph.get().getTarget();
-    const size_t combinedRngTensorSize = getCombinedRngStateTensorSize(target);
+    const size_t combinedRngTensorSize =
+        getCombinedRngStateTensorSize(graph.get());
 
     auto streamRngFromHost = graph.get().addHostToDeviceFIFO(
         "h2d_rngStateTensor",
@@ -278,12 +269,8 @@ PriTask RngStateLowering::rngStateFromHost() {
 
 PriTask RngStateLowering::rngStateToHost() {
   auto rngStateToHostTask = [this]() {
-    // Get combined rng state tensor size for a single replica. The target
-    // is taken intentionally from the graph, not from the deviceInfo.
-    // The graph contains the target for a single replica whereas deviceInfo
-    // for all replicas.
-    const auto &target                 = graph.get().getTarget();
-    const size_t combinedRngTensorSize = getCombinedRngStateTensorSize(target);
+    const size_t combinedRngTensorSize =
+        getCombinedRngStateTensorSize(graph.get());
 
     auto streamRngToHost = graph.get().addDeviceToHostFIFO(
         "d2h_rngStateTensor", poplar::UNSIGNED_INT, combinedRngTensorSize);
@@ -316,34 +303,55 @@ PriTask RngStateLowering::rngStateToHost() {
 }
 
 std::vector<size_t>
-RngStateLowering::getRngStateTensorShape(const poplar::Target &target) {
-  return std::vector<size_t>{
-      getNumTiles(target), getNumWorkersPerTile(target), rngStateSizePerWorker};
-}
-
-std::vector<size_t>
-RngStateLowering::getCombinedRngStateTensorShape(const poplar::Target &target) {
-  return std::vector<size_t>{numRngStateTensors,
-                             getNumTiles(target),
-                             getNumWorkersPerTile(target),
-                             rngStateSizePerWorker};
+RngStateLowering::getCombinedRngStateTensorShape(const snap::Graph &graph) {
+  std::vector<size_t> rngTensorShape = getRngStateTensorShape(graph);
+  rngTensorShape.insert(rngTensorShape.begin(), numRngStateTensors);
+  return rngTensorShape;
 }
 
 size_t
-RngStateLowering::getCombinedRngStateTensorSize(const poplar::Target &target) {
-  std::vector<size_t> tensorShape = getCombinedRngStateTensorShape(target);
+RngStateLowering::getCombinedRngStateTensorSize(const snap::Graph &graph) {
+  const std::vector<size_t> tensorShape = getCombinedRngStateTensorShape(graph);
   return std::accumulate(tensorShape.begin(),
                          tensorShape.end(),
                          size_t(1),
                          std::multiplies<size_t>());
 }
 
-unsigned RngStateLowering::getNumWorkersPerTile(const poplar::Target &target) {
-  return target.getNumWorkerContexts();
+std::vector<size_t> RngStateLowering::getCombinedRngStateTensorShape(
+    const popart::DeviceInfo &deviceInfo,
+    const unsigned replicationFactor) {
+  std::vector<size_t> rngTensorShape =
+      getRngStateTensorShape(deviceInfo, replicationFactor);
+  rngTensorShape.insert(rngTensorShape.begin(), numRngStateTensors);
+  return rngTensorShape;
 }
 
-unsigned RngStateLowering::getNumTiles(const poplar::Target &target) {
-  return target.getNumTiles();
+size_t RngStateLowering::getCombinedRngStateTensorSize(
+    const popart::DeviceInfo &deviceInfo,
+    const unsigned replicationFactor) {
+  const std::vector<size_t> tensorShape =
+      getCombinedRngStateTensorShape(deviceInfo, replicationFactor);
+  return std::accumulate(tensorShape.begin(),
+                         tensorShape.end(),
+                         size_t(1),
+                         std::multiplies<size_t>());
+}
+
+std::vector<size_t>
+RngStateLowering::getRngStateTensorShape(const snap::Graph &graph) {
+  const size_t numTiles       = graph.getTarget().getNumTiles();
+  const size_t workersPerTile = graph.getTarget().getNumWorkerContexts();
+  return std::vector<size_t>{numTiles, workersPerTile, rngStateSizePerWorker};
+}
+
+std::vector<size_t>
+RngStateLowering::getRngStateTensorShape(const popart::DeviceInfo &deviceInfo,
+                                         const unsigned replicationFactor) {
+  const size_t numTiles =
+      deviceInfo.getTarget().getNumTiles() / replicationFactor;
+  const size_t workersPerTile = deviceInfo.getTarget().getNumWorkerContexts();
+  return std::vector<size_t>{numTiles, workersPerTile, rngStateSizePerWorker};
 }
 
 const TaskId RngStateLowering::initRngStateTensorTaskId =
