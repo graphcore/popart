@@ -3,11 +3,16 @@
 #define BOOST_TEST_MODULE ConstOpTest
 
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/voiddata.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/names.hpp"
 
 BOOST_AUTO_TEST_CASE(ConstOp_Opset9) {
 

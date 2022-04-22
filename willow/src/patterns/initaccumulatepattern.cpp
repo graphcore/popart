@@ -1,14 +1,20 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/graph.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/add.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/pad.hpp>
 #include <popart/patterns/initaccumulatepattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
-#include <popart/tensors.hpp>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/region.hpp"
 
 namespace popart {
 

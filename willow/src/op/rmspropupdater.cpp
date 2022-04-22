@@ -1,12 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <limits>
 #include <memory>
-#include <popart/ir.hpp>
+#include <set>
 #include <popart/op/rmspropupdater.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/region.hpp>
-#include <popart/tensornames.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

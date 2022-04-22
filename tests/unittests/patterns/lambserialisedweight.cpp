@@ -1,16 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE LambSerialisedWeightTests
 #include <boost/test/unit_test.hpp>
-
+#include <typeindex>
 #include <popart/patterns/lambserialisedweight.hpp>
-
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/lamb.hpp>
-#include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
 
-#include <typeindex>
+#include "popart/patterns/pattern.hpp"
 
 using namespace popart;
 

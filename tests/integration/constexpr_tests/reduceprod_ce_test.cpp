@@ -1,17 +1,27 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ConstExprReduceProdTest
 
-#include <boost/optional.hpp>
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 
@@ -88,7 +98,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_ReduceProd) {
   //
   // (C) --> [ReduceProd] --> [Add] --> (*)
   // (X) --> [ReduceProd] ----^
-  // 
+  //
   // After constant folding the graph should look like this:
   //
   //          (reduced C) --> [Add] --> (*)

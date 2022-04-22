@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_COPYVARUPDATE_HPP
 #define GUARD_NEURALNET_COPYVARUPDATE_HPP
 
+#include <map>
+#include <memory>
 #include <popart/op/varupdate.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class CopyVarUpdateOp : public VarUpdateWithUpdaterOp {
 public:

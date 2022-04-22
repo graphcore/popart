@@ -1,13 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/graph/adjacency_matrix.hpp>
+#include <boost/graph/undirected_graph.hpp>
+#include <memory>
+#include <utility>
 #include <vector>
-
 #include <popart/error.hpp>
 #include <popart/logging.hpp>
 #include <popart/maxclique.hpp>
-
-#include <boost/graph/adjacency_matrix.hpp>
-#include <boost/graph/undirected_graph.hpp>
 
 namespace popart {
 namespace graphclique {

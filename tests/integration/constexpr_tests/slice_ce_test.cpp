@@ -1,23 +1,31 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ConstExprSliceTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cmath>
+#include <cstdint>
 #include <filereader.hpp>
+#include <memory>
+#include <numeric>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include <math.h>
+#include "popart/builder.gen.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

@@ -1,10 +1,24 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/subtract.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/op/reducesum.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
                        const Op::Settings &_settings)

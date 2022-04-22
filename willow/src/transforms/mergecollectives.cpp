@@ -1,5 +1,33 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/transforms/mergecollectives.hpp>
+
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/alias/aliasmodelgrower.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/graph.hpp"
+#include "popart/graphutils.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/op/collectives/multi_replicatedallreduce.hpp"
+#include "popart/op/collectives/replicatedallreduce.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 std::size_t MergeCollectivesTransform::id() {

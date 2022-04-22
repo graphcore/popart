@@ -1,30 +1,34 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <testutil/test_graphs/ready_made.hpp>
-
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <string>
 #include <testutil/test_graphs/dummy_builder.hpp>
-
-#include <filereader.hpp>
+#include <testutil/test_graphs/ready_made.hpp>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/graphid.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/operators.hpp>
-#include <popart/scheduler.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/topocons.hpp>
-
 #include <popart/op/add.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/conv.hpp>
 #include <popart/op/lrn.hpp>
 #include <popart/op/reducesumsquare.hpp>
 #include <popart/op/relu.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/topocons.hpp>
 
-#include <memory>
-#include <string>
-#include <vector>
+#include "popart/op/convbase.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

@@ -2,10 +2,20 @@
 #ifndef GUARD_NEURALNET_REDUCE_HPP
 #define GUARD_NEURALNET_REDUCE_HPP
 
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
-#include <popart/vendored/optional.hpp>
+#include <popart/vendored/optional.hpp> // IWYU pragma: keep
+
+#include "popart/names.hpp"
 
 namespace popart {
+class OpSerialiserBase;
+struct AiGraphcoreOpIdV1;
+struct OperatorIdentifier;
 
 class ReduceOp : public Op {
 public:

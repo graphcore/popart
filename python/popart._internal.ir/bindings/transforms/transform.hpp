@@ -2,14 +2,16 @@
 #ifndef POPART__INTERNAL_IR_BINDINGS_TRANSFORM_TRANSFORM_HPP
 #define POPART__INTERNAL_IR_BINDINGS_TRANSFORM_TRANSFORM_HPP
 
+#include <cstddef>
 #include <pybind11/pybind11.h>
-
-#include <popart/graph.hpp>
+#include <string>
+#include <popart/graph.hpp> // IWYU pragma: keep
 #include <popart/transforms/transform.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
+
 namespace _internal {
 namespace ir {
 namespace transforms {

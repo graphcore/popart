@@ -1,11 +1,31 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/broadcastutil.hpp>
 #include <popart/op/expand.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
 
 ExpandInplaceOp::ExpandInplaceOp(const OperatorIdentifier &_opid,

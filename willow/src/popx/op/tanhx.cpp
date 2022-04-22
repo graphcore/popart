@@ -1,12 +1,26 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
 #include <popnn/NonLinearity.hpp>
-#include <popart/error.hpp>
+#include <popnn/NonLinearityDef.hpp>
 #include <popart/op/tanh.hpp>
 #include <popart/popx/op/tanhx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+
 namespace popart {
+class Op;
+namespace view {
+class Region;
+} // namespace view
+
 namespace popx {
+class Devicex;
 
 TanhOpx::TanhOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TanhOp>(op, {Onnx::Operators::Tanh_6});

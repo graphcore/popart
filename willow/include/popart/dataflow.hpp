@@ -3,6 +3,10 @@
 #ifndef GUARD_NEURALNET_DATAFLOW_HPP
 #define GUARD_NEURALNET_DATAFLOW_HPP
 
+#include <cstddef>
+#include <functional>
+#include <iosfwd>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
@@ -10,10 +14,9 @@
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/replicatedstreammode.hpp>
 
-namespace popart {
+#include "popart/tensorlocation.hpp"
 
-// Forward declaration.
-struct SessionOptions;
+namespace popart {
 
 /**
  * Class that defines the identifiers for the return type of the anchor tensors.

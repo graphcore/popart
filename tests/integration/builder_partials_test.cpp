@@ -1,13 +1,22 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE BuilderPartialsTest
 
+#include <algorithm>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <functional>
+#include <initializer_list>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/builder.gen.hpp"
 
 using namespace popart;
 

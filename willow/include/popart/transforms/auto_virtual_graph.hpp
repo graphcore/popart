@@ -2,10 +2,19 @@
 #ifndef GUARD_NEURALNET_AUTO_VIRTUAL_GRAPH_HPP
 #define GUARD_NEURALNET_AUTO_VIRTUAL_GRAPH_HPP
 
-#include <popart/op.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
 #include <popart/transforms/transform.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Graph;
+class Op;
 
 class Subgraph {
 public:

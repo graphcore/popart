@@ -3,8 +3,9 @@
 #ifndef GUARD_VARIABLE_SETTINGS_HPP
 #define GUARD_VARIABLE_SETTINGS_HPP
 
-#include <string>
-
+#include <cstdint>
+#include <iosfwd>
+#include <vector>
 #include <popart/commgroup.hpp>
 #include <popart/names.hpp>
 

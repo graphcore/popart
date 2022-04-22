@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_EXPM1_HPP
 #define GUARD_NEURALNET_EXPM1_HPP
 
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 // Compute exp(x) - 1.
 

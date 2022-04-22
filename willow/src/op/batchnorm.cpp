@@ -1,6 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <algorithm>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
 #include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -10,7 +12,19 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+
 namespace popart {
+
+struct OperatorIdentifier;
 
 BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
                          float _epsilon,

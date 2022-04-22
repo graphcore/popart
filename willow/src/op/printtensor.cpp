@@ -1,11 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
 #include <memory>
-#include <popart/op/identity.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/printtensor.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
                              bool printSelf_,

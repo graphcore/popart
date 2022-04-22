@@ -1,14 +1,31 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <cstddef>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/op/tile.hpp>
 #include <popart/popx/op/tilex.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
 
-#include <snap/popops/ElementWise.hpp>
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 void TileOpx::grow(snap::program::Sequence &prog) const {
   // not in-place, so cloning input

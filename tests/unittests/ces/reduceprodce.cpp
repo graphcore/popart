@@ -1,15 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ConstExprReduceProdUnittest
 
-#include <boost/optional.hpp>
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
+#include <cstring>
+#include <map>
+#include <string>
+#include <vector>
 #include <popart/ces/reduceprodce.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/reduceprod.hpp>
 
-#include <string>
+#include "popart/datatype.hpp"
+#include "popart/erroruid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

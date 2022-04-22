@@ -1,12 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/reducelogsum.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/reduce.hpp"
+#include "popart/operators.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 ReduceLogSumOp::ReduceLogSumOp(
     const OperatorIdentifier &_opid,

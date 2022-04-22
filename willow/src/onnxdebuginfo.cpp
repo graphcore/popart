@@ -1,8 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <iosfwd>
 #include <onnx/onnx_pb.h>
-
+#include <string>
+#include <vector>
 #include <popart/onnxdebuginfo.hpp>
 #include <popart/util.hpp>
+
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace {
 using namespace popart;

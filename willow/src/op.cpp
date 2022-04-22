@@ -1,34 +1,64 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <boost/optional/optional_io.hpp>
-#include <onnx/onnx_pb.h>
+#include <poprithms/common/multiout/ioindices.hpp>
+#include <poprithms/common/multiout/tensorid.hpp>
+#include <poprithms/memory/inplace/crosslink.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
+#include <poprithms/ndarray/shape.hpp>
+#include <popart/alias/aliasmodel.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/mean.hpp>
-#include <popart/op/sum.hpp>
+#include <popart/op/elementwise.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/opattributehelper.hpp>
 #include <popart/opdebuginfo.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
-#include <popart/util.hpp>
-
 // The layers:
-#include <popart/op/elementwise.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/restore.hpp>
-#include <popart/op/varupdate.hpp>
-
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
 #include <sstream>
-#include <poprithms/memory/inplace/crosslink.hpp>
-#include <poprithms/memory/inplace/graph.hpp>
-#include <popart/alias/aliasmodel.hpp>
+#include <string>
+#include <tuple>
+#include <typeinfo>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
+#include "popart/attributes.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/patterns/pattern.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/scope.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/any.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/vertex.hpp"
 
 namespace {
 using namespace popart;

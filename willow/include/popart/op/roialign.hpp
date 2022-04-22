@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_ROIALIGN_HPP
 #define GUARD_NEURALNET_ROIALIGN_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
-#include <popart/opmanager.hpp>
 
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 /** Region of Interest (RoI) align operation described in the Mask R-CNN paper.
  *
@@ -32,7 +37,7 @@ public:
   RoiAlignOp(const RoiAlignOp &) = default;
   RoiAlignOp &operator=(const RoiAlignOp &) = delete;
   ~RoiAlignOp() override                    = default;
-  std::unique_ptr<popart::Op> clone() const final;
+  std::unique_ptr<Op> clone() const final;
   void setup() override;
   std::vector<std::unique_ptr<popart::Op>> getGradOps() final;
 

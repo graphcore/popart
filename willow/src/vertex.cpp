@@ -1,8 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <map>
 #include <sstream>
-
-#include <popart/error.hpp>
+#include <string>
 #include <popart/vertex.hpp>
 
 namespace popart {

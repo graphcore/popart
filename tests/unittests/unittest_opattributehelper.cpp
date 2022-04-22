@@ -3,7 +3,8 @@
 #define BOOST_TEST_MODULE BuilderTest
 
 #include <boost/test/unit_test.hpp>
-
+#include <map>
+#include <string>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -17,6 +18,17 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/op/loop.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/util.hpp"
 
 using namespace popart;
 

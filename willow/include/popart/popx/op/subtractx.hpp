@@ -2,13 +2,20 @@
 #ifndef GUARD_NEURALNET_SUBTRACTX_HPP
 #define GUARD_NEURALNET_SUBTRACTX_HPP
 
-#include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
-#include <popart/popx/op/negatex.hpp>
 #include <popart/popx/op/reducesumx.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class SubtractOpx : public ElementWiseBinaryOpx {
 public:

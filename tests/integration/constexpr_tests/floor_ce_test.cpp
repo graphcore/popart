@@ -1,22 +1,40 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ConstExprFloorTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <map>
 #include <memory>
+#include <onnx/onnx_pb.h>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

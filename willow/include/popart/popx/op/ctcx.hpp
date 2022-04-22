@@ -2,11 +2,18 @@
 #ifndef GUARD_NEURALNET_CTCX_HPP
 #define GUARD_NEURALNET_CTCX_HPP
 
+#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-
+#include <set>
+#include <snap/Tensor.hpp>
 #include <popart/names.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/popx/popopx.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popnn {
 namespace ctc {
@@ -15,7 +22,10 @@ class Plan;
 } // namespace popnn
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class CtcOpx : public PopOpx {
 public:

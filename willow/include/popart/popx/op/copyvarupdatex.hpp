@@ -2,11 +2,25 @@
 #ifndef GUARD_NEURALNET_COPYVARUPDATEX_HPP
 #define GUARD_NEURALNET_COPYVARUPDATEX_HPP
 
+#include "popart/popx/debugcontextx.hpp"
+#include <set>
+#include <snap/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/op/varupdatex.hpp>
 
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class CopyVarUpdateOpx : public VarUpdateOpx {
 public:

@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_MATMULGRADPATTERN_HPP
 #define GUARD_NEURALNET_MATMULGRADPATTERN_HPP
 
+#include <vector>
 #include <popart/op/matmul.hpp>
 #include <popart/patterns/pattern.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+class Tensor;
 
 /*
   The intention of this pattern is to make sure that all matmuls have 3D inputs

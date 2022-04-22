@@ -2,21 +2,30 @@
 #define BOOST_TEST_MODULE RecomputeTestIrStandardAnnotation0
 
 #include <boost/test/unit_test.hpp>
-#include <memory>
-#include <vector>
-#include <popart/testdevice.hpp>
-
+#include <cstdint>
 #include <filereader.hpp>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
-#include <popart/names.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
-#include <popart/tensordata.hpp>
+#include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vertex.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

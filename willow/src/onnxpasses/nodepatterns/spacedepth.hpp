@@ -2,11 +2,18 @@
 #ifndef GUARD_NEURALNET_ONNXTOONNX_SPACEDEPTH_HPP
 #define GUARD_NEURALNET_ONNXTOONNX_SPACEDEPTH_HPP
 
+#include <cstdint>
+#include <memory>
 #include <onnxpasses/nodepattern.hpp>
+#include <string>
+#include <vector>
 #include <popart/names.hpp>
+
+#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {
+class PatternTarget;
 
 // DCR mode: elements along the depth dimension from the input tensor
 // are rearranged in the following order: depth, column, and then row.

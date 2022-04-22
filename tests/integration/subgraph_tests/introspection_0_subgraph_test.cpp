@@ -2,19 +2,36 @@
 #define BOOST_TEST_MODULE Introspection0SubgraphTest
 
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/call.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/ipucopy.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/util.hpp"
+#include "popart/voiddata.hpp"
 
 BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 

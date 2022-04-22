@@ -1,18 +1,33 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/boundary.hpp>
-#include <popart/op/concat.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/reshape.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/graphutils.hpp"
+#include "popart/logging.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 
@@ -47,18 +62,18 @@ ExplicitRecomputeTensorContext::ExplicitRecomputeTensorContext(
     : isForwardOp(isForwardOp_), executionPhase(executionPhase_),
       pipelineStage(pipelineStage_) {}
 
-bool ExplicitRecomputeTensorContext::
-operator<(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator<(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) < getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::
-operator==(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator==(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) == getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::
-operator!=(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator!=(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) != getTensorContextTuple(rhs);
 }
 

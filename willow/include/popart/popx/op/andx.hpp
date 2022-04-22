@@ -2,14 +2,20 @@
 #ifndef GUARD_NEURALNET_ANDX_HPP
 #define GUARD_NEURALNET_ANDX_HPP
 
-#include <popart/names.hpp>
 #include <popart/popx/op/elementwisex.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 
-class AndOp;
+class Op;
 
 namespace popx {
+class Devicex;
 
 class AndOpx : public BinaryComparisonOpx {
 public:

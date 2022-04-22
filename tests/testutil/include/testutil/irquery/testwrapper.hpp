@@ -2,8 +2,9 @@
 #ifndef TEST_UTILS_IR_QUERY_TEST_WRAPPER_HPP
 #define TEST_UTILS_IR_QUERY_TEST_WRAPPER_HPP
 
+#include "testfailuretriggerer.hpp" // IWYU pragma: keep
+#include <functional>
 #include <memory>
-#include <testutil/irquery/testfailuretriggerer.hpp>
 
 namespace popart {
 
@@ -47,7 +48,5 @@ protected:
 
 } // namespace irquery
 } // namespace popart
-
-#include <testutil/irquery/testwrapper_impl.hpp>
 
 #endif

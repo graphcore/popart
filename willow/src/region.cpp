@@ -1,12 +1,20 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/range/algorithm.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
 #include <utility>
-
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/region.hpp>
 #include <popart/util.hpp>
 
-#include <boost/range/algorithm.hpp>
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
 namespace view {

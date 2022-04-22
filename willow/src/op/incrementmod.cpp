@@ -1,11 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
 #include <popart/op/incrementmod.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 IncrementModOp::IncrementModOp(const OperatorIdentifier &opId,
                                double increment_,

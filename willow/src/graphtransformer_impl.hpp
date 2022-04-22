@@ -2,11 +2,10 @@
 #ifndef GUARD_GRAPHTRANSFORMER_IMPL_H
 #define GUARD_GRAPHTRANSFORMER_IMPL_H
 
-#include <vector>
-
-#include <popart/names.hpp>
-
 #include <onnx/onnx_pb.h>
+#include <string>
+#include <vector>
+#include <popart/names.hpp>
 
 namespace popart {
 

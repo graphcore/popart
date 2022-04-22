@@ -1,7 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

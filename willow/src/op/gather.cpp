@@ -1,15 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
-
-#include <memory>
 #include <popart/op/gather.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,

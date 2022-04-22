@@ -2,10 +2,16 @@
 #ifndef GUARD_NEURALNET_MODIFYRANDOMSEED_HPP
 #define GUARD_NEURALNET_MODIFYRANDOMSEED_HPP
 
+#include <cstdint>
+#include <memory>
+#include <string>
 #include <popart/op.hpp>
 #include <popart/tensornames.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class ModifyRandomSeedOp : public Op {
 public:

@@ -1,15 +1,31 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <numeric>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <poplin/MatMul.hpp>
-#include <poputil/TileMapping.hpp>
 #include <popart/op/cumsum.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/cumsumx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
+
 namespace {
 
 // Four triangular types for attributes:

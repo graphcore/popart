@@ -3,7 +3,13 @@
 #ifndef GUARD_NEURALNET_TIEDGATHER_HPP
 #define GUARD_NEURALNET_TIEDGATHER_HPP
 
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/gather.hpp>
+
+#include "popart/op.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

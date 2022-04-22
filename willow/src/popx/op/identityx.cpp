@@ -1,20 +1,39 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <cstddef>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
-#include <popops/ElementWise.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/identityx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+namespace view {
+class Region;
+} // namespace view
+
 namespace popx {
+class Devicex;
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOpx(op, devicex) {

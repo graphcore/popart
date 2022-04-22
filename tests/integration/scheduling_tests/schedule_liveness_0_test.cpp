@@ -1,8 +1,13 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ScheduleLivness0Test
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -10,12 +15,21 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 using namespace popart;
 

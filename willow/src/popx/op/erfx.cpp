@@ -1,12 +1,21 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
 #include <popart/op/erf.hpp>
 #include <popart/popx/op/erfx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ErfxOpx::ErfxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<ErfOp>(op, Onnx::Operators::Erf_9);

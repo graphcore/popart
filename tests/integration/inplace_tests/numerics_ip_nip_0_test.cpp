@@ -1,26 +1,42 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NumericsInplaceVsNot0Test
 
-#include "../random_util.hpp"
+#include <algorithm>
 #include <boost/filesystem.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <filereader.hpp>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <ratio>
+#include <set>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/optimizer.hpp>
 #include <popart/session.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/testdevice.hpp>
 
-#include <chrono>
-#include <complex>
-#include <iostream>
+#include "../random_util.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

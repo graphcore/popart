@@ -1,25 +1,28 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <poprand/RandomGen.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/modifyrandomseed.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/op/modifyrandomseedx.hpp>
-#include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-
-#include <snap/popops/ElementWise.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Expr.hpp>
-#include <popops/Reduce.hpp>
-
 #include <cstdint>
 #include <limits>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <poplar/Type.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <poprand/RandomGen.hpp>
+#include <popart/op/modifyrandomseed.hpp>
+#include <popart/popx/op/modifyrandomseedx.hpp>
+#include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
+class Devicex;
 
 ModifyRandomSeedOpx::ModifyRandomSeedOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {

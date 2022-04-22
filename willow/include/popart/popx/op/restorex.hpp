@@ -2,15 +2,24 @@
 #ifndef GUARD_NEURALNET_RESTOREX_HPP
 #define GUARD_NEURALNET_RESTOREX_HPP
 
+#include <cstdint>
+#include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 
 class RestoreOp;
 class RestoreInplaceOp;
-class RestoreOpx;
+class Op;
 
 namespace popx {
+class Devicex;
 
 /**
  * \brief Base class for restore opxs.

@@ -2,10 +2,12 @@
 #ifndef GUARD_NEURALNET_NEGATIVE_ONE_SCALE_PATTERN_HPP
 #define GUARD_NEURALNET_NEGATIVE_ONE_SCALE_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <memory>
+#include <vector>
 #include <popart/patterns/sequenceexpander.hpp>
 
 namespace popart {
+class Op;
 
 class NegativeOneScalePattern : public SequenceExpander {
 public:

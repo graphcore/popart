@@ -3,21 +3,31 @@
 #define GUARD_NEURALNET_UTIL_HPP
 
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <limits>
-#include <memory>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <type_traits>
 #include <unordered_set>
+#include <utility>
 #include <vector>
-
-#include <popart/tensorinfo.hpp>
-#include <popart/vendored/any.hpp>
+#include <popart/datatype.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 
 class Graph;
+class Ir;
+class Op;
+class Tensor;
+class any;
 
 /**
  * Struct of maps that map cloned Op and Tensor Ids back to the original,

@@ -1,23 +1,38 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <popart/error.hpp>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/VariableMappingMethod.hpp>
+#include <popops/Encoding.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/OperationDef.hpp>
+#include <popops/Reduce.hpp>
+#include <popops/Zero.hpp>
 #include <popart/op/onehot.hpp>
 #include <popart/popx/op/onehotx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/Encoding.hpp>
-#include <popops/Expr.hpp>
-#include <popops/Zero.hpp>
-
-#include <queue>
-#include <popops/Reduce.hpp>
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 OnehotOpx::OnehotOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<OnehotOpx>(op,

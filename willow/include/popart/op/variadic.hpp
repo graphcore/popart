@@ -2,9 +2,16 @@
 #ifndef GUARD_NEURALNET_VARIADIC_HPP
 #define GUARD_NEURALNET_VARIADIC_HPP
 
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 // A Variadic Op is a reduction which applies an element-wise binary op
 // sequentially to a variable number of inputs, 'til 1 tensor remains

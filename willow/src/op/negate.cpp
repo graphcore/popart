@@ -1,11 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popart/op/negate.hpp>
-
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
+#include <popart/op/negate.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 NegateOp::NegateOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)

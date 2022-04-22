@@ -2,18 +2,23 @@
 #ifndef GUARD_NEURALNET_STEPIOSPLITTER_HPP
 #define GUARD_NEURALNET_STEPIOSPLITTER_HPP
 
-#include <popart/istepio.hpp>
-
+#include <cstdint>
+#include <functional>
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
-#include <tuple>
+#include <popart/istepio.hpp>
+
+#include "popart/names.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 
 // Forward declaration.
 class StepIOSplitter;
 class SplitIOTensorInfo;
+class TensorInfo;
 
 namespace popx {
 class Executablex;

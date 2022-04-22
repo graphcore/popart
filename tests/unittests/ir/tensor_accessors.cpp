@@ -1,9 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Ir_TensorAccessors
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+
+namespace popart {
+class Tensor;
+} // namespace popart
 
 using namespace popart;
 

@@ -2,11 +2,15 @@
 #define BOOST_TEST_MODULE IsNormTest
 
 #include <boost/test/unit_test.hpp>
+#include <memory>
 #include <onnx/onnx_pb.h>
-#include <popart/builder.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/opmanager.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
 
 BOOST_AUTO_TEST_CASE(IsNormTest) {
   using namespace popart;

@@ -2,15 +2,18 @@
 #ifndef NEURALNET_TENSOR_HPP
 #define NEURALNET_TENSOR_HPP
 
+#include <cstdint>
+#include <functional>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <set>
-
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/error.hpp>
-#include <popart/istepio.hpp>
 #include <popart/names.hpp>
-#include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/replicatedstreammode.hpp>
 #include <popart/tensordata.hpp>
@@ -18,9 +21,17 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/variablesettings.hpp>
 #include <popart/vertex.hpp>
-#include <popart/voiddata.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/tensorlocation.hpp"
 
 namespace popart {
+class Aliases;
+class Graph;
+class Ir;
+class Op;
+class Tensor;
 
 enum class TensorType {
   ActGrad = 0, // an activation or a gradient, basically any output of an Op

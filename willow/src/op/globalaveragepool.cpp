@@ -1,12 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
 #include <memory>
-#include <popart/error.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/globalaveragepool.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 GlobalAveragePoolOp::GlobalAveragePoolOp(const OperatorIdentifier &_opid,
                                          const Op::Settings &settings_)

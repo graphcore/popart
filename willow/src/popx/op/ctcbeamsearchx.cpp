@@ -1,14 +1,25 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <tuple>
 #include <popnn/CTCInference.hpp>
-#include <popart/ir.hpp>
+#include <popnn/CTCPlan.hpp>
 #include <popart/op/ctcbeamsearch.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/ctcbeamsearchx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
 CtcBeamSearchDecoderOpx::CtcBeamSearchDecoderOpx(Op *op_, Devicex *devicex)
     : PopOpx(op_, devicex), plan(std::make_unique<popnn::ctc::Plan>()) {

@@ -1,5 +1,9 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/onehot.hpp>
 #include <popart/opmanager.hpp>
@@ -9,7 +13,18 @@
 #include <popart/tensors.hpp>
 #include <popart/typefunctor.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 OnehotOp::OnehotOp(const OperatorIdentifier &_opid,
                    int64_t axis_,

@@ -1,8 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/gemm.hpp>
-#include <onnxpasses/onnxtoonnx.hpp>
-#include <onnxpasses/suffixer.hpp>
+#include <vector>
+
+#include "popart/attributes.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
 
 namespace popart {
 namespace onnxpasses {

@@ -2,29 +2,31 @@
 #ifndef GUARD_BUILDER_HPP
 #define GUARD_BUILDER_HPP
 
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
-
 #include <popart/dataflow.hpp>
 #include <popart/debugcontext.hpp>
+#include <popart/domainopset.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/op/scatterreduce.hpp>
-#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/variablesettings.hpp>
-
-#include <popart/domainopset.hpp>
 #include <popart/vendored/any.hpp>
 #include <popart/vendored/optional.hpp>
 
 // Include the generated builder.gen.hpp code
+#include "popart/attributes.hpp"
 #include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
 
 namespace popart {
 
@@ -43,6 +45,10 @@ class BuilderImpl;
  * the graph.
  */
 class Builder;
+class ConstVoidData;
+struct OperatorIdentifier;
+class CommGroup;
+
 enum class DataType;
 enum class RecomputeType;
 

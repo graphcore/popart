@@ -129,8 +129,14 @@ repos:
           #   name: Include what you use
           #   types: [c++]
           #   entry: scripts/lint/linters/iwyu/include_what_you_use_linter.sh
+          #   # verify_cxx_11_interface.cpp is excluded as it relies on files generated
+          #   #    during build
+          #   # opidentifier.hpp is deprecated and should be kept as is until removed
+          #   # willow/include/popart/vendored/ contains external files, should avoid
+          #   #    changing them
           #   exclude: >
           #     (?x)^(
           #         tests/integration/verify_cxx_11_interface/verify_cxx_11_interface.cpp|
-          #         willow/include/popart/opidentifier.hpp
+          #         willow/include/popart/opidentifier.hpp|
+          #         willow/include/popart/vendored/
           #     )$

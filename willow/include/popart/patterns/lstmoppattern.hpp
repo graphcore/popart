@@ -1,7 +1,10 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
+class Op;
+class Tensor;
 
 class LSTMPattern : public PreAliasPattern {
 public:

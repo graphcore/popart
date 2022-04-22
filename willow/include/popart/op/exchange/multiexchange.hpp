@@ -2,13 +2,22 @@
 #ifndef GUARD_NEURALNET_MULTIEXCHANGE_HPP
 #define GUARD_NEURALNET_MULTIEXCHANGE_HPP
 
+#include <memory>
+#include <set>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/exchange/exchange.hpp>
 
-namespace popart {
+#include "popart/names.hpp"
+#include "popart/tensorlocation.hpp"
 
-std::ostream &operator<<(std::ostream &, const ExchangeDirection &);
-std::ostream &operator<<(std::ostream &, const ExchangeDescriptor &);
+namespace popart {
+class AliasModel;
+class OpSerialiserBase;
+class ReplicaEqualAnalysisProxy;
+struct OperatorIdentifier;
 
 using ExchangeDescriptors = std::vector<ExchangeDescriptor>;
 

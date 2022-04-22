@@ -1,26 +1,34 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <builder_impl.hpp>
+#include <builderdebuginfo.hpp>
+#include <cstdint>
+#include <filereader.hpp>
 #include <fstream>
 #include <iterator>
-#include <sstream>
-#include <unordered_set>
-#include <vector>
-
-#include <builder_impl.hpp>
-
-#include <builderdebuginfo.hpp>
-#include <filereader.hpp>
+#include <onnx/checker.h>                        // IWYU pragma: keep
+#include <onnx/shape_inference/implementation.h> // IWYU pragma: keep
 #include <onnxutil.hpp>
-#include <popart/ces/constexpr.hpp>
+#include <string.h>
+#include <type_traits>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
-#include <popart/operators.hpp>
 #include <popart/shapeinference.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/variablesettings.hpp>
 
-#include <onnx/checker.h>
-#include <onnx/shape_inference/implementation.h>
+#include "popart/attributes.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vendored/any.hpp"
+#include "popart/voiddata.hpp"
 
 namespace {
 std::string generateUniqueGraphName(const std::string &name) {

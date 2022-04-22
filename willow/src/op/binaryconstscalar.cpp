@@ -1,7 +1,19 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/op/binaryconstscalar.hpp>
 #include <popart/opmanager.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
 

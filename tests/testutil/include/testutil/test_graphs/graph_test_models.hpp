@@ -2,11 +2,20 @@
 #ifndef GUARD_NEURALNET_GRAPH_TEST_MODELS_HPP
 #define GUARD_NEURALNET_GRAPH_TEST_MODELS_HPP
 
+#include <map>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/replicatedstreammode.hpp>
-#include <popart/sessionoptions.hpp>
+
+namespace popart {
+class Graph;
+class LoopOp;
+class Op;
+class Tensor;
+struct SessionOptions;
+} // namespace popart
 
 class GraphTestModel {
 public:

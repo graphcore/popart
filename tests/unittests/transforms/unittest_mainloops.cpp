@@ -2,15 +2,21 @@
 #define BOOST_TEST_MODULE MainLoopsUnittest
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/test/unit_test.hpp>
-
+#include <functional>
 #include <memory>
 #include <string>
-
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/transforms/mainloops.hpp>
 #include <popart/util.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
 
 using namespace popart;
 

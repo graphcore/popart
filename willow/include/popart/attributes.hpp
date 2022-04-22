@@ -2,11 +2,18 @@
 #ifndef GUARD_NEURALNET_ATTRIBUTES_HPP
 #define GUARD_NEURALNET_ATTRIBUTES_HPP
 
+#include <cstdint>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 #include <popart/names.hpp>
+
+namespace onnx {
+class AttributeProto;
+class GraphProto;
+} // namespace onnx
 
 namespace popart {
 

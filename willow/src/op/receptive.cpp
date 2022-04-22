@@ -1,16 +1,22 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <iostream>
-#include <math.h>
-#include <memory>
-#include <unordered_map>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/op/receptive.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
 #include <popart/util.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 HasReceptiveFieldOp::HasReceptiveFieldOp(
     const OperatorIdentifier &_opid,

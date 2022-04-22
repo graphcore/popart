@@ -1,10 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/cosh.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 CoshOp::CoshOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}

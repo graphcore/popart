@@ -1,10 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/log.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 LogOp::LogOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

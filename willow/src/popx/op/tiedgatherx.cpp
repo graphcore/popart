@@ -1,21 +1,35 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/popx/op/tiedgatherx.hpp>
-
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <tuple>
+#include <vector>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
+#include <poplin/MatMul.hpp>
+#include <popops/Gather.hpp>
 #include <popart/op/tiedgather.hpp>
-#include <popart/operators.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
+#include <popart/popx/op/tiedgatherx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <poplin/MatMul.hpp>
-#include <popops/Cast.hpp>
-#include <popops/DynamicSlice.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/Gather.hpp>
-
-#include <vector>
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/gatherx.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 TiedGatherOpx::TiedGatherOpx(Op *op, Devicex *device)

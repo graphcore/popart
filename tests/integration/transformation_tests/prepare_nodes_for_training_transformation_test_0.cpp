@@ -2,11 +2,18 @@
 #define BOOST_TEST_MODULE RemoveUnusedInputTest0
 
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <memory>
 #include <onnx/onnx_pb.h>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/graphtransformer.hpp>
-#include <popart/tensordata.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
 
 using namespace popart;
 

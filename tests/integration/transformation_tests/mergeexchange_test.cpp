@@ -2,34 +2,35 @@
 #define BOOST_TEST_MODULE MergeExchangeTest
 
 #include <boost/test/unit_test.hpp>
+#include <map>
+#include <memory>
 #include <string>
-#include <popart/builder.hpp>
-#include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
-#include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/add.hpp>
-#include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
-#include <popart/op/iotilecopy.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/loop.hpp>
-#include <popart/op/matmul.hpp>
-#include <popart/op/mean.hpp>
-#include <popart/op/nll.hpp>
-#include <popart/op/relu.hpp>
-#include <popart/op/reshape.hpp>
-#include <popart/op/sum.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/transforms/remotesetup.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <transforms/autodiff/tensorgradmapregister.hpp>
-
+#include <utility>
 #include <popart/tensor.hpp>
 
 namespace popart {

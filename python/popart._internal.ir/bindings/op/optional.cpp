@@ -1,13 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op/optional.hpp"
 
-#include <pybind11/numpy.h>
+#include <cstdint>
+#include <initializer_list>
+#include <pybind11/numpy.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <vector>
 #include <popart/basicoptionals.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/tensors.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace py = pybind11;
 

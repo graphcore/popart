@@ -1,15 +1,23 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#include <popops/Zero.hpp>
-
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Graph.hpp>
 #include <popart/op/tensorremap.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/tensorremapx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 TensorRemapOpx::TensorRemapOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<TensorRemapOp>(op, Onnx::CustomOperators::TensorRemap_1);

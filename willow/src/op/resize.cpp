@@ -1,11 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cmath>
-
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+#include <popart/util.hpp> // IWYU pragma: keep
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

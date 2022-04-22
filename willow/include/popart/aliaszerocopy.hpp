@@ -2,11 +2,21 @@
 #ifndef GUARD_NEURALNET_ALIASZEROCOPY_HPP
 #define GUARD_NEURALNET_ALIASZEROCOPY_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/aliases.hpp>
 #include <popart/liveness.hpp>
-#include <popart/op.hpp>
-#include <popart/tensor.hpp>
-#include <popart/transforms/transform.hpp>
+
+#include "popart/names.hpp"
+#include "popart/pointercomparators.hpp"
 
 // AliasZeroCopy:
 // Optimisation pass to eliminate copies into and out of subgraphs, and to reuse
@@ -56,7 +66,9 @@
 //    If possible, but not necessarily, tc will also alias to tb.
 
 namespace popart {
-struct PTensorCmp;
+class Ir;
+class Op;
+class Tensor;
 
 namespace liveness {
 
@@ -72,6 +84,7 @@ enum ProducerInterval {
 
 // Right-open intervals of tensor liveness
 class IntervalsImpl;
+
 class Intervals {
 public:
   Intervals();

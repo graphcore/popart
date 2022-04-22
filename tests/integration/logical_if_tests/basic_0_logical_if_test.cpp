@@ -1,18 +1,30 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Basic0LogicalIf
 
-#include "../test_runner.hpp"
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-#include <filereader.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/builder.hpp>
-#include <popart/inputshapeinfo.hpp>
-#include <popart/op/add.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/if.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
+
+#include "../test_runner.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizer.hpp"
+#include "popart/sgd.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/util.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

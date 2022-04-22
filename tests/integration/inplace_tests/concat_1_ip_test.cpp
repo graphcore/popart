@@ -1,24 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Concat1InplaceTest
 
-#include <memory>
-#include <vector>
-
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/sgd.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/names.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
 
 using namespace popart;
 

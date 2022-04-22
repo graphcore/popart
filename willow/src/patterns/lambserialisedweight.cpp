@@ -1,7 +1,10 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/patterns/lambserialisedweight.hpp>
-
+#include <algorithm>
+#include <memory>
 #include <patterns/tiedgatherutils/tgutils.hpp>
+#include <string>
+#include <unordered_set>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/adamvarupdate.hpp>
@@ -9,8 +12,18 @@
 #include <popart/op/lamb.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/patterns/pattern.hpp>
+#include <popart/patterns/lambserialisedweight.hpp>
 #include <popart/patterns/patterns.hpp>
+
+#include "patterns/tiedgatherutils/tgutils_impl.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensornames.hpp"
 
 namespace popart {
 

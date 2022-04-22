@@ -1,12 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/region.hpp"
 
-#include <pybind11/operators.h>
+#include <initializer_list>
+#include <pybind11/operators.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
 #include <sstream>
-
+#include <string>
 #include <popart/region.hpp>
+
+#include "popart/names.hpp"
 
 namespace py = pybind11;
 

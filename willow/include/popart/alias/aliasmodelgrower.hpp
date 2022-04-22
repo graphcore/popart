@@ -4,10 +4,16 @@
 
 #include <functional>
 #include <memory>
+#include <string>
+#include <vector>
 
-#include <popart/alias/aliasmodel.hpp>
+#include "popart/names.hpp"
 
 namespace popart {
+class AliasModel;
+class Graph;
+class Op;
+class Tensor;
 
 /**
  * An enum type that determines whether topological constraints are added to

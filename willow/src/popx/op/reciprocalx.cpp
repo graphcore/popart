@@ -1,13 +1,24 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <cstddef>
 #include <snap/popops/ElementWise.hpp>
-#include <popart/error.hpp>
-#include <popart/op/reciprocal.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/reciprocalx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class ReciprocalOp;
+
 namespace popx {
 
 ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex)

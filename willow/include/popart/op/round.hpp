@@ -2,9 +2,15 @@
 #ifndef GUARD_NEURALNET_ROUND_HPP
 #define GUARD_NEURALNET_ROUND_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/onewayunary.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class RoundOp : public OneWayUnaryOp {
 public:

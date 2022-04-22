@@ -1,16 +1,17 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <memory>
-#include <utility>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/mul.hpp>
-#include <popart/op/negate.hpp>
 #include <popart/op/reciprocal.hpp>
 #include <popart/op/square.hpp>
 #include <popart/patterns/reciprocalgradoppattern.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

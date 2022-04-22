@@ -2,19 +2,16 @@
 #ifndef GUARD_TEST_DEVICE_HPP
 #define GUARD_TEST_DEVICE_HPP
 
-#include <poplar/DeviceManager.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/IPUModel.hpp>
-#include <poplar/OptionFlags.hpp>
-#include <poplar/Target.hpp>
-#include <poplar/TargetType.hpp>
-#include <popart/defaulttilecount.hpp>
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
-
-#include <chrono>
 #include <iostream>
-#include <thread>
+#include <map>
+#include <memory>
+#include <string>
+#include <poplar/OptionFlags.hpp>
+#include <popart/defaulttilecount.hpp>
+
+#include "popart/devicemanager.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
 
 namespace popart {
 

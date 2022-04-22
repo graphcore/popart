@@ -3,6 +3,7 @@
 #define GUARD_NEURALNET_MAXCLIQUE_HPP
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace popart {
@@ -14,6 +15,7 @@ using Vertex      = std::pair<int, int>;
 using Vertices    = std::vector<Vertex>;
 
 class AGraphImpl;
+
 class AGraph {
 public:
   AGraph(int size_);

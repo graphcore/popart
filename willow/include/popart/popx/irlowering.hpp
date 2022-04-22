@@ -2,51 +2,80 @@
 #ifndef GUARD_NEURALNET_IRLOWERING_HPP
 #define GUARD_NEURALNET_IRLOWERING_HPP
 
-#include <popart/vendored/optional.hpp>
-
-#include <poplar/DeviceManager.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/IPUModel.hpp>
-#include <poplin/Convolution.hpp>
-#include <poplin/MatMul.hpp>
-#include <poputil/TileMapping.hpp>
-
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
 #include <snap/DataStream.hpp>
-#include <snap/Graph.hpp>
-#include <snap/RemoteBuffer.hpp>
 #include <snap/Tensor.hpp>
-
-#include <popart/aliaszerocopy.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/popx/creatorx.hpp>
-#include <popart/popx/enigma.hpp>
+#include <string>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+#include <poplar/Executable.hpp>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/ReplicatedStreamMode.hpp>
+#include <poplar/Type.hpp>
+#include <poplar/exceptions.hpp>
+#include <popart/names.hpp>
 #include <popart/popx/inittensor.hpp>
 #include <popart/popx/linearmapper.hpp>
 #include <popart/popx/namesx.hpp>
-#include <popart/popx/opxstate.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
 #include <popart/popx/popprograms.hpp>
 #include <popart/popx/poptensors.hpp>
 #include <popart/popx/pritask.hpp>
 #include <popart/popx/replicatedtensorshardingbundle.hpp>
 #include <popart/popx/virtualgraph.hpp>
+#include <popart/vendored/optional.hpp>
 
-#include <popart/subgraphcopyingstrategy.hpp>
-#include <popart/subgraphpartitioner.hpp>
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/preparedtensor.hpp"
+#include "popart/popx/viewchangers.hpp"
+#include "popart/taskid.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorlocation.hpp"
 
-#include <memory>
-#include <set>
-#include <tuple>
-#include <popart/names.hpp>
-// MutableVoidData is defined in here:
-#include <popart/pointercomparators.hpp>
-#include <popart/stepio.hpp>
-#include <popart/tensordata.hpp>
+namespace poplar {
+class Target;
+} // namespace poplar
+namespace poplin {
+struct ConvParams;
+struct MatMulParams;
+} // namespace poplin
+namespace snap {
+class Function;
+class Graph;
+class RemoteBuffer;
+
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class DeviceInfo;
+class Graph;
+class Ir;
+class Tensor;
+struct POpCmp;
+struct SessionOptions;
+class TensorInfo;
+
 namespace liveness {
 // Forward declaration.
 class LivenessAnalyzer;
+class AliasZeroCopy;
+class SubgraphCopyingStrategy;
+class SubgraphPartitioner;
 } // namespace liveness
 namespace popx {
 namespace serialization {
@@ -56,6 +85,7 @@ class Reader;
 
 // Forward declaration.
 class RngStateLowering;
+class OpxState;
 
 // TODO: Find common location to share between devicex and IrLowering
 class devicex_memory_allocation_err : public popart::memory_allocation_err {
@@ -78,9 +108,7 @@ public:
 
 using PopStreamId = std::string;
 
-class CollectiveBalancedHostRearrangement;
 class Devicex;
-class PopOpx;
 
 enum class ToHostStreamType { NonAnchor, NonSumAnchor, SumAnchor };
 

@@ -2,10 +2,12 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_SLICECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_SLICECE_HPP
 
+#include <vector>
 #include <popart/ces/constexpr.hpp>
-#include <popart/op/slice.hpp>
 
 namespace popart {
+class Op;
+struct Slice;
 
 class ConstExprSlice : public ConstExprOp {
 public:

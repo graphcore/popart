@@ -2,16 +2,20 @@
 #ifndef GUARD_NEURALNET_MUL_HPP
 #define GUARD_NEURALNET_MUL_HPP
 
+#include <cstdint>
 #include <memory>
 #include <vector>
-#include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
-#include <popart/op/reducesum.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 
 class MulArg0GradOp;
 class MulArg1GradOp;
+class Ir;
 
 class MulOp : public ElementWiseNpBroadcastableBinaryWithGradOp<MulArg0GradOp,
                                                                 MulArg1GradOp> {

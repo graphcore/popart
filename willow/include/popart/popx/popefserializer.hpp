@@ -2,14 +2,13 @@
 #ifndef GUARD_NEURALNET_POPEF_SERIALIZER_HPP
 #define GUARD_NEURALNET_POPEF_SERIALIZER_HPP
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
-#include <stddef.h>
 
 namespace poplar {
 // Forward declaration.
 class Executable;
-class Engine;
 } // namespace poplar
 
 namespace popart {

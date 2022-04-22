@@ -2,12 +2,14 @@
 #ifndef GUARD_NEURALNET_DEVICEMANAGER_HPP
 #define GUARD_NEURALNET_DEVICEMANAGER_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <vector>
-
-#include <popart/names.hpp>
 
 namespace poplar {
 class OptionFlags;

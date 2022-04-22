@@ -2,9 +2,12 @@
 #ifndef GUARD_NEURALNET_INFERPIPELINESTAGES_HPP
 #define GUARD_NEURALNET_INFERPIPELINESTAGES_HPP
 
+#include <cstddef>
+#include <string>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
+class Graph;
 
 class InferPipelineStages : public Transform {
 public:

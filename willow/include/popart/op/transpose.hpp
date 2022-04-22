@@ -2,9 +2,21 @@
 #ifndef GUARD_NEURALNET_TRANSPOSE_HPP
 #define GUARD_NEURALNET_TRANSPOSE_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
+#include <popart/region.hpp> // IWYU pragma: keep
+
+#include "popart/names.hpp"
 
 namespace popart {
+class AliasModel;
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 // Corresponds to the ONNX Transpose op
 // for N-dimensional tensors.

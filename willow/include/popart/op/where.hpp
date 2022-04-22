@@ -2,9 +2,20 @@
 #ifndef GUARD_NEURALNET_WHERE_HPP
 #define GUARD_NEURALNET_WHERE_HPP
 
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 class WhereOp : public Op {
 public:

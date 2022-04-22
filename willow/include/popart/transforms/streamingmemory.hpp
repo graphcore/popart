@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_STREAMINGMEMORY_HPP
 #define GUARD_NEURALNET_STREAMINGMEMORY_HPP
 
-#include <popart/op.hpp>
+#include <cstddef>
+#include <string>
 #include <popart/transforms/transform.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Graph;
+class Op;
 
 class StreamingMemory : public Transform {
 public:

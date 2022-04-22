@@ -2,11 +2,17 @@
 #ifndef GUARD_NEURALNET_REDUCEMEAN_HPP
 #define GUARD_NEURALNET_REDUCEMEAN_HPP
 
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/reduce.hpp>
-#include <popart/vendored/optional.hpp>
+#include <popart/vendored/optional.hpp> // IWYU pragma: keep
+
+#include "popart/names.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 class ReduceMeanOp : public ReduceOp {
 public:

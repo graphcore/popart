@@ -2,13 +2,21 @@
 #ifndef GUARD_NEURALNET_SUBTRACT_HPP
 #define GUARD_NEURALNET_SUBTRACT_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 #include <popart/op/reducesum.hpp>
+
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 
 class SubtractArg0GradOp;
 class SubtractArg1GradOp;
+struct OperatorIdentifier;
 
 class SubtractOp
     : public ElementWiseNpBroadcastableBinaryWithGradOp<SubtractArg0GradOp,

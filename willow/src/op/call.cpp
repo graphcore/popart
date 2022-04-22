@@ -1,19 +1,43 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <map>
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/call.hpp>
-#include <popart/op/ipucopy.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/scope.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
 #include <popart/util.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/subgraph.hpp"
+#include "popart/region.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 CallOp::CallOp(const OperatorIdentifier &opid_,
                Graph &callee_,

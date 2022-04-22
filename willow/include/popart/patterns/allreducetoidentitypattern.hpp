@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_SUM_TO_ADD_PATTERN_HPP
 #define GUARD_NEURALNET_SUM_TO_ADD_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replace a AllReduceOp with an identity
 class AllReduceToIdentityPattern : public PreAliasPattern {

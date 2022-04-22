@@ -1,15 +1,31 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
 #include <memory>
-#include <popart/error.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/pow.hpp>
 #include <popart/popx/op/powx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <popops/ElementWise.hpp>
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
+
+namespace snap {
+class Graph;
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 PowComputex::PowComputex(EwbComputex::InplacePolicy ip) : EwbComputex(ip) {}
 

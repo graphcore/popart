@@ -1,24 +1,26 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <iterator>
+#include <map>
 #include <memory>
-#include <queue>
+#include <ostream>
+#include <set>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/graphutils.hpp>
-#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
-#include <popart/op/exchange/remote.hpp>
-#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/loop.hpp>
-
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/decomposeloops.hpp>
-#include <popart/util.hpp>
+
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorlocation.hpp"
 
 namespace popart {
 

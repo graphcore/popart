@@ -2,17 +2,31 @@
 #define BOOST_TEST_MODULE RecomputeTestPopxStandardCalls0
 
 #include <boost/test/unit_test.hpp>
-#include <iostream>
-#include <vector>
-#include <popart/testdevice.hpp>
-
+#include <cstdint>
 #include <filereader.hpp>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/builder.hpp>
-#include <popart/op.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/sgd.hpp>
+#include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class Op;
+} // namespace popart
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
@@ -22,6 +36,7 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
+
 #undef private
 #undef public
 

@@ -6,9 +6,31 @@
  */
 
 #include "popart/builder.gen.hpp"
+
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
+#include <map>
+#include <onnx/onnx_pb.h>
+
 #include "builder_helper.hpp"
+#include "builder_impl.hpp"
 #include "builderdebuginfo.hpp"
+#include "filereader.hpp"
+#include "onnxutil.hpp"
+#include "popart/builder.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/any.hpp"
+#include "poparttracepoint.hpp"
+
 namespace popart {
+class ConstVoidData;
+
 TensorId AiOnnxOpset6::abs(const std::vector<TensorId> &args,
                            const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;

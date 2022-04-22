@@ -1,8 +1,19 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <functional>
+#include <map>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/transforms/autodiff/calledgraphgradophelper.hpp>
+
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

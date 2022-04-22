@@ -2,8 +2,8 @@
 #ifndef GUARD_NEURALNET_OPERATORIDENTIFIER_HPP
 #define GUARD_NEURALNET_OPERATORIDENTIFIER_HPP
 
-#include <popart/attributes.hpp>
-#include <popart/error.hpp>
+#include <iosfwd>
+#include <string>
 #include <popart/names.hpp>
 
 namespace popart {

@@ -1,15 +1,36 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/packeddatablock.hpp>
-#include <popart/op/printtensor.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/sequenceslice.hpp>
 #include <popart/patterns/packeddatablockpattern.hpp>
 #include <popart/util.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

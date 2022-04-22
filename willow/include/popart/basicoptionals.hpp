@@ -2,9 +2,10 @@
 #ifndef GUARD_NEURALNET_BASICOPTIONALS_HPP
 #define GUARD_NEURALNET_BASICOPTIONALS_HPP
 
+#include <cstdint>
 #include <ostream>
 #include <popart/names.hpp>
-#include <popart/tensorlocation.hpp>
+#include <popart/tensorlocation.hpp> // IWYU pragma: keep
 
 namespace popart {
 

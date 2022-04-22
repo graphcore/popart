@@ -1,25 +1,32 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <algorithm>
+#include <cstdlib>
+#include <deque>
+#include <iterator>
+#include <memory>
+#include <ostream>
 #include <transforms/batchserialscheduler.hpp>
 #include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
-#include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/concat.hpp>
-#include <popart/op/dynamic/dynamicslice.hpp>
-#include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/exchange/remote.hpp>
-#include <popart/op/init.hpp>
 #include <popart/op/iotilecopy.hpp>
-#include <popart/op/ipucopy.hpp>
-#include <popart/op/reshape.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
 
 namespace popart {
 

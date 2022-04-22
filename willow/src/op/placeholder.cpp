@@ -2,7 +2,10 @@
 #include <memory>
 #include <popart/op/placeholder.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 PlaceholderOp::PlaceholderOp(const OperatorIdentifier &opid_,
                              const Op::Settings &settings_)

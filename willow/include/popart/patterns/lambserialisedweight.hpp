@@ -2,11 +2,18 @@
 #ifndef GUARD_NEURALNET_LAMBSERIALISEDWEIGHTPATTERN_HPP
 #define GUARD_NEURALNET_LAMBSERIALISEDWEIGHTPATTERN_HPP
 
+#include <string>
+#include <vector>
 #include <popart/patterns/pattern.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 
 class SumOp;
+class Graph;
+class Op;
+class Tensor;
 
 /**
  * This Pattern finds Weights that have been serialised and are being

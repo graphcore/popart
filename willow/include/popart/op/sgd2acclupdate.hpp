@@ -2,9 +2,11 @@
 #ifndef GUARD_NEURALNET_SGD2VARUPDATEACCLUPDATEOPOP_HPP
 #define GUARD_NEURALNET_SGD2VARUPDATEACCLUPDATEOPOP_HPP
 
+#include <memory>
 #include <popart/op/sgd1acclupdate.hpp>
 
 namespace popart {
+class Op;
 
 /**
  * This Op is by design exactly equivalent to an SGD1AcclUpdateOp. Any logic

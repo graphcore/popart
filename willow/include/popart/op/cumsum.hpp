@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_CUMSUM_HPP
 #define GUARD_NEURALNET_CUMSUM_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 // Performs cumulative sum of the input elements along the given axis.
 // By default, it will do the sum inclusively meaning the first element

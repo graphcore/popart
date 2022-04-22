@@ -1,12 +1,30 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <cmath>
-
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/op/upsample.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/half.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 std::string toString(const UpsampleMode &mode) {
   switch (mode) {

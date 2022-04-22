@@ -3,11 +3,13 @@
 #ifndef NEURALNET_TASK_ID_HPP
 #define NEURALNET_TASK_ID_HPP
 
+#include <cstddef>
+#include <functional>
 #include <ostream>
-
 #include <popart/names.hpp>
-#include <popart/operators.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 

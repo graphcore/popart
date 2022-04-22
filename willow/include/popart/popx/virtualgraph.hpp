@@ -2,7 +2,9 @@
 #ifndef GUARD_NEURALNET_VIRTUALGRAPH_HPP
 #define GUARD_NEURALNET_VIRTUALGRAPH_HPP
 
+#include <memory>
 #include <snap/Graph.hpp>
+#include <utility>
 
 namespace popart {
 namespace popx {

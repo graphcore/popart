@@ -1,14 +1,24 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <popnn/NonLinearity.hpp>
+#include <popnn/NonLinearityDef.hpp>
 #include <popart/op/relu.hpp>
 #include <popart/popx/op/relux.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensorindex.hpp>
 
-#include <popnn/NonLinearity.hpp>
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryInplaceOpx(op, devicex, ReluComputex::get()) {

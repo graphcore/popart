@@ -1,8 +1,12 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Region0Test
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
 #include <cstdint>
+#include <memory>
+#include <set>
+#include <utility>
 #include <vector>
 #include <popart/names.hpp>
 #include <popart/region.hpp>

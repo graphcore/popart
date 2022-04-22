@@ -1,12 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Add0InplaceTest
 
+#include <algorithm>
+#include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <string>
+#include <vector>
+
 #include "../test_runner.hpp"
 #include "elementwisebinary_testcase.hpp"
-#include <boost/test/unit_test.hpp>
-#include <popart/op/add.hpp>
-#include <popart/patterns/pattern.hpp>
-#include <popart/tensors.hpp>
+#include "popart/builder.gen.hpp"
+#include "popart/builder.hpp"
+#include "popart/ir.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 using namespace popart;
 

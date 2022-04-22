@@ -1,10 +1,13 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <sstream>
+#include <string>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/loss.hpp>
 
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 std::string LossOp::reductionTypeToString(ReductionType reduction) {
   if (reduction == ReductionType::Sum) {

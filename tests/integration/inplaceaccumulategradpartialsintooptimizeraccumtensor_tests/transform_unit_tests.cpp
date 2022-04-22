@@ -2,23 +2,39 @@
 #define BOOST_TEST_MODULE                                                      \
   InplaceAccumulateGradPartialsIntoOptimizerAccumTensorTests
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstddef>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
 #include <testutil/test_graphs/builder.hpp>
 #include <testutil/test_graphs/op/dummy.hpp>
-
-#include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
-
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/init.hpp>
-#include <popart/operators.hpp>
+#include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 
-#include <iostream>
-#include <map>
-#include <unordered_set>
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vertex.hpp"
 
 using namespace popart;
 using test_graphs::DummyOp;
@@ -385,7 +401,7 @@ BOOST_AUTO_TEST_CASE(TestReplacesAddsWithAccumulateOpsOnOptimizerAccum) {
     expected.addInput(pW0, tInfo);
     expected.addInput(pW1, tInfo);
     expected.addInput(pW2, tInfo);
-    
+
     expected.getTensors().addActGrad(init7Out);
     expected.getTensors().addActGrad(init8Out);
 
@@ -1149,7 +1165,7 @@ BOOST_AUTO_TEST_CASE(
       ops.push_back(mkAccumulateOp(graph, "Accumulate2"));
       ops.push_back(mkInitOp(graph, tInfo, "Init3"));
 
-      test_graphs::builder::withEdges(graph, ops, 
+      test_graphs::builder::withEdges(graph, ops,
           {
             {ops[3]->id, InitOp::getOutIndex(), ops[0]->id, AddLhsInplaceOp::getArg0InIndex()},
             {ops[3]->id, InitOp::getOutIndex(), ops[1]->id, dummyNextInIndex(*ops[1])},

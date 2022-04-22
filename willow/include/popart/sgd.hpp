@@ -2,10 +2,29 @@
 #ifndef GUARD_SGD_HPP
 #define GUARD_SGD_HPP
 
+#include <cstddef>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 
+#include "popart/clipnormsettings.hpp"
+#include "popart/compoundscalarhelper.hpp"
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/optimizervaluemap.hpp"
+#include "popart/tensordebuginfo.hpp"
+
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
+class TensorInfo;
 
 /**
  * Strategy for implementing SGD with momentum and/or gradient accumulation.

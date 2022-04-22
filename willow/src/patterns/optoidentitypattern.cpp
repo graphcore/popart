@@ -1,17 +1,18 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <memory>
-#include <popart/ir.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/gather.hpp>
 #include <popart/op/groupnorm.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/pad.hpp>
-#include <popart/op/reducesum.hpp>
-#include <popart/op/scale.hpp>
-#include <popart/op/subsample.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/patterns/optoidentitypattern.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

@@ -2,16 +2,30 @@
 #ifndef GUARD_NEURALNET_ADAM_HPP
 #define GUARD_NEURALNET_ADAM_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/compoundscalarhelper.hpp>
-#include <popart/names.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
 #include <popart/optimizervaluemap.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
+
+#include "popart/clipnormsettings.hpp"
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
+struct SessionOptions;
+class TensorInfo;
 
 /**
  * Enum type describing the mode of an Adam optimizer instance.

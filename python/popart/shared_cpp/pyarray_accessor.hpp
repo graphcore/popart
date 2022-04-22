@@ -2,9 +2,16 @@
 #ifndef GUARD_NEURALNET_PYBIND11_ARRAY_ACCESSOR_HPP
 #define GUARD_NEURALNET_PYBIND11_ARRAY_ACCESSOR_HPP
 
-#include "np_utils.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <pybind11/buffer_info.h>
 #include <pybind11/numpy.h>
-#include <popart/tensorinfo.hpp>
+#include <pybind11/pytypes.h>
+#include <string>
+#include <vector>
+
+#include "np_utils.hpp"
+#include "popart/datatype.hpp"
 
 namespace popart {
 namespace StepIONS {

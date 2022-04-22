@@ -1,14 +1,35 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <map>
 #include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/tensors.hpp"
+#include "popart/util.hpp"
+
 namespace popart {
+
+struct OperatorIdentifier;
 
 std::string IpuCopyOp::getFromToStr() const {
   std::ostringstream ss;

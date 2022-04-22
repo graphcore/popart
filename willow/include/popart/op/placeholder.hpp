@@ -2,9 +2,11 @@
 #ifndef GUARD_NEURALNET_PLACEHOLDER_HPP
 #define GUARD_NEURALNET_PLACEHOLDER_HPP
 
+#include <memory>
 #include <popart/op.hpp>
 
 namespace popart {
+struct OperatorIdentifier;
 
 class PlaceholderOp : public Op {
 public:

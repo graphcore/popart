@@ -1,14 +1,27 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <google/protobuf/descriptor.h>
 #include <graphtransformer_impl.hpp>
-
+#include <limits.h>
+#include <onnx/checker.h> // IWYU pragma: keep
 #include <onnxutil.hpp>
-#include <popart/logging.hpp>
-#include <popart/operators.hpp>
-
-// used for float to half conversion
 #include <poplar/Target.hpp>
+#include <popart/logging.hpp>
+// used for float to half conversion
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <ostream>
+#include <set>
+#include <utility>
 
-#include <onnx/checker.h>
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 

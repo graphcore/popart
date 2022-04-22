@@ -1,8 +1,9 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <memory>
 #include <popart/op/sgd2varupdate.hpp>
 
-#include <memory>
+#include "popart/op.hpp"
 
 namespace popart {
 

@@ -1,23 +1,20 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE GraphEdgeMapTest
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
 #include <map>
-#include <memory>
 #include <sstream>
+#include <string>
+#include <testutil/test_graphs/ready_made.hpp>
+#include <tuple>
+#include <type_traits>
+#include <unordered_set>
 #include <utility>
-#include <vector>
-
-#include <filereader.hpp>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
-#include <popart/operators.hpp>
-#include <popart/scheduler.hpp>
-#include <popart/tensorinfo.hpp>
-#include <popart/topocons.hpp>
 
-#include <testutil/test_graphs/ready_made.hpp>
+#include "popart/names.hpp"
 
 using namespace popart;
 
@@ -119,7 +116,7 @@ struct ComplexTestCase : EdgeMapTestCase<ComplexTestCase> {
         mp(8, {9}),
         mp(9, {10}),
         mp(10, {12}),
-        mp(11, {12}), 
+        mp(11, {12}),
         mp(12, {}),
         mp(13, {8, 12}),
         mp(14, {}),

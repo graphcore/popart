@@ -2,18 +2,25 @@
 #ifndef GUARD_NEURALNET_COLLECTIVESX_HPP
 #define GUARD_NEURALNET_COLLECTIVESX_HPP
 
-#include <popart/debugcontext.hpp>
+#include <cstdint>
+#include <gcl/CollectiveBalancedReorder.hpp>
+#include <gcl/Collectives.hpp>
+#include <set>
+#include <snap/Tensor.hpp>
+#include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/viewchangers.hpp>
 #include <popart/replicatedtensorsharding.hpp>
 
-#include <gcl/CollectiveBalancedReorder.hpp>
-#include <gcl/Collectives.hpp>
-
 namespace popart {
+class CommGroup;
+class Op;
+class Tensor;
+
 namespace popx {
+class Devicex;
 
 gcl::CollectiveOperator getPoplarCollectiveOperator(CollectiveOperator op);
 

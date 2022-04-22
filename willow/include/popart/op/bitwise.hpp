@@ -8,6 +8,7 @@
 #include <popart/op/elementwise.hpp>
 
 namespace popart {
+struct OperatorIdentifier;
 
 // This class implements bitwise not operator.
 class BitwiseNotOp : public ElementWiseUnaryOp {

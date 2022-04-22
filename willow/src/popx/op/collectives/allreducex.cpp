@@ -1,22 +1,28 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <gcl/Collectives.hpp>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
-#include <popart/error.hpp>
-#include <popart/op/collectives/allreduce.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/irlowering.hpp>
+#include <vector>
+#include <poplar/Tensor.hpp>
 #include <popart/popx/op/collectives/allreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/popx/popopx.hpp>
-#include <popart/util.hpp>
 
-#include <poplar/Graph.hpp>
-#include <poputil/exceptions.hpp>
-#include <popart/op/collectives/collectives.hpp>
-
-#include <gcl/Collectives.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/tensorindex.hpp"
 
 namespace popart {
+class AllReduceOp;
+
 namespace popx {
+class Devicex;
 
 AllReduceOpx::AllReduceOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<AllReduceOp>(op,

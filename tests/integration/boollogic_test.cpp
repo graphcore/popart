@@ -2,8 +2,9 @@
 #define BOOST_TEST_MODULE BoolLogicTest
 
 #include <boost/test/unit_test.hpp>
+#include <map>
+#include <string>
 #include <popart/boollogic.hpp>
-#include <popart/logging.hpp>
 
 using namespace popart;
 using namespace boollogic;

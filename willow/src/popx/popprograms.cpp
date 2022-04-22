@@ -1,22 +1,38 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <cctype>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <fstream>
-#include <ostream>
-#include <random>
+#include <iterator>
+#include <map>
+#include <memory>
 #include <set>
-
+#include <snap/Function.hpp>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <popops/Zero.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/popprograms.hpp>
 
-#include <poplar/Program.hpp>
-#include <popops/Zero.hpp>
-
-#include <snap/Graph.hpp>
-#include <snap/Program.hpp>
+#include "popart/dataflow.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/pritask.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/transforms/pipeline.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 namespace popx {

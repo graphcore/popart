@@ -2,11 +2,25 @@
 #ifndef GUARD_NEURALNET_SLICE_HPP
 #define GUARD_NEURALNET_SLICE_HPP
 
+#include <array>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 #include <popart/op/pad.hpp>
-#include <popart/slicestruct.hpp>
+
+#include "popart/names.hpp"
+#include "popart/region.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+class AliasModel;
+class OpSerialiserBase;
+struct OperatorIdentifier;
+struct Slice;
 
 class BaseSliceOp : public Op {
 

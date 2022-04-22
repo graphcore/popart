@@ -2,31 +2,30 @@
 #ifndef GUARD_NEURALNET_POPEXECUTABLE_HPP
 #define GUARD_NEURALNET_POPEXECUTABLE_HPP
 
+#include <cstdint>
 #include <gcl/CollectiveBalancedReorder.hpp>
-
-#include <popart/devicemanager.hpp>
-#include <popart/popx/op/collectives/collectivesx.hpp>
-#include <popart/popx/popprograms.hpp>
-#include <popart/popx/poptensors.hpp>
-#include <popart/popx/pritask.hpp>
-#include <popart/vendored/optional.hpp>
-
-#include <set>
-#include <tuple>
-#include <popart/names.hpp>
-
+#include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include <popart/ir.hpp>
+#include <popart/names.hpp>
 #include <popart/vendored/optional.hpp>
+
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace ONNX_NAMESPACE {
 class ModelProto;
 }
 
 namespace popart {
-class StepIOSplitter;
-class Optimizer;
+class DataFlow;
+struct SessionOptions;
+
 namespace popx {
-class Devicex;
+class IrLowering;
 
 class Executablex {
 private:

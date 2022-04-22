@@ -2,17 +2,27 @@
 #ifndef GUARD_NEURALNET_PIPELINE_HPP
 #define GUARD_NEURALNET_PIPELINE_HPP
 
-#include <popart/graph.hpp>
-#include <popart/op/loop.hpp>
-#include <popart/op/restore.hpp>
-#include <popart/transforms/decomposeloops.hpp>
-#include <popart/transforms/mainloops.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/transforms/transform.hpp>
+
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace popart {
 
 class Ir;
 class LoopOp;
+class Graph;
+class Op;
+class RestoreInplaceOp;
+class RestoreOp;
+class Tensor;
 
 /**
  * A helper class for constructing the pipeline on a per-cycle basis

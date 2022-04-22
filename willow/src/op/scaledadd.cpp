@@ -1,11 +1,23 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <poprithms/common/multiout/ioindices.hpp>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/op/scaledadd.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

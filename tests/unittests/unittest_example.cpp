@@ -3,9 +3,9 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/trompeloeil.hpp>
-
-#include <exception>
-
+#include <memory>
+#include <stdexcept>
+#include <type_traits>
 #include <popart/logging.hpp>
 
 /**

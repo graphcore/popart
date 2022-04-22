@@ -2,10 +2,27 @@
 #ifndef GUARD_NEURALNET_REPLICATEDALLGATHERX_HPP
 #define GUARD_NEURALNET_REPLICATEDALLGATHERX_HPP
 
+#include "popart/popx/debugcontextx.hpp"
+#include <set>
+#include <snap/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
 
+#include "popart/names.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/viewchangers.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class ReplicatedAllGatherOpx : public CollectivesBaseOpx {
 public:

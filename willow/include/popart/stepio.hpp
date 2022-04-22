@@ -1,14 +1,20 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_STEPIO_HPP
 #define GUARD_NEURALNET_STEPIO_HPP
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <string>
+#include <utility>
 #include <popart/iarray.hpp>
 #include <popart/stepio_generic.hpp>
-#include <popart/tensorinfo.hpp>
 
-#include <functional>
-#include <iostream>
-#include <numeric>
-#include <ostream>
+#include "popart/datatype.hpp"
+#include "popart/istepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/voiddata.hpp"
 
 namespace popart {
 

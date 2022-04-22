@@ -2,9 +2,9 @@
 #ifndef GUARD_NEURALNET_INPLACE_ACCUMULATE_GRAD_PARTIALS_INTO_OPTIMIZER_ACCUM_TENSOR_HPP
 #define GUARD_NEURALNET_INPLACE_ACCUMULATE_GRAD_PARTIALS_INTO_OPTIMIZER_ACCUM_TENSOR_HPP
 
-#include <popart/transforms/transform.hpp>
-
+#include <cstddef>
 #include <string>
+#include <popart/transforms/transform.hpp>
 
 namespace popart {
 

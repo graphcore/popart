@@ -2,11 +2,16 @@
 #ifndef GUARD_NEURALNET_DETACH_HPP
 #define GUARD_NEURALNET_DETACH_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
-#include <popart/opmanager.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 class DetachOp : public ElementWiseUnaryOp {
 public:

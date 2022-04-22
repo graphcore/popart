@@ -1,19 +1,38 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
+#include <cstddef>
+#include <ctype.h>
 #include <filereader.hpp>
 #include <fstream>
-#include <sstream>
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 #include <popart/dotvisualizer.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/call.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/region.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

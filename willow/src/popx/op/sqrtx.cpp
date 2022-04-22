@@ -1,12 +1,21 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <popops/ElementWise.hpp>
-#include <popart/error.hpp>
-#include <popart/op/sqrt.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/sqrtx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class Op;
+class SqrtOp;
+
 namespace popx {
+class Devicex;
 
 SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt_6);

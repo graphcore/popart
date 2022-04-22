@@ -1,22 +1,33 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_ReplicaEqualAnalysis
 #include <boost/test/unit_test.hpp>
-
+#include <iostream>
+#include <map>
+#include <string>
 #include <testutil/test_graphs/graph_test_models.hpp>
-
+#include <vector>
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/l1.hpp>
-#include <popart/op/matmul.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/subtract.hpp>
 #include <popart/sessionoptions.hpp>
 
-#include <string>
-#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
-
-#include <testutil/irquery/irquery.hpp>
+#include "popart/graphid.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/replicatedstreammode.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp" // IWYU pragma: keep
+#include "popart/util.hpp"
+#include "popart/vendored/any.hpp" // IWYU pragma: keep
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/irquery.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

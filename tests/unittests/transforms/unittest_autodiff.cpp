@@ -1,11 +1,21 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE autodiff_unittest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <initializer_list>
 #include <iostream>
-#include <sstream>
-
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/bwdgraphinfo.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -13,22 +23,33 @@
 #include <popart/op/call.hpp>
 #include <popart/op/greater.hpp>
 #include <popart/op/if.hpp>
-#include <popart/op/loop.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
-#include <popart/op/sgd0varupdate.hpp>
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp" // IWYU pragma: keep
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/irquery.hpp"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define private public
 #include <popart/transforms/autodiff.hpp>
+
 #undef private
 
-#include <testutil/irquery/irquery.hpp>
 #include <testutil/test_graphs/graph_test_models.hpp>
 
 using namespace popart;
@@ -40,13 +61,8 @@ using namespace popart::irquery;
 
 namespace {
 
-// Forward declarations.
-class TestOp;
-class SimpleTestOp;
 class SimpleTestGradOp;
-class AdvTest1Op;
 class AdvTest1GradOp;
-class AdvTest2Op;
 class AdvTest2GradOp;
 
 /**

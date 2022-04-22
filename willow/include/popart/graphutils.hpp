@@ -2,16 +2,21 @@
 #ifndef GUARD_NEURALNET_GRAPHUTILS_HPP
 #define GUARD_NEURALNET_GRAPHUTILS_HPP
 
+#include <cstddef>
+#include <functional>
+#include <iosfwd>
 #include <map>
-#include <memory>
 #include <set>
-#include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include <popart/tensor.hpp>
-#include <popart/tensors.hpp>
+#include "popart/names.hpp"
 
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
+struct POpCmp;
 
 namespace graphutils {
 

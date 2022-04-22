@@ -5,9 +5,8 @@
 
 #include <functional>
 
-#include <transforms/autodiff/autodiffirinterface.hpp>
-
 namespace popart {
+class AutodiffIrInterface;
 
 /**
  * Base class for helper classes that grow gradients for the autodiff

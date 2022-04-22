@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_ABORT_HPP
 #define GUARD_NEURALNET_ABORT_HPP
 
+#include <memory>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class AbortOp : public Op {
 public:

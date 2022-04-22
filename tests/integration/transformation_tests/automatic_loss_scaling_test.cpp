@@ -2,7 +2,28 @@
 #define BOOST_TEST_MODULE AutomaticLossScalingTest
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include "popart/builder.gen.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/ir.hpp"
+#include "popart/names.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/tensors.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/voiddata.hpp"
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wkeyword-macro"
@@ -10,19 +31,15 @@
 #define protected public
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/op.hpp>
 #include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/histogram.hpp>
-#include <popart/op/mul.hpp>
-#include <popart/op/scale.hpp>
-#include <popart/op/sigmoid.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
+
 #undef protected
 
 using namespace popart;

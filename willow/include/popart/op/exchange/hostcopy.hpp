@@ -2,12 +2,20 @@
 #ifndef GUARD_NEURALNET_HOSTCOPY_HPP
 #define GUARD_NEURALNET_HOSTCOPY_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
-#include <popart/op/elementwise.hpp>
 #include <popart/op/exchange/exchange.hpp>
 #include <popart/op/exchange/hostbase.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class AliasModel;
+class ReplicaEqualAnalysisProxy;
+struct OperatorIdentifier;
 
 /**
  * Host Load Op: an op to represent the transfer of data from the host to the

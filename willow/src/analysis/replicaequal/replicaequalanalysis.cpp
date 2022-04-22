@@ -1,10 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
-#include <popart/graph.hpp>
 
+#include "popart/names.hpp"
 #include <analysis/replicaequal/replicaequalanalysisimpl.hpp>
+#include <map>
+#include <memory>
+#include <string>
+#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
+
+#include "popart/vendored/any.hpp"
 
 namespace popart {
+class AliasModel;
+class Ir;
+class Op;
 
 ReplicaEqualAnalysis::ReplicaEqualAnalysis(const Ir &ir)
     : impl{std::make_unique<ReplicaEqualAnalysisImpl>(ir)} {}

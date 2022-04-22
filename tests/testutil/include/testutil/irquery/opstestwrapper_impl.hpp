@@ -2,13 +2,21 @@
 #ifndef TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_IMPL_HPP
 #define TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_IMPL_HPP
 
-#include <popart/op.hpp>
-
+#include <algorithm>
+#include <memory>
+#include <ostream>
+#include <string>
 #include <testutil/irquery/opstestwrapper.hpp>
 #include <testutil/irquery/optestwrapper.hpp>
 #include <testutil/irquery/testfailuretriggerer.hpp>
+#include <vector>
+
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/require.hpp"
 
 namespace popart {
+class Op;
+
 namespace irquery {
 
 template <typename OP, typename enableif>

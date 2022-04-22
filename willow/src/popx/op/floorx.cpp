@@ -1,13 +1,27 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <vector>
 #include <popops/ElementWise.hpp>
-#include <popart/op/floor.hpp>
-#include <popart/popx/devicex.hpp>
+#include <popops/ExprOp.hpp>
 #include <popart/popx/op/floorx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+
 namespace popart {
+class FloorInplaceOp;
+class FloorOp;
+class Op;
+
 namespace popx {
+class Devicex;
 
 snap::Tensor FloorComputex::outplace(snap::program::Sequence &prog,
                                      snap::Graph &graph,

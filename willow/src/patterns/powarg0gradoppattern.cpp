@@ -1,12 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <string>
 #include <popart/graph.hpp>
-#include <popart/op/mul.hpp>
 #include <popart/op/pow.hpp>
-#include <popart/op/subtract.hpp>
 #include <popart/patterns/powarg0gradoppattern.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/ir.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

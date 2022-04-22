@@ -1,20 +1,23 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <onnxutil.hpp>
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/collectives/replicatedallreduce.hpp>
-#include <popart/op/concat.hpp>
 #include <popart/op/sgd0combo.hpp>
 #include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/patterns/sgd0decompose.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/op.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/variablesettings.hpp"
 
 namespace popart {
 

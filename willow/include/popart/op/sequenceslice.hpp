@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_SEQUENCESLICE_HPP
 #define GUARD_NEURALNET_SEQUENCESLICE_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 class SequenceSliceOp : public Op {
 public:

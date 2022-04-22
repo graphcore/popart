@@ -4,7 +4,12 @@
 
 #include <popart/patterns/binarygradoppattern.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Ir;
+class Op;
+class Tensor;
 
 // Replace a FmodArg0GradOp with a constant tensor filled with ones that has the
 // same shape and type as its input. This matches the behavior of PyTorch.

@@ -1,10 +1,19 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/div.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &_settings)
     : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, _settings) {

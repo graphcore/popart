@@ -2,10 +2,16 @@
 #ifndef GUARD_NEURALNET_NEGATE_HPP
 #define GUARD_NEURALNET_NEGATE_HPP
 
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 class NegateOp : public ElementWiseUnaryOp {
 public:

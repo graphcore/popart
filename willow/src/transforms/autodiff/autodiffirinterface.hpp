@@ -3,16 +3,18 @@
 #ifndef GUARD_NEURALNET_AUTODIFF_IR_INTERFACE_HPP
 #define GUARD_NEURALNET_AUTODIFF_IR_INTERFACE_HPP
 
+#include <string>
+#include <vector>
 #include <popart/names.hpp>
 
 namespace popart {
 
 // Forward declarations.
-class Ir;
-class Op;
 class Optimizer;
-class Tensor;
 struct SessionOptions;
+class Graph;
+class GraphId;
+class Tensors;
 
 // NOTE: In this file we declare an interface that encapsulates the dependency
 // that a collection of grad growing functions (that previously lived in

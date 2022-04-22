@@ -2,12 +2,14 @@
 #ifndef GUARD_TRANSITIVE_CLOSURE_HPP
 #define GUARD_TRANSITIVE_CLOSURE_HPP
 
+#include <cstddef>
 #include <unordered_map>
-
 #include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
-#include <popart/graph.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
+class Graph;
 
 /**
  * This is an adapter class for constructing a CONST

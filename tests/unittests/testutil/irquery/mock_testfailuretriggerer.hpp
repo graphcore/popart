@@ -2,10 +2,11 @@
 #ifndef TEST_UTILS_IR_QUERY_MOCK_TEST_FAILURE_TRIGGERER_HPP
 #define TEST_UTILS_IR_QUERY_MOCK_TEST_FAILURE_TRIGGERER_HPP
 
-#include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test.hpp> // IWYU pragma: keep
 #include <boost/trompeloeil.hpp>
+#include <string>
 
-#include <testutil/irquery/testfailuretriggerer.hpp>
+#include "testutil/irquery/irquery.hpp"
 
 namespace popart {
 namespace irquery {

@@ -1,7 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <popart/patterns/sgd2decompose.hpp>
-
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -10,7 +11,20 @@
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/sgd2varupdate.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/patterns/sgd2decompose.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/tensors.hpp"
+#include "popart/variablesettings.hpp"
 
 namespace popart {
 

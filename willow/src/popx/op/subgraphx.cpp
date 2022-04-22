@@ -1,14 +1,27 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <map>
+#include <memory>
+#include <utility>
+#include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
 #include <popart/graph.hpp>
-#include <popart/op/call.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/subgraphx.hpp>
-#include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/subgraph.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/preparedtensor.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 namespace popx {
+class Devicex;
 
 SubgraphOpx::SubgraphOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {}
 

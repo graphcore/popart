@@ -1,10 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_aapi_basic_graph
 #include <boost/test/unit_test.hpp>
-
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
-#include <popart/iarray.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -19,10 +23,18 @@
 #include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include <onnx/onnx_pb.h>
+#include "popart/bimap.hpp"
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
 
-#include <memory>
-#include <vector>
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

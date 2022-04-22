@@ -1,5 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
 #include <onnxutil.hpp>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/aliasesmap.hpp>
@@ -7,14 +18,12 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulatorzero.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/autolossscaleproxy.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/convbase.hpp>
 #include <popart/op/copyvarupdate.hpp>
 #include <popart/op/div.hpp>
 #include <popart/op/histogram.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/op/incrementmod.hpp>
 #include <popart/op/less.hpp>
 #include <popart/op/lossscaleupdate.hpp>
@@ -26,9 +35,28 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
+#include <popart/transforms/subgraphoutline.hpp>
 #include <popart/util.hpp>
 
-#include <popart/transforms/subgraphoutline.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/half.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 

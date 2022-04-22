@@ -1,5 +1,12 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/pbwrap.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 

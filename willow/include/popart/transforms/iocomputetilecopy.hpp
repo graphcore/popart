@@ -2,6 +2,8 @@
 #ifndef GUARD_NEURALNET_IOCOMPUTETILECOPY_HPP
 #define GUARD_NEURALNET_IOCOMPUTETILECOPY_HPP
 
+#include <cstddef>
+#include <string>
 #include <popart/names.hpp>
 #include <popart/tensorlocation.hpp>
 #include <popart/transforms/transform.hpp>
@@ -11,6 +13,9 @@
 // a single IPU.
 
 namespace popart {
+class Graph;
+class Op;
+class Tensor;
 
 class IoComputeTileCopy : public Transform {
 public:

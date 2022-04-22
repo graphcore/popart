@@ -1,11 +1,24 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <onnx/onnx_pb.h>
 #include <onnxutil.hpp>
-#include <popart/graph.hpp>
+#include <string>
+#include <vector>
 #include <popart/op/cast.hpp>
 #include <popart/opmanager.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 CastOp::CastOp(const OperatorIdentifier &_opid,
                DataType _to,

@@ -2,16 +2,23 @@
 #ifndef GUARD_NEURALNET_CONVX_HPP
 #define GUARD_NEURALNET_CONVX_HPP
 
-#include <popart/names.hpp>
-#include <popart/op/conv.hpp>
-#include <popart/popx/enigma.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <snap/Tensor.hpp>
+#include <vector>
 #include <popart/popx/op/convbasex.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include <poplin/Convolution.hpp>
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class ConvOpx : public MultiConvBaseOpx {
 public:

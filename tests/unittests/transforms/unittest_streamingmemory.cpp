@@ -1,21 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE streamingmemory_unittest
 
-#include <testutil/irquery/irquery.hpp>
-#include <testutil/test_graphs/graph_test_models.hpp>
-
 #include <boost/test/unit_test.hpp>
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <testutil/test_graphs/graph_test_models.hpp>
+#include <vector>
 #include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/adamupdater.hpp>
 #include <popart/op/adamvarupdate.hpp>
-#include <popart/op/collectives/collectives.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
-#include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/lamb.hpp>
@@ -28,6 +30,17 @@
 #include <popart/op/sgd2varupdate.hpp>
 #include <popart/transforms/prune.hpp>
 #include <popart/transforms/streamingmemory.hpp>
+
+#include "popart/commgroup.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/error.hpp"
+#include "popart/graph.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/irquery.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

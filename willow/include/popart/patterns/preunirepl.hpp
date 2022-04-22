@@ -2,9 +2,12 @@
 #ifndef GUARD_NEURALNET_PREUNIREPL_HPP
 #define GUARD_NEURALNET_PREUNIREPL_HPP
 
+#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
+class Op;
+class Tensor;
 
 // remove ()->[] where () is a Tensor and [] is an Op and ()->[]
 // forms part of [.]->()->[]->(.). after this, this section will

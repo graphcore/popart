@@ -1,10 +1,17 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
+#include <functional>
+#include <map>
+#include <memory>
+#include <utility>
 #include <popart/op.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/operatoridentifier.hpp"
+#include "popart/popx/popopx.hpp"
+
 namespace popart {
 namespace popx {
+class Devicex;
 
 OpxManager &OpxManager::getInstance() {
   static OpxManager instance;

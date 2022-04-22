@@ -2,16 +2,24 @@
 #ifndef NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_IMPL_HPP
 #define NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_IMPL_HPP
 
-#include <memory>
-#include <vector>
-
-#include <popart/ir.hpp>
-
 #include <analysis/replicaequal/replicaequalanalysisresults.hpp>
-#include <popart/analysis/replicaequal/replicaequalanalysis.hpp>
+#include <functional>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <popart/analysis/replicaequal/replicaequalanalysisproxy.hpp>
 
+#include "popart/alias/aliasmodel.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+
 namespace popart {
+class Graph;
+class Ir;
+class Op;
+class Tensor;
+class any;
 
 /**
  * Implementation of ReplicaEqualAnalysis.

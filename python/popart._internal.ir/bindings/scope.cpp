@@ -1,22 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/scope.hpp"
 
+#include <initializer_list>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-#include <popart/names.hpp>
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <string>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/scope.hpp>
-
-#include <popart/transforms/autodiff.hpp>
-#include <popart/vendored/optional.hpp>
-
-#include <popart/transforms/transform.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
+class Op;
+
 namespace _internal {
 namespace ir {
 

@@ -1,9 +1,20 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <ostream>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/Tensor.hpp>
 #include <popops/Pad.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
-#include <popart/names.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/popx/devicex.hpp>
@@ -12,7 +23,18 @@
 #include <popart/popx/op/padx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/util.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/linearmapper.hpp"
+#include "popart/popx/op/slicex.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/poptensors.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 namespace popx {

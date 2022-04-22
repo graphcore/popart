@@ -2,10 +2,10 @@
 #ifndef GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_HPP
 #define GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_HPP
 
-#include <queue>
 #include <vector>
-
 #include <popart/op.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 class Tensor;
@@ -120,7 +120,5 @@ template <class T> Tensor *maybeTraverseProducer(InIndex index, Tensor *t);
 
 } // namespace tgutil
 } // namespace popart
-
-#include "tgutils_impl.hpp"
 
 #endif

@@ -2,7 +2,9 @@
 #ifndef GUARD_NEURALNET_AUTOMATICLOSSSCALE_HPP
 #define GUARD_NEURALNET_AUTOMATICLOSSSCALE_HPP
 
+#include <cstddef>
 #include <map>
+#include <string>
 #include <popart/names.hpp>
 #include <popart/transforms/transform.hpp>
 
@@ -246,6 +248,8 @@
 namespace popart {
 class Op;
 class AliasModel;
+class Graph;
+
 class AutomaticLossScale : public Transform {
 public:
   static std::size_t id();

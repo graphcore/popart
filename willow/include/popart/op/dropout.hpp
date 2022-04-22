@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_DROPOUT_HPP
 #define GUARD_NEURALNET_DROPOUT_HPP
 
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/dropoutbase.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class DropoutOp : public DropoutBaseOp {
 protected:

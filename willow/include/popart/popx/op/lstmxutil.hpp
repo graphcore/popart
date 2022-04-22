@@ -2,7 +2,7 @@
 #ifndef GUARD_NEURALNET_LSTMXUTIL_HPP
 #define GUARD_NEURALNET_LSTMXUTIL_HPP
 
-#include <popnn/NonLinearity.hpp>
+#include <popnn/NonLinearityDef.hpp>
 #include <popart/op/lstmutil.hpp>
 
 namespace popart {

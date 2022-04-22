@@ -2,9 +2,13 @@
 #ifndef GUARD_NEURALNET_SPLIT_OP_PATTERN_HPP
 #define GUARD_NEURALNET_SPLIT_OP_PATTERN_HPP
 
-#include <popart/patterns/patterns.hpp>
+#include <vector>
+
+#include "popart/patterns/pattern.hpp"
 
 namespace popart {
+class Op;
+class Tensor;
 
 // Replace a SplitOp with SliceOps
 class SplitOpPattern : public PreAliasPattern {

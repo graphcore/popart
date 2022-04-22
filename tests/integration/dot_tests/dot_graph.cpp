@@ -4,18 +4,31 @@
 // This tool supports training and as well as inference.
 
 #include <boost/program_options.hpp>
+#include <cstdlib>
+#include <exception>
 #include <filereader.hpp>
 #include <iostream>
 #include <memory>
-#include <onnxutil.hpp>
+#include <onnx/onnx_pb.h>
+#include <set>
+#include <string>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/graphtransformer.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/nll.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
+
+#include "popart/dataflow.hpp"
+#include "popart/devicemanager.hpp"
+#include "popart/error.hpp"
+#include "popart/inputshapeinfo.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizer.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 namespace po = boost::program_options;

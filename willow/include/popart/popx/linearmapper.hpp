@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_LINEARMAPPER_HPP
 #define GUARD_NEURALNET_LINEARMAPPER_HPP
 
+#include <cstddef>
 #include <map>
 
 namespace snap {

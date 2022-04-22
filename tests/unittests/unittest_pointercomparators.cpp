@@ -2,14 +2,18 @@
 #define BOOST_TEST_MODULE PointerComparators
 
 #include <boost/test/unit_test.hpp>
-
-#include <popart/error.hpp>
+#include <utility>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/init.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/graph.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
 

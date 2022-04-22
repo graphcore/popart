@@ -1,7 +1,15 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <functional>
 #include <transforms/autodiff/stitcher.hpp>
-
 #include <popart/graph.hpp>
+
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/vendored/optional.hpp"
+#include "transforms/autodiff/autodiffhelper.hpp"
+#include "transforms/autodiff/autodiffirinterface.hpp"
+#include "transforms/autodiff/stitcherinterface.hpp"
 
 namespace popart {
 

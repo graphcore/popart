@@ -2,10 +2,15 @@
 #ifndef GUARD_NEURALNET_ADAMUPDATER_HPP
 #define GUARD_NEURALNET_ADAMUPDATER_HPP
 
+#include <memory>
 #include <popart/adam.hpp>
-#include <popart/op/varupdate.hpp>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
 
 namespace popart {
+class OpSerialiserBase;
 
 class AdamUpdaterOp : public Op {
 

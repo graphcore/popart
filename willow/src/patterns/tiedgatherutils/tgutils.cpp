@@ -1,12 +1,13 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "tgutils.hpp"
 
+#include <memory>
 #include <popart/graphutils.hpp>
 #include <popart/op.hpp>
-#include <popart/op/detach.hpp>
-#include <popart/op/slice.hpp>
 #include <popart/op/transpose.hpp>
 #include <popart/tensor.hpp>
+
+#include "popart/tensorindex.hpp"
 
 namespace popart {
 namespace tgutil {

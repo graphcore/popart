@@ -1,16 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Unittest_StochasticRoundingAssumptionVerifier
 
-#include <string>
-
 #include <boost/test/unit_test.hpp>
-
-#include <popart/error.hpp>
+#include <cstddef>
+#include <stochasticroundingassumptionverifier.hpp>
+#include <testutil/test_graphs/graph_test_models.hpp>
+#include <vector>
 #include <popart/ir.hpp>
 
-#include <stochasticroundingassumptionverifier.hpp>
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/sessionoptions.hpp"
 
-#include <testutil/test_graphs/graph_test_models.hpp>
+namespace popart {
+class error;
+} // namespace popart
 
 using namespace popart;
 

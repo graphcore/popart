@@ -1,10 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/basicoptionals.hpp"
 
+#include <cstdint>
+#include <initializer_list>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
+#include <pybind11/stl.h> // IWYU pragma: keep
 #include <popart/basicoptionals.hpp>
 
 namespace py = pybind11;

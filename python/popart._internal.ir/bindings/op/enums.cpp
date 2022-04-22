@@ -1,13 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/op/enums.hpp"
 
-#include <pybind11/numpy.h>
+#include <initializer_list>
+#include <pybind11/attr.h>
+#include <pybind11/numpy.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
+#include <pybind11/stl.h> // IWYU pragma: keep
 #include <popart/adam.hpp>
 #include <popart/op/collectives/collectives.hpp>
 #include <popart/op/init.hpp>
+
+#include "popart/op.hpp"
+
 namespace py = pybind11;
 
 namespace popart {

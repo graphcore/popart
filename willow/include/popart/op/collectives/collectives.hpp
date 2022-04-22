@@ -2,11 +2,24 @@
 #ifndef GUARD_NEURALNET_COLLECTIVES_HPP
 #define GUARD_NEURALNET_COLLECTIVES_HPP
 
+#include <cstdint>
+#include <iosfwd>
+#include <memory>
+#include <set>
+#include <vector>
 #include <popart/commgroup.hpp>
 #include <popart/op.hpp>
-#include <popart/pointercomparators.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/names.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
 
 namespace popart {
+class Ir;
+class OpSerialiserBase;
+class Tensor;
+struct OperatorIdentifier;
 
 enum class CollectiveOperator {
   Add = 0,
@@ -90,6 +103,7 @@ public:
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
+  virtual std::unique_ptr<Op> clone() const = 0;
   void setup() override;
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex in) const;
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex out) const;

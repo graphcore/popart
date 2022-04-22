@@ -1,11 +1,30 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <boost/range/numeric.hpp>
-
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/split.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+
+namespace popart {
+
+struct OperatorIdentifier;
+} // namespace popart
 
 using boost::accumulate;
 

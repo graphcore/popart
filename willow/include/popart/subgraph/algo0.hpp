@@ -2,6 +2,10 @@
 #ifndef GUARD_NEURALNET_RINSEMATCHER_ALGO0_HPP
 #define GUARD_NEURALNET_RINSEMATCHER_ALGO0_HPP
 
+#include <vector>
+
+#include "popart/subgraph/match.hpp"
+#include "popart/subgraph/subgraphutil.hpp"
 #include "rinsematcherbase.hpp"
 
 namespace fwtools {

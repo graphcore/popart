@@ -2,13 +2,25 @@
 #ifndef GUARD_NEURALNET_NORMX_HPP
 #define GUARD_NEURALNET_NORMX_HPP
 
-#include <popart/names.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/op/normx.hpp>
-#include <popart/popx/opxmanager.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Type.hpp>
 #include <popart/popx/popopx.hpp>
 
-#include <snap/Tensor.hpp>
+namespace popart {
+class Op;
+
+namespace popx {
+class Devicex;
+} // namespace popx
+} // namespace popart
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 // Base class for the norm options such as group, instance, batch
 

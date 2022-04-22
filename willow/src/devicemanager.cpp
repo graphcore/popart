@@ -1,21 +1,31 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/functional/hash.hpp>
 #include <chrono>
+#include <cstdint>
+#include <ctime>
+#include <cxxabi.h>
 #include <fstream>
 #include <iomanip>
+#include <map>
+#include <memory>
 #include <random>
-#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <thread>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/functional/hash.hpp>
-
-#include <poplar/DeviceManager.hpp>
+#include <type_traits>
+#include <utility>
+#include <vector>
 #include <poplar/OptionFlags.hpp>
+#include <poplar/StringRef.hpp>
+#include <poplar/Target.hpp>
 #include <poplar/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/util.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

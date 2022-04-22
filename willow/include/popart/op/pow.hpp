@@ -2,14 +2,20 @@
 #ifndef GUARD_NEURALNET_POW_HPP
 #define GUARD_NEURALNET_POW_HPP
 
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
 
 namespace popart {
 
 class PowArg0GradOp;
 class PowArg1GradOp;
+class Ir;
 
 // arg_0 / arg_1
 class PowOp : public ElementWiseNpBroadcastableBinaryWithGradOp<PowArg0GradOp,

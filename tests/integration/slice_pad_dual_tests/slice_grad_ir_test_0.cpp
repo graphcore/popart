@@ -1,23 +1,32 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE ConverSliceGradsTest
 
-#include <memory>
-#include <vector>
-
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
 #include <filereader.hpp>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/sgd.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
 
 using namespace popart;
 

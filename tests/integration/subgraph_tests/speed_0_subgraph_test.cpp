@@ -1,14 +1,26 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Speed0SubgraphTest
 
-#include "../random_util.hpp"
-#include "validate.hpp"
+#include <algorithm>
+#include <boost/random/uniform_int_distribution.hpp>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
+#include <cstddef>
 #include <iostream>
+#include <memory>
+#include <ratio>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
+#include <popart/subgraph/outliner.hpp>
 
+#include "../random_util.hpp"
 #include "blip.hpp"
+#include "popart/subgraph/match.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "validate.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

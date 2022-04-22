@@ -2,9 +2,16 @@
 #ifndef GUARD_NEURALNET_THRESHOLDEDRELU_HPP
 #define GUARD_NEURALNET_THRESHOLDEDRELU_HPP
 
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/elementwise.hpp>
 
+#include "popart/op.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class ThresholdedReluOp : public ElementWiseUnaryOp {
 public:

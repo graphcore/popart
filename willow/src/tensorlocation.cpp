@@ -1,8 +1,14 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 
+#include <cstdint>
+#include <ostream>
+#include <string>
+#include <vector>
 #include <popart/commgroup.hpp>
 #include <popart/error.hpp>
 #include <popart/tensorlocation.hpp>
+
+#include "popart/logging.hpp"
 
 namespace popart {
 

@@ -1,27 +1,43 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PipelineTrainingTest0
 
-#include "../random_util.hpp"
 #include <algorithm>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
+#include <cstdlib>
 #include <filereader.hpp>
+#include <iostream>
 #include <map>
 #include <memory>
+#include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
+
+#include "../random_util.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/ir.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 // In this model, where continuous and exact pipelines are numerically
 // equivalent, there are Ops in the forwards and backwards passes which are

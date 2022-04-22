@@ -2,7 +2,13 @@
 #ifndef GUARD_NEURALNET_InputShapeInfo_HPP
 #define GUARD_NEURALNET_InputShapeInfo_HPP
 
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <vector>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/names.hpp"
 
 namespace popart {
 

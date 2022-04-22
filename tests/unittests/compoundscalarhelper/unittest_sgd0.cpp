@@ -1,9 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_SGD0_CompoundScalarHelpers
 #include <boost/test/unit_test.hpp>
+#include <string>
+#include <utility>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/sgd.hpp>
+
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
 
 using namespace popart;
 

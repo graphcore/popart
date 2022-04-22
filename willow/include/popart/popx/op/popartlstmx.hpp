@@ -2,19 +2,32 @@
 #ifndef GUARD_NEURALNET_POPARTLSTMX_HPP
 #define GUARD_NEURALNET_POPARTLSTMX_HPP
 
-#include "popart/logging.hpp"
+#include <memory>
+#include <set>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <poplar/Type.hpp>
 #include <popnn/Lstm.hpp>
-#include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
-#include <popart/popx/devicex.hpp>
-
 #include <popart/names.hpp>
-#include <popart/op/lstm.hpp>
+#include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
 #include <popart/popx/popopx.hpp>
 
+#include "popart/logging.hpp"
+#include "popart/popx/debugcontextx.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace poplar {
+class Tensor;
+} // namespace poplar
+
 namespace popart {
+class Op;
+class PopartLSTMGradOp;
+class PopartLSTMOp;
+
 namespace popx {
 
 template <typename LSTMOP> class PopartLSTMOpxBase : public PopOpx {

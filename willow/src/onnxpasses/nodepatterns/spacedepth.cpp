@@ -1,7 +1,14 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
+#include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/spacedepth.hpp>
+#include <poprithms/ndarray/shape.hpp>
 #include <popart/attributes.hpp>
 #include <popart/error.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
 
 namespace popart {
 namespace onnxpasses {

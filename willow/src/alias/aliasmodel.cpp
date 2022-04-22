@@ -1,19 +1,26 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poprithms/common/multiout/ioindices.hpp>
+#include <poprithms/common/multiout/opid.hpp>
+#include <poprithms/common/multiout/tensorid.hpp>
+#include <poprithms/memory/inplace/graph.hpp>
+#include <poprithms/ndarray/shape.hpp>
+#include <poprithms/util/typedinteger.hpp>
 #include <popart/alias/aliasmodel.hpp>
-#include <popart/graph.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/elementwise.hpp>
-#include <popart/op/pad.hpp>
-#include <popart/op/scaledadd.hpp>
-#include <popart/operators.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/topocons.hpp>
 
-#include <poprithms/logging/timepartitionlogger.hpp>
-#include <poprithms/schedule/vanilla/vanilla.hpp>
-
-#include <list>
-#include <unordered_set>
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

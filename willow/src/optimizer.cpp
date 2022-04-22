@@ -1,20 +1,25 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
+#include <boost/functional/hash.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
-#include <popart/op/loss.hpp>
-#include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/sgd1combo.hpp>
-#include <popart/op/sgd2combo.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
-#include <popart/util.hpp>
 
-#include <boost/functional/hash.hpp>
+#include "popart/clipnormsettings.hpp"
+#include "popart/datatype.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

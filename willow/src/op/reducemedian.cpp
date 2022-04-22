@@ -1,9 +1,23 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/reducemedian.hpp>
 #include <popart/opmanager.hpp>
 
+#include "popart/attributes.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/reduce.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 ReduceMedianOp::ReduceMedianOp(
     const OperatorIdentifier &opid,

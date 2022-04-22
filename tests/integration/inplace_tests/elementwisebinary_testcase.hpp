@@ -2,18 +2,39 @@
 #ifndef GUARD_ELEMENTWISEBINARY_TESTCASE_HPP
 #define GUARD_ELEMENTWISEBINARY_TESTCASE_HPP
 
-#include "../test_runner.hpp"
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
 #include <popart/op/elementwise.hpp>
-#include <popart/operators.hpp>
 #include <popart/tensorinfo.hpp>
 
-#include <vector>
+// Hack to see the internals of Ir
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
+#define private public
+#include "popart/ir.hpp" // IWYU pragma: keep
+
+#undef private
+
+#include "../test_runner.hpp" // IWYU pragma: keep
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/region.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
+
+namespace popart {
+class AiOnnxOpset9;
+} // namespace popart
 
 // Struct containing data inputs and expected output for testing element-wise
 // binary operations

@@ -4,8 +4,17 @@
 
 #include <popart/popx/op/varupdatex.hpp>
 
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class SGD1VarUpdateOpx : public VarUpdateOpx {
 public:

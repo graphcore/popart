@@ -1,25 +1,44 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <cstddef>
 #include <memory>
-
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Interval.hpp>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/Tensor.hpp>
+#include <poplar/Type.hpp>
+#include <popnn/Lstm.hpp>
+#include <popnn/Rnn.hpp>
+#include <popops/ExprOp.hpp>
+#include <popops/Zero.hpp>
 #include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/lstm.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/lstmx.hpp>
 #include <popart/popx/op/lstmxutil.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorindex.hpp>
-#include <popart/util.hpp>
 
-#include <snap/popops/ElementWise.hpp>
-#include <poplar/Tensor.hpp>
-#include <poplar/Type.hpp>
-#include <popnn/Lstm.hpp>
-#include <popops/Zero.hpp>
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
 
 LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {

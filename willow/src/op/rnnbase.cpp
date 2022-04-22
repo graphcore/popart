@@ -3,7 +3,13 @@
 #include <popart/opserialiser.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/vendored/optional.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 BaseOnnxRNNOp::BaseOnnxRNNOp(const OperatorIdentifier &_opid,
                              nonstd::optional<int64_t> hidden_size,

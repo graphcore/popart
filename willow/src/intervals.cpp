@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <popart/intervals.hpp>
 // for std::sqrt
+#include <algorithm>
 #include <cmath>
-
 #include <numeric>
 
 namespace popart {

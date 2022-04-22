@@ -1,9 +1,18 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <memory>
-#include <popart/ir.hpp>
+#include <string>
+#include <utility>
 #include <popart/op/sgd2combo.hpp>
-#include <popart/opserialiser.hpp>
 #include <popart/optimizer.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/op/sgdcombobase.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

@@ -1,10 +1,33 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <queue>
+#include <set>
 #include <sstream>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include <poprithms/schedule/scc/scc.hpp>
 #include <popart/error.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/pritask.hpp>
+
+#include "popart/logging.hpp"
+#include "popart/taskid.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
+
+namespace snap {
+
+class Graph;
+} // namespace snap
 
 namespace popart {
 

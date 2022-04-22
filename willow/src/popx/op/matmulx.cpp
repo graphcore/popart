@@ -1,5 +1,24 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include "popart/popx/debugcontextx.hpp"
+#include <algorithm>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iosfwd>
+#include <iterator>
+#include <numeric>
+#include <set>
+#include <snap/Tensor.hpp>
+#include <snap/poplin/MatMul.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/OptionFlags.hpp>
+#include <poplar/StringRef.hpp>
+#include <poplar/Type.hpp>
+#include <poplin/MatMul.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/matmul.hpp>
@@ -11,11 +30,21 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/util.hpp>
 
-#include <snap/poplin/MatMul.hpp>
-#include <popops/Reduce.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/vendored/optional.hpp"
 
-#include <boost/range/algorithm.hpp>
-#include <boost/range/algorithm_ext.hpp>
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 namespace popx {

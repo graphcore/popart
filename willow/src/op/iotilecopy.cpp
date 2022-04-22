@@ -1,14 +1,18 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <map>
 #include <memory>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include <set>
+#include <utility>
 #include <popart/op/iotilecopy.hpp>
-#include <popart/opmanager.hpp>
-#include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 IoTileCopyOp::IoTileCopyOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_)

@@ -1,19 +1,27 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MergeCopiesTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
-#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
 
 using namespace popart;
 

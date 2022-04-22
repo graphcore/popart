@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_LRN_HPP
 #define GUARD_NEURALNET_LRN_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class LRNOp : public Op {
 public:

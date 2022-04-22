@@ -1,22 +1,32 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Slice1InplaceTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <iterator>
+#include <memory>
+#include <string>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/graph.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/op/nll.hpp>
-#include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
+
+#include "popart/builder.gen.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
 
 using namespace popart;
 

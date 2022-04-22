@@ -1,20 +1,29 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/transforms/autodiff.hpp>
-
-#include <popart/bwdgraphinfo.hpp>
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
-
+#include <cstddef>
+#include <memory>
 #include <transforms/autodiff/autodiffiradapter.hpp>
 #include <transforms/autodiff/backwardsgraphcreator.hpp>
-#include <transforms/autodiff/backwardsgraphcreatorhelper.hpp>
 #include <transforms/autodiff/gradgrowergraph.hpp>
 #include <transforms/autodiff/gradgrowerloss.hpp>
 #include <transforms/autodiff/gradgrowermaingraph.hpp>
 #include <transforms/autodiff/gradgrowerop.hpp>
 #include <transforms/autodiff/gradgrowersumop.hpp>
-#include <transforms/autodiff/recomputestitcher.hpp>
 #include <transforms/autodiff/stitcherfactory.hpp>
+#include <typeinfo>
+#include <utility>
+#include <vector>
+#include <popart/bwdgraphinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/transforms/autodiff.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
+#include "transforms/autodiff/stitcherinterface.hpp"
 
 namespace popart {
 

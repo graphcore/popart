@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
@@ -8,9 +9,11 @@
 #include <popart/op/negate.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/patterns/coshoppattern.hpp>
-#include <popart/patterns/pattern.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorinfo.hpp>
+
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

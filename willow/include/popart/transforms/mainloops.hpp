@@ -2,12 +2,15 @@
 #ifndef GUARD_NEURALNET_MAINLOOPS_HPP
 #define GUARD_NEURALNET_MAINLOOPS_HPP
 
-#include <popart/graph.hpp>
-#include <popart/op/loop.hpp>
+#include <cstddef>
+#include <string>
+#include <utility>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
 class LoopOp;
+class Graph;
+class Ir;
 
 class MainLoops : public Transform {
 private:

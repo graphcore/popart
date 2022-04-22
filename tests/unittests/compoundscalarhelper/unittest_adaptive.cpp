@@ -1,9 +1,16 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_Adaptive_CompoundScalarHelpers
 #include <boost/test/unit_test.hpp>
+#include <string>
+#include <utility>
 #include <popart/adaptive.hpp>
 #include <popart/compoundscalarhelper.hpp>
 #include <popart/sessionoptions.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizer.hpp"
+#include "popart/optimizervalue.hpp"
 
 using namespace popart;
 

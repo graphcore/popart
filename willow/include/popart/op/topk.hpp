@@ -2,9 +2,19 @@
 #ifndef GUARD_NEURALNET_TOPK_HPP
 #define GUARD_NEURALNET_TOPK_HPP
 
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <vector>
 #include <popart/op/basesort.hpp>
 
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/tensorinfo.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class TopKOp : public BaseSortOp {
 public:

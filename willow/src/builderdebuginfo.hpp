@@ -2,12 +2,18 @@
 #ifndef GUARD_NEURALNET_BUILDER_DEBUGINFO_HPP
 #define GUARD_NEURALNET_BUILDER_DEBUGINFO_HPP
 
+#include <map>
+#include <string>
+#include <vector>
 #include <popart/debugcontext.hpp>
-#include <popart/tensor.hpp>
-#include <popart/vendored/any.hpp>
 #include <poparttracepoint.hpp>
 
+#include "popart/tensordebuginfo.hpp"
+
 namespace popart {
+class TensorInfo;
+class any;
+
 class BuilderDebugInfo : public DebugInfo {
 public:
   // BuilderDebugInfo(const DebugContext &debugContext);

@@ -1,9 +1,20 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <popart/op.hpp>
+#include <map>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
+
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 

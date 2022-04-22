@@ -2,7 +2,9 @@
 #ifndef GUARD_POPART_TEST_GRAPHS_READY_MADE_HPP
 #define GUARD_POPART_TEST_GRAPHS_READY_MADE_HPP
 
-#include <popart/graph.hpp>
+namespace popart {
+class Graph;
+} // namespace popart
 
 /*
   Do not use these graphs as a reference for creating graphs/certain ops.

@@ -1,6 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
 #include <memory>
+#include <ostream>
+#include <set>
+#include <string>
 #include <tuple>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
@@ -11,12 +22,25 @@
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
-#include <popart/operators.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/sgdcombobase.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 

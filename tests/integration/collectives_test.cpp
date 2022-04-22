@@ -1,35 +1,48 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE CollectivesTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <filereader.hpp>
+#include <initializer_list>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/collectives/replicatedallgather.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/op/collectives/replicatedreducescatter.hpp>
-#include <popart/op/dynamic/dynamicslice.hpp>
-#include <popart/op/exchange/remote.hpp>
-#include <popart/op/init.hpp>
-#include <popart/op/l1.hpp>
-#include <popart/opmanager.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
-#include <popart/tensors.hpp>
 #include <popart/testdevice.hpp>
 
-#include <algorithm>
-#include <map>
-#include <random>
-#include <tuple>
-#include <vector>
+#include "popart/builder.gen.hpp"
+#include "popart/commgroup.hpp"
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/ir.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/stepio.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vendored/any.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

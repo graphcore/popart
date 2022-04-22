@@ -1,19 +1,31 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
-
-#include <popart/alias/aliasmodel.hpp>
-#include <popart/alias/aliasmodelgrower.hpp>
+#include <algorithm>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/add.hpp>
 #include <popart/op/init.hpp>
 #include <popart/topocons.hpp>
+#include <popart/transforms/inplaceaccumulategradpartialsintooptimizeraccumtensor.hpp>
 #include <popart/vendored/optional.hpp>
 
-#include <algorithm>
-#include <tuple>
-#include <typeinfo>
-#include <vector>
+#include "popart/basicoptionals.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/scope.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
 
 namespace popart {
 

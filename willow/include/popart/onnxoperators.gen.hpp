@@ -7,9 +7,6 @@
 #ifndef GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP
 #define GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP
 
-#include "popart/attributes.hpp"
-#include "popart/error.hpp"
-#include "popart/names.hpp"
 #include "popart/operatoridentifier.hpp"
 
 namespace popart {

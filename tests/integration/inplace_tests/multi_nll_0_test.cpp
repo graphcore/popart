@@ -1,30 +1,44 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE MultiNll0InplaceTest
 
-#include "../random_util.hpp"
-#include <boost/filesystem.hpp>
+#include <algorithm>
+#include <array>
+#include <boost/random/uniform_int_distribution.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/test/unit_test.hpp>
-#include <chrono>
-#include <complex>
-#include <filereader.hpp>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
-#include <popart/devicemanager.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/add.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/nll.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/stepio.hpp>
-#include <popart/tensordata.hpp>
-#include <popart/tensornames.hpp>
 #include <popart/testdevice.hpp>
+
+#include "../random_util.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/voiddata.hpp"
+
+namespace popart {
+class IArray;
+} // namespace popart
 
 using namespace popart;
 

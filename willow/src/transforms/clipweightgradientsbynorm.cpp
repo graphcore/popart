@@ -1,6 +1,15 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <typeinfo>
+#include <utility>
 #include <vector>
-
+#include <poplar/Target.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
@@ -11,18 +20,34 @@
 #include <popart/op/max.hpp>
 #include <popart/op/mul.hpp>
 #include <popart/op/reducesumsquare.hpp>
-#include <popart/op/scale.hpp>
-#include <popart/op/scaledadd.hpp>
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/sqrt.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/operators.hpp>
 #include <popart/transforms/clipweightgradientsbynorm.hpp>
 #include <popart/util.hpp>
 
-#include <poplar/Target.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/clipnormsettings.hpp"
+#include "popart/datatype.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/operators.hpp"
+#include "popart/optimizer.hpp"
+#include "popart/scope.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/tensors.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
 
 namespace popart {
 

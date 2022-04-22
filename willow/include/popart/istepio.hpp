@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_ISTEPIO_HPP
 #define GUARD_NEURALNET_ISTEPIO_HPP
 
+#include <cstdint>
 #include <popart/names.hpp>
 #include <popart/voiddata.hpp>
 

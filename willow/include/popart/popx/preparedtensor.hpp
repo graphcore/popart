@@ -2,6 +2,7 @@
 #ifndef GUARD_NEURALNET_PREPAREDTENSOR_HPP
 #define GUARD_NEURALNET_PREPAREDTENSOR_HPP
 
+#include <vector>
 #include <popart/names.hpp>
 
 namespace popart {

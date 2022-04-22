@@ -1,11 +1,19 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/upsample.hpp>
 #include <popart/patterns/upsampletoresizepattern.hpp>
 #include <popart/tensor.hpp>
-#include <popart/tensorinfo.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/patterns/patterns.hpp"
 
 namespace popart {
 

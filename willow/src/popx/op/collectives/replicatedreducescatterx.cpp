@@ -1,4 +1,17 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include "popart/popx/debugcontextx.hpp"
+#include <gcl/CollectiveBalancedReorder.hpp>
+#include <gcl/Collectives.hpp>
+#include <map>
+#include <memory>
+#include <set>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
+#include <poplar/Tensor.hpp>
 #include <popops/Zero.hpp>
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
@@ -7,11 +20,25 @@
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
-#include <popart/popx/op/collectives/replicatedallgatherx.hpp>
 #include <popart/popx/op/collectives/replicatedreducescatterx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <gcl/Collectives.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/collectives.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/viewchangers.hpp"
+#include "popart/replicatedtensorsharding.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+
+namespace poplar {
+
+class OptionFlags;
+} // namespace poplar
 
 namespace popart {
 namespace popx {

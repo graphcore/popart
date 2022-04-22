@@ -7,9 +7,13 @@
 #ifndef GUARD_NEURALNET_OPSETS_GEN_HPP
 #define GUARD_NEURALNET_OPSETS_GEN_HPP
 
-#include "popart/names.hpp"
-#include "popart/operators.hpp"
 #include <map>
+#include <string>
+#include <utility>
+
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 
 namespace popart {
 using OpTypeMap = std::map<OpType, OperatorIdentifier>;

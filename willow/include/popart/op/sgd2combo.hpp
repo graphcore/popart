@@ -2,8 +2,12 @@
 #ifndef GUARD_NEURALNET_SGD2VARUPDATECOMBOOP_HPP
 #define GUARD_NEURALNET_SGD2VARUPDATECOMBOOP_HPP
 
+#include <memory>
 #include <popart/op/sgdcombobase.hpp>
-#include <popart/optimizervaluemap.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/optimizervalue.hpp"
 
 namespace popart {
 

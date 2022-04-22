@@ -2,25 +2,38 @@
 #ifndef GUARD_NEURALNET_STREAMING_MEMORY_OP_INSERTER_HPP
 #define GUARD_NEURALNET_STREAMING_MEMORY_OP_INSERTER_HPP
 
+#include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <map>
-
+#include <set>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/op/copyvarupdate.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/tensor.hpp>
-#include <popart/vendored/optional.hpp>
+
+#include "popart/basicoptionals.hpp"
+#include "popart/names.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/vertex.hpp"
 
 namespace popart {
 
 class RemoteLoadInplaceOp;
 class RemoteStoreOp;
 class ReplicatedAllGatherOp;
-class ReplicatedAllReduceOp;
 class ReplicatedReduceScatterOp;
-struct POpCmp;
-struct PTensorCmp;
+class AliasModel;
+class CommGroup;
+class CopyVarUpdateOp;
+class Graph;
+class Tensor;
+class VarUpdateOp;
 
 class StreamingMemoryOpInserter {
 public:

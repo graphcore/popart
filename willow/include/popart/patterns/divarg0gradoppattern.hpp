@@ -4,7 +4,12 @@
 
 #include <popart/patterns/binarygradoppattern.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class Ir;
+class Op;
+class Tensor;
 
 // Replace a DivArg0GradOp with
 // {(grad_in), (fwd_in1)} -> [Div] -> [ReduceSum] -> (grad_out)

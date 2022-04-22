@@ -1,10 +1,20 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <vector>
 #include <popart/op/fmod.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 FmodOp::FmodOp(const OperatorIdentifier &opId, const Op::Settings &settings)
     : ElementWiseBinaryOp(opId, settings) {}

@@ -1,4 +1,16 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <transforms/autodiff/gradgrowersumop.hpp>
+#include <tuple>
+#include <typeinfo>
+#include <utility>
+#include <vector>
+#include <poprithms/schedule/transitiveclosure/transitiveclosure.hpp>
 #include <poprithmstransitiveclosure.hpp>
 #include <popart/alias/aliasmodel.hpp>
 #include <popart/alias/aliasmodelgrower.hpp>
@@ -9,13 +21,20 @@
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/opmanager.hpp>
-
-#include <transforms/autodiff/gradgrowersumop.hpp>
 #include <popart/transforms/decomposegradsum.hpp>
 
-#include <algorithm>
-#include <tuple>
-#include <vector>
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vertex.hpp"
+#include "transforms/autodiff/autodiffhelper.hpp"
 
 namespace {
 using namespace popart;

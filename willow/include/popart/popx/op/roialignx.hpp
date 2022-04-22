@@ -2,11 +2,21 @@
 #ifndef GUARD_NEURALNET_ROIALIGNX_HPP
 #define GUARD_NEURALNET_ROIALIGNX_HPP
 
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/popopx.hpp>
+#include <poplar/Tensor.hpp>
+
+#include "popart/popx/opx.hpp"
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 class RoiAlignOpx : public Opx {
 public:

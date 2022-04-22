@@ -1,13 +1,21 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <popart/error.hpp>
-#include <popart/op/globalmaxpool.hpp>
-
+#include <algorithm>
+#include <map>
 #include <memory>
+#include <string>
+#include <vector>
+#include <popart/op/globalmaxpool.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
-#include <popart/tensor.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
+struct OperatorIdentifier;
 
 GlobalMaxPoolOp::GlobalMaxPoolOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)

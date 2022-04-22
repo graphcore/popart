@@ -1,11 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <cmath>
-
-#include <popart/subgraph/iosubgraphcostmodel.hpp>
-
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 #include <popart/op.hpp>
+#include <popart/subgraph/iosubgraphcostmodel.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+
+#include "popart/tensorinfo.hpp"
 
 namespace popart {
 namespace outline {

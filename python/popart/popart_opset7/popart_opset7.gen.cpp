@@ -5,18 +5,27 @@
  * To regenerate this file run the gen_operators.py script
  */
 #include "popart/docs/opset7_docs.hpp"
-#include <pybind11/functional.h>
-
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+#include <cstdint>
+#include <initializer_list>
+#include <pybind11/buffer_info.h> // IWYU pragma: keep
+#include <pybind11/cast.h>        // IWYU pragma: keep
+#include <pybind11/functional.h>  // IWYU pragma: keep
+#include <pybind11/numpy.h>       // IWYU pragma: keep
+#include <pybind11/pybind11.h>    // IWYU pragma: keep
+#include <pybind11/pytypes.h>     // IWYU pragma: keep
+#include <pybind11/stl.h>         // IWYU pragma: keep
+#include <string>
+#include <vector>
 
 #include "../shared_cpp/np_utils.hpp"
-#include "../shared_cpp/pyarray_accessor.hpp"
-
-#include "popart/builder.hpp"
-#include "popart/tensors.hpp"
-#include "popart/version.hpp"
+#include "popart/builder.gen.hpp"
+#include "popart/builder.hpp" // IWYU pragma: keep
+#include "popart/debugcontext.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/vendored/optional.hpp"
+#include "popart/voiddata.hpp"
 
 namespace py = pybind11;
 using namespace popart;

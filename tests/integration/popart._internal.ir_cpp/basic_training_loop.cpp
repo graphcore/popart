@@ -1,13 +1,8 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_AAPI_loop_accumulate
 #include <boost/test/unit_test.hpp>
-#include <memory>
-#include <onnx/onnx_pb.h>
-#include <tuple>
-#include <vector>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
-#include <popart/iarray.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/ndarraywrapper.hpp>
@@ -15,7 +10,6 @@
 #include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
-#include <popart/op/identity.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/mul.hpp>
@@ -28,6 +22,34 @@
 #include <popart/testdevice.hpp>
 #include <popart/transforms/autodiff.hpp>
 #include <popart/util.hpp>
+// This is needed for ModelProto
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <onnx/onnx_pb.h> // IWYU pragma: keep
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensornames.hpp"
+
+namespace popart {
+class Aliases;
+class IArray;
+} // namespace popart
 
 float generateReferenceWeights(const float,
                                const std::vector<float> &,

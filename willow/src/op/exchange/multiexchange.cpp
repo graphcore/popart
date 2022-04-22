@@ -1,13 +1,33 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <popart/graph.hpp>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <set>
+#include <tuple>
+#include <utility>
+#include <vector>
 #include <popart/ir.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
-#include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 
+#include "popart/analysis/replicaequal/replicaequalanalysisproxy.hpp"
+#include "popart/basicoptionals.hpp"
+#include "popart/error.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/region.hpp"
+#include "popart/replicatedstreammode.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+
 namespace popart {
+class AliasModel;
+struct OperatorIdentifier;
 
 MultiExchangeOp::MultiExchangeOp(
     const OperatorIdentifier &_opid,

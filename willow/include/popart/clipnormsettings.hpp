@@ -1,6 +1,8 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_CLIPNORMSETTINGS_HPP
 #define GUARD_NEURALNET_CLIPNORMSETTINGS_HPP
+#include <string>
+#include <vector>
 #include <popart/names.hpp>
 
 namespace popart {

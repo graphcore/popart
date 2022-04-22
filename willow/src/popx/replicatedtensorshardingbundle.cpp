@@ -1,8 +1,20 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
+#include <gcl/CollectiveBalancedReorder.hpp>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
 #include <popart/popx/replicatedtensorshardingbundle.hpp>
 
+#include "popart/error.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensornames.hpp"
+
 namespace popart {
+class Ir;
+
 namespace popx {
 
 ReplicatedTensorShardingBundle::ReplicatedTensorShardingBundle(const Ir &ir)

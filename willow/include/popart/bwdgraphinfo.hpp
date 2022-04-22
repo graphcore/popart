@@ -2,8 +2,9 @@
 #ifndef GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
 #define GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
 
+#include <map>
 #include <ostream>
-
+#include <vector>
 #include <popart/graphid.hpp>
 #include <popart/names.hpp>
 

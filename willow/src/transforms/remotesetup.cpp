@@ -1,24 +1,46 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
 #include <popart/op/dynamic/dynamicslice.hpp>
 #include <popart/op/dynamic/dynamicupdate.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
 #include <popart/op/identity.hpp>
-#include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-#include <popart/topocons.hpp>
 #include <popart/transforms/remotesetup.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/elementwise.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/op/subgraph.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/tensordata.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/util.hpp"
 
 namespace popart {
 

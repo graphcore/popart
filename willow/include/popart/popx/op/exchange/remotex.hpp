@@ -2,12 +2,23 @@
 #ifndef GUARD_NEURALNET_REMOTEX_HPP
 #define GUARD_NEURALNET_REMOTEX_HPP
 
+#include <snap/Tensor.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
 #include <popart/popx/popopx.hpp>
 
+#include "popart/names.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
 
 namespace popx {
+class Devicex;
 
 class RemoteBaseOpx : public ExchangeBaseOpx {
 public:

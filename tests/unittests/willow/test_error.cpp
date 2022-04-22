@@ -2,8 +2,12 @@
 #define BOOST_TEST_MODULE WillowErrorUnittest
 
 #include <boost/test/unit_test.hpp>
+#include <functional>
 #include <string>
 #include <popart/error.hpp>
+
+#include "popart/erroruid.hpp"
+#include "popart/logging.hpp"
 
 using namespace popart;
 

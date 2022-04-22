@@ -1,6 +1,13 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <utility>
+#include <vector>
 #include <popops/Zero.hpp>
-
 #include <popart/graph.hpp>
 #include <popart/op/if.hpp>
 #include <popart/popx/devicex.hpp>
@@ -9,7 +16,20 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensorindex.hpp>
 
+#include "popart/error.hpp"
+#include "popart/graphid.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/popx/popprograms.hpp"
+#include "popart/popx/preparedtensor.hpp"
+#include "popart/tensor.hpp"
+
 namespace popart {
+class Op;
+
 namespace popx {
 
 void IfOpx::copyInputs(snap::program::Sequence &thenProg,

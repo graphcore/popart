@@ -2,11 +2,19 @@
 #ifndef GUARD_NEURALNET_CLIP_HPP
 #define GUARD_NEURALNET_CLIP_HPP
 
+#include <map>
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/elementwise.hpp>
+
+#include "popart/names.hpp"
+#include "popart/op.hpp"
 
 namespace popart {
 
 class OpSerialiserBase;
+struct OperatorIdentifier;
 
 class ClipOp : public ElementWiseUnaryOp {
 public:

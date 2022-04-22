@@ -1,9 +1,11 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE TestPatternsUpdateInplacePrioritiesForIpu
 #include <boost/test/unit_test.hpp>
-
-#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
-
+#include <cstdint>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/add.hpp>
@@ -14,12 +16,22 @@
 #include <popart/op/identity.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/op/reshape.hpp>
-#include <popart/operators.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
 
-#include <typeindex>
+#include "popart/datatype.hpp"
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/convbase.hpp"
+#include "popart/op/receptive.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/vendored/optional.hpp"
 
 using namespace popart;
 

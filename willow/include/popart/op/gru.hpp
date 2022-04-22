@@ -2,11 +2,21 @@
 #ifndef GUARD_NEURALNET_GRU_HPP
 #define GUARD_NEURALNET_GRU_HPP
 
+#include <cstdint>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 #include <popart/op.hpp>
 #include <popart/op/rnnbase.hpp>
 #include <popart/vendored/optional.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+class OpSerialiserBase;
+class TensorInfo;
+struct OperatorIdentifier;
 
 /**
  * This op applies a single-layer GRU with a non-linearity to a batch of

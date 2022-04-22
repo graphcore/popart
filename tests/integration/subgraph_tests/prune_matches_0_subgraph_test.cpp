@@ -1,14 +1,22 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PruneMatches0SubgraphTest
 
-#include "blip.hpp"
 #include <algorithm>
 #include <boost/test/unit_test.hpp>
+#include <cstdint>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <set>
 #include <vector>
 #include <popart/logging.hpp>
 #include <popart/subgraph/prunematches.hpp>
+
+#include "blip.hpp"
+#include "popart/subgraph/algo0.hpp"
+#include "popart/subgraph/match.hpp"
+#include "popart/subgraph/subgraphnames.hpp"
+#include "popart/subgraph/subgraphutil.hpp"
 
 using namespace fwtools::subgraph;
 using namespace blip;

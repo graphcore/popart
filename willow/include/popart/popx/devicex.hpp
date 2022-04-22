@@ -2,39 +2,40 @@
 #ifndef GUARD_NEURALNET_POPDEVICE_HPP
 #define GUARD_NEURALNET_POPDEVICE_HPP
 
-#include <popart/vendored/optional.hpp>
-
-#include <poplar/DataStream.hpp>
-#include <poplar/DeviceManager.hpp>
-#include <poplar/Engine.hpp>
-#include <poplar/IPUModel.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <poplar/Engine.hpp> // IWYU pragma: keep
+#include <poplar/StreamCallback.hpp>
+#include <poplar/Type.hpp>
 #include <poplin/Convolution.hpp>
 #include <poplin/MatMul.hpp>
-#include <poputil/TileMapping.hpp>
+#include <popart/popx/popefserializer.hpp> // IWYU pragma: keep
 
-#include <snap/Graph.hpp>
+#include "popart/datatype.hpp"
+#include "popart/tensordebuginfo.hpp"
 
-#include <popart/aliaszerocopy.hpp>
-#include <popart/devicemanager.hpp>
-#include <popart/popx/creatorx.hpp>
-#include <popart/popx/enigma.hpp>
-#include <popart/popx/popefserializer.hpp>
-#include <popart/popx/poplaroptionsx.hpp>
-#include <popart/popx/popprograms.hpp>
-#include <popart/popx/poptensors.hpp>
-#include <popart/popx/pritask.hpp>
-#include <popart/popx/virtualgraph.hpp>
-
-#include <set>
-#include <tuple>
-#include <popart/names.hpp>
-// MutableVoidData is defined in here:
-#include <popart/stepio.hpp>
-
-#include <popart/tensordata.hpp>
+namespace pva {
+class Report;
+} // namespace pva
 
 namespace popart {
 class StepIOSplitter;
+class DeviceInfo;
+class IStepIO;
+class IWeightsIO;
+class Ir;
+class MutableVoidData;
+class Tensor;
+class TensorInfo;
+
 namespace popx {
 
 using PopStreamId = std::string;

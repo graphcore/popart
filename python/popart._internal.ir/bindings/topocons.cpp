@@ -1,24 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#include <algorithm>
-#include <iterator>
-#include <map>
-#include <vector>
-
-#include <pybind11/numpy.h>
+#include <initializer_list>
+#include <pybind11/numpy.h> // IWYU pragma: keep
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-#include "../../popart/shared_cpp/np_utils.hpp"
-#include <popart/ir.hpp>
-#include <popart/op.hpp>
-#include <popart/op/call.hpp>
-#include <popart/pointercomparators.hpp>
+#include <pybind11/pytypes.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
 #include <popart/topocons.hpp>
 
 namespace py = pybind11;
 
 namespace popart {
+class Op;
+
 namespace _internal {
 namespace ir {
 

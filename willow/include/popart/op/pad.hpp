@@ -2,10 +2,23 @@
 #ifndef GUARD_NEURALNET_PAD_HPP
 #define GUARD_NEURALNET_PAD_HPP
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
+#include <poprithms/memory/inplace/proposal.hpp>
 #include <popart/op.hpp>
-#include <popart/slicestruct.hpp>
+
+#include "popart/names.hpp"
+#include "popart/region.hpp"
 
 namespace popart {
+class AliasModel;
+class OpSerialiserBase;
+struct OperatorIdentifier;
+struct Slice;
 
 class BasePadOp : public Op {
 public:

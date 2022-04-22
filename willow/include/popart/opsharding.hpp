@@ -2,10 +2,19 @@
 #ifndef GUARD_NEURALNET_OPSHARDING_HPP
 #define GUARD_NEURALNET_OPSHARDING_HPP
 
+#include <cstdint>
+#include <vector>
 #include <popart/names.hpp>
 #include <popart/op/init.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/op.hpp"
+#include "popart/tensordebuginfo.hpp"
+
 namespace popart {
+class Graph;
+class Tensor;
+class TensorInfo;
 
 /**
  * Class that contains helper functions to add sharding related operations to

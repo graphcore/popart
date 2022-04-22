@@ -2,8 +2,14 @@
 #ifndef GUARD_NEURALNET_ARGMINX_HPP
 #define GUARD_NEURALNET_ARGMINX_HPP
 
-#include <popart/names.hpp>
+#include <snap/Tensor.hpp>
 #include <popart/popx/op/argextremax.hpp>
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
 
 namespace popart {
 

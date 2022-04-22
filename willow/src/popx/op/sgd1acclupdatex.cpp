@@ -1,18 +1,30 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
 #include <snap/popops/ElementWise.hpp>
+#include <string>
+#include <poplar/Tensor.hpp>
+#include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popops/ScaledAdd.hpp>
 #include <popops/Zero.hpp>
-#include <popart/error.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/sgd1acclupdatex.hpp>
 #include <popart/popx/opxmanager.hpp>
+
+#include "popart/graphcoreoperators.hpp"
+#include "popart/op/varupdate.hpp"
+#include "popart/optimizervalue.hpp"
+#include "popart/popx/op/varupdatex.hpp"
 
 namespace pe = popops::expr;
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 SGD1AcclUpdateOpx::SGD1AcclUpdateOpx(Op *op, Devicex *devicex)
     : VarUpdateOpx(op, devicex) {

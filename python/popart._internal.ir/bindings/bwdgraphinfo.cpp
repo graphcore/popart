@@ -1,12 +1,17 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #include "bindings/bwdgraphinfo.hpp"
-#include <pybind11/cast.h>
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
+#include <initializer_list>
+#include <pybind11/cast.h>       // IWYU pragma: keep
+#include <pybind11/functional.h> // IWYU pragma: keep
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h> // IWYU pragma: keep
+#include <vector>
 #include <popart/bwdgraphinfo.hpp>
-#include <popart/graph.hpp>
+
+#include "popart/graphid.hpp"
+#include "popart/names.hpp"
+#include "popart/tensordebuginfo.hpp"
 
 namespace py = pybind11;
 

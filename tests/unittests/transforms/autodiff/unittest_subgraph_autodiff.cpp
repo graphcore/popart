@@ -1,7 +1,18 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE unittest_transform_subgraph_autodiff
+#include <algorithm>
+#include <boost/hof/unpack.hpp>
 #include <boost/test/unit_test.hpp>
-
+#include <cstddef>
+#include <functional>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
@@ -9,31 +20,35 @@
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/opidentifier.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
-
 #include <popart/transforms/autodiff.hpp>
 
-#include <testutil/irquery/irquery.hpp>
+#include "popart/bwdgraphinfo.hpp"
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/names.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp" // IWYU pragma: keep
+#include "popart/tensorinfo.hpp"
+#include "popart/util.hpp"
+#include "popart/vendored/optional.hpp"
+#include "testutil/irquery/irquery.hpp"
 
-#include <boost/hof/unpack.hpp>
-
-#include <utility>
+namespace popart {
+class error;
+} // namespace popart
 
 using namespace popart;
 
 namespace {
 
-class BaseTestOp;
-class UnaryOp;
 class UnaryGradOp;
-class BinaryOp;
 class BinaryLhsGradOp;
 class BinaryRhsGradOp;
-class BinaryOpDifferentiableOnLhsOnly;
-class TertiaryOp;
 class TertiaryGradOp;
 
 /**

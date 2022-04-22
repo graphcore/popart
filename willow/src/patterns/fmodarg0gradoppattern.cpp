@@ -1,11 +1,22 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#include <memory>
+#include <cstdint>
+#include <string>
+#include <vector>
 #include <popart/graph.hpp>
 #include <popart/op/cast.hpp>
 #include <popart/op/fmod.hpp>
 #include <popart/patterns/fmodarg0gradoppattern.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
+
+#include "popart/datatype.hpp"
+#include "popart/ir.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/operators.hpp"
+#include "popart/patterns/patterns.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensors.hpp"
 
 namespace popart {
 

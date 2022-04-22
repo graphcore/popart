@@ -1,4 +1,5 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <onnxpasses/nodepatterns/binary_ops.hpp>
@@ -9,9 +10,10 @@
 #include <onnxpasses/nodepatterns/trig.hpp>
 #include <onnxpasses/onnxtoonnx.hpp>
 #include <onnxpasses/patterntarget.hpp>
-#include <onnxpasses/suffixer.hpp>
-#include <string>
-#include <popart/error.hpp>
+#include <vector>
+
+#include "onnxpasses/nodepattern.hpp"
+#include "onnxpasses/onnxnames.hpp"
 
 namespace popart {
 namespace onnxpasses {

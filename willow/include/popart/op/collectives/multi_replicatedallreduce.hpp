@@ -1,11 +1,22 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
 #define GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
-#include <popart/ir.hpp>
+#include <memory>
+#include <tuple>
+#include <vector>
 #include <popart/op/collectives/collectives.hpp>
-#include <popart/tensorindex.hpp>
+
+#include "popart/names.hpp"
+#include "popart/tensorlocation.hpp"
 
 namespace popart {
+class AliasModel;
+class CommGroup;
+class Op;
+class Tensor;
+class TensorInfo;
+class ReplicaEqualAnalysisProxy;
+
 class MultiReplicatedAllReduceOp : public MultiCollectiveBaseOp {
 public:
   MultiReplicatedAllReduceOp(

@@ -2,9 +2,12 @@
 #ifndef GUARD_NEURALNET_NLLLWITHSOFTMAXGRADDIRECT_HPP
 #define GUARD_NEURALNET_NLLLWITHSOFTMAXGRADDIRECT_HPP
 
+#include <vector>
 #include <popart/patterns/pattern.hpp>
 
 namespace popart {
+class Op;
+class Tensor;
 
 // consider,
 // (label), (probs) -> [NllOp]

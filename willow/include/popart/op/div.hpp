@@ -2,14 +2,18 @@
 #ifndef GUARD_NEURALNET_DIV_HPP
 #define GUARD_NEURALNET_DIV_HPP
 
-#include <popart/ir.hpp>
-#include <popart/names.hpp>
+#include <cstdint>
+#include <memory>
+#include <vector>
 #include <popart/op/elementwise.hpp>
+
+#include "popart/op.hpp"
 
 namespace popart {
 
 class DivArg0GradOp;
 class DivArg1GradOp;
+struct OperatorIdentifier;
 
 class DivOp : public ElementWiseNpBroadcastableBinaryWithGradOp<DivArg0GradOp,
                                                                 DivArg1GradOp> {

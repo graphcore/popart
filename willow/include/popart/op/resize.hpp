@@ -2,9 +2,17 @@
 #ifndef GUARD_NEURALNET_RESIZE_HPP
 #define GUARD_NEURALNET_RESIZE_HPP
 
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 #include <popart/op.hpp>
 
+#include "popart/names.hpp"
+
 namespace popart {
+struct OperatorIdentifier;
 
 enum class ResizeMode { Nearest, Linear, Cubic, N };
 std::string toString(const ResizeMode &);

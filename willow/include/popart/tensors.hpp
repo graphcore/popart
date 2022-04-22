@@ -2,15 +2,28 @@
 #ifndef GUARD_NEURALNET_WILLOWTENSORS_HPP
 #define GUARD_NEURALNET_WILLOWTENSORS_HPP
 
+#include <cstddef>
+#include <iosfwd>
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <popart/aliases.hpp>
-#include <popart/chains.hpp>
-#include <popart/names.hpp>
 #include <popart/variablesettings.hpp>
 #include <popart/vectorandset.hpp>
 
+#include "popart/dataflow.hpp"
+#include "popart/debugcontext.hpp"
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+
+namespace onnx {
+class TensorProto;
+} // namespace onnx
+
 namespace popart {
+class Graph;
+class Scope;
+class TensorInfo;
 
 class Tensors {
 public:

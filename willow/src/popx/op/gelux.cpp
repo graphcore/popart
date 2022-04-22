@@ -1,19 +1,25 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#include <iterator>
-#include <memory>
-
-#include <popart/error.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <popnn/NonLinearity.hpp>
+#include <popnn/NonLinearityDef.hpp>
+#include <popops/Rearrange.hpp>
 #include <popart/op/gelu.hpp>
-#include <popart/op/nll.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/op/gelux.hpp>
 #include <popart/popx/opxmanager.hpp>
 
-#include <popnn/NonLinearity.hpp>
-#include <popops/Rearrange.hpp>
+#include "popart/graphcoreoperators.hpp"
+#include "popart/popx/op/elementwisex.hpp"
+#include "popart/popx/popopx.hpp"
 
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 GeluOpx::GeluOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOutplaceOpx(op, devicex, GeluComputex::get()) {

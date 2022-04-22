@@ -1,6 +1,17 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <unordered_set>
+#include <utility>
 #include <vector>
-
 #include <popart/aliasesmap.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
@@ -18,14 +29,12 @@
 #include <popart/op/init.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loop.hpp>
-#include <popart/op/loss.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-#include <popart/transforms/explicitrecompute.hpp>
 #include <popart/transforms/mainloops.hpp>
 #include <popart/transforms/overlapio.hpp>
 #include <popart/transforms/pipeline.hpp>
@@ -34,7 +43,25 @@
 #include <popart/util.hpp>
 #include <popart/vertex.hpp>
 
-#include <popart/graphutils.hpp>
+#include "popart/basicoptionals.hpp"
+#include "popart/dataflow.hpp"
+#include "popart/datatype.hpp"
+#include "popart/logging.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
+#include "popart/pointercomparators.hpp"
+#include "popart/region.hpp"
+#include "popart/scheduler_requireoptimal.hpp"
+#include "popart/sessionoptions.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorinfo.hpp"
+#include "popart/tensorlocation.hpp"
+#include "popart/tensornames.hpp"
+#include "popart/transforms/decomposeloops.hpp"
+#include "popart/transforms/transform.hpp"
+#include "popart/vendored/optional.hpp"
 
 // Which pipelining scheme should we use? There are some considerations to
 // make:

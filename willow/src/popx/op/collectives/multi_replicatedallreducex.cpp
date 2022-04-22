@@ -1,15 +1,32 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+#include <algorithm>
+#include <gcl/Collectives.hpp>
+#include <memory>
+#include <snap/Graph.hpp>
+#include <snap/Program.hpp>
+#include <snap/Tensor.hpp>
+#include <vector>
+#include <poplar/Graph.hpp>
+#include <poplar/Program.hpp>
 #include <poplar/Tensor.hpp>
-#include <popart/ir.hpp>
-#include <popart/opserialiser.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/collectives/multi_replicatedallreducex.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/popx/opxstate.hpp>
-#include <popart/region.hpp>
+
+#include "popart/error.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op.hpp"
+#include "popart/op/collectives/multi_replicatedallreduce.hpp"
+#include "popart/popx/op/collectives/collectivesx.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/tensorindex.hpp"
 
 namespace popart {
+
 namespace popx {
 
 MultiReplicatedAllReduceOpx::MultiReplicatedAllReduceOpx(popart::Op *op,

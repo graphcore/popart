@@ -1,32 +1,40 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE NoGradOpTest
 
+#include <algorithm>
 #include <boost/test/unit_test.hpp>
-
+#include <cstdint>
 #include <memory>
-
-#include "test_runner.hpp"
-
-#include <onnxutil.hpp>
-#include <popart/builder.hpp>
-#include <popart/devicemanager.hpp>
+#include <string>
+#include <vector>
 #include <popart/logging.hpp>
-#include <popart/ndarraywrapper.hpp>
 #include <popart/op.hpp>
-#include <popart/op/identity.hpp>
-#include <popart/op/l1.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/patterns/pattern.hpp>
-#include <popart/popx/devicex.hpp>
 #include <popart/popx/opx.hpp>
 #include <popart/popx/opxmanager.hpp>
-#include <popart/session.hpp>
-#include <popart/tensordata.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/tensornames.hpp>
 
-#include <popops/ElementWise.hpp>
+#include "popart/datatype.hpp"
+#include "popart/graphcoreoperators.hpp"
+#include "popart/ir.hpp"
+#include "popart/operatoridentifier.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/util.hpp"
+#include "popart/voiddata.hpp"
+#include "test_runner.hpp"
+
+namespace popart {
+namespace popx {
+class Devicex;
+} // namespace popx
+} // namespace popart
+
+namespace poplar {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace poplar
 
 using namespace popart;
 

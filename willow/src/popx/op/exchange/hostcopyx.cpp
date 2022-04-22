@@ -1,14 +1,38 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <popart/graph.hpp>
-#include <popart/ir.hpp>
+#include "popart/popx/debugcontextx.hpp"
+#include <limits>
+#include <memory>
+#include <snap/Tensor.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 #include <popart/op/exchange/hostcopy.hpp>
-#include <popart/popx/devicex.hpp>
-#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/exchange/hostcopyx.hpp>
 #include <popart/popx/opxmanager.hpp>
 
+#include "popart/graphcoreoperators.hpp"
+#include "popart/logging.hpp"
+#include "popart/names.hpp"
+#include "popart/op/exchange/exchange.hpp"
+#include "popart/popx/op/exchange/exchangex.hpp"
+#include "popart/popx/popopx.hpp"
+#include "popart/region.hpp" // IWYU pragma: keep
+#include "popart/tensor.hpp"
+#include "popart/tensordebuginfo.hpp"
+#include "popart/tensorindex.hpp"
+#include "popart/tensorlocation.hpp"
+
+namespace snap {
+namespace program {
+class Sequence;
+} // namespace program
+} // namespace snap
+
 namespace popart {
+class Op;
+
 namespace popx {
+class Devicex;
 
 HostBaseOpx::HostBaseOpx(Op *op, Devicex *devicex)
     : ExchangeBaseOpx(op, devicex) {}
