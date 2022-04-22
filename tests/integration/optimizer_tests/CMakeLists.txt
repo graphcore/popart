@@ -17,8 +17,22 @@ add_popart_py_unit_test(adam_mixed_mode_test_py_0 adam_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(adaptive_mixed_mode_test_py_0 adaptive_mixed_mode_test_py_0.py)
 add_popart_py_unit_test(pytorch_comparisons pytorch_comparisons.py VARIANTS IpuModel)
 add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
-add_popart_py_unit_test(sgd_mixed_mode_test_py_1 sgd_mixed_mode_test_py_1.py)
 add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
+
+# sgd_mixed_mode_test_py_1 starts here
+set(accl_types "accl1Type0" "accl1Type1")
+set(accum_types "accumType0" "accumType1")
+set(sgdAccMm_types "sgdAccMm0" "sgdAccMm1")
+foreach(accl1Type ${accl_types})
+  foreach(accumType ${accum_types})
+    foreach(sgdAccMm ${sgdAccMm_types})
+# linter complains if this is indented
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1_mode_0 sgd_mixed_mode_test_py_1.py MATCHEXPR "[${accl1Type}-${accumType}-${sgdAccMm}]")
+    endforeach()
+  endforeach()
+endforeach()
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1_mode_1 sgd_mixed_mode_test_py_1.py MATCHEXPR "test_sgd_mixed_mode_1")
+# sgd_mixed_mode_test_py_1 ends here
 
 # global_batch_size_test starts here
 set(batchserial_options "Unroll" "Loop")
