@@ -103,7 +103,7 @@ public:
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
-  virtual std::unique_ptr<Op> clone() const = 0;
+  std::unique_ptr<Op> clone() const override = 0;
   void setup() override;
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex in) const;
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex out) const;
