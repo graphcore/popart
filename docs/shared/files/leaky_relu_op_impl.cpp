@@ -50,7 +50,7 @@ class Devicex;
 } // namespace popx
 
 /**
- * @brief Leaky relu custom op parameters.
+ * @brief Struct to encapsulate Leaky ReLU parameters.
  *
  * This structure is encapsulating the parameters/attributes logic, such that it
  * can be shared between FWD and GRAD op implementations.
@@ -83,26 +83,39 @@ struct LeakyReluParams {
 };
 
 /**
- * @brief Leaky Relu grad op.
+ * @brief Leaky ReLU gradient op.
  */
 class LeakyReluGradOp
     : public ParameterizedOp<LeakyReluGradOp, LeakyReluParams> {
 public:
+  // Inherit constructor from ParameterizedOp<LeakyReluGradOp, LeakyReluParams>.
   using ParameterizedOp<LeakyReluGradOp, LeakyReluParams>::ParameterizedOp;
 
+  /**
+   * Create an operator identifier for LeakyReluOp.
+   */
   static popart::OperatorIdentifier defaultOperatorId() {
     return popart::OperatorIdentifier{
         "custom.ops", "LeakyReluGrad", 1, {1, 1}, 1};
   }
-  void setup() final { outInfo(0) = inInfo(0); };
 
-  const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
+  /**
+   * @brief Determine the shapes and type of output tensors.
+   */
+  void setup() override { outInfo(0) = inInfo(0); };
+
+  const std::vector<popart::GradInOutMapper> &gradInputInfo() const override {
     static const std::vector<popart::GradInOutMapper> inInfo = {
         {0, 0, popart::GradOpInType::GradOut},
         {1, 0, popart::GradOpInType::In}};
     return inInfo;
   }
-  const std::map<int, int> &gradOutToNonGradIn() const {
+
+  /**
+   * @brief Return mapping to associated the outputs indices of LeakyReluGradOp
+   * with inputs of the LeakyReluOp. \return const std::map<int, int>&
+   */
+  const std::map<int, int> &gradOutToNonGradIn() const override {
     // The Grad Op has 1 output, which is the gradient of the only input
     static const std::map<int, int> outInfo = {{0, 0}};
     return outInfo;
@@ -110,18 +123,30 @@ public:
 };
 
 /**
- * @brief Leaky Relu op.
+ * @brief Leaky ReLU op.
  */
 class LeakyReluOp : public ParameterizedOp<LeakyReluOp, LeakyReluParams> {
 public:
+  // Inherit constructor from ParameterizedOp<LeakyReluGradOp, LeakyReluParams>.
   using ParameterizedOp<LeakyReluOp, LeakyReluParams>::ParameterizedOp;
 
+  /**
+   * Create an operator identifier for LeakyReluOp.
+   */
   static popart::OperatorIdentifier defaultOperatorId() {
     return popart::OperatorIdentifier{"custom.ops", "LeakyRelu", 1, {1, 1}, 1};
   }
-  void setup() final { outInfo(0) = inInfo(0); }
 
-  std::vector<std::unique_ptr<popart::Op>> getGradOps() {
+  /**
+   * @brief Determine the shapes and type of output tensors.
+   */
+  void setup() override { outInfo(0) = inInfo(0); }
+
+  /**
+   * @brief Construct associated gradient operations.
+   * \return std::vector<std::unique_ptr<popart::Op>>
+   */
+  std::vector<std::unique_ptr<popart::Op>> getGradOps() override {
     std::vector<std::unique_ptr<Op>> upops;
     upops.emplace_back(new LeakyReluGradOp(*this));
     return upops;
@@ -154,7 +179,9 @@ static popart::OpCreator<LeakyReluOp> leakyReluOpCreator(
 
 namespace pe = popops::expr;
 
-// Leaky Relu ops implementation.
+/**
+ * Leaky ReLU implementation.
+ */
 class LeakyReluOpx : public popart::popx::Opx {
 public:
   LeakyReluOpx(popart::Op *op, popart::popx::Devicex *devicex)
@@ -162,26 +189,32 @@ public:
     verifyOp<LeakyReluOp>(op, {CustomOperators::LeakyReluId});
   }
 
-  void grow(poplar::program::Sequence &prog) const final {
+  /**
+   * @brief Add the Poplar code for this operation to a Poplar sequence.
+   * \param prog The Poplar sequence to add the operation to.
+   */
+  void grow(poplar::program::Sequence &prog) const override {
     auto op              = getOp<LeakyReluOp>();
     poplar::Tensor input = getInTensor(0);
     const float alpha    = op.params().alpha;
     // x < 0.0f ? alpha * x : x
-    // pe::_1 here are placeholders for the argument for the expression.
-    // \sa popops::expr
+    // pe::_1 here is a placeholder for the argument of the expression.
     auto expression = pe::Select(pe::Mul(pe::Const(alpha), pe::_1),
                                  pe::_1,
                                  pe::Lt(pe::_1, pe::Const(0.0f)));
-    popops::mapInPlace(graph(),
-                       expression,
-                       {input},
-                       prog,
-                       debugContext("LeakyRelu"),
-                       poplar::OptionFlags());
-    setOutTensor(0, input);
+    auto output     = popops::map(graph(),
+                              expression,
+                              {input},
+                              prog,
+                              debugContext("LeakyRelu"),
+                              poplar::OptionFlags());
+    setOutTensor(0, output);
   }
 };
 
+/**
+ * Leaky ReLU gradient operation implementation.
+ */
 class LeakyReluGradOpx : public popart::popx::Opx {
 public:
   LeakyReluGradOpx(popart::Op *op, popart::popx::Devicex *devicex)
@@ -189,13 +222,18 @@ public:
     verifyOp<LeakyReluGradOp>(op, {CustomGradOperators::LeakyReluGradId});
   }
 
-  void grow(poplar::program::Sequence &prog) const final {
+  /**
+   * @brief Add the Poplar code for this operation to a Poplar sequence.
+   * \param prog The Poplar sequence to add the operation to.
+   */
+  void grow(poplar::program::Sequence &prog) const override {
     auto op              = getOp<LeakyReluGradOp>();
     poplar::Tensor grad  = getInTensor(0);
     poplar::Tensor input = getInTensor(1);
 
     const float alpha = op.params().alpha;
     // (grad * (x < 0.0f ? alpha : 1))
+    // pe::_1 and pe::_2 are placeholders for the arguments of the expression.
     pe::Mul expression = pe::Mul(pe::Select(pe::Const(alpha),
                                             pe::Const(1.0f),
                                             pe::Lt(pe::_2, pe::Const(0.0f))),
@@ -229,7 +267,7 @@ PYBIND11_MODULE(leaky_relu_op_impl, m) {
 
   // Helper function to make the custom op bindings automatically (once the
   // params are pybinded).
-  _internal::ir::op::makeParameterizedOpBindings<LeakyReluOp>(m, "LeakyRelu");
+  popart::ir::op::makeParameterizedOpBindings<LeakyReluOp>(m, "LeakyRelu");
 }
 } // namespace popart
 

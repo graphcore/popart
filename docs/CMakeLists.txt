@@ -127,6 +127,7 @@ if (BUILD_DOCS)
             ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
   )
 
+
   # For a given document directory DOC_SOURCE_DIR, get the source files,
   # returned in DOC_SOURCE_FILES.
   function(get_doc_files DOC_SOURCE_DIR DOC_SOURCE_FILES)
@@ -144,6 +145,9 @@ if (BUILD_DOCS)
     set(${DOC_SOURCE_FILES} ${GLOB_RESULT} PARENT_SCOPE)
   endfunction()
 
+  set(SHARED_SOURCE_FILES "")
+  get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/shared SHARED_SOURCE_FILES)
+
   set(USER_GUIDE_SOURCE_FILES "")
   get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/user_guide USER_GUIDE_SOURCE_FILES)
 
@@ -153,10 +157,12 @@ if (BUILD_DOCS)
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/user_guide
     COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/user_guide
+    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_BINARY_DIR}/user_guide
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
             ${USER_GUIDE_SOURCE_FILES}
+            ${SHARED_SOURCE_FILES}
   )
 
   set(POPXL_SOURCE_FILES "")
@@ -168,10 +174,12 @@ if (BUILD_DOCS)
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/popxl
     COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popxl ${CMAKE_CURRENT_BINARY_DIR}/popxl
+    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_BINARY_DIR}/popxl
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Copying PopXL sources to ${CMAKE_CURRENT_BINARY_DIR}/popxl"
     DEPENDS ${SUPPORTED_POPXL_OPS_GEN}
             ${POPXL_SOURCE_FILES}
+            ${SHARED_SOURCE_FILES}
   )
 
   # Create Doxyfile file.

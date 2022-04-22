@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
-#define POPART__INTERNAL_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
+#ifndef POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
+#define POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
 
 #include <map>
 #include <memory>
@@ -22,7 +22,6 @@ namespace popart {
 class Graph;
 struct OperatorIdentifier;
 
-namespace _internal {
 namespace ir {
 namespace op {
 // Pybind11 helper functions.
@@ -97,7 +96,6 @@ void makeParameterizedOpBindings(pybind11::module m, const char *op_name) {
 
 } // namespace op
 } // namespace ir
-} // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
+#endif // POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP

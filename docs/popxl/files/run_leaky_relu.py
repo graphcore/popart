@@ -6,7 +6,7 @@ import argparse
 import popxl
 import popxl.ops as ops
 
-from leaky_relu_op_popxl import leaky_relu
+from leaky_relu_op import leaky_relu
 
 
 def build_and_run_graph(input_data: Union[float, np.ndarray],

@@ -1,3 +1,5 @@
+.. _sec_custom_operations:
+
 Custom operators
 ================
 

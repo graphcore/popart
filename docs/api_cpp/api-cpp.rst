@@ -274,6 +274,15 @@ Op definition for PopART IR
 .. doxygenclass:: popart::Op
    :members:
 
+.. doxygenclass:: popart::OperatorIdentifier
+   :members:
+
+.. doxygenclass:: popart::OpSerialiserBase
+   :members:
+
+.. doxygenclass:: popart::ParameterizedOp
+   :members:
+
 .. doxygenenum:: popart::RecomputeType
 
 .. code-block:: cpp
