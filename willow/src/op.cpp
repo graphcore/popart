@@ -487,6 +487,7 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute(sExecutionContextAttribute, executionContextSs.str());
   os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
   os.appendAttribute("scope", getScope());
+  os.appendAttribute("recomputetype", settings.recomputeType);
 
   // Can not add debugInfoId to the attributes as this will break
   // cache executables - debugInfoId would be part of the hash.
@@ -496,6 +497,9 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
 }
 
 void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
+  // Note that for explicit recomputation, `Checkpoint`, `Recomputed` and
+  // `Undefined` are equivalent in terms of outlining, and only `Recompute`
+  // indicates a difference
   std::string recomputeString =
       settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);

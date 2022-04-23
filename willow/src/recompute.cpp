@@ -149,6 +149,15 @@ void annotateStandard(const Graph &graph) {
   }
 }
 
+void logAnnotations(Graph &graph) {
+  std::stringstream ss;
+  for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::No)) {
+    ss << op->settings.recomputeType << "    " << op->toLoss << "    "
+       << op->fromLoss << "    " << op->debugName() << "\n";
+  }
+  logging::trace("[autoAnnotate] Resulting annotations: \n{}", ss.str());
+}
+
 } // namespace
 
 void annotateRecomputeAll(Graph &graph) {
@@ -164,7 +173,11 @@ void annotateRecomputeAll(Graph &graph) {
       lossOps.push_back(op);
     }
   }
-  allCheckpointAfterLastCheckpoint(lossOps);
+  // Do not use allCheckpointAfterLastCheckpoint with explicit recomputation
+  // TODO: T61001
+  if (!graph.getIr().getSessionOptions().explicitRecomputation) {
+    allCheckpointAfterLastCheckpoint(lossOps);
+  }
 }
 
 void annotateRecomputePipeline(Graph &graph) {
@@ -180,7 +193,11 @@ void annotateRecomputePipeline(Graph &graph) {
       lossOps.push_back(op);
     }
   }
-  allCheckpointAfterLastCheckpoint(lossOps);
+  // Do not use allCheckpointAfterLastCheckpoint with explicit recomputation
+  // TODO: T61001
+  if (!graph.getIr().getSessionOptions().explicitRecomputation) {
+    allCheckpointAfterLastCheckpoint(lossOps);
+  }
 }
 
 void autoAnnotate(Graph &graph, RecomputationType rctype) {
@@ -219,6 +236,8 @@ void autoAnnotate(Graph &graph, RecomputationType rctype) {
     throw error("Invalid RecomputationType in autoAnnotate");
   }
   }
+
+  logAnnotations(graph);
 }
 
 } // namespace recompute

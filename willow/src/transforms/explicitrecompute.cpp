@@ -49,7 +49,7 @@ ExplicitRecomputeHelper::ExplicitRecomputeHelper(Graph &graph_)
 
   for (Op *op : schedule) {
     if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
-      pipelineStageVraphIdMap[op->getPipelineStage()].insert(
+      pipelineStageVGraphIdMap[op->getPipelineStage()].insert(
           op->getVirtualGraphId());
     }
   }
@@ -62,18 +62,18 @@ ExplicitRecomputeTensorContext::ExplicitRecomputeTensorContext(
     : isForwardOp(isForwardOp_), executionPhase(executionPhase_),
       pipelineStage(pipelineStage_) {}
 
-bool ExplicitRecomputeTensorContext::operator<(
-    const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::
+operator<(const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) < getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::operator==(
-    const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::
+operator==(const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) == getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::operator!=(
-    const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::
+operator!=(const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) != getTensorContextTuple(rhs);
 }
 
@@ -95,9 +95,12 @@ ExplicitRecomputeHelper::getContext(Op *op) const {
           ? op->getOptionalPipelineStage()
           : OptionalPipelineStage();
 
+  // Recomputed operations should not count as forward operations, even though
+  // they do not spawn from the loss
   bool isForwardOp =
-      relationMap.at(op) == graphutils::OpFinalLossRelation::ToLoss ||
-      relationMap.at(op) == graphutils::OpFinalLossRelation::FromToLoss;
+      op->settings.recomputeType != RecomputeType::Recomputed &&
+      (relationMap.at(op) == graphutils::OpFinalLossRelation::ToLoss ||
+       relationMap.at(op) == graphutils::OpFinalLossRelation::FromToLoss);
 
   return ExplicitRecomputeTensorContext(
       isForwardOp, executionPhase, pipelineStage);
@@ -134,9 +137,9 @@ ExplicitRecomputeHelper::getValidRecomputeContexts(
 
     if (producerContext.pipelineStage && consumerContext.pipelineStage) {
       auto producerVGrapIds =
-          pipelineStageVraphIdMap.at(*producerContext.pipelineStage);
+          pipelineStageVGraphIdMap.at(*producerContext.pipelineStage);
       auto consumerVGrapIds =
-          pipelineStageVraphIdMap.at(*consumerContext.pipelineStage);
+          pipelineStageVGraphIdMap.at(*consumerContext.pipelineStage);
       std::set<VGraphId> intersection;
       std::set_intersection(producerVGrapIds.begin(),
                             producerVGrapIds.end(),

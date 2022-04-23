@@ -24,7 +24,7 @@ add_popart_cpp_unit_test(automatic_loss_scaling automatic_loss_scaling_test.cpp)
 add_subdirectory(mergevarupdates)
 
 add_popart_py_unit_test(serializematmul serializematmul.py)
-add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py)
+add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py VARIANTS "IpuModel")
 add_popart_py_unit_test(batchserialize batchserialize.py)
 add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)
 

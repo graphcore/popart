@@ -125,7 +125,7 @@ private:
   std::vector<Op *> schedule;
   std::map<std::pair<TensorId, ExplicitRecomputeTensorContext>, TensorId>
       recomputedTensorMap;
-  std::map<PipelineStage, std::set<VGraphId>> pipelineStageVraphIdMap;
+  std::map<PipelineStage, std::set<VGraphId>> pipelineStageVGraphIdMap;
   std::map<Op *, graphutils::OpFinalLossRelation, POpCmp> relationMap;
 };
 
