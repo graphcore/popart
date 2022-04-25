@@ -11,22 +11,22 @@ def mean(t: Tensor,
          axis: Optional[Union[int, Iterable[int]]] = None,
          keepdims: bool = False) -> Tensor:
     """
-    Compute the arithmetic mean of elements in a tensor along axes.
+    Compute the arithmetic mean of elements in a tensor along the specified axes.
 
     See also `PyTorch Tensor.mean <https://pytorch.org/docs/stable/generated/torch.Tensor.mean.html>`__, `NumPy mean <https://numpy.org/doc/stable/reference/generated/numpy.mean.html>`__, `ONNX Mean <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Mean>`__.
 
     Args:
         t (Tensor):
-            Tensor to compute mean.
+            Tensor to compute the mean of elements.
         axis (int or list):
-            Axis or axes to computer the mean along. If none is provided all axes will
-            be reduced. If axis is negative it counts from the
+            Axis or axes to compute the mean along. If none is provided all axes will
+            be reduced. If axis is negative it indexes from the
             last to the first axis.
         keepdims (bool):
-            Keep the axis that is being reduced (`True` or not (`False`).
+            Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor containing the arithmetic means computed along the specified axes.
     """
     ctx = get_current_context()

@@ -9,17 +9,17 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     """
-    Concatenate tensors along an axis and copy output to a new tensor.
+    Concatenate tensors along an axis. The result will be copied to a new tensor.
 
     See also `ONNX Concat <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Concat>`__.
 
     Args:
-        ts: Iterable[Tensor]
+        ts (Iterable[Tensor]):
             Tensors to be concatenated.
-        axis: int
+        axis (int):
             Axis of `ts` to concatenate along.
     Returns:
-        out: Tensor
+        Tensor:
             The concatenated tensors.
     """
     ctx = get_current_context()
@@ -51,15 +51,17 @@ def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
 @op_debug_context
 def concat_(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     """
-    Concatenate tensors along an axis with the output aliasing each of the input tensors.
+    Concatenate tensors along an axis.
+
+    The result will alias both of the input tensors.
 
     Args:
-        ts: Iterable[Tensor]
+        ts (Iterable[Tensor]):
             Tensors to be concatenated.
-        axis: int
+        axis (int):
             Axis of `ts` to concatenate along.
     Returns:
-        out: Tensor
+        Tensor:
             The concatenated tensors.
     """
     ctx = get_current_context()

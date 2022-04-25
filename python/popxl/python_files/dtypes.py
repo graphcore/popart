@@ -52,7 +52,7 @@ class dtype:
             - `double` aliases `float64`
 
         Raises:
-            TypeError: This class cannot be initialised.
+            TypeError: If an attempt is made to create an object of this class.
         """
         self._is_complex: bool = None
         self._is_int: bool = None
@@ -236,7 +236,7 @@ class dtype:
             is_complex (bool):
                 Is the type complex.
             is_int (bool):
-                Is the type an integer (signed or unsiged).
+                Is the type an integer (signed or unsigned).
             is_floating_point (bool):
                 Is the type floating point.
             is_signed (bool):

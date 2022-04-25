@@ -108,7 +108,7 @@ class Tensor:
         """
         Construct a subclass.
 
-        Used as a hook which is called when creating a Tensor subclass.
+        Used as a hook which is called when creating a `Tensor` subclass.
 
         Argument `tensor_type` is used to allow `_from_pb_tensor` to return
         the correct subclass for any Tensor retrieved from the internal IR
@@ -131,21 +131,17 @@ class Tensor:
     ## Properties
     @property
     def id(self) -> str:
-        """Return the fully qualified identifier of the tensor (e.g. 'graph1/Gradient___x')."""
+        """The fully-qualified identifier of the tensor (for example, 'graph1/Gradient___x')."""
         return str(self._pb_tensor.id)
 
     @property
     def name(self) -> str:
-        """Return the identifier of the tensor with the graph scope removed (e.g. 'Gradient___x')."""
+        """The identifier of the tensor with the graph scope removed (for example, 'Gradient___x')."""
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
     def scope(self) -> str:
-        """
-        Return the scope.
-
-        The graph scope component of the tensor's identifier (e.g. 'graph1').
-        """
+        """The graph scope component of the tensor's identifier (for example, 'graph1')."""
         return self._pb_tensor.getGraph().getScope().str()
 
     @property
@@ -549,15 +545,15 @@ class Tensor:
 
         Slicing is triggered when the input is an integer, slice (for example, `0:2`) or a tuple of the two. Slicing
         either selects a single index of an axis using an integer or range using a slice. If a single index
-        is selected the dimension will be squeezed - this matches numpy slicing rules.
+        is selected the dimension will be squeezed - this matches NumPy slicing rules.
 
         Integer indexing is triggered when the input is a tensor or host tensor of integers.
-        Elements are selected using the indices in the input - see `ops.gather` for details.
+        Elements are selected using the indices in the input - see :py:func:`~popxl.ops.gather` for details.
 
         Boolean indexing is triggered when the input is a tensor or host tensor of booleans.
-        The input is interpreted as a mask: True propagates the value to the output while False zeros
-        the element. This differs to numpy-style boolean indexing, as numpy removed elements indicated
-        by False and the output shape is dynamic dependent on the mask's data.
+        The input is interpreted as a mask: True propagates the value to the output while False zeroes
+        the element. This differs from NumPy-style boolean indexing because NumPy *removes* elements indicated
+        by False and so the output shape is dynamic, depending on the mask's data.
 
         Examples:
 
@@ -1059,7 +1055,8 @@ def graph_input(shape: Iterable[int],
             The meta shape of the tensor.
 
     Returns:
-        Tensor: The created input tensor.
+        Tensor:
+            The created input tensor.
     """
     g = gcg()
     pb_g = g._pb_graph

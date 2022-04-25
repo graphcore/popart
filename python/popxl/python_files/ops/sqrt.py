@@ -8,18 +8,16 @@ from .utils import check_in_graph
 @op_debug_context
 def sqrt(t: Tensor) -> Tensor:
     """
-    Compute the square-root element-wise on a Tensor.
+    Compute the square root of the elements of a tensor.
 
-    If `t` is negative, then sqrt will return NaN.
-
-    This is similar to :onnxop:`sqrt`.
+    If `t` is negative, then this will return NaN.
 
     Args:
         t: Tensor
             Input tensor.
     Returns:
         out: Tensor
-            Output tensor.
+            Output tensor containing the elementwise square roots of the input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

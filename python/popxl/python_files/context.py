@@ -232,13 +232,15 @@ def get_current_graph() -> 'Graph':
     """
     Get the current graph from the current context.
 
+    The function `gcg()` is available as an alias of `get_current_graph()`.
+
     Raises:
         RuntimeError:
             If the stack is empty.
 
     Returns:
         Graph:
-            The graph at the top of the global graph stack.
+            The last graph that was used as a context scope.
     """
     return get_current_context().graph
 
@@ -246,6 +248,8 @@ def get_current_graph() -> 'Graph':
 def get_main_graph() -> 'Graph':
     """
     Get the main graph from the current context.
+
+    The function `gmg()` is available as an alias of `get_main_graph()`.
 
     Raises:
         RuntimeError:

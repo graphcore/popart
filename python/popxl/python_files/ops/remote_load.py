@@ -17,31 +17,35 @@ def remote_load(remote_buffer: RemoteBuffer,
     """
     Load a tensor from Streaming Memory.
 
-    This operation loads a tensor from the remote buffer residing in the off-chip Streaming Memory.
+    This operation loads a tensor from the remote buffer residing in Streaming Memory.
 
     The tensor will be loaded from the memory location corresponding to
     ``remote_buffer_id`` (specified in ``remote_buffer``).
 
-    The relationship between ``offset`` and ``remote_buffer_id`` is thoroughly
-    described in ``remote_store``.
+    The value of ``offset`` must be >= 0.
+
+    The relationship between ``offset`` and ``remote_buffer_id`` is
+    described in :py:func:`~popxl.ops.remote_store`.
 
     Note:
-        There is no data dependency (in the graph) between remote store and remote load.
+        There is no data dependency in the graph between remote store and remote load.
         Thus, the remote load operator may end up before the remote store operator in the
         serialized graph.
-        One way to circumvent this is by using ``with popxl.in_sequence(True)``
+        One way to avoid this is by using ``with popxl.in_sequence(True)``.
 
     See also:
-        ``remote_buffer``, ``remote_store``, ``remote_load_``
+        :py:func:`~popxl.remote_buffer`
+        :py:func:`~popxl.ops.remote_store`
+        :py:func:`~popxl.ops.remote_load_`
 
     Args:
-        remote_buffer (RemoteBuffer): The handle to the remote buffer
-        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating what row/entry in the
-          remote buffer to load from
-        name (str): Name to use for the returned tensor
+        remote_buffer (RemoteBuffer): The handle to the remote buffer.
+        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating which entry in the
+          remote buffer to load from.
+        name (str): Name to use for the returned tensor.
 
     Returns:
-        Tensor: The tensor loaded from the remote buffer
+        Tensor: A new tensor loaded from the remote buffer.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -86,27 +90,29 @@ def remote_load(remote_buffer: RemoteBuffer,
 def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
                  t: Tensor) -> Tensor:
     """
-    Load a tensor from Streaming Memory (in-place).
+    Load from Streaming Memory into a specified tensor.
 
-    This operation loads a tensor in-place from the remote buffer residing in the off-chip Streaming Memory.
+    This operation loads from the remote buffer in Streaming Memory into an existing tensor.
 
-    This op is identical to ``remote_load``, but with the exception that the tensor loaded from
-    the remote buffer will be written to ``t`` directly.
+    This op is identical to ``remote_load``, except that the data loaded from
+    the remote buffer will be written to the tensor ``t``.
 
     Note:
         There is no data dependency (in the graph) between remote store and remote load.
         Thus, the remote load operator may end up before the remote store operator in the
         serialized graph.
-        One way to circumvent this is by using ``with popxl.in_sequence(True)``
+        One way to avoid this is by using ``with popxl.in_sequence(True)``.
 
     See also:
-        ``remote_buffer``, ``remote_store``, ``remote_load``
+        :py:func:`~popxl.remote_buffer`
+        :py:func:`~popxl.ops.remote_store`
+        :py:func:`~popxl.ops.remote_load`
 
     Args:
-        remote_buffer (RemoteBuffer): The handle to the remote buffer
-        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating what row/entry in the
-          remote buffer to load from
-        t (Tensor): The tensor the loaded data will written to
+        remote_buffer (RemoteBuffer): The handle to the remote buffer.
+        offset (Union[int, Tensor]): Integer or rank-0 tensor indicating which entry in the
+          remote buffer to load from.
+        t (Tensor): The tensor the loaded data will written to.
 
     Returns:
         Tensor: The tensor loaded from the remote buffer
@@ -145,7 +151,7 @@ def multiply_tuple(tup: Tuple) -> int:
     """Multiply the elements in a tuple.
 
     Args:
-        tup (Tuple): The tuple.
+        tup (Tuple): A tuple containing values to be multiplied.
 
     Returns:
         int: The product of the elements.

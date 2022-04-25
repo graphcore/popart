@@ -11,7 +11,7 @@ def prod(t: Tensor,
          axis: Optional[Union[int, Iterable[int]]] = None,
          keepdims: bool = False) -> Tensor:
     """
-    Compute the product of elements over an axis.
+    Compute the product of elements along an axis.
 
     See also `PyTorch Tensor.prod <https://pytorch.org/docs/stable/generated/torch.Tensor.prod.html>`__, `NumPy prod <https://numpy.org/doc/stable/reference/generated/numpy.prod.html>`__.
 
@@ -26,7 +26,7 @@ def prod(t: Tensor,
             Keep the axis that is being reduced ('True`) or not ('False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor.
     """
     ctx = get_current_context()

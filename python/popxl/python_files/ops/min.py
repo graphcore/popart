@@ -19,13 +19,13 @@ def min(t: Tensor,
         t (Tensor):
             Tensor to compute minimum of.
         axis (int or list):
-            Axis or axes to compute minimum along. If none is provided, all axes will be reduced. If the axis is negative, it counts from the
+            Axis or axes to compute minimum along. If none is provided, all axes will be reduced. If the axis is negative, it indexes from the
             last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced (`True` or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor containing the minimum of the elements along the axes.
     """
     ctx = get_current_context()

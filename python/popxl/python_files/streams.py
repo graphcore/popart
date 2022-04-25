@@ -61,7 +61,7 @@ class HostToDeviceStream(Stream):
 
     This can be created in the main graph of the IR only.
 
-    You can pass a host-to-device stream and a tensor to `ops.host_load()` in
+    You can pass a host-to-device stream and a tensor to `popxl.ops.host_load()` in
     any subgraph any number of times, and in all cases PopART will stream the
     next value into the tensor.
     """
@@ -76,7 +76,7 @@ class DeviceToHostStream(Stream):
 
     This can be created in the main graph of the IR only.
 
-    You can pass a device-to-host stream and a tensor to `ops.host_store()` in
+    You can pass a device-to-host stream and a tensor to `popxl.ops.host_store()` in
     any subgraph any number of times, and in all cases PopART will send the
     tensor to the stream.
     """

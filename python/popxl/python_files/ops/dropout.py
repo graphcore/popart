@@ -8,26 +8,26 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def dropout(t: Tensor, seed_tensor: Tensor, p: float):
     """
-    Randomly zero elements of the input tensor.
+    Randomly set elements of the input tensor to zero.
 
     This operation will zero elements of tensor `t` with a probability of `p`.
     The dropout mask is created using samples from a Bernoulli distribution
     seeded with the `seed_tensor`.
 
-    The user needs to manage updating the `seed_tensor` for each forward pass and replica.
+    You needs to manage updating the `seed_tensor` for each forward pass and replica.
 
     See also `ONNX Dropout <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Dropout>`__.
 
     Args:
         t (Tensor):
-            Tensor for drop out to be applied.
+            Tensor to apply the dropout to.
         seed_tensor (Tensor):
-            Used to seed the probability distribution which generates the dropout mask. Must have data type uint32 and shape (2,).
+            Used to seed the probability distribution which generates the dropout mask. Must have data type uint32 and shape [2,].
         p (float):
-            Probability an element will be zeroed
+            Probability that an element will be zeroed.
 
     Returns:
-        Tensor
+        Tensor: A new tensor with the dropout applied.
     """
 
     ctx = get_current_context()

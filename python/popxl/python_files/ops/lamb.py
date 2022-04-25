@@ -12,10 +12,10 @@ def lamb_square(t: Tensor) -> Tensor:
 
     Args:
         t: Tensor
-            Input tensor.
+            The input tensor.
     Returns:
-        out: Tensor
-            Output tensor.
+        Tensor
+            A new tensor containing the squared values of the input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -9,17 +9,17 @@ from .utils import check_in_graph, cast_if_needed
 @op_debug_context
 def logical_not(t: Tensor) -> Tensor:
     """
-    Compute the element-wise NOT of a tensor.
+    Compute the elementwise `not` of a tensor.
 
-    Inputs will be cast to bool if needed.
+    Inputs will be cast to bool if necessary.
 
     See also `PyTorch Tensor.logical_not <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_not.html>`__, `NumPy logical_not <https://numpy.org/doc/stable/reference/generated/numpy.logical_not.html>`__.
 
     Args:
         t: Tensor
-            Input tensor.
+            The input tensor.
     Returns:
-        out: Tensor
+        Tensor: A new tensor with the elementwise logical `not` of the input.
     """
     ctx = get_current_context()
     g = ctx.graph

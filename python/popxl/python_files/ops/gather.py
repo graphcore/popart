@@ -45,21 +45,21 @@ def gather(
 
     Args:
         t (Tensor):
-            Input tensor
+            The input tensor.
         indices (Tensor):
-            The indices of the elements to extract
+            The indices of the elements to extract.
         axis (int):
-            Axis along which to gather. Default is 0.
+            The axis to gather on. The default is 0.
         available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
         zero_OOR (bool):
-            If `False`, out of range indices will produce garbage data.
+            If `False`, out of range (OOR) indices will produce undefined data.
             If `True`, out of range indices will produce zeros.
 
     Returns:
-        gather (Tensor):
+        Tensor:
             The gathered elements concatenated.
     """
     ctx = get_current_context()
@@ -131,11 +131,11 @@ def tied_gather(
 
     Args:
         t (Tensor):
-            Input tensor
+            The input tensor.
         indices (Tensor):
-            The indices of the elements to extract
+            The indices of the elements to extract.
         axis (int):
-            Which axis to gather on. Default is 0.
+            The axis to gather on. The default is 0.
         available_memory_proportion (Optional[float]):
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
@@ -145,7 +145,7 @@ def tied_gather(
             If True, OOR indices will produce zeros.
 
     Returns:
-        gather (Tensor):
+        Tensor:
             The gathered elements concatenated.
     """
 

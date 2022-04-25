@@ -25,8 +25,8 @@ class Ir:
         PopXL intermediate representation (IR).
 
         An IR contains a main graph (property `main_graph`) and can create
-        additional graphs using member methods e.g. `create_graph` and
-        `create_empty_graph`.
+        additional graphs using member methods such as :py:meth:`create_graph` and
+        :py:meth:`create_empty_graph`.
         """
         self._pb_ir = _ir.Ir()
         # Set better defaults for popxl programs.

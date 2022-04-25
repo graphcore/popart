@@ -12,11 +12,11 @@ def create_random_seed(seed: Tensor, modifier: Tensor) -> Tensor:
     """Create a new random seed.
 
     Args:
-        seed (Tensor): Seed Tensor used to produce the new seed. Must be shape=(2,) dtype=uint32.
+        seed (Tensor): The seed tensor used to produce the new seed. Must have shape=(2,) and dtype=uint32.
         modifier (Tensor): A scalar modifier to be combined with `seed` before generating the output.
 
     Raises:
-        ValueError: If the seed Tensor does not have shape=(2,) or dtype=uint32.
+        ValueError: If the seed tensor does not have shape=[2,] or dtype=uint32.
 
     Returns:
         Tensor: A new random seed.
@@ -53,7 +53,7 @@ def create_random_seed(seed: Tensor, modifier: Tensor) -> Tensor:
 @debug_context_frame_offset(1)
 def split_random_seed(seed: Tensor, n: int = 2) -> Tuple[Tensor, ...]:
     """
-    Produce `n` random seeds from a seed.
+    Produce `n` random seeds from an initial seed.
 
     Chaining calls to `split_random_seed` can be used to ensure unique random behaviour
     across a program. For example:
@@ -66,11 +66,11 @@ def split_random_seed(seed: Tensor, n: int = 2) -> Tuple[Tensor, ...]:
        z = ops.dropout(y, s2)
 
     Args:
-        seed (Tensor): Seed tensor used to be produce new seeds. Must be shape=(2,) dtype=uint32.
+        seed (Tensor): Seed tensor used to be produce new seeds. Must have shape=(2,) and dtype=uint32.
         n (int, optional): Number of new seeds to produce. Defaults to 2.
 
     Returns:
-        Tuple[Tensor, ...]: New seeds
+        Tuple[Tensor, ...]: New random seeds.
     """
     return tuple(
         create_random_seed(seed, constant(i, uint32)) for i in range(n))

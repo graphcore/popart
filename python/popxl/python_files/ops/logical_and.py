@@ -9,19 +9,19 @@ from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 @op_debug_context
 def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Apply a logical AND element-wise.
+    Compute the elementwise logical `and` of two tensors.
 
     Follows NumPy broadcasting rules.
-    Inputs will be cast to bool if needed.
+    Inputs will be cast to bool if necessary.
 
     See also `PyTorch Tensor.logical_and <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_and.html>`__, `NumPy logical_and <https://numpy.org/doc/stable/reference/generated/numpy.logical_and.html>`__.
 
     Args:
         lhs, rhs: Tensor
-            Tensors to be compared.
+            Tensors to be combined.
     Returns:
-        out: Tensor
-            The value (lhs AND rhs)
+        Tensor:
+            A new tensor with the result of elementwise `lhs and rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

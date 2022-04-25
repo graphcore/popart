@@ -11,7 +11,7 @@ def softmax(t: Tensor, axis: int) -> Tensor:
     Normalize the elements of a tensor along specified axes.
 
     This rescales the slices of `axis` such that all elements are within the range [0, 1] and
-    sum to 1. The output shape and dtype matches the input.
+    sum to 1. The output shape and dtype match the input.
 
     See also `ONNX Softmax <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Softmax>`__.
 
@@ -21,8 +21,8 @@ def softmax(t: Tensor, axis: int) -> Tensor:
         axis: int
             The axis along which the normalization will be computed.
     Returns:
-        out: Tensor
-            The normalized tensor
+        Tensor:
+            The normalized tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

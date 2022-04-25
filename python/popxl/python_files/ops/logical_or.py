@@ -9,19 +9,19 @@ from .utils import check_in_graph, cast_if_needed, check_tensor_ipu_and_tile_set
 @op_debug_context
 def logical_or(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Apply a logical OR element-wise.
+    Compute the elementwise logical `or` of the input tensors.
 
     Follows NumPy broadcasting rules.
-    Inputs will be cast to bool if needed.
+    Inputs will be cast to bool if necessary.
 
     See also `PyTorch Tensor.logical_or <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_or.html>`__, `NumPy logical_or <https://numpy.org/doc/stable/reference/generated/numpy.logical_or.html>`__.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be compared.
+        lhs, rhs (Tensor):
+            Tensors to be combined.
     Returns:
-        out: Tensor
-            The value (lhs OR rhs)
+        Tensor:
+            A new tensor with the result of elementwise `lhs or rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

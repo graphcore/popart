@@ -12,16 +12,20 @@ def create_seeds(seed: int,
                  gradient_accumulation_factor: int = 1,
                  replicas: int = 1) -> np.ndarray:
     """
-    Create seed tensors from a parent seed. A seed tensor is a uint64 represented as two uint32s.
-    If required, it creates multiple seed tensors for a the number of `batches_per_step`,
-    `gradient_accumulation_factor` and `replicas` as needed.
+    Create seed tensors from a parent seed.
+
+    A seed tensor is a uint64 value represented as two uint32 elements.
+    The function creates a NumPy array containing `batches_per_step` *
+    `gradient_accumulation_factor` * `replicas` seed tensors. The result
+    is a tensor with shape [`batches_per_step`, `gradient_accumulation_factor`,
+    `replicas`, 2].
 
 
     Args:
         seed (int):
-            Initial seed
+            Seed value for the random number generator.
         offset (int):
-            Offset `seed` by given amount
+            Offset added to `seed`.
         batches_per_step (int, optional):
             Number of batches per step. Defaults to 1.
         replicas (int, optional):
@@ -30,7 +34,7 @@ def create_seeds(seed: int,
             Gradient accumulation factor of model. Defaults to 1.
 
     Returns:
-        np.ndarray: seed_tensors
+        :py:class:`numpy.ndarray`: The initialised seed tensors.
     """
     seeds = np.random.default_rng(seed + offset).integers(
         0,
@@ -49,7 +53,8 @@ def create_seeds(seed: int,
 
 
 def uint64_to_two_uint32(num: int) -> Tuple[int, int]:
-    """Convert uint64 to two uint32s."""
+    """Convert uint64 to two uint32 values. The return values are the
+    most-significant 32 bits and least-significant 32 bits."""
     num_bin = f"{num:064b}"
     if num < 0 or len(num_bin) != 64:
         raise ValueError(
@@ -60,7 +65,8 @@ def uint64_to_two_uint32(num: int) -> Tuple[int, int]:
 
 
 def two_uint32_to_uint64(a: int, b: int) -> int:
-    """Convert two uint32 to uint64."""
+    """Convert two uint32 values to a uint64. `a` is the most-significant 32 bits
+    and `b` is the least-significant 32 bits."""
     a_bin = f"{a:032b}"
     b_bin = f"{b:032b}"
     if len(a_bin) != 32 or len(b_bin) != 32 or a < 0 or b < 0:

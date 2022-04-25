@@ -26,7 +26,7 @@ class Graph:
 
         Raises:
             TypeError:
-                The ``Graph`` class cannot be instantiated.
+                If an attempt is made to create an object of this class.
         """
         # The following attributes and their types are declared here for the
         # sake of Python language servers.
@@ -145,12 +145,12 @@ class Graph:
 
         If the name already exists in the graph it will be modified
         to make it unique in the graph.
-        The graph scope will then be added to construct the global unique ID.
+        The graph scope will then be added to construct a globally unique ID.
 
         Args:
             name (Optional[str]):
                 A name which will have an ID appended to make it unique.
-                Defaults to `t`.
+                Defaults to `"t"`.
 
         Returns:
             str:

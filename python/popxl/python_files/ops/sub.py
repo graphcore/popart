@@ -8,18 +8,19 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Subtract two tensors element-wise.
+    Subtract two tensors elementwise.
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
     See also `PyTorch Tensor.sub <https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html>`__, `ONNX Sub <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Sub>`__.
 
         Args:
-            lhs, rhs: Tensor
+            lhs, rhs (Tensor):
                 Tensors to be subtracted.
         Returns:
-            add: Tensor
-                The value of (lhs - rhs)"""
+            Tensor:
+                A tensor containing (lhs - rhs).
+    """
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph

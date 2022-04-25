@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 class Module:
     """
-    Callable class from which user-defined layers can inherit.
+    Callable class that user-defined layers can inherit from.
 
     The `build` method should be overridden with a function to build the subgraph.
 

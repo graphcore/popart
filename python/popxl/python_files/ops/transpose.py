@@ -19,9 +19,9 @@ def transpose(t: Tensor,
     Args:
         t (Tensor): Tensor to be transposed.
         permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
-        rank of input `t`. If not provided, the axes will be reversed.
+        rank of input `t`. If not specified, the axes will be reversed.
     Returns:
-        out (Tensor): The transposed tensor.
+        Tensor: The transposed tensor.
     """
     permutation = _handle_permutation(t, permutation)
 
@@ -49,11 +49,11 @@ def transpose(t: Tensor,
 def transpose_(t: Tensor,
                permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
-    Permute the axes of a tensor (in-place).
+    Permute the axes of a tensor in place.
 
     By default this operation reverses the axes of `t`.
 
-    This is the in-place version of :func:`~ops.transpose`. The behaviour is the same, but it modifies the
+    This is the in-place version of :func:`~popxl.ops.transpose`. The behaviour is the same, but it modifies the
     tensor in place.
 
     See also `PyTorch Tensor.transpose_ <https://pytorch.org/docs/stable/generated/torch.Tensor.transpose_.html>`__.
@@ -64,7 +64,7 @@ def transpose_(t: Tensor,
             Tuple containing the a permutation of [0, N-1] where N is the
             rank of input `t`. If not provided, the axes will be reversed.
     Returns:
-        out (Tensor):
+        Tensor:
             The transposed input tensor.
     """
     permutation = _handle_permutation(t, permutation)
@@ -91,9 +91,9 @@ def transpose_(t: Tensor,
 
 def _handle_permutation(
         t: Tensor, permutation: Optional[Tuple[int, ...]]) -> Tuple[int, ...]:
-    """Check if the values of a permutation is valid given a tensor.
+    """Check if the values of a permutation is valid for a tensor.
 
-    The default is to use the reversed dimensions as a permutation (if None is given).
+    The default is to use the reversed dimensions as a permutation (if no permutation is specified).
 
     Args:
         t (Tensor): The tensor to be permuted.

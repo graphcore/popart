@@ -12,9 +12,9 @@ from .utils import check_in_graph
 # TODO: Bind subgraph op T53714
 class CallSiteInfo:
     """
-    Info relating to parent graph calling a graph (subgraph) e.g. using a call op or repeat op.
+    Information relating to a parent graph calling a subgraph, for example using a call op or repeat op.
 
-    This is a convenience class for extracting information about the callsite and it's subgraph.
+    This is a convenience class for extracting information about the callsite and its subgraph.
     """
 
     def __init__(self, subgraph_op: Union[_ir.op.CallOp, _ir.op.LoopOp]):
@@ -53,7 +53,7 @@ class CallSiteInfo:
             ValueError: If `graph_tensor` is not an input or output of the called graph.
 
         Returns:
-            Tensor: The associated input or output tensor on the CallOp
+            Tensor: The associated input or output tensor on the `CallOp`.
         """
         sgraph = self.called_graph._pb_graph
         if sgraph.hasInputId(graph_tensor.id):
@@ -124,7 +124,7 @@ class CallSiteInfo:
                                   parent_tensor: Tensor,
                                   infer_modified_regions: bool = True):
         """
-        Specify that the parent graph input tensor `parent_tensor` is modified by the call op.
+        Specify that the parent graph's input tensor `parent_tensor` is modified by the call op.
 
         This will guarantee that any modification to the graph input during the execution
         of the called graph will also change `parent_tensor`.
@@ -164,7 +164,8 @@ def call(
     Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
     The order of inputs in will be the same as the order of the tensor inputs in the
     function signature and the order of called `popxl.graph_inputs`.
-    See documentation on `ir.create_graph` for more information.
+
+    See  :py:meth:`~popxl.Ir.create_graph` for more information.
 
     Args:
         graph (Graph): The graph to call.
@@ -196,9 +197,11 @@ def call_with_info(
     to inspect call site inputs/outputs.
 
     Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
-    The order of inputs in will be the same as the order of the tensor inputs in the
+
+    The order of inputs will be the same as the order of the tensor inputs in the
     function signature and the order of called `popxl.graph_inputs`.
-    See documentation on `ir.create_graph` for more information.
+
+    See  :py:meth:`~popxl.Ir.create_graph` for more information.
 
     Args:
         graph (Graph): The graph to call.

@@ -8,14 +8,13 @@ from .utils import check_in_graph
 @op_debug_context
 def negate(t: Tensor) -> Tensor:
     """
-    Compute logical negation of a tensor.
+    Perform elementwise negation (two's complement) of a tensor.
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor): The input tensor.
     Returns:
-        out: Tensor
-            Output tensor that is the logical negation of `t`.
+        Tensor:
+            The output tensor that is the elementwise negation of the input.
     """
     ctx = get_current_context()
     g = ctx.graph

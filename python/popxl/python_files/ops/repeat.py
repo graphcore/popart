@@ -19,20 +19,21 @@ def repeat(graph: Graph,
     """
     Repeatedly call a graph.
 
-    This operation repeatedly executes a graph `repeat_count` number of times. The
+    This operation repeatedly executes a graph `repeat_count` times. The
     input tensors are provided as graph inputs for the first iteration.
 
     The `inputs` and `inputs_dict` tensors are passed as graph inputs.
-    You can specify an input either positionally using `inputs` or via a tensor
+    You can specify an input either positionally using `inputs`, or via a tensor
     map using `inputs_dict`.
 
-    Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
-    The order of inputs in will be the same as the order of the tensor inputs in the
+    Graph inputs are determined when the graph is created using `create_graph(callable, ...)`.
+    The order of inputs will be the same as the order of the tensor inputs in the
     function signature and the order of called `popxl.graph_inputs`.
-    See documentation on `ir.create_graph` for more information.
+    See :py:meth:`~popxl.Ir.create_graph` for more information.
 
     Between each execution of the subgraph, the N outputs of subgraph will be copied to the first N inputs.
-    These are called Loop Carried. The number of outputs must be less than or equal to the number of inputs.
+    These are called *loop carried* inputs. The number of outputs must be less than or equal to the number of inputs.
+    The remaining inputs will be unchanged throughout the loop iterations (unless modified in place).
 
     Example:
 
@@ -67,7 +68,7 @@ def repeat(graph: Graph,
         inputs_dict (Optional[Mapping[Tensor, Tensor]]):
             Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.
         check_inputs (bool = True):
-            Check when called if all inputs have been provided.
+            If true, then check when called that all inputs have been provided.
 
     Throws:
         ValueError: If repeat_count < 0.
@@ -104,13 +105,13 @@ def repeat_with_info(
     You can specify an input either positionally using `inputs` or via a tensor
     map using `inputs_dict`.
 
-    Graph inputs are determined when the graph was created using `ir.create_graph(callable, ...)`.
-    The order of inputs in will be the same as the order of the tensor inputs in the
+    Graph inputs are determined when the graph is created using `ir.create_graph(callable, ...)`.
+    The order of inputs will be the same as the order of the tensor inputs in the
     function signature and the order of called `popxl.graph_inputs`.
-    See documentation on `ir.create_graph` for more information.
+    See :py:meth:`~popxl.Ir.create_graph` for more information.
 
     Between each execution of the subgraph, the N outputs of subgraph will be copied to the first N inputs.
-    These are called Loop Carried. The number of outputs must be less than or equal to the number of inputs.
+    These are called *loop carried* inputs. The number of outputs must be less than or equal to the number of inputs.
 
     Implementation detail: In order to maintain the input / output indices of the subgraph, we must
     call the user provided subgraph, and create a "middle" subgraph to repeat the user provided
@@ -273,12 +274,12 @@ def repeat_with_info(
 def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
                            pb_bottom_graph: _ir.Graph
                            ) -> Tuple[_ir.Graph, _ir.op.CallOp, _ir.op.LoopOp]:
-    """Set up the call and repeat ops, as well as the middle graph that the loop op will loop.
+    """Set up the call and repeat ops, as well as the middle graph that the loop op will loop over.
 
     Args:
         pb_ir (_ir.Ir): The _ir level Ir
-        pb_top_graph (_ir.Graph): The _ir top level graph that will contain the loop op.
-        pb_bottom_graph (_ir.Graph): The _ir user defined graph that will be called.
+        pb_top_graph (_ir.Graph): The top-level graph in `_ir` that will contain the loop op.
+        pb_bottom_graph (_ir.Graph): The user-defined graph in `_ir` that will be called.
 
     Returns:
         Tuple[_ir.Graph, _ir.op.CallOp, _ir.op.LoopOp]: The created _ir-level middle graph, call op
@@ -331,10 +332,10 @@ def _setup_inputs(inputs: Iterable[Tensor],
     This is done in the following way:
 
     1. Connect explicitly passed inputs. These would have been created first
-       by ir.get_graph, so we do them first. ir.get_graph will have created
-       the input tensors t_0,...,t_N at input indices 0,..,N, respectively. We
-       require that the user has passed the parent tensors that correspond to
-       these inputs in the exact same order, so we can trivially reconstruct
+       by :py:meth:`~popxl.Ir.create_graph`, so we do them first. ``create_graph()`` will have created
+       the input tensors `t_0`, ..., `t_N` at input indices 0, ..., N, respectively.
+       The parent tensors that correspond to
+       these inputs must be passed in the exact same order, so we can trivially reconstruct
        the input indices here.
 
     2. Connect internally created inputs.
@@ -343,14 +344,14 @@ def _setup_inputs(inputs: Iterable[Tensor],
         inputs (Iterable[Tensor]): User defined explicit inputs.
         inputs_dict (Mapping[Tensor, Tensor]):
             Mapping of `graph tensor -> parent tensor` that corresponds to
-            the inputs that the callable defined internally, for example, by using
+            the inputs that the callable defined internally, for example by using
             popxl.graph_input. Defaults to an empty dictionary.
-            Works effectively the same as the call op's `inputs_dict` argument.
-        pb_top_graph (_ir.Graph): Top _ir graph
-        pb_bottom_graph (_ir.Graph): Bottom _ir Graph
-        pb_middle_graph (_ir.Graph): Middle _ir Graph
-        pb_callop (_ir.op.CallOp): Previously created Call op
-        pb_loop_op (_ir.op.LoopOp): Previously created Loop op
+            Works effectively the same as the `call` op's `inputs_dict` argument.
+        pb_top_graph (_ir.Graph): Top _ir graph.
+        pb_bottom_graph (_ir.Graph): Bottom _ir graph.
+        pb_middle_graph (_ir.Graph): Middle _ir graph
+        pb_callop (_ir.op.CallOp): Previously created call op.
+        pb_loop_op (_ir.op.LoopOp): Previously created loop op.
     """
 
     # Note: Only bottom_graph (which is called) has gone through the ir.get_graph process.
@@ -393,14 +394,14 @@ def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
     call op in the middle graph.
 
     Args:
-        pb_top_graph (_ir.Graph): Top _ir graph
-        pb_bottom_graph (_ir.Graph): Bottom _ir Graph
-        pb_middle_graph (_ir.Graph): Middle _ir Graph
-        pb_callop (_ir.op.CallOp): Previously created Call op
-        pb_loop_op (_ir.op.LoopOp): Previously created Loop op
+        pb_top_graph (_ir.Graph): Top _ir graph.
+        pb_bottom_graph (_ir.Graph): Bottom _ir graph.
+        pb_middle_graph (_ir.Graph): Middle _ir graph.
+        pb_callop (_ir.op.CallOp): Previously created call op.
+        pb_loop_op (_ir.op.LoopOp): Previously created loop op.
 
     Returns:
-        List[str]: The output tensor ids.
+        List[str]: The output tensor IDs.
     """
 
     outnames: List[str] = []

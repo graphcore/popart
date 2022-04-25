@@ -12,18 +12,19 @@ def group_norm(t: Tensor,
                num_groups: int,
                eps: float = 1e-5) -> Tensor:
     """
-    Apply group normalisation over a tensor.
+    Apply group normalisation to a tensor.
 
     For more details, refer to the paper :arxiv:`Group Normalization <1803.08494>`.
 
     Args:
         t (Tensor): Tensor to be normalized.
-        weight (Tensor): Tensor to scale output of normalisation.
-        bias (Tensor): Tensor to shift output of normalisation.
+        weight (Tensor): Tensor used to scale the result of normalisation.
+        bias (Tensor): Tensor used to shift the result of normalisation.
         num_groups (int): Number of groups to separate the channels into.
-        eps (float): The number to use to avoid division by zero.
+        eps (float): The small value to use to avoid division by zero.
     Returns:
-        out (Tensor): The group normalised Tensor.
+        Tensor:
+            The group normalised tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -64,11 +65,11 @@ def layer_norm(t: Tensor, weight: Tensor, bias: Tensor,
     Uses `group_norm` under the hood.
 
     Args:
-        t (Tensor): Tensor to be normalized.
-        weight (Tensor): Tensor to scale output of normalisation.
-        bias (Tensor): Tensor to shift output of normalisation.
-        eps (float): The number to use to avoid division by zero
+        t (Tensor): The tensor to be normalized.
+        weight (Tensor): Tensor used to scale the result of normalisation.
+        bias (Tensor): Tensor used to shift result of normalisation.
+        eps (float): The small value to use to avoid division by zero
     Returns:
-        out (Tensor): The layer normalised Tensor.
+        Tensor: The layer normalised tensor.
     """
     return group_norm(t, weight=weight, bias=bias, num_groups=1, eps=eps)

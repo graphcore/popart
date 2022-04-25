@@ -26,11 +26,12 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 
     Raises:
         ValueError: A ValueError will be raised if:
-            - An invalid value is encountered in the shape.
-            - If more than -1 is given in shape.
+
+          - An invalid value is encountered in the shape.
+          - If more than -1 is given in shape.
 
     Returns:
-        out (Tensor): The reshaped tensor.
+        Tensor: The reshaped tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -63,7 +64,7 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
     """
     Reshape a tensor (in-place).
 
-    This is the in-place version of :func:`~ops.reshape`.
+    This is the in-place version of :func:`~popxl.ops.reshape`.
 
     Args:
         t (Tensor): The tensor to be reshaped.
@@ -71,11 +72,12 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
 
     Raises:
         ValueError: A ValueError will be raised if:
-            - An invalid value is encountered in the shape.
-            - If more than -1 is given in shape.
+
+          - An invalid value is encountered in the shape.
+          - If more than -1 is given in shape.
 
     Returns:
-        out (Tensor): An alias of the input tensor, reshaped.
+        Tensor: An alias of the input tensor, reshaped.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -108,7 +110,7 @@ def flatten(t: Tensor) -> Tensor:
     """
     Flatten a tensor.
 
-    Internally this uses :func:`~ops.reshape`.
+    Internally this uses :func:`~popxl.ops.reshape`.
 
     See also `PyTorch Tensor.flatten <https://pytorch.org/docs/stable/generated/torch.Tensor.flatten.html>`__, `ONNX Flatten <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Flatten>`__.
 
@@ -126,9 +128,9 @@ def flatten_(t: Tensor) -> Tensor:
     """
     Flatten a tensor in place.
 
-    Internally this uses :func:`~ops.reshape`.
+    Internally this uses :func:`~popxl.ops.reshape_`.
 
-    This is the in-place version of :func:`~ops.flatten`
+    This is the in-place version of :func:`~popxl.ops.flatten`.
 
     Args:
         t (Tensor): The tensor to be flattened.

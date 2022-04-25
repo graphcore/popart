@@ -15,7 +15,7 @@ def sumsquare(t: Tensor,
 
     Args:
         t (Tensor):
-            Tensor to compute the sum of squares.
+            Tensor to compute the sum of squares from.
         axis (int or list):
             Axis or axes over which to compute the sum of squares. If none is provided all axes will
             be reduced. If axis is negative it counts from the
@@ -24,7 +24,7 @@ def sumsquare(t: Tensor,
             Keep the axis that is being reduced or not.
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor.
     """
     ctx = get_current_context()

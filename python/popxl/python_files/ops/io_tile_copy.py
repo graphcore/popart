@@ -8,15 +8,14 @@ from .utils import check_in_graph
 @op_debug_context
 def io_tile_copy(t: Tensor) -> Tensor:
     """
-    Copy a tensor to/from I/O tiles on the current IPU.
+    Copy a tensor to or from I/O tiles on the current IPU.
 
     Args:
-        t: Tensor
-            Tensor to be copied.
+        t (Tensor): The tensor to be copied.
 
     Returns:
-        t_copied: Tensor
-            The copied tensor
+        Tensor:
+            A copy of the input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

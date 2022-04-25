@@ -8,22 +8,20 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def div(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Divide two tensors element-wise.
+    Divide two tensors elementwise.
 
-    Follows NumPy broadcasting rules. Arguments must have the same dtype.
-    Output will be the same dtype as the inputs.
-    With integer values, floor division is used.
+    Follows NumPy broadcasting rules. The arguments must have the same dtype.
+    The output will be the same dtype as the inputs.
+    Floor division is used with integer values.
 
     See also `PyTorch Tensor.div <https://pytorch.org/docs/stable/generated/torch.Tensor.div.html>`__, `ONNX Div <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Div>`__.
 
     Args:
-        lhs: Tensor
-            Divisor
-        rhs: Tensor
-            Dividend
+        lhs (Tensor): Divisor.
+        rhs (Tensor): Dividend.
     Returns:
-        mul: Tensor
-            The division of lhs by rhs
+        Tensor:
+            The result of dividing `lhs` by `rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

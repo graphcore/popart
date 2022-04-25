@@ -19,13 +19,13 @@ def random_uniform(seed_tensor: Tensor,
     This operation will sample uniformly from a range with minimum value `low`
     and maximum value `high`.
 
-    Note: not compatible with `IPUModel`.
+    Note: not compatible with IPU Model.
 
     Args:
         seed_tensor (Tensor):
-            Used to seed the probability distribution. Must have data type uint32 and shape (2,).
+            A tensor used to seed the probability distribution. Must have data type uint32 and shape (2,).
         shape (Tuple[int, ...]):
-            Shape of output tensor
+            The shape of the output tensor.
         low (float, optional):
             Minimum value. Defaults to 0.0.
         high (float, optional):
@@ -34,7 +34,7 @@ def random_uniform(seed_tensor: Tensor,
             Data type of output tensor. Defaults to dtypes.float32.
 
     Returns:
-        Tensor: tensor with elements sampled from a uniform distribution.
+        Tensor: A new tensor with element values sampled from a uniform distribution.
     """
 
     ctx = get_current_context()
@@ -71,22 +71,22 @@ def random_normal(seed_tensor: Tensor,
 
     The mean and standard deviation of the distribution is specified by `mean` and `std` respectively.
 
-    Note: not compatible with `IPUModel`.
+    Note: not compatible with IPU Model.
 
     Args:
         seed_tensor (Tensor):
-            Used to seed the probability distribution. Must have data type uint32 and shape (2,).
+            A tensor used to seed the probability distribution. Must have data type uint32 and shape (2,).
         shape (Tuple[int, ...]):
-            Shape of output tensor
+            The shape of the output tensor.
         mean (float, optional):
-            Mean of distribution. Defaults to 0.0.
+            Mean of the distribution. Defaults to 0.0.
         std (float, optional):
-            Standard deviation of distribution. Defaults to 1.0.
+            Standard deviation of the distribution. Defaults to 1.0.
         dtype (dtypes.dtype, optional):
             Data type of output tensor. Defaults to dtypes.float32.
 
     Returns:
-        Tensor: tensor with elements sampled from a normal distribution.
+        Tensor: A new tensor with elements sampled from a normal distribution.
     """
 
     ctx = get_current_context()

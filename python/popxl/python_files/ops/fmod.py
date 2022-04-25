@@ -8,7 +8,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def fmod(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Compute element-wise remainder after division (modulo operation).
+    Compute the elementwise remainder after division (modulo operation).
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
@@ -18,7 +18,7 @@ def fmod(lhs: Tensor, rhs: Tensor) -> Tensor:
         lhs, rhs: Tensor
             Tensors to be modded.
     Returns:
-        fmod: Tensor
+        Tensor:
             The fmod of lhs and rhs
     """
     ctx = get_current_context()

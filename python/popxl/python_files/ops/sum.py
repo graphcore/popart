@@ -26,7 +26,7 @@ def sum(t: Tensor,
             Keep the axis that is being reduced or not.
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor.
     """
     ctx = get_current_context()

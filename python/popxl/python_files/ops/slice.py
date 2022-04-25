@@ -22,7 +22,7 @@ def slice(t: Tensor,
     Multiple slices can be specified using a list of items for each parameter (`start`, `stop`, `step`).
     If `step` is `-1`, the slice is performed backwards.
 
-    If `axis` is not specified, each slice will correspond to axis 0 to `N` where `N` is the number of slices.
+    If `axis` is not specified, each slice will correspond to dimensions 0 to `N` where `N` is the number of slices.
 
     Examples:
 
@@ -45,7 +45,7 @@ def slice(t: Tensor,
         axis: Axis of tensor to slice on or `None` will default to each axis sequentially.
 
     Returns:
-        Tensor: output tensor
+        Tensor: A tensor containing the selected slices.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -82,9 +82,15 @@ def slice_(t: Tensor,
            step: Optional[Union[int, List[Optional[int]]]] = None,
            axis: Optional[Union[int, List[int]]] = None) -> Tensor:
     """
-    Select elements from a tensor using a slice or multiple slices (in-place).
+    Select elements from a tensor, in place, using a slice or multiple slices.
 
-    This is the in-place version of :func:`~ops.slice`. The functionality is the same, but the tensor is sliced in place.
+    This is the in-place version of :func:`~popxl.ops.slice`. The functionality is the same, but the tensor is sliced in place.
+
+    A slice specifies the start (inclusive) and stop (exclusive) index of elements to select.
+    Multiple slices can be specified using a list of items for each parameter (`start`, `stop`, `step`).
+    If `step` is `-1`, the slice is performed backwards.
+
+    If `axis` is not specified, each slice will correspond to dimensions 0 to `N` where `N` is the number of slices.
 
     Args:
         t (Tensor): Tensor to slice
@@ -95,7 +101,7 @@ def slice_(t: Tensor,
         axis: Axis of tensor to slice on or `None` will default to each axis sequentially.
 
     Returns:
-        Tensor: alias of the input tensor t.
+        Tensor: An alias of the input tensor containing the selected slices.
     """
     ctx = get_current_context()
     g = ctx.graph

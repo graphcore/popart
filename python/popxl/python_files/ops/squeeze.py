@@ -26,11 +26,13 @@ def squeeze(t: Tensor, axes: Optional[List[int]] = None) -> Tensor:
 
     Raises:
         ValueError: A ValueError is raised if:
-            - The axes contains duplicates.
-            - The axis cannot be squeezed.
+
+          - The axes contains duplicates.
+          - The axis cannot be squeezed.
 
     Returns:
-        out (Tensor): Squeezed tensor.
+        Tensor:
+            The squeezed tensor.
     """
 
     shape = t.shape

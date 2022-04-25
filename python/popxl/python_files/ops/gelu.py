@@ -8,16 +8,16 @@ from .utils import check_in_graph
 @op_debug_context
 def gelu(t: Tensor) -> Tensor:
     """
-    Compute the GELU activation on a Tensor.
+    Compute the GELU activation on a tensor.
 
     For more details, refer to the paper :arxiv:`Gaussian Error Linear Units <1606.08415>`
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor):
+            The input tensor.
     Returns:
-        out: Tensor
-            Output tensor.
+        Tensor:
+            A new tensor with the GELU activation applied to it.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -42,11 +42,11 @@ def gelu_(t: Tensor) -> Tensor:
     For more details, refer to the paper :arxiv:`Gaussian Error Linear Units <1606.08415>`
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor):
+            The input tensor.
     Returns:
-        out: Tensor
-            `t` with the GELU activation applied on it in-place.
+        Tensor:
+            The input tensor with the GELU activation applied to it.
     """
     ctx = get_current_context()
     g = ctx.graph

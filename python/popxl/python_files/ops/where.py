@@ -9,10 +9,10 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set, cast_if_needed
 @op_debug_context
 def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Element-wise selection based on satisfying a condition.
+    Elementwise selection based on satisfying a condition.
 
-    Chooses elements from `lhs` or `rhs` depending on whether the corresponding element in `condition` is satisfied or not.
-    The operator supports multi-directional broadcasting (NumPy-style).
+    Choose elements from `lhs` or `rhs` depending on whether the corresponding element in `condition` is satisfied or not.
+    The operator supports multi-directional broadcasting (NumPy style).
 
     See also `PyTorch Tensor.where <https://pytorch.org/docs/stable/generated/torch.Tensor.where.html>`__, `NumPy where <https://numpy.org/doc/stable/reference/generated/numpy.where.html>`__, `ONNX Where <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Where>`__.
 
@@ -26,7 +26,7 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
             The right hand side operand.
 
     Returns:
-        Tensor: The tensor containing element-wise `lhs if condition else rhs.
+        Tensor: The tensor containing elementwise `lhs if condition else rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -8,18 +8,16 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def add(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Add two tensors element-wise.
+    Add two tensors elementwise.
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
     See also `PyTorch Tensor.add <https://pytorch.org/docs/stable/generated/torch.Tensor.add.html>`__, `NumPy add <https://numpy.org/doc/stable/reference/generated/numpy.add.html>`__, `ONNX Add <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Add>`__.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be added.
+        lhs, rhs (Tensor): Tensors to be added.
     Returns:
-        add: Tensor
-            The sum of the input tensors
+        Tensor: The sum of the input tensors.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -48,21 +46,17 @@ def add(lhs: Tensor, rhs: Tensor) -> Tensor:
 @op_debug_context
 def add_(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Add two tensors element-wise (in-place).
-
+    Add two tensors elementwise in place, in the lhs tensor.
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
-    Note: There is no add_rhs_inplace_ op, please use add_lhs_inplace_(rhs, lhs) or rhs += lhs for
-        the same functionality.
+    Note: There is no operation that adds to the rhs tensor in place. Use add_(rhs, lhs) or rhs += lhs for the same functionality.
 
     See also `PyTorch Tensor.add_ <https://pytorch.org/docs/stable/generated/torch.Tensor.add_.html>`__.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be added.
+        lhs, rhs (Tensor): Tensors to be added.
     Returns:
-        lhs: Tensor
-            The lhs tensor with rhs added in place.
+        Tensor: The lhs tensor with rhs added in place.
     """
     ctx = get_current_context()
     g = ctx.graph

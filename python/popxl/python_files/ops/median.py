@@ -17,16 +17,16 @@ def median(t: Tensor,
 
     Args:
         t (Tensor):
-            Tensor to compute median.
+            Tensor to compute median of.
         axis (int or list):
             Axis or axes to compute the median along. If none is provided all axes will
-            be reduced. If axis is negative it counts from the
+            be reduced. If axis is negative it indexes from the
             last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor.
     """
     ctx = get_current_context()

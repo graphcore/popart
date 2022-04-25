@@ -15,11 +15,11 @@ def relu(t: Tensor) -> Tensor:
     See also `ONNX Relu <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Relu>`__.
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor):
+            The input tensor to calculate the activation of.
     Returns:
-        out: Tensor
-            Output tensor.
+        Tensor:
+            A tensor containing the activations.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -38,16 +38,16 @@ def relu(t: Tensor) -> Tensor:
 @op_debug_context
 def relu_(t: Tensor) -> Tensor:
     """
-    Compute the ReLU activation of a tensor (in-place).
+    Compute the ReLU activation of a tensor in place.
 
     For more details, refer to `Rectifier (neural networks) <https://en.wikipedia.org/wiki/Rectifier_(neural_networks)>`__.
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor):
+            The input tensor to calculate the activation of.
     Returns:
-        out: Tensor
-            t with the relu activation applied on it inplace.
+        Tensor:
+            The input tensor with the ReLU activation applied to it.
     """
     ctx = get_current_context()
     g = ctx.graph

@@ -15,19 +15,21 @@ def scaled_add(X: Tensor,
     """
     Perform a scaled addition of two tensors.
 
-    Computes the sum of `X` scaled by `a and `Y` by `b`, which means `aX + bY`.
+    Compute the sum of `X` scaled by `a and `Y` by `b`, which means `aX + bY`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
+
     `X` and `Y` must be the same shape, but can be different types.
+
     `a` and `b` must be scalars.
 
     Args:
-        X, Y: Tensor
-        a, b: Union[float, Tensor]
-            Scalars to be applied to `X` and `Y` before addition.
+        X, Y (Tensor): The tensors to be added.
+        a, b (Union[float, Tensor]):
+            Scalars that will be multiplied by `X` and `Y` before performing the addition.
     Returns:
-        Z: Tensor, `Z = aX + bY`
+        Tensor: A tensor containing `aX + bY`.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -69,10 +71,11 @@ def scaled_add_(X: Tensor,
     """
     Perform a scaled addition of two tensors (in-place).
 
-    Computes the sum of `X` scaled by `a and `Y` by `b`. This is performed in place on `X`, which means `X = aX + bY`.
+    Compute the sum of `X` scaled by `a and `Y` by `b`. This is performed in place on `X`, which means that `X = aX + bY`.
 
     Does not apply NumPy broadcasting.
     Uses mixed precision poplibs operations.
+
     `X` and `Y` must be the same shape, but can be different types.
 
     Args:
@@ -80,8 +83,8 @@ def scaled_add_(X: Tensor,
         a, b: Union[float, Tensor]
             Scalars to be applied to `X` and `Y` before addition.
     Returns:
-        X: Tensor
-            Updated `X` tensor. Alias of `X`.
+        Tensor:
+            The `X` tensor containing `aX + bY`.
     """
     ctx = get_current_context()
     g = ctx.graph

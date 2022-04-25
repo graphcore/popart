@@ -12,42 +12,46 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
     """
     Return a cloned slice of the input tensor.
 
-    "Dynamic" means that the index can be specified
-    during runtime.
+    The name "dynamic" refers to the fact that the index can be specified
+    at runtime.
 
     A slice along an axis can be defined by the tuple
-    ( start, stop, step )
-    start - will be equal the index for the respective axis
-    stop - will be equal index + size for the respective axis
-    step - will equal 1
+    (`start`, `stop`, `step`) where:
+
+    - `start` is the index for the respective axis
+    - `stop` is index + size for the respective axis
+    - `step` equals 1
 
     Limitations:
-    Assuming we would like to slice A with dimension (4, 3)
-    - Step other than 1 is not supported (which means t[::2,:] is not supported)
-    - Negative slicing is not supported (which means t[:-1,:] is not supported)
-    - stop greater than the size of the axis is not supported
-     (which means t[:5,:] is not supported)
+
+    Assuming we would like to slice `t` with dimension [4, 3]:
+
+    - A step other than 1 is not supported (that is, `t[::2,:]` is not supported)
+    - Negative slicing is not supported (that is, `t[:-1,:]` is not supported)
+    - A stop value greater than the size of the axis is not supported
+      (that is, `t[:5,:]` is not supported)
 
     Args:
-        t: Tensor
-            Input tensor.
-        index: Tensor
+        t (Tensor):
+            The input tensor.
+        index (Tensor):
             The indices to start the slice from.
-        axes: List[int]
+        axes (List[int]):
             The axes to slice from.
-        sizes: List[int]
+        sizes (List[int]):
             The sizes of the slices for the specified axes.
             For example:
-            If index = [1, 2], axes = [0, 3] and sizes = [2, 4], the Tensor will be sliced
-            t[1:2, :, :, 2:4]
-        no_overlap : bool
+
+            If `index` = [1, 2], `axes` = [0, 3] and `sizes` = [2, 4], then the tensor will be sliced
+            as `t[1:2, :, :, 2:4]`.
+        no_overlap (bool):
             If set to true, then correct gradient backpropagation is only guaranteed if
             each region in the output tensor has exactly one populator
             (operation that writes data to this region).
             There are no run-time or compile-time checks possible to ensure this.
     Returns:
-        out: Tensor
-            A clone (which means, not a view) of the sliced input tensor.
+        Tensor:
+            A clone (not a view) of the sliced input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

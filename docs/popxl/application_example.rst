@@ -77,7 +77,7 @@ subgraph to do the linear computation.
   :end-before: linear end
 
 In the diagram :numref:`fig_popxl_mnist`, you can see two graphs created from the two linear
-layers by using :py:func:`popxl.create_graph` and called by using :py:func:`popxl.call_with_info`.
+layers by using :py:func:`popxl.Ir.create_graph` and called by using :py:func:`popxl.call_with_info`.
 The tensors ``x1`` and ``y`` are respectively the outputs of the first linear graph call and the
 second linear graph. The weight tensors, bias tensors, output tensors, graphs, and graph callsite
 infos are all returned for the next step. This forward graph of the network is created in the method
@@ -112,7 +112,7 @@ and update the weights and bias in ``update_weights_bias``.
   Let's start fromt the second layer.
   The ``bwd_graph_info_1``, returned from ``autodiff`` of the second layer, contains the graph to calculate the
   gradient for the layer. The activations for this layer ``activations_1`` is obtained from the corresponding
-  forward graph call. After calling the gradient graph, ``bwd_graph_info_1.graph`` with ``ops.call_with_info``,
+  forward graph call. After calling the gradient graph, ``bwd_graph_info_1.graph`` with ``popxl.ops.call_with_info``,
   the ``grads_1_call_info`` is used to get all the gradients with regard to the inputs ``x1``, ``W1``, and ``b1``.
   The method ``fwd_parent_ins_to_grad_parent_outs`` gives a mapping from the corresponding forward graph inputs,
   ``x1``, ``W1``, and ``b1``, and their gradients, ``grad_x1``, ``grad_w_1``, and ``grad_b_1``.
@@ -125,7 +125,7 @@ and update the weights and bias in ``update_weights_bias``.
 
   For the first layer, we can obtain the required gradients in a similar way. Here we will show you an alternative
   approach. We define the list of tensors that require gradients ``grads_required=[linears[0].W, linears[0].b]``
-  in ``autodiff``. Their gradients are returned directly from the ``ops.call`` of the gradient graph ``bwd_graph_info_0.graph``.
+  in ``autodiff``. Their gradients are returned directly from the ``popxl.ops.call`` of the gradient graph ``bwd_graph_info_0.graph``.
   The input gradient for ``grads_0_call_infof`` is the gradients w.r.t the input of the second linear graph,
   the output of the first linear graph, ``grad_x_1``.
 

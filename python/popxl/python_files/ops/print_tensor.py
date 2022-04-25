@@ -13,8 +13,7 @@ def print_tensor(t: Tensor,
     """
     Print a tensor.
 
-    You need to use the output tensor of this op, otherwise the `removeIsolatedTensors` pattern
-    will remove this op and it will not print the tensor.
+    You need to use the output tensor of this op, otherwise the op will be optimised away and the tensor will not be printed.
 
     Args:
         t (Tensor): The tensor to print.

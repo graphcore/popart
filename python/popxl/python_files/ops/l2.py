@@ -15,16 +15,16 @@ def l2(t: Tensor,
 
     Args:
         t: Tensor
-            Tensor to compute L2 norm of.
+            Tensor to compute the L2 norm of.
         axis (int or list):
             Axis or axes to compute L2 norm along. If none is provided all elements
-            will be normed. If axis is negative it counts from the
+            will be normalised. If axis is negative it counts from the
             last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor containing the L2 norm of elements along the specified axes.
     """
     ctx = get_current_context()

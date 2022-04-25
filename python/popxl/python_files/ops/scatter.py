@@ -15,22 +15,23 @@ def scatter(t: Tensor,
     """
     Update the values of multiple elements in an tensor.
 
-    Elements are specified by `indices`. The elements are updated with the
+    The elements specified by `indices` are updated with the
     values in `values`.
 
     `scatter` requires the three input tensor to be of the same rank `r >=
-    1`.  The optional attribute `axis` identifies the axis of the tensor along which the update will be performed. By default, the outer-most axis, that is axis 0, is used. The output of the operation
-    is produced by creating a copy of the input data, and then updating its
-    value to values specified by updates at specific index positions specified
-    by `indices`. Its output shape is the same as the shape of data.
+    1`.  The optional attribute `axis` identifies the axis of the tensor along which the update will be performed.
+    By default, the outer-most axis, axis 0, is used. The output of the operation
+    is produced by creating a copy of the input tensor, `t`, and then updating its
+    elements to the values specified by `values` at the index positions specified
+    by `indices`. The output shape is the same as the shape of the input tensor.
 
-    For each entry in `values`, the target index in `t`` is obtained by combining
+    For each entry in `values`, the target index in `t` is obtained by combining
     the corresponding entry in `indices` with the index of the entry itself: the
     index-value for dimension = axis is obtained from the value of the
     corresponding entry in indices and the index-value for dimension != axis is
     obtained from the index of the entry itself.
 
-    Pseudo example:
+    Pseudo-code example:
 
     .. code-block:: python
 
@@ -46,11 +47,11 @@ def scatter(t: Tensor,
 
     Args:
         t: Tensor
-            Input tensor
+            The input tensor.
         indices: Tensor
-            The indices of the elements to update
+            The indices of the elements to update.
         values: Tensor
-            The values to update the tensor with
+            The values to update the tensor with.
         axis: int
             Which axis to set on. Default is 0.
         available_memory_proportion: Optional[float]
@@ -59,7 +60,7 @@ def scatter(t: Tensor,
             Defaults to 1.0 if not set globally.
 
     Returns:
-        scatter: Tensor
+        Tensor:
             The tensor with updated values.
     """
     ctx = get_current_context()

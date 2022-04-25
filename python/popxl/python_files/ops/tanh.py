@@ -8,16 +8,16 @@ from .utils import check_in_graph
 @op_debug_context
 def tanh(t: Tensor) -> Tensor:
     """
-    Compute the hyperbolic tangent function element-wise on a Tensor.
+    Compute the hyperbolic tangent function elementwise on a tensor.
 
     See also `PyTorch Tensor.tanh <https://pytorch.org/docs/stable/generated/torch.Tensor.tanh.html>`__, `NumPy tanh <https://numpy.org/doc/stable/reference/generated/numpy.tanh.html>`__, `ONNX Tanh <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Tanh>`__.
 
     Args:
-        t: Tensor
-            Input tensor.
+        t (Tensor):
+            The input tensor.
     Returns:
-        out: Tensor
-            Output tensor.
+        Tensor:
+            A tensor containing the hyperbolic tangent of the elements of the input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

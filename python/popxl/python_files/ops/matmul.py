@@ -36,7 +36,7 @@ def matmul(lhs: Tensor,
              (float16, float32). Defaults to dtypes.float32.
 
     Returns:
-        Tensor: The matrix product of lhs and rhs.
+        Tensor: The matrix product of `lhs` and `rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

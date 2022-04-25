@@ -8,7 +8,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Compare two tensors element-wise.
+    Apply an elementwise equality operation.
 
     Follows NumPy broadcasting rules.
 
@@ -18,7 +18,7 @@ def equal(lhs: Tensor, rhs: Tensor) -> Tensor:
         lhs, rhs: Tensor
             Tensors to be compared.
     Returns:
-        out: Tensor
+        Tensor:
             The value (lhs == rhs)
     """
     ctx = get_current_context()

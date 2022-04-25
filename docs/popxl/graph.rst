@@ -19,7 +19,7 @@ Graphs
 
 You can create a subgraph (:numref:`graph_concept`) in PopXL by calling, for example, :py:func:`popxl.Ir.create_graph`. You then connect the subgraph with the calling graph with the op :py:func:`popxl.ops.call`.
 In PopXL, you have access to ``create_graph()`` before you call a graph with
-``ops.call()``, which gives you the flexibility to manipulate the graph.
+``popxl.ops.call()``, which gives you the flexibility to manipulate the graph.
 
 :numref:`code_basic_subgraph_popxl` shows a basic example for how to create and call subgraphs.
 In the example, a subgraph is created and called instead of directly calling the Python function

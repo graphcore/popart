@@ -17,8 +17,11 @@ def init(shape: Iterable[int],
     Create a tensor that is initialised with zero or undefined values.
 
     The returned tensor is not considered a variable.
-    Variable must be created in the main_graph, can be initialised to arbitrary values and can be read/written to with session methods.
-    In contrast, `init` can be executed anywhere so it can return an initialised tensor in non-main graphs. However, it can only be initialised to zero or undefined values.
+    A variable must be created in the main graph; it can be initialised to arbitrary values and can be read/written with session methods.
+
+    In contrast, `init` can be executed anywhere so it can return an initialised tensor in non-main graphs.
+
+    The tensor can only be initialised to zero or undefined values.
 
     Args:
         dtype (dtypes.dtype): Data type of the output tensor.
@@ -27,10 +30,10 @@ def init(shape: Iterable[int],
         init_type (Union[Literal["zero"], Literal["undef"]]): Initialisation of the output tensor.
 
     Raises:
-        ValueError: If the init_type is unknown.
+        ValueError: If the `init_type` is unknown.
 
     Returns:
-        Tensor: Output tensor.
+        Tensor: An initialised tensor.
     """
     ctx = get_current_context()
     g = ctx.graph

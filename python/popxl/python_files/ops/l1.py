@@ -15,16 +15,16 @@ def l1(t: Tensor,
 
     Args:
         t: Tensor
-            Tensor to compute L1 norm of.
+            Tensor to compute the L1 norm of.
         axis (int or list):
-            Axis or axes to compute L1 norm along. If none is provided all elements
-            will be normed. If axis is negative it counts from the
+            Axis or axes to compute L1 norm along. If none is specified then all elements
+            will be normalised. If an axis is negative then it indexes from the
             last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor containing the L1 norm of elements along the specified axes.
     """
     ctx = get_current_context()

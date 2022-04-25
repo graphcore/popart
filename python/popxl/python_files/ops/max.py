@@ -11,7 +11,7 @@ def max(t: Tensor,
         axis: Optional[Union[int, Iterable[int]]] = None,
         keepdims: bool = False) -> Tensor:
     """
-    Compute the maximum of elements in a tensor along specified axes.
+    Compute the maximum value of the elements in a tensor along specified axes.
 
     See also `PyTorch Tensor.max <https://pytorch.org/docs/stable/generated/torch.Tensor.max.html>`__, `ONNX Max <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Max>`__.
 
@@ -20,13 +20,13 @@ def max(t: Tensor,
             Tensor to compute maximum of.
         axis (int or list):
             Axis or axes to computer maximum along. If none is provided all axes will
-            be reduced. If axis is negative it counts from the
+            be reduced. If an axis is negative it indexes from the
             last to the first axis.
         keepdims (bool):
             Keep the axis that is being reduced (`True`) or not (`False`).
 
     Returns:
-        Tensor
+        Tensor:
             The reduced tensor containing the maximum of elements computed along the specified axes.
     """
     ctx = get_current_context()
@@ -62,18 +62,16 @@ def max(t: Tensor,
 @op_debug_context
 def maximum(*ts: Tensor) -> Tensor:
     """
-    Computes the maximum of N tensors element-wise.
+    Compute the elementwise maximum of N tensors.
 
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
-    This is similar to :onnxop:`Max`.
-
     Args:
         *ts: Tensor
-            Tensors to compute the maximum of.
+            Tensors to compute the elementwise maximum of.
     Returns:
         max: Tensor
-            Element-wise max tensor of the input tensors.
+            A tensor with the maximum elements from the input tensors.
     """
     ctx = get_current_context()
     g = ctx.graph

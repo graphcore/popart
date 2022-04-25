@@ -9,7 +9,7 @@ from .utils import check_in_graph, handle_negative_axis
 @op_debug_context
 def split(t: Tensor, splits: Union[int, List[int]],
           axis: int = 0) -> List[Tensor]:
-    """Split a tensor (along an axis) into a list of tensors.
+    """Split a tensor along an axis into a list of tensors.
 
     See also `PyTorch Tensor.split <https://pytorch.org/docs/stable/generated/torch.Tensor.split.html>`__, `NumPy split <https://numpy.org/doc/stable/reference/generated/numpy.split.html>`__, `ONNX Split <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Split>`__.
 

@@ -8,7 +8,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 @op_debug_context
 def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     """
-    Multiply two tensors element-wise.
+    Multiply two tensors elementwise.
 
     Follows NumPy broadcasting rules.
     Arguments must have the same dtype.
@@ -16,11 +16,11 @@ def mul(lhs: Tensor, rhs: Tensor) -> Tensor:
     See also `PyTorch Tensor.mul <https://pytorch.org/docs/stable/generated/torch.Tensor.mul.html>`__, `ONNX Mul <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Mul>`__.
 
     Args:
-        lhs, rhs: Tensor
+        lhs, rhs (Tensor):
             Tensors to be multiplied.
     Returns:
-        mul: Tensor
-            The product of lhs and rhs
+        Tensor:
+            The product of `lhs` and `rhs`.
     """
     ctx = get_current_context()
     g = ctx.graph

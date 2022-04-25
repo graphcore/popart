@@ -10,15 +10,15 @@ def detach(t: Tensor) -> Tensor:
     """
     Prevent gradient computation of this tensor.
 
-    This operations is numerically equivlent to the identity op.
+    This operation is numerically equivalent to the identity op.
 
     See also `PyTorch Tensor.detach <https://pytorch.org/docs/stable/generated/torch.Tensor.detach.html>`__.
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor.
     Returns:
-        out: Tensor
+        Tensor: The input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
@@ -42,18 +42,19 @@ def detach(t: Tensor) -> Tensor:
 @op_debug_context
 def detach_(t: Tensor) -> Tensor:
     """
-    Prevent gradient computation of this tensor (in-place).
+    Prevent in-place gradient computation of this tensor.
 
-    The in-place version of :func:`~ops.detach`. The functionality is the same, but this
-    blocks gradient propagation in-place on the input tensor.
+    The in-place version of :func:`~popxl.ops.detach`. The behaviour is the same,
+    it blocks gradient propagation on the input tensor but does not make
+    a copy of the input tensor.
 
     See also `PyTorch Tensor.detach_ <https://pytorch.org/docs/stable/generated/torch.Tensor.detach_.html>`__.
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor.
     Returns:
-        out: Tensor
+        Tensor: The input tensor.
     """
     ctx = get_current_context()
     g = ctx.graph
