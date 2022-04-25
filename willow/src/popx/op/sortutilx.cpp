@@ -4,13 +4,13 @@
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
-#include <snap/poputil/TileMapping.hpp>
 #include <utility>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/Program.hpp>
 #include <poplar/Type.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/popx/op/sortutilx.hpp>
 
 namespace popart {
@@ -37,7 +37,8 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
                                          poplar::ArrayRef<int>(iotaVals),
                                          {dnai, "constant"}),
       graph};
-  snap::poputil::mapTensorLinearly(graph, singleRowIota);
+  poputil::mapTensorLinearly(graph.getPoplarGraph(),
+                             singleRowIota.getPoplarTensor());
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});

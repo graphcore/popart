@@ -2,10 +2,10 @@
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
-#include <snap/poputil/TileMapping.hpp>
 #include <vector>
 #include <poplar/ArrayRef.hpp>
 #include <popops/GatherStatistics.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/op/histogram.hpp>
 #include <popart/popx/op/histogramx.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -27,7 +27,8 @@ void HistogramOpx::grow(snap::program::Sequence &prog) const {
                                      {levels.size()},
                                      poplar::ArrayRef<float>(levels),
                                      debugContext("levels"));
-  snap::poputil::mapTensorLinearly(graph(), levelsT);
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             levelsT.getPoplarTensor());
 
   auto out = popops::histogram(
       graph().getPoplarGraph(),
