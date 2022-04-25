@@ -225,10 +225,17 @@ endfunction()
 # Python unit test function
 # Uses VARIANTS as above for add_popart_cpp_unit_test
 # Takes optional MATCHEXPR parameter, which is a string that will be passed
-# verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
+#   verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
+# Takes optional NUM_WORKERS parameter that is passed to pytest as `-n NUM_WORKERS`.
+#   It specifies the number of workers to launch for this particular test. In particular,
+#   NUM_WORKERS can have a number value or be the string `auto`, in which case the number
+#   of launched workers is equal to the number of available CPUs. In order to avoid
+#   launching too many threads at once tests that use the NUM_WORKERS option are run
+#   sequentially after any other tests have run (so the pytest subtests run in parallel,
+#   but the individual ctest tests run sequentially)
 function(add_popart_py_unit_test name filename)
   set(options "")
-  set(oneValueArgs MATCHEXPR)
+  set(oneValueArgs MATCHEXPR NUM_WORKERS)
   set(multiValueArgs LABELS VARIANTS)
   cmake_parse_arguments(test_args "${options}" "${oneValueArgs}" "${multiValueArgs}" "${ARGN}")
 
@@ -239,29 +246,37 @@ function(add_popart_py_unit_test name filename)
     extract_target(VARIANT TEST_TARGET)
     extract_runconfig(VARIANT TEST_CONFIG)
 
+    set(pytest_arguments -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+
     if (NOT DEFINED test_args_MATCHEXPR)
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
-      # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
-      # parallel, pytest removes the directories of running tests.
-      # This is because by default, pytest removes entries in basetemp older
-      # than the newest 3 entries.
-      add_test(NAME "${test_name}"
-            COMMAND ${Python3_EXECUTABLE} -m pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename} --basetemp=${PYTEST_BASETEMP}/${test_name}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     else()
       # Note, solid brackets and dash can form part of parameterised pytest names.
       string(REGEX REPLACE " " "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
       set(MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
       set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
-
-      # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
-      # parallel, pytest removes the directories of running tests.
-      # This is because by default, pytest removes entries in basetemp older
-      # than the newest 3 entries.
-      add_test(NAME "${test_name}"
-            COMMAND "${Python3_EXECUTABLE}" -m pytest -s "${CMAKE_CURRENT_SOURCE_DIR}/${filename}" -k "${MATCHEXPR_VALUE}" --basetemp=${PYTEST_BASETEMP}/${test_name}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+      list(APPEND pytest_arguments -k "${MATCHEXPR_VALUE}")
     endif()
+
+    # Adding ${test_name} after PYTEST_BASETEMP because when running tests in
+    # parallel, pytest removes the directories of running tests.
+    # This is because by default, pytest removes entries in basetemp older
+    # than the newest 3 entries.
+    list(APPEND pytest_arguments --basetemp=${PYTEST_BASETEMP}/${test_name})
+
+    if (DEFINED test_args_NUM_WORKERS)
+      # Set number of threads to run test with
+      list(APPEND pytest_arguments -n "${test_args_NUM_WORKERS}")
+    endif()
+
+    add_test(NAME "${test_name}"
+            COMMAND ${Python3_EXECUTABLE} -m pytest ${pytest_arguments}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    if (DEFINED test_args_NUM_WORKERS)
+      # Run this test serially, so that it doesn't starve other tests
+      set_property(TEST "${test_name}" PROPERTY RUN_SERIAL TRUE)
+    endif()
+
     # Setting TMPDIR=${PYTEST_BASETEMP} as `pytest --forked` is somehow
     # preventing poplar from cleaning up its temporary files if the test raises
     # an exception.

@@ -1,2 +1,2 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-add_popart_py_unit_test(test_backend_test test_backend_test.py)
+add_popart_py_unit_test(test_backend_test test_backend_test.py NUM_WORKERS auto)
