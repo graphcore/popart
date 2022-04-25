@@ -37,8 +37,7 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
                                          poplar::ArrayRef<int>(iotaVals),
                                          {dnai, "constant"}),
       graph};
-  poputil::mapTensorLinearly(graph.getPoplarGraph(),
-                             singleRowIota.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph, singleRowIota);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});

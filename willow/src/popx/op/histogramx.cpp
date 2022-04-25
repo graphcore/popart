@@ -27,8 +27,7 @@ void HistogramOpx::grow(snap::program::Sequence &prog) const {
                                      {levels.size()},
                                      poplar::ArrayRef<float>(levels),
                                      debugContext("levels"));
-  poputil::mapTensorLinearly(graph().getPoplarGraph(),
-                             levelsT.getPoplarTensor());
+  snap::poputil::mapTensorLinearly(graph(), levelsT);
 
   auto out = popops::histogram(
       graph().getPoplarGraph(),
