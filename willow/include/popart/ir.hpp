@@ -210,9 +210,10 @@ public:
 
   // Remove from the IR any tensors which are unconnected, i.e.
   // the have no producers or consumers
-  void removeIsolatedTensors(bool retainIoTensors    = false,
-                             bool retainVarTensors   = false,
-                             bool retainConstTensors = false);
+  void removeIsolatedTensors(bool retainUsedIOTensors = false,
+                             bool retainAllIOTensors  = false,
+                             bool retainVarTensors    = false,
+                             bool retainConstTensors  = false);
 
   // Remove any Graphs that are not called by the main graph
   // (or by their called graphs; ad infinitum)

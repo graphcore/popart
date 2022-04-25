@@ -112,9 +112,10 @@ void bindTensors(py::module_ &m) {
       // .def("insertConstId", &Tensors::insertConstId)
       .def("removeIsolated",
            &Tensors::removeIsolated,
-           py::arg("retainIoTensors")    = false,
-           py::arg("retainVarTensors")   = false,
-           py::arg("retainConstTensors") = false)
+           py::arg("retainUsedIOTensors") = false,
+           py::arg("retainAllIOTensors")  = false,
+           py::arg("retainVarTensors")    = false,
+           py::arg("retainConstTensors")  = false)
       // Not sure we can do this from the python api
       // TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
       ;

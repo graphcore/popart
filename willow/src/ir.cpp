@@ -423,13 +423,16 @@ bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
   }
 }
 
-void Ir::removeIsolatedTensors(bool retainIoTensors,
+void Ir::removeIsolatedTensors(bool retainUsedIOTensors,
+                               bool retainAllIOTensors,
                                bool retainVarTensors,
                                bool retainConstTensors) {
   auto scopedStopwatch =
       timePartitionLogger().scopedStopwatch("Removing isolated Tensors");
-  getTensors().removeIsolated(
-      retainIoTensors, retainVarTensors, retainConstTensors);
+  getTensors().removeIsolated(retainUsedIOTensors,
+                              retainAllIOTensors,
+                              retainVarTensors,
+                              retainConstTensors);
 }
 
 void Ir::removeIsolatedGraphs() {

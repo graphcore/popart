@@ -71,9 +71,10 @@ void bindIr(py::module &m) {
       .def("setRemoteBufferInfo", &Ir::setRemoteBufferInfo)
       .def("removeIsolatedTensors",
            &Ir::removeIsolatedTensors,
-           py::arg("retainIoTensors")    = false,
-           py::arg("retainVarTensors")   = false,
-           py::arg("retainConstTensors") = false)
+           py::arg("retainUsedIOTensors") = false,
+           py::arg("retainAllIOTensors")  = false,
+           py::arg("retainVarTensors")    = false,
+           py::arg("retainConstTensors")  = false)
       .def("removeIsolatedGraphs", &Ir::removeIsolatedGraphs)
       .def("finalizeOpDebugInfo", &Ir::finalizeOpDebugInfo)
       .def("dataStreamTensors",

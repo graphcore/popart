@@ -363,11 +363,14 @@ public:
   void finalizeSchedule();
 
   // Remove isolated tensors
-  void removeIsolatedTensors(bool retainIoTensors    = false,
-                             bool retainVarTensors   = false,
-                             bool retainConstTensors = false) {
-    up_tensors->removeIsolated(
-        retainIoTensors, retainVarTensors, retainConstTensors);
+  void removeIsolatedTensors(bool retainUsedIOTensors = false,
+                             bool retainAllIOTensors  = false,
+                             bool retainVarTensors    = false,
+                             bool retainConstTensors  = false) {
+    up_tensors->removeIsolated(retainUsedIOTensors,
+                               retainAllIOTensors,
+                               retainVarTensors,
+                               retainConstTensors);
   }
 
 private:
