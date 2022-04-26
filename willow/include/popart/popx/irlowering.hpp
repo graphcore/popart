@@ -22,6 +22,7 @@
 #include <poplar/Type.hpp>
 #include <poplar/exceptions.hpp>
 #include <popart/names.hpp>
+#include <popart/popx/exchangebundle.hpp>
 #include <popart/popx/inittensor.hpp>
 #include <popart/popx/linearmapper.hpp>
 #include <popart/popx/namesx.hpp>
@@ -166,6 +167,11 @@ private:
    */
   ReplicatedTensorShardingBundle replicatedTensorShardingBundle;
 
+  /**
+   * Container for stream and remote buffer related lowering state
+   */
+  ExchangeBundle exchangeBundle;
+
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
@@ -232,17 +238,6 @@ private:
   // and 2) from device to host;
   std::map<TensorId, snap::DataStream> toHostAnchorStreams;
   std::map<TensorId, snap::DataStream> toHostWeightStreams;
-
-  // Remote buffers
-  std::map<RemoteBufferId,
-           std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>>>
-      remoteBuffers;
-
-  // Stream tensors are temporary landing pad tensors for host exchanges
-  // that are implementation specific, and used to facilitate overlapped
-  // IO by avoiding internal exchanges following a host exchange.
-  // They are not exposed to the IR.
-  std::map<TensorId, snap::Tensor> streamTensors;
 
   // Streams for doing allreduce on host side
   std::map<TensorId, snap::DataStream> toHostGradientStreams;
@@ -635,36 +630,6 @@ public:
   static PopStreamId gradientLoadStreamId(TensorId id);
   static PopStreamId weightLoadStreamId(TensorId id);
 
-  bool hasRemoteBuffer(RemoteBufferId) const;
-
-  const std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>> &
-      getRemoteBuffer(RemoteBufferId) const;
-
-  static const std::string getRemoteBufferName(RemoteBufferId);
-
-  void createRemoteBuffer(RemoteBufferId, snap::Tensor);
-
-  /**
-   * Check if a stream landing pad tensor exists for \p TensorId id
-   * \param id \p TensorId to probe
-   * \return true if the tensor exists, false if not.
-   */
-  bool hasStreamTensor(TensorId tid) const;
-
-  /**
-   * Get the stream landing pad tensor for \p TensorId id
-   * \param tid \p TensorId to fetch
-   * \return Returns the \p snap::Tensor
-   */
-  snap::Tensor getStreamTensor(TensorId tid) const;
-
-  /**
-   * Set a new stream landing pad tensor for \p TensorId id
-   * \param tid \p TensorId to set
-   * \param t \p snap::Tensor to set
-   */
-  void setStreamTensor(TensorId tid, snap::Tensor t);
-
   snap::DataStream &
   insertGradientStoreStream(TensorId, TensorInfo, snap::Graph &);
   snap::DataStream &
@@ -674,6 +639,18 @@ public:
   void addPipelineIndexTensor(const snap::Tensor &tensor) {
     pipelineIndexTensors.push_back(tensor);
   }
+
+  /**
+   * Get the exchange bundle containing stream and remote buffer data structures
+   * \return Exchange bundle
+   */
+  ExchangeBundle &getExchangeBundle() { return exchangeBundle; }
+
+  /**
+   * Get the exchange bundle containing stream and remote buffer data structures
+   * \return Exchange bundle
+   */
+  const ExchangeBundle &getExchangeBundle() const { return exchangeBundle; }
 
   const std::vector<snap::Tensor> getPipelineIndexTensors() {
     return pipelineIndexTensors;

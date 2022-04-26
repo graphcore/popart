@@ -36,27 +36,57 @@ class Op;
 namespace popx {
 
 namespace {
-snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
-                                              TensorId id,
-                                              RemoteBufferId rbid,
-                                              snap::Graph &graph,
-                                              snap::Tensor t,
-                                              bool inplace) {
-  snap::Tensor rbTensor;
-  // Clone the input tensor if the remote buffer tensor does not exist
-  if (!dv_p->lowering().hasRemoteBuffer(rbid)) {
-    rbTensor =
-        graph.clone(t,
-                    {"RB_" + std::to_string(rbid)},
-                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->lowering().createRemoteBuffer(rbid, rbTensor);
+
+std::vector<snap::Tensor>
+createRemoteBufferLandingPads(snap::Graph &graph,
+                              snap::Tensor refTensor,
+                              ExchangeDescriptor descriptor,
+                              bool remoteBufferSeparateLoadStorePadsRequired) {
+  auto numPads = remoteBufferSeparateLoadStorePadsRequired ? 2 : 1;
+  std::vector<snap::Tensor> rbTensors;
+  rbTensors.reserve(numPads);
+  for (int i = 0; i < numPads; ++i) {
+    rbTensors.push_back(
+        graph.clone(refTensor,
+                    poplar::DebugContext(ExchangeBundle::getRemoteBufferName(
+                        descriptor.getRemoteBufferId())),
+                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES));
   }
-  auto buffer = dv_p->lowering().getRemoteBuffer(rbid);
-  rbTensor    = buffer.second.value();
+  return rbTensors;
+}
+
+snap::Tensor selectRemoteBufferLandingPad(std::vector<snap::Tensor> rbTensors,
+                                          ExchangeDescriptor descriptor) {
+  return rbTensors.at(static_cast<int>(descriptor.getDirection()) %
+                      rbTensors.size());
+}
+
+snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
+                                              ExchangeDescriptor descriptor,
+                                              TensorId id,
+                                              snap::Graph &graph,
+                                              snap::Tensor t) {
+  auto rbid    = descriptor.getRemoteBufferId();
+  bool inplace = descriptor.isInplace();
+  std::vector<snap::Tensor> rbTensors;
+  // Clone the input tensor if the remote buffer tensor does not exist
+  if (!dv_p->lowering().getExchangeBundle().hasRemoteBuffer(rbid)) {
+    rbTensors = createRemoteBufferLandingPads(
+        graph,
+        t,
+        descriptor,
+        dv_p->lowering()
+            .getExchangeBundle()
+            .getRemoteBufferSeparateLoadStorePadsRequired(rbid));
+    dv_p->lowering().getExchangeBundle().createRemoteBuffer(
+        graph, rbid, rbTensors);
+  }
+  auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(rbid);
+  rbTensors   = buffer.second;
   // The outplacing of the tensor will be done explicitly
   if (!inplace) {
     snap::Tensor tw =
-        graph.clone(rbTensor,
+        graph.clone(selectRemoteBufferLandingPad(rbTensors, descriptor),
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
@@ -68,7 +98,7 @@ snap::Tensor makeWritableRemoteExchangeTensor(Devicex *dv_p,
                        "The aliasing properties have changed implicitly.",
                        id);
     snap::Tensor tw =
-        graph.clone(rbTensor,
+        graph.clone(selectRemoteBufferLandingPad(rbTensors, descriptor),
                     {id + "_writable"},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_AND_ALIASES);
     return tw;
@@ -83,14 +113,17 @@ snap::Tensor getOrCreateStreamTensor(Devicex *dv_p,
                                      const poplar::DebugContext &context) {
   snap::Tensor streamTensor;
 
-  if (dv_p->lowering().hasStreamTensor("ST_" + streamTensorId)) {
-    streamTensor = dv_p->lowering().getStreamTensor("ST_" + streamTensorId);
+  if (dv_p->lowering().getExchangeBundle().hasStreamTensor("ST_" +
+                                                           streamTensorId)) {
+    streamTensor = dv_p->lowering().getExchangeBundle().getStreamTensor(
+        "ST_" + streamTensorId);
   } else {
     streamTensor =
         graph.clone(t,
                     poplar::DebugContext(context, streamTensorId),
                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->lowering().setStreamTensor("ST_" + streamTensorId, streamTensor);
+    dv_p->lowering().getExchangeBundle().setStreamTensor("ST_" + streamTensorId,
+                                                         streamTensor);
   }
   return streamTensor;
 }
@@ -112,7 +145,7 @@ makeWritableHostExchangeTensor(Devicex *dv_p,
         graph.clone(t,
                     {streamTensorId},
                     poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->lowering().setStreamTensor(id, streamTensor);
+    dv_p->lowering().getExchangeBundle().setStreamTensor(id, streamTensor);
   }
   // The outplacing of the tensor will be done explicitly
   if (!inplace) {
@@ -370,33 +403,43 @@ void RemoteLoadDescriptorx::pre(snap::Graph &graph,
 void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
                                      snap::program::Sequence &prog,
                                      poplar::DebugContext context) {
-  snap::Tensor rbTensor;
+  std::vector<snap::Tensor> rbTensors;
 
   snap::Tensor offset;
   if (inTensors.size() > 1) {
     offset = inTensors.at(1).second;
   }
 
-  if (!dv_p->lowering().hasRemoteBuffer(descriptor.getRemoteBufferId())) {
-    rbTensor =
-        graph.clone(inTensors.at(0).second,
-                    poplar::DebugContext(context,
-                                         dv_p->lowering().getRemoteBufferName(
-                                             descriptor.getRemoteBufferId())),
-                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->lowering().createRemoteBuffer(descriptor.getRemoteBufferId(),
-                                        rbTensor);
+  if (!dv_p->lowering().getExchangeBundle().hasRemoteBuffer(
+          descriptor.getRemoteBufferId())) {
+    auto rbTensors = createRemoteBufferLandingPads(
+        graph,
+        inTensors.at(0).second,
+        descriptor,
+        dv_p->lowering()
+            .getExchangeBundle()
+            .getRemoteBufferSeparateLoadStorePadsRequired(
+                descriptor.getRemoteBufferId()));
+    dv_p->lowering().getExchangeBundle().createRemoteBuffer(
+        graph, descriptor.getRemoteBufferId(), rbTensors);
   }
 
-  auto buffer =
-      dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
-  rbTensor = buffer.second.value();
+  auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
+      descriptor.getRemoteBufferId());
+  rbTensors = buffer.second;
 
   if (offset.valid() && offset.numElements() > 0) {
-    snap::program::Copy copy_prog(buffer.first, rbTensor, offset, context);
+    snap::program::Copy copy_prog(
+        buffer.first,
+        selectRemoteBufferLandingPad(rbTensors, descriptor),
+        offset,
+        context);
     prog.add(copy_prog);
   } else {
-    snap::program::Copy copy_prog(buffer.first, rbTensor, context);
+    snap::program::Copy copy_prog(
+        buffer.first,
+        selectRemoteBufferLandingPad(rbTensors, descriptor),
+        context);
     prog.add(copy_prog);
   }
 }
@@ -404,53 +447,53 @@ void RemoteLoadDescriptorx::exchange(snap::Graph &graph,
 void RemoteLoadDescriptorx::post(snap::Graph &graph,
                                  snap::program::Sequence &prog,
                                  poplar::DebugContext context) {
-  outTensors.push_back(
-      makeWritableRemoteExchangeTensor(dv_p,
-                                       inTensors.at(0).first,
-                                       descriptor.getRemoteBufferId(),
-                                       graph,
-                                       inTensors.at(0).second,
-                                       descriptor.isInplace()));
+  outTensors.push_back(makeWritableRemoteExchangeTensor(
+      dv_p, descriptor, inTensors.at(0).first, graph, inTensors.at(0).second));
 
-  auto buffer =
-      dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
-  snap::Tensor rbTensor = buffer.second.value();
-  snap::program::Copy tmp_copy_prog(rbTensor, outTensors.at(0), false, context);
+  auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
+      descriptor.getRemoteBufferId());
+  std::vector<snap::Tensor> rbTensors = buffer.second;
+  snap::program::Copy tmp_copy_prog(
+      selectRemoteBufferLandingPad(rbTensors, descriptor),
+      outTensors.at(0),
+      false,
+      context);
   prog.add(tmp_copy_prog);
 }
 
 snap::Tensor RemoteLoadDescriptorx::unwind(snap::Graph &graph,
                                            snap::Tensor tensor) const {
-  auto context = DebugContext();
-  snap::Tensor unwound =
-      makeWritableRemoteExchangeTensor(dv_p,
-                                       TensorId(),
-                                       descriptor.getRemoteBufferId(),
-                                       graph,
-                                       tensor,
-                                       descriptor.isInplace());
+  auto context         = DebugContext();
+  snap::Tensor unwound = makeWritableRemoteExchangeTensor(
+      dv_p, descriptor, TensorId(), graph, tensor);
   return unwound;
 }
 
 void RemoteStoreDescriptorx::pre(snap::Graph &graph,
                                  snap::program::Sequence &prog,
                                  poplar::DebugContext context) {
-  snap::Tensor rbTensor;
-  if (!dv_p->lowering().hasRemoteBuffer(descriptor.getRemoteBufferId())) {
-    rbTensor =
-        graph.clone(inTensors.at(0).second,
-                    poplar::DebugContext(context,
-                                         dv_p->lowering().getRemoteBufferName(
-                                             descriptor.getRemoteBufferId())),
-                    poplar::TensorCloneMethod::PRESERVE_ORDER_UNLESS_ALIASES);
-    dv_p->lowering().createRemoteBuffer(descriptor.getRemoteBufferId(),
-                                        rbTensor);
+  std::vector<snap::Tensor> rbTensors;
+  if (!dv_p->lowering().getExchangeBundle().hasRemoteBuffer(
+          descriptor.getRemoteBufferId())) {
+    rbTensors = createRemoteBufferLandingPads(
+        graph,
+        inTensors.at(0).second,
+        descriptor,
+        dv_p->lowering()
+            .getExchangeBundle()
+            .getRemoteBufferSeparateLoadStorePadsRequired(
+                descriptor.getRemoteBufferId()));
+    dv_p->lowering().getExchangeBundle().createRemoteBuffer(
+        graph, descriptor.getRemoteBufferId(), rbTensors);
   }
-  auto buffer =
-      dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
-  rbTensor = buffer.second.value();
+  auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
+      descriptor.getRemoteBufferId());
+  rbTensors = buffer.second;
   snap::program::Copy tmp_copy_prog(
-      inTensors.at(0).second, rbTensor, false, context);
+      inTensors.at(0).second,
+      selectRemoteBufferLandingPad(rbTensors, descriptor),
+      false,
+      context);
   prog.add(tmp_copy_prog);
 }
 
@@ -462,14 +505,21 @@ void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
     offset = inTensors.at(1).second;
   }
 
-  auto buffer =
-      dv_p->lowering().getRemoteBuffer(descriptor.getRemoteBufferId());
-  snap::Tensor rbTensor = buffer.second.value();
+  auto buffer = dv_p->lowering().getExchangeBundle().getRemoteBuffer(
+      descriptor.getRemoteBufferId());
+  std::vector<snap::Tensor> rbTensors = buffer.second;
   if (offset.valid() && offset.numElements() > 0) {
-    snap::program::Copy copy_prog(rbTensor, buffer.first, offset, context);
+    snap::program::Copy copy_prog(
+        selectRemoteBufferLandingPad(rbTensors, descriptor),
+        buffer.first,
+        offset,
+        context);
     prog.add(copy_prog);
   } else {
-    snap::program::Copy copy_prog(rbTensor, buffer.first, context);
+    snap::program::Copy copy_prog(
+        selectRemoteBufferLandingPad(rbTensors, descriptor),
+        buffer.first,
+        context);
     prog.add(copy_prog);
   }
 }

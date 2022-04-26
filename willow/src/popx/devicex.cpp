@@ -302,7 +302,8 @@ void Devicex::remoteBufferWeightsToHost() {
       // Lamba expression that does the reading op automatically
       auto copyFromRemoteBuffer = [&](char *from, unsigned replica_id) {
         pEngine->copyFromRemoteBuffer(
-            lowering().getRemoteBufferName(remoteBufferInfo.first),
+            lowering().getExchangeBundle().getRemoteBufferName(
+                remoteBufferInfo.first),
             from,
             static_cast<int>(remoteBufferInfo.second),
             replica_id);
@@ -616,7 +617,8 @@ void Devicex::remoteBufferWeightsFromHost() {
                                                          unsigned replica_id) {
         pEngine->copyToRemoteBuffer(
             from,
-            lowering().getRemoteBufferName(remoteBufferInfo.first),
+            lowering().getExchangeBundle().getRemoteBufferName(
+                remoteBufferInfo.first),
             static_cast<int>(remoteBufferInfo.second),
             replica_id);
       };

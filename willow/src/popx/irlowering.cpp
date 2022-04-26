@@ -385,7 +385,7 @@ IrLowering::IrLowering(const Ir &ir,
                        std::shared_ptr<DeviceInfo> deviceInfo_,
                        bool prepareGraphHasBeenCalled)
     : _ir(ir), deviceInfo(deviceInfo_), progressLogger(ir.getSessionOptions()),
-      replicatedTensorShardingBundle(_ir),
+      replicatedTensorShardingBundle(_ir), exchangeBundle(_ir),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
       tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
       progs_(PopPrograms(this)), rngStateLowering() {
@@ -1435,49 +1435,6 @@ PriTask IrLowering::streamToHostTask(TensorId streamTensorId,
       {},
       f // what to run when the task is executed,
   };
-}
-
-bool IrLowering::hasRemoteBuffer(RemoteBufferId id) const {
-  return remoteBuffers.find(id) != remoteBuffers.end();
-}
-
-const std::string IrLowering::getRemoteBufferName(RemoteBufferId id) {
-  return "RB_" + std::to_string(id);
-}
-
-const std::pair<snap::RemoteBuffer, nonstd::optional<snap::Tensor>> &
-IrLowering::getRemoteBuffer(RemoteBufferId id) const {
-  return remoteBuffers.at(id);
-}
-
-void IrLowering::createRemoteBuffer(RemoteBufferId id, snap::Tensor tensor) {
-  auto info    = ir().getRemoteBufferInfo(id);
-  auto name    = getRemoteBufferName(id);
-  auto type    = tensor.elementType();
-  auto size    = tensor.numElements();
-  auto repeats = info.repeats;
-
-  logging::devicex::info(
-      "Creating remote buffer {}, type {}, size {}, repeats {}",
-      name,
-      type,
-      size,
-      repeats);
-
-  remoteBuffers.insert(
-      {id,
-       {graph().addRemoteBuffer(name, type, size, repeats, true),
-        nonstd::optional<snap::Tensor>(tensor)}});
-}
-
-bool IrLowering::hasStreamTensor(TensorId tid) const {
-  return streamTensors.find(tid) != streamTensors.end();
-}
-snap::Tensor IrLowering::getStreamTensor(TensorId tid) const {
-  return streamTensors.at(tid);
-}
-void IrLowering::setStreamTensor(TensorId tid, snap::Tensor t) {
-  streamTensors[tid] = t;
 }
 
 int IrLowering::getNumFragments(const Graph &graph) const {

@@ -157,7 +157,7 @@ std::vector<std::pair<int, int>> MultiExchangeOpx::getSegments() const {
   std::vector<std::pair<int, int>> segments;
 
   // A resource identifier denoting stream tensor ID or remote buffer ID
-  std::set<std::string> resourcesSeen;
+  std::set<std::pair<std::string, ExchangeDirection>> resourcesSeen;
 
   int last = 0;
   int i    = 0;
@@ -168,7 +168,8 @@ std::vector<std::pair<int, int>> MultiExchangeOpx::getSegments() const {
   // available again. Segmenting decreases potential IO/compute overlap.
   for (; i < multiExchangeOp.getNumExchanges(); ++i) {
     auto descriptor = multiExchangeOp.getExchangeDescriptor(i);
-    auto resourceId = descriptor.getResourceId();
+    auto resourceId =
+        std::make_pair(descriptor.getResourceId(), descriptor.getDirection());
     if (resourcesSeen.find(resourceId) != resourcesSeen.end()) {
       logging::opx::info("[MultiExchangeOpx] Resource {} used more than once, "
                          "exchange will be segmented.",

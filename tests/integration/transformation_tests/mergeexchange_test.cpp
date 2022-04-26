@@ -21,8 +21,11 @@
 #include "popart/datatype.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/graphid.hpp"
+#include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
+#include "popart/popx/exchangebundle.hpp"
+#include "popart/popx/irlowering.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/stepio.hpp"
 #include "popart/tensor.hpp"
@@ -36,7 +39,13 @@ using namespace popart;
 
 namespace {
 
-void createModelWithRemoteExchange(Ir *ir, bool mergeExchange) {
+/**
+ * Create a model that includes two RemoteLoads and two RemoteStores which have
+ * data dependencies on each other
+ * \param ir             IR to create the model in
+ * \param mergeExchange  True if the \a MergeExchange transform should be run
+ */
+void createModelWithRemoteExchange0(Ir *ir, bool mergeExchange) {
   // Construct IR and main graph.
   Graph &g = ir->getMainGraph();
 
@@ -103,6 +112,82 @@ void createModelWithRemoteExchange(Ir *ir, bool mergeExchange) {
   ir->setIsPrepared();
 }
 
+/**
+ * Create a model that mimics phased execution, loading and storing
+ * from the same remote buffers in a merged RemoteExchange
+ * \param ir             IR to create the model in
+ * \param numBuffers     Number of remote buffers to use
+ * \param mergeExchange  True if the \a MergeExchange transform should be run
+ */
+void createModelWithRemoteExchange1(Ir *ir,
+                                    int numBuffers,
+                                    bool mergeExchange) {
+  // Construct IR and main graph.
+  Graph &g = ir->getMainGraph();
+
+  const TensorInfo tInfo{DataType::FLOAT, Shape{2, 2}};
+
+  std::vector<InitOp *> initOps;
+  initOps.reserve(numBuffers * 2);
+
+  // Add one InitOp per RemoteStore and RemoteLoad (2 * numBuffers in total)
+  for (int bufferId = 0; bufferId < numBuffers; ++bufferId) {
+    for (int initId = 0; initId < 2; ++initId) {
+      initOps.push_back(g.createConnectedOp<InitOp>(
+          {},
+          {{InitOp::getOutIndex(),
+            logging::format("init_{}_{}", bufferId, initId)}},
+          Onnx::CustomOperators::Init_1,
+          tInfo,
+          TensorType::ActGrad,
+          InitType::Zero,
+          Op::Settings{g, "init"}));
+    }
+  }
+
+  for (int bufferId = 0; bufferId < numBuffers; ++bufferId) {
+    // Connect one RemoteLoadOp per remote buffer
+    auto load = g.createConnectedOp<RemoteLoadOp>(
+        {{0, logging::format("init_{}_{}", bufferId, 0)}},
+        {{0, logging::format("load_{}", bufferId)}},
+        Onnx::CustomOperators::RemoteLoad,
+        Op::Settings{g, "load"},
+        bufferId);
+
+    load->pruneable = false;
+
+    // Connect one RemoteStoreOp per remote buffer with no sequential data
+    // dependency to the RemoteLoadOp, such that they can be merged to
+    // a single MultiExchangeOp
+    auto store = g.createConnectedOp<RemoteStoreOp>(
+        {{0, logging::format("init_{}_{}", bufferId, 0)}},
+        {},
+        Onnx::CustomOperators::RemoteStore,
+        Op::Settings{g, "store"},
+        bufferId);
+
+    // Add topocons such that all InitOps occur before all RemoteLoad and
+    // RemoteStore operations
+    for (auto init : initOps) {
+      g.topoCons->insert(init, load, false);
+      g.topoCons->insert(init, store, false);
+    }
+
+    store->pruneable = false;
+  }
+
+  auto &opts                   = ir->getSessionOptions();
+  opts.enableExplicitMainLoops = true;
+  opts.useHostCopyOps          = true;
+
+  if (mergeExchange) {
+    ir->applyTransform(MergeExchange::id(), g);
+  }
+  ir->applyTransform(RemoteSetup::id(), g);
+  ir->updateVertices();
+  ir->setIsPrepared();
+}
+
 } // namespace
 
 // Testing that adjacent RemoteLoad/RemoteStore are merged if they have
@@ -122,7 +207,7 @@ BOOST_AUTO_TEST_CASE(TestMergeRemoteExchange) {
                           std::vector<float> &out1) {
     auto ir = std::make_unique<Ir>();
 
-    createModelWithRemoteExchange(ir.get(), mergeExchange);
+    createModelWithRemoteExchange0(ir.get(), mergeExchange);
 
     if (mergeExchange) {
       BOOST_REQUIRE_EQUAL(
@@ -167,4 +252,72 @@ BOOST_AUTO_TEST_CASE(TestMergeRemoteExchange) {
   BOOST_REQUIRE_EQUAL(in1, run0_out0);
   BOOST_REQUIRE_EQUAL(run0_out0, run1_out0);
   BOOST_REQUIRE_EQUAL(run0_out1, run1_out1);
+}
+
+// Testing that adjacent RemoteLoad/RemoteStore are merged even if they use the
+// same remote buffer, and that this triggers using two landing pad tensors
+// per remote buffer instead of one.
+BOOST_AUTO_TEST_CASE(TestMergeRemoteExchangeLandingPads) {
+
+  auto numBuffers = 3;
+
+  auto run = [&numBuffers](bool mergeExchange) {
+    auto ir = std::make_unique<Ir>();
+
+    createModelWithRemoteExchange1(ir.get(), numBuffers, mergeExchange);
+
+    if (mergeExchange) {
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::RemoteLoadInplace).size(), 0);
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::RemoteStore).size(), 0);
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::MultiExchange).size(), 1);
+
+      const auto session = TrainingSession::createFromIr(
+          std::move(ir), createTestDevice(TEST_TARGET));
+      session->prepareDevice();
+
+      for (int i = 0; i < numBuffers; ++i) {
+        BOOST_REQUIRE_EQUAL(
+            session->getIrLowering()
+                .getExchangeBundle()
+                .getRemoteBufferSeparateLoadStorePadsRequired(i),
+            true);
+        BOOST_REQUIRE_EQUAL(session->getIrLowering()
+                                .getExchangeBundle()
+                                .getRemoteBuffer(i)
+                                .second.size(),
+                            2);
+      }
+
+    } else {
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::RemoteLoad).size(), numBuffers);
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::RemoteStore).size(), numBuffers);
+      BOOST_REQUIRE_EQUAL(
+          ir->opsOfType(Onnx::CustomOperators::MultiExchange).size(), 0);
+
+      const auto session = TrainingSession::createFromIr(
+          std::move(ir), createTestDevice(TEST_TARGET));
+      session->prepareDevice();
+
+      for (int i = 0; i < numBuffers; ++i) {
+        BOOST_REQUIRE_EQUAL(
+            session->getIrLowering()
+                .getExchangeBundle()
+                .getRemoteBufferSeparateLoadStorePadsRequired(i),
+            false);
+        BOOST_REQUIRE_EQUAL(session->getIrLowering()
+                                .getExchangeBundle()
+                                .getRemoteBuffer(i)
+                                .second.size(),
+                            1);
+      }
+    }
+  };
+
+  run(false);
+  run(true);
 }
