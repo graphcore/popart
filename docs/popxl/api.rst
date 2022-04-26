@@ -24,6 +24,7 @@ limited degree manipulate) PopART IRs.
     api/random-seeds
     api/remote-buffers
     api/replica-grouping
+    api/session
     api/streams
     api/tensors
     api/tensor-locations
