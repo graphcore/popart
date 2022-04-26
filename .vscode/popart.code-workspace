@@ -1,0 +1,32 @@
+// Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+			"files.watcherExclude": {
+					"**/.git/objects/**": true,
+					"**/.git/subtree-cache/**": true,
+					"**/.cache": true,
+					"**/.linters": true,
+					"**/.pytest_cache": true,
+					"**/docs": true,
+					"**/scripts": true,
+					"**/build_scripts": true,
+					"**/ci": true,
+					"**/cmake": true,
+			},
+			"python.defaultInterpreterPath": "~/.virtualenvs/popart-dev",
+			"clangd.arguments": [
+				"-compile-commands-dir=${workspaceFolder}/../build/build/popart"
+			]
+	},
+	"extensions": {
+		"recommendations": [
+			// Intellisense for C++
+			"llvm-vs-code-extensions.vscode-clangd",
+		]
+	}
+}
