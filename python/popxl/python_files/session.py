@@ -144,11 +144,23 @@ class Session:
             for d2h, arr in outputs.items()
         }
 
+        # If not Hw, we attach now manually, as `run` will not do it for us.
+        # In PopXL, we want the user to be attached after run.
+        # TODO(T59969): Remove this, as with the Session contextmgr, the user
+        # will be forced to attach before run, and instead we should assert they
+        # are already attached.
+        if self.device.type != popart.DeviceType.Ipu:
+            self.device.attach()
+
         stepio = popart.PyStepIO(stepio_inputs, stepio_outputs)
         stepio.enableRuntimeAsserts(False)
         self._pb_session.run(stepio)
-
         # Arrays in outputs should now alias those filled in by _pb_session.run
+
+        # As we have run a program on device that can invalidate the host weight
+        # buffers (make it so they no longer reflect the latest device values),
+        # we must mark them as out-of-sync.
+        self._pb_session.markHostWeightsOutOfSync()
 
     def run(
             self,
@@ -175,7 +187,12 @@ class Session:
 
     def weights_to_host(self) -> None:
         """Copy the weights to host from the device."""
-        self._pb_session.weightsToHost()
+        # NOTE: Copies from device, to internal buffers, to Ir TensorData
+        #       buffers. After this call, `get_tensor_data` can immediately
+        #       return the Ir tensors' TensorData buffers.
+        # NOTE: Internally detects if host weights out-of-sync and marks them as
+        #       in-sync.
+        self._pb_session.copyDeviceWeightsToHost()
 
     def weights_from_host(self) -> None:
         """Copy the weights to device from the host."""
@@ -238,11 +255,19 @@ class Session:
             if isinstance(obj, Variable):
                 any_variable = True
 
-        # Fetch weights from device into tensor data buffers. Constants cannot
-        # have been updated by definition, so elide this step unless any of the
-        # tensors were variables.
-        if any_variable:
-            self._pb_session.copyToTensorData()
+        # Fetch the latest weights from device into the TensorData buffers.
+        # We skip this step if:
+        #   1) Only Constants were requested. By definition, these cannot have
+        #      been updated on device, so we do not bother to fetch the latest
+        #      values.
+        #   2) We are not attached to the device. This occurs if and only if
+        #      we are outside the Session context. In this case, we can only
+        #      return the current host weights.
+        #   3) The host weights are already in sync. There is no need to fetch
+        #      the weights again.
+        if any_variable and self.device.isAttached and not self._pb_session.areHostWeightsInSync(
+        ):
+            self.weights_to_host()
 
         return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {
             tensor: _popxl_to_numpy(tensor)

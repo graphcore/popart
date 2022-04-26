@@ -147,7 +147,7 @@ def test_get_tensor_data_bad_argument_type():
         ops.var_updates.accumulate_(w2, c)
 
     session = popxl.Session(ir)
-    session.device = tu.create_test_device(numIpus=1)
+    session.device = tu.create_test_device(numIpus=1).device
 
     session.run({h2d: np.array(1.)})
 

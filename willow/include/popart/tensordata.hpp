@@ -83,7 +83,7 @@ private:
   /// Is the data stored in data_ in sync with the data on the IPU? If not a
   /// call to Devicex::readWeightsToTensorData will be required before reading
   /// the tensor's data
-  bool isSyncedWithIPU = false;
+  bool isSyncedWithIPU = true;
 };
 
 } // namespace popart

@@ -241,9 +241,21 @@ void Devicex::weightsToHost() {
   }
 }
 
-void Devicex::weightsToTensorData() {
+void Devicex::popxlWeightsToTensorData() {
   POPART_TRACEPOINT();
+
+  // Recall: attached <=> in the popxl.Session context.
+  // If this is not the case, we do not run the WeightsToHost program, but still
+  // transfer from the d2hWeightBuffers to the TensorData of the weights, so
+  // that the results of the last popxl.Session.weights_to_host are reflected.
+  // If the weights are already in sync, we do not do the transfer either.
+
+  // Fetch weights from device into d2hWeightBuffers.
+  weightsToHost();
+  popxlMarkHostWeightsInSync();
+
   auto tensors = executable_.getWeightTensors();
+
   std::map<TensorId, MutableVoidData> Wdata;
   std::transform(tensors.begin(),
                  tensors.end(),
@@ -258,10 +270,27 @@ void Devicex::weightsToTensorData() {
                    tData.info.set(tData.info.dataType(), hostShape);
                    return std::make_pair(t->id, tData);
                  });
-  // Actually do the transfer for these tensors.
-  weightsToHost(Wdata);
 
-  // Host weights now in sync with IPU
+  // Copy from d2hWeightBuffers into the TensorData of the weights.
+  d2hWeightBuffersToTensorData(Wdata);
+}
+
+bool Devicex::popxlAreHostWeightsInSync() {
+  const auto tensors = executable_.getWeightTensors();
+
+  bool all_in_sync = std::all_of(tensors.cbegin(), tensors.cend(), [](auto &t) {
+    return t->tensorData()->getIsSyncedWithIPU();
+  });
+
+  return all_in_sync;
+}
+
+void Devicex::popxlMarkHostWeightsOutOfSync() {
+  for (auto t : executable_.getWeightTensors()) {
+    t->tensorData()->setIsSyncedWithIPU(false);
+  }
+}
+void Devicex::popxlMarkHostWeightsInSync() {
   for (auto t : executable_.getWeightTensors()) {
     t->tensorData()->setIsSyncedWithIPU(true);
   }
@@ -452,6 +481,19 @@ void Devicex::weightsToHost(
     // Weights in the remote buffers
     remoteBufferWeightsToHost();
 
+    d2hWeightBuffersToTensorData(onnxModelData);
+  }
+}
+
+void Devicex::d2hWeightBuffersToTensorData(
+    const std::map<TensorId, MutableVoidData> &onnxModelData) {
+  if (!prepareHasBeenCalled()) {
+    throw internal_error("Devicex::prepare() must be called before "
+                         "Devicex::d2hWeightBuffersToTensorData(const "
+                         "std::map<TensorId, MutableVoidData> &) is called.");
+  }
+
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
     // addresses on onnxModelData

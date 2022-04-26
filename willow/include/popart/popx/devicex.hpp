@@ -99,11 +99,27 @@ public:
   // device -> host stream
   void weightsToHost();
   void remoteBufferWeightsToHost();
-  // device ->host stream -> specified host addresses
+  // device -> host stream -> specified host addresses
+  // (weightsToHost() + d2hWeightBuffersToTensorData)
   void weightsToHost(const std::map<TensorId, MutableVoidData> &);
 
-  /// Copy data from the host buffers to the `tensor.tensorData()` buffers.
-  void weightsToTensorData();
+private:
+  // host stream -> specified host addresses
+  void d2hWeightBuffersToTensorData(
+      const std::map<TensorId, MutableVoidData> &onnxModelData);
+
+public:
+  /// Copy data from the device, to the host buffers, to the
+  /// `tensor.tensorData()` buffers. Will not run a WeightsToHost program if
+  /// weights already in sync with ipu. After WeightsToHost, marks the
+  /// weights as in sync with the ipu.
+  void popxlWeightsToTensorData();
+  /// Mark the d2hWeightBuffers as out of sync with the ipu.
+  void popxlMarkHostWeightsOutOfSync();
+  /// Mark the d2hWeightBuffers as in sync with the ipu.
+  void popxlMarkHostWeightsInSync();
+  /// Are all the weights in sync with the ipu?
+  bool popxlAreHostWeightsInSync();
 
   // TODO T8229 : change these names to disambiguate
   // the source and destination

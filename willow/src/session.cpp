@@ -480,7 +480,6 @@ void Session::connectHostFunction(
 void Session::run(IStepIO &stepio, std::string debugName) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::run {}", debugName);
-
   if (device_->getDeviceInfo()->getConnectionType() ==
       DeviceConnectionType::Never) {
     throw runtime_error("Offline IPU device is not configured for execution");
@@ -488,7 +487,6 @@ void Session::run(IStepIO &stepio, std::string debugName) {
   if (!ir->canInfer()) {
     throw runtime_error("Trying to infer when not in inference mode");
   }
-
   if (weightsFromHostCalled == false && ir->containsInitialisers() &&
       ir->isTraining()) {
     throw runtime_error(
@@ -496,13 +494,7 @@ void Session::run(IStepIO &stepio, std::string debugName) {
         "and the session has been created in training mode");
   }
   device_->run(stepio, debugName);
-
   runCalled = true;
-
-  // Host weights now out of sync with IPU
-  for (auto t : executable_->getWeightTensors()) {
-    t->tensorData()->setIsSyncedWithIPU(false);
-  }
 }
 
 void Session::run(std::string programHandle,
@@ -528,11 +520,6 @@ void Session::run(std::string programHandle,
   device_->run(programHandle, stepio, debugName);
 
   runCalled = true;
-
-  // Host weights now out of sync with IPU
-  for (auto t : executable_->getWeightTensors()) {
-    t->tensorData()->setIsSyncedWithIPU(false);
-  }
 }
 
 void Session::updateExternallySavedTensorLocations(

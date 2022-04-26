@@ -2054,9 +2054,29 @@ PYBIND11_MODULE(popart_core, m) {
         py::return_value_policy::reference);
     cls.def("checkInplacingAmbiguity", &Session::checkInplacingAmbiguity);
     cls.def(
-        "copyToTensorData",
-        [](InferenceSession &self) { self.getDevice().weightsToTensorData(); },
-        DOC(popart, popx, Devicex, weightsToTensorData));
+        "copyDeviceWeightsToHost",
+        [](InferenceSession &self) {
+          self.getDevice().popxlWeightsToTensorData();
+        },
+        DOC(popart, popx, Devicex, popxlWeightsToTensorData));
+    cls.def(
+        "markHostWeightsOutOfSync",
+        [](InferenceSession &self) {
+          self.getDevice().popxlMarkHostWeightsOutOfSync();
+        },
+        DOC(popart, popx, Devicex, popxlMarkHostWeightsOutOfSync));
+    cls.def(
+        "markHostWeightsInSync",
+        [](InferenceSession &self) {
+          self.getDevice().popxlMarkHostWeightsInSync();
+        },
+        DOC(popart, popx, Devicex, popxlMarkHostWeightsInSync));
+    cls.def(
+        "areHostWeightsInSync",
+        [](InferenceSession &self) -> bool {
+          return self.getDevice().popxlAreHostWeightsInSync();
+        },
+        DOC(popart, popx, Devicex, popxlAreHostWeightsInSync));
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");
