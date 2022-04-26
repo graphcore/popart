@@ -28,7 +28,7 @@ typing==3.7.4.3
 typing-extensions>=3.7.4.3
 
 # Requirements for linters.
-dataclasses==0.8
+dataclasses==0.8;python_version < "3.7"
 clang-format==9.0.0
 yapf==0.27.0
 pre-commit==2.16.0
