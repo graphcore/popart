@@ -1,10 +1,10 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 from .add import add, add_
-from .pool import average_pool2d, max_pool2d
+from .pool import average_pool, max_pool
 from .call import call, call_with_info, CallSiteInfo
 from .cast import cast
 from .concat import concat, concat_
-from .conv import conv2d
+from .conv import conv, PadType
 from .roialign import roi_align
 from .argminmax import argmin, argmax
 from .detach import detach, detach_
@@ -71,12 +71,12 @@ __all__ = [
     # add.py
     "add",
     "add_",
-    #argminmax.py
+    # argminmax.py
     "argmax",
     "argmin",
     # pool.py
-    "average_pool2d",
-    "max_pool2d",
+    "average_pool",
+    "max_pool",
     # call.py
     "call",
     "call_with_info",
@@ -87,7 +87,8 @@ __all__ = [
     "concat",
     "concat_",
     # conv.py
-    "conv2d",
+    "conv",
+    "PadType",
     # roialign.py
     "roi_align",
     # detach.py

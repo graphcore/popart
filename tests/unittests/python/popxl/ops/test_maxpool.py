@@ -18,7 +18,7 @@ class TestMaxPool:
         with ir.main_graph:
             t = popxl.variable(
                 np.random.rand(batch_size, in_channel, height, width))
-            res = ops.max_pool2d(t, kernel)
+            res = ops.max_pool(t, kernel)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("MaxPool", _ir.op.MaxPoolOp, g)

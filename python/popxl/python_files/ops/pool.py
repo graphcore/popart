@@ -1,6 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 from typing import Optional, Tuple
-from typing_extensions import Literal
+from .conv import PadType
 import popart._internal.ir as _ir
 from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
@@ -21,33 +21,40 @@ def receptive_attributes(strides, pads, out_pads, dilations, in_dilations,
     if in_dilations:
         receptive_attributes.inDilations = list(in_dilations)
     if auto_pad:
-        receptive_attributes.auto_pad = auto_pad
+        pad_dict = {
+            'not_set': 'NOTSET',
+            'same_upper': 'SAME_UPPER',
+            'same_lower': 'SAME_LOWER',
+            'valid': 'VALID'
+        }
+        receptive_attributes.auto_pad = pad_dict[auto_pad]
     if ceil_mode:
         receptive_attributes.ceil_mode = int(ceil_mode)
     return receptive_attributes
 
 
 @op_debug_context
-def average_pool2d(
-        t: Tensor,
-        kernel_size: Tuple[int],
-        stride: Optional[Tuple[int]] = None,
-        padding: Optional[Tuple[int]] = None,
-        out_pads: Optional[Tuple[int]] = None,
-        dilation: Optional[Tuple[int]] = None,
-        in_dilations: Optional[Tuple[int]] = None,
-        auto_pad: Literal['NOTSET', 'SAME_UPPER', 'SAME_LOWER', 'VALID'] = None,
-        ceil_mode: Optional[bool] = None) -> Tensor:
+def average_pool(t: Tensor,
+                 kernel_size: Tuple[int],
+                 stride: Optional[Tuple[int]] = None,
+                 padding: Optional[Tuple[int]] = None,
+                 out_pads: Optional[Tuple[int]] = None,
+                 dilation: Optional[Tuple[int]] = None,
+                 in_dilations: Optional[Tuple[int]] = None,
+                 auto_pad: Optional[PadType] = 'not_set',
+                 ceil_mode: Optional[bool] = None) -> Tensor:
     """
-    average_pool2d consumes an input tensor `t` and applies average pooling across the tensor according to kernel sizes,
+    average_pool consumes an input tensor `t` and applies average pooling across the tensor according to kernel sizes,
     stride sizes, and pad lengths.
     Average pooling consisting of computing the average on all values of a subset of the input tensor according to
     the kernel size and downsampling the data into the output tensor Y for further processing.
 
     Args:
         t (Tensor):
-           Input data tensor from previous layer; has size (N, C, H, W), where N is the batch size, C is the number of
-           channels, and H and W are the height and width. Note that this is for the 2D image.
+            Input data tensor from previous layer; If the input is a 3D tensor, the size is (N, C, L), where N is the batch size,
+            C is the number of channel, L is the length; If the input is a 2D image, the size is (N, C, H, W), where N is the batch size,
+            C is the number of channel, H and W are the height and width; If the input is a 3D image, the size is (N, C, D, H, W), where
+            N is the batch size, C is the number of channel, D is the depth, H and W are the height and width.
         kernel_size (Tuple[int]):
             The size of the kernel along each axis.
         stride (Tuple[int]):
@@ -64,11 +71,11 @@ def average_pool2d(
         in_dilations (Tuple[int]):
             The input dilations attributes along each spatial axis of the filter.
         auto_pad (Literal):
-            auto_pad must be either NOTSET, SAME_UPPER, SAME_LOWER or VALID. Where default value is NOTSET, which means explicit
-            padding is used. SAME_UPPER or SAME_LOWER mean pad the input so that `output_shape[i] = ceil(input_shape[i] / strides[i])`
+            auto_pad must be either not_set, same_upper, same_lower or valid. Where default value is not_set, which means explicit
+            padding is used. same_upper or same_lower mean pad the input so that `output_shape[i] = ceil(input_shape[i] / strides[i])`
             for each axis `i`. The padding is split between the two sides equally or almost equally (depending on whether it is even
-            or odd). In case the padding is an odd number, the extra padding is added at the end for SAME_UPPER and at the beginning
-            for SAME_LOWER.
+            or odd). In case the padding is an odd number, the extra padding is added at the end for same_upper and at the beginning
+            for same_lower.
         ceil_mode (bool):
             Whether to use ceil or floor (default) to compute the output shape.
     Returns:
@@ -98,31 +105,30 @@ def average_pool2d(
 
 
 @op_debug_context
-def max_pool2d(
-        t: Tensor,
-        kernel_size: Tuple[int],
-        storage_order: Optional[bool] = None,
-        stride: Optional[Tuple[int]] = None,
-        padding: Optional[Tuple[int]] = None,
-        out_pads: Optional[Tuple[int]] = None,
-        dilation: Optional[Tuple[int]] = None,
-        in_dilations: Optional[Tuple[int]] = None,
-        auto_pad: Literal['NOTSET', 'SAME_UPPER', 'SAME_LOWER', 'VALID'] = None,
-        ceil_mode: Optional[bool] = None) -> Tensor:
+def max_pool(t: Tensor,
+             kernel_size: Tuple[int],
+             stride: Optional[Tuple[int]] = None,
+             padding: Optional[Tuple[int]] = None,
+             out_pads: Optional[Tuple[int]] = None,
+             dilation: Optional[Tuple[int]] = None,
+             in_dilations: Optional[Tuple[int]] = None,
+             auto_pad: Optional[PadType] = 'not_set',
+             ceil_mode: Optional[bool] = None,
+             storage_order: Optional[bool] = None) -> Tensor:
     """
-    max_pool2d consumes an input tensor `t` and applies max pooling across the tensor according to kernel sizes,
+    max_pool consumes an input tensor `t` and applies max pooling across the tensor according to kernel sizes,
     stride sizes, and pad lengths. 
     Max pooling consisting of computing the max on all values of a subset of the input tensor according to
     the kernel size and downsampling the data into the output tensor Y for further processing.
 
     Args:
         t (Tensor):
-           Input data tensor from previous layer; has size (N, C, H, W), where N is the batch size, C is the number of channels,
-           and H and W are the height and width. Note that this is for the 2D image.
+            Input data tensor from previous layer; If the input is a 3D tensor, the size is (N, C, L), where N is the batch size,
+            C is the number of channel, L is the length; If the input is a 2D image, the size is (N, C, H, W), where N is the batch size,
+            C is the number of channel, H and W are the height and width; If the input is a 3D image, the size is (N, C, D, H, W), where
+            N is the batch size, C is the number of channel, D is the depth, H and W are the height and width.
         kernel_size (Tuple[int]):
             The size of the kernel along each axis.
-        storage_order (bool):
-            The storage order of the tensor. 0 is row major, and 1 is column major, default is false.
         stride (Tuple[int]):
             Stride along each spatial axis. If not present, the stride defaults to 1 along each spatial axis.
         padding (Tuple[int]):
@@ -137,13 +143,15 @@ def max_pool2d(
         in_dilations (Tuple[int]):
             The input dilations attributes along each spatial axis of the filter.
         auto_pad (Literal):
-            auto_pad must be either NOTSET, SAME_UPPER, SAME_LOWER or VALID. Where default value is NOTSET, which means explicit
-            padding is used. SAME_UPPER or SAME_LOWER mean pad the input so that `output_shape[i] = ceil(input_shape[i] / strides[i])`
+            auto_pad must be either not_set, same_upper, same_lower or valid. Where default value is not_set, which means explicit
+            padding is used. same_upper or same_lower mean pad the input so that `output_shape[i] = ceil(input_shape[i] / strides[i])`
             for each axis `i`. The padding is split between the two sides equally or almost equally (depending on whether it is even
-            or odd). In case the padding is an odd number, the extra padding is added at the end for SAME_UPPER and at the beginning
-            for SAME_LOWER.
+            or odd). In case the padding is an odd number, the extra padding is added at the end for same_upper and at the beginning
+            for same_lower.
         ceil_mode (bool):
             Whether to use ceil or floor (default) to compute the output shape.
+        storage_order (bool):
+            The storage order of the tensor. 0 is row major, and 1 is column major, default is false.
     Returns:
         out (Tensor):
             Output data tensor from max pooling across the input tensor. Dimensions will vary based on various kernel, stride, and pad sizes.

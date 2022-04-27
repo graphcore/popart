@@ -9,7 +9,7 @@ from utils import contains_op_of_type
 
 class TestConv:
     @pytest.mark.parametrize("pad_type",
-                             ('NOTSET', 'SAME_UPPER', 'SAME_LOWER', 'VALID'))
+                             ('not_set', 'same_upper', 'same_lower', 'valid'))
     def test_fn(self, pad_type):
         batch_size = 1
         in_channel = 4
@@ -30,8 +30,8 @@ class TestConv:
             weight = popxl.variable(
                 np.random.rand(out_channel, int(in_channel / group), h_kernel,
                                w_kernel))
-            res = ops.conv2d(t, weight, strides, pads, dilations, group,
-                             pad_type)
+            res = ops.conv(t, weight, strides, pads, dilations, group,
+                           pad_type)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Conv", _ir.op.ConvOp, g)

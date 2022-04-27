@@ -18,7 +18,7 @@ class TestAveragePool:
         with ir.main_graph:
             t = popxl.variable(
                 np.random.rand(batch_size, in_channel, height, width))
-            res = ops.average_pool2d(t, kernel)
+            res = ops.average_pool(t, kernel)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("AveragePool", _ir.op.AveragePoolOp, g)
