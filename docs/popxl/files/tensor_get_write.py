@@ -26,21 +26,24 @@ with main:
 ir.num_host_transfers = 1
 
 # TensorData begin
-session = popxl.Session(ir, "ipu_model")
-outputs = session.run()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run()
 
-print(f"Result is {outputs[o_d2h]}")
+    print(f"Result is {outputs[o_d2h]}")
 
-a_data = session.get_tensor_data(a)
-b_data = session.get_tensor_data(b)
+    # Takes a `popxl.Constant` or `popxl.Variable` tensor
+    # Retrieves the data for the specified tensor
+    a_data = session.get_tensor_data(a)
+    b_data = session.get_tensor_data(b)
 
-# Check the device values of 'a', 'b'
-assert a_data == np.array(3)
-assert b_data == np.array(1)
+    # Check the device values of 'a', 'b'
+    assert a_data == np.array(3)
+    assert b_data == np.array(1)
 
-# Write a new value for `a`
-session.write_variable_data(a, np.array(5).astype(np.int32))
+    # Takes a `popxl.Variable`
+    # Writes a new value for `a` on device
+    session.write_variable_data(a, np.array(5).astype(np.int32))
 
-# Variable now updated on 'device'
-assert session.get_tensor_data(a) == np.array(5)
-# TensorData end
+    # Variable now updated on 'device'
+    assert session.get_tensor_data(a) == np.array(5)
+    # TensorData end

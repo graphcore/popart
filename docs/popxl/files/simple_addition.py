@@ -33,7 +33,8 @@ inputs = {input0: data_a, input1: data_b}
 
 # SessionRun begin
 # run the model
-outputs = session.run(inputs)
+with session:
+    outputs = session.run(inputs)
 
 print(f"Input a is {data_a}")
 print(f"Input b is {data_b}")
@@ -44,7 +45,8 @@ print(f"Result is {outputs[o_d2h]}")
 # Alternatively:
 run_output = {o_d2h: np.zeros(shape=[1]).astype(np.float32)}
 
-session.run_with_outputs(inputs, run_output)
+with session:
+    session.run_with_outputs(inputs, run_output)
 
 print(f"Input a is {data_a}")
 print(f"Input b is {data_b}")

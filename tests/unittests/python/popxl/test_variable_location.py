@@ -155,9 +155,8 @@ def test_remote_replia_sharded_reuse_buffer():
 def run(ir, out, weight):
     session = popxl.Session(ir, "ipu_model")
 
-    outputs = session.run({})
-    session._pb_session.weightsToHost()
-
+    with session:
+        outputs = session.run({})
     final_weight = session.get_tensor_data(weight)
 
     return outputs[out], final_weight

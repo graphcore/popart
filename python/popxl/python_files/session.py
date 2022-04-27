@@ -96,16 +96,26 @@ class Session:
 
         self._device = device
 
+        # Initialise stack of "was attached" states when entering the Session
+        # context
+        self._was_attached_stack: List[bool] = []
+
         # Note: This uses the underlying popart .InferenceSession class, but supports BOTH inference
         # and training (via the autodiff transform). We use the  popart.InferenceSession class to
         # avoid any automatic autodiff-like transformations we want to do manually in popxl.
         self._pb_session = popart.InferenceSession.fromIr(ir=self._ir,
                                                           deviceInfo=device)
 
-        self._pb_session.prepareDevice()
-        self._pb_session.weightsFromHost()
+        self._pb_session.prepareDevice(loadEngine=False)
 
     # Methods:
+
+    def _assert_attached_before_runtime(self):
+        if not self.device.isAttached:
+            raise ValueError(
+                'Must be attached to device before calling a runtime function. Put the call inside a `Session` context, for example `with session: session.run()`.'
+            )
+
     def run_with_outputs(
             self,
             inputs: Optional[h2dStreamBufferMaps] = None,
@@ -121,7 +131,12 @@ class Session:
             outputs (d2hStreamBufferMaps, optional): The output buffers, these will be written to
                 and modified. Defaults to None.
             downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
+        
+        Raises:
+            ValueError: If not attached to device before calling this function.
         """
+
+        self._assert_attached_before_runtime()
 
         inputs = inputs or {}
         outputs = outputs or {}
@@ -143,14 +158,6 @@ class Session:
             d2h.tensor_id: arr
             for d2h, arr in outputs.items()
         }
-
-        # If not Hw, we attach now manually, as `run` will not do it for us.
-        # In PopXL, we want the user to be attached after run.
-        # TODO(T59969): Remove this, as with the Session contextmgr, the user
-        # will be forced to attach before run, and instead we should assert they
-        # are already attached.
-        if self.device.type != popart.DeviceType.Ipu:
-            self.device.attach()
 
         stepio = popart.PyStepIO(stepio_inputs, stepio_outputs)
         stepio.enableRuntimeAsserts(False)
@@ -175,7 +182,13 @@ class Session:
 
         Returns:
             d2hStreamBufferMaps: The map of outputs from the model.
+        
+        Raises:
+            ValueError: If not attached to device before calling this function.
         """
+
+        self._assert_attached_before_runtime()
+
         # Get D2HStream -> array outputs, convert to TensorId -> array anchors
         outputs = self.create_host_outputs()
 
@@ -186,7 +199,12 @@ class Session:
         return outputs
 
     def weights_to_host(self) -> None:
-        """Copy the weights to host from the device."""
+        """Copy the weights to host from the device.
+            
+        Raises:
+            ValueError: If not attached to device before calling this function.
+        """
+        self._assert_attached_before_runtime()
         # NOTE: Copies from device, to internal buffers, to Ir TensorData
         #       buffers. After this call, `get_tensor_data` can immediately
         #       return the Ir tensors' TensorData buffers.
@@ -195,7 +213,12 @@ class Session:
         self._pb_session.copyDeviceWeightsToHost()
 
     def weights_from_host(self) -> None:
-        """Copy the weights to device from the host."""
+        """Copy the weights to device from the host.
+        
+        Raises:
+            ValueError: If not attached to device before calling this function.
+        """
+        self._assert_attached_before_runtime()
         self._pb_session.weightsFromHost()
 
     def expected_inputs(self) -> List[HostToDeviceStream]:
@@ -276,62 +299,69 @@ class Session:
 
         return return_tensors
 
-    def write_variable_data(self,
-                            tensor: Variable,
-                            data: np.ndarray,
-                            write_from_host: bool = True) -> None:
+    def write_variable_data(self, tensor: Variable, data: np.ndarray) -> None:
         """Write the variable tensor data from the provided host array.
 
-        This is only valid for Variable type tensors. This will update values on the device with
-        values from the array, both the Tensor and the array must have matching types and shapes.
+        This is only valid for Variable type tensors.
+
+        tensor and data must have matching shape and dtype.
+        
+        If attached to device, the Variable will be updated on host, then a
+        ``weights_from_host`` will occur to update the weights on device.
+
+        If not attached to device, the Variable will be updated on host only.
+        The next call to `weights_from_host` will send this updated value to
+        device.
 
         Args:
-            tensor (Variable): The tensor to update on the device.
-            data (np.ndarray): The array with values to update to.
-            write_from_host (bool, optional): Whether to do the actual transfer to device; used for
-                delaying multiple transfers to run in one go, for example in ``write_tensors_data``.
-                Defaults to True.
+            tensor (Variable): The popxl tensor to update.
+            data (np.ndarray): The array to update the tensor data to.
 
         Raises:
             TypeError: If the tensor is not a Variable.
             TypeError: If the data types do not match.
             ValueError: If the shapes do not match.
         """
-        import numbers
-        if not isinstance(tensor, Variable):
-            raise TypeError(
-                f"Tensor {tensor.id} is not of type Variable. write_variable_data is not"
-                "supported for this type.")
 
-        if isinstance(data, numbers.Number):
-            data = np.array(data).astype(tensor.dtype.as_numpy())
-        if data.dtype != tensor.dtype.as_numpy():
-            raise TypeError(
-                f"The dtype of the input array {data.dtype} must match the equivalent "
-                f"type of the tensor {tensor.id} : {tensor.dtype}")
-        elif data.shape != tensor.shape:
-            raise ValueError(
-                f"The shape of the input array {data.shape} must match the "
-                f"shape of the tensor {tensor.id} : {tensor.shape}")
-
-        tensor._pb_tensor.writeTensorData(data)
-        if write_from_host:
-            self.weights_from_host()
+        self.write_variables_data({tensor: data})
 
     def write_variables_data(self,
                              tensors: Dict[Variable, np.ndarray]) -> None:
         """Call ``write_variable_data`` for multiple tensors in one go.
 
-        The function delays the host to device transfer until last so that
-        it is transferred in one go.
+        Like ``write_variable_data``, the ``weights_from_host`` will only occur
+        if already attached to device when calling this function.
+
+        The host to device transfer is delayed until the end so that it only
+        happens once.
 
         Args:
-            tensors (Variable, np.ndarray]): A dictionary of tensors and the
-            corresponding array to call 'write_variable_data` with.
+            tensors Dict[(Variable, np.ndarray]): A dictionary of tensors and
+            the corresponding array to call 'write_variable_data` with.
         """
-        for k, v in tensors.items():
-            self.write_variable_data(k, v, False)
-        self.weights_from_host()
+
+        import numbers
+        for tensor, data in tensors.items():
+            if not isinstance(tensor, Variable):
+                raise TypeError(
+                    f"Tensor {tensor.id} is not of type Variable. write_variable_data is not"
+                    "supported for this type.")
+
+            if isinstance(data, numbers.Number):
+                data = np.array(data).astype(tensor.dtype.as_numpy())
+            if data.dtype != tensor.dtype.as_numpy():
+                raise TypeError(
+                    f"The dtype of the input array {data.dtype} must match the equivalent "
+                    f"type of the tensor {tensor.id} : {tensor.dtype}")
+            elif data.shape != tensor.shape:
+                raise ValueError(
+                    f"The shape of the input array {data.shape} must match the "
+                    f"shape of the tensor {tensor.id} : {tensor.shape}")
+
+            tensor._pb_tensor.writeTensorData(data)
+
+        if self.device.isAttached:
+            self.weights_from_host()
 
     def create_host_outputs(self) -> d2hStreamBufferMaps:
         """
@@ -422,6 +452,56 @@ class Session:
             device (popart.DeviceInfo): The popart.DeviceInfo to set this to.
         """
         self._device = device
+
+    def __enter__(self) -> 'Session':
+        """
+        Enter the context of this ``Session``.
+
+        If not already attached to device, this will attach and perform a
+        ``weights_from_host``.
+
+        See the PopXL User Guide entry on ``Session`` for a more comprehensive
+        guide to ``Session``s and the context manager.
+        """
+
+        self._was_attached_stack.append(self.device.isAttached)
+
+        # Only attach and weights_from_host if going from detached->attached.
+        if not self.device.isAttached:
+            self.device.attach()
+            # On Hw, above will not block until attach, only the below call will.
+            if not self.device.isAttached:
+                self.device.tryAttachUntilTimeout()
+
+            self.weights_from_host()
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        """
+        Exit the context of this ``Session``.
+
+        If you were attached when entering this context, this will perform a
+        ``weights_to_host`` then detach.
+
+        See the PopXL User Guide entry on ``Session`` for a more comprehensive
+        guide to ``Session``s and the context manager.
+        """
+
+        # Teardown context only if we were not attached when entering it. Thus
+        # if we were already attached on enter, we will still be attached after
+        # exit.
+        was_attached = self._was_attached_stack.pop()
+
+        should_teardown = not was_attached
+        if should_teardown:
+            self.weights_to_host()
+            self.device.detach()
+
+        # Note, if the user was attached, but then manually detached inside the
+        # context, we do not restore their pre-enter attached state.
+
+        # Let exceptions propagate
 
     # Private methods
     def _get_ipu_count(self) -> int:

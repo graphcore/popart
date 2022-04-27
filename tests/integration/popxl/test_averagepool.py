@@ -31,8 +31,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool2d(kernel, stride=strides)
@@ -67,8 +67,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool2d(kernel,
@@ -110,8 +110,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool2d(kernel, stride=strides, ceil_mode=True)
@@ -143,8 +143,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool1d(kernel, stride=strides, ceil_mode=False)
@@ -177,8 +177,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool1d(kernel,
@@ -218,8 +218,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool3d(kernel, stride=strides, ceil_mode=False)
@@ -256,8 +256,8 @@ class TestAveragePool:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # averagepool in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = nn.AvgPool3d(kernel,

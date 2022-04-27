@@ -22,8 +22,8 @@ class TestArgMax:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # argmax in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.argmax(dim=0, keepdim=False)
@@ -49,8 +49,8 @@ class TestArgMax:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # argmax in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.argmax(dim=-1, keepdim=True)

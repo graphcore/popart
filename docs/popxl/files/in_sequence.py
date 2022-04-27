@@ -20,7 +20,6 @@ with main:
         o_d2h = popxl.d2h_stream(x.shape, x.dtype, name="output_stream")
         ops.host_store(o_d2h, x)
 
-session = popxl.Session(ir, "ipu_model")
-
 # run the model
-outputs = session.run()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run()

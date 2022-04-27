@@ -26,8 +26,8 @@ with main:
 
 ir.num_host_transfers = 1
 
-session = popxl.Session(ir, "ipu_model")
-outputs = session.run()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run()
+# Session end
 
 print(f"Result is {outputs[o_d2h]}")
-# Session end

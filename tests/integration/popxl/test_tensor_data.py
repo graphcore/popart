@@ -77,10 +77,11 @@ class TestData:
 
         arr2 = get_np_array(shape, np_dtype)
         # This should throw:
-
-        with pytest.raises(TypeError) as e_info:
-            session.write_variable_data(a, arr2)
-        assert e_info.value.args[0].startswith(f"Tensor {a.id} is not of type")
+        with session:
+            with pytest.raises(TypeError) as e_info:
+                session.write_variable_data(a, arr2)
+            assert e_info.value.args[0].startswith(
+                f"Tensor {a.id} is not of type")
 
     def test_update_weights(self, shape, np_dtype):
         ir = popxl.Ir()
@@ -106,7 +107,8 @@ class TestData:
         retrieved_array = session.get_tensor_data(w_tensor)
         assert np.allclose(retrieved_array, w_np_data)
 
-        _ = session.run({x_d2h: x_data})
+        with session:
+            _ = session.run({x_d2h: x_data})
 
         print("w_data: ", retrieved_array)
         print("expected: ", w_np_data_copy + x_data)
@@ -135,7 +137,8 @@ class TestWriteTensorData:
         ir.num_host_transfers = 1
         session = popxl.Session(ir, device_desc="ipu_model")
         input_array_2 = get_np_array(shape, np_dtype)
-        session.write_variable_data(t, input_array_2)
+        with session:
+            session.write_variable_data(t, input_array_2)
         retrieved_array = session.get_tensor_data(t)
 
         assert input_array_2.strides == retrieved_array.strides

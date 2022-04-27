@@ -38,11 +38,10 @@ with ir.main_graph, popxl.in_sequence():
     ops.remote_store(buffer, 0, updated_shard)
 
 # Execute the ir
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run({})
-# Get the updated x value
-final_weight = session.get_tensor_data(remote_x)
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run({})
+    # Get the updated x value
+    final_weight = session.get_tensor_data(remote_x)
 
 # remote_var end
 print(final_weight)

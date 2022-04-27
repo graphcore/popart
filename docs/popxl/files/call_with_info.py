@@ -32,8 +32,7 @@ with main, popxl.in_sequence():
     ops.host_store(o_d2h, x)
     # Op end
 
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run()
 
 print(f"Result is {outputs[o_d2h]}")

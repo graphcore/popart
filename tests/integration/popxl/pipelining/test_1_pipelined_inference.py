@@ -611,7 +611,8 @@ def test_pipelined_inference():
         full_dataset_data[run_nr, ...] = dataset_data
 
         data = {t_in_h2d: dataset_data}
-        outputs = session.run(data)
+        with session:
+            outputs = session.run(data)
 
         # Append the result
         result[run_nr, ...] = outputs[t_out_d2h]

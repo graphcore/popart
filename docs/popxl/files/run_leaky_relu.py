@@ -39,8 +39,8 @@ def build_and_run_graph(input_data: Union[float, np.ndarray],
         o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
         ops.host_store(o_d2h, o)
 
-    session = popxl.Session(ir, "ipu_model")
-    outputs = session.run({input0: input_array})
+    with popxl.Session(ir, "ipu_model") as session:
+        outputs = session.run({input0: input_array})
 
     print("ALPHA param:", alpha)
     print("INPUT data:", input_data)

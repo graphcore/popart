@@ -53,6 +53,13 @@ class TestPythonDocExamples(ExamplesTester):
                         file_dir=working_dir,
                         working_dir=working_dir)
 
+    def test_documentation_popxl_nested_session_contexts(self):
+        """Test the nested Session contexts example"""
+        filename = "nested_session_contexts.py"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
     def test_documentation_popxl_call_with_info(self):
         """Test the popxl call_with_info example"""
         filename = "call_with_info.py"
@@ -84,6 +91,14 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_popart_ir_get_set_tensors(self):
         """Test the popxl getting / setting tensor data example"""
         filename = "tensor_get_write.py"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
+    def test_documentation_popxl_adv_get_write(self):
+        """Test the popxl advanced getting / writing tensor data example that
+        shows exactly when device-host transfers occur"""
+        filename = "tensor_get_write_adv.py"
         self.run_python(filename,
                         file_dir=working_dir,
                         working_dir=working_dir)

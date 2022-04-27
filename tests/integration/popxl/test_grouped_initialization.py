@@ -418,15 +418,11 @@ def test_grouped_initialization(config, remote: bool, rts: bool):
         ir, session_type, rg, rts, remote)
 
     # Run a session on an ipu device
-    session = popxl.Session(ir, "ipu_hw")
-    outputs = session.run(inputs)
+    with popxl.Session(ir, "ipu_hw") as session:
+        outputs = session.run(inputs)
 
     # Retrieve the updated weight value
-    session._pb_session.weightsToHost()
     final_weight = session.get_tensor_data(w)
-
-    # Explicitly detach from device
-    session.device.detach()
 
     if rg is None:
         # Model already run, so it's safe to initialize rg

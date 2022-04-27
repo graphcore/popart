@@ -76,9 +76,9 @@ ir.num_host_transfers = _REPEAT_COUNT
 # Note the input shape here (_REPEAT_COUNT, *data_shape):
 x_data = np.random.random([_REPEAT_COUNT, 2, 2]).astype(np.float32)
 input_ = {x_h2d: x_data}
-session = popxl.Session(ir, "ipu_model")
 
-outputs = session.run(input_)
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run(input_)
 # SessionRun3 end
 
 y_data: np.ndarray = outputs[y_d2h]

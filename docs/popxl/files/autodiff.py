@@ -70,12 +70,10 @@ with main:
     ops.host_store(grad_d2h, grads_w)
     # Op end
 
-session = popxl.Session(ir, "ipu_model")
-
-# Generate some random input data
-inputs = {input: np.random.rand(2, 2).astype(np.float32)}
-
-outputs = session.run(inputs)
+with popxl.Session(ir, "ipu_model") as session:
+    # Generate some random input data
+    inputs = {input: np.random.rand(2, 2).astype(np.float32)}
+    outputs = session.run(inputs)
 
 print(f"Input is {inputs[input]}")
 print(f"Output is {outputs[o_d2h]}")

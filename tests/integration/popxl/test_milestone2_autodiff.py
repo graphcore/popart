@@ -164,7 +164,8 @@ def test_autodiff():
     x_data = np.ones(_IN_SHAPE, dtype=np.float32)
     inputs = {x_h2d: x_data}
 
-    outputs = session.run(inputs)
+    with session:
+        outputs = session.run(inputs)
 
     def check_tensors(a: np.ndarray, b: np.ndarray):
         assert a.shape == b.shape

@@ -37,11 +37,10 @@ with main, popxl.in_sequence():
     y_d2h = popxl.d2h_stream(loaded_x.shape, loaded_x.dtype)
     ops.host_store(y_d2h, loaded_x)
 
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run({})
-# Get the data for the remote variable
-final_weight = session.get_tensor_data(remote_x)
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run({})
+    # Get the data for the remote variable
+    final_weight = session.get_tensor_data(remote_x)
 
 assert outputs[y_d2h] == 3
 assert final_weight == 3

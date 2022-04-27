@@ -36,9 +36,8 @@ with main:
 inputs = {input: np.random.rand(2, 2).astype(np.float32)}
 
 # run the model
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run(inputs)
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run(inputs)
 
 print(f"Input is {inputs[input]}")
 print(f"Result is {outputs[o_d2h]}")

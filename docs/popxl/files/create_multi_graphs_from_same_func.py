@@ -39,13 +39,12 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-session = popxl.Session(ir, "ipu_model")
-
 # Generate some random input data
 inputs = {input: np.random.rand(2, 2).astype(np.float32)}
 
 # run the model
-outputs = session.run(inputs)
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run(inputs)
 
 print(f"Input is {inputs[input]}")
 print(f"Result is {outputs[o_d2h]}")

@@ -96,7 +96,8 @@ class TestIOSizes():
         outputs[out_d2h] = np.zeros(
             (BPS * 2, DATA_SHAPE, DATA_SHAPE)).astype(np.float32)
 
-        session.run_with_outputs(data, outputs)
+        with session:
+            session.run_with_outputs(data, outputs)
 
         for k, v in outputs.items():
             print(k, ":", v.shape)
@@ -139,7 +140,7 @@ class TestIOSizes():
         ir.num_host_transfers = num_host_transfers
         ir.replication_factor = replication_factor
 
-        def dummy_function(self):  # pylint: disable=unused-argument
+        def dummy_function(self, *args, **kwargs):  # pylint: disable=unused-argument
             # Do nothing
             pass
 

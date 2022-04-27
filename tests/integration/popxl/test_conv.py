@@ -41,8 +41,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -96,8 +96,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -152,8 +152,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -213,8 +213,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -265,8 +265,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -316,8 +316,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -377,8 +377,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -436,8 +436,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(
@@ -496,8 +496,8 @@ class TestConv:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t, input1: weight})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t, input1: weight})
         # conv in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_weight = torch.nn.Parameter(

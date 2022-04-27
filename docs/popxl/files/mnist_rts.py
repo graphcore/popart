@@ -434,12 +434,12 @@ def run_train(training_data, opts):
         train_session = popxl.Session(train_ir, 'ipu_hw')
     else:
         train_session = popxl.Session(train_ir, 'ipu_model')
-    train(train_session, training_data, opts, input_streams, loss_stream)
+    with train_session:
+        train(train_session, training_data, opts, input_streams, loss_stream)
     # session end
     trained_weights_data_dict = train_session.get_tensors_data(
         [v.var for v in train_variables])
 
-    train_session.device.detach()
     print("Training complete.")
     return trained_weights_data_dict
 
@@ -458,9 +458,8 @@ def run_test(test_data, trained_weights_data_dict, opts):
                                                  trained_weights_data_dict)
     # Copy trained weights to the test ir
     test_session.write_variables_data(test_weights_data_dict)
-
-    test(test_session, test_data, opts, test_input_streams, out_stream)
-    test_session.device.detach()
+    with test_session:
+        test(test_session, test_data, opts, test_input_streams, out_stream)
     # test end
     print("Testing complete.")
 

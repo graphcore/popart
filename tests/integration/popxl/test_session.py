@@ -37,8 +37,6 @@ def test_session():
         np.array(w_input).astype(np.float32) +
         np.array(c_input).astype(np.float32))
 
-    session.device.detach()
-
 
 class LinearHostLoad(popxl.Module):
     def __init__(self):
@@ -87,8 +85,6 @@ def test_session_multi_iteration():
     for i in range(bps):
         assert np.allclose(output[i, ...], (input_[i, ...] @ W_data) + b_data)
 
-    session.device.detach()
-
 
 # yapf: disable
 @pytest.mark.parametrize("data,shape,dtype", [
@@ -109,9 +105,8 @@ def test_session_input_types(data, shape, dtype):
         y_d2h = popxl.d2h_stream(y.shape, y.dtype)
         ops.host_store(y_d2h, y)
 
-    session = popxl.Session(ir, device_desc="ipu_model")
-    outputs = session.run(inputs={x_h2d: data})
-    session.device.detach()
+    with popxl.Session(ir, device_desc="ipu_model") as session:
+        outputs = session.run(inputs={x_h2d: data})
 # yapf: enable
 
 
@@ -127,9 +122,10 @@ def run_session(ir, input_tensors, input_d2hs, num_host_transfers):
         t_input = np.random.normal(0, 0.4, shape).astype(t.dtype.as_numpy())
         inputs[t_d2h] = t_input
 
-    outputs = session.run(inputs)
-    # Could also do `outputs = session.create_host_outputs()`
-    # session.run_with_outputs(inputs, outputs)
+    with session:
+        outputs = session.run(inputs)
+        # Could also do `outputs = session.create_host_outputs()`
+        # session.run_with_outputs(inputs, outputs)
     return session, inputs, outputs
 
 
@@ -149,7 +145,8 @@ def test_get_tensor_data_bad_argument_type():
     session = popxl.Session(ir)
     session.device = tu.create_test_device(numIpus=1).device
 
-    session.run({h2d: np.array(1.)})
+    with session:
+        session.run({h2d: np.array(1.)})
 
     # Variable permitted.
     session.get_tensor_data(w)

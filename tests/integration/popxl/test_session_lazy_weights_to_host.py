@@ -58,10 +58,7 @@ def test_get_tensor_data_elides_weights_to_host_if_host_weights_are_in_sync(
     # functions under test.
     clear_log()
 
-    # Recall device context manager does not attach on enter, only ensures
-    # detach on exit.
-    attach(session.device)
-    with session.device:
+    with session:
         session.get_tensor_data(w)  # cache hit
         session.get_tensor_data(w)  # cache hit
         session.get_tensor_data(v)  # cache hit
@@ -89,9 +86,14 @@ def test_get_tensor_data_elides_weights_to_host_if_host_weights_are_in_sync(
             "Expected exactly 1 WeightsToHost when calling get_tensor_data repeatedly after run."
         )
 
+    # As exiting ctxt caused a weights_to_host.
+    clear_log()
+
     # Test get_tensor_data will get latest weights outside of context IF
     # manually attached.
     attach(session.device)
+    # Note using device ctxt to ensure detach, not full Session ctxt.
+    # Note device ctxtmgr does not attach, only detach on exit.
     with session.device:
         session.run()
         assert session.device.isAttached

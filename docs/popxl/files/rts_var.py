@@ -28,10 +28,8 @@ with ir.main_graph, popxl.in_sequence():
     ops.var_updates.accumulate_(loaded_x, sharded_y)
 
 # Execute the ir
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run({})
-session._pb_session.weightsToHost()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run({})
 
 # Get the updated x value
 final_weight = session.get_tensor_data(remote_x)

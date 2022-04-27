@@ -52,8 +52,7 @@ with main:
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")
     ops.host_store(o_d2h, o)
 
-session = popxl.Session(ir, "ipu_model")
-
-outputs = session.run()
+with popxl.Session(ir, "ipu_model") as session:
+    outputs = session.run()
 
 np.testing.assert_allclose(outputs[o_d2h], [[7, 7], [7, 7]])

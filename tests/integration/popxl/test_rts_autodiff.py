@@ -182,8 +182,7 @@ class TestTensorLocation():
         ir.num_host_transfers = 1
         ir.replication_factor = NUM_LOCAL_REPLICAS
 
-        session = popxl.Session(ir, "ipu_model")
-
-        outputs = session.run(data)
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run(data)
 
         return session, outputs

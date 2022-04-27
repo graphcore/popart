@@ -21,8 +21,8 @@ class TestExp:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # exp in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.exp()
@@ -47,8 +47,8 @@ class TestExp:
             o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="out_stream")
             ops.host_store(o_d2h, o)
         # get the result
-        session = popxl.Session(ir, "ipu_model")
-        outputs = session.run({input0: t})
+        with popxl.Session(ir, "ipu_model") as session:
+            outputs = session.run({input0: t})
         # exp in torch
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.exp()

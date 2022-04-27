@@ -86,7 +86,8 @@ def test_basic_subgraph():
 
     inputs = {x_h2d: x_data}
 
-    outputs = session.run(inputs)
+    with session:
+        outputs = session.run(inputs)
 
     expected_y = np.matmul(x_data, W_data) + b_data
     y = outputs[y_d2h]
