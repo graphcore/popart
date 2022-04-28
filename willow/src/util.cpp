@@ -198,6 +198,10 @@ nonstd::optional<std::string> getPopartEnvVar(const std::string &env_var) {
   return getEnvVar(logging::format("POPART_{}", env_var));
 }
 
+nonstd::optional<std::string> getPopXLEnvVar(const std::string &env_var) {
+  return getEnvVar(logging::format("POPXL_{}", env_var));
+}
+
 std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v) {
   appendSequence(ss, v);
   return ss;

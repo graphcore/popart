@@ -2,10 +2,12 @@
 
 import popxl
 import os
+import pytest
 
 
-def test_cache_env():
-    os.environ['POPART_CACHE_DIR'] = 'PATH_TO_CACHE'
+@pytest.mark.parametrize("varname", ["POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
+def test_cache_env(varname):
+    os.environ['POPXL_CACHE_DIR'] = 'PATH_TO_CACHE'
 
     ir = popxl.Ir()
     opts = ir._pb_ir.getSessionOptions()
@@ -13,4 +15,4 @@ def test_cache_env():
     assert opts.enableEngineCaching
     assert opts.cachePath == 'PATH_TO_CACHE'
 
-    del os.environ['POPART_CACHE_DIR']
+    del os.environ['POPXL_CACHE_DIR']

@@ -216,12 +216,13 @@ def test_cache_miss_on_engine_option_change(tmp_path, capfd):
 
 
 @tu.requires_ipu
-def test_cache_environment_variable(tmp_path, capfd):
+@pytest.mark.parametrize("varname", ["POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
+def test_cache_environment_variable(tmp_path, capfd, varname):
     """
-    Test chaching enabled via env POPART_CACHE_DIR
+    Test caching as enabled via env POPART_CACHE_DIR or POPXL_CACHE_DIR
     """
     popart.getLogger().setLevel('DEBUG')
-    os.environ['POPART_CACHE_DIR'] = str(tmp_path / 'saved_graph')
+    os.environ[varname] = str(tmp_path / 'saved_graph')
 
     opts = popart.SessionOptions()
 
@@ -232,7 +233,7 @@ def test_cache_environment_variable(tmp_path, capfd):
     run_session(2, opts)
     assert loaded_saved_executable(capfd) is True
 
-    del os.environ['POPART_CACHE_DIR']
+    del os.environ[varname]
 
 
 @tu.requires_ipu

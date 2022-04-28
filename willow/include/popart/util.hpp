@@ -91,6 +91,7 @@ cast(DataType src, DataType dst, const std::vector<char> &data);
 
 nonstd::optional<std::string> getEnvVar(const std::string &env_var);
 nonstd::optional<std::string> getPopartEnvVar(const std::string &env_var);
+nonstd::optional<std::string> getPopXLEnvVar(const std::string &env_var);
 
 /**
  * Return the ctest name (e.g.,

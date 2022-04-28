@@ -7,8 +7,8 @@ from popxl import ops
 
 class TestWriteVariablesData:
     # Test that write_variable_data updates variable data on host and
-    # that its weight is updated on device when using POPART_CACHE_DIR, [A].
-    # This test was failing, see T60847. But was passing when POPART_CACHE_DIR
+    # that its weight is updated on device when using POPXL_CACHE_DIR, [A].
+    # This test was failing, see T60847. But was passing when POPXL_CACHE_DIR
     # was not used, [B].
     # The reason was that for [B] weights are populated by IR and we were
     # updating IR when calling write_variable_data.
@@ -18,7 +18,7 @@ class TestWriteVariablesData:
     def test_write_variables_data_cache(self, tmp_path):
         opts = popart.SessionOptions()
         popart.getLogger().setLevel('DEBUG')
-        os.environ['POPART_CACHE_DIR'] = str(tmp_path / 'cache')
+        os.environ['POPXL_CACHE_DIR'] = str(tmp_path / 'cache')
         ir = popxl.Ir()
         with ir.main_graph:
             v = popxl.variable(1, popxl.float32)
@@ -32,4 +32,4 @@ class TestWriteVariablesData:
             sess.write_variable_data(v, 3)
             assert sess.run()[d2h] == 3
 
-        del os.environ['POPART_CACHE_DIR']
+        del os.environ['POPXL_CACHE_DIR']

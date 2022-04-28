@@ -1102,11 +1102,27 @@ struct SessionOptions {
 
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the
-    // environment variable `POPART_CACHE_DIR` is provided
-    auto cachePathEnv = getPopartEnvVar("CACHE_DIR");
-    if (cachePathEnv) {
+    // environment variable `POPART_CACHE_DIR` or `POPXL_CACHE_DIR` is provided
+    auto popartCachePathEnv = getPopartEnvVar("CACHE_DIR");
+    auto popxlCachePathEnv  = getPopXLEnvVar("CACHE_DIR");
+
+    if (popartCachePathEnv && popxlCachePathEnv &&
+        (*popartCachePathEnv != *popxlCachePathEnv)) {
+      logging::warn("Both POPART_CACHE_DIR ('{}') and POPXL_CACHE_DIR ('{}') "
+                    "are set and differ from each other. The value of "
+                    "POPART_CACHE_DIR will be ignored.",
+                    *popartCachePathEnv,
+                    *popxlCachePathEnv);
+    }
+
+    if (popartCachePathEnv) {
       enableEngineCaching = true;
-      cachePath           = *cachePathEnv;
+      cachePath           = *popartCachePathEnv;
+    }
+
+    if (popxlCachePathEnv) {
+      enableEngineCaching = true;
+      cachePath           = *popxlCachePathEnv;
     }
   }
 
