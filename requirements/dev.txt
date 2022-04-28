@@ -42,5 +42,5 @@ docutils==0.16
 # Build system stuff.
 cmake==3.18.4
 ninja>=1.8.2
-conan==1.22.2
+conan==1.46.0
 git+ssh://git@phabricator.sourcevertex.net/diffusion/VIEW/view.git
