@@ -1,4 +1,4 @@
-.. _sec_graphs:
+.. _ch_graphs:
 
 Graphs
 ======
@@ -8,7 +8,7 @@ Graphs
 Main graph
 ----------
 
-You can create the main graph of an IR by calling :py:attr:`popxl.Ir.main_graph`.
+You can create the main graph of an IR by calling :py:attr:`~popxl.Ir.main_graph`.
 The returned main graph can be used as a context to include its operations
 and tensors.
 
@@ -17,13 +17,16 @@ and tensors.
 Graphs
 ------
 
-You can create a subgraph (:numref:`graph_concept`) in PopXL by calling, for example, :py:func:`popxl.Ir.create_graph`. You then connect the subgraph with the calling graph with the op :py:func:`popxl.ops.call`.
-In PopXL, you have access to ``create_graph()`` before you call a graph with
-``popxl.ops.call()``, which gives you the flexibility to manipulate the graph.
+You can create a subgraph (:numref:`graph_concept`) in PopXL by calling, for
+example, :py:func:`~popxl.Ir.create_graph`. You then connect the
+subgraph with the calling graph with the :py:func:`~popxl.ops.call` op. In
+PopXL, you have access to :py:func:`~popxl.Ir.create_graph` before
+you call a graph with :py:func:`~popxl.ops.call`, which gives you the
+flexibility to manipulate the graph.
 
-:numref:`code_basic_subgraph_popxl` shows a basic example for how to create and call subgraphs.
-In the example, a subgraph is created and called instead of directly calling the Python function
-``increment_fn()``.
+:numref:`code_basic_graph_popxl` shows a basic example for how to create and
+call subgraphs. In the example, a subgraph is created and called instead of
+directly calling the Python function ``increment_fn()``.
 
 .. literalinclude:: files/basic_graph.py
   :language: python
@@ -39,9 +42,9 @@ In the example, a subgraph is created and called instead of directly calling the
 Creating a graph
 ----------------
 
-You can create a subgraph by calling the function :py:func:`popxl.Ir.create_graph`.
+You can create a subgraph by calling the function :py:func:`~popxl.Ir.create_graph`.
 You can use the same function to create multiple subgraphs.
-In the example in :numref:`code_create_multi_subgraphs_from_same_func_popxl`, two different graphs are created
+In the example in :numref:`code_create_multi_graphs_from_same_func_popxl`, two different graphs are created
 for different input tensors, ``w1`` and ``w2``, which have different shapes.
 
 .. literalinclude:: files/create_multi_graphs_from_same_func.py
@@ -53,16 +56,16 @@ for different input tensors, ``w1`` and ``w2``, which have different shapes.
 
 .. only:: html
 
-    :download:`Download create_multi_subgraphs_from_same_func_popxl.py <../user_guide/files/create_multi_graphs_from_same_func_popxl.py>`
+    :download:`Download create_multi_subgraphs_from_same_func.py <files/create_multi_graphs_from_same_func.py>`
 
-You can also create the subgraph with an additional graph input with :py:func:`popxl.graph_input`
-in its Python function. :py:func:`popxl.graph_input` creates a new input tensor for the
+You can also create the subgraph with an additional graph input with :py:func:`~popxl.graph_input`
+in its Python function. :py:func:`~popxl.graph_input` creates a new input tensor for the
 subgraph. An example can be found in :numref:`multi_call_graph_input_example`.
 
 Calling a graph
 ---------------
 
-After you have created a subgraph, you can invoke it with :py:func:`popxl.ops.call`. The input tensors are as follows:
+After you have created a subgraph, you can invoke it with :py:func:`~popxl.ops.call`. The input tensors are as follows:
 
 .. code-block:: python
 
@@ -72,9 +75,9 @@ After you have created a subgraph, you can invoke it with :py:func:`popxl.ops.ca
       ) -> Union[None, Tensor, Tuple[Tensor, ...]]:
 
 ``inputs`` are the inputs the subgraph requires and they must
-be in the same order as in :py:func:`popxl.Ir.create_graph`. If you are not sure about the order
+be in the same order as in :py:func:`~popxl.Ir.create_graph`. If you are not sure about the order
 of the subgraph internal tensors that are defined by
-:py:func:`popxl.graph_input`, you can use ``inputs_dict`` to
+:py:func:`~popxl.graph_input`, you can use ``inputs_dict`` to
 provide the mapping between the subgraph tensors and the parent graph tensors.
 
 .. :note:: Each graph can be called from multiple call sites, but it is compiled only once to avoid redundant code.
@@ -96,9 +99,9 @@ for this input as well. You can use it to instantiate the weights of layers inte
     :download:`Download multi_call_graph_input.py <files/multi_call_graph_input.py>`
 
 
-Instead of calling a graph with :py:func:`popxl.ops.call`, you can call it and get the information about the call site with the op
-:py:func:`popxl.ops.call_with_info`. This op returns a
-:py:obj:`popxl.ops.CallSiteInfo` object that provides extra information about the call site. For
+Instead of calling a graph with :py:func:`~popxl.ops.call`, you can call it and get the information about the call site with the op
+:py:func:`~popxl.ops.call_with_info`. This op returns a
+:py:obj:`~popxl.ops.CallSiteInfo` object that provides extra information about the call site. For
 instance, you can get the graph being called using ``called_graph``.
 ``inputs`` and ``outputs`` return the input tensors and
 output tensors respectively. You can also obtain the input and output tensors at
@@ -109,8 +112,8 @@ graph tensor that corresponds to a parent tensor using
 ``graph_to_parent(graph_tensor)`` provides an input or output tensor in
 ``called_graph`` that associates the input or output tensor in the parent graph.
 
-With the :py:obj:`popxl.ops.CallSiteInfo` object, you can use ``set_parent_input_modified(subgraph_tensor)`` to specify
-that the input tensor ``subgraph_tensor`` can be modified by this :py:func:`popxl.ops.call_with_info` op. This provides
+With the :py:obj:`~popxl.ops.CallSiteInfo` object, you can use ``set_parent_input_modified(subgraph_tensor)`` to specify
+that the input tensor ``subgraph_tensor`` can be modified by this :py:func:`~popxl.ops.call_with_info` op. This provides
 support for in-place variable updates as in :numref:`code_call_with_info_popxl`. After calling the subgraph, the value
 of the variable tensor ``x`` is changed to 2.
 
@@ -125,13 +128,13 @@ of the variable tensor ``x`` is changed to 2.
 
     :download:`Download call_with_info.py <files/call_with_info.py>`
 
-The op :py:func:`popxl.ops.call_with_info` is helpful when building and optimizing the backward graph. More details are given in :numref:`autodiff`.
+The op :py:func:`~popxl.ops.call_with_info` is helpful when building and optimizing the backward graph. More details are given in :numref:`autodiff`.
 
 
 Calling a graph in a loop
 -------------------------
 
-You can use the op :py:func:`popxl.ops.repeat` to create a loop.
+You can use the op :py:func:`~popxl.ops.repeat` to create a loop.
 
 .. code-block:: python
 
@@ -151,7 +154,7 @@ Both inputs from ``inputs`` and ``inputs_dict`` are "loop-carried" inputs. This
 means that they are copied into the subgraph as inputs before the first
 iteration is run. The outputs of each iteration are copied to the inputs of the
 next iteration as shown in :numref:`fig_repeat_op`. The outputs of the last
-iteration serve as the outputs of the :py:func:`popxl.ops.repeat` op.
+iteration serve as the outputs of the :py:func:`~popxl.ops.repeat` op.
 
 .. figure:: images/repeat_op.png
   :name: fig_repeat_op
@@ -160,7 +163,7 @@ iteration serve as the outputs of the :py:func:`popxl.ops.repeat` op.
 
   Repeat op graph
 
-The :py:func:`popxl.ops.repeat` op requires that the number of the subgraph inputs, including the ``inputs`` and the ``inputs_dict``, to be at least the number of outputs.
+The :py:func:`~popxl.ops.repeat` op requires that the number of the subgraph inputs, including the ``inputs`` and the ``inputs_dict``, to be at least the number of outputs.
 
 .. note:: This operation requires the repeat count to be greater than 0.
 

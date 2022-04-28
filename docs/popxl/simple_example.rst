@@ -12,7 +12,7 @@ You need to import the ``popxl`` package in order to use it:
   import popxl
 
 
-The IR in PopXL is represented by the class :py:class:`popxl.Ir`.
+The IR in PopXL is represented by the class :py:class:`~popxl.Ir`.
 :numref:`simple_example` contains a basic example of how to construct such an object.
 
 .. literalinclude:: files/simple_addition.py
@@ -25,10 +25,10 @@ The IR in PopXL is represented by the class :py:class:`popxl.Ir`.
 
     :download:`Download simple_addition.py <files/simple_addition.py>`
 
-In PopXL, an IR is essentially a collection of :py:class:`popxl.Graph` objects.
+In PopXL, an IR is essentially a collection of :py:class:`Graph <popxl.Graph>` objects.
 Each such graph contains a number of operations.
 Each IR has a *main graph* that is constructed by default.
-This main graph serves as the entry point for your model and is created with :py:func:`popxl.Ir.main_graph` in :numref:`simple_example`.
+This main graph serves as the entry point for your model and is created with :py:func:`~popxl.Ir.main_graph` in :numref:`simple_example`.
 
 By adding operations within a ``with main`` context, the operations
 are automatically added to the main graph.

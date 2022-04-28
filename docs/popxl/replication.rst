@@ -15,7 +15,7 @@ This is called graph replication. Replication is a means of parallelising your
 inference or training workloads.
 We call each instance of the graph a replica. The replication factor is the number of replicas in total across all replica groups (see :numref:`sec_replica_grouping`).
 
-This can be set through :py:attr:`popxl.Ir.replication_factor`.
+This can be set through :py:attr:~popxl.Ir.replication_factor`.
 
 
 .. _sec_replica_grouping:

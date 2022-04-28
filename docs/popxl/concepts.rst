@@ -28,7 +28,7 @@ An IR contains one main graph (:numref:`sec_maingraphs`), created on IR initiali
 Graphs
 ------
 
-A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of operations (ops) and tensors. There are two types of PopXL graphs: the main graph (:numref:`sec_maingraphs`) and graphs (:numref:`sec_subgraphs`). An example is shown in :numref:`fig_popxl_calling_a_graph`.
+A graph in the IR (:numref:`ch_graphs`) is a computational graph: a network of operations (ops) and tensors. There are two types of PopXL graphs: the main graph (:numref:`sec_maingraphs`) and graphs (:numref:`sec_subgraphs`). An example is shown in :numref:`fig_popxl_calling_a_graph`.
 
 
 .. figure:: images/popxl_calling_a_graph.png
@@ -43,7 +43,7 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
 
 * The **main graph** (:numref:`sec_maingraphs`) is the entry point of the IR (like the ``main()`` function in many programming languages). There is only one main graph per IR. The main graph can contain intermediate, constant and variable tensors.
 
-* **Graphs** (:numref:`sec_graphs`) can be called by other graphs using the ``call`` or ``repeat`` op. If a graph has multiple call sites, the graph is outlined during lowering, leading to code reuse and reduced memory usage. A graph can only contain intermediate or constant tensors and not variable tensors. A graphs inputs and outputs are specified on graph creation.
+* **Graphs** (:numref:`sec_subgraphs`) can be called by other graphs using the ``call`` or ``repeat`` op. If a graph has multiple call sites, the graph is outlined during lowering, leading to code reuse and reduced memory usage. A graph can only contain intermediate or constant tensors and not variable tensors. A graphs inputs and outputs are specified on graph creation.
 
 .. figure:: images/popart_ir_graph_tensors.png
    :width: 90%
@@ -54,7 +54,7 @@ A graph in the IR (:numref:`sec_graphs`) is a computational graph: a network of 
 
 When a graph is called, using the ``call`` or ``repeat`` op, the inputs must be provided by the calling graph, these tensors are known as **parent inputs**. Similarly tensors that are outputs at the call site are known as **parent outputs**. The parent inputs and outputs are specific to a call site. The input data can be either passed by reference or value, and this is determined by the user at the call site.
 
-* **Subgraphs** (:numref:`sec_subgraphs`) have input and output tensors. Subgraphs can be called by other graphs using the :py:func:`popxl.ops.call` or :py:func:`popxl.ops.repeat` op. If a subgraph has multiple call sites, the subgraph is outlined during lowering, leading to code reuse and reduced memory usage. A subgraph can only contain intermediate or constant tensors and not variable tensors. Subgraphs have intermediate tensors which are marked as inputs or outputs. When a subgraph is called, the inputs must be provided by the calling graph. The input data can be either passed by reference or value, and this is determined by the user at the call site.
+* **Subgraphs** (:numref:`sec_subgraphs`) have input and output tensors. Subgraphs can be called by other graphs using the :py:func:`~popxl.ops.call` or :py:func:`~popxl.ops.repeat` op. If a subgraph has multiple call sites, the subgraph is outlined during lowering, leading to code reuse and reduced memory usage. A subgraph can only contain intermediate or constant tensors and not variable tensors. Subgraphs have intermediate tensors which are marked as inputs or outputs. When a subgraph is called, the inputs must be provided by the calling graph. The input data can be either passed by reference or value, and this is determined by the user at the call site.
 
 .. _sec_concept_tensors:
 
@@ -67,7 +67,7 @@ There are three types of tensors: intermediate, variable and constant. Variable 
 
 * **Constant tensors** contain data that cannot change.
 
-* **Variable tensors** contain data that is always live and hence is never freed. Typically model weights are kept on the IPU between runs and are therefore defined as variable tensors. Variable tensors are analogous to "global variables" in other programming languages, which can be accessed throughout the lifetime of the program.
+* **Variable tensors** contain data that is always live and hence the memory allocated to them is never freed. Typically model weights are kept on the IPU between runs and are therefore defined as variable tensors. Variable tensors are analogous to "global variables" in other programming languages, which can be accessed throughout the lifetime of the program.
 
 * **Intermediate tensors** are not initialised with data and are live from the time they are produced until their final consumer. Intermediate tensors are analogous to "local variables" in other programming languages, which are created and discarded dynamically as the program executes.
 

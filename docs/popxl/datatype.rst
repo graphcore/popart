@@ -5,7 +5,7 @@ Data types
 
 Currently, PopXL supports the data types listed in :numref:`datatypes_table`.
 These data types are defined in ``popxl`` directly and
-will be converted to their IPU-compatible data type. Note that if the session option :py:func:`popart_core.SessionOptions.enableSupportedDataTypeCasting` is set to ``True``, then ``int64``
+will be converted to their IPU-compatible data type. Note that if the session option :py:attr:`popart.SessionOptions.enableSupportedDataTypeCasting` is set to ``True``, then ``int64``
 and ``uint64`` will be downcast to ``int32`` and ``uint32``, respectively.
 
 .. list-table:: Data types in PopXL

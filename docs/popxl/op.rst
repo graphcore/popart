@@ -6,7 +6,7 @@ Supported operations
 Operations (or ops) in a graph are connected by input and output tensors. Each
 operation is applied to the input tensors, and optionally produces output
 tensors. The supported operations are listed in
-:numref:`popxl_ops_available_ops`.
+:numref:`sec_popxl_ops_available_ops`.
 
 You can add operations to a graph by calling operation methods within the graph
 context as shown in :numref:`simple_example`. In this example, within the
@@ -47,6 +47,7 @@ where ``t`` is the tensor to be copied to the host. Note that you require a
 separate ``host_load`` or ``host_store`` for each tensor and transfer to or from
 the device respectively. However, the transfers will be internally merged into one for efficiency if the op's schedule allows it.
 
+.. _sec_popxl_ops_available_ops:
 
 List of available operations
 ----------------------------

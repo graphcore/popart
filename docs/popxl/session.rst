@@ -3,9 +3,9 @@
 Session
 =======
 
-
-A :py:class:`popxl.Session` is a class that compiles and executes a :py:class:`popxl.Ir`.
-You can construct one like so:
+The :py:class:`~popxl.Session` class represents the PopART runtime
+session and lets you execute a PopXL graph of operations. You create a session
+as follows:
 
 .. literalinclude:: files/tensor_addition.py
   :language: python
@@ -18,20 +18,20 @@ You can construct one like so:
 
     :download:`Download tensor_addition.py <files/tensor_addition.py>`
 
-Where ``ir`` is the ``popxl.Ir`` object you have created.
-The second parameter is a string literal describing the type of device ``session``
-will run on. The possible values of this parameter are further described in :numref:`device-types`.
+where ``ir`` is the :py:class:`~popxl.Ir` object you have created.
 
 .. warning::
-    The ``Session`` takes unique ownership of the :py:class:`popxl.Ir` object.
-    From construction onwards, the ``Ir`` cannot be changed after this point.
-    You also cannot create another ``Session`` from the same ``Ir``.
+     The session takes ownership of the :py:class:`~popxl.Ir` object from
+     creation onwards;  the ``Ir`` object cannot be changed after this point.
 
-Constructing the session will compile the IR that your Python ``popxl.Ir`` class
-represents. A `popart.popart_exception` error will be thrown if it is not valid.
-This could happen, for example, if there are cycles in the graph, or if the
-configuration for the device(s) you have specified is invalid.
+The session will prepare and compile the IR that your Python
+:py:class:`~popxl.Ir` object represents. A :py:class:`~popart.popart_exception`
+error will be thrown if the ``Ir`` object is not valid. This can happen if there
+are cycles in the graph or if the configuration for the device(s) you have
+specified is invalid.
 
+
+.. _running_a_session:
 
 Running a session
 -----------------
@@ -53,6 +53,15 @@ Finally, on exiting the context, the weights will be loaded from device back ont
   :caption: Example of running with :py:func:`popxl.Session.run`
   :start-after: SessionRun begin
   :end-before: SessionRun end
+Once you have constructed your session, you can run your model with the relevant inputs to return your outputs. You can do this in two ways:
+
+1. :py:func:`outputs = session.run(inputs, device_desc) <popxl.Session.run>`.
+
+  This runs the session with ``inputs`` and constructs ``outputs``
+  in the form of NumPy ``ndarray`` objects to return to the caller. Input shapes
+  will be validated and outputs will be returned in the shape inferred by the
+  IR. ``device_desc`` is a string describing the type of device you will use to
+  run the session as described in :numref:`device-types`.
 
 .. note::
     It is important that the context manager keeps the host weights in sync with
@@ -68,6 +77,14 @@ The correct shape and dtype will be inferred from the ``Ir``.
 
 Alternatively, you can create the output buffers yourself and pass them to :py:func:`popxl.Session.run_with_outputs` to fill in for you. The
 ``Mapping`` you pass will be validated similarly to the inputs.
+2. :py:func:`popxl.Session.run_with_outputs <run_with_outputs(inputs, outputs, device_desc)>`
+
+  If you want to write to part of a larger array, or you already have output
+  arrays constructed, use :py:func:`~popxl.Session.run_with_outputs`. You must
+  first construct the output arrays with the necessary shape, then pass them to
+  the session. The session runs the model and writes the values to the output
+  arrays. The shapes of the output arrays will be validated against the inferred
+  shape and an error is thrown if the shapes do not correspond.
 
   .. literalinclude:: files/simple_addition.py
     :language: python
@@ -80,13 +97,16 @@ Finally, there is also :py:func:`popxl.Session.create_host_outputs` that will cr
 This is the method used internally in :py:func:`popxl.Session.run` and provides a shortcut to constructing the output arrays required for :py:func:`popxl.Session.run_with_outputs`.
 
 
-Getting / setting tensor data
------------------------------
+.. _sec_getting_setting_tensor_data:
 
-Once you have created a session, it is possible to write to variables, and read variables and constants from
-the device. You can do this if you want to make comparisons of trained weights versus a known reference, or
-to update or reset weights for debugging. You can also do this if you want to save progress on your
-model by storing and reloading the variables.
+Getting and setting tensor data
+-------------------------------
+
+Once you have created a session, it is possible to write to variable tensors,
+and read variable tensors and constant tensors from the device. You can do this
+if you want to make comparisons between trained weights and a reference, or to
+update or reset weights for debugging. You can also do this if you want to save
+progress on your model by storing and reloading the variable tensors.
 
 .. literalinclude:: files/tensor_get_write.py
   :language: python
@@ -204,48 +224,77 @@ The following code demonstrates the semantics:
     :download:`Download nested_session_contexts.py <files/nested_session_contexts.py>`
 
 
-num_host_transfers
-------------------
+Number of host transfers
+------------------------
 
-``num_host_transfers`` is a property of the ``Ir`` class that determines the amount of data required for each ``session.run`` call.
-For each ``host_load`` (per tensor) operation in your model to run, you will need to increment the ``num_host_transfers`` by one. This includes
-``host_load`` operations inside called subgraphs and repeated subgraphs.
-For example, if you have two ``host_load`` ops for tensors ``x`` and ``label`` in the main graph, your ``num_host_transfers``
-will be 1. However if you put these ops inside a repeat op that repeats 10 times, you will need to set ``num_host_transfers`` to 10.
+The :py:attr:`~popxl.Ir.num_host_transfers` property of the
+:py:class:`~popxl.Ir` class determines the number of iterations required for each
+``session.run`` call. For each :py:func:`~popxl.ops.host_load` (per
+tensor) operation in your model to run, you will need to increment
+``num_host_transfers`` by one. This includes :py:func:`~popxl.ops.host_load` operations inside called subgraphs and repeated subgraphs. For
+example, if you have two :py:func:`~popxl.ops.host_load` ops for
+tensors ``x`` and ``label`` in the main graph, ``num_host_transfers`` will
+be 1. However if you put these ops inside a repeat op that repeats 10 times, you
+will need to set ``num_host_transfers`` to 10.
 
-If you have different numbers of host load ops for different tensors in your graph, you will find that some streams will
-exhaust their data before others, resulting in the exhausted stream looping round the data buffer before Python is able to provide more data.
-For example, if you have 2 repeat ops that have host loaded tensors inside, one repeating 3 times (stream A),
-the other 5 times (stream B), providing 3 batches of data for stream A and 5 for stream B will result in A exhausting it's data. For every
-model run, both streams will advance by one batch; leading to A hitting the end of it's allotted data before B.
+If you have different numbers of :py:func:`~popxl.ops.host_load` ops
+for different tensors in your graph, you will find that some streams will
+exhaust their data before others, resulting in the exhausted stream looping
+around the data buffer before Python is able to provide more data. For example,
+assume you have two :py:func:`~popxl.ops.repeat` ops that have host
+loaded tensors inside - stream A repeats three times and stream B repeats five
+times - providing three batches of data for stream A and five for stream B. This
+will result in stream A exhausting its data. For every model run, both streams
+will advance by one batch leading to A hitting the end of its allotted data
+before B.
 
-In this case, set your ``num_host_transfers`` to ``2 * ceil(number_of_host_load_runs)`` and provide ``ceil(number_of_host_load_runs)`` batches
-for each stream. In the example, this would mean a ``ir.num_host_transfers = 5 * 2 = 10`` and  you would need to provide 5 batches for stream A and B.
-You will need to keep track of how many batches have been consumed by the model, and perhaps move data to the next model run if it
-was not consumed. For example stream A would need to move the last 2 unused batches to the next model run's data. Alternatively
-pad the last 2 batches of data for stream A with zeros on every model run.
+In this case, set ``num_host_transfers`` to ``2 *
+ceil(number_of_host_load_runs)`` and provide ``ceil(number_of_host_load_runs)``
+batches for each stream. In the example, this would mean a
+``ir.num_host_transfers = 5 * 2 = 10`` and you would need to provide five
+batches for streams A and B. You will need to keep track of how many batches
+have been consumed by the model, and perhaps move data to the next model run if
+it was not consumed. For example, stream A would need to move the last two
+unused batches to the next model run's data. Alternatively, pad the last two
+batches of data for stream A with zeros on every model run.
 
 .. note::
-  This behaviour will likely change in the future so that the correct number of batches of data are
-  required per stream.
+  This behaviour will likely change in the future so that the correct number of
+  batches of data are required per stream.
+
+.. _sec_data_input_shape:
 
 .. _sec_session_inputs:
 
 Data input shape
 ----------------
 
-When providing data for the session, you also need to ensure that you provide enough data for the
-``replication_factor`` as well as the ``num_host_transfers``. The data shape provided for input will need
-to be of shape:
+When providing data for the session, you also need to ensure that you provide
+enough data for :py:attr:`replication_factor <popxl.Ir.replication_factor>` as well as
+for :py:attr:`~popxl.Ir.num_host_transfers`. The input data
+will need to have a shape as follows:
 
 .. code-block:: python
 
   [num_host_transfers, replication_factor, *device_data_shape]
 
-For example, ``device_data_shape = (5, 9, 9)``, ``num_host_transfers = 7``, ``replication_factor = 2``
-then ``input_shape = (7, ) + (2 , ) + (5, 9) = (7, 2, 5, 9, 9)``. Note, ``replication_factor`` and ``num_host_transfers``
-are independent and need to have separate dimensions in the input data, or you will find data will be consumed output
-of order.
+For example, with:
+
+.. code-block:: python
+
+  device_data_shape = (5, 9, 9)
+  num_host_transfers = 7
+  replication_factor = 2
+
+then:
+
+.. code-block:: python
+
+  input_shape = (7, ) + (2 , ) + (5, 9) = (7, 2,5, 9, 9).
+
+Note, ``replication_factor`` and ``num_host_transfers`` are
+independent and need to have separate dimensions in the input data, or you will
+find that the data will be consumed out of order.
 
 .. literalinclude:: files/repeat_graph_2.py
   :language: python
@@ -263,27 +312,32 @@ of order.
 Device Types
 ------------
 
-When creating a session, you need to provide a ``device_desc`` argument to describe the device type you are using.
-It can be one of ``ipu_hw``, ``ipu_model`` or ``cpu``:
+When creating a session, you need to describe the device you are using with
+``device_desc``. Possible values are:
 
 1. ``ipu_hw``
 
-  Physical IPU hardware.
+  This indicates that you are using physical IPU hardware.
 
 2. ``ipu_model``
 
-  The IPU Model is a simulation of the behaviour of the IPU hardware. It does not completely implement every
-  aspect of a real IPU. For example, the IPU Model does not fully support replicated graphs
-  nor the same random number generation as the hardware. Its arithmetic results may differ from what would be
-  obtained by using the IPU hardware. It also does does not support remote storing and loading of variables.
+  This indicates that you are using the IPU Model. The IPU Model is a simulation
+  of the behaviour of the IPU hardware, but it does not completely implement
+  every aspect of a real IPU. For example, the IPU Model does not fully support
+  replicated graphs nor the same random number generation as the IPU hardware.
+  Its arithmetic results may differ from what would be obtained by using the IPU
+  hardware. It also does does not support remote storing and loading of
+  variable tensors.
 
 3. ``cpu``
 
-  Run using the CPU. In some use cases it is faster than the IPU model. In addition to not
-  supporting remote storing and loading of variables as per the ``ipu_model``, the ``cpu`` device does
-  not support replication in any use case.
+  This indicates that you are using a CPU. In some use cases it is faster to use
+  a CPU than the IPU Model. The ``cpu`` device type does not support remote
+  storing and loading of variable tensors. The ``cpu`` device type also does not
+  support replication in any use case.
 
 .. note::
-  You do not need to set the number of devices, as this is calculated automatically using the number
-  of virtual graphs used and the replication factor. An error will be thrown if the number required
-  exceeds the number available.
+  You do not need to set the number of devices, as this is calculated
+  automatically from the number of virtual graphs used and the replication
+  factor. An error will be thrown if the number of devices required exceeds the
+  number available.

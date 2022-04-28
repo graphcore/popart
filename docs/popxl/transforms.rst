@@ -26,17 +26,8 @@ Currently, we support the following transforms:
 Autodiff
 -----------
 
-In PopXL you can use :py:func:`popxl.transforms.autodiff` to perform automatic differentiation on a per-graph basis. This transform creates a graph (the *gradient graph*) to compute
-the gradients of a forward graph (:numref:`fig-autodiff_overview`).
-
-
-.. figure:: images/autodiff_overview.png
-   :name: fig-autodiff_overview
-   :width: 80%
-
-   Overview of the ``autodiff`` transform.
-
-It is declared as:
+In PopXL you can use :py:func:`~popxl.transforms.autodiff` to perform automatic differentiation on a per-graph basis. This transform creates a graph (the *gradient graph*) to compute
+the gradients of a forward graph. It is declared as:
 
 .. code-block:: python
 
@@ -64,7 +55,7 @@ The inputs are as follows:
   * ``return_all_grad_graphs`` indicates whether to return the gradient graphs
     for all the graphs that ``autodiff`` has been recursively applied to or
     just for the given ``graph``. ``autodiff`` returns an
-    :py:class:`popxl.transforms.GradGraphInfo` object that includes the
+    :py:class:`~popxl.transforms.GradGraphInfo` object that includes the
     computational graph for computing the gradients if
     ``return_all_grad_graphs`` is set to ``False``. It will return all the
     gradient graphs if ``return_all_grad_graphs`` is set to ``True``.
@@ -83,8 +74,7 @@ The inputs are as follows:
 
   * You use ``called_graphs_grad_info`` to provide the information for gradient graphs, which you have already calculated, as inputs to subsequent ``autodiff`` calls where that gradient graph information is needed.
 
-The :py:class:`popxl.transforms.GradGraphInfo` object contains all the information and tools you need to get a gradient graph:
-You can find how to use them in the application example in :numref:`sec_grad_example_mnist`.
+The :py:class:`~popxl.transforms.GradGraphInfo` object contains all the information and tools you need to get a gradient graph:
 
  -  ``graph``: the associated gradient graph as produced by ``autodiff``
  -  ``forward_graph``: the forward graph that ``autodiff`` was applied to
@@ -106,10 +96,10 @@ You can then use the information for the gradient graph returned by ``autodiff``
 The partial derivatives of the loss with respect to the graph outputs of the forward graph are
 the first inputs of the gradient graph. :numref:`code-autodiff-example` shows how to calculate the gradients with ``autodiff`` for ``linear_graph``.
 
-#. Start with :py:func:`popxl.ops.call_with_info` which returns the the call site information, ``fwd_call_info``.
-#. Then, calculate the information for the gradient graph, ``bwd_graph_info``, by applying :py:func:`popxl.transforms.autodiff` to ``linear_graph``.
+#. Start with :py:func:`~popxl.ops.call_with_info` which returns the the call site information, ``fwd_call_info``.
+#. Then, calculate the information for the gradient graph, ``bwd_graph_info``, by applying :py:func:`~popxl.transforms.autodiff` to ``linear_graph``.
 #. Next, get all the activations calculated in the forward pass with the gradient graph using ``bwd_graph_info.inputs_dict()`` with ``fwd_call_info`` as input.
-#. Last, calculate the gradient graphs with :py:func:`popxl.ops.call`. ``grad_seed`` is the initial value of the partial gradient. Increasing ``grad_seed`` can serve as loss scaling. ``activation`` is used to connect the input of the gradient graph with the caller graph.
+#. Last, calculate the gradient graphs with :py:func:`~popxl.ops.call`. ``grad_seed`` is the initial value of the partial gradient. Increasing ``grad_seed`` can serve as loss scaling. ``activation`` is used to connect the input of the gradient graph with the caller graph.
 
 
 .. literalinclude:: files/autodiff.py

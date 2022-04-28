@@ -73,13 +73,13 @@ Writer
 Builder
 -------
 
-.. autoclass:: popart_core._BuilderCore
+.. autoclass:: popart._BuilderCore
     :members:
 
 AiGraphcoreOpset1
 ^^^^^^^^^^^^^^^^^
 
-.. autoclass:: popart_core.AiGraphcoreOpset1
+.. autoclass:: popart.AiGraphcoreOpset1
     :members:
 
 Patterns
@@ -136,19 +136,19 @@ Session Options
 .. autoclass:: popart::ExecutionPhaseSettings
   :members:
 
-.. autoclass:: popart_core.SessionOptions
+.. autoclass:: popart.SessionOptions
     :members:
 
 Optimizers
 ----------
 
-.. autoclass:: popart_core.Optimizer
+.. autoclass:: popart.Optimizer
     :members:
 
 SGD
 ^^^
 
-.. autoclass:: popart_core.SGD
+.. autoclass:: popart.SGD
     :members:
     :undoc-members:
     :private-members:
@@ -156,7 +156,7 @@ SGD
 ConstSGD
 ^^^^^^^^
 
-.. autoclass:: popart_core.ConstSGD
+.. autoclass:: popart.ConstSGD
     :members:
     :undoc-members:
     :private-members:
@@ -164,7 +164,7 @@ ConstSGD
 Adam
 ^^^^
 
-.. autoclass:: popart_core.Adam
+.. autoclass:: popart.Adam
     :members:
     :undoc-members:
     :private-members:

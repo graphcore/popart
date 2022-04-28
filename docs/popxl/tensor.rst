@@ -37,7 +37,7 @@ Constant tensors
 ----------------
 
 A constant tensor is initialised with data during graph creation with
-:py:func:`popxl.constant()`. This tensor cannot change during the runtime of a
+:py:func:`~popxl.constant`. This tensor cannot change during the runtime of a
 model. You can also use Python numeric literals in PopXL. These literals are
 implicitly converted to constant tensors. For example:
 
@@ -57,18 +57,20 @@ can also be written as:
 Variable tensors
 ----------------
 
-Variable tensors are always live in IPU memory and this memory does not get freed during execution. Therefore, a variable tensor is used to represents trainable parameters in a model or non-trainable optimizer states.
+Variable tensors are always live in IPU memory and this memory does not get
+freed during execution. Therefore, a variable tensor is used to represent
+trainable parameters in a model or non-trainable optimizer states.
 
 You create and initialize variable tensors in the scope of the
 main graph. You can add a variable tensor to the main graph using
-:py:func:`popxl.variable()`.
+:py:func:`~popxl.variable`.
 
 To enable flexible interaction, you can read or write variable tensors on
-the IPU at runtime using :py:func:`popart_core.Session.readWeights()` and
-:py:func:`popart_core.Session.writeWeights()` methods respectively.
+the IPU at runtime using :py:func:`~popart.Session.readWeights` and
+:py:func:`~popart.Session.writeWeights` methods respectively.
 
 Note that, you have to copy the initial value of a variable tensor to the IPU
-from the host before running the graph with :py:func:`popart_core.Session.weightsFromHost()`.
+from the host before running the graph with :py:func:`~popart.Session.weightsFromHost`.
 
 If your graph has a replication factor, you can load different instances of the variable on
 different replicas by using replica grouping, see :numref:`sec_replica_grouping`.
