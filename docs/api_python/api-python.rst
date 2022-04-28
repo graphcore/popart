@@ -41,6 +41,10 @@ Data input and output
     :special-members: __init__
     :members:
 
+.. autoclass:: popart.DataFlow
+    :special-members: __init__
+    :members:
+
 
 Builder
 --------

@@ -3,18 +3,21 @@
 Importing graphs
 ----------------
 
-The PopART ``Session`` class creates the runtime environment for executing graphs on IPU
-hardware. It can read an ONNX graph from a serialised ONNX model protobuf
-(ModelProto), either directly from a file or from memory. A session object can be
-constructed either as an ``InferenceSession`` or a ``TrainingSession``.
+The PopART ``Session`` class creates the runtime environment for executing
+graphs on IPU hardware. It can read an ONNX graph from a serialised ONNX model
+protobuf (ModelProto), either directly from a file or from memory. A ``Session``
+object can be constructed either as ``InferenceSession``
+(:py:class:`Python <popart.InferenceSession>`, :cpp:class:`C++ <popart::InferenceSession>`) for
+inference or ``TrainingSession`` (:py:class:`Python <popart.TrainingSession>`,
+:cpp:class:`C++ <popart::Session>`) for training.
 
-Some metadata must be supplied to augment the data present in the ONNX graph in order to run it,
-as described below.
+Some metadata must be supplied to construct the ``Session`` class. These are described in :numref:`sec_create_session`.
 
-In the following example of importing a graph for inference, TorchVision
-is used to create a pre-trained AlexNet graph, with a 4 x 3 x 244 x 244 input. The
-graph has an ONNX output called ``out``, and the ``DataFlow`` object
-contains an entry to fetch that anchor.
+In the following example of importing a graph for inference, the `torchvision package <https://pytorch.org/vision/stable/index.html>`__ is used
+to create a pre-trained `AlexNet graph <https://pytorch.org/hub/pytorch_vision_alexnet/>`__ , with a 4 x 3 x 244 x 244 input. The graph
+has an ONNX output called ``output``, and the ``DataFlow`` object
+(:py:class:`Python <~popart-python-api:popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`)
+contains an entry to fetch that anchor tensor.
 
 .. literalinclude:: files/importing_graphs.py
   :language: python
@@ -23,39 +26,51 @@ contains an entry to fetch that anchor.
 
     :download:`files/importing_graphs.py`
 
-The ``DataFlow`` object is described in more detail in :numref:`popart_executing`.
+The ``DataFlow`` object is described in more detail in
+:numref:`popart_executing`.
+
+.. _sec_create_session:
 
 Creating a session
 ~~~~~~~~~~~~~~~~~~
 
-The ``Session`` class takes a number of parameters which are listed in the `PopART Python API reference
-<https://docs.graphcore.ai/projects/popart-python-api/en/latest/api-python.html#training-session>`_.
-In order to get the ONNX graph, the ``Session`` class takes the name of a protobuf file,
-or the protobuf itself.  It also takes a ``DataFlow`` object which has information about
-how to execute the graph:
+The following parameters are required to create a ``Session`` object:
 
-* Batches per step: The number of batches to run in a single call to ``Session::run``
+* ``model``: The name of a protobuf file, or the protobuf itself in order to get
+  the ONNX graph.
+* ``dataFlow``: A ``DataFlow`` object which contains the following needed to
+  execute the graph:
 
-  * For an ``InferenceSession`` this is equal to the number of executions of the model.
+  * Batches per step: The number of batches to run in a single call to
+    ``Session::run()``:
 
-  * For a ``TrainingSession`` this is equal to the number of weight updates.
+    * For ``InferenceSession``, this is the number of executions of the model.
 
-* The names of the tensors in the graph used to return the results to the host.
+    * For ``TrainingSession``, this is the number of weight updates.
 
-In some ONNX graphs, the sizes of input tensors might not be specified.
-In this case, the optional ``inputShapeInfo`` parameter can be used to specify the
-input shapes.  The Poplar framework uses statically allocated memory buffers
-and so it needs to know the size of tensors before the compilation.
+  * The names of the tensors in the graph used to return the results to the
+    host.
 
-The optional ``patterns`` parameter allows the user to select a set of graph transformation
-patterns which will be applied to the graph.  Without this parameter, a default
-set of optimisation transformations will be applied.
+* ``inputShapeInfo``: In some ONNX graphs, the sizes of input tensors might not
+  be specified. In this case, the optional ``inputShapeInfo`` parameter can be
+  used to specify the input shapes.  The Poplar framework uses statically
+  allocated memory buffers and so it needs to know the size of tensors before
+  the compilation.
 
-Other parameters to the ``Session`` object are used when you are training the
-network instead of performing inference. They describe the types of loss to apply to
-the network and the optimiser to use.
+* ``patterns``: The optional ``patterns`` parameter allows the user to select a
+  set of graph transformation patterns which will be applied to the graph.
+  Without this parameter, a default set of optimisation transformations will be
+  applied.
 
-An example of creating a session object from an ONNX model is shown below.
+* ``userOptions``: The options to be applied to the session. This is described
+  in more detail in :numref:`sec_session_control_options`.
+
+* For ``TrainingSession`` only:
+
+  * ``loss``: The types of loss to apply to the network.
+  * ``optimizer``: The optimiser to use.
+
+An example of creating a ``Session`` object from an ONNX model is shown below.
 
 .. literalinclude:: files/importing_session.py
   :language: python
@@ -65,48 +80,56 @@ An example of creating a session object from an ONNX model is shown below.
     :download:`files/importing_session.py`
 
 
-In this example, when the ``Session`` object is asked to train the graph, an Nll
-loss node will be added to the end of the graph, and a ``ConstSGD`` optimiser
-will be used to optimise the parameters in the network.
+In this example, when the ``TrainingSession`` object is created, a
+negative log likelihood (NLL) loss node (:py:func:`Python <~popart-python-api:popart.AiGraphcoreOpset1.nllloss>`, :cpp:func:`C++ <~popart-cpp-api:popart::AiGraphcoreOpset1::nllloss>`) will be added to the end of the graph,
+and a ``ConstSGD`` optimiser will be used to optimise the parameters in the
+network.
+
+.. _sec_session_control_options:
 
 Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The optional ``userOptions`` parameter passes options to the session. The available options
-are listed in the `PopART C++ API Reference
-<https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#session-options>`_.
-In addition to passing options that control specific features of
-the PopART session, you can also use ``userOptions`` to pass options to the underlying
-Poplar functions:
+The optional ``userOptions`` parameter passes options to the session that
+control specific features of the PopART session. The available PopART options
+are listed in :ref:`popart-cpp-api:session options` in the PopART C++ API
+reference document.
+
+The ``userOptions`` parameter also controls  the underlying Poplar functions:
 
 * ``engineOptions`` passes options to the Poplar ``Engine`` object created to run the graph.
 * ``convolutionOptions`` passes options to the PopLibs convolution functions.
-* ``reportOptions`` Controls the instrumentation and generation of profiling information.
+* ``reportOptions`` controls the instrumentation and generation of profiling information.
 
-See :any:`popart_profiling` for examples of using some of these options.
+Full details of the Poplar options can be found in the :doc:`poplar-api:index`.
 
-Full details of the Poplar options can be found in the
-`Poplar and PopLibs API Reference
-<https://www.graphcore.ai/docs/poplar-api-reference>`_.
+:numref:`popart_profiling` contains examples of how to use some of these options.
+
+.. _sec_executing_imported_graph:
 
 Executing an imported graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The device has been selected in the previous step. Now, the graph can be compiled for it and
-loaded into the hardware. The ``prepareDevice`` method allows you to do this.
+Now that the device has been selected, the graph can be compiled for it and
+loaded onto the hardware. The ``prepareDevice()`` method (:py:func:`Python <popart.TrainingSession.prepareDevice>`, :cpp:func:`C++ <popart::Session::prepareDevice>`) allows you to do this.
 
-In order to execute the graph, input data has to be provided. The input created here to feed data
-to PopART, must be a NumPy array, rather than an initialised torch tensor.
+In order to execute the graph, input data has to be provided. The input created
+here to feed data to PopART must be a NumPy array, rather than an initialised
+``torch`` tensor.
 
-Finally, the ``PyStepIO`` class provides a session with input and output buffers. For both input
-and output, this class takes a dictionary with tensor names as keys and Python (or Numpy) arrays as
-values. Note that, for the imported graph, the key should match the tensor names in the graph. In
-this case, ``input.1`` is the input tensor name in the imported graph ``alexnet.onnx``, and ``input_1``
-is the value fed into it.
+Finally, the ``PyStepIO`` class (:py:class:`Python <popart.PyStepIO>`,
+:cpp:class:`IStepIO in C++ <popart::IStepIO>`) provides a session with input and
+output buffers. For both input and output, this class takes a dictionary with
+tensor names as keys and Python (or NumPy) arrays as values. Note that, for the
+imported graph, the key should match the tensor names in the graph. In this
+case, ``input.1`` is the input tensor name in the imported graph
+``alexnet.onnx``, and ``input_1`` is the value fed into it.
 
-In order to find the input names, you can import ``onnx`` package and use ``onnx.load`` to load the
-model. ``loaded_model.graph.input`` and ``loaded_model.graph.output`` give you all the node information
-for input and outputs. You can use the following command to extract the names of inputs and outputs.
+In order to find the input names, you can import the ``onnx`` package and use
+``onnx.load`` to load the model. ``loaded_model.graph.input`` and
+``loaded_model.graph.output`` give you all the node information for inputs and
+outputs. You can use the following command to extract the names of inputs and
+outputs:
 
 .. code-block:: python
 
