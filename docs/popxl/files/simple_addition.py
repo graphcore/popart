@@ -43,7 +43,7 @@ print(f"Result is {outputs[o_d2h]}")
 
 # SessionRun2 begin
 # Alternatively:
-run_output = {o_d2h: np.zeros(shape=[1]).astype(np.float32)}
+run_output = {o_d2h: np.empty(shape=[1]).astype(np.float32)}
 
 with session:
     session.run_with_outputs(inputs, run_output)
