@@ -818,10 +818,8 @@ class ConstVoidData;
                                     f.write("  if (!{}.empty()) {{\n".format(
                                         a.name))
                                 elif a.isFloat() and not a.isBoostOptional():
-                                    f.write(
-                                        "  if (std::abs({} - {}) >  std::numeric_limits<{}>::epsilon()) {{\n"
-                                        .format(a.name, a.DefaultValue(),
-                                                a.CppType()))
+                                    f.write("  if ({} != {}) {{\n".format(
+                                        a.name, a.DefaultValue()))
                                 else:
                                     if a.hasPrimitiveDefaultValue():
                                         f.write("  // Workaround Onnx not " +

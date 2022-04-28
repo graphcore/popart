@@ -150,12 +150,12 @@ AiOnnxOpset6::batchnormalization(const std::vector<TensorId> &args,
                                  int64_t spatial,
                                  const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
+  if (epsilon != 1e-05f) {
     attributes["epsilon"] = epsilon;
   }
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["is_test"] = is_test; }
-  if (std::abs(momentum - 0.9f) > std::numeric_limits<float>::epsilon()) {
+  if (momentum != 0.9f) {
     attributes["momentum"] = momentum;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -203,12 +203,10 @@ TensorId AiOnnxOpset6::clip(const std::vector<TensorId> &args,
                             float min,
                             const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(max - 3.4028234663852886e+38f) >
-      std::numeric_limits<float>::epsilon()) {
+  if (max != 3.4028234663852886e+38f) {
     attributes["max"] = max;
   }
-  if (std::abs(min - -3.4028234663852886e+38f) >
-      std::numeric_limits<float>::epsilon()) {
+  if (min != -3.4028234663852886e+38f) {
     attributes["min"] = min;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -366,7 +364,7 @@ AiOnnxOpset6::dropout(const std::vector<TensorId> &args,
   std::map<std::string, popart::any> attributes;
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["is_test"] = is_test; }
-  if (std::abs(ratio - 0.5f) > std::numeric_limits<float>::epsilon()) {
+  if (ratio != 0.5f) {
     attributes["ratio"] = ratio;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -385,7 +383,7 @@ TensorId AiOnnxOpset6::elu(const std::vector<TensorId> &args,
                            float alpha,
                            const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -519,10 +517,10 @@ TensorId AiOnnxOpset6::gemm(const std::vector<TensorId> &args,
                             int64_t transB,
                             const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 1.0f) {
     attributes["beta"] = beta;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -608,10 +606,10 @@ TensorId AiOnnxOpset6::hardsigmoid(const std::vector<TensorId> &args,
                                    float beta,
                                    const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 0.2f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 0.2f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 0.5f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 0.5f) {
     attributes["beta"] = beta;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -684,7 +682,7 @@ AiOnnxOpset6::instancenormalization(const std::vector<TensorId> &args,
                                     float epsilon,
                                     const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
+  if (epsilon != 1e-05f) {
     attributes["epsilon"] = epsilon;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -705,13 +703,13 @@ TensorId AiOnnxOpset6::lrn(const std::vector<TensorId> &args,
                            float bias,
                            const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 0.0001f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 0.0001f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 0.75f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 0.75f) {
     attributes["beta"] = beta;
   }
-  if (std::abs(bias - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (bias != 1.0f) {
     attributes["bias"] = bias;
   }
   attributes["size"] = size;
@@ -774,7 +772,7 @@ TensorId AiOnnxOpset6::leakyrelu(const std::vector<TensorId> &args,
                                  float alpha,
                                  const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 0.01f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 0.01f) {
     attributes["alpha"] = alpha;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -952,7 +950,7 @@ TensorId AiOnnxOpset6::maxroipool(const std::vector<TensorId> &args,
                                   const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
   attributes["pooled_shape"] = pooled_shape;
-  if (std::abs(spatial_scale - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (spatial_scale != 1.0f) {
     attributes["spatial_scale"] = spatial_scale;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -1064,7 +1062,7 @@ TensorId AiOnnxOpset6::pad(const std::vector<TensorId> &args,
     attributes["mode"] = mode;
   }
   attributes["pads"] = pads;
-  if (std::abs(value - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (value != 0.0f) {
     attributes["value"] = value;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -1154,10 +1152,10 @@ TensorId AiOnnxOpset6::randomnormal(const std::vector<int64_t> &shape,
   std::map<std::string, popart::any> attributes;
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["dtype"] = dtype; }
-  if (std::abs(mean - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (mean != 0.0f) {
     attributes["mean"] = mean;
   }
-  if (std::abs(scale - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (scale != 1.0f) {
     attributes["scale"] = scale;
   }
   if (seed != nonstd::optional<float>()) {
@@ -1183,10 +1181,10 @@ AiOnnxOpset6::randomnormallike(const std::vector<TensorId> &args,
   if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
-  if (std::abs(mean - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (mean != 0.0f) {
     attributes["mean"] = mean;
   }
-  if (std::abs(scale - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (scale != 1.0f) {
     attributes["scale"] = scale;
   }
   if (seed != nonstd::optional<float>()) {
@@ -1212,10 +1210,10 @@ TensorId AiOnnxOpset6::randomuniform(const std::vector<int64_t> &shape,
   std::map<std::string, popart::any> attributes;
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["dtype"] = dtype; }
-  if (std::abs(high - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (high != 1.0f) {
     attributes["high"] = high;
   }
-  if (std::abs(low - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (low != 0.0f) {
     attributes["low"] = low;
   }
   if (seed != nonstd::optional<float>()) {
@@ -1244,10 +1242,10 @@ AiOnnxOpset6::randomuniformlike(const std::vector<TensorId> &args,
   if (dtype != nonstd::optional<int64_t>()) {
     attributes["dtype"] = *dtype;
   }
-  if (std::abs(high - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (high != 1.0f) {
     attributes["high"] = high;
   }
-  if (std::abs(low - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (low != 0.0f) {
     attributes["low"] = low;
   }
   if (seed != nonstd::optional<float>()) {
@@ -1493,10 +1491,10 @@ TensorId AiOnnxOpset6::selu(const std::vector<TensorId> &args,
                             float gamma,
                             const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.67326f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.67326f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(gamma - 1.0507f) > std::numeric_limits<float>::epsilon()) {
+  if (gamma != 1.0507f) {
     attributes["gamma"] = gamma;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -1889,10 +1887,10 @@ AiOnnxOpset7::batchnormalization(const std::vector<TensorId> &args,
                                  int64_t spatial,
                                  const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
+  if (epsilon != 1e-05f) {
     attributes["epsilon"] = epsilon;
   }
-  if (std::abs(momentum - 0.9f) > std::numeric_limits<float>::epsilon()) {
+  if (momentum != 0.9f) {
     attributes["momentum"] = momentum;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -1937,7 +1935,7 @@ AiOnnxOpset7::dropout(const std::vector<TensorId> &args,
                       float ratio,
                       const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(ratio - 0.5f) > std::numeric_limits<float>::epsilon()) {
+  if (ratio != 0.5f) {
     attributes["ratio"] = ratio;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -2014,10 +2012,10 @@ TensorId AiOnnxOpset7::gemm(const std::vector<TensorId> &args,
                             int64_t transB,
                             const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 1.0f) {
     attributes["beta"] = beta;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -2426,10 +2424,10 @@ AiOnnxOpset9::batchnormalization(const std::vector<TensorId> &args,
                                  float momentum,
                                  const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
+  if (epsilon != 1e-05f) {
     attributes["epsilon"] = epsilon;
   }
-  if (std::abs(momentum - 0.9f) > std::numeric_limits<float>::epsilon()) {
+  if (momentum != 0.9f) {
     attributes["momentum"] = momentum;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -2564,10 +2562,10 @@ TensorId AiOnnxOpset9::gemm(const std::vector<TensorId> &args,
                             int64_t transB,
                             const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 1.0f) {
     attributes["beta"] = beta;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -2761,10 +2759,10 @@ TensorId AiOnnxOpset9::shrink(const std::vector<TensorId> &args,
                               float lambd,
                               const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(bias - 0.0f) > std::numeric_limits<float>::epsilon()) {
+  if (bias != 0.0f) {
     attributes["bias"] = bias;
   }
-  if (std::abs(lambd - 0.5f) > std::numeric_limits<float>::epsilon()) {
+  if (lambd != 0.5f) {
     attributes["lambd"] = lambd;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -2951,7 +2949,7 @@ AiOnnxOpset10::dropout(const std::vector<TensorId> &args,
                        float ratio,
                        const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(ratio - 0.5f) > std::numeric_limits<float>::epsilon()) {
+  if (ratio != 0.5f) {
     attributes["ratio"] = ratio;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -3188,7 +3186,7 @@ TensorId AiOnnxOpset10::roialign(const std::vector<TensorId> &args,
   { attributes["output_width"] = output_width; }
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["sampling_ratio"] = sampling_ratio; }
-  if (std::abs(spatial_scale - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (spatial_scale != 1.0f) {
     attributes["spatial_scale"] = spatial_scale;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -3245,7 +3243,7 @@ AiOnnxOpset10::thresholdedrelu(const std::vector<TensorId> &args,
                                float alpha,
                                const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
@@ -3668,10 +3666,10 @@ TensorId AiOnnxOpset11::gemm(const std::vector<TensorId> &args,
                              int64_t transB,
                              const popart::DebugContext &debugContext) {
   std::map<std::string, popart::any> attributes;
-  if (std::abs(alpha - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (alpha != 1.0f) {
     attributes["alpha"] = alpha;
   }
-  if (std::abs(beta - 1.0f) > std::numeric_limits<float>::epsilon()) {
+  if (beta != 1.0f) {
     attributes["beta"] = beta;
   }
   // Workaround Onnx not applying default values during type/shape inference
@@ -4125,14 +4123,12 @@ AiOnnxOpset11::resize(const std::vector<TensorId> &args,
     attributes["coordinate_transformation_mode"] =
         coordinate_transformation_mode;
   }
-  if (std::abs(cubic_coeff_a - -0.75f) >
-      std::numeric_limits<float>::epsilon()) {
+  if (cubic_coeff_a != -0.75f) {
     attributes["cubic_coeff_a"] = cubic_coeff_a;
   }
   // Workaround Onnx not applying default values during type/shape inference
   { attributes["exclude_outside"] = exclude_outside; }
-  if (std::abs(extrapolation_value - 0.0f) >
-      std::numeric_limits<float>::epsilon()) {
+  if (extrapolation_value != 0.0f) {
     attributes["extrapolation_value"] = extrapolation_value;
   }
   if (mode != "nearest") {

@@ -46,6 +46,7 @@
 
 # C++ unittests for main codebase:
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
+add_popart_cpp_unit_test(unittest_gen_operators unittest_gen_operators.cpp)
 add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_tensor unittest_tensor.cpp TEST_UTILS test-graphs-test-util)
 add_popart_cpp_unit_test(unittest_tensorid unittest_tensorid.cpp TEST_UTILS test-graphs-test-util)
