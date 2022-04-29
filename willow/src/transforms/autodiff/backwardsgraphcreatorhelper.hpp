@@ -48,7 +48,8 @@ public:
                    const nonstd::optional<TensorIds> &gradsRequiredForFwdId,
                    const FwdGraphToBwdGraphInfo &calledGraphsGradInfo);
 
-  virtual BwdGraphInfo makeGradInfo();
+  virtual BwdGraphInfo
+  makeGradInfo(std::map<InIndex, ExpectedConnection> &expectedConnectionsMap);
 
   /**
    * Enum type used in `doPrune`.

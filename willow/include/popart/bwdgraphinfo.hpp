@@ -9,7 +9,6 @@
 #include <popart/names.hpp>
 
 namespace popart {
-
 /**
  * The type of tensor expected to connect to a graph input or output.
  **/

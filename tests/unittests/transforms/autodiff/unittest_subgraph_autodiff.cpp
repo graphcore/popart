@@ -17,6 +17,7 @@
 #include <popart/graphid.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
+#include <popart/op/add.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/init.hpp>
 #include <popart/op/sum.hpp>
@@ -29,7 +30,7 @@
 #include "popart/datatype.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
-#include "popart/operatoridentifier.hpp"
+#include "popart/operators.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp" // IWYU pragma: keep
@@ -1829,4 +1830,218 @@ BOOST_AUTO_TEST_CASE(
                        << stitchStrat);
     test(stitchStrat);
   }
+}
+
+BOOST_AUTO_TEST_CASE(autodiff_gradsum_for_input) {
+
+  // When you autodiff the subgraph below, and provide the gradient of y as an
+  // input for the backwards graph, the autodiffer has to be smart enough to see
+  // that the input gradient is only part of the y's gradient. Previous autodiff
+  // implementations failed here, so this is a regression test to ensure this
+  // edge case is covered.
+  //
+  //              a       b
+  //              |       |
+  // .------------|-------|----------------[A]---.
+  // |            |       |                      |
+  // |            |   .---'                      |
+  // |            |   |                          |
+  // |            V   V                          |
+  // |            AddOp                          |
+  // |              |                            |
+  // |              |-------.---.                |
+  // |              |       |   |                |
+  // |              |       V   V                |
+  // |              |       AddOp                |
+  // |              |         |                  |
+  // '--------------|---------|------------------'
+  //                |         |
+  //                y         z
+  //
+
+  Ir ir;
+
+  // Tensor info for tensors in the IR.
+  TensorInfo tInfo{DataType::INT32, {}};
+
+  // Create the subgraph.
+  auto fwdId     = GraphId("A");
+  auto &fwdGraph = ir.createGraph(fwdId);
+
+  // Create subgraph A.
+  auto a = addScope(fwdGraph, "a");
+  auto b = addScope(fwdGraph, "b");
+  auto y = addScope(fwdGraph, "y");
+  auto z = addScope(fwdGraph, "z");
+
+  fwdGraph.addInput(a, tInfo);
+  fwdGraph.addInput(b, tInfo);
+
+  Op::Settings settingsSubgraphA = Op::Settings{fwdGraph, "AddOp"};
+  fwdGraph.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), a}, {AddOp::getArg1InIndex(), b}},
+      {{AddOp::getOutIndex(), y}},
+      Onnx::Operators::Add_7,
+      settingsSubgraphA);
+
+  fwdGraph.createConnectedOp<AddOp>(
+      {{AddOp::getArg0InIndex(), y}, {AddOp::getArg1InIndex(), y}},
+      {{AddOp::getOutIndex(), z}},
+      Onnx::Operators::Add_7,
+      settingsSubgraphA);
+
+  fwdGraph.markAsOutput(y);
+  fwdGraph.markAsOutput(z);
+
+  // Apply autodiff.
+  Autodiff autodiff;
+  auto f2bInfo = autodiff.apply(ir,
+                                fwdId,
+                                {{y, z}},
+                                {{a, b}},
+                                FwdGraphToBwdGraphInfo(),
+                                AutodiffStitchStrategy::SafeAddFwdOutputs);
+
+  /****** TEST ******/
+  using irquery::Require;
+
+  irquery::IrTestWrapper tw_ir{ir};
+
+  /* Test sg has correct inputs, outputs */
+
+  auto tw_sg = tw_ir.hasGraph(fwdId, Require::MustBeTrue);
+  tw_sg->inputs().hasExactIds({a, b}, Require::MustBeTrue);
+  tw_sg->outputs().hasExactIds({y, z}, Require::MustBeTrue);
+
+  tw_sg->ops().hasOp<AddOp>(
+      [&](auto &tw_tertiary) -> bool {
+        return tw_tertiary.inputs().hasIdAtIndex(AddOp::getArg0InIndex(), a) &&
+               tw_tertiary.inputs().hasIdAtIndex(AddOp::getArg1InIndex(), b) &&
+               tw_tertiary.outputs().hasIdAtIndex(AddOp::getOutIndex(), y);
+      },
+      Require::MustBeTrue);
+
+  tw_sg->ops().hasOp<AddOp>(
+      [&](auto &tw_tertiary) -> bool {
+        return tw_tertiary.outputs().hasIdAtIndex(AddOp::getOutIndex(), z) &&
+               tw_tertiary.inputs().hasIdAtIndex(AddOp::getArg0InIndex(), y) &&
+               tw_tertiary.inputs().hasIdAtIndex(AddOp::getArg1InIndex(), y);
+      },
+      Require::MustBeTrue);
+
+  /* Test ExpectedConnections of bwd graph `bg`. */
+
+  const auto &bgInfo = f2bInfo.at(fwdId);
+
+  BOOST_REQUIRE(bgInfo.expectedInputs.size() == 2);
+  BOOST_REQUIRE(
+      contains(bgInfo.expectedInputs,
+               ExpectedConnection{y, ExpectedConnectionType::FwdGrad}));
+  BOOST_REQUIRE(
+      contains(bgInfo.expectedInputs,
+               ExpectedConnection{z, ExpectedConnectionType::FwdGrad}));
+
+  BOOST_REQUIRE(bgInfo.expectedOutputs.size() == 2);
+
+  BOOST_REQUIRE(
+      contains(bgInfo.expectedOutputs,
+               ExpectedConnection{a, ExpectedConnectionType::FwdGrad}));
+  BOOST_REQUIRE(
+      contains(bgInfo.expectedOutputs,
+               ExpectedConnection{b, ExpectedConnectionType::FwdGrad}));
+
+  /* Test ir has a bwd sg */
+
+  auto tw_bg = tw_ir.hasGraph(bgInfo.bwdGraphId, Require::MustBeTrue);
+
+  /* Test bg has correct inputs and outputs. */
+
+  auto bg_a_grad = fwdIdToBwdGradId(fwdGraph, tw_bg->unwrap(), a);
+  auto bg_b_grad = fwdIdToBwdGradId(fwdGraph, tw_bg->unwrap(), b);
+  auto bg_y_grad = fwdIdToBwdGradId(fwdGraph, tw_bg->unwrap(), y);
+  auto bg_z_grad = fwdIdToBwdGradId(fwdGraph, tw_bg->unwrap(), z);
+
+  // y is provided gradient input and it is sumed to sum in
+  // gradgrowersumop, for this case, where input is renamed.
+  // We expect MustBeFalse.
+  tw_bg->inputs().containsIds({bg_y_grad}, Require::MustBeFalse);
+  tw_bg->inputs().containsIds({bg_z_grad}, Require::MustBeTrue);
+  tw_bg->outputs().hasExactIds({bg_a_grad, bg_b_grad}, Require::MustBeTrue);
+
+  /* Test bg AddArg0GradOp and AddArg1GradOp. */
+
+  auto tw_add_arg0_grad_z = tw_bg->ops().hasOp<AddArg0GradOp>(
+      [&](auto &tw_add_arg0_grad_z) -> bool {
+        return (bool)tw_add_arg0_grad_z.inputs().hasIdAtIndex(
+            AddArg0GradOp::getInIndex(), bg_z_grad);
+      },
+      Require::MustBeTrue);
+
+  auto tw_add_arg1_grad_z = tw_bg->ops().hasOp<AddArg1GradOp>(
+      [&](auto &tw_add_arg1_grad_z) -> bool {
+        return (bool)tw_add_arg1_grad_z.inputs().hasIdAtIndex(
+            AddArg1GradOp::getInIndex(), bg_z_grad);
+      },
+      Require::MustBeTrue);
+
+  auto tw_add_arg0_grad_y = tw_bg->ops().hasOp<AddArg0GradOp>(
+      [&](auto &tw_add_arg0_grad_y) -> bool {
+        return (bool)tw_add_arg0_grad_y.inputs().hasIdAtIndex(
+            AddArg0GradOp::getInIndex(), bg_y_grad);
+      },
+      Require::MustBeTrue);
+
+  auto tw_add_arg1_grad_y = tw_bg->ops().hasOp<AddArg1GradOp>(
+      [&](auto &tw_add_arg1_grad_y) -> bool {
+        return (bool)tw_add_arg1_grad_y.inputs().hasIdAtIndex(
+            AddArg1GradOp::getInIndex(), bg_y_grad);
+      },
+      Require::MustBeTrue);
+
+  /* Test bg SumOp and expected connections to bg_a_grad, bg_b_grad and
+   * bg_y_grad. */
+
+  auto tw_edge_a0gy =
+      tw_add_arg0_grad_y->outputs()
+          .hasIndex(AddArg0GradOp::getOutIndex(), Require::MustBeTrue)
+          ->tensor();
+
+  tw_edge_a0gy.consumers().hasOp<SumOp>(
+      [&](auto &tw_sum) -> bool {
+        return tw_sum.outputs().hasExactIds({bg_a_grad});
+      },
+      Require::MustBeTrue);
+
+  auto tw_edge_a1gy =
+      tw_add_arg1_grad_y->outputs()
+          .hasIndex(AddArg1GradOp::getOutIndex(), Require::MustBeTrue)
+          ->tensor();
+
+  tw_edge_a1gy.consumers().hasOp<SumOp>(
+      [&](auto &tw_sum) -> bool {
+        return tw_sum.outputs().hasExactIds({bg_b_grad});
+      },
+      Require::MustBeTrue);
+
+  auto tw_edge_a0gz =
+      tw_add_arg0_grad_z->outputs()
+          .hasIndex(AddArg0GradOp::getOutIndex(), Require::MustBeTrue)
+          ->tensor();
+
+  tw_edge_a0gz.consumers().hasOp<SumOp>(
+      [&](auto &tw_sum) -> bool {
+        return tw_sum.outputs().hasExactIds({bg_y_grad});
+      },
+      Require::MustBeTrue);
+
+  auto tw_edge_a1gz =
+      tw_add_arg1_grad_z->outputs()
+          .hasIndex(AddArg1GradOp::getOutIndex(), Require::MustBeTrue)
+          ->tensor();
+
+  tw_edge_a1gz.consumers().hasOp<SumOp>(
+      [&](auto &tw_sum) -> bool {
+        return tw_sum.outputs().hasExactIds({bg_y_grad});
+      },
+      Require::MustBeTrue);
 }

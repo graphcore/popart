@@ -23,7 +23,9 @@ public:
 
   // register that the output of nonGrad Op at OutIndex index
   // has had its gradient tensor computed
-  void insert(Op *nonGrad, int index);
+  // When we call insert during initial grad tensors provided
+  // we set isProvided to true.
+  void insert(Op *nonGrad, int index, bool isProvided = false);
   void fail(Op *nonGrad, int index);
 
   // Pop one op from the completed pile, if available.
@@ -43,7 +45,10 @@ private:
 
   // For a non-grad-op, which of its outputs (by index)
   // have had a gradient computed
-  std::map<OpId, std::set<int>> partial;
+  // Second element of pair, bool, helps to identify
+  // already registered outputs.
+  std::map<OpId, std::set<std::pair<int, bool>>> partial;
+
   // When all required gradient inputs are in,
   // move the key of partial from partial to complete
   std::list<Op *> complete;

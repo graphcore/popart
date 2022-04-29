@@ -214,7 +214,7 @@ void GradGrower::growGrads(
       auto producer = nonGradTensor->getProducerUnsafe();
       // the index at which nonGrad was produced
       int index = producer->output->indices(nonGradTensor).at(0);
-      op_grad_registry.insert(producer, index);
+      op_grad_registry.insert(producer, index, true);
     }
   }
 

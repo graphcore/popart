@@ -101,6 +101,9 @@ bool isGradId(const TensorId &id);
  * edge-grad of, the edge-gradient is uniquely defined by the the edge it flows
  * on in the forward pass (input at 'index' to 'opId')
  *
+ * Note: When subgraph input is an edge grad it is possible that the edge grad
+ * have an id constructed not like by getEdgeGradId(). See growGradSumOp().
+ *
  * \param opId The id of the operator consuming tenId
  * \param index The index at which the operator is consuming the tensor
  * \return The new TensorId of the edge-gradient

@@ -124,7 +124,17 @@ BwdGraphInfo RecomputeStitcher::stitch(
           No);
 
   BackwardsGraphCreatorHelper helper{fwdGraph, bwdGraph};
-  return helper.makeGradInfo();
+
+  std::map<InIndex, ExpectedConnection> expectedConnectionsMap;
+  for (const auto i : protectedInputIndices) {
+    const auto &expInput = bwdGraphInfo.expectedInputs[i];
+    expectedConnectionsMap.insert({i, expInput});
+  }
+
+  // Use expectedConnectionsMap to make sure that we do not overwrite
+  // expected input connections. Note: protectedInputIndices contain
+  // provided gradients list.
+  return helper.makeGradInfo(expectedConnectionsMap);
 }
 
 bool RecomputeStitcher::isDefaultStitch(const GraphId &fwdGraphId,

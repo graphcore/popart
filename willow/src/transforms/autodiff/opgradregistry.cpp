@@ -19,7 +19,16 @@ OpGradRegistry::OpGradRegistry(Graph &fwdGraph_)
     : fwdGraph{fwdGraph_}, partial{}, complete{}, failed{}, completeOrFailed{},
       edgesToLoss{} {}
 
-void OpGradRegistry::insert(Op *nonGrad, int index) {
+// When we insert for the first time, bool helper in partial is
+// set to same value as argument isProvided.
+// If we insert and index is already in the set we handle logic as:
+// A) if isProvided is true:
+//   Do nothing. Allow potential overregistration when tensor is also one of
+//   the provided gradients to autograd.
+// B) if isProvided is false:
+//   B1) if bool helper in partial is true set it to false.
+//   B2) if bool helper in partial is false throw "index already present error".
+void OpGradRegistry::insert(Op *nonGrad, int index, bool isProvided) {
 
   if (nonGrad->outTensor(index)->toLoss == PathToLoss::Yes) {
 
@@ -31,13 +40,25 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
       if (partialIt == partial.end()) {
         partial.insert({nonGrad->id, {}});
       }
-      // this should be removed when we're happy the IL (internal logic)
-      // is correct:
-      if (partial[nonGrad->id].count(index) != 0) {
-        throw internal_error("index already present in OpGradRegistry::insert");
-      }
 
-      partial[nonGrad->id].insert(index);
+      auto comp = [index](const std::pair<int, bool> &p) {
+        return p.first == index;
+      };
+      auto indexProvided = std::find_if(
+          begin(partial[nonGrad->id]), end(partial[nonGrad->id]), comp);
+      if (indexProvided == partial[nonGrad->id].end()) {
+        partial[nonGrad->id].insert(std::make_pair(index, isProvided));
+      } else {
+        if (!isProvided) {
+          if (indexProvided->second) {
+            partial[nonGrad->id].erase(std::make_pair(index, true));
+            partial[nonGrad->id].insert(std::make_pair(index, false));
+          } else {
+            throw internal_error(
+                "index already present in OpGradRegistry::insert");
+          }
+        }
+      }
 
       // Check whether an Op is ready to grow gradients based on the set of
       // output indices of `op' for which a gradient is available. Currently,
@@ -47,12 +68,23 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
       if (edgesToLoss.at(nonGrad) == partial[nonGrad->id].size()) {
         complete.push_back(nonGrad);
         completeOrFailed.insert(nonGrad->id);
-        partial.erase(nonGrad->id);
       }
     } else {
-      throw internal_error("[Autodiff] Unable to process gradient for {} "
-                           "because it has already failed or completed",
-                           nonGrad->str());
+      if (!isProvided) {
+        auto comp2 = [index](const std::pair<int, bool> &p) {
+          return p.first == index && p.second == true;
+        };
+        auto indexProvided = std::find_if(
+            begin(partial[nonGrad->id]), end(partial[nonGrad->id]), comp2);
+        if (indexProvided != partial[nonGrad->id].end()) {
+          partial[nonGrad->id].erase(std::make_pair(index, true));
+          partial[nonGrad->id].insert(std::make_pair(index, false));
+        } else {
+          throw internal_error("[Autodiff] Unable to process gradient for {} "
+                               "because it has already failed or completed",
+                               nonGrad->str());
+        }
+      }
     }
   } else {
     logging::transform::trace("[Autodiff] Ignoring availability of gradient "
@@ -135,7 +167,7 @@ void OpGradRegistry::initialize() {
 
 void OpGradRegistry::logDump(logging::Level level) const {
 
-  auto logMap = [&](const std::map<OpId, std::set<int>> &map,
+  auto logMap = [&](const std::map<OpId, std::set<std::pair<int, bool>>> &map,
                     const char *store) {
     for (const auto &entry : map) {
       Op *nonGrad = fwdGraph.get().getOp(entry.first);

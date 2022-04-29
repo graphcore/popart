@@ -63,10 +63,25 @@ BwdGraphInfo BackwardsGraphCreatorHelper::populateBwdGraph(
     doPrune(bwdGraph, {}, WarnIfProtectedInputCouldHaveBeenRemoved::No);
   }
 
-  return makeGradInfo();
+  // It is guaranteed that provided inputs are expected inputs
+  // connections. Pass them to make grad info.
+  std::map<InIndex, ExpectedConnection> expectedConnectionsMap;
+  if (gradsProvidedForFwdId.has_value()) {
+    auto gradsProvided = *gradsProvidedForFwdId;
+    int numProvided    = gradsProvided.size();
+    for (int i = 0; i < numProvided; i++) {
+      ExpectedConnection expectedConnection;
+      expectedConnection.fwdId = gradsProvided[i];
+      expectedConnection.type  = ExpectedConnectionType::Fwd;
+      expectedConnectionsMap.insert({i, expectedConnection});
+    }
+  }
+
+  return makeGradInfo(expectedConnectionsMap);
 }
 
-BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
+BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo(
+    std::map<InIndex, ExpectedConnection> &expectedConnectionsMap) {
 
   // NOTE: Code later on in the stack (getGradOps for subgraph ops) has certain
   // requirements on what expected inputs/outputs can be. Namely, expected
@@ -77,26 +92,33 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
   // version of BackwardsGraphCreatorHelper then it is likely that this
   // results in an error in, say, `OpWithCalledGraphs` code.
 
-  auto populateExpConns = [this](ExpectedConnections &expConns,
-                                 const std::vector<TensorId> &bwdIds) {
-    for (InIndex i = 0; i < bwdIds.size(); i++) {
-      auto bwdId = bwdIds.at(i);
-      if (bwdIdIsNonGrad(bwdId)) {
-        // Non-grad tensor in bwdGraph.
-        auto fwdId = bwdNonGradIdToFwdId(bwdId);
-        expConns.push_back({fwdId, ExpectedConnectionType::Fwd});
-      } else {
-        // Grad tensor in bwdGraph.
-        auto fwdId = bwdGradIdToFwdId(bwdId);
-        expConns.push_back({fwdId, ExpectedConnectionType::FwdGrad});
-      }
-    }
-  };
+  auto populateExpConns =
+      [this, &expectedConnectionsMap](ExpectedConnections &expConns,
+                                      const std::vector<TensorId> &bwdIds,
+                                      bool isInputs) {
+        for (InIndex i = 0; i < bwdIds.size(); i++) {
+          auto bwdId = bwdIds.at(i);
+          if (bwdIdIsNonGrad(bwdId)) {
+            // Non-grad tensor in bwdGraph.
+            auto fwdId = bwdNonGradIdToFwdId(bwdId);
+            expConns.push_back({fwdId, ExpectedConnectionType::Fwd});
+          } else {
+            // Grad tensor in bwdGraph.
+            // Populate expected connections by bwdGradIdToFwdId. But employ
+            // expectedConnectionsMap if it is given - to deal with
+            // subgraph provided inputs in growGradSumOp.
+            TensorId fwdId = (isInputs && expectedConnectionsMap.count(i))
+                                 ? expectedConnectionsMap[i].fwdId
+                                 : bwdGradIdToFwdId(bwdId);
+            expConns.push_back({fwdId, ExpectedConnectionType::FwdGrad});
+          }
+        }
+      };
 
   ExpectedConnections expectedInputs;
   ExpectedConnections expectedOutputs;
 
-  populateExpConns(expectedInputs, bwdGraph.getInputIds());
+  populateExpConns(expectedInputs, bwdGraph.getInputIds(), true);
   // IMPORTANT NOTE:
   // It is a requirement of autodiff that the returned ExpectedConnections for
   // the outputs of the bwdGraph be in order of gradsRequiredForFwdId (passed to
@@ -107,7 +129,7 @@ BwdGraphInfo BackwardsGraphCreatorHelper::makeGradInfo() {
   // of those outputs, thus abiding by our requirement.
   //
   // Therefore, THE ORDER OF THE OUTPUT IDS PASSED HERE IS VERY IMPORTANT.
-  populateExpConns(expectedOutputs, bwdGraph.getOutputIds());
+  populateExpConns(expectedOutputs, bwdGraph.getOutputIds(), false);
 
   return BwdGraphInfo{bwdGraph.id, expectedInputs, expectedOutputs};
 }
