@@ -48,6 +48,7 @@ public:
         const ReductionType reduction,
         const unsigned blank,
         const Op::Settings &settings_,
+        const bool enableReducedClassesInLabel,
         const DataType outDataType = DataType::UNDEFINED);
 
   std::unique_ptr<Op> clone() const final;
@@ -73,8 +74,13 @@ public:
 
   bool canShard() const override { return false; }
 
+  bool getEnableReducedClassesInLabel() const {
+    return enableReducedClassesInLabel;
+  }
+
 private:
   const unsigned blank;
+  const bool enableReducedClassesInLabel;
   const DataType userOutputType;
 };
 
@@ -101,9 +107,14 @@ public:
 
   bool canShard() const override { return false; }
 
+  bool getEnableReducedClassesInLabel() const {
+    return enableReducedClassesInLabel;
+  }
+
 private:
   ReductionType reduction;
   TensorInfo logProbsInfo;
+  bool enableReducedClassesInLabel;
 };
 
 } // namespace popart

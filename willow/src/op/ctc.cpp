@@ -38,8 +38,10 @@ CtcOp::CtcOp(const OperatorIdentifier &_opid,
              const ReductionType reduction_,
              const unsigned blank_,
              const Op::Settings &_settings,
+             const bool enableReducedClassesInLabel_,
              const DataType userOutputType_)
     : LossOp(_opid, _settings, reduction_), blank(blank_),
+      enableReducedClassesInLabel(enableReducedClassesInLabel_),
       userOutputType(userOutputType_) {}
 
 std::unique_ptr<Op> CtcOp::clone() const {
@@ -120,13 +122,15 @@ void CtcOp::setup() {
         logProbsInShape);
   }
 
-  if (targetsInInfo.getDataTypeInfo()->type() != DataType::UINT32) {
+  if (targetsInInfo.getDataTypeInfo()->type() != DataType::UINT32 &&
+      targetsInInfo.getDataTypeInfo()->type() != DataType::INT32) {
     throw error(
         "Unsupported data type for input {} of Op {} (expected a 'targets' "
-        "tensor of type {}, got {}).",
+        "tensor of type {} or type {}, got {}).",
         getLogProbsInIndex(),
         str(),
         DataType::UINT32,
+        DataType::INT32,
         targetsInInfo.getDataTypeInfo()->type());
   }
 
@@ -147,12 +151,14 @@ void CtcOp::setup() {
         inputLengthsInShape);
   }
 
-  if (inputLengthsInInfo.getDataTypeInfo()->type() != DataType::UINT32) {
+  if (inputLengthsInInfo.getDataTypeInfo()->type() != DataType::UINT32 &&
+      inputLengthsInInfo.getDataTypeInfo()->type() != DataType::INT32) {
     throw error("Unsupported data type for input {} of Op {} (expected a "
-                "'input lengths' tensor of type {}, got {}).",
+                "'input lengths' tensor of type {} or type {}, got {}).",
                 getInputLengthsInIndex(),
                 str(),
                 DataType::UINT32,
+                DataType::INT32,
                 inputLengthsInInfo.getDataTypeInfo()->type());
   }
 
@@ -170,12 +176,14 @@ void CtcOp::setup() {
         targetLengthsInShape);
   }
 
-  if (targetLengthsInInfo.getDataTypeInfo()->type() != DataType::UINT32) {
+  if (targetLengthsInInfo.getDataTypeInfo()->type() != DataType::UINT32 &&
+      targetLengthsInInfo.getDataTypeInfo()->type() != DataType::INT32) {
     throw error("Unsupported data type for input {} of Op {} (expected a "
-                "'target lengths' tensor of type {}, got {}).",
+                "'target lengths' tensor of type {} or type {}, got {}).",
                 getTargetLengthsInIndex(),
                 str(),
                 DataType::UINT32,
+                DataType::INT32,
                 targetLengthsInInfo.getDataTypeInfo()->type());
   }
 
@@ -206,6 +214,8 @@ void CtcOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction_type",
                      static_cast<int64_t>(getReductionType()));
   os.appendAttribute("blank", static_cast<int64_t>(blank));
+  os.appendAttribute("enableReducedClassesInLabel",
+                     enableReducedClassesInLabel);
 }
 
 void CtcGradOp::setup() {
@@ -216,7 +226,8 @@ void CtcGradOp::setup() {
 CtcGradOp::CtcGradOp(const CtcOp &op_)
     : Op(Onnx::CustomGradOperators::CtcGrad, op_.getSettings()),
       reduction(op_.getReductionType()),
-      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())) {}
+      logProbsInfo(op_.inInfo(CtcOp::getLogProbsInIndex())),
+      enableReducedClassesInLabel(op_.getEnableReducedClassesInLabel()) {}
 
 std::unique_ptr<Op> CtcGradOp::clone() const {
   return std::make_unique<CtcGradOp>(*this);
@@ -250,12 +261,14 @@ const std::map<int, int> &CtcGradOp::gradOutToNonGradIn() const {
 void CtcGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("reduction_type", static_cast<int64_t>(reduction));
+  os.appendAttribute("enableReducedClassesInLabel",
+                     enableReducedClassesInLabel);
 }
 
 namespace {
 
 static OpDefinition::DataTypes T1 = {DataType::FLOAT16, DataType::FLOAT};
-static OpDefinition::DataTypes T2 = {DataType::UINT32};
+static OpDefinition::DataTypes T2 = {DataType::UINT32, DataType::INT32};
 
 static OpDefinition ctclossOpDef(
     {OpDefinition::Inputs({{"A", T1}, {"B", T2}, {"C", T2}, {"D", T2}}),
@@ -280,8 +293,20 @@ static OpCreator<CtcOp> ctclossOpCreator(
       auto tpdt_to = static_cast<ONNX_NAMESPACE::TensorProto_DataType>(i64_to);
       DataType outDataType = onnxutil::getDataType(tpdt_to);
 
-      return std::unique_ptr<CtcOp>(
-          new CtcOp(info.opid, reduction, blank, info.settings, outDataType));
+      bool enableReducedClassesInLabel = false;
+
+      if (info.attributes.hasAttribute("enableReducedClassesInLabel")) {
+        enableReducedClassesInLabel =
+            info.attributes.getAttribute<Attributes::Int>(
+                "enableReducedClassesInLabel");
+      }
+
+      return std::unique_ptr<CtcOp>(new CtcOp(info.opid,
+                                              reduction,
+                                              blank,
+                                              info.settings,
+                                              enableReducedClassesInLabel,
+                                              outDataType));
     },
     true);
 

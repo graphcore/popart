@@ -50,6 +50,10 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
   auto outDtype = popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
 
   // Create plan once and re-use for growing and createInput.
+  poplar::OptionFlags options;
+  if (op.getEnableReducedClassesInLabel() == true) {
+    options.set("enableReducedClassesInLabel", "true");
+  }
   *plan = popnn::ctc::plan(graph().getPoplarGraph(),
                            inDtype,
                            outDtype,
@@ -57,7 +61,7 @@ CtcOpx::CtcOpx(Op *op_, Devicex *devicex)
                            op.getMaxInputLength(),
                            op.getMaxTargetLength(),
                            op.getNumClasses(),
-                           {});
+                           options);
 }
 
 CtcOpx::~CtcOpx() = default;
@@ -85,9 +89,9 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
         graph().getPoplarGraph(),
         outDtype,
         logProbs.getPoplarTensor(),
-        targets.getPoplarTensor(),
-        inputLengths.getPoplarTensor(),
-        targetLengths.getPoplarTensor(),
+        targets.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
+        inputLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
+        targetLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
         prog.getPoplarSequence(),
         op.getBlank(),
         *plan,
