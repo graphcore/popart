@@ -2516,7 +2516,7 @@ bool Ir::streamingIsDisabledForTensor(const Tensor *tensor) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if ((tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor()) &&
+  if ((!tensor->isOptimizerStateTensor() && tensor->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }
@@ -2544,7 +2544,7 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
 
   // 2. The tensor is an Gradient Accl tensor, but the user
   //    has turned off streaming for this kind of tensor
-  if ((tensor->isOptimizerStateTensor() || tensor->isAccumulatorTensor()) &&
+  if ((!tensor->isOptimizerStateTensor() && tensor->isAccumulatorTensor()) &&
       getSessionOptions().disableGradAccumulationTensorStreams) {
     return true;
   }
