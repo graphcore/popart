@@ -549,7 +549,7 @@ void serializePopartExecutable(std::ostream &out,
       const auto &hostRearrangement = kv.second->getHostRearrangement();
       auto rearrangementBuilder = rearrangementsBuilder[i].initRearrangement();
       rearrangementBuilder.setReplicationFactor(
-          ir_lowering.getReplicationFactor());
+          hostRearrangement.getReplicationFactor());
 
       rearrangementBuilder.setTotalElementsPerReplica(
           hostRearrangement.getTotalElementsPerReplica());
