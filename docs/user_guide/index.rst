@@ -10,6 +10,7 @@ PopART User Guide
     builderonnx
     executing
     performance
+    variablesettings
     supported_ops
     custom_ops
     env_vars

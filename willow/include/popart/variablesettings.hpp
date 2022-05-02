@@ -41,9 +41,20 @@ enum class VariableRetrievalMode {
   AllReplicas
 };
 
+/**
+ * A class to dictate behaviour of variables and reductions of such across
+ * multiple graphs.
+ */
 class VariableSettings {
 private:
-  CommGroup sharedVariableDomain      = CommGroup(CommGroupType::All, 0);
+  /**
+   * How this Variable is grouped across graph replication.
+   */
+  CommGroup sharedVariableDomain = CommGroup(CommGroupType::All, 0);
+
+  /**
+   * Dictates how Variable retrieval is conducted.
+   */
   VariableRetrievalMode retrievalMode = VariableRetrievalMode::OnePerGroup;
 
 public:
@@ -64,17 +75,25 @@ public:
    */
   VariableRetrievalMode getRetrievalMode() const { return retrievalMode; }
 
-  /// "Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to
-  /// OnePerGroup
+  /**
+   *  "Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to
+   * OnePerGroup.
+   */
   VariableSettings();
 
-  /// Defaults VariableRetrievalMode to OnePerGroup
+  /**
+   *  Defaults VariableRetrievalMode to OnePerGroup.
+   */
   VariableSettings(CommGroup sharedVariableDomain_);
 
-  // Defaults CommGroup to [All, 0]
+  /**
+   *  Defaults CommGroup to [All, 0].
+   */
   VariableSettings(VariableRetrievalMode retrievalMode_);
 
-  // Entirely custom VariableSettings
+  /**
+   *  Entirely custom VariableSettings.
+   */
   VariableSettings(CommGroup sharedVariableDomain_,
                    VariableRetrievalMode retrievalMode_);
 

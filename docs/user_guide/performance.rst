@@ -70,6 +70,8 @@ There are two tiers of replication available in PopART, *local* and
 
 Note that replication is not supported on IPU model targets.
 
+.. _sec_local_replication:
+
 Local replication
 ~~~~~~~~~~~~~~~~~
 

@@ -39,21 +39,30 @@ enum class CommGroupType {
  *
  * Examples of derived sub-groups:
  * - IPU-link domain sub-rack:
- *   \code
+ *
+ *   .. code-block:: python
  *     type == Consecutive && replicaGroupSize == 64/replica-size/N
- *   \endcode
+ *
  *   where N is power of two and replicaGroupSize > 1.
+ *
  * - Complete IPU-link domain / full rack:
- *   \code
+ *
+ *   .. code-block:: python
  *     type == Consecutive && replicaGroupSize == 64/replica-size
- *   \endcode
+ *
  * - Using GW-links only:
- *   \code
+ *
+ *   .. code-block:: python
  *     type == Orthogonal && replicaGroupSize == 64/replica-size
- *   \endcode
+ *
  */
 class CommGroup {
 public:
+  /**
+   * Default CommGroup constructor.
+   *
+   * Sets type to CommGroupType::All and replicaGroupSize to 0.
+   */
   CommGroup();
 
   /**
@@ -68,10 +77,14 @@ public:
   bool operator==(const CommGroup &other) const;
   bool operator!=(const CommGroup &other) const;
 
-  /** Replica group type */
+  /**
+   * Replica group type.
+   */
   CommGroupType type = CommGroupType::All;
 
-  /** Replica group size */
+  /**
+   * Replica group size.
+   */
   unsigned replicaGroupSize = 0;
 };
 

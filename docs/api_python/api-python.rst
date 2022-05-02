@@ -139,6 +139,23 @@ Session Options
 .. autoclass:: popart.SessionOptions
     :members:
 
+.. autoclass:: popart::VariableSettings
+    :members:
+    :undoc-members:
+
+.. autoclass:: popart::CommGroup
+    :members:
+    :undoc-members:
+
+.. autoclass:: popart::CommGroupType
+    :members:
+    :undoc-members:
+
+.. autoclass:: popart::VariableRetrievalMode
+    :members:
+    :undoc-members:
+
+
 Optimizers
 ----------
 
