@@ -306,7 +306,9 @@ void Devicex::remoteBufferWeightsToHost() {
                               tensor->tensorType());
       // Collect information
       auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
-      char *data0           = d2hWeightBuffers[initId].data();
+      auto &data            = d2hWeightBuffers[initId];
+      char *data0           = data.data();
+      const auto data0Size  = data.size() * sizeof(data[0]);
       auto elemSize =
           static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
 
@@ -390,7 +392,11 @@ void Devicex::remoteBufferWeightsToHost() {
                 replicas);
           }
 
-          cbr.undoRearrangeForCollective(&tmp[0], &data0[address], elemSize);
+          cbr.undoRearrangeForCollective(&tmp[0],
+                                         tmp.size() * sizeof(tmp[0]),
+                                         &data0[address],
+                                         data0Size - address,
+                                         elemSize);
 
           // Copy the contents of the collection to the space of the other
           // replicas. This means their collection is synthesized and will
@@ -635,6 +641,7 @@ void Devicex::remoteBufferWeightsFromHost() {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
       auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
       char *data0           = static_cast<char *>(tensor->tensorData()->data());
+      const auto data0Size  = tensor->tensorData()->size();
 
       // Various values uesed throughout the function
       unsigned replicas = getReplicationFactor();
@@ -642,8 +649,7 @@ void Devicex::remoteBufferWeightsFromHost() {
       unsigned nelms    = tensor->info.nelms();
       unsigned realGroupSize =
           tensor->getVariableSettings().getRealGroupSize(replicas);
-      auto elemSize =
-          static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
+      auto elemSize = tensor->info.getDataTypeInfo()->nbytes();
 
       CommGroup commGroup =
           tensor->getVariableSettings().getSharedVariableDomain();
@@ -692,7 +698,11 @@ void Devicex::remoteBufferWeightsFromHost() {
           unsigned address = group * nelms * elemSize;
 
           // Rearrange weights into tmp buffer
-          cbr.rearrangeForCollective(&data0[address], &tmp[0], elemSize);
+          cbr.rearrangeForCollective(&data0[address],
+                                     data0Size - address,
+                                     &tmp[0],
+                                     tmp.size() * sizeof(tmp[0]),
+                                     elemSize);
 
           // Iterate over group members in group
           for (unsigned group_member = 0; group_member < realGroupSize;
