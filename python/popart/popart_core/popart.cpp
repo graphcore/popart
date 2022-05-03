@@ -2077,6 +2077,9 @@ PYBIND11_MODULE(popart_core, m) {
           return self.getDevice().popxlAreHostWeightsInSync();
         },
         DOC(popart, popx, Devicex, popxlAreHostWeightsInSync));
+    cls.def("setEngineIsLoaded",
+            &InferenceSession::popxlSetEngineIsLoaded,
+            py::arg("isLoaded"));
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");

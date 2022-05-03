@@ -62,6 +62,7 @@ def test_session_runtime_fns_guard_attached_behaviour():
     assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
 
     # Entering context attaches
+    session._pb_session.setEngineIsLoaded(False)
     with session:
         assert_all_fns_throw(require_attach_runtime_fns, should_throw=False)
         assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
@@ -69,6 +70,24 @@ def test_session_runtime_fns_guard_attached_behaviour():
     # Leaving context detaches
     assert_all_fns_throw(require_attach_runtime_fns, should_throw=True)
     assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
+
+
+def test_reentry():
+    ir = popxl.Ir()
+
+    with ir.main_graph:
+        w = popxl.variable(1)
+        y = popxl.constant(2)
+        v = ops.var_updates.accumulate_(w, y)
+
+    session: popxl.Session = mk_session_with_test_device(ir)
+
+    for i in range(2):
+        # attach, loadEngineAndConnectStreams, weightsFromHost
+        with session:
+            pass
+        # weightsToHost, detach
+        assert not session.device.isAttached
 
 
 def test_session_ctxtmgr_attach_detach():
@@ -97,6 +116,10 @@ def test_session_ctxtmgr_attach_detach():
         session.device.detach()
         assert not session.device.isAttached
 
+        # Must do this manually after every detach, but not exposed, so the
+        # manual API is unusable.
+        session._pb_session.setEngineIsLoaded(False)
+
         # Nested enter will attach
         with session:
             assert session.device.isAttached
@@ -104,6 +127,7 @@ def test_session_ctxtmgr_attach_detach():
         assert not session.device.isAttached
 
         # Manual attach
+        session._pb_session.setEngineIsLoaded(False)
         attach(session.device)
         assert session.device.isAttached
 

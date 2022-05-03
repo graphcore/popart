@@ -819,6 +819,10 @@ InferenceSession::createFromOnnxModel(const std::string &model,
   return session;
 }
 
+void InferenceSession::popxlSetEngineIsLoaded(const bool isLoaded) {
+  device_->setEngineIsLoaded(isLoaded);
+}
+
 TrainingSession::~TrainingSession() = default;
 
 std::unique_ptr<TrainingSession>

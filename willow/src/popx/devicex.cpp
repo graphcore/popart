@@ -615,6 +615,7 @@ const IrLowering &Devicex::lowering() const { return executable_.lowering(); }
 
 void Devicex::weightsFromHost() {
   POPART_TRACEPOINT();
+
   if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();

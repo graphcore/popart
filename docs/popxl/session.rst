@@ -163,43 +163,6 @@ The above points are demonstrated in the following example:
 
     :download:`Download tensor_get_write_adv.py <files/tensor_get_write_adv.py>`
 
-Manual attaching and detaching from device
-------------------------------------------
-
-.. warning::
-    It is highly recommended to always use the :py:class:`popxl.Session` context
-    manager to manage attaching/detaching from device. The following API is
-    provided for rare cases where the user needs more precise control. DO NOT
-    use it unless the context manager proves insufficient for your use case.
-
-You have direct access to the :py:class:`popart.DeviceInfo` object through
-:py:func:`popxl.Session.device`. This object has an API for managing the device.
-In particular, you can manually attach or detach from the device.
-
-To attach, you can call :py:func:`popart.DeviceInfo.attach`. This will attempt
-to attach to device, returning ``True`` if possible, or ``False`` if the device
-is unavailable. When running on ``cpu`` or ``ipu_model`` devices, the attach
-will always be successful. When running on ``ipu_hw`` devices, the attach may
-fail.
-
-To try attach to a device until a certain timeout, throwing if not possible,
-call :py:func:`popart.DeviceInfo.tryAttachUntilTimeout`. If running on
-``ipu_hw``, you probably just want to call this function and not ``attach``.
-
-To detach from device, call :py:func:`popart.DeviceInfo.detach`.
-
-Preferable to manually detaching is to use the :py:class:`popart.DeviceInfo`
-context manager. This does nothing on enter (so you are still responsible for
-attaching), but always detaches on exit.
-
-On exit of the process, it will detach from all devices. However, it is an easy
-mistake to be attached whilst the process is performing long-running CPU-bound
-code. This hogs the device and makes it difficult to work on a machine shared
-with others, thus it is important to remember to manually detach immediately
-after the necessary runtime functions have completed. This can be error-prone
-due to the attach-detach-attach-ing possibly invalidating IPU memory (as
-explained in the note :ref:`here<Running a session>`). For these reasons, it is
-highly recommended to always use the context manager.
 
 Nested Session Contexts
 -----------------------

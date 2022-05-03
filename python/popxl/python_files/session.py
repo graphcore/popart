@@ -520,6 +520,7 @@ class Session:
         if should_teardown:
             self.weights_to_host()
             self.device.detach()
+            self._pb_session.setEngineIsLoaded(False)
 
         # Note, if the user was attached, but then manually detached inside the
         # context, we do not restore their pre-enter attached state.

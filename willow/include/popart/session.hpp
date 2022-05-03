@@ -649,6 +649,8 @@ public:
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns(),
                       const std::string name = DefaultInferenceSessionName);
+
+  void popxlSetEngineIsLoaded(bool isLoaded);
 };
 
 /**
