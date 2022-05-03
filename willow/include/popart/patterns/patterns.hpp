@@ -271,7 +271,7 @@ public:
   static bool isMandatory(std::string &patternName);
 
   /**
-   * Check if InitAccumulate is enabled.
+   * Check if InitAccumulatePattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -301,19 +301,19 @@ public:
    */
   bool isNlllWithSoftMaxGradDirectEnabled();
   /**
-   * Check if SplitGather is enabled.
+   * Check if SplitGatherPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isSplitGatherEnabled();
   /**
-   * Check if OpToIdentity is enabled.
+   * Check if OpToIdentityPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isOpToIdentityEnabled();
   /**
-   * Check if UpsampleToResize is enabled.
+   * Check if UpsampleToResizePattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -325,49 +325,49 @@ public:
    */
   bool isSubtractArg1GradOpEnabled();
   /**
-   * Check if MulArgGradOp is enabled.
+   * Check if MulArgGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isMulArgGradOpEnabled();
   /**
-   * Check if ReciprocalGradOp is enabled.
+   * Check if ReciprocalGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isReciprocalGradOpEnabled();
   /**
-   * Check if Atan2Arg0GradOp is enabled.
+   * Check if Atan2Arg0GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isAtan2Arg0GradOpEnabled();
   /**
-   * Check if Atan2Arg1GradOp is enabled.
+   * Check if Atan2Arg1GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isAtan2Arg1GradOpEnabled();
   /**
-   * Check if DivArg0GradOp is enabled.
+   * Check if DivArg0GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isDivArg0GradOpEnabled();
   /**
-   * Check if DivArg1GradOp is enabled.
+   * Check if DivArg1GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isDivArg1GradOpEnabled();
   /**
-   * Check if PowArg0GradOp is enabled.
+   * Check if PowArg0GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isPowArg0GradOpEnabled();
   /**
-   * Check if PowArg1GradOp is enabled.
+   * Check if PowArg1GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -379,13 +379,13 @@ public:
    */
   bool isSinGradOpEnabled();
   /**
-   * Check if CosGradOp is enabled.
+   * Check if CosGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isCosGradOpEnabled();
   /**
-   * Check if InPlaceEnabled() { return inplace is enabled.
+   * Check if InPlace is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -400,55 +400,55 @@ public:
     return updateInplacePrioritiesForIpuEnabled;
   }
   /**
-   * Check if SqrtGradOp is enabled.
+   * Check if SqrtGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isSqrtGradOpEnabled();
   /**
-   * Check if ConvFlipWeightsDoubleFlip is enabled.
+   * Check if ConvFlipWeightsDoubleFlipPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isConvFlipWeightsDoubleFlipEnabled();
   /**
-   * Check if ConvFlipWeightsGradOp is enabled.
+   * Check if ConvFlipWeightsGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isConvFlipWeightsGradOpEnabled();
   /**
-   * Check if ExpandCast is enabled.
+   * Check if ExpandCastPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isExpandCastEnabled();
   /**
-   * Check if ExpGradOp is enabled.
+   * Check if ExpGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isExpGradOpEnabled();
   /**
-   * Check if Expm1GradOp is enabled.
+   * Check if Expm1GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isExpm1GradOpEnabled();
   /**
-   * Check if Log1pGradOp is enabled.
+   * Check if Log1pGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isLog1pGradOpEnabled();
   /**
-   * Check if LogGradOp is enabled.
+   * Check if LogGradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isLogGradOpEnabled();
   /**
-   * Check if NegativeOneScale is enabled.
+   * Check if NegativeOneScalePattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -472,19 +472,19 @@ public:
    */
   bool isMatMulRhsGradOpEnabled();
   /**
-   * Check if RandomNormalLikeOpPattern is enabled.
+   * Check if RandomNormalLikeOp is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isRandomNormalLikeOpPatternEnabled();
   /**
-   * Check if RandomUniformLikeOpPattern is enabled.
+   * Check if RandomUniformLikeOp is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isRandomUniformLikeOpPatternEnabled();
   /**
-   * Check if ZerosLikeOpPattern is enabled.
+   * Check if ZerosLikeOp is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -496,25 +496,25 @@ public:
    */
   bool isDecomposeBinaryConstScalarEnabled();
   /**
-   * Check if FmodArg0GradOp is enabled.
+   * Check if FmodArg0GradOpPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isFmodArg0GradOpEnabled();
   /**
-   * Check if LambSerialisedWeight is enabled.
+   * Check if LambSerialisedWeightPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isLambSerialisedWeightEnabled();
   /**
-   * Check if TiedGather is enabled.
+   * Check if TiedGatherPattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
   bool isTiedGatherEnabled();
   /**
-   * Check if TiedGatherAccumulate is enabled.
+   * Check if TiedGatherAccumulatePattern is enabled.
    *
    * \returns `true` if pattern is enabled; `false` otherwise.
    */
@@ -525,7 +525,7 @@ public:
   //           enablePreUniRepl(true);
 
   /**
-   * Enable or disable InitAccumulate.
+   * Enable or disable InitAccumulatePattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
@@ -560,84 +560,84 @@ public:
   Patterns &enableNlllWithSoftMaxGradDirect(bool v);
 
   /**
-   * Enable or disable SplitGather.
+   * Enable or disable SplitGatherPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableSplitGather(bool v);
 
   /**
-   * Enable or disable OpToIdentity.
+   * Enable or disable OpToIdentityPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableOpToIdentity(bool v);
 
   /**
-   * Enable or disable UpsampleToResize.
+   * Enable or disable UpsampleToResizePattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableUpsampleToResize(bool v);
 
   /**
-   * Enable or disable SubtractArg1GradOp.
+   * Enable or disable SubtractArg1GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableSubtractArg1GradOp(bool v);
 
   /**
-   * Enable or disable MulArgGradOp.
+   * Enable or disable MulArgGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableMulArgGradOp(bool v);
 
   /**
-   * Enable or disable ReciprocalGradOp.
+   * Enable or disable ReciprocalGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableReciprocalGradOp(bool v);
 
   /**
-   * Enable or disable Atan2Arg0GradOp.
+   * Enable or disable Atan2Arg0GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableAtan2Arg0GradOp(bool v);
 
   /**
-   * Enable or disable Atan2Arg1GradOp.
+   * Enable or disable Atan2Arg1GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableAtan2Arg1GradOp(bool v);
 
   /**
-   * Enable or disable DivArg0GradOp.
+   * Enable or disable DivArg0GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableDivArg0GradOp(bool v);
 
   /**
-   * Enable or disable DivArg1GradOp.
+   * Enable or disable DivArg1GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableDivArg1GradOp(bool v);
 
   /**
-   * Enable or disable PowArg0GradOp.
+   * Enable or disable PowArg0GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enablePowArg0GradOp(bool v);
 
   /**
-   * Enable or disable PowArg1GradOp.
+   * Enable or disable PowArg1GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
@@ -651,7 +651,7 @@ public:
   Patterns &enableSinGradOp(bool v);
 
   /**
-   * Enable or disable CosGradOp.
+   * Enable or disable CosGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
@@ -678,56 +678,56 @@ public:
   }
 
   /**
-   * Enable or disable SqrtGradOp.
+   * Enable or disable SqrtGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableSqrtGradOp(bool v);
 
   /**
-   * Enable or disable ConvFlipWeightsDoubleFlip.
+   * Enable or disable ConvFlipWeightsDoubleFlipPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableConvFlipWeightsDoubleFlip(bool v);
 
   /**
-   * Enable or disable ConvFlipWeightsGradOp.
+   * Enable or disable ConvFlipWeightsGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableConvFlipWeightsGradOp(bool v);
 
   /**
-   * Enable or disable ExpGradOp.
+   * Enable or disable ExpGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableExpGradOp(bool v);
 
   /**
-   * Enable or disable Expm1GradOp.
+   * Enable or disable Expm1GradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableExpm1GradOp(bool v);
 
   /**
-   * Enable or disable Log1pGradOp.
+   * Enable or disable Log1pGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableLog1pGradOp(bool v);
 
   /**
-   * Enable or disable LogGradOp.
+   * Enable or disable LogGradOpPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableLogGradOp(bool v);
 
   /**
-   * Enable or disable NegativeOneScale.
+   * Enable or disable NegativeOneScalePattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
@@ -755,21 +755,21 @@ public:
   Patterns &enableMatMulRhsGradOp(bool v);
 
   /**
-   * Enable or disable RandomNormalLikeOpPattern.
+   * Enable or disable RandomNormalLikeOp.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableRandomNormalLikeOpPattern(bool v);
 
   /**
-   * Enable or disable RandomUniformLikeOpPattern.
+   * Enable or disable RandomUniformLikeOp.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableRandomUniformLikeOpPattern(bool v);
 
   /**
-   * Enable or disable ZerosLikeOpPattern.
+   * Enable or disable ZerosLikeOp.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
@@ -783,21 +783,21 @@ public:
   Patterns &enableDecomposeBinaryConstScalar(bool v);
 
   /**
-   * Enable or disable LambSerialisedWeight.
+   * Enable or disable LambSerialisedWeightPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableLambSerialisedWeight(bool v);
 
   /**
-   * Enable or disable TiedGather.
+   * Enable or disable TiedGatherPattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
   Patterns &enableTiedGather(bool v);
 
   /**
-   * Enable or disable TiedGatherAccumulate.
+   * Enable or disable TiedGatherAccumulatePattern.
    *
    * \param v If `true` then enable pattern. If `false` then disable pattern.
    */
