@@ -22,7 +22,7 @@ class Tensor;
 
 /**
  * Class describing a group cluster of Ops belonging to the same Graph
- * that can be replaced be replaced by a call to a single subgraph.
+ * that can be replaced by a call to a single subgraph.
  **/
 class SubgraphableOpCluster {
 public:
