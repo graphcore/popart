@@ -347,3 +347,97 @@ def test_get_reports(tmp_path):
         cached_session.getSummaryReport()
     error = e_info.value.args[0].splitlines()[0]
     assert error == expected_error
+
+
+def test_implicit_pipelining_custom_fwd_only_cache(tmpdir):
+    """Test if running inference within the training session works
+    with caching
+    """
+    filename = str(tmpdir / 'model.popart')
+
+    hidden_size = 5
+    batches_per_step = 2
+    accumulation_factor = 4
+    input_shape = [hidden_size, hidden_size]
+
+    data = np.random.normal(0, 0.02,
+                            [hidden_size, hidden_size]).astype(np.float32)
+
+    input_data = np.random.normal(
+        0, 0.02, [batches_per_step, accumulation_factor] + input_shape).astype(
+            np.float32)
+
+    builder = popart.Builder(opsets={
+        "ai.onnx": 9,
+        "ai.onnx.ml": 1,
+        "ai.graphcore": 1
+    })
+
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
+                                  "x_in")
+
+    w0 = builder.addInitializedInputTensor(data, "w0")
+    w1 = builder.addInitializedInputTensor(data, "w1")
+
+    with builder.virtualGraph(0), builder.pipelineStage(0):
+        o = builder.aiOnnx.mul([x_in, w0])
+
+    with builder.virtualGraph(1), builder.pipelineStage(1):
+        o = builder.aiOnnx.mul([o, w1])
+        l1 = builder.aiGraphcore.l1loss([o], 0.1)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(batches_per_step,
+                               {l1: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+    # Disable outlining to make debugging easier
+    opts.enableOutlining = False
+    opts.enablePipelining = True
+    opts.enableGradientAccumulation = True
+    opts.accumulationFactor = accumulation_factor
+    opts.autoRecomputation = popart.RecomputationType.Pipeline
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
+
+    # Option under test
+    opts.createImplicitPipeliningFwdOnlyProgram = True
+
+    pat = popart.Patterns(popart.PatternsLevel.Default)
+
+    with tu.create_test_device(numIpus=4) as device0:
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(1),
+                                         patterns=pat,
+                                         deviceInfo=device0)
+
+        session.prepareDevice()
+
+        # Old session
+        session.compileAndExport(filename)
+
+        # New session
+        session = popart.TrainingSession(fnModel=proto,
+                                         dataFlow=dataFlow,
+                                         userOptions=opts,
+                                         loss=l1,
+                                         optimizer=popart.ConstSGD(1),
+                                         patterns=pat,
+                                         deviceInfo=device0)
+
+        session.loadExecutable(filename)
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+        inputs = {x_in: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.weightsFromHost()
+
+        # Test if both entry points work with a cached executable
+        session.run(stepio)
+        session.run("implicitPipeliningFwdOnly", stepio)

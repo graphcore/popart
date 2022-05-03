@@ -679,6 +679,11 @@ public:
     return static_cast<T *>(opxState.at(opid).get());
   }
 
+  void setProgramHandleIndexMap(
+      const std::map<std::string, unsigned> &programHandleIndexMap_) {
+    programHandleIndexMap = programHandleIndexMap_;
+  }
+
   const std::map<std::string, unsigned> &getProgramHandleIndexMap() const {
     return programHandleIndexMap;
   }

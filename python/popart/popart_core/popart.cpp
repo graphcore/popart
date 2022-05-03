@@ -214,7 +214,7 @@ public:
 
   void assertNumElements(const popx::Executablex &) const final {}
 
-  ConstVoidData in(TensorId id, int64_t, bool prefetch) final {
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
     py::gil_scoped_acquire acquire;
     py::array a = inputCb(id, prefetch);
     if (!isContiguous(a)) {
@@ -2112,6 +2112,13 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(
         "loadExecutable",
         [](InferenceSession &session, const std::string &filename) {
+          session.loadExecutableFromFile(filename);
+        },
+        py::arg("filename"),
+        DOC(popart, Session, loadExecutableFromFile));
+    cls.def(
+        "loadExecutable",
+        [](TrainingSession &session, const std::string &filename) {
           session.loadExecutableFromFile(filename);
         },
         py::arg("filename"),

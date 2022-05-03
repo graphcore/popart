@@ -450,6 +450,22 @@ void serializePopartExecutable(std::ostream &out,
   }
 
   {
+    // Store the handle (string) and program index (integer) of all custom
+    // programs
+    auto programHandleIndexMap = ir_lowering.getProgramHandleIndexMap();
+    auto programHandleIndicesBuilder =
+        irLoweringBuilder.initProgramHandleIndices();
+    auto idPairsBuilder =
+        programHandleIndicesBuilder.initIdPairs(programHandleIndexMap.size());
+    int i = 0;
+    for (const auto &programHandleAndIndex : programHandleIndexMap) {
+      idPairsBuilder[i].setIndex(programHandleAndIndex.second);
+      idPairsBuilder[i].setHandleId(programHandleAndIndex.first);
+      ++i;
+    }
+  }
+
+  {
     auto variableTensors   = ir.getTensorIds(TensorType::Variable);
     auto anchorTensors     = ir.getRootAnchors();
     auto optimizerTensors  = ir.optimizerTensors();
@@ -630,6 +646,21 @@ deserializePopartExecutable(std::istream &in,
       cycleCountIds_.push_back(t);
     }
     lowering.setCycleCountIds(cycleCountIds_);
+  }
+
+  {
+    // Restore the handle (string) and program index (integer) of all custom
+    // programs
+    auto programHandleIndices =
+        irLoweringReader.getProgramHandleIndices().getIdPairs();
+    std::map<std::string, unsigned> programHandleIndexMap;
+
+    for (const auto &programHandleIndex : programHandleIndices) {
+      programHandleIndexMap[programHandleIndex.getHandleId()] =
+          programHandleIndex.getIndex();
+    }
+
+    lowering.setProgramHandleIndexMap(programHandleIndexMap);
   }
 
   std::unordered_map<TensorId, std::unique_ptr<popart::Tensor>>
