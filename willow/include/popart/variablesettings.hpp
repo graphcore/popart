@@ -157,6 +157,7 @@ public:
    * \return               The shape as presented by Onnx.
    */
   Shape shapeOnHost(Shape replica_shape, unsigned replicaCount) const;
+
   /**
    * This function returns a set of vectors where each vector contains all
    * the replicaId's of the replicas with a sharedVariableDomain given the

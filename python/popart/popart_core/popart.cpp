@@ -3190,6 +3190,7 @@ PYBIND11_MODULE(popart_core, m) {
             &VariableSettings::getSharedVariableDomain);
     cls.def("getRetrievalMode", &VariableSettings::getRetrievalMode);
     cls.def("shapeOnReplica", &VariableSettings::shapeOnReplica);
+    cls.def("shapeOnHost", &VariableSettings::shapeOnHost);
     cls.def("groups", &VariableSettings::groups);
     cls.def("verify", &VariableSettings::verify);
   }

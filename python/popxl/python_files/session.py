@@ -131,7 +131,7 @@ class Session:
             outputs (d2hStreamBufferMaps, optional): The output buffers, these will be written to
                 and modified. Defaults to None.
             downcast_inputs (bool): If True 64-bit float/ints inputs will be downcast to 32-bit variants. Defaults to True.
-        
+
         Raises:
             ValueError: If not attached to device before calling this function.
         """
@@ -182,7 +182,7 @@ class Session:
 
         Returns:
             d2hStreamBufferMaps: The map of outputs from the model.
-        
+
         Raises:
             ValueError: If not attached to device before calling this function.
         """
@@ -200,7 +200,7 @@ class Session:
 
     def weights_to_host(self) -> None:
         """Copy the weights to host from the device.
-            
+
         Raises:
             ValueError: If not attached to device before calling this function.
         """
@@ -214,7 +214,7 @@ class Session:
 
     def weights_from_host(self) -> None:
         """Copy the weights to device from the host.
-        
+
         Raises:
             ValueError: If not attached to device before calling this function.
         """
@@ -237,14 +237,11 @@ class Session:
 
         This will sync all the host buffers with the corresponding tensors on the device. Note this
         is a memory view of the data, so will not allocate extra memory for the data, but it is your
-        responsibility to ensure the data in the tensor is live at the point of retrival.
+        responsibility to ensure the data in the tensor is live at the point of retrieval.
 
         Args:
             tensor (Union[Variable, Constant]): The tensor to get the data for. Must be Constant or
             Variable type.
-
-        Raises:
-            TypeError: If the tensor is not of type Constant, Variable.
 
         Returns:
             np.ndarray: The data for the tensor in question, with type and shape the same as the
@@ -262,6 +259,9 @@ class Session:
         Args:
             tensors (Iterable[Union[Variable, Constant]]): An iterable of the tensors to provide data
             for.
+
+        Raises:
+            TypeError: If any tensor is not of type Constant, Variable.
 
         Returns:
             Dict[Union[Constant, Variable], np.ndarray]: A dictionary of tensors and the
@@ -292,10 +292,24 @@ class Session:
         ):
             self.weights_to_host()
 
-        return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {
-            tensor: _popxl_to_numpy(tensor)
-            for tensor in tensors
-        }
+        return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {}
+
+        for tensor in tensors:
+            if isinstance(tensor, Variable) and (
+                    tensor.retrieval_mode == "all_replicas") and (
+                        tensor.replica_grouping.group_size > 1):
+                # If using all replicas retrieval mode, we must use weightsIo to copy
+                # every replica's weights.
+                shape = list(tensor.shape_on_host)
+                shape[0] *= tensor.replica_grouping.group_size
+                weights = {}
+                weights[tensor.id] = np.empty(shape, tensor.dtype.as_numpy())
+                weightsIo = popart.PyWeightsIO(weights)
+                self._pb_session.readWeights(weightsIo)
+
+                return_tensors[tensor] = weights[tensor.id]
+            else:
+                return_tensors[tensor] = _popxl_to_numpy(tensor)
 
         return return_tensors
 
@@ -305,7 +319,7 @@ class Session:
         This is only valid for Variable type tensors.
 
         tensor and data must have matching shape and dtype.
-        
+
         If attached to device, the Variable will be updated on host, then a
         ``weights_from_host`` will occur to update the weights on device.
 
@@ -334,6 +348,15 @@ class Session:
 
         The host to device transfer is delayed until the end so that it only
         happens once.
+
+        Raises:
+            TypeError: If any input tensor is not of type Variable.
+
+            TypeError: If the input array data type does not match that of the associated
+                tensor.
+
+            ValueError: If the input array shape does not match that of the associated
+                tensor.
 
         Args:
             tensors Dict[(Variable, np.ndarray]): A dictionary of tensors and

@@ -7,7 +7,6 @@ add_popart_py_unit_test(popxl-modified_call test_modified_call.py VARIANTS IpuMo
 add_popart_py_unit_test(popxl-random-seed test_random_seed.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-remote_buffer_store_load test_remote_buffer_store_load.py VARIANTS Hw)
 add_popart_py_unit_test(popxl-model_caching test_model_caching.py VARIANTS Hw)
-add_popart_py_unit_test(popxl-grouped_initialization test_grouped_initialization.py VARIANTS Hw)
 add_popart_py_unit_test(popxl-rts_autodiff test_rts_autodiff.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-gather_oor test_gather_oor.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-session test_session.py VARIANTS IpuModel)
@@ -22,3 +21,21 @@ add_popart_py_unit_test(popxl-test_roialign test_roialign.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_argmax test_argmax.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_argmin test_argmin.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_exp test_exp.py VARIANTS IpuModel)
+
+# popxl-grouped_initialization test starts here
+set(retieval_mode_options "all_replicas" "one_per_group")
+set(remote_options "True" "False")
+set(rts_options "True" "False")
+set(config_options "config0" "config1" "config2" "config3" "config4")
+
+foreach(retieval ${retieval_mode_options})
+  foreach(remote ${remote_options})
+    foreach(rts ${rts_options})
+        foreach(config ${config_options})
+# linter complains if this is indented
+add_popart_py_unit_test(popxl-grouped_initialization test_grouped_initialization.py VARIANTS Hw MATCHEXPR "[${retieval}-${remote}-${rts}-${config}]")
+      endforeach()
+    endforeach()
+  endforeach()
+endforeach()
+# popxl-grouped_initialization test ends here

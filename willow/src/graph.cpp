@@ -193,7 +193,7 @@ void Graph::addVarInit(const TensorId &name,
           num_groups);
     }
   }
-  getTensors().addVarInitWithLeadingGroupDim(name, info, src, vs, debugContext);
+  getTensors().addVarInit(name, info, src, vs, debugContext);
 }
 
 void Graph::addConstInit(const TensorId &name,

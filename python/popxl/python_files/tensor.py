@@ -131,17 +131,17 @@ class Tensor:
     ## Properties
     @property
     def id(self) -> str:
-        """The fully-qualified identifier of the tensor (for example, 'graph1/Gradient___x')."""
+        """Fully-qualified identifier of the tensor (for example, 'graph1/Gradient___x')."""
         return str(self._pb_tensor.id)
 
     @property
     def name(self) -> str:
-        """The identifier of the tensor with the graph scope removed (for example, 'Gradient___x')."""
+        """Id of the tensor with the graph scope removed (for example, 'Gradient___x')."""
         return _ir.removeScope(self._pb_tensor.getGraph(), self.id)
 
     @property
     def scope(self) -> str:
-        """The graph scope component of the tensor's identifier (for example, 'graph1')."""
+        """Graph scope component of the tensor's identifier (for example, 'graph1')."""
         return self._pb_tensor.getGraph().getScope().str()
 
     @property
@@ -666,12 +666,64 @@ class Variable(Tensor, tensor_type="Variable"):
         return ops.ipu_copy(self, dst, src)
 
     @property
-    def replica_grouping(self) -> Union[None, ReplicaGrouping]:
-        return self._replica_grouping
+    def replica_grouping(self) -> ReplicaGrouping:
+        """Return the ReplicaGrouping settings for this tensor.
 
-    @replica_grouping.setter
-    def replica_grouping(self, rg: ReplicaGrouping) -> None:
-        self._replica_grouping = rg
+        Returns:
+            ReplicaGrouping: The ReplicaGrouping object, if set.
+        """
+        vs = self._pb_tensor.getVariableSettings()
+        return ReplicaGrouping._from_variable_settings(self.ir, vs)
+
+    @property
+    def retrieval_mode(self) -> Literal["one_per_group", "all_replicas"]:
+        """Return the string representation of the retrieval mode.
+
+        One of:
+            - "one_per_group": Return only the first replica's variable per group.
+            - "all_replicas": Return all replica's variables in every group.
+
+        Raises:
+            ValueError: If an unsupported VariableRetrievalMode is present on the popart tensor.
+
+        Returns:
+            Literal["one_per_group", "all_replicas"]: The string representing the retieval_mode.
+        """
+        import popart
+        if self._pb_tensor.getVariableSettings().getRetrievalMode(
+        ) == popart.VariableRetrievalMode.OnePerGroup:
+            return "one_per_group"
+        elif self._pb_tensor.getVariableSettings().getRetrievalMode(
+        ) == popart.VariableRetrievalMode.AllReplicas:
+            return "all_replicas"
+        else:
+            raise ValueError(
+                f"Unsupported VariableRetrievalMode :{self._pb_tensor.getVariableSettings().getRetrievalMode()}"
+            )
+
+    @property
+    def shape_on_replica(self):
+        """Return the reduced shape on an individial replica.
+
+        The full shape on host may have an outer group_num dimension on the host, depending on the
+        replica_grouping argument. This function takes the full shape and removes the outer
+        dimension safely (ie. checks if the outer dimension matches an expected
+        outer dimension).
+        """
+        return tuple(self._pb_tensor.getVariableSettings().shapeOnReplica(
+            self.shape, self.ir.replication_factor, self.name))
+
+    @property
+    def shape_on_host(self):
+        """Return the full tensor shape on the host.
+
+        The full shape on host may have an outer group_num dimension on the host, depending on the
+        replica_grouping argument. This function takes the reduced on-replica shape and adds the outer
+        dimension safely (ie. checks if the outer dimension matches an expected
+        outer dimension).
+        """
+        return tuple(self._pb_tensor.getVariableSettings().shapeOnHost(
+            self.shape, self.ir.replication_factor))
 
 
 class Constant(Tensor, tensor_type="Const"):
@@ -695,7 +747,9 @@ def variable(data: HostScalarTensor,
              dtype: Optional[dtypes.dtype] = None,
              name: Optional[str] = None,
              downcast: bool = True,
-             replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
+             replica_grouping: Optional[ReplicaGrouping] = None,
+             retrieval_mode: Optional[
+                 Literal["one_per_group", "all_replicas"]] = None) -> Variable:
     """
     Create a variable tensor that is initialised with data during graph creation.
 
@@ -729,6 +783,11 @@ def variable(data: HostScalarTensor,
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+            One of:
+            - "one_per_group": Return only the first replica's variable per group.
+            - "all_replicas": Return all replica's variables in every group.
+            Defaults to None.
 
     Raises:
         RuntimeError: If a non-default replica group is used
@@ -755,11 +814,10 @@ def variable(data: HostScalarTensor,
     pb_id = g._create_tensor_id(name)
 
     if replica_grouping is None:
-        pb_g.addVarInit(pb_id, info, np_data)
-        return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
-
+        replica_grouping = g.ir.replica_grouping()
     pb_g.addVarInit(pb_id, info, np_data,
-                    replica_grouping._to_variable_settings())
+                    replica_grouping._to_variable_settings(retrieval_mode))
+
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
@@ -770,7 +828,10 @@ def remote_variable(
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
-        replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
+        replica_grouping: Optional[ReplicaGrouping] = None,
+        retrieval_mode: Optional[
+            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
 
     Args:
@@ -788,7 +849,7 @@ def remote_variable(
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping:
+        replica_grouping (Optional[ReplicaGrouping]):
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -796,6 +857,12 @@ def remote_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+            One of:
+            - "one_per_group": Return only the first replica's variable per group, this is the
+                default behaviour.
+            - "all_replicas": Return all replica's variables in every group.
+            Defaults to "one_per_group".
 
     Raises:
         RuntimeError: If a non-default replica group is used.
@@ -805,7 +872,8 @@ def remote_variable(
         Variable: The remote variable.
     """
 
-    var = variable(data, dtype, name, downcast, replica_grouping)
+    var = variable(data, dtype, name, downcast, replica_grouping,
+                   retrieval_mode)
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
@@ -821,7 +889,10 @@ def remote_replica_sharded_variable(
         dtype: Optional[dtypes.dtype] = None,
         name: Optional[str] = None,
         downcast: bool = True,
-        replica_grouping: Optional[ReplicaGrouping] = None) -> Variable:
+        replica_grouping: Optional[ReplicaGrouping] = None,
+        retrieval_mode: Optional[
+            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
         The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
         data parallelism) of the same model/graph. Eliminates redundant data storage when the full
@@ -847,7 +918,7 @@ def remote_replica_sharded_variable(
             The name of the tensor. Defaults to `None`.
         downcast (bool):
             If no dtype is provided 64 bit float/ints will be downcasted to 32 bit variants. Default to True.
-        replica_grouping:
+        replica_grouping (Optional[ReplicaGrouping]):
             The grouping of replicas to use when getting and setting variable
             values. Generally it makes sense to group replicas together that
             are guaranteed to agree on value based on the collective operations
@@ -855,6 +926,12 @@ def remote_replica_sharded_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+            One of:
+            - "one_per_group": Return only the first replica's variable per group, this is the
+                default behaviour.
+            - "all_replicas": Return all replica's variables in every group.
+            Defaults to "one_per_group".
 
     Raises:
         RuntimeError: If a non-default replica group is used.
@@ -887,7 +964,7 @@ def remote_replica_sharded_variable(
         )
 
     var = remote_variable(data, remote_buffer, offset, dtype, name, downcast,
-                          replica_grouping)
+                          replica_grouping, retrieval_mode)
 
     var._pb_tensor.setTensorLocationInfo(
         _ir.TensorLocation(_ir.TensorStorage.OffChip,
@@ -896,12 +973,15 @@ def remote_replica_sharded_variable(
     return var
 
 
-def replica_sharded_variable(data: HostScalarTensor,
-                             dtype: Optional[dtypes.dtype] = None,
-                             name: Optional[str] = None,
-                             downcast: bool = True,
-                             replica_grouping: Optional[ReplicaGrouping] = None
-                             ) -> Tuple[Variable, Tensor]:
+def replica_sharded_variable(
+        data: HostScalarTensor,
+        dtype: Optional[dtypes.dtype] = None,
+        name: Optional[str] = None,
+        downcast: bool = True,
+        replica_grouping: Optional[ReplicaGrouping] = None,
+        retrieval_mode: Optional[
+            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+) -> Tuple[Variable, Tensor]:
     """
     Scatter a tensor in equal shards across replicas (data parallelism) of the same model/graph.
 
@@ -927,6 +1007,12 @@ def replica_sharded_variable(data: HostScalarTensor,
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+        retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
+            One of:
+            - "one_per_group": Return only the first replica's variable per group, this is the
+                default behaviour.
+            - "all_replicas": Return all replica's variables in every group.
+            Defaults to "one_per_group".
 
     Raises:
         RuntimeError: If non-default grouping is used.
@@ -950,7 +1036,8 @@ def replica_sharded_variable(data: HostScalarTensor,
 
     # Create a remote RTS variable
     var = remote_replica_sharded_variable(data, buffer, 0, dtype, name,
-                                          downcast, replica_grouping)
+                                          downcast, replica_grouping,
+                                          retrieval_mode)
 
     # Load/Store the variable in the WeightsFromHost/WeightsToHost programs.
     with get_main_graph():

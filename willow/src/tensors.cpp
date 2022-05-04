@@ -241,73 +241,20 @@ void Tensors::addVarInit(const TensorId &name,
   logging::devicex::debug("AddVarInit.info {}, {}", name, info.shape());
   insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
 
-  Tensor *init = get(name);
-  init->info   = info;
+  Tensor *init        = get(name);
+  init->info          = info;
+  Shape shape_on_host = info.shape();
+  Shape shape_on_replica =
+      vs.shapeOnReplica(shape_on_host,
+                        graph.getIr().getSessionOptions().replicatedGraphCount,
+                        name);
 
-  bool iflock =
-      vs.groupCount(graph.getIr().getSessionOptions().replicatedGraphCount) !=
-      1;
+  init->info = TensorInfo(info.dataType(), shape_on_replica);
 
-  logging::debug("addVarInit({}) --({})-->", name, init->info.shape());
-
-  if (iflock) {
-    // When seeding variables different per replica group, the shape of the
-    // tensor data (what the host interacts with and is streamed to the IPUs)
-    // has an additional dimension compared to the shape of the tensor residing
-    // on the IPU/replica.
-    Shape expanded_shape(info.shape().size() + 1);
-    expanded_shape[0] =
-        vs.groupCount(graph.getIr().getSessionOptions().replicatedGraphCount);
-
-    expanded_shape.insert(
-        expanded_shape.begin() + 1, info.shape().begin(), info.shape().end());
-
-    TensorInfo re_info(info.dataType(), expanded_shape);
-
-    init->setTensorData(re_info, src);
-  } else {
-    init->setTensorData(info, src);
-  }
-}
-
-void Tensors::addVarInitWithLeadingGroupDim(const TensorId &name,
-                                            const TensorInfo &info,
-                                            const void *src,
-                                            const VariableSettings &vs,
-                                            const DebugContext &debugContext) {
-
-  popart::TensorDebugInfo di(debugContext, name, info, TensorType::Variable);
-  logging::devicex::debug(
-      "addVarInitWithLeadingGroupDim.info {}, {}", name, info.shape());
-  insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
-  Tensor *init = get(name);
-
-  bool iflock =
-      vs.numReplicasReturningVariable(
-          graph.getIr().getSessionOptions().replicatedGraphCount) != 1;
-
-  if (iflock) {
-    Shape contracted_shape;
-    for (auto i = 1; i < info.shape().size(); i++) {
-      contracted_shape.push_back(info.shape()[i]);
-    }
-    TensorInfo re_info(info.dataType(), contracted_shape);
-    init->info = re_info;
-
-    logging::debug("addVarInitWithLeadingGroupDim({}) --({})-->",
-                   name,
-                   init->info.shape());
-
-    init->setTensorData(info, src);
-  } else {
-    // "Normal" code path.
-    init->info = info;
-    logging::debug("addVarInitWithLeadingGroupDim({}) --({})-->",
-                   name,
-                   init->info.shape());
-
-    init->setTensorData(info, src);
-  }
+  logging::debug(
+      "addVarInit({}) --({})-->({})", name, init->info.shape(), shape_on_host);
+  TensorInfo ex_info(info.dataType(), shape_on_host);
+  init->setTensorData(ex_info, src);
 }
 
 void Tensors::addConstInit(const TensorId &name,

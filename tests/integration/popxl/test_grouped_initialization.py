@@ -12,6 +12,12 @@ import popxl.ops as ops
 import popxl.dtypes as dtypes
 import popxl.transforms as transforms
 
+# Dimension sizes
+# Our model multiplies AxB and BxC matrices
+A = 3
+B = 5
+C = 4  # This needs to be divisible by group size when RTS is enabled
+
 # Configurations used for the test
 configs = [
     # ---------------------
@@ -65,7 +71,8 @@ configs = [
 
 
 def create_variable(x: np.ndarray, rts: bool, remote: bool,
-                    rg: popxl.ReplicaGrouping, replication_factor: int,
+                    rg: popxl.ReplicaGrouping, retrieval_mode: str,
+                    replication_factor: int,
                     name: str) -> popxl.tensor.Variable:
     """
     Create a (possibly RTS / remote) variable given the replica grouping.
@@ -75,7 +82,9 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
         rts: whether the variable should use RTS
         remote: whether the variable should be remote
         rg: ReplicaGrouping to use for the variable
-        replication_factor: the replications factor
+        retrieval_mode: Whether to return one replica per group,
+            or all replicas.
+        replication_factor: the replication factor
         name: name of the variable
     Returns:
         The following tuple:
@@ -88,15 +97,21 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
     if rts and remote:
         shard_shape: Tuple[int, ...] = (x.size // replication_factor, )
         buffer = popxl.RemoteBuffer(shard_shape, dtypes.float32, 1)
-        v_remote = popxl.remote_replica_sharded_variable(x,
-                                                         buffer,
-                                                         dtype=dtypes.float32,
-                                                         name=name,
-                                                         replica_grouping=rg)
+        v_remote = popxl.remote_replica_sharded_variable(
+            x,
+            buffer,
+            dtype=dtypes.float32,
+            name=name,
+            replica_grouping=rg,
+            retrieval_mode=retrieval_mode)
         v_loaded = ops.remote_load(buffer, 0)
     elif rts and not remote:
         v_remote, v_loaded = popxl.replica_sharded_variable(
-            x, dtypes.float32, name=name, replica_grouping=rg)
+            x,
+            dtypes.float32,
+            name=name,
+            replica_grouping=rg,
+            retrieval_mode=retrieval_mode)
     elif not rts and remote:
         shape = x.shape
         if rg is not None and rg.num_groups > 1:
@@ -107,13 +122,15 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
                                          buffer,
                                          dtype=dtypes.float32,
                                          name=name,
-                                         replica_grouping=rg)
+                                         replica_grouping=rg,
+                                         retrieval_mode=retrieval_mode)
         v_loaded = ops.remote_load(buffer, 0)
     else:
         v_loaded = popxl.variable(x,
                                   dtypes.float32,
                                   name=name,
-                                  replica_grouping=rg)
+                                  replica_grouping=rg,
+                                  retrieval_mode=retrieval_mode)
         v_remote = v_loaded
     return v_loaded, v_remote, buffer
 
@@ -162,7 +179,9 @@ def get_weights_array(shape: List[int], num_groups: int = 1,
 
 def create_simple_model(
         ir: popxl.Ir, session_type: Literal["inference", "training"],
-        rg: popxl.ReplicaGrouping, rts: bool, remote: bool
+        rg: popxl.ReplicaGrouping,
+        retrieval_mode: Literal["one_per_group", "all_replicas"], rts: bool,
+        remote: bool
 ) -> Tuple[np.ndarray, popxl.tensor.
            Variable, Dict[popxl.HostToDeviceStream, np.ndarray], popxl.
            DeviceToHostStream, np.ndarray, np.ndarray]:
@@ -177,6 +196,8 @@ def create_simple_model(
         ir: the Ir to be used for building the model
         session_type: whether to run a step of inference or training
         rg: replica grouping to be used for the weights variable
+        retrieval_mode: Whether to return one replica per group,
+            or all replicas.
         rts: whether we should use rts for weights variable
         remote: whether the weights variable should be remote
     Returns:
@@ -188,11 +209,7 @@ def create_simple_model(
         * input (X) data
         * label data
     """
-    # Dimension sizes
-    # Our model multiplies AxB and BxC matrices
-    A = 3
-    B = 5
-    C = 4  # This needs to be divisible by group size when RTS is enabled
+
     # Set up shapes for input tensors
     data_shape = [A, B]
     output_shape = [A, C]
@@ -235,6 +252,7 @@ def create_simple_model(
                                                       rts,
                                                       remote,
                                                       rg,
+                                                      retrieval_mode,
                                                       ir.replication_factor,
                                                       name="W")
         W_gathered = W_loaded
@@ -390,7 +408,9 @@ def accumulate_groups(data: np.ndarray, groups: List[List[int]]) -> np.ndarray:
 @pytest.mark.parametrize("config", configs)
 @pytest.mark.parametrize("remote", [False, True])
 @pytest.mark.parametrize("rts", [False, True])
-def test_grouped_initialization(config, remote: bool, rts: bool):
+@pytest.mark.parametrize("retrieval_mode", ["all_replicas", "one_per_group"])
+def test_grouped_initialization(config, remote: bool, rts: bool,
+                                retrieval_mode: str):
     """
     Run a simple model in PopART with the specified configs,
     and compare it's output to the same model run in torch.
@@ -415,7 +435,7 @@ def test_grouped_initialization(config, remote: bool, rts: bool):
         rg = ir.replica_grouping(**config["inputs"])
     # Create a simple linear model
     w_data, w, inputs, y_d2h, X_data, label_data = create_simple_model(
-        ir, session_type, rg, rts, remote)
+        ir, session_type, rg, retrieval_mode, rts, remote)
 
     # Run a session on an ipu device
     with popxl.Session(ir, "ipu_hw") as session:
@@ -427,7 +447,8 @@ def test_grouped_initialization(config, remote: bool, rts: bool):
     if rg is None:
         # Model already run, so it's safe to initialize rg
         rg = ir.replica_grouping()
-    groups = rg._to_variable_settings().groups(ir.replication_factor)
+    groups = rg._to_variable_settings(retrieval_mode).groups(
+        ir.replication_factor)
 
     # Get forward pass output
     y = outputs[y_d2h]
@@ -440,10 +461,9 @@ def test_grouped_initialization(config, remote: bool, rts: bool):
         # Check that weights don't change during inference
         assert np.allclose(final_weight, w_data)
     else:
-        if rg.num_groups == 1:
-            # Add replication dimension for w_data
-            w_data = np.array([w_data])
-            final_weight = np.array([final_weight])
+        # Reshape in case there's no replication factor dimension
+        w_data = w_data.reshape((-1, C, B))
+        final_weight = final_weight.reshape((-1, C, B))
 
         # Compare our model to a torch model
         grads = get_torch_grads(X_data, W_replicated, label_data, y)
@@ -452,6 +472,9 @@ def test_grouped_initialization(config, remote: bool, rts: bool):
             grads = accumulate_groups(grads, groups)
         torch_final_weight = np.array(
             [W - W_grad for W, W_grad in zip(W_replicated, grads)])
-
-        torch_final_weight = dereplicate(torch_final_weight, groups)
-        assert np.allclose(final_weight, torch_final_weight)
+        if retrieval_mode == "one_per_group":
+            torch_final_weight = dereplicate(torch_final_weight, groups)
+        np.testing.assert_allclose(final_weight,
+                                   torch_final_weight,
+                                   rtol=1e-5,
+                                   atol=1e-8)

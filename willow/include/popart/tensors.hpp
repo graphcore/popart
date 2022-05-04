@@ -60,22 +60,6 @@ public:
                   const void *,
                   const VariableSettings &,
                   const DebugContext &dc = {});
-  /**
-   * In PopXL, instead of the user pasing a tensor of shape 'device_shape', the
-   * user initialises the variable with an array of size (num_groups,
-   * *device_shape). Because of this, we need to ensure that the tensor on
-   * device is of shape 'device_shape', but the data is initialised with shape
-   * (num_groups, *device_shape), ensuring that each group receives it's own
-   * data. Therefore we need to remove the leading num_groups dimension when
-   * setting the on-device TensorInfo.
-   *
-   * @param dc DebugContext to aid with debugging.
-   */
-  void addVarInitWithLeadingGroupDim(const TensorId &,
-                                     const TensorInfo &,
-                                     const void *,
-                                     const VariableSettings &,
-                                     const DebugContext &dc = {});
 
   // create a Constant Tensor
   void addConstInit(const TensorId &,

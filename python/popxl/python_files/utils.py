@@ -73,7 +73,7 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
 
     Note this is a memory view of the data, so will not allocate extra memory for the data, but
     it is your responsibility to ensure the data in the tensor is live at the point
-    of retrival.
+    of retrieval.
 
     Args:
         t (Tensor): The tensor to retrive the data from.
@@ -115,7 +115,8 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
         return np.asarray(t_.dataAsBool(), t.dtype.as_numpy())
     else:
         raise ValueError(
-            f"Data type {t.dtype} not supported for get_tensor_data retrival.")
+            f"Data type {t.dtype} not supported for get_tensor_data retrieval."
+        )
 
 
 def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],

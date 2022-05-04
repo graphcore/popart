@@ -105,6 +105,23 @@ Code examples
 
 .. literalinclude:: ../user_guide/files/replication_popxl.py
     :language: python
-    :emphasize-lines: 11-13, 15-19, 21-24
+    :lines: 1-27
+    :emphasize-lines: 14-16, 18-23, 24-27
     :caption: Example of setting up different variables.
     :name: var_settings_example
+
+Retrieval Modes
+---------------
+
+By default, only one replica per group is returned. Usually this is sufficient as all replicas within
+a group should be identical. However, if you wish to return all replicas within a group
+(for example to test all grouped replicas are the same), set the ``retrieval_mode`` parameter to
+``"all_replicas"``  when constructing your variable:
+
+
+.. literalinclude:: ../user_guide/files/replication_popxl.py
+    :language: python
+    :lines: 29-45
+    :emphasize-lines: 1-8, 10-16
+    :caption: Example of setting up variables with all_replicas retrieval mode.
+    :name: var_settings_example_2
