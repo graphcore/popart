@@ -405,6 +405,16 @@ void moveIntoLoop(LoopOp *loop,
 
 std::size_t MainLoops::id() { return typeid(MainLoops).hash_code(); }
 
+const Graph &MainLoops::getInnerLoopSubgraph(const Ir &ir) {
+  if (ir.getSessionOptions().getAccumulationFactor() > 1) {
+    return ir.getGraph(GraphId(getAccumulationGraphName()));
+  } else if (ir.getDataFlow().batchesPerStep() > 1) {
+    return ir.getGraph(GraphId(getStepGraphName()));
+  } else {
+    return ir.getMainGraph();
+  }
+}
+
 Graph &MainLoops::getInnerLoopSubgraph(Ir &ir) {
   if (ir.getSessionOptions().getAccumulationFactor() > 1) {
     return ir.getGraph(GraphId(getAccumulationGraphName()));

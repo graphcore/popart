@@ -92,6 +92,9 @@ public:
    * \return The inner loop subgraph
    **/
   static Graph &getInnerLoopSubgraph(Ir &ir);
+
+  static const Graph &getInnerLoopSubgraph(const Ir &ir);
+
   /**
    * Helper function for accessing the subgraph of the outer loop
    *

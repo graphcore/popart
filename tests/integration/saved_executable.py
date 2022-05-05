@@ -3,6 +3,7 @@ import os
 import numpy as np
 import popart
 import pytest
+import onnx
 
 # `import test_util` requires adding to sys.path
 import sys

@@ -208,7 +208,8 @@ std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
 // Find descendent consumers on different PipelineStages that can be used
 // as restore reference Ops by searching through the consumers but not
 // crossing IPU or executionContext boundaries.
-std::vector<Op *> findDescendentsOnDifferentPipelineStages(Tensor *t,
+std::vector<Op *> findDescendentsOnDifferentPipelineStages(PipelineInfo info,
+                                                           Tensor *t,
                                                            Op *stashRefOp) {
   OpSearchHelper toCheck;
 
@@ -225,7 +226,9 @@ std::vector<Op *> findDescendentsOnDifferentPipelineStages(Tensor *t,
     } else if (op->settings.executionContext !=
                stashRefOp->settings.executionContext) {
       // do nothing
-    } else if (op->getPipelineStage() > stashRefOp->getPipelineStage()) {
+    } else if (op->getPipelineStage() > stashRefOp->getPipelineStage() &&
+               info.executeWithStage(op->getPipelineStage()) !=
+                   info.executeWithStage(stashRefOp->getPipelineStage())) {
       if (std::find(foundPipelineStages.begin(),
                     foundPipelineStages.end(),
                     op->getPipelineStage()) == foundPipelineStages.end()) {
@@ -430,7 +433,8 @@ void insertCloneBeforeCopiesToHost(Graph &graph,
   }
 }
 
-std::vector<Op *> getRestoreReferenceOps(Tensor *t, Op *stashRefOp) {
+std::vector<Op *>
+getRestoreReferenceOps(PipelineInfo info, Tensor *t, Op *stashRefOp) {
   logging::debug("Collecting restore ref candidates");
   auto consumers = t->consumers.getOps();
 
@@ -439,7 +443,9 @@ std::vector<Op *> getRestoreReferenceOps(Tensor *t, Op *stashRefOp) {
   for (auto c : consumers) {
     if (getVirtualGraphIdOrSourceIpu(c, t) ==
             getVirtualGraphIdOrSourceIpu(stashRefOp, t) &&
-        c->getPipelineStage() != stashRefOp->getPipelineStage()) {
+        c->getPipelineStage() != stashRefOp->getPipelineStage() &&
+        info.executeWithStage(c->getPipelineStage()) !=
+            info.executeWithStage(stashRefOp->getPipelineStage())) {
       if (c->getPipelineStage() < stashRefOp->getPipelineStage()) {
         throw internal_error(
             "All 'restore' reference ops must have a PipelineStage greater "
@@ -603,6 +609,8 @@ bool onlyConsumedByPostLossOps(
 }
 
 std::set<TensorId> getStashCandidateTensors(Graph &graph) {
+  auto info = graph.getIr().pipelineInfo();
+
   bool isExplicit =
       graph.getIr().getSessionOptions().explicitPipeliningEnabled();
 
@@ -685,11 +693,17 @@ std::set<TensorId> getStashCandidateTensors(Graph &graph) {
     // Get all the stages the tensor is produced/consumed in.
     std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
 
+    std::set<PipelineStage> tensorStagesCombined;
+    for (auto stage : tensorStages) {
+      tensorStagesCombined.insert(info.executeWithStage(stage));
+    }
+
     // There is no need to stash a tensor that only appears in 1 stage.
     // Unless using full recompute, then it must be consumed by something
     // other than a copy (it's not just "passing through"), which is
     // scheduled pre-loss (we're not recomputing grad ops)
-    if (stashing && tensorStages.size() == 1 &&
+    if (stashing &&
+        (tensorStages.size() == 1 || tensorStagesCombined.size() == 1) &&
         !(!isExplicit && isFullRecompute && !onlyConsumedByCopies(tensor) &&
           !onlyConsumedByPostLossOps(tensor, relations))) {
       reason   = logging::format("only appearing in 1 stage: {} (there are no "
@@ -966,6 +980,62 @@ IncrementModOp *insertCounterUpdate(Graph &graph,
 }
 
 } // namespace
+
+std::map<PipelineStage, PipelineStage> Pipeline::withStages(const Ir &ir) {
+  std::map<PipelineStage, PipelineStage> withStages;
+
+  std::map<PipelineStage, std::set<VGraphId>> pipelineStageVGraphMap;
+
+  const Graph *graph;
+  if (ir.getSessionOptions().explicitPipeliningEnabled()) {
+    graph = &MainLoops::getInnerLoopSubgraph(ir);
+  } else {
+    graph = &ir.getMainGraph();
+  }
+
+  for (auto &op : graph->getOps()) {
+    if ((op.second->settings.executionContext == ExecutionContext::Normal ||
+         op.second->settings.executionContext == ExecutionContext::Subgraph) &&
+        op.second->hasPipelineStage() && op.second->hasVirtualGraphId()) {
+      pipelineStageVGraphMap[op.second->getPipelineStage()].insert(
+          op.second->getVirtualGraphId());
+      auto ps                                   = op.second->getPipelineStage();
+      withStages[op.second->getPipelineStage()] = ps;
+    }
+  }
+
+  PipelineStage stageOffset = 0;
+  OptionalPipelineStage prevStage;
+  std::set<VGraphId> prevVGraphIds;
+  for (auto stageAndVGraphIds : pipelineStageVGraphMap) {
+    if (prevStage) {
+      std::set<VGraphId> result;
+      std::set_intersection(stageAndVGraphIds.second.begin(),
+                            stageAndVGraphIds.second.end(),
+                            prevVGraphIds.begin(),
+                            prevVGraphIds.end(),
+                            std::inserter(result, result.begin()));
+      if (!result.empty()) {
+        // If the two sets of virtual graph IDs overlap, execute the current
+        // pipeline stage with the previous one.
+        withStages[stageAndVGraphIds.first] = withStages[*prevStage];
+        ++stageOffset;
+      } else {
+        withStages[stageAndVGraphIds.first] =
+            withStages[stageAndVGraphIds.first] - stageOffset;
+      }
+      logging::trace(
+          "[Pipeline::withStages] Executing stage {} together with stage {}",
+          stageAndVGraphIds.first,
+          withStages[stageAndVGraphIds.first]);
+    }
+
+    prevStage     = stageAndVGraphIds.first;
+    prevVGraphIds = stageAndVGraphIds.second;
+  }
+
+  return withStages;
+}
 
 void Pipeline::checkOpsPipelineStage(Graph &graph) {
   // return the pipeline stage or -1 if not set
@@ -1397,6 +1467,13 @@ bool Pipeline::contiguateIpuCopies(Graph &graph) const {
   return true;
 }
 
+int Pipeline::getStashSize(const Ir &ir,
+                           PipelineStage stashStage,
+                           PipelineStage maxRestoreStage) const {
+  return ir.pipelineInfo().numIndependentStages(stashStage,
+                                                maxRestoreStage + 1);
+}
+
 bool Pipeline::applyExplicit(Graph &innerLoopSubgraph) const {
   ExplicitPipelineHelper explicitPipeline(innerLoopSubgraph);
   explicitPipeline.createExplicitPipeline();
@@ -1406,7 +1483,9 @@ bool Pipeline::applyExplicit(Graph &innerLoopSubgraph) const {
 PipelineStashInfo
 Pipeline::prepareForStashing(Graph &graph,
                              std::set<TensorId> toStashCandidateTensors) const {
-  auto &ir             = graph.getIr();
+  auto &ir          = graph.getIr();
+  auto pipelineInfo = ir.pipelineInfo();
+
   bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
   bool isExplicit =
       graph.getIr().getSessionOptions().explicitPipeliningEnabled();
@@ -1456,9 +1535,9 @@ Pipeline::prepareForStashing(Graph &graph,
         // restoreReference then it is not required for recomputation during the
         // backwards pass.
         if (isFullRecompute) {
-          auto stashRef = getStashReferenceOp(tensor);
-          auto restoreRefs =
-              findDescendentsOnDifferentPipelineStages(tensor, stashRef);
+          auto stashRef    = getStashReferenceOp(tensor);
+          auto restoreRefs = findDescendentsOnDifferentPipelineStages(
+              pipelineInfo, tensor, stashRef);
           if (restoreRefs.size() == 0) {
             logging::transform::debug("Discarding Stash candidate tensor {} as "
                                       "no restore reference found.",
@@ -1798,6 +1877,7 @@ void Pipeline::addDynamicRestoreOpsForTensor(
 
 void Pipeline::addDynamicStashAndRestoreOpsForTensor(
     Graph &graph,
+    const PipelineInfo &pipelineInfo,
     const PipelineStashInfo &pipelineStashInfo,
     TensorId tid) const {
   auto &ir = graph.getIr();
@@ -1821,8 +1901,9 @@ void Pipeline::addDynamicStashAndRestoreOpsForTensor(
     info.stashRefOp    = refs.first;
     info.restoreRefOps = refs.second;
   } else {
-    info.stashRefOp    = getStashReferenceOp(info.tensor);
-    info.restoreRefOps = getRestoreReferenceOps(info.tensor, info.stashRefOp);
+    info.stashRefOp = getStashReferenceOp(info.tensor);
+    info.restoreRefOps =
+        getRestoreReferenceOps(pipelineInfo, info.tensor, info.stashRefOp);
   }
 
   for (Op *restoreRefOp : info.restoreRefOps) {
@@ -1830,9 +1911,10 @@ void Pipeline::addDynamicStashAndRestoreOpsForTensor(
   }
 
   // The largest PipelineStage of the restoreRefOps determines stash size
-  info.stashSize =
-      *std::max_element(info.restoreStages.begin(), info.restoreStages.end()) -
-      info.stashRefOp->getPipelineStage() + 1;
+  info.stashSize = getStashSize(
+      ir,
+      info.stashRefOp->getPipelineStage(),
+      *std::max_element(info.restoreStages.begin(), info.restoreStages.end()));
 
   logging::transform::debug(
       "[Pipeline::addDynamicStashOpsForTensor] Adding stash of "
@@ -1856,7 +1938,8 @@ void Pipeline::addDynamicStashAndRestoreOpsForTensor(
 }
 
 bool Pipeline::addDynamicStashAndRestoreOps(Graph &graph) const {
-  auto &ir = graph.getIr();
+  auto &ir          = graph.getIr();
+  auto pipelineInfo = ir.pipelineInfo();
 
   // Get graph which pipelineMainLoop is part of
   LoopOp *innerLoopOp = MainLoops::getInnerLoopOp(ir);
@@ -1875,7 +1958,8 @@ bool Pipeline::addDynamicStashAndRestoreOps(Graph &graph) const {
   }
 
   for (auto &tid : pipelineStashInfo.toStashTensors) {
-    addDynamicStashAndRestoreOpsForTensor(graph, pipelineStashInfo, tid);
+    addDynamicStashAndRestoreOpsForTensor(
+        graph, pipelineInfo, pipelineStashInfo, tid);
   }
 
   innerLoopOp->setup();
@@ -1884,7 +1968,9 @@ bool Pipeline::addDynamicStashAndRestoreOps(Graph &graph) const {
 }
 
 bool Pipeline::addStashRestoreOps(Graph &graph) const {
-  auto &ir             = graph.getIr();
+  auto &ir          = graph.getIr();
+  auto pipelineInfo = ir.pipelineInfo();
+
   bool isFullRecompute = Pipeline::checkIsFullRecompute(graph);
 
   auto toStashCandidateTensors = getStashCandidateTensors(graph);
@@ -1913,7 +1999,7 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
       restoreRefOps = refs.second;
     } else {
       stashRefOp    = getStashReferenceOp(tensor);
-      restoreRefOps = getRestoreReferenceOps(tensor, stashRefOp);
+      restoreRefOps = getRestoreReferenceOps(pipelineInfo, tensor, stashRefOp);
     }
 
     std::vector<PipelineStage> restoreStages;
@@ -1922,9 +2008,10 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
     }
 
     // The largest PipelineStage of the restoreRefOps determines stash size
-    auto stashSize =
-        *std::max_element(restoreStages.begin(), restoreStages.end()) -
-        stashRefOp->getPipelineStage() + 1;
+    auto stashSize = getStashSize(
+        ir,
+        stashRefOp->getPipelineStage(),
+        *std::max_element(restoreStages.begin(), restoreStages.end()));
 
     logging::transform::debug("Adding stash of size {} of activations {} for "
                               "pipelining. Stash stage: {}, Restore stages {}",
@@ -2181,10 +2268,12 @@ RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph,
 PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
                            int64_t _gradAcclFactor,
                            int64_t _numPipelineStages,
-                           bool _doGradAccl)
-    : numStages(_numPipelineStages), doGradAccl(_doGradAccl) {
+                           bool _doGradAccl,
+                           std::map<PipelineStage, PipelineStage> _withStage)
+    : numStages(_numPipelineStages), doGradAccl(_doGradAccl),
+      withStage(_withStage) {
 
-  auto fillFlushPhaseCycles = _numPipelineStages - 1;
+  auto fillFlushPhaseCycles = numIndependentStages(0, numStages) - 1;
   fillPhase.start           = 0;
   fillPhase.end             = fillFlushPhaseCycles - 1;
 
@@ -2207,8 +2296,27 @@ PipelineInfo::PipelineInfo(int64_t _batchesPerStep,
   flushPhase.end   = flushPhase.start + fillFlushPhaseCycles - 1;
 }
 
+PipelineStage PipelineInfo::executeWithStage(PipelineStage pStage) const {
+  auto it = withStage.find(pStage);
+  return it == withStage.end() ? pStage : it->second;
+}
+
+int PipelineInfo::numIndependentStages(PipelineStage start, PipelineStage end) {
+  std::set<PipelineStage> stages;
+  for (PipelineStage stage = start; stage < end; ++stage) {
+    auto it = withStage.find(stage);
+    stages.insert(it == withStage.end() ? stage : it->second);
+  }
+  return stages.size();
+}
+
 bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
+  logging::trace(
+      "[ PipelineInfo::doStage] Executing stage {} together with stage {}",
+      pStage,
+      executeWithStage(pStage));
   bool doStageAtAll = pStage < numStages;
+  pStage            = executeWithStage(pStage);
   bool doStageLower = (pCycle >= pStage);
   bool doStageUpper = (pCycle < pStage + flushPhase.start);
 

@@ -540,4 +540,4 @@ def test_implicit_pipelining_custom_fwd_only_no_copy():
             op for graph in ir for op in ir[graph] if (op["type"] == "IpuCopy")
         ]
 
-        assert len(copies) == 4
+        assert len(copies) == 2

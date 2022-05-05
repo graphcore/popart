@@ -86,37 +86,6 @@ public:
 
 namespace {
 
-// Checks if a tensor is a "view" of a weight. Not technically correct, since
-// we also check outplace operations, but this is necessary to avoid copies
-// when e.g. matmul serialisation leads to outplace copies of weights.
-// Could be avoided if weights were properly aliased by using inplace view
-// changes from the start (model definition and IR transformations)
-bool isWeightOrConstView(Tensor *t) {
-  bool is;
-  graphutils::traverse(
-      {t},
-      [&is](Tensor *t0) {
-        is |= (t0->tensorType() == TensorType::Variable ||
-               t0->tensorType() == TensorType::Const);
-        return true;
-      },
-      [](Op *op, Tensor *t0, Tensor *t1) {
-        return op->isConvertibleTo<ReshapeBaseOp>() ||
-               op->isConvertibleTo<TransposeBaseOp>() ||
-               op->isConvertibleTo<SliceOp>() ||
-               op->isConvertibleTo<SliceInplaceOp>() ||
-               op->isConvertibleTo<SliceGradOp>() ||
-               op->isConvertibleTo<ConcatOp>() ||
-               op->isConvertibleTo<ConcatInplaceOp>() ||
-               op->isConvertibleTo<ConcatGradOp>();
-      },
-      graphutils::TraversalType::DepthFirst,
-      graphutils::VisitType::Pre,
-      graphutils::TraversalDirection::Backward,
-      graphutils::TraverseCallSites::Current);
-  return is;
-}
-
 struct PipelineStageAndVGraphIdLtCmp {
   bool operator()(std::pair<PipelineStage, VGraphId> const &a,
                   std::pair<PipelineStage, VGraphId> const &b) const {
@@ -395,9 +364,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
   // For each graph input
   for (auto tid : graph.getInputIds()) {
-    auto tensor             = graph.getTensors().get(tid);
-    auto fromIpu            = tensor->getVirtualGraphIdUnsafe();
-    auto fromPipelineStages = tensor->getPipelineStages();
+    auto tensor  = graph.getTensors().get(tid);
+    auto fromIpu = tensor->getVirtualGraphIdUnsafe();
 
     // For each consumer op of the tensor
     // but, take a copy of the map as we will be modifying it.
@@ -413,19 +381,9 @@ bool InterIpuCopy::apply(Graph &graph) const {
         std::set<OpId> visited;
         VGraphId toIpu =
             to->getIntrospectionInVirtualGraphId(toInIdx, visited).first;
-        OptionalPipelineStage toPipelineStage = to->getOptionalPipelineStage();
 
-        bool implicitPipelineFwdOnlyCopy =
-            (graph.getIr()
-                 .getSessionOptions()
-                 .createImplicitPipeliningFwdOnlyProgram &&
-             toPipelineStage && fromPipelineStages.size() &&
-             (*toPipelineStage == (*fromPipelineStages.begin()) + 1) &&
-             !isWeightOrConstView(tensor));
-
-        // If the ops are not on the same ipu, or adjacent pipeline stages
-        // with implicitPipelineFwdOnlyCopy
-        if (fromIpu != toIpu || implicitPipelineFwdOnlyCopy) {
+        // If the ops are not on the same ipu
+        if (fromIpu != toIpu) {
 
           bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 
@@ -477,8 +435,6 @@ bool InterIpuCopy::apply(Graph &graph) const {
         Tensor *tensor = t.second;
         VGraphId fromIpu =
             from->getIntrospectionOutVirtualGraphId(t.first).first;
-        OptionalPipelineStage fromPipelineStage =
-            from->getOptionalPipelineStage();
 
         // For each consumer op of the tensor
         // but, take a copy of the map as we will be modifying it.
@@ -492,20 +448,9 @@ bool InterIpuCopy::apply(Graph &graph) const {
             // Get which ipu the tensor is supposed to be on
             VGraphId toIpu =
                 to->getIntrospectionInVirtualGraphId(toInIdx).first;
-            OptionalPipelineStage toPipelineStage =
-                to->getOptionalPipelineStage();
 
-            bool implicitPipelineFwdOnlyCopy =
-                (graph.getIr()
-                     .getSessionOptions()
-                     .createImplicitPipeliningFwdOnlyProgram &&
-                 (fromPipelineStage && toPipelineStage &&
-                  *toPipelineStage == *fromPipelineStage + 1) &&
-                 !isWeightOrConstView(tensor));
-
-            // If the ops are not on the same ipu, or adjacent pipeline stages
-            // with implicitPipelineFwdOnlyCopy
-            if (fromIpu != toIpu || implicitPipelineFwdOnlyCopy) {
+            // If the ops are not on the same ipu
+            if (fromIpu != toIpu) {
 
               bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 

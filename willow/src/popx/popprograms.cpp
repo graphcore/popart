@@ -370,9 +370,8 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
          pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
-        sq.add(
-            snap::program::Call(ir_lowering_p->graph(),
-                                toDeviceStreamFunctions.at(stage_seq.first)));
+        // Inline code in order to not block overlap
+        sq.add(stage_seq.second);
       }
     }
   } else {
@@ -399,9 +398,8 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
          pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToHostStream";
-        sq.add(
-            snap::program::Call(ir_lowering_p->graph(),
-                                fromDeviceStreamFunctions.at(stage_seq.first)));
+        // Inline code to not block overlap
+        sq.add(stage_seq.second);
       }
     }
   }
@@ -448,24 +446,6 @@ void PopPrograms::createPipelineFunctions() {
       ir_lowering_p->graph().addFunction(*pipelineIpuCopySeq.get());
   toHostFinalCopyFunction =
       ir_lowering_p->graph().addFunction(toHostFinalCopyFragment());
-
-  if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
-      pipelineSeqs.end()) {
-    for (const auto &stage_seq :
-         pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
-      toDeviceStreamFunctions[stage_seq.first] =
-          ir_lowering_p->graph().addFunction(stage_seq.second);
-    }
-  }
-
-  if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
-      pipelineSeqs.end()) {
-    for (const auto &stage_seq :
-         pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
-      fromDeviceStreamFunctions[stage_seq.first] =
-          ir_lowering_p->graph().addFunction(stage_seq.second);
-    }
-  }
 }
 
 snap::program::Sequence
@@ -504,7 +484,8 @@ PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
                          ir_lowering_p->ir().getDataFlow().batchesPerStep()),
                      ir_lowering_p->ir().getSessionOptions().accumulationFactor,
                      ir_lowering_p->ir().getNumPipelineStages() / 2,
-                     pInfo.doGradAccl);
+                     pInfo.doGradAccl,
+                     pInfo.withStage);
   }
 
   snap::program::Sequence fill(poplar::DebugContext{"fill"},

@@ -55,6 +55,7 @@ def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline_u
         ])
 
 
+@pytest.mark.skip(reason="TODO: T61577")
 @tu.requires_ipu_model
 @pytest.mark.parametrize("optimizer", getOptimizers())
 def test_auto_loss_scaling_identical_weight_updates_grad_accumulation_pipeline_update_period2(

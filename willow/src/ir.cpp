@@ -2691,7 +2691,8 @@ PipelineInfo Ir::pipelineInfo() const {
     pInfo = PipelineInfo(static_cast<int64_t>(getDataFlow().batchesPerStep()),
                          getSessionOptions().accumulationFactor,
                          getNumPipelineStages(),
-                         getSessionOptions().enableGradientAccumulation);
+                         getSessionOptions().enableGradientAccumulation,
+                         Pipeline::withStages(*this));
   }
   return pInfo;
 }
@@ -4199,8 +4200,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(
