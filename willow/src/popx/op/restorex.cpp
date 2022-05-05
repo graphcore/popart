@@ -3,6 +3,7 @@
 #include <popart/names.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/restorex.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -39,6 +40,7 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
   graph().getPoplarGraph().setTileMapping(stashIndex.getPoplarTensor(), 0);
   graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
                                            poplar::ArrayRef<uint32_t>({0}));
+  dv_p->lowering().addPipelineIndexTensor(stashIndex);
 
   // Create the stash size tensor.
   const auto stashSizeTensor =

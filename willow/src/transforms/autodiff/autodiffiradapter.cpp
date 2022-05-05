@@ -62,6 +62,10 @@ PipelineStage AutodiffIrAdapter::getFinalLossPipelineStage() {
   return ir.get().getFinalLossPipelineStage();
 }
 
+PipelineStage AutodiffIrAdapter::getMaxPipelineStage() {
+  return ir.get().getMaxPipelineStage();
+}
+
 TensorId
 AutodiffIrAdapter::createIntermediateTensorId(const TensorId &base_id) {
   return ir.get().createIntermediateTensorId(base_id);

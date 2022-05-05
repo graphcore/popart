@@ -3,7 +3,6 @@
 #define GUARD_NEURALNET_PIPELINE_HPP
 
 #include <popart/graph.hpp>
-#include <popart/ir.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/transforms/mainloops.hpp>
@@ -23,20 +22,22 @@ public:
 
   /**
    * Construct PipelineInfo
-   * \param _batchesPerStep   Batches per step
-   * \param _gradAcclFactor   Gradient accumulation factor
-   * \param _maxPipelineStage The last pipeline stage
-   * \param _doTraining       Optimizers are going to be applied (not inference)
-   * \param _doGradAccl       Gradients are accumulated rather than applied to
-   *                          the weights directly.
+   * \param batchesPerStep     Batches per step
+   * \param gradAcclFactor     Gradient accumulation factor
+   * \param numPipelineStages  The number of pipeline stages
+   * \param doGradAccl         Gradients are accumulated rather than applied to
+   *                           the weights directly.
+   * \param withStage          Map of pipeline stages to which stage to execute
+   *                           with in sequence
    */
-  PipelineInfo(int64_t _batchesPerStep,
-               int64_t _gradAcclFactor,
-               int64_t _maxPipelineStage,
-               bool _doTraining,
-               bool _doGradAccl);
+  PipelineInfo(int64_t batchesPerStep,
+               int64_t gradAcclFactor,
+               int64_t maxPipelineStage,
+               bool doGradAccl,
+               std::map<PipelineStage, PipelineStage> withStage);
 
-  bool doTraining;
+  int64_t numStages;
+
   bool doGradAccl;
 
   /**
@@ -64,12 +65,31 @@ public:
   PipelinePhase flushPhase;
 
   /**
+   * The map of stages to the stage it should be executed with in sequence
+   */
+  std::map<PipelineStage, PipelineStage> withStage;
+
+  /**
+   * Get the number of independent stages in an interval of stages.
+   * \param start First pipeline stage to check (inclusive)
+   * \param end   Last pipeline stage to check (exclusive)
+   * \return The number of independently executed pipeline stages
+   */
+  int numIndependentStages(PipelineStage start, PipelineStage end);
+
+  /**
    * Checks if a \a stage stage needs to be executed in a \a cycle
    * \param pCycle the cycle to check
    * \param pStage the stage to check
    * \return true  if a stage is to be executed in a cycle
    */
   bool doStage(PipelineCycle pCycle, PipelineStage pStage) const;
+
+  /**
+   * The stage this stage should be executed with in sequence
+   * \return previous pStage with which to execute this stage
+   */
+  PipelineStage executeWithStage(PipelineStage pStage) const;
 
   /**
    * Number of cycles in the main phase interval
@@ -130,6 +150,25 @@ public:
    * \param graph top-level IR graph (main graph)
    */
   static void setFinalFwdStageRecomputation(Graph &graph);
+
+  /**
+   * Check which stages should be executed with which other stage
+   * \param ir IR from which to read the pipeline stages
+   * \return   Map of pipeline stages to which stage to execute
+   *           with in sequence.
+   */
+  static std::map<PipelineStage, PipelineStage> withStages(const Ir &ir);
+
+  /**
+   * Calculate the required stash size.
+   * \param ir              The current IR
+   * \param stashStage      The stage in which the stash is updated
+   * \param maxRestoreStage The last stage in which the stash is restored
+   * \return                Required number of stash entries
+   */
+  int getStashSize(const Ir &ir,
+                   PipelineStage stashStage,
+                   PipelineStage maxRestoreStage) const;
 
 private:
   /**

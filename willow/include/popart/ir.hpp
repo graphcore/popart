@@ -645,7 +645,19 @@ private:
   std::set<Tensor *> getRootInputsToOp(Op *op);
 
 public:
+  /**
+   * Get pipeline stage containing the final loss
+   * (the last forward pipeline stage)
+   * \return pipeline stage containing the final loss
+   */
   PipelineStage getFinalLossPipelineStage() const;
+
+  /**
+   * Get the max pipeline stage that will exist after the backward pass has been
+   * added to the graph
+   * \return max pipeline stage of the graph
+   */
+  PipelineStage getMaxPipelineStage() const;
 
 private:
   DataFlow dataFlow;

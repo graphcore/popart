@@ -45,6 +45,8 @@ public:
   virtual void setMainGraphPathFromLoss() override;
   // Final loss' pipeline stage.
   virtual PipelineStage getFinalLossPipelineStage() override;
+  // Maximum pipeline stage
+  virtual PipelineStage getMaxPipelineStage() override;
   // Create a new tensor id.
   virtual TensorId createIntermediateTensorId(const TensorId &base_id) override;
 

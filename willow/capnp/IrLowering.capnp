@@ -14,9 +14,22 @@ struct TensorInterval{
 using TensorIntervalList = List(TensorInterval);
 using TensorId = Text;
 
+using ProgramIndex = UInt32;
+using ProgramHandle = Text;
+
+struct ProgramHandleIndices{
+  idPairs @0 :List(ProgramHandleId);
+  struct ProgramHandleId{
+    index @0 :ProgramIndex;
+    handleId @1 :ProgramHandle;
+  }
+}
+
 struct IrLowering {
   ir @0: Ir.Ir;
   linearlyCreatedInputTensors @1: List(TensorId);
   efficientlyCreatedInputTensors @2: List(TensorId);
   cycleCountIds @3: List(TensorId);
+  programHandleIndices @4: ProgramHandleIndices;
 }
+

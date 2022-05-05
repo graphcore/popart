@@ -186,6 +186,9 @@ private:
   std::map<ReturnPeriod, snap::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, snap::Tensor> batchCountCheckingTensors;
 
+  // Implicit pipelining index tensors (i.e. stash and restore counters)
+  std::vector<snap::Tensor> pipelineIndexTensors;
+
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
@@ -226,6 +229,9 @@ private:
 
   unsigned tileCounterGraphConstVar;
   int tileCounterGraphScalarVar;
+
+  // Map of custom programs that can be run
+  std::map<std::string, unsigned> programHandleIndexMap;
 
   void setMetadataFromIr();
 
@@ -637,6 +643,14 @@ public:
   insertGradientLoadStream(TensorId, TensorInfo, snap::Graph &);
   snap::DataStream &insertWeightLoadStream(TensorId, TensorInfo, snap::Graph &);
 
+  void addPipelineIndexTensor(const snap::Tensor &tensor) {
+    pipelineIndexTensors.push_back(tensor);
+  }
+
+  const std::vector<snap::Tensor> getPipelineIndexTensors() {
+    return pipelineIndexTensors;
+  }
+
   const std::map<TensorId, snap::DataStream> &getFromHostStreams() const {
     return fromHostStreams;
   }
@@ -658,6 +672,15 @@ public:
       opxState[opid] = std::unique_ptr<T>(new T());
     }
     return static_cast<T *>(opxState.at(opid).get());
+  }
+
+  void setProgramHandleIndexMap(
+      const std::map<std::string, unsigned> &programHandleIndexMap_) {
+    programHandleIndexMap = programHandleIndexMap_;
+  }
+
+  const std::map<std::string, unsigned> &getProgramHandleIndexMap() const {
+    return programHandleIndexMap;
   }
 };
 

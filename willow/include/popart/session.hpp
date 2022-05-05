@@ -243,6 +243,20 @@ public:
   void run(IStepIO &stepIO, std::string debugName = "");
 
   /**
+   * Run one step of a custom program.
+   *
+   * Read input data from address in \p stepIO.in.
+   *
+   * Write the output data to addresses in \p stepIO.out.
+   *
+   * \param programHandle The handle of the custom program to run.
+   * \param stepIO        The input and output data.
+   * \param debugName     A debug string to identify this run in logs.
+   */
+  void
+  run(std::string programHandle, IStepIO &stepIO, std::string debugName = "");
+
+  /**
    * Update the tensor locations of the tensors in the Session's ONNX model.
    * The new file will be created at this point, and written to when the ONNX
    * model is saved with a subsequent call to modelToHost.

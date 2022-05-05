@@ -231,7 +231,7 @@ void Devicex::OutputDatastream::write(void *ptr) {
   }
 }
 
-void Devicex::run(PopPrograms::ProgramIndex ind, const std::string debugName) {
+void Devicex::run(unsigned ind, const std::string debugName) {
   POPART_TRACEPOINT();
   if (isEngineLoaded() == false) {
     logging::devicex::debug("Reloading engine & connecting streams");
@@ -823,6 +823,49 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
 
   pEngine->enableExecutionProfiling();
   run(PopPrograms::ProgramIndex::Program, debugName);
+
+  ++nCallsToRun;
+}
+
+void Devicex::run(std::string programHandle,
+                  IStepIO &stepio,
+                  std::string debugName) {
+  POPART_TRACEPOINT();
+
+  if (!prepareHasBeenCalled()) {
+    throw runtime_error("Devicex::prepare() must be called before"
+                        " Devicex::run(const IStepIO &) is called.");
+  }
+
+  // Check that the input and output buffers have the correct number of
+  // elements. As run(.) is called multiple times during a user's session, the
+  // check is only performed in the first call to run, under the assumption
+  // that the user is unlikely to change the size of buffers between runs.
+  if (nCallsToRun == 0 && stepio.runtimeAssertsEnabled()) {
+    stepio.assertNumElements(executable_);
+  }
+
+  logging::devicex::debug("Performing one step: ");
+
+  // Reconnect input streams.
+  reconnectInputStreams();
+
+  // Configure the inputstreams
+  anchorsHostToHostStreams(stepio);
+
+  // Configure the outputstreams
+  anchorsHostFromHostStreams(stepio);
+
+  pEngine->enableExecutionProfiling();
+
+  auto &indexMap = lowering().getProgramHandleIndexMap();
+  auto it        = indexMap.find(programHandle);
+
+  if (it == indexMap.end()) {
+    throw error("[Devicex::run] Program {} not found.", programHandle);
+  }
+
+  run(it->second, debugName);
 
   ++nCallsToRun;
 }

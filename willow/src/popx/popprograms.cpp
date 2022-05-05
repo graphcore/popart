@@ -13,6 +13,7 @@
 #include <popart/popx/popprograms.hpp>
 
 #include <poplar/Program.hpp>
+#include <popops/Zero.hpp>
 
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
@@ -268,11 +269,10 @@ snap::program::Sequence PopPrograms::rngStateToHost() const {
   return prog;
 }
 
-void PopPrograms::addPipelineCycle(
-    PipelineCycle pCycle,
-    snap::program::Sequence &sq,
-    std::ostringstream &ss,
-    std::map<PipelineStage, snap::Function> &mainFunctions) const {
+void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
+                                   PipelineCycle pCycle,
+                                   snap::program::Sequence &sq,
+                                   std::ostringstream &ss) const {
   // Inside each pipeline cycle
   //
   // Always do:
@@ -286,18 +286,17 @@ void PopPrograms::addPipelineCycle(
   // Then always do:
   // 5. Inter-IPU copies for all pipeline stages
 
-  PipelineInfo pInfo = ir_lowering_p->ir().pipelineInfo();
-
   // 1.
   sq.add(preForwardFragment());
 
   // 2.
   if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
       pipelineSeqs.end()) {
-    for (auto &stage_seq :
+    for (const auto &stage_seq :
          pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
+        // Inline code in order to not block overlap
         sq.add(stage_seq.second);
       }
     }
@@ -310,7 +309,7 @@ void PopPrograms::addPipelineCycle(
   }
 
   // 3.
-  for (auto &stage_seq : mainFunctions) {
+  for (const auto &stage_seq : mainPipelineFunctions) {
     auto stage = stage_seq.first;
     if (pInfo.doStage(pCycle, stage)) {
       ss << "\n  ps" << stage << " : Main";
@@ -321,9 +320,11 @@ void PopPrograms::addPipelineCycle(
   // 4.
   if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
       pipelineSeqs.end()) {
-    for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
+    for (const auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
       if (pInfo.doStage(pCycle, stage_seq.first)) {
         ss << "\n  ps" << stage_seq.first << " : ToHostStream";
+        // Inline code to not block overlap
         sq.add(stage_seq.second);
       }
     }
@@ -333,11 +334,48 @@ void PopPrograms::addPipelineCycle(
   // Note: Always do all the copies. This is ensure that ALL copies are
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
-  sq.add(*pipelineIpuCopySeq.get());
+  sq.add(snap::program::Call(ir_lowering_p->graph(), pipelineIpuCopyFunction));
+}
+
+unsigned PopPrograms::addCustomProgram(const snap::program::Program &program) {
+  customPrograms.push_back(program);
+  return ProgramIndex::CustomProgramsStart + customPrograms.size() - 1;
+}
+
+void PopPrograms::createPipelineFunctions() {
+  // Function to reset all stash and restore indices when switching between
+  // training and inference in the same engine. This is required because
+  // the inference program will have fewer pipeline stages (forward stages only)
+  // and therefore fewer pipeline stash entries. This will mean that after
+  // training, all indices will be at 0 again, however, after an inference step,
+  // not all indices are 0 and need to be reset to make the next inference
+  // or training step correct.
+  {
+    snap::program::Sequence sequence(ir_lowering_p->graph());
+    for (auto &index : ir_lowering_p->getPipelineIndexTensors()) {
+      popops::zero(ir_lowering_p->graph().getPoplarGraph(),
+                   index.getPoplarTensor(),
+                   sequence.getPoplarSequence(),
+                   {"zeroPipelineIndex"});
+    }
+    zeroPipelineIndexFunction = ir_lowering_p->graph().addFunction(sequence);
+  }
+
+  for (const auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
+    // fwdOnly: Skip stages containing backward pass only
+    const snap::program::Sequence &sequence = stage_seq.second;
+    mainPipelineFunctions.insert(
+        {stage_seq.first, ir_lowering_p->graph().addFunction(sequence)});
+  }
+
+  pipelineIpuCopyFunction =
+      ir_lowering_p->graph().addFunction(*pipelineIpuCopySeq.get());
+  toHostFinalCopyFunction =
+      ir_lowering_p->graph().addFunction(toHostFinalCopyFragment());
 }
 
 snap::program::Sequence
-PopPrograms::getFullProgramFromPipelineFragments() const {
+PopPrograms::getFullProgramFromPipelineFragments(bool fwdOnly) const {
   // Which parts of the Ir graph are run in each of the pipeline
   // fragments? Print this info here:
   std::ostringstream ss;
@@ -359,12 +397,21 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   PipelineInfo pInfo = ir_lowering_p->ir().pipelineInfo();
 
-  std::map<PipelineStage, snap::Function> mainFunctions;
+  // Adjust pipeline info
+  if (fwdOnly) {
+    logging::info("[PopPrograms::getFullProgramFromPipelineFragments] Creating "
+                  "forward-only program with pipeline stages [{},{}]",
+                  0,
+                  ir_lowering_p->ir().getNumPipelineStages() / 2 - 1);
 
-  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Main)) {
-    const snap::program::Sequence &sequence = stage_seq.second;
-    mainFunctions.insert(
-        {stage_seq.first, ir_lowering_p->graph().addFunction(sequence)});
+    // Skip stages containing backward pass only
+    pInfo =
+        PipelineInfo(static_cast<int64_t>(
+                         ir_lowering_p->ir().getDataFlow().batchesPerStep()),
+                     ir_lowering_p->ir().getSessionOptions().accumulationFactor,
+                     ir_lowering_p->ir().getNumPipelineStages() / 2,
+                     pInfo.doGradAccl,
+                     pInfo.withStage);
   }
 
   snap::program::Sequence fill(poplar::DebugContext{"fill"},
@@ -373,7 +420,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, fill, ss, mainFunctions);
+    addPipelineCycle(pInfo, pCycle, fill, ss);
   }
 
   // All pipeline cycles in the main phase are identical. So we create the
@@ -382,7 +429,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
                                ir_lowering_p->graph());
   int64_t mainCycles = pInfo.getMainCycles();
   ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
-  addPipelineCycle(pInfo.mainPhase.start, main, ss, mainFunctions);
+  addPipelineCycle(pInfo, pInfo.mainPhase.start, main, ss);
 
   snap::program::Sequence flush(poplar::DebugContext{"flush"},
                                 ir_lowering_p->graph());
@@ -390,7 +437,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
     ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
-    addPipelineCycle(pCycle, flush, ss, mainFunctions);
+    addPipelineCycle(pInfo, pCycle, flush, ss);
   }
 
   logging::devicex::debug("Pipelining program construction summary:");
@@ -404,7 +451,7 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
   inner.add(snap::program::Repeat(
-      static_cast<uint32_t>(mainCycles), main, {"inerLoop"}));
+      static_cast<uint32_t>(mainCycles), main, {"innerLoop"}));
   inner.add(flush);
 
   snap::program::Sequence outer(poplar::DebugContext{"outer"},
@@ -412,9 +459,18 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
 
   outer.add(initFragment());
 
-  if (!ir_lowering_p->getOuterLoopFragEmpty()) {
+  // Only add index zero function call if required
+  if (ir_lowering_p->ir()
+          .getSessionOptions()
+          .createImplicitPipeliningFwdOnlyProgram) {
+    outer.add(
+        snap::program::Call(ir_lowering_p->graph(), zeroPipelineIndexFunction));
+  }
 
-    inner.add(accumulateOuterFragment());
+  if (!ir_lowering_p->getOuterLoopFragEmpty()) {
+    if (!fwdOnly) {
+      inner.add(accumulateOuterFragment());
+    }
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = ir_lowering_p->ir().getDataFlow().batchesPerStep();
@@ -424,7 +480,8 @@ PopPrograms::getFullProgramFromPipelineFragments() const {
     outer.add(inner);
   }
 
-  outer.add(toHostFinalCopyFragment());
+  outer.add(
+      snap::program::Call(ir_lowering_p->graph(), toHostFinalCopyFunction));
 
   return outer;
 }
@@ -444,7 +501,7 @@ snap::program::Sequence PopPrograms::program() const {
     outer.add(toHostFinalCopyFragment());
   } else {
     if (opts.implicitPipeliningEnabled()) {
-      outer.add(getFullProgramFromPipelineFragments());
+      outer.add(getFullProgramFromPipelineFragments(false));
     } else {
       snap::program::Sequence prog(poplar::DebugContext{"program"},
                                    ir_lowering_p->graph());
@@ -510,7 +567,8 @@ snap::program::Sequence PopPrograms::weightsToHost() const {
 }
 
 const std::vector<snap::program::Program> PopPrograms::progs() const {
-  std::vector<snap::program::Program> ps(ProgramIndex::N);
+  std::vector<snap::program::Program> ps(ProgramIndex::CustomProgramsStart +
+                                         customPrograms.size());
 
   ps[ProgramIndex::WeightsFromHost]        = weightsFromHost();
   ps[ProgramIndex::OptimizerFromHost]      = optimizerFromHost();
@@ -521,6 +579,13 @@ const std::vector<snap::program::Program> PopPrograms::progs() const {
   ps[ProgramIndex::RngStateToHost]         = rngStateToHost();
   ps[ProgramIndex::WeightsToHost]          = weightsToHost();
   ps[ProgramIndex::CycleCountTensorToHost] = cycleCountTensorToHost();
+
+  // Add custom programs
+  size_t i = 0;
+  for (const auto &customProgram : customPrograms) {
+    ps[ProgramIndex::CustomProgramsStart + i] = customProgram;
+    ++i;
+  }
 
   return ps;
 }

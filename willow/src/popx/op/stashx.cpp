@@ -2,6 +2,7 @@
 #include <popart/error.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/popx/devicex.hpp>
+#include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/stashx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
@@ -67,6 +68,7 @@ void StashOpx::grow(snap::program::Sequence &prog) const {
   graph().getPoplarGraph().setTileMapping(stashIndex.getPoplarTensor(), 0);
   graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
                                            poplar::ArrayRef<uint32_t>({0}));
+  dv_p->lowering().addPipelineIndexTensor(stashIndex);
 
   // Retrieve the input tensor.
   const auto &inTensor = getInTensor(StashOp::getInIndex());

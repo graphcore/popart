@@ -10640,6 +10640,10 @@ otherwise
 static const char *__singlelinedoc_popart_SessionOptions_getGlobalReplicationFactor =
     R"doc(Helper method to handle the different replication options. If enableDistributedReplicatedGraphs is true return globalReplicationFactor if enableReplicatedGraphs return replicatedGraphCount otherwise return 1)doc";
 
+static const char
+    *__doc_popart_SessionOptions_createImplicitPipeliningFwdOnlyProgram =
+        R"doc()doc";
+
 static const char *__doc_popart_SessionOptions_getBufferingDepth =
     R"doc(Get the buffering depth for a TensorId. Will return 1 unless
 prefetching is enabled and the buffering depth is overwritten

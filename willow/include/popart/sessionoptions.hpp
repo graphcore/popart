@@ -1082,6 +1082,10 @@ struct SessionOptions {
   /// (default). However inplace fallbacks will occur if necessary.
   bool enableInplaceAmbiguityChecking = false;
 
+  // TODO T52152: Remove implicit pipelining
+  /// \deprecated Create a custom program containing the forward pipeline only
+  bool createImplicitPipeliningFwdOnlyProgram = false;
+
   SessionOptions() {
     // Automatically set `enableEngineCaching` and `cachePath` if the
     // environment variable `POPART_CACHE_DIR` is provided

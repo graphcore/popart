@@ -4,10 +4,15 @@
 #include <popart/alias/aliasmodelgrower.hpp>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/concat.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/transpose.hpp>
 #include <popart/pointercomparators.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
