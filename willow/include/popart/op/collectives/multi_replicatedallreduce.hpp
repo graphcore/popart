@@ -1,7 +1,9 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 #ifndef GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
 #define GUARD_NEURALNET_MULTIREPLICATEDALLREDUCE_HPP
+#include <popart/ir.hpp>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/tensorindex.hpp>
 
 namespace popart {
 class MultiReplicatedAllReduceOp : public MultiCollectiveBaseOp {
@@ -22,9 +24,15 @@ public:
   Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override;
   bool isCollectiveLinkedIndexTensor(InIndex in) const override;
   bool isCollectiveLinkedIndexTensor(Tensor *t) const override;
+  ReplicatedTensorShardingIndices
+  getReplicatedTensorShardingIndices() const override;
   view::Regions modifies(InIndex index) const override;
   view::Regions aliases(InIndex in, OutIndex out) const override;
   void growAliasModel(AliasModel &m) const override;
+  std::tuple<ReplEqOutputMap, ReplEqModifiedInputMap>
+  fwdPropagateIsReplicaEqual(const AliasModel &aliasModel,
+                             const ReplEqInputMap &inputMap,
+                             ReplicaEqualAnalysisProxy &proxy) const override;
 
 private:
   CollectiveOperator op;

@@ -159,12 +159,17 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
     outInfoFromBaseOps.emplace_back(op->outInfo(op->getOutIndex()));
   }
 
+  // Grow a partial alias model which covers all affected inputs
+  AliasModel popMem;
+  AliasModelGrower aliasModelGrower{popMem};
+  for (BaseType *match : matchingOps) {
+    aliasModelGrower.growPartialGraph(
+        graph, match->inId(match->getInIndex()), DataDependenciesOnly::No);
+  }
+
   // Determine which parts of the multiop can be inplaced. Even if the original
   // base op is inplace, in the multiOp there can be aliases between
   // the inputs, which prevents full inplacing.
-  AliasModel popMem;
-  AliasModelGrower aliasModelGrower{popMem};
-  aliasModelGrower.growFullGraph(graph, DataDependenciesOnly::No);
   std::vector<bool> modifiesIndexInplace;
   for (size_t i = 0; i < matchingOps.size(); i++) {
     auto opI      = matchingOps.at(i);

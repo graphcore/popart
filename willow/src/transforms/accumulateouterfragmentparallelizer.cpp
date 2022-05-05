@@ -374,6 +374,20 @@ vector<vector<Op *>> AccumulateOuterFragmentParallelizer::getBinConstraints(
   binConstraints.insert(
       binConstraints.end(), postBinConstaints.begin(), postBinConstaints.end());
 
+  std::string debugString;
+  for (size_t constraintIdx = 0; constraintIdx < binConstraints.size();
+       constraintIdx++) {
+    debugString += "\nBin constraint " + std::to_string(constraintIdx) +
+                   " contains the following ops: ";
+    for (auto op : binConstraints[constraintIdx]) {
+      debugString += "\n\t" + op->debugName();
+    }
+  }
+  logging::debug("[AccumulateOuterFragmentParallelizer::getBinConstraints] "
+                 "There are {} bin constraints in AOF {}",
+                 binConstraints.size(),
+                 debugString);
+
   return binConstraints;
 }
 
@@ -415,6 +429,16 @@ AccumulateOuterFragmentParallelizer::getGradientClippingClusters(
           ExecutionContext::AccumulateOuterFragment) {
         gradCluster.absorb({&graph, x});
         opSearch.pushInputProducers(x);
+
+        // All ops which are tied to another op in the gradient clipping
+        // cluster must themselves be in the gradient clipping cluster
+        // For instance when merging collectives
+        for (auto before : graph.topoCons->getTiedBefores(x)) {
+          opSearch.push(before);
+        }
+        for (auto after : graph.topoCons->getTiedAfters(x)) {
+          opSearch.push(after);
+        }
       }
     }
 
