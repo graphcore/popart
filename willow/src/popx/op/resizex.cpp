@@ -21,6 +21,9 @@
 #include <popops/Fill.hpp>
 #include <popops/Pad.hpp>
 #include <popops/Zero.hpp>
+
+#include <popops/Reduce.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/logging.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/popx/op/resizex.hpp>
@@ -41,19 +44,19 @@ class Devicex;
 
 namespace {
 
-struct ResizeParams {
-  Shape inShape;
-  Shape outShape;
-  std::vector<float> scales;
-  ResizeMode mode;
-  ResizeNearestMode nearestMode;
-  ResizeCoordinateTransformationMode coordinateTransformationMode;
-};
-
 ResizeParams getResizeParams(const ResizeOp &x) {
   return {x.inShape(ResizeOp::getInIndex()),
           x.outShape(ResizeOp::getOutIndex()),
           x.getScales(),
+          x.getMode(),
+          x.getNearestMode(),
+          x.getCoordinateTransformationMode()};
+}
+
+ResizeParams getResizeGradParams(const ResizeGradOp &x) {
+  return {x.inShape(ResizeGradOp::getInIndex()),
+          x.outShape(ResizeGradOp::getOutIndex()),
+          x.getFwdScales(),
           x.getMode(),
           x.getNearestMode(),
           x.getCoordinateTransformationMode()};
@@ -323,118 +326,246 @@ public:
       : input(input_), graph(graph_), params(params_), prog(prog_),
         debugContext(debugContext_) {}
 
-  poplar::Tensor cubicCoeffs(float ratio, float A) {
+  std::vector<float> cubicCoeffs(float ratio, float A) {
     // Check if there is a cached result for this call to cubicCoeffs.
-    auto found = cubicCoeffsCache.find(std::make_pair(ratio, A));
-    if (found != cubicCoeffsCache.end()) {
-      return found->second;
-    } else {
-      // See https://ieeexplore.ieee.org/document/1163711 for details.
-      const std::vector<float> coeffs = {
-          ((A * (ratio + 1) - 5 * A) * (ratio + 1) + 8 * A) * (ratio + 1) -
-              4 * A,
-          ((A + 2) * ratio - (A + 3)) * ratio * ratio + 1,
-          ((A + 2) * (1 - ratio) - (A + 3)) * (1 - ratio) * (1 - ratio) + 1,
-          ((A * ((1 - ratio) + 1) - 5 * A) * ((1 - ratio) + 1) + 8 * A) *
-                  ((1 - ratio) + 1) -
-              4 * A};
-      auto coeffsTensor = graph.getPoplarGraph().addConstant<float>(
-          poplar::FLOAT, {4}, coeffs, debugContext);
-      graph.getPoplarGraph().setTileMapping(coeffsTensor, 0);
-      cubicCoeffsCache.insert({{ratio, A}, coeffsTensor});
-      return coeffsTensor;
+    // See https://ieeexplore.ieee.org/document/1163711 for details.
+    const std::vector<float> coeffs = {
+        ((A * (ratio + 1) - 5 * A) * (ratio + 1) + 8 * A) * (ratio + 1) - 4 * A,
+        ((A + 2) * ratio - (A + 3)) * ratio * ratio + 1,
+        ((A + 2) * (1 - ratio) - (A + 3)) * (1 - ratio) * (1 - ratio) + 1,
+        ((A * ((1 - ratio) + 1) - 5 * A) * ((1 - ratio) + 1) + 8 * A) *
+                ((1 - ratio) + 1) -
+            4 * A};
+    return coeffs;
+  }
+
+  // will use edge pixels to pad indexes
+  std::pair<std::vector<unsigned>, poplar::Tensor>
+  getXOrisNCoeffsTensor(uint64_t inSize, float scaleFactor, uint64_t outSize) {
+    std::vector<float> coeffs;
+    std::vector<unsigned> x_oris;
+    for (int64_t x = 0; x < outSize; ++x) {
+      float x_ori = coordinateTransformation(
+          x, params.coordinateTransformationMode, scaleFactor, inSize);
+      int x_ori_int = std::floor(x_ori);
+      x_oris.push_back(unsigned(x_ori_int));
+
+      float ratio = x_ori - x_ori_int;
+
+      auto coeffs_partial = cubicCoeffs(ratio, -0.75f);
+      coeffs.insert(coeffs.end(), coeffs_partial.begin(), coeffs_partial.end());
     }
-  }
+    auto coeffsTensor =
+        createFloatConstant({outSize, 4},
+                            poplar::DebugContext(debugContext, "coeffsTensor"),
+                            coeffs);
 
-  poplar::Tensor dotProd(poplar::Tensor lhs, poplar::Tensor rhs) {
-    assert(lhs.dim(0) == rhs.dim(0));
-    lhs    = lhs.reshape({1, lhs.dim(0)});
-    rhs    = rhs.reshape({rhs.dim(0), 1});
-    auto r = poplin::matMul(graph.getPoplarGraph(),
-                            lhs,
-                            rhs,
-                            prog.getPoplarSequence(),
-                            debugContext);
-    return r.reshape({1});
-  }
-
-  poplar::Tensor interpolate1D(poplar::Tensor data, float scaleFactor, int x) {
-    float x_ori = coordinateTransformation(
-        x, params.coordinateTransformationMode, scaleFactor, data.dim(0));
-    int x_ori_int = std::floor(x_ori);
-
-    float ratio = x_ori - x_ori_int;
-
-    auto coeffsTensor = cubicCoeffs(ratio, -0.75f);
-    auto n            = coeffsTensor.dim(0);
-    auto padded =
-        popops::pad(data, n / 2, n / 2, 0, popops::padding::Type::EDGE);
-    int sliceStart = std::floor(x_ori + n / 2) - 1;
-    int sliceEnd   = sliceStart + coeffsTensor.dim(0);
-    auto d         = padded.slice(sliceStart, sliceEnd, 0);
-
-    return dotProd(coeffsTensor, d);
-  }
-
-  poplar::Tensor interpolateND(const std::vector<float> &scales,
-                               const std::vector<int64_t> &xs,
-                               const std::vector<int64_t> &slices) {
-    // Check if there is a cached result for this call to cubicCoeffs.
-    auto found = interpolateNDCache.find(std::make_tuple(scales, xs, slices));
-    if (found != interpolateNDCache.end()) {
-      return found->second;
-    } else {
-      poplar::Tensor result;
-      if (xs.size() == 1) {
-        auto d = input;
-        for (auto slice : slices) {
-          d = d.slice(slice, slice + 1, 0).squeeze({0});
-        }
-
-        result = interpolate1D(d, scales.at(0), xs.at(0));
-      } else {
-        std::vector<poplar::Tensor> elems;
-        for (int i = 0; i < input.dim(slices.size()); i++) {
-          auto subslices = slices;
-          subslices.push_back(i);
-
-          auto r = interpolateND(
-              std::vector<float>(scales.begin() + 1, scales.end()),
-              std::vector<int64_t>(xs.begin() + 1, xs.end()),
-              subslices);
-          elems.push_back(r);
-        }
-        auto r = poplar::concat(elems, 0);
-        result = interpolate1D(r, scales.at(0), xs.at(0));
+    std::vector<unsigned> indexes;
+    for (int j = 0; j < x_oris.size(); ++j) {
+      // for each index we take pixels with relative offsets: -1, 0, 1, 2
+      for (int i = -1; i < 3; ++i) {
+        int index = x_oris[j] + i;
+        // pad out of range pixels with edge value
+        index = index < 0 ? 0 : index;
+        index = index > inSize - 1 ? inSize - 1 : index;
+        indexes.push_back(index);
       }
-
-      interpolateNDCache.insert({{scales, xs, slices}, result});
-      return result;
     }
+
+    return {std::move(indexes), coeffsTensor};
+  }
+
+  // take the input by index
+  // returned tensor shape: (otherdims..., dim, 1)
+  poplar::Tensor indexTake(poplar::Tensor data,
+                           std::vector<unsigned> indexes,
+                           std::size_t dim) {
+
+    data = popops::multiSlice(graph.getPoplarGraph(),
+                              data,
+                              indexes,
+                              dim,
+                              prog.getPoplarSequence(),
+                              poplar::DebugContext(debugContext, "multiSlice"));
+
+    auto result = data.dimRoll(0, data.shape().size() - 1);
+    result      = result.dimRoll(dim, data.shape().size() - 1);
+    return result;
+  }
+
+  // transform from input -> output indexes
+  // to output->input indexes
+  std::vector<std::vector<unsigned>> reverseIndex(std::vector<unsigned> indexes,
+                                                  uint64_t expected_size,
+                                                  uint64_t pad_index) {
+    std::vector<std::vector<unsigned>> result;
+    std::set<uint64_t> used_indexes;
+    // if there's any index not used
+    while (true) {
+      std::vector<unsigned> one_seq;
+      one_seq.resize(expected_size, pad_index);
+      for (int64_t i = indexes.size() - 1; i >= 0; --i) {
+        if (indexes[i] == -1) {
+          continue;
+        }
+        if (used_indexes.find(indexes[i]) == used_indexes.end()) {
+          one_seq[indexes[i]] = i;
+          used_indexes.insert(indexes[i]);
+          indexes[i] = -1;
+        }
+      }
+      if (used_indexes.size() == 0) {
+        break;
+      }
+      result.push_back(one_seq);
+      used_indexes.clear();
+    }
+    return result;
+  }
+
+  poplar::Tensor createFloatConstant(std::vector<uint64_t> shape,
+                                     poplar::DebugContext debugContext = "",
+                                     std::vector<float> values         = {},
+                                     float defaultValue                = 0) {
+    uint64_t total = 1;
+    for (auto i = 0; i < shape.size(); ++i) {
+      total *= shape[i];
+    }
+    if (values.size() == 0) {
+      values.resize(total, defaultValue);
+    }
+    auto result = graph.getPoplarGraph().addConstant<float>(
+        poplar::FLOAT,
+        shape,
+        values,
+        poplar::DebugContext(debugContext, "addConstant"));
+    graph.getPoplarGraph().setTileMapping(result, 0);
+    return result;
   }
 
   snap::Tensor run(std::vector<int64_t> indices = {}) {
-    if (indices.size() < input.rank()) {
-      indices.push_back(0);
-
-      std::vector<snap::Tensor> elems;
-
-      for (int i = 0; i < params.outShape.at(indices.size() - 1); i++) {
-        indices.at(indices.size() - 1) = i;
-        auto x                         = run(indices);
-        if (indices.size() != params.outShape.size()) {
-          std::vector<size_t> expansion(1, 0);
-          x = x.expand(expansion);
-        }
-
-        elems.push_back(x);
+    auto result = input;
+    // do interpolation for each dimension, start from the last dimension
+    for (uint64_t dim = params.scales.size() - 1; dim < params.scales.size();
+         --dim) {
+      auto scale = params.scales[dim];
+      // if scale == 1
+      // we do not need to do anything to this dim
+      if (scale == 1) {
+        continue;
       }
-      return snap::concat(elems, 0);
-    } else {
-      return snap::Tensor{interpolateND(params.scales, indices, {}), graph};
+
+      auto x_oris_and_coeffs_tensor =
+          getXOrisNCoeffsTensor(result.dim(dim), scale, params.outShape[dim]);
+      std::vector<unsigned> x_oris = x_oris_and_coeffs_tensor.first;
+      poplar::Tensor coeffsTensor  = x_oris_and_coeffs_tensor.second;
+
+      result                      = indexTake(result, x_oris, std::size_t(dim));
+      std::vector<uint64_t> shape = result.shape();
+      // last indexes repeated for 4 times
+      shape[shape.size() - 1] = 4;
+      shape[shape.size() - 2] /= 4;
+      // put 4 pixels at last dim
+      result = result.reshape(shape);
+      result = popops::mul(graph.getPoplarGraph(),
+                           result,
+                           coeffsTensor,
+                           prog.getPoplarSequence(),
+                           poplar::DebugContext(debugContext, "mulCoeffs"));
+      result =
+          popops::reduce(graph.getPoplarGraph(),
+                         result,
+                         {result.shape().size() - 1},
+                         {popops::Operation::ADD},
+                         prog.getPoplarSequence(),
+                         poplar::DebugContext(debugContext, "reduce4Pixels"));
+
+      // move the indexes dim back from backward to it's original position
+      result = result.dimRoll(result.shape().size() - 1, dim);
     }
+    return snap::Tensor{result, graph};
   }
-};
+
+  snap::Tensor runBackward(std::vector<int64_t> indices = {}) {
+    auto result = input;
+    // when running backward pass
+    // we need to start from the higher rank,
+    // reversed order of forward pass
+    for (uint64_t dim = 0; dim < params.scales.size(); ++dim) {
+      auto scale = params.scales[dim];
+      // if scale == 1
+      // we do not need to do anything to this dim
+      if (scale == 1) {
+        continue;
+      }
+      // we need to use params in forward pass
+      auto x_oris_and_coeffs_tensor = getXOrisNCoeffsTensor(
+          params.outShape.at(dim), scale, params.inShape[dim]);
+      std::vector<unsigned> x_oris = x_oris_and_coeffs_tensor.first;
+
+      poplar::Tensor coeffsTensor = x_oris_and_coeffs_tensor.second;
+      // for example, current shape of result is [1,32,7,14]
+      // put current dim to the end
+      // [1,32,7,14] -> [1,32,14,7] for dim =2
+      result = result.dimRoll(dim, result.shape().size() - 1);
+      // for each dimension, we expand the each pixel to 4
+      // [1,32,14,7] -> [1,32,14,7,1]
+      result = result.expand({result.shape().size()});
+      // [1,32,14,7,1] -> [1,32,14,7,4]
+      result = poplar::concat({result, result, result, result},
+                              result.shape().size() - 1);
+      // we don't create new coeffTensors but use tensors in forward pass
+      result = popops::mul(graph.getPoplarGraph(),
+                           result,
+                           coeffsTensor,
+                           prog.getPoplarSequence(),
+                           poplar::DebugContext(debugContext, "mulCoeffs"));
+      // flatten last 2 dims
+      auto shape              = result.shape();
+      auto last_dim           = shape[shape.size() - 1];
+      auto last2_dim          = shape[shape.size() - 2];
+      shape[shape.size() - 2] = last_dim * last2_dim;
+      shape.resize(shape.size() - 1);
+      // [1,32,14,7,4] -> [1,32,14,28]
+      result               = result.reshape(shape);
+      auto reverse_indexes = reverseIndex(
+          x_oris, params.outShape[dim], uint64_t(shape[shape.size() - 1]));
+
+      // pad 0 as value for unused index
+      shape[shape.size() - 1] = 1;
+      auto pad                = createFloatConstant(
+          shape, poplar::DebugContext(debugContext, "padZero"));
+      result = poplar::concat({result, pad}, shape.size() - 1);
+
+      // then put the value to it's original position using index
+      std::vector<poplar::Tensor> elems;
+      for (auto index : reverse_indexes) {
+        // [1,32,14,28]->[1,32,14,14,1]
+        elems.push_back(indexTake(result, index, result.shape().size() - 1));
+      }
+      // [1,32,14,14,1]->[1,32,14,14,n]
+      // result = poplar::concat(elems, elems[0].shape().size() - 1);
+      // multiple add will consume less memory than concat + reduceSum
+      result = elems[0];
+      for (int i = 1; i < elems.size(); ++i) {
+        result =
+            popops::add(graph.getPoplarGraph(),
+                        elems[i],
+                        result,
+                        prog.getPoplarSequence(),
+                        poplar::DebugContext(debugContext, "addInverseGrads"));
+      }
+      shape = result.shape();
+      shape.resize(shape.size() - 1);
+      result = result.reshape(shape);
+      // move the indexes dim back from backward to it's original position
+      // [1,32,14,14]->[1,32,14,14]
+      result = result.dimRoll(result.shape().size() - 1, dim);
+    }
+    return snap::Tensor{result, graph};
+  }
+
+}; // namespace
 
 snap::Tensor resizeCubic(snap::Tensor input,
                          const ResizeParams &params,
@@ -460,13 +591,16 @@ void ResizeOpx::grow(snap::program::Sequence &prog) const {
   snap::Tensor result;
   switch (params.mode) {
   case ResizeMode::Nearest:
-    result = resizeNearest(input, params, prog, graph(), debugContext());
+    result = resizeNearest(
+        input, params, prog, graph(), debugContext("resizeNearest"));
     break;
   case ResizeMode::Linear:
-    result = resizeLinear(input, params, prog, graph(), debugContext());
+    result = resizeLinear(
+        input, params, prog, graph(), debugContext("resizeLinear"));
     break;
   case ResizeMode::Cubic:
-    result = resizeCubic(input, params, prog, graph(), debugContext());
+    result =
+        resizeCubic(input, params, prog, graph(), debugContext("resizeCubic"));
     break;
   default:
     throw error("Unsupported resize mode {}", params.mode);
@@ -478,10 +612,11 @@ void ResizeOpx::grow(snap::program::Sequence &prog) const {
 ResizeGradOpx::ResizeGradOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<ResizeGradOp>(op);
 }
-
-void ResizeGradOpx::grow(snap::program::Sequence &prog) const {
-  auto &op   = getOp<ResizeGradOp>();
-  auto input = getInTensor(ResizeGradOp::getInIndex());
+snap::Tensor
+ResizeGradOpx::resizeNearestGrad(ResizeGradOp &op,
+                                 const snap::Tensor &input,
+                                 ResizeParams &params,
+                                 snap::program::Sequence &prog) const {
 
   auto inShape  = op.inShape(ResizeGradOp::getInIndex());
   auto outShape = op.outShape(ResizeGradOp::getOutIndex());
@@ -501,8 +636,28 @@ void ResizeGradOpx::grow(snap::program::Sequence &prog) const {
                             1.0f / op.getFwdScales().at(dimension));
     }
   }
+  return result;
+}
 
-  setOutTensor(ResizeGradOp::getOutIndex(), result);
+void ResizeGradOpx::grow(snap::program::Sequence &prog) const {
+  auto &op   = getOp<ResizeGradOp>();
+  auto input = getInTensor(ResizeGradOp::getInIndex());
+
+  auto params = getResizeGradParams(op);
+  if (params.mode == ResizeMode::Nearest) {
+    auto result = resizeNearestGrad(op, input, params, prog);
+    setOutTensor(ResizeGradOp::getOutIndex(), result);
+  } else if (params.mode == ResizeMode::Linear) {
+    throw error("Resize mode 'linear' is not supported when training.");
+  } else if (params.mode == ResizeMode::Cubic) {
+    auto result = ResizeCubicHelper(input.getPoplarTensor(),
+                                    graph(),
+                                    params,
+                                    prog,
+                                    debugContext("reszeCubicGrad"))
+                      .runBackward();
+    setOutTensor(ResizeGradOp::getOutIndex(), result);
+  }
 }
 
 snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,

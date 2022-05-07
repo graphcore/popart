@@ -18,6 +18,15 @@ class Op;
 namespace popx {
 class Devicex;
 
+struct ResizeParams {
+  Shape inShape;
+  Shape outShape;
+  std::vector<float> scales;
+  ResizeMode mode;
+  ResizeNearestMode nearestMode;
+  ResizeCoordinateTransformationMode coordinateTransformationMode;
+};
+
 class ResizeOpx : public PopOpx {
 public:
   ResizeOpx(Op *, Devicex *);
@@ -30,6 +39,10 @@ public:
   void grow(snap::program::Sequence &) const final;
 
 private:
+  snap::Tensor resizeNearestGrad(ResizeGradOp &op,
+                                 const snap::Tensor &input,
+                                 ResizeParams &params,
+                                 snap::program::Sequence &prog) const;
   snap::Tensor reduceDimension(snap::program::Sequence &,
                                const snap::Tensor &input,
                                int dimension,

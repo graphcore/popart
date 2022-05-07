@@ -271,3 +271,63 @@ def test_resize_cubic(op_tester, data_shape, scales,
         op_tester.atol = 1e-05
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # This changes the values without changing the size of the dimension.
+        # in pytorch we find that it will reset scale = 1.0 if input_size==output_size
+        # i.e. floor(8*1.12)=8
+        # but the reset will only happen in backward pass(not forward pass),
+        # so this is a bug in pytorch
+        # so we temprarily comment this test
+        #([8], [1.12]),
+        # upsample
+        ([2], [8.0]),
+        ([2, 2], [2.0, 3.0]),
+        ([5, 3], [2.3, 2.5]),
+        # downsample
+        ([2, 8], [1.0, 3 / 8]),
+        ([5, 4], [0.5, 0.5]),
+        # 3D
+        ([5, 3, 4], [2.3, 2.5, 0.5]),
+    ])
+@pytest.mark.parametrize(
+    "coordinate_transformation_mode",
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
+def test_resize_cubic_grad(op_tester, data_shape, scales,
+                           coordinate_transformation_mode):
+    data = np.random.rand(1, 1, *data_shape).astype(np.float32)
+
+    scales = np.array([1.0, 1.0] + scales, dtype=np.float32)
+
+    x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
+    x_data = np.random.rand(*x_data_shape).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        x = builder.addInputTensor(x_data)
+        s = builder.aiOnnx.constant(scales)
+        o = builder.aiOnnx.resize([d, s])
+        o = builder.aiOnnx.mul([o, x])
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o,
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(data, requires_grad=True)
+        s = [i for i in scales[2:]]
+        b = interpolate(a, s)
+        b.retain_grad()
+        o = b * torch.tensor(x_data)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, a.grad, None]
+
+    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, 'train')
