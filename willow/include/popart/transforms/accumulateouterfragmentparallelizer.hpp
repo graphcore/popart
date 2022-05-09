@@ -61,6 +61,9 @@ protected:
     // Get the number of load bytes (if split over multiple virtual graph ids,
     // pick max)
     int64_t calcNumLoadBytes() const;
+    // Gradient clipping clusters require special treatment and can be
+    // identified with this function
+    bool isGradientClippingCluster() const;
 
     // Get the tensor IDs for op's inputs and outputs and put them in the
     // tensorIds set.
