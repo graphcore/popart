@@ -191,6 +191,7 @@ add_popart_python_module(
   bindings/op/roialign.cpp
   bindings/op/pool.cpp
   bindings/op/argminmax.cpp
+  bindings/op/resize.cpp
   bindings/op/matmul.cpp
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp

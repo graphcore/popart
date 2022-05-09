@@ -7,6 +7,7 @@ from .concat import concat, concat_
 from .conv import conv, PadType
 from .roialign import roi_align
 from .argminmax import argmin, argmax
+from .interpolate import interpolate
 from .detach import detach, detach_
 from .div import div
 from .dropout import dropout
@@ -94,6 +95,8 @@ __all__ = [
     "PadType",
     # roialign.py
     "roi_align",
+    # interpolate.py,
+    "interpolate",
     # detach.py
     "detach",
     "detach_",

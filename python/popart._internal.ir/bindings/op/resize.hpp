@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_ROIALIGN_HPP
-#define POPART__INTERNAL_IR_BINDINGS_ROIALIGN_HPP
+#ifndef POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
+#define POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
 
 #include <pybind11/pybind11.h>
 
@@ -12,13 +12,13 @@ namespace ir {
 namespace op {
 
 /**
- * Add bindings for the roi_align op.
+ * Add bindings for the resize op.
  **/
-void bindRoiAlign(py::module &m);
+void bindResize(py::module &m);
 
 } // namespace op
 } // namespace ir
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_ROIALIGN_HPP
+#endif // POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
