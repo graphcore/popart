@@ -167,13 +167,19 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
     break;
   }
 
+  // Sort the ops so that the order in which they are merged is
+  // the same across instances
+  std::sort(matchingOps.begin(),
+            matchingOps.end(),
+            [](BaseType *opA, BaseType *opB) { return opA->id < opB->id; });
+
   // Notify which ops are about to me merged
   std::vector<std::string> allMatchNames;
   for (auto op : matchingOps) {
     allMatchNames.emplace_back("\t" + op->debugName() + "\n");
   }
   logging::info("[MergeCollectivesTransform ] Merging op {} with its "
-                "contiguous matches: \n{}",
+                "sorted contiguous matches: \n{}",
                 baseOp->debugName(),
                 allMatchNames);
 

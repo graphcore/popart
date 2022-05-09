@@ -253,6 +253,14 @@ AccumulateOuterFragmentParallelizer::OpCluster::calcNumLoadBytes() const {
   return result;
 }
 
+bool AccumulateOuterFragmentParallelizer::OpCluster::isGradientClippingCluster()
+    const {
+  // Check if any of the ops is a gradient clipping op
+  return std::any_of(ops.begin(), ops.end(), [](const Op *op) {
+    return op->isGradientClippingOp();
+  });
+}
+
 size_t AccumulateOuterFragmentParallelizer::id() {
   return typeid(AccumulateOuterFragmentParallelizer).hash_code();
 }
@@ -582,18 +590,36 @@ void AccumulateOuterFragmentParallelizer::filterOpClusters(
 }
 
 void AccumulateOuterFragmentParallelizer::sortOpClusters(
-    // Sort op groups in descending order of the number
+    // Sort op groups in ascending order of the number
     // of bytes that are loaded. This is so we can better
     // parallelise similar groups across virtual graphs.
     OpClusters &clusters) const {
   clusters.sort([](const OpCluster &c1, const OpCluster &c2) {
-    // Descending order of size.
-    return c1.numLoadBytes < c2.numLoadBytes;
+    // Gradient clipping cluster should be scheduled first
+    if (c1.isGradientClippingCluster() && !c2.isGradientClippingCluster()) {
+      return true; // c1 has higher priority
+    } else if (c2.isGradientClippingCluster() &&
+               !c1.isGradientClippingCluster()) {
+      return false; // c1 has lower priority
+    } else if (c1.isGradientClippingCluster() &&
+               c2.isGradientClippingCluster()) {
+      throw error("[AccumulateOuterFragmentParallelizer::sortOpClusters] There "
+                  "is more than one gradient clipping cluster per virtual "
+                  "graph id. This is very unexepected.");
+    } else if (c1.numLoadBytes != c2.numLoadBytes) {
+      // Ascending order of size.
+      return c1.numLoadBytes < c2.numLoadBytes;
+    } else {
+      // Finally, there may be cases where the clusters may have the same
+      // numLoadBytes, e.g. same size varialbes so we introduce a secondary
+      // order based on op id to to make sure ordering is always well-defined
+      return c1.ops.at(0)->id < c2.ops.at(0)->id;
+    }
   });
 }
 
 void AccumulateOuterFragmentParallelizer::sortOpClusters(
-    // Sort op groups in descending order of the number
+    // Sort op groups in ascending order of the number
     // of bytes that are loaded. This is so we can better
     // parallelise similar groups across virtual graphs.
     OpClustersMap &clustersMap) const {
