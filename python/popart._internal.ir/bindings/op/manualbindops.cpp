@@ -20,12 +20,11 @@
 #include <popart/op/averagepool.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/conv.hpp>    // IWYU pragma: keep
-#include <popart/op/ipucopy.hpp> // IWYU pragma: keep
-#include <popart/op/loop.hpp>    // IWYU pragma: keep
-#include <popart/op/matmul.hpp>  // IWYU pragma: keep
-#include <popart/op/maxpool.hpp> // IWYU pragma: keep
-#include <popart/op/resize.hpp>
+#include <popart/op/conv.hpp>     // IWYU pragma: keep
+#include <popart/op/ipucopy.hpp>  // IWYU pragma: keep
+#include <popart/op/loop.hpp>     // IWYU pragma: keep
+#include <popart/op/matmul.hpp>   // IWYU pragma: keep
+#include <popart/op/maxpool.hpp>  // IWYU pragma: keep
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
 
 #include "bindings/basicoptionals.hpp"
@@ -34,7 +33,6 @@
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
 #include "bindings/op/pool.hpp"
-#include "bindings/op/resize.hpp"
 #include "bindings/op/roialign.hpp"
 #include "bindings/op/varupdate.hpp"
 #include "popart/adam.hpp"
@@ -197,44 +195,6 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("keepdims"),
         py::arg("settings"),
         py::return_value_policy::reference);
-
-  // Resize
-  g.def("createOp_ResizeOp",
-        py::overload_cast<const OperatorIdentifier &,
-                          const Op::Settings &,
-                          ResizeMode &,
-                          const std::vector<float> &>(
-            &Graph::createOp<ResizeOp,
-                             const OperatorIdentifier &,
-                             const Op::Settings &,
-                             ResizeMode &,
-                             const std::vector<float> &>),
-        py::arg("opid"),
-        py::arg("settings"),
-        py::arg("mode"),
-        py::arg("scales"),
-        py::return_value_policy::reference)
-      .def("createOp_ResizeOp",
-           py::overload_cast<const OperatorIdentifier &,
-                             const Op::Settings &,
-                             ResizeMode &,
-                             const std::vector<float> &,
-                             ResizeNearestMode &,
-                             ResizeCoordinateTransformationMode &>(
-               &Graph::createOp<ResizeOp,
-                                const OperatorIdentifier &,
-                                const Op::Settings &,
-                                ResizeMode &,
-                                const std::vector<float> &,
-                                ResizeNearestMode &,
-                                ResizeCoordinateTransformationMode &>),
-           py::arg("opid"),
-           py::arg("settings"),
-           py::arg("mode"),
-           py::arg("scales"),
-           py::arg("nearestMode"),
-           py::arg("coordinateTransformationMode"),
-           py::return_value_policy::reference);
 
   // LoopOp
   g.def("createOp_LoopOp",
@@ -572,52 +532,6 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("keepdims"),
         py::arg("settings"),
         py::return_value_policy::reference);
-
-  // Resize
-  g.def("createConnectedOp_ResizeOp",
-        py::overload_cast<const std::map<InIndex, TensorId> &,
-                          const std::map<OutIndex, TensorId> &,
-                          const OperatorIdentifier &,
-                          const Op::Settings &,
-                          ResizeMode &,
-                          const std::vector<float> &>(
-            &Graph::createConnectedOp<ResizeOp,
-                                      const OperatorIdentifier &,
-                                      const Op::Settings &,
-                                      ResizeMode &,
-                                      const std::vector<float> &>),
-        py::arg("in"),
-        py::arg("out"),
-        py::arg("opid"),
-        py::arg("settings"),
-        py::arg("mode"),
-        py::arg("scales"),
-        py::return_value_policy::reference)
-      .def("createConnectedOp_ResizeOp",
-           py::overload_cast<const std::map<InIndex, TensorId> &,
-                             const std::map<OutIndex, TensorId> &,
-                             const OperatorIdentifier &,
-                             const Op::Settings &,
-                             ResizeMode &,
-                             const std::vector<float> &,
-                             ResizeNearestMode &,
-                             ResizeCoordinateTransformationMode &>(
-               &Graph::createConnectedOp<ResizeOp,
-                                         const OperatorIdentifier &,
-                                         const Op::Settings &,
-                                         ResizeMode &,
-                                         const std::vector<float> &,
-                                         ResizeNearestMode &,
-                                         ResizeCoordinateTransformationMode &>),
-           py::arg("in"),
-           py::arg("out"),
-           py::arg("opid"),
-           py::arg("settings"),
-           py::arg("mode"),
-           py::arg("scales"),
-           py::arg("nearestMode"),
-           py::arg("coordinateTransformationMode"),
-           py::return_value_policy::reference);
 
   // LoopOp
   g.def("createConnectedOp_LoopOp",

@@ -12,7 +12,7 @@ namespace ir {
 namespace op {
 
 /**
- * Add bindings for the roi_align op.
+ * Add bindings for the conv op.
  **/
 void bindRoiAlign(py::module &m);
 
