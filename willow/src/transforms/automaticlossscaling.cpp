@@ -91,6 +91,15 @@ bool consumesVariableInput(const Op *op) {
   return false;
 }
 
+bool consumesOptimizerTensor(const Op *op) {
+  for (Tensor *tensor : op->input->tensors()) {
+    if (tensor->isOptimizerTensor()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool producesConvOrMatmulGradient(const Op *op) {
   // conv or matmul operations that produce gradient tensors
   if (op->fromLoss == PathFromLoss::Yes) {
@@ -135,6 +144,10 @@ bool producesNonViewChangingGradientTensor(const Op *op) {
   }
   // Doesn't lead to a VarUpdateOp, so we shouldn't care about its statistics
   if (numberOfConsumers(op) == 0) {
+    return false;
+  }
+  // Don't track optimizer tensors.
+  if (consumesOptimizerTensor(op)) {
     return false;
   }
 
