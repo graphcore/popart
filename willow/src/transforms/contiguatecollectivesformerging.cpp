@@ -144,19 +144,12 @@ void ContiguateCollectivesTransform::processOp(
   // Find matching ops
   std::vector<BaseType *> allMatches =
       lookForMatchingOps(baseOp, schedule, opsToProcess);
-
-  // Sort the ops so that the order in which they are merged is
-  // the same across instances
-  std::sort(allMatches.begin(),
-            allMatches.end(),
-            [](BaseType *opA, BaseType *opB) { return opA->id < opB->id; });
-
   std::vector<std::string> allMatchNames;
   for (auto op : allMatches) {
     allMatchNames.emplace_back("\t" + op->debugName() + "\n");
   }
   logging::info(
-      "[ContiguateCollectivesForMerging] Tying op {} with sorted matches: \n{}",
+      "[ContiguateCollectivesForMerging] Tying op {} with matches: \n{}",
       baseOp->debugName(),
       allMatchNames);
 
