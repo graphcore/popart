@@ -92,6 +92,14 @@ Session::Session(std::shared_ptr<Ir> ir_,
   ir->prepareCache(cacheEntries);
 }
 
+void Session::updateEngineCache() {
+  const SessionOptions userOptions = ir->getSessionOptions();
+  if (userOptions.enableEngineCaching) {
+    cacheEntries = getCacheEntries(userOptions.cachePath);
+    ir->compareWithSavedHash(cacheEntries);
+  }
+}
+
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   POPART_TRACEPOINT();
   logging::session::trace("Session::setDevice({})", *deviceInfo);

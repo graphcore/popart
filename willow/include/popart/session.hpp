@@ -368,6 +368,13 @@ public:
   const popx::IrLowering &getIrLowering() const { return *lowering_; }
   const popx::Executablex &getExecutable() const { return *executable_; }
 
+  /**
+   * Update cacheEntries from engine cache directory
+   * and update ir::hashMatched_ with the updated cacheEntries
+   *
+   */
+  void updateEngineCache();
+
 protected:
   /**
    * Select a device type.
