@@ -43,8 +43,7 @@ RestoreBaseOpx<Derived>::growRestore(snap::program::Sequence &prog,
 
   // Create the stash index tensor.
   const auto stashIndex =
-      graph().addVariable(poplar::UNSIGNED_INT, {1}, debugContext());
-  graph().getPoplarGraph().setTileMapping(stashIndex.getPoplarTensor(), 0);
+      getScalarVariable(poplar::UNSIGNED_INT, "stash_index").reshape({1});
   graph().getPoplarGraph().setInitialValue(stashIndex.getPoplarTensor(),
                                            poplar::ArrayRef<uint32_t>({0}));
   dv_p->lowering().addPipelineIndexTensor(stashIndex);

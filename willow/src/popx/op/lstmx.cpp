@@ -528,7 +528,6 @@ snap::Tensor LSTMGradOpx::getCellStateGrad() const {
   } else {
     auto zero =
         getScalarVariable(elem_type, "lstm/zero_cell_state").getPoplarTensor();
-    graph().getPoplarGraph().setTileMapping(zero, 0);
     graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
@@ -590,7 +589,6 @@ snap::Tensor LSTMGradOpx::getHiddenStateGrad() const {
   } else {
     auto zero = getScalarVariable(elem_type, "lstm/zero_hidden_state")
                     .getPoplarTensor();
-    graph().getPoplarGraph().setTileMapping(zero, 0);
     graph().getPoplarGraph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
     zero = zero.broadcast(batch_size, 0);
