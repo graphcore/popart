@@ -4,7 +4,7 @@ import popart
 import torch
 import onnx
 import pytest
-from lstm_test import LSTM_Helper
+from rnn_helper import LSTM_Helper
 
 from pathlib import Path
 
