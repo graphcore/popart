@@ -192,20 +192,11 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
       auto y =
-          snap::Tensor{graph().getPoplarGraph().addConstant(
-                           x.elementType(), x.shape(), 0, debugContext("y")),
-                       graph()};
-      auto batchMean =
-          snap::Tensor{graph().getPoplarGraph().addConstant(
-                           mean.elementType(), {1}, NAN, debugContext("mean")),
-                       graph()};
+          graph().addConstant(x.elementType(), x.shape(), 0, debugContext("y"));
+      auto batchMean = graph().addConstant(
+          mean.elementType(), {1}, NAN, debugContext("mean"));
       auto batchVar =
-          snap::Tensor{graph().getPoplarGraph().addConstant(
-                           var.elementType(), {1}, NAN, debugContext("var")),
-                       graph()};
-      graph().getPoplarGraph().setTileMapping(y.getPoplarTensor(), 0);
-      graph().getPoplarGraph().setTileMapping(batchMean.getPoplarTensor(), 0);
-      graph().getPoplarGraph().setTileMapping(batchVar.getPoplarTensor(), 0);
+          graph().addConstant(var.elementType(), {1}, NAN, debugContext("var"));
 
       result = GrowSpatialOutput({y,
                                   batchMean,
@@ -288,10 +279,7 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
       auto y =
-          snap::Tensor{graph().getPoplarGraph().addConstant(
-                           x.elementType(), x.shape(), 0, debugContext("y")),
-                       graph()};
-      graph().getPoplarGraph().setTileMapping(y.getPoplarTensor(), 0);
+          graph().addConstant(x.elementType(), x.shape(), 0, debugContext("y"));
 
       result = GrowSpatialOutput({y,
                                   nonstd::optional<snap::Tensor>(),
@@ -435,21 +423,12 @@ BatchNormGradOpx::growSpatial(snap::program::Sequence &prog,
 
   // Special case - zero sized array
   if (isZeroElementArray(x.shape())) {
-    auto xGrad =
-        snap::Tensor{graph().getPoplarGraph().addConstant(
-                         x.elementType(), x.shape(), 0, debugContext("xGrad")),
-                     graph()};
+    auto xGrad = graph().addConstant(
+        x.elementType(), x.shape(), 0, debugContext("xGrad"));
     auto scaleGrad =
-        snap::Tensor{graph().getPoplarGraph().addConstant(
-                         x.elementType(), {1}, 0, debugContext("scaleGrad")),
-                     graph()};
+        graph().addConstant(x.elementType(), {1}, 0, debugContext("scaleGrad"));
     auto bGrad =
-        snap::Tensor{graph().getPoplarGraph().addConstant(
-                         x.elementType(), {1}, 0, debugContext("bGrad")),
-                     graph()};
-    graph().getPoplarGraph().setTileMapping(xGrad.getPoplarTensor(), 0);
-    graph().getPoplarGraph().setTileMapping(scaleGrad.getPoplarTensor(), 0);
-    graph().getPoplarGraph().setTileMapping(bGrad.getPoplarTensor(), 0);
+        graph().addConstant(x.elementType(), {1}, 0, debugContext("bGrad"));
     result.xGrad     = xGrad;
     result.scaleGrad = scaleGrad;
     result.bGrad     = bGrad;

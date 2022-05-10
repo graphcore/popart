@@ -39,11 +39,9 @@ void ZerosOpx::grow(snap::program::Sequence &) const {
   auto poplarType = popType(op.outInfo(op.getOutIndex()));
   auto shape      = vXtoY<int64_t, std::size_t>(outputInfo.shape());
 
-  auto zeros = graph().getPoplarGraph().addConstant(
-      poplarType, shape, 0, debugContext("zeros"));
-  graph().getPoplarGraph().setTileMapping(zeros, 0);
+  auto zeros = graph().addConstant(poplarType, shape, 0, debugContext("zeros"));
 
-  setOutTensor(ZerosOp::getOutIndex(), snap::Tensor{zeros, graph()});
+  setOutTensor(ZerosOp::getOutIndex(), zeros);
 }
 
 namespace {

@@ -269,21 +269,19 @@ snap::Tensor resizeLinear(snap::Tensor input,
       std::vector<size_t> coeffsShape(resultFloor.rank(), 1);
       coeffsShape.at(dim) = coeffs.size();
 
-      auto coeffsTensor = graph.getPoplarGraph().addConstant<float>(
+      auto coeffsTensor = graph.addConstant<float>(
           poplar::FLOAT, coeffsShape, coeffs, debugContext);
-      graph.getPoplarGraph().setTileMapping(coeffsTensor, 0);
-      auto oneTensor = graph.getPoplarGraph().addConstant<float>(
-          poplar::FLOAT, {1}, 1.0f, debugContext);
-      graph.getPoplarGraph().setTileMapping(oneTensor, 0);
+      auto oneTensor =
+          graph.addConstant<float>(poplar::FLOAT, {1}, 1.0f, debugContext);
       auto oneMinusCoeffs = popops::sub(graph.getPoplarGraph(),
-                                        oneTensor,
-                                        coeffsTensor,
+                                        oneTensor.getPoplarTensor(),
+                                        coeffsTensor.getPoplarTensor(),
                                         prog.getPoplarSequence(),
                                         debugContext);
 
       resultCeil  = snap::Tensor{popops::mul(graph.getPoplarGraph(),
                                             resultCeil.getPoplarTensor(),
-                                            coeffsTensor,
+                                            coeffsTensor.getPoplarTensor(),
                                             prog.getPoplarSequence(),
                                             debugContext),
                                 graph};
@@ -437,13 +435,12 @@ public:
     if (values.size() == 0) {
       values.resize(total, defaultValue);
     }
-    auto result = graph.getPoplarGraph().addConstant<float>(
+    auto result = graph.addConstant<float>(
         poplar::FLOAT,
         shape,
         values,
         poplar::DebugContext(debugContext, "addConstant"));
-    graph.getPoplarGraph().setTileMapping(result, 0);
-    return result;
+    return result.getPoplarTensor();
   }
 
   snap::Tensor run(std::vector<int64_t> indices = {}) {
@@ -670,9 +667,8 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
 
   auto &op      = getOp<ResizeGradOp>();
   auto outShape = op.outShape(ResizeGradOp::getOutIndex());
-  auto one      = graph().getPoplarGraph().addConstant(
+  auto one      = graph().addConstant(
       input.elementType(), {}, 1.0f, debugContext("const_one"));
-  graph().getPoplarGraph().setTileMapping(one, 0);
 
   std::vector<size_t> resultShape = input.shape();
   resultShape.at(dimension)       = outShape.at(dimension);
@@ -695,7 +691,7 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
                              .dimRoll(static_cast<unsigned>(dimension))
                              .expand({static_cast<unsigned>(dimension + 1)}),
                          offsets,
-                         one,
+                         one.getPoplarTensor(),
                          static_cast<size_t>(dimension),
                          prog.getPoplarSequence(),
                          debugContext("reduceDimAdd"));

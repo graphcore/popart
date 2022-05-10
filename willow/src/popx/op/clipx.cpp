@@ -35,10 +35,7 @@ snap::Tensor ClipComputex::getClipTensor(float val,
                                          const poplar::Type &type,
                                          snap::Graph &graph,
                                          const poplar::DebugNameAndId &dnai) {
-  auto tensor =
-      graph.getPoplarGraph().addConstant(type, {}, val, {dnai, "clip"});
-  graph.getPoplarGraph().setTileMapping(tensor, 0);
-  return snap::Tensor{tensor, graph};
+  return graph.addConstant(type, {}, val, {dnai, "clip"});
 }
 
 snap::Tensor ClipComputex::broadcastClipTensor(snap::Tensor clipT,

@@ -58,12 +58,8 @@ snap::Tensor linspace(snap::Graph &graph,
                  values.begin(),
                  [left, increment](int v) { return left + v * increment; });
 
-  auto result = graph.getPoplarGraph().addConstant(
+  return graph.addConstant(
       type, {count}, poplar::ArrayRef<int>(values), {dnai, "count"});
-
-  graph.getPoplarGraph().setTileMapping(result, 0);
-
-  return snap::Tensor{result, graph};
 }
 
 snap::Tensor matchRank(snap::Tensor a, snap::Tensor b, unsigned dim) {
@@ -102,13 +98,12 @@ snap::Tensor linearizeIndices(const PopOpx &opx,
 
   // numDataCols * indices + colIndices
   result                = opx.cloneNcopy(prog, result, "copyIndices");
-  auto numDataColsConst = opx.graph().getPoplarGraph().addConstant(
+  auto numDataColsConst = opx.graph().addConstant(
       result.elementType(), {}, numDataCols, opx.getDebugNameAndId("numCols"));
-  opx.graph().getPoplarGraph().setTileMapping(numDataColsConst, 0);
 
   popops::mulInPlace(opx.graph().getPoplarGraph(),
                      result.getPoplarTensor(),
-                     numDataColsConst,
+                     numDataColsConst.getPoplarTensor(),
                      prog.getPoplarSequence(),
                      opx.getDebugNameAndId("numColsMulIndices"));
   snap::popops::addInPlace(opx.graph(),

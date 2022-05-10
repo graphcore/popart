@@ -172,12 +172,11 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   // data, in this case return zero loss. Do this by taking
   // min(numIgnoredSamples, 1) and letting the result be 0 / 1 (where scale = 0
   // due to the ignored labels). See T36441
-  auto min_1 = opx.graph().getPoplarGraph().addConstant(
+  auto min_1 = opx.graph().addConstant(
       numNonIgnoredSamples.elementType(), {}, 1, opx.debugContext("const_1"));
-  opx.graph().getPoplarGraph().setTileMapping(min_1, 0);
   popops::maxInPlace(opx.graph().getPoplarGraph(),
                      numNonIgnoredSamples,
-                     min_1,
+                     min_1.getPoplarTensor(),
                      prog.getPoplarSequence(),
                      opx.debugContext("numNonIgnoredSamples_min"));
 
@@ -216,14 +215,8 @@ NllOpx::applyMaskInPlaceForIgnoredIndex(const PopOpx &opx,
                                         snap::program::Sequence &prog) {
   // Get the scalar ignoreIndex tensor. If it doesn't already
   // exist, create it
-  auto ignoreIndexTensor = snap::Tensor{
-      opx.graph().getPoplarGraph().addConstant(labels.elementType(),
-                                               {},
-                                               ignoreIndex,
-                                               opx.debugContext("ignoreIndex")),
-      opx.graph()};
-  opx.graph().getPoplarGraph().setTileMapping(
-      ignoreIndexTensor.getPoplarTensor(), 0);
+  auto ignoreIndexTensor = opx.graph().addConstant(
+      labels.elementType(), {}, ignoreIndex, opx.debugContext("ignoreIndex"));
 
   // Create the mask
   auto lossMaskBool = snap::popops::map(opx.graph(),
@@ -411,10 +404,7 @@ void NllGradOpx::grow(snap::program::Sequence &prog) const {
                              debugContext("negOneHot"));
   } else {
     auto smallConst =
-        snap::Tensor{graph().getPoplarGraph().addConstant(
-                         probs.elementType(), {1}, eps, debugContext("eps")),
-                     graph()};
-    graph().getPoplarGraph().setTileMapping(smallConst.getPoplarTensor(), 0);
+        graph().addConstant(probs.elementType(), {1}, eps, debugContext("eps"));
 
     // oneHot: set to -1/p at position "label", 0 elsewhere.
     snap::popops::mapInPlace(

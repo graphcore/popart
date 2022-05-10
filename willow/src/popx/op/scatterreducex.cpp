@@ -81,9 +81,8 @@ void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
                0.0f,
                debugContext("scatterreduceFill"));
 
-  auto scale = graph().getPoplarGraph().addConstant(
+  auto scale = graph().addConstant(
       data.elementType(), {}, 1.0f, debugContext("constOne"));
-  graph().getPoplarGraph().setTileMapping(scale, 0);
 
   // The popops::multiUpdateAdd op is roughly:
   //   for i indices:
@@ -124,7 +123,7 @@ void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
                            target.getPoplarTensor(),
                            data.getPoplarTensor(),
                            indices.getPoplarTensor(),
-                           scale,
+                           scale.getPoplarTensor(),
                            {0},
                            {1},
                            prog.getPoplarSequence(),
@@ -140,7 +139,7 @@ void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
                            out.getPoplarTensor(),
                            data.getPoplarTensor(),
                            indices.getPoplarTensor(),
-                           scale,
+                           scale.getPoplarTensor(),
                            {0},
                            {1},
                            prog.getPoplarSequence(),

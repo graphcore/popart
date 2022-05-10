@@ -29,10 +29,7 @@ class Devicex;
 
 snap::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
                                            snap::Graph &graph) const {
-  auto tensor = graph.getPoplarGraph().addConstant(
-      type, {1}, scale_factor, "scale_factor");
-  graph.getPoplarGraph().setTileMapping(tensor, 0);
-  return snap::Tensor{tensor, graph};
+  return graph.addConstant(type, {1}, scale_factor, "scale_factor");
 }
 
 snap::Tensor ScaleComputex::outplace(snap::program::Sequence &prog,

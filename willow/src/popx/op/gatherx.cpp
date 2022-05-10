@@ -362,9 +362,8 @@ void GatherGradOpx::grow(snap::program::Sequence &prog) const {
     return;
   }
 
-  auto scale = graph().getPoplarGraph().addConstant(
+  auto scale = graph().addConstant(
       update.elementType(), {}, 1.0f, debugContext("const_1"));
-  graph().getPoplarGraph().setTileMapping(scale, 0);
 
   // Rolls axis to front.
   const auto inputs = handleNDMultiUpdate(result, update, indices, axis);
@@ -377,7 +376,7 @@ void GatherGradOpx::grow(snap::program::Sequence &prog) const {
                          targetND,
                          updateND,
                          indicesND,
-                         scale,
+                         scale.getPoplarTensor(),
                          {0},
                          {1},
                          prog.getPoplarSequence(),
