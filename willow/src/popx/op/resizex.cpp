@@ -257,7 +257,10 @@ snap::Tensor resizeLinear(snap::Tensor input,
 
       std::vector<float> coeffs;
       for (int outIndex = 0; outIndex < params.outShape.at(dim); outIndex++) {
-        float x = coordinateTransformation(outIndex, dim, params);
+        float x = coordinateTransformation(outIndex,
+                                           params.coordinateTransformationMode,
+                                           params.scales.at(dim),
+                                           params.inShape.at(dim));
         x       = std::max(x, 0.0f);
         x       = x - floor(x);
         coeffs.push_back(x);

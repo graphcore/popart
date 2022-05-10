@@ -331,3 +331,123 @@ def test_resize_cubic_grad(op_tester, data_shape, scales,
 
     op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
     op_tester.run(init_builder, reference, 'train')
+
+
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # upsample
+        ([1, 1, 3], [1, 1, 2]),
+        ([1, 1, 8], [1, 1, 1.5]),
+        ([1, 1, 3], [1, 1, 2]),
+        # downsample
+        ([1, 1, 6], [1, 1, 5 / 6]),
+        ([1, 1, 8], [1, 1, 3 / 4]),
+        ([1, 1, 10], [1, 1, 0.7]),
+    ])
+def test_resize_torch_linear(op_tester, data_shape, scales):
+    data = np.random.rand(*data_shape).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array(scales, dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            mode="linear",
+            coordinate_transformation_mode='pytorch_half_pixel')
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        d = torch.Tensor(data)
+        s = np.multiply(scales, data_shape).round().astype(np.int32)
+        o = torch.nn.functional.interpolate(d,
+                                            size=(s[2]),
+                                            mode='linear',
+                                            align_corners=False)
+        return [o.numpy().astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # upsample
+        ([1, 1, 5, 3], [1, 1, 2, 2]),
+        ([1, 1, 2, 8], [1, 1, 3, 1.5]),
+        ([1, 1, 5, 3], [1, 1, 1.6, 2]),
+        # downsample
+        ([1, 1, 4, 6], [1, 1, 0.5, 5 / 6]),
+        ([1, 1, 5, 8], [1, 1, 0.2, 3 / 4]),
+        ([1, 1, 7, 10], [1, 1, 4 / 7, 0.7]),
+    ])
+def test_resize_torch_bilinear(op_tester, data_shape, scales):
+    data = np.random.rand(*data_shape).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array(scales, dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            mode="linear",
+            coordinate_transformation_mode='pytorch_half_pixel')
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        d = torch.Tensor(data)
+        s = np.multiply(scales, data_shape).round().astype(np.int32)
+        o = torch.nn.functional.interpolate(d,
+                                            size=(s[2], s[3]),
+                                            mode='bilinear',
+                                            align_corners=False)
+        return [o.numpy().astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+@pytest.mark.parametrize(
+    "data_shape, scales",
+    [
+        # upsample
+        ([1, 1, 4, 5, 3], [1, 1, 3, 2, 2]),
+        ([1, 1, 6, 2, 8], [1, 1, 4, 3, 1.5]),
+        ([1, 1, 7, 5, 3], [1, 1, 2, 1.6, 2]),
+        # downsample
+        ([1, 1, 8, 4, 6], [1, 1, 3 / 8, 0.5, 5 / 6]),
+        ([1, 1, 3, 5, 8], [1, 1, 2 / 3, 0.2, 3 / 4]),
+        ([1, 1, 6, 7, 10], [1, 1, 0.5, 4 / 7, 0.7]),
+    ])
+def test_resize_torch_trilinear(op_tester, data_shape, scales):
+    data = np.random.rand(*data_shape).astype(np.float32)
+    roi = np.array([], dtype=np.float32)
+    scales = np.array(scales, dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            mode="linear",
+            coordinate_transformation_mode='pytorch_half_pixel')
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        d = torch.Tensor(data)
+        s = np.multiply(scales, data_shape).round().astype(np.int32)
+        o = torch.nn.functional.interpolate(d,
+                                            size=(s[2], s[3], s[4]),
+                                            mode='trilinear',
+                                            align_corners=False)
+        return [o.numpy().astype(data.dtype)]
+
+    op_tester.run(init_builder, reference, 'infer')
