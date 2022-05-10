@@ -2095,6 +2095,11 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("name") = "training",
             DOC(popart, TrainingSession, createFromOnnxModel));
     cls.def(
+        "updateEngineCache",
+        [](TrainingSession &session) { session.updateEngineCache(); },
+        DOC(popart, TrainingSession, updateEngineCache));
+
+    cls.def(
         "compileAndExport",
         [](TrainingSession &session,
            const std::string &filename,

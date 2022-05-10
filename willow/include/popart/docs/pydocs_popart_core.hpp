@@ -14094,6 +14094,12 @@ Args:
 static const char *__singlelinedoc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer from the host. This method updates the optimizer and the associated hyperparameters but not the optimizer state tensors. **NOTE**: The optimizer parameter has to be compatible with the optimizer passed to the TrainingSession constructor. For example, you cannot call this function with an :code:`SDG1` optimizer if you created the session with an :code:`SDG0` optimizer. This is because it is not possible to change the IR after a session has been constructed. Args: optimizer: A pointer to a popart::Optimizer.)doc";
 
+static const char *__doc_popart_TrainingSession_updateEngineCache =
+    R"doc(Update cache entries from engine cache directory.)doc";
+
+static const char *__singlelinedoc_popart_TrainingSession_updateEngineCache =
+    R"doc(Update cache entries from engine cache directory.)doc";
+
 static const char *__doc_popart_VGraphIdAndTileSetCmp = R"doc()doc";
 
 static const char *__singlelinedoc_popart_VGraphIdAndTileSetCmp = R"doc()doc";
