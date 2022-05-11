@@ -4,19 +4,19 @@ from popxl import Graph
 
 
 # pylint: disable=unused-argument
-def graph_copy(graph: Graph,
-               source: Literal['remote', 'io', 'compute'] = 'remote',
-               destination: Literal['io', 'compute'] = 'compute'):
-    """Load the graph from the source location to the destination location.
+def code_copy(graph: Graph,
+              source: Literal['remote', 'io', 'compute'] = 'remote',
+              destination: Literal['io', 'compute'] = 'compute'):
+    """Copy the graph code from the source location to the destination location.
 
     There are 3 locations available for a graph at any point:
     * 'remote' means that the graph is located in remote memory (off-chip).
     * 'io' means it is located on the io tile set (on-chip, but not executable).
     * 'compute' means it is located in executable memory.
 
-    The initial location of the graph will be inferred from the first call to graph_copy.
+    The initial location of the graph will be inferred from the first call to code_copy.
     It is also the user's responsibility to ensure that their subsequent calls
-    to graph_copy make sense. In particular, if the user never copies a graph to
+    to code_copy make sense. In particular, if the user never copies a graph to
     the 'compute' location and calls it, it will be assumed to have always been in
     executable memory, and hence always live.
 
@@ -37,6 +37,6 @@ def graph_copy(graph: Graph,
     """
     if source == destination:
         raise ValueError(
-            f"graph_copy called with the same source and destination which is not allowed. Both are assigned to value '{source}'"
+            f"code_copy called with the same source and destination which is not allowed. Both are assigned to value '{source}'"
         )
-    raise NotImplementedError("graph_copy function not implemented yet")
+    raise NotImplementedError("code_copy function not implemented yet")
