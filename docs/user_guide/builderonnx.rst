@@ -3,11 +3,10 @@
 Building graphs in PopART
 -------------------------
 
-PopART has a ``Builder`` class for constructing ONNX graphs without needing a third
-party framework.
+PopART has a ``Builder`` class (:py:class:`Python <popart.Builder>`, :cpp:class:`C++ <popart::Builder>`) for constructing ONNX graphs without needing a third-party framework.
 
 In the example below, a simple addition is prepared for execution. The steps involved are
-described in the following sections and in :any:`popart_executing`.
+described in the following sections and in :numref:`popart_executing`.
 
 .. code-block:: python
 
@@ -34,38 +33,40 @@ described in the following sections and in :any:`popart_executing`.
   # Create the session from the graph, data feed and device information
   session = popart.InferenceSession(proto, dataFlow, device)
 
-The DataFlow object is described in more detail in :any:`popart_executing`.
+The ``DataFlow`` object (:py:class:`Python <~popart-python-api:popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`) is described in more detail in :numref:`popart_executing`.
 
 Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The builder adds operations to the graph by calling one of the many
-operation methods.  Each of these methods has a common signature.
-For example, ``relu`` will add an ONNX Relu operation
-to the graph:
+The ``Builder`` object adds operations to the graph by calling the
+corresponding operation methods, for example ``relu``, ``gather`` and ``slice``.  Each of these methods has a common signature.
+For example, ``relu`` will add an ONNX ReLU operation to the graph:
 
 .. code-block:: python
 
-  output = builder.aiOnnx.relu([input], "debug-name")
+  output = builder.aiOnnx.relu([input], "relu-debug-name")
 
-They take a list of arguments which are the input tensor names, and an optional
-string to assign to the node. This name is passed to the Poplar nodes and used
-in debugging and profiling reports.
+In general, the operation methods take two arguments which are the input tensor
+names, and an optional string to assign to the operation. This string is passed
+to the Poplar nodes and used in debugging and profiling reports to refer to the
+operation method.
 
-The operation method returns the name of the tensor that is an output of the newly added node.
+The operation methods return the name of the tensor that is an output of the newly added node.
 
-In some cases other arguments are required, for instance:
+In some cases, other arguments are required, for instance ``gather`` requires an additional argument that specifies the axis along which to perform the gather operation:
 
 .. code-block:: python
 
   output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugContext="My-Gather")
+
+All arguments are described in the documentation for each operation method.
 
 Adding parameters to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parameters, for instance the weights of a convolution, are represented as
 initialised inputs to the graph.  They can be added with the
-``addInitializedInputTensor`` method:
+``addInitializedInputTensor`` method (:py:func:`Python <popart.Builder.addInitializedInputTensor>`, :cpp:func:`C++ <popart::Builder::addInitializedInputTensor>`):
 
 .. code-block:: python
 
@@ -76,7 +77,7 @@ Setting outputs
 ~~~~~~~~~~~~~~~
 
 The outputs of the graph should be marked appropriately, using the
-``addOutputTensor`` method:
+``addOutputTensor`` method (:py:func:`Python <popart.Builder.addOutputTensor>`, :cpp:func:`C++ <popart::Builder::addOutputTensor>`):
 
 .. code-block:: python
 
@@ -85,13 +86,14 @@ The outputs of the graph should be marked appropriately, using the
 Setting the IPU number for operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When creating a graph which will run on a multiple IPU system, nodes need
-to be marked with an annotation to describe which IPU they will run upon.
+When creating a graph which will run on a multiple-IPU system, nodes need
+to be marked with an annotation to describe which IPU they will run on.
 
 For instance, to place a specific convolution onto IPU 1:
 
 .. code-block:: python
 
+  # prepare convolution operation in builder
   we = builder.addInitializedInputTensor(np.zeros([32, 4, 3, 3], np.float16))
   bi = builder.addInitializedInputTensor(np.zeros([32], np.float16))
   o = builder.aiOnnx.conv([x, we, bi],
@@ -124,7 +126,4 @@ specific IPU:
       o = builder.aiOnnx.add([o1, o2])
 
 Alternatively, for automatic placement of nodes on available IPUs, set the
-session option ``virtualGraphMode`` to ``popart.VirtualGraphMode.Auto``.
-See ``SessionOptions`` in the
-`PopART C++ API Reference
-<https://www.graphcore.ai/docs/popart-c-api-reference>`_.
+session option ``virtualGraphMode`` to ``popart.VirtualGraphMode.Auto``. For more information, on ``virtualGraphMode``: :py:func:`Python <popart.SessionOptions.virtualGraphMode>`, :cpp:func:`C++ <popart::SessionOptions::virtualGraphMode>`.
