@@ -173,13 +173,14 @@ popef::TensorInfo createTensorInfo(const popart::TensorInfo &info) {
  * \param metadata Data needed to run a model using Model Runtime.
  * \return \c popef::Anchor that was inserted to the \c popef::Metadata.
  */
-popef::Anchor putAnchorToMetadata(const std::string &name,
-                                  const PopStreamId &handle,
-                                  const bool isPerReplica,
-                                  const popef::TensorType tensorType,
-                                  const popef::TensorInfo &tensorInfo,
-                                  const std::vector<int64_t> &programs,
-                                  popef::Metadata &metadata) {
+popef::Anchor putAnchorToMetadata(
+    const std::string &name,
+    const PopStreamId &handle,
+    const bool isPerReplica,
+    const popef::TensorType tensorType,
+    const popef::TensorInfo &tensorInfo,
+    const std::vector<popef::ProgramFlow::ProgramIndexType> &programs,
+    popef::Metadata &metadata) {
   popef::Anchor anchor;
   anchor.setName(name);
   anchor.setHandle(handle);
@@ -590,15 +591,16 @@ void serializePopefAnchors(const popart::popx::Executablex &executablex,
   serializeCycleCountersAsPopefAnchors(executablex, metadata);
 }
 
-static const std::unordered_map<int64_t, std::string> &
+static const std::unordered_map<popef::ProgramFlow::ProgramIndexType,
+                                std::string> &
 programsMap(const popart::popx::Executablex &executablex) {
   const auto &customPrograms =
       executablex.lowering().getProgramHandleIndexMap();
   if (customPrograms.empty())
     return PopPrograms::commonPrograms;
 
-  static std::unordered_map<int64_t, std::string> out(
-      PopPrograms::commonPrograms);
+  static std::unordered_map<popef::ProgramFlow::ProgramIndexType, std::string>
+      out(PopPrograms::commonPrograms);
 
   std::transform(customPrograms.cbegin(),
                  customPrograms.cend(),
@@ -651,24 +653,25 @@ void serializePopefMetadata(const popart::popx::Executablex &executablex,
 
   serializePopefAnchors(executablex, rngBuffer, metadata, writer);
 
-  std::vector<int64_t> loadPrograms{
-      PopPrograms::ProgramIndex::WeightsFromHost,
-      PopPrograms::ProgramIndex::OptimizerFromHost};
-  std::vector<int64_t> mainPrograms{PopPrograms::ProgramIndex::Program};
-  std::vector<int64_t> savePrograms{PopPrograms::ProgramIndex::WeightsToHost};
+  using ProgramIndexType = popef::ProgramFlow::ProgramIndexType;
+  using ProgramIndex     = PopPrograms::ProgramIndex;
+  std::vector<ProgramIndexType> loadPrograms{ProgramIndex::WeightsFromHost,
+                                             ProgramIndex::OptimizerFromHost};
+  std::vector<ProgramIndexType> mainPrograms{ProgramIndex::Program};
+  std::vector<ProgramIndexType> savePrograms{ProgramIndex::WeightsToHost};
 
   if (!metadata.seedHandle().empty()) {
-    loadPrograms.push_back(PopPrograms::ProgramIndex::RandomSeedFromHost);
-    savePrograms.push_back(PopPrograms::ProgramIndex::RandomSeedToHost);
+    loadPrograms.push_back(ProgramIndex::RandomSeedFromHost);
+    savePrograms.push_back(ProgramIndex::RandomSeedToHost);
 
     if (ir.getSessionOptions().enableLoadAndOffloadRNGState) {
-      loadPrograms.push_back(PopPrograms::ProgramIndex::RngStateFromHost);
-      savePrograms.push_back(PopPrograms::ProgramIndex::RngStateToHost);
+      loadPrograms.push_back(ProgramIndex::RngStateFromHost);
+      savePrograms.push_back(ProgramIndex::RngStateToHost);
     }
   }
 
   if (ir.getSessionOptions().instrumentWithHardwareCycleCounter) {
-    savePrograms.push_back(PopPrograms::ProgramIndex::CycleCountTensorToHost);
+    savePrograms.push_back(ProgramIndex::CycleCountTensorToHost);
   }
 
   popef::ProgramFlow flow;

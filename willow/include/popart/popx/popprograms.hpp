@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <popef/Types.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/pritask.hpp>
 
@@ -63,7 +64,9 @@ public:
     N // The number of enums
   };
 
-  static const std::unordered_map<int64_t, std::string> commonPrograms;
+  static const std::unordered_map<popef::ProgramFlow::ProgramIndexType,
+                                  std::string>
+      commonPrograms;
 
   // Order of these enums is used for scheduling
   enum class ProgramFragmentIndex {

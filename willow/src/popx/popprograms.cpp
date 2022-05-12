@@ -39,9 +39,9 @@ namespace popx {
 
 std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex);
 
-const std::unordered_map<int64_t, std::string> PopPrograms::commonPrograms =
-    []() {
-      std::unordered_map<int64_t, std::string> out;
+const std::unordered_map<popef::ProgramFlow::ProgramIndexType, std::string>
+    PopPrograms::commonPrograms = []() {
+      std::unordered_map<popef::ProgramFlow::ProgramIndexType, std::string> out;
 
       for (int i = 0; i < PopPrograms::ProgramIndex::N; i++) {
         std::stringstream ss;
@@ -87,9 +87,7 @@ std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex index) {
   case PopPrograms::ProgramIndex::N:
     out << "N";
     break;
-  default: {
-    throw internal_error("Invalid value for ProgramIndex");
-  }
+  default: { throw internal_error("Invalid value for ProgramIndex"); }
   };
 
   return out;
@@ -158,9 +156,7 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: {
-    throw internal_error("Invalid value for ProgramFragmentIndex");
-  }
+  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
   };
   return out;
 }
