@@ -2824,6 +2824,8 @@ void Ir::constructBackwards() {
       growGradientVarUpdateOp(varId, mainGraphAliasModel);
       break;
     case VariableUpdateType::None:
+      logging::info("Tensor {} does not need a variable update.", tensor->id);
+      break;
     default:
       throw error("Unknown variable update approach");
     }
