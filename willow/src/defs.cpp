@@ -1725,6 +1725,11 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               "If unset, ctc_loss' data type is inferred from log_probs.",
               AttributeProto::INT,
               false)
+        .Attr("zeroInfinity",
+              "If set, infinite losses and the associated gradients are "
+              "zeroed-out",
+              AttributeProto::INT,
+              false)
         .TypeAndShapeInferenceFunction(CtcLossShapeInference))
 
 ONNX_OPERATOR_SET_SCHEMA_EX(

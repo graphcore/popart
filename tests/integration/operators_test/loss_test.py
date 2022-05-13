@@ -697,7 +697,8 @@ def test_nll_all_ingoreindex(op_tester):
 
 @pytest.mark.parametrize("blank", [0, 1])
 @pytest.mark.parametrize("reduction", ["none", "mean", "sum"])
-def test_ctc_loss(op_tester, blank, reduction):
+@pytest.mark.parametrize("zero_infinity", [False, True])
+def test_ctc_loss(op_tester, blank, reduction, zero_infinity):
     np.random.seed(0)
     reductionTypeMap = {
         "none": popart.ReductionType.NoReduction,
@@ -712,10 +713,9 @@ def test_ctc_loss(op_tester, blank, reduction):
     # number of classes (including blank)
     C = 3
     # max target length
-    S = 2
-
-    # fixed params
-    zero_infinity = False
+    # (bigger than input length when zero_infinity is enabled,
+    # so that inf losses can arise)
+    S = 2 if not zero_infinity else 8
 
     # [T, N, C] data (not yet logsoftmax'ed)
     logits_data = np.random.rand(T, N, C).astype(np.float32)
@@ -741,7 +741,9 @@ def test_ctc_loss(op_tester, blank, reduction):
 
         ctc = builder.aiGraphcore.ctcloss(
             [log_probs, targets, input_lengths, target_lengths],
-            reductionTypeMap[reduction], blank)
+            reductionTypeMap[reduction],
+            blank,
+            zeroInfinity=zero_infinity)
         builder.addOutputTensor(ctc)
 
         # Check shape inference.

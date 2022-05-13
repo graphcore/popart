@@ -37,10 +37,12 @@ namespace popart {
 CtcOp::CtcOp(const OperatorIdentifier &_opid,
              const ReductionType reduction_,
              const unsigned blank_,
+             const bool zeroInfinity_,
              const Op::Settings &_settings,
              const bool enableReducedClassesInLabel_,
              const DataType userOutputType_)
     : LossOp(_opid, _settings, reduction_), blank(blank_),
+      zeroInfinity(zeroInfinity_),
       enableReducedClassesInLabel(enableReducedClassesInLabel_),
       userOutputType(userOutputType_) {}
 
@@ -214,6 +216,7 @@ void CtcOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("reduction_type",
                      static_cast<int64_t>(getReductionType()));
   os.appendAttribute("blank", static_cast<int64_t>(blank));
+  os.appendAttribute("zeroInfinity", zeroInfinity);
   os.appendAttribute("enableReducedClassesInLabel",
                      enableReducedClassesInLabel);
 }
@@ -275,7 +278,8 @@ static OpDefinition ctclossOpDef(
      OpDefinition::Outputs({{"E", T1}, {"F", T1}}),
      OpDefinition::Attributes({{"reduction", {"*"}},
                                {"blank", {"*"}},
-                               {"outDataType", {"FLOAT|FLOAT16|UNDEFINED"}}})});
+                               {"outDataType", {"FLOAT|FLOAT16|UNDEFINED"}},
+                               {"zeroInfinity", {"*"}}})});
 
 static OpCreator<CtcOp> ctclossOpCreator(
     OpDefinitions({{Onnx::CustomOperators::Ctc, ctclossOpDef}}),
@@ -286,6 +290,9 @@ static OpCreator<CtcOp> ctclossOpCreator(
       unsigned blank = static_cast<unsigned>(
           info.attributes.getAttribute<Attributes::Int>("blank"));
       ReductionType reduction = LossOp::reductionTypeFromString(reductionStr);
+
+      bool zeroInfinity =
+          info.attributes.getAttribute<Attributes::Int>("zeroInfinity", 0) != 0;
 
       // Get data type from attributes.
       int64_t i64_to;
@@ -304,6 +311,7 @@ static OpCreator<CtcOp> ctclossOpCreator(
       return std::unique_ptr<CtcOp>(new CtcOp(info.opid,
                                               reduction,
                                               blank,
+                                              zeroInfinity,
                                               info.settings,
                                               enableReducedClassesInLabel,
                                               outDataType));

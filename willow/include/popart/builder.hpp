@@ -694,6 +694,8 @@ public:
    * \param blank The integer representing the blank class.
    * \param outDataType The data type of the output tensors. Default =
    *      `UNDEFINED`.
+   * \param zeroInfinity If `true` infinite losses and the associated
+   *      gradients are zeroed-out. Default = `false`.
    * \param debugContext Optional debug information
    * \return The tensor id of the result tensor.
    */
@@ -701,6 +703,7 @@ public:
                    const ReductionType reduction    = ReductionType::Mean,
                    const unsigned blank             = 0,
                    const std::string &outDataType   = "UNDEFINED",
+                   const bool zeroInfinity          = false,
                    const DebugContext &debugContext = {});
 
   // Additional version of ctcloss that returns both output tensors. The second
@@ -712,6 +715,7 @@ public:
            const ReductionType reduction    = ReductionType::Mean,
            const unsigned blank             = 0,
            const std::string &outDataType   = "UNDEFINED",
+           const bool zeroInfinity          = false,
            const DebugContext &debugContext = {});
 
   /**

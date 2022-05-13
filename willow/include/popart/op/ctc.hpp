@@ -47,6 +47,7 @@ public:
   CtcOp(const OperatorIdentifier &_opid,
         const ReductionType reduction,
         const unsigned blank,
+        const bool zeroInfinity,
         const Op::Settings &settings_,
         const bool enableReducedClassesInLabel,
         const DataType outDataType = DataType::UNDEFINED);
@@ -65,6 +66,7 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
   unsigned getBlank() const { return blank; }
+  bool getZeroInfinity() const { return zeroInfinity; }
   virtual void appendOutlineAttributes(OpSerialiserBase &) const final;
 
   unsigned getBatchSize() const;
@@ -80,6 +82,7 @@ public:
 
 private:
   const unsigned blank;
+  const bool zeroInfinity;
   const bool enableReducedClassesInLabel;
   const DataType userOutputType;
 };

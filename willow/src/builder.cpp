@@ -899,9 +899,11 @@ TensorId AiGraphcoreOpset1::ctcloss(const std::vector<TensorId> &args,
                                     const ReductionType reduction,
                                     const unsigned blank,
                                     const std::string &outDataType,
+                                    const bool zeroInfinity,
                                     const DebugContext &debugContext) {
   // Call _ctcloss but only return the first output.
-  auto outputs = _ctcloss(args, reduction, blank, outDataType, debugContext);
+  auto outputs =
+      _ctcloss(args, reduction, blank, outDataType, zeroInfinity, debugContext);
   return outputs.at(0);
 }
 
@@ -910,6 +912,7 @@ AiGraphcoreOpset1::_ctcloss(const std::vector<TensorId> &args,
                             const ReductionType reduction,
                             const unsigned blank,
                             const std::string &outDataType,
+                            const bool zeroInfinity,
                             const DebugContext &debugContext) {
   std::string reductionString = LossOp::reductionTypeToString(reduction);
 
@@ -918,7 +921,8 @@ AiGraphcoreOpset1::_ctcloss(const std::vector<TensorId> &args,
   std::map<std::string, popart::any> attributes = {
       {"reduction", reductionString},
       {"blank", blank},
-      {"outDataType", static_cast<int>(onnxutil::getTPDataType(toDataType))}};
+      {"outDataType", static_cast<int>(onnxutil::getTPDataType(toDataType))},
+      {"zeroInfinity", zeroInfinity}};
 
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});

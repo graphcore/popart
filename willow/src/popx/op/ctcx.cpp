@@ -85,6 +85,11 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
     const auto &inputLengths  = getInTensor(CtcOp::getInputLengthsInIndex());
     const auto &targetLengths = getInTensor(CtcOp::getTargetLengthsInIndex());
 
+    poplar::OptionFlags options;
+    if (op.getZeroInfinity()) {
+      options.set("zeroInfinity", "true");
+    }
+
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
         graph().getPoplarGraph(),
         outDtype,
@@ -95,7 +100,8 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
         prog.getPoplarSequence(),
         op.getBlank(),
         *plan,
-        debugContext("lossAndGrad"));
+        debugContext("lossAndGrad"),
+        options);
 
     snap::Tensor ctcLoss = snap::Tensor{result.first, graph()};
 
