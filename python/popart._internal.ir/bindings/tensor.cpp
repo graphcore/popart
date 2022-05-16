@@ -15,6 +15,7 @@
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp> // IWYU pragma: keep
 #include <popart/names.hpp>
+#include <popart/session.hpp>
 #include <popart/tensor.hpp>
 
 #include "../../popart/shared_cpp/np_utils.hpp"
@@ -224,7 +225,7 @@ void bindTensor(py::module &m) {
       .def("dataAsBool", [](Tensor &self) { return getTensorData<bool>(self); })
       .def(
           "writeTensorData",
-          [](Tensor &self, py::array &npArray) {
+          [](Tensor &self, py::array &npArray, InferenceSession &ses) {
             if (!isContiguous(npArray)) {
               throw error(
                   "writeToMemory is unable to use the numpy output array for "
@@ -236,6 +237,8 @@ void bindTensor(py::module &m) {
             }
             self.tensorData()->resetData(
                 self.info, static_cast<void *>(npArray.request().ptr));
+            self.tensorData()->resetDataInExecutablex(
+                self, ses, static_cast<void *>(npArray.request().ptr));
           })
       .def("setTensorLocationInfo",
            [](Tensor &self, TensorLocation &tLocation, int a, int b) {

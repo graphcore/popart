@@ -12,6 +12,8 @@ class TensorProto;
 
 namespace popart {
 class TensorInfo;
+class Tensor;
+class Session;
 
 // A class to hold data, used
 // within the popart::Tensor class.
@@ -42,6 +44,9 @@ public:
   // reset the data in the TensorData by copying from src.
   // Input data must be the same size as the existing data_
   void resetData(const TensorInfo &, const void *src);
+
+  // Reset the data for executablex by copying from src.
+  void resetDataInExecutablex(Tensor &, Session &, const void *src);
 
   // reset the data in the TensorData by copying from
   // ONNX_NAMESPACE::TensorProto. Input data must be the same size as the

@@ -381,7 +381,7 @@ class Session:
                     f"The shape of the input array {data.shape} must match the "
                     f"shape of the tensor {tensor.id} : {tensor.shape}")
 
-            tensor._pb_tensor.writeTensorData(data)
+            tensor._pb_tensor.writeTensorData(data, self._pb_session)
 
         if self.device.isAttached:
             self.weights_from_host()

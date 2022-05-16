@@ -22,6 +22,8 @@ add_popart_py_unit_test(popxl-test_roialign test_roialign.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_argmax test_argmax.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_argmin test_argmin.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-test_exp test_exp.py VARIANTS IpuModel)
+add_popart_py_unit_test(popxl-write_variables_data_cache test_write_variables_data_cache.py VARIANTS Hw)
+
 
 # popxl-grouped_initialization test starts here
 set(retieval_mode_options "all_replicas" "one_per_group")

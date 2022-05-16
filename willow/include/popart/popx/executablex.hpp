@@ -96,6 +96,8 @@ public:
 
   const SessionOptions &getSessionOptions() const { return options; }
 
+  std::vector<Tensor *> &getWeightTensors() { return weightTensors; }
+
   const std::vector<Tensor *> &getWeightTensors() const {
     return weightTensors;
   }

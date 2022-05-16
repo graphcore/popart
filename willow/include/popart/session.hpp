@@ -497,6 +497,11 @@ public:
   /**
    * Get the executable associated with the Session.
    */
+  popx::Executablex &getExecutable() { return *executable_; }
+
+  /**
+   * Get the executable associated with the Session.
+   */
   const popx::Executablex &getExecutable() const { return *executable_; }
 
   /**

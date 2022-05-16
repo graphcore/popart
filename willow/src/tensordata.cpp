@@ -1,5 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -9,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <popart/error.hpp>
+#include <popart/session.hpp>
 #include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 
@@ -54,6 +56,33 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
   }
   data_.resize(info.nbytes());
   std::memcpy(data_.data(), from, info.nbytes());
+}
+
+void TensorData::resetDataInExecutablex(Tensor &tensorIr,
+                                        Session &ses,
+                                        const void *from) {
+
+  auto &weightTensors = ses.getExecutable().getWeightTensors();
+
+  TensorId tensorIrId = tensorIr.id;
+  for (auto *tensorExe : weightTensors) {
+    if (tensorExe->id == tensorIrId) {
+      if (!tensorExe->hasTensorData()) {
+        throw error(
+            "[TensorData] Executable weight tensor {} does not have data.",
+            tensorIrId);
+      }
+
+      if (tensorExe->info != tensorIr.info) {
+        throw error("[TensorData] Info of executable weight tensor {} is not "
+                    "compatible with info of data source tensor {}.",
+                    tensorExe->id,
+                    tensorIrId);
+      }
+
+      tensorExe->tensorData()->resetData(tensorExe->info, from);
+    }
+  }
 }
 
 void TensorData::resetDataWithNonMatchingSize(const TensorInfo &info,
