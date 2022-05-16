@@ -134,6 +134,14 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   device_.reset(new popx::Devicex(*executable_, deviceInfo));
 }
 
+void Session::setDeviceInfo(std::shared_ptr<DeviceInfo> deviceInfo) {
+  POPART_TRACEPOINT();
+  deviceInfo_ = std::move(deviceInfo);
+  ir->setDeviceInfo(*deviceInfo_);
+  lowering_->setDeviceInfo(deviceInfo_);
+  device_->setDeviceInfo(deviceInfo_);
+}
+
 std::vector<uint32_t> Session::getRNGState() {
   if (!ir->getSessionOptions().enableLoadAndOffloadRNGState) {
     throw runtime_error("Trying to get the RNG state, but the session option "

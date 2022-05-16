@@ -587,6 +587,9 @@ public:
   }
 
   const DeviceInfo *getDeviceInfo() const { return deviceInfo.get(); }
+  void setDeviceInfo(std::shared_ptr<DeviceInfo> deviceInfo_) {
+    deviceInfo = std::move(deviceInfo_);
+  }
 
   std::unique_ptr<PopOpx> createOpx(Op *);
 

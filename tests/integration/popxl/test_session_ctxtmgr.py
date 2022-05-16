@@ -5,7 +5,7 @@ import popxl
 import popxl.ops as ops
 import numpy as np
 
-from popxl_test_device_helpers import attach, mk_session_with_test_device
+from popxl_test_device_helpers import mk_session_with_test_device
 
 
 def test_session_runtime_fns_guard_attached_behaviour():
@@ -52,22 +52,10 @@ def test_session_runtime_fns_guard_attached_behaviour():
     assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
 
     # Can run outside context if manually attached
-    attach(session.device)
-    assert_all_fns_throw(require_attach_runtime_fns, should_throw=False)
-    assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
-
-    # Manual detach disbars run again
-    session.device.detach()
-    assert_all_fns_throw(require_attach_runtime_fns, should_throw=True)
-    assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
-
-    # Entering context attaches
-    session._pb_session.setEngineIsLoaded(False)
     with session:
         assert_all_fns_throw(require_attach_runtime_fns, should_throw=False)
         assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
 
-    # Leaving context detaches
     assert_all_fns_throw(require_attach_runtime_fns, should_throw=True)
     assert_all_fns_throw(can_be_detached_runtime_fns, should_throw=False)
 
@@ -87,7 +75,7 @@ def test_reentry():
         with session:
             pass
         # weightsToHost, detach
-        assert not session.device.isAttached
+        assert not session.is_attached
 
 
 def test_session_ctxtmgr_attach_detach():
@@ -101,46 +89,27 @@ def test_session_ctxtmgr_attach_detach():
     session: popxl.Session = mk_session_with_test_device(ir)
 
     # Starts not attached
-    assert not session.device.isAttached
+    assert not session.is_attached
     with session:
         # Attached on enter
-        assert session.device.isAttached
+        assert session.is_attached
 
         # Nested enter maintains attach
         with session:
-            assert session.device.isAttached
+            assert session.is_attached
         # Exiting nested session does not clobber outer context's attach
-        assert session.device.isAttached
-
-        # Can manually detach
-        session.device.detach()
-        assert not session.device.isAttached
-
-        # Must do this manually after every detach, but not exposed, so the
-        # manual API is unusable.
-        session._pb_session.setEngineIsLoaded(False)
-
-        # Nested enter will attach
-        with session:
-            assert session.device.isAttached
-        # Nested exit will detach as outer context was detached
-        assert not session.device.isAttached
-
-        # Manual attach
-        session._pb_session.setEngineIsLoaded(False)
-        attach(session.device)
-        assert session.device.isAttached
+        assert session.is_attached
 
         # Test `run`
         session.run()
-        assert session.device.isAttached
+        assert session.is_attached
 
         # Test `weights_to_host`
         session.weights_to_host()
-        assert session.device.isAttached
+        assert session.is_attached
 
     # Exit ensures detach
-    assert not session.device.isAttached
+    assert not session.is_attached
 
 
 def test_session_ctxtmgr_does_weights_from_host_on_enter():
@@ -223,12 +192,12 @@ def test_session_ctxtmgr_exit_weights_to_host_behaviour():
 
         # No explicit weights_to_host()
 
-    assert not session.device.isAttached
+    assert not session.is_attached
 
     w_h = session.get_tensor_data(w)
 
     # Should not have attached due to get_tensor_data
-    assert not session.device.isAttached
+    assert not session.is_attached
 
     # Should be the new value of w that was updated on device
     assert np.allclose(w_h, MAGIC)
