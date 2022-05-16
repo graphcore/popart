@@ -11,7 +11,6 @@ add_popart_py_unit_test(popxl-rts_autodiff test_rts_autodiff.py VARIANTS IpuMode
 add_popart_py_unit_test(popxl-gather_oor test_gather_oor.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-session test_session.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-session_ctxtmgr test_session_ctxtmgr.py VARIANTS Cpu IpuModel Hw)
-add_popart_py_unit_test(popxl-session_set_device test_session_set_device.py VARIANTS Hw)
 add_popart_py_unit_test(popxl-tensor_data test_tensor_data.py VARIANTS IpuModel)
 add_popart_py_unit_test(popxl-session_lazy_weights_to_host test_session_lazy_weights_to_host.py VARIANTS IpuModel Hw)
 add_popart_py_unit_test(popxl-test_io_sizes test_io_sizes.py VARIANTS IpuModel)

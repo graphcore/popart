@@ -511,11 +511,6 @@ public:
    */
   void updateEngineCache();
 
-  /**
-   * Set the DeviceInfo of the Session.
-   */
-  void setDeviceInfo(std::shared_ptr<DeviceInfo> deviceInfo);
-
 protected:
   /**
    * Select a device type.

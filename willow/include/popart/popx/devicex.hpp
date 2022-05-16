@@ -191,9 +191,6 @@ public:
 
   const DeviceInfo *getDeviceInfo() const { return deviceInfo.get(); }
   DeviceInfo *getDeviceInfo() { return deviceInfo.get(); }
-  void setDeviceInfo(std::shared_ptr<DeviceInfo> deviceInfo_) {
-    deviceInfo = std::move(deviceInfo_);
-  }
 
   // Return stored input tensors based on how they are allocated
   std::set<TensorId> getLinearlyCreatedInputTensors() const;

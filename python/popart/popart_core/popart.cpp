@@ -2080,7 +2080,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def("setEngineIsLoaded",
             &InferenceSession::popxlSetEngineIsLoaded,
             py::arg("isLoaded"));
-    cls.def("_setDeviceInfo", &InferenceSession::setDeviceInfo);
   }
   {
     py::class_<TrainingSession> cls(m, "_TrainingSessionCore");
@@ -3146,18 +3145,7 @@ PYBIND11_MODULE(popart_core, m) {
              SINGLE_LINE_DOC(popart, DeviceType, IpuModel));
     en.value("Cpu", DeviceType::Cpu, SINGLE_LINE_DOC(popart, DeviceType, Cpu));
     en.value("Ipu", DeviceType::Ipu, SINGLE_LINE_DOC(popart, DeviceType, Ipu));
-    en.value("OfflineIpu",
-             DeviceType::OfflineIpu,
-             SINGLE_LINE_DOC(popart, DeviceType, OfflineIpu));
     en.value("Sim", DeviceType::Sim, SINGLE_LINE_DOC(popart, DeviceType, Sim));
-    en.attr("__str__") = py::cpp_function(
-        [](const DeviceType &sp) {
-          std::stringstream ss;
-          ss << sp;
-          return ss.str();
-        },
-        py::name("__str__"),
-        py::is_method(en));
   }
   {
     py::enum_<DeviceConnectionType> en(m, "DeviceConnectionType");
@@ -3302,7 +3290,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_property_readonly("type", &DeviceInfo::getType);
     cls.def_property_readonly("connectionType", &DeviceInfo::getConnectionType);
     cls.def_property_readonly("version", &DeviceInfo::getVersion);
-    cls.def_property_readonly("ipuVersion", &DeviceInfo::getIpuVersion);
     cls.def_property_readonly("id", &DeviceInfo::getId);
     cls.def_property_readonly("numIpus", &DeviceInfo::getNumIpus);
     cls.def_property_readonly("tilesPerIPU", &DeviceInfo::getTilesPerIPU);

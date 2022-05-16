@@ -4,7 +4,7 @@ import pytest
 import popxl
 import popxl.ops as ops
 
-from popxl_test_device_helpers import mk_session_with_test_device
+from popxl_test_device_helpers import attach, mk_session_with_test_device
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -77,11 +77,29 @@ def test_get_tensor_data_elides_weights_to_host_if_host_weights_are_in_sync(
         )
 
         session.run()
-        assert session.is_attached
+        assert session.device.isAttached
         session.get_tensor_data(v)  # miss
         session.get_tensor_data(w)  # hit
         session.get_tensor_data(v)  # hit
         assert_num_weights_to_host(
             1,
             "Expected exactly 1 WeightsToHost when calling get_tensor_data repeatedly after run."
+        )
+
+    # As exiting ctxt caused a weights_to_host.
+    clear_log()
+
+    # Test get_tensor_data will get latest weights outside of context IF
+    # manually attached.
+    attach(session.device)
+    # Note using device ctxt to ensure detach, not full Session ctxt.
+    # Note device ctxtmgr does not attach, only detach on exit.
+    with session.device:
+        session.run()
+        assert session.device.isAttached
+        session.get_tensor_data(v)  # miss
+        session.get_tensors_data([w, v])  # hit
+        assert_num_weights_to_host(
+            1,
+            "Expected exactly 1 WeightsToHost when calling get_tensor_data repeatedly after run outside of the context but with manual attach."
         )

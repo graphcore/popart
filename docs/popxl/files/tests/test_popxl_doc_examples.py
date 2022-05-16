@@ -88,7 +88,7 @@ class TestPythonDocExamples(ExamplesTester):
                         file_dir=working_dir,
                         working_dir=working_dir)
 
-    def test_documentation_popxl_get_set_tensors(self):
+    def test_documentation_popart_ir_get_set_tensors(self):
         """Test the popxl getting / setting tensor data example"""
         filename = "tensor_get_write.py"
         self.run_python(filename,

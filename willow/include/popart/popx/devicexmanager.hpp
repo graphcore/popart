@@ -78,10 +78,6 @@ public:
     return device.getTarget();
   }
 
-  std::string getIpuVersion() const override {
-    return getTarget().getTargetArchString();
-  }
-
   std::set<Devicex *> previouslyLoadedDevicexs;
 
   virtual bool isAttached() const override { return isAttached_; }
@@ -185,10 +181,6 @@ public:
   }
   virtual int getNumWorkerContexts() const override {
     return target.getNumWorkerContexts();
-  }
-
-  std::string getIpuVersion() const override {
-    return getTarget().getTargetArchString();
   }
 
   virtual std::vector<unsigned> getDriverIds() const override { return {0}; }

@@ -10,7 +10,7 @@ from popxl.streams import DeviceToHostStream, HostToDeviceStream
 from popxl.tensor import Constant, HostScalarTensor, Variable
 from typing_extensions import Literal
 
-from popxl.utils import _acquire_hw_device_with_timeout, _to_device_info, _popxl_to_numpy, to_numpy
+from popxl.utils import _to_device_info, _popxl_to_numpy, to_numpy
 from popxl.tensor import Tensor
 
 d2hStreamBufferMaps = Mapping[DeviceToHostStream, np.ndarray]
@@ -23,6 +23,7 @@ class Session:
             self,
             ir: Ir,
             device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu",
+            num_ipus: Optional[int] = None,
     ) -> None:
         """
         Construct a session object.
@@ -84,28 +85,33 @@ class Session:
         # Logs to DEBUG
         self._ir.logIr()
 
-        if isinstance(device_desc, popart.DeviceInfo):
-            self._device = device_desc
-        else:
-            self._device = _to_device_info(device_type=device_desc,
-                                           num_ipus=self._get_ipu_count())
+        if num_ipus is None:
+            num_ipus = self._get_ipu_count()
+        device = None
+        device = _to_device_info(device_type=device_desc, num_ipus=num_ipus)
+        if device is None:
+            raise RuntimeError(
+                f"Could not aquire a device with device_type={device_desc}, \
+            num_ipus={num_ipus}.")
+
+        self._device = device
 
         # Initialise stack of "was attached" states when entering the Session
         # context
-        self._was_attached_stack: List[Union[bool, popart.DeviceInfo]] = []
+        self._was_attached_stack: List[bool] = []
 
         # Note: This uses the underlying popart .InferenceSession class, but supports BOTH inference
         # and training (via the autodiff transform). We use the  popart.InferenceSession class to
         # avoid any automatic autodiff-like transformations we want to do manually in popxl.
-        self._pb_session = popart.InferenceSession.fromIr(
-            ir=self._ir, deviceInfo=self._device)
+        self._pb_session = popart.InferenceSession.fromIr(ir=self._ir,
+                                                          deviceInfo=device)
 
         self._pb_session.prepareDevice(loadEngine=False)
 
     # Methods:
 
     def _assert_attached_before_runtime(self):
-        if not self.is_attached:
+        if not self.device.isAttached:
             raise ValueError(
                 'Must be attached to device before calling a runtime function. Put the call inside a `Session` context, for example `with session: session.run()`.'
             )
@@ -282,7 +288,7 @@ class Session:
         #      return the current host weights.
         #   3) The host weights are already in sync. There is no need to fetch
         #      the weights again.
-        if any_variable and self.is_attached and not self._pb_session.areHostWeightsInSync(
+        if any_variable and self.device.isAttached and not self._pb_session.areHostWeightsInSync(
         ):
             self.weights_to_host()
 
@@ -377,7 +383,7 @@ class Session:
 
             tensor._pb_tensor.writeTensorData(data, self._pb_session)
 
-        if self.is_attached:
+        if self.device.isAttached:
             self.weights_from_host()
 
     def create_host_outputs(self) -> d2hStreamBufferMaps:
@@ -456,49 +462,40 @@ class Session:
         return self.ir_
 
     @property
-    def is_attached(self) -> bool:
-        """Return if the session is attached to a device
+    def device(self) -> popart.DeviceInfo:
+        """Return the popart.DeviceInfo object representing the device for this session to run on.
         """
-        return self._device.isAttached
+        return self._device
 
-    def _set_device(self, device: popart.DeviceInfo):
-        """Change the Session to use a different device
+    @device.setter
+    def device(self, device: popart.DeviceInfo) -> None:
+        """Setter for :func:`~popxl.Session.device`.
 
         Args:
-            device (popart.DeviceInfo): Device to use.
+            device (popart.DeviceInfo): The popart.DeviceInfo to set this to.
         """
         self._device = device
-        self._pb_session._setDeviceInfo(device)
 
     def __enter__(self) -> 'Session':
         """
         Enter the context of this ``Session``.
 
-        If not already attached to a device, this will attach to an available device and perform a
+        If not already attached to device, this will attach and perform a
         ``weights_from_host``.
 
         See the PopXL User Guide entry on ``Session`` for a more comprehensive
         guide to ``Session``s and the context manager.
         """
-        # Only weights_from_host if going from detached->attached.
-        should_setup = not self.is_attached
 
-        # If the current device is an OfflineIpu then acquire a proper device
-        if self._device.type == popart.DeviceType.OfflineIpu:
-            # Store the offline device to be used on context exit
-            self._was_attached_stack.append(self._device)
-            self._set_device(
-                _acquire_hw_device_with_timeout(self._device.numIpus))
-        else:
-            self._was_attached_stack.append(self.is_attached)
-            # This is needed for when device has been provided by the user.
-            if not self.is_attached:
-                self._device.attach()
-                # On Hw, above will not block until attach, only the below call will.
-                if not self.is_attached:
-                    self._device.tryAttachUntilTimeout()
+        self._was_attached_stack.append(self.device.isAttached)
 
-        if should_setup:
+        # Only attach and weights_from_host if going from detached->attached.
+        if not self.device.isAttached:
+            self.device.attach()
+            # On Hw, above will not block until attach, only the below call will.
+            if not self.device.isAttached:
+                self.device.tryAttachUntilTimeout()
+
             self.weights_from_host()
 
         return self
@@ -507,7 +504,7 @@ class Session:
         """
         Exit the context of this ``Session``.
 
-        If you were not attached when entering this context, this will perform a
+        If you were attached when entering this context, this will perform a
         ``weights_to_host`` then detach.
 
         See the PopXL User Guide entry on ``Session`` for a more comprehensive
@@ -517,18 +514,13 @@ class Session:
         # Teardown context only if we were not attached when entering it. Thus
         # if we were already attached on enter, we will still be attached after
         # exit.
-        was_attached_or_device = self._was_attached_stack.pop()
+        was_attached = self._was_attached_stack.pop()
 
-        should_teardown = not was_attached_or_device or isinstance(
-            was_attached_or_device, popart.DeviceInfo)
+        should_teardown = not was_attached
         if should_teardown:
             self.weights_to_host()
-            self._device.detach()
+            self.device.detach()
             self._pb_session.setEngineIsLoaded(False)
-
-        # If a DeviceInfo was stored in the stack then restore it.
-        if isinstance(was_attached_or_device, popart.DeviceInfo):
-            self._set_device(was_attached_or_device)
 
         # Note, if the user was attached, but then manually detached inside the
         # context, we do not restore their pre-enter attached state.

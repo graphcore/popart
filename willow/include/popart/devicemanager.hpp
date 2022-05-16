@@ -84,8 +84,6 @@ public:
   virtual int getTilesPerIPU() const = 0;
   /// Get the number of worker contexts per tile.
   virtual int getNumWorkerContexts() const = 0;
-  // Get the IPU version
-  virtual std::string getIpuVersion() const = 0;
 
   virtual std::vector<unsigned> getDriverIds() const = 0;
 

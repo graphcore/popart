@@ -31,16 +31,26 @@ ir.num_host_transfers = 1
 # Enter Ctxt 1, causes attach, weights_from_host
 with popxl.Session(ir, "ipu_model") as session:
     # Attach, weights_from_host
-    assert session.is_attached
+    assert session.device.isAttached
 
     # Enter Ctxt 2, still attached, no weights_from_host again
     with session:
-        assert session.is_attached
+        assert session.device.isAttached
+
+        # Manual detach then enter Ctxt 3. Causes attach and weights_from_host
+        session.device.detach()
+        with session:
+            assert session.device.isAttached
+        # Exit Ctxt 3, causes detach and weights_to_host, as detached on enter
+        assert not session.device.isAttached
+
+        # Manual re-attach
+        session.device.attach()
 
     # Exit Ctxt 2, no detach or weights_to_host, as attached on enter
-    assert session.is_attached
+    assert session.device.isAttached
 
 # Exit Ctxt3, causes detach and weights weights_to_host as detached on enter
-assert not session.is_attached
+assert not session.device.isAttached
 
 # Session end
