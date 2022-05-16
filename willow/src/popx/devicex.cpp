@@ -1102,7 +1102,11 @@ void Devicex::loadEngineAndConnectStreams() {
     throw runtime_error("Trying to load an engine but no compiled engine. Did "
                         "you forget to call prepareDevice()?");
   }
-  DevicexInfo &di = dynamic_cast<DevicexInfo &>(*deviceInfo);
+  auto di_p = dynamic_cast<DevicexInfo *>(deviceInfo.get());
+  if (di_p == nullptr) {
+    throw internal_error("DeviceInfo could not be cast to DevicexInfo.");
+  }
+  DevicexInfo &di = *di_p;
 
   // Let the device info know that this devicex's engine
   // has most recently loaded its engine onto the poplar

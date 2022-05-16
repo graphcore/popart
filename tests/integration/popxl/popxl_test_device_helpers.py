@@ -11,17 +11,8 @@ import test_util as tu
 import os
 
 
-def is_hw(device: popart.DeviceInfo) -> bool:
-    return device.type == popart.DeviceType.Ipu
-
-
-def attach(device: popart.DeviceInfo) -> bool:
-    # If OnDemand Hw, just calling `attach` will immediately return False,
-    # not wait until it can attach.
-    if is_hw(device):
-        return device.tryAttachUntilTimeout()
-    else:
-        return device.attach()
+def get_test_device_with_timeout(numIpus: int):
+    return tu.create_test_device(numIpus).device
 
 
 def mk_session_with_test_device(ir: popxl.Ir) -> popxl.Session:

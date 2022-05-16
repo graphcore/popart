@@ -1,4 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+import sys
+import time
 from typing import Union, Optional, TYPE_CHECKING
 
 import numpy as np
@@ -125,8 +127,7 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
 
     Args:
         device_type (Literal[str]): One of:
-            "ipu_hw": Real IPU hardware. Uses DeviceConnectionType == OnDemand and
-                DeviceSelectionCriterion == Random.
+            "ipu_hw": OfflineIpuDevice matching the current system.
             "ipu_model": IPU model.
             "cpu": CPU model. Does not support replication.
         num_ipus (int, optional): Number of ipus to request. Defaults to 1.
@@ -138,7 +139,6 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
     Returns:
         popart.DeviceInfo: The device info for the given options.
     """
-
     if device_type == "cpu":
         if num_ipus > 1:
             raise ValueError(f"For a cpu device, multiple devices "
@@ -148,13 +148,93 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
         return popart.DeviceManager().createIpuModelDevice(
             {"numIPUs": num_ipus})
     elif device_type == "ipu_hw":
-        # TODO: T56055 prompt the user that the session is waiting for a device.
         dm = popart.DeviceManager()
-        dm.setOnDemandAttachTimeout(HW_DEVICE_CONNECTION_TIMEOUT)
-        device = dm.acquireAvailableDevice(
-            num_ipus,
-            connectionType=popart.DeviceConnectionType.OnDemand,
-            selectionCriterion=popart.DeviceSelectionCriterion.Random)
-        return device
-    raise ValueError(f"Incorrect device type provided: {device_type}, must be"
-                     "one of: `hw`, `ipu_model`, `cpu`")
+        devices = dm.enumerateDevices(numIpus=num_ipus)
+        if len(devices) < 1:
+            raise RuntimeError(
+                f"Failed to acquire device with {num_ipus} IPUs. Ensure that there are "
+                "sufficient IPUs available. If you have enabled the Poplar SDK you can "
+                "check device availability with the `gc-monitor` command-line utility."
+            )
+        device = devices[0]
+        return dm.createOfflineIPUDevice({
+            "numIPUs": device.numIpus,
+            "ipuVersion": device.ipuVersion
+        })
+    raise ValueError(f"Incorrect device type provided: {device_type}, must be "
+                     "one of: `ipu_hw`, `ipu_model`, `cpu`")
+
+
+def _print_acquired():
+    # Check if stdout supports `utf-8` to avoid errors when printing
+    if sys.stdout.encoding.lower() in {"utf-8", "utf_8"}:
+        rocket = "\U0001F680"
+    else:
+        rocket = "device"
+    print(f". Acquired {rocket}", end="\n")
+
+
+def _print_waiting(elapsed, time_until_summary, update_frequency, devices):
+    message = f"\r{devices} matching device{'s' if devices > 1 else ''}. Waiting for available device."
+    dots = min(time_until_summary // update_frequency,
+               elapsed // update_frequency)
+    message += ("." * int(dots))
+    if elapsed >= time_until_summary:
+        # After `time_until_summary` seconds just print the elapsed time instead of more dots
+        message += f" waited {int(elapsed)}s"
+    print(message, end="")
+
+
+def _acquire_hw_device_with_timeout(num_ipus: int = 1,
+                                    timeout: int = HW_DEVICE_CONNECTION_TIMEOUT
+                                    ) -> popart.DeviceInfo:
+    """Acquire a real IPU device with `num_ipus`.
+
+    If there are matching devices available but they are busy, this method will wait for an available device.
+
+    Args:
+        num_ipus (int, optional): Number of IPUs required. Defaults to 1.
+        timeout (int, optional): How many seconds to wait for matching devices to be available. Defaults to HW_DEVICE_CONNECTION_TIMEOUT.
+
+    Raises:
+        RuntimeError: If there are no matching devices
+        RuntimeError: If timeout is reached before a matching device is available
+
+    Returns:
+        popart.DeviceInfo: Acquired device
+    """
+    devices = popart.DeviceManager().enumerateDevices(numIpus=num_ipus)
+    if len(devices) < 1:
+        raise RuntimeError(
+            f"Failed to acquire device with {num_ipus} IPUs. Ensure that there are "
+            "sufficient IPUs available. If you have enabled the Poplar SDK you can "
+            "check device availability with the `gc-monitor` command-line utility."
+        )
+    start = time.time()
+    elapsed = 0
+    next_message = 0
+    update_frequency = 1
+    wait_time = 0.1
+    time_until_summary_message = 15
+
+    while elapsed <= timeout:
+        for device in devices:
+            device.attach()
+            if device.isAttached:
+                if elapsed > 0:
+                    # Print only if we've waited for a device
+                    _print_acquired()
+                return device
+
+        time.sleep(wait_time)
+
+        elapsed = time.time() - start
+        if elapsed > next_message:
+            _print_waiting(elapsed, time_until_summary_message,
+                           update_frequency, len(devices))
+            next_message += update_frequency
+
+    print(end="\n")
+    raise RuntimeError(
+        "Reached timeout waiting for an available device. Check `gc-monitor` for current device usage."
+    )
