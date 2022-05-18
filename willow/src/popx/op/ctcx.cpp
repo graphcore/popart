@@ -69,27 +69,23 @@ CtcOpx::~CtcOpx() = default;
 void CtcOpx::grow(snap::program::Sequence &prog) const {
 
   const auto &op = getOp<CtcOp>();
-  const auto &ir = op.getIr();
 
-  if (!ir.isTraining()) {
-    throw error("CtcOpx is currently not supported for infererence sessions");
-  } else {
+  auto ctcLossPopartTensor = op.output->tensor(CtcOp::getCtcLossOutIndex());
+  auto outDtype = popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
 
-    const auto &op           = getOp<CtcOp>();
-    auto ctcLossPopartTensor = op.output->tensor(CtcOp::getCtcLossOutIndex());
-    auto outDtype =
-        popType(ctcLossPopartTensor->info.getDataTypeInfo()->type());
+  const auto &logProbs      = getInTensor(CtcOp::getLogProbsInIndex());
+  const auto &targets       = getInTensor(CtcOp::getTargetsInIndex());
+  const auto &inputLengths  = getInTensor(CtcOp::getInputLengthsInIndex());
+  const auto &targetLengths = getInTensor(CtcOp::getTargetLengthsInIndex());
 
-    const auto &logProbs      = getInTensor(CtcOp::getLogProbsInIndex());
-    const auto &targets       = getInTensor(CtcOp::getTargetsInIndex());
-    const auto &inputLengths  = getInTensor(CtcOp::getInputLengthsInIndex());
-    const auto &targetLengths = getInTensor(CtcOp::getTargetLengthsInIndex());
+  poplar::OptionFlags options;
+  if (op.getZeroInfinity()) {
+    options.set("zeroInfinity", "true");
+  }
 
-    poplar::OptionFlags options;
-    if (op.getZeroInfinity()) {
-      options.set("zeroInfinity", "true");
-    }
-
+  // when CtcOp is used in an inference session to compute a loss for the
+  // purposes of validation, it only return loss.
+  if (op.output->hasIndex(CtcOp::getLogProbsGradientWrtCtcLossOutIndex())) {
     auto result = popnn::ctc::calcLossAndGradientLogProbabilities(
         graph().getPoplarGraph(),
         outDtype,
@@ -110,6 +106,25 @@ void CtcOpx::grow(snap::program::Sequence &prog) const {
     setOutTensor(CtcOp::getCtcLossOutIndex(), ctcLoss);
     setOutTensor(CtcOp::getLogProbsGradientWrtCtcLossOutIndex(),
                  snap::Tensor{result.second, graph()});
+  } else {
+    auto result = popnn::ctc::calcCTCLossLogProbabilities(
+        graph().getPoplarGraph(),
+        outDtype,
+        logProbs.getPoplarTensor(),
+        targets.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
+        inputLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
+        targetLengths.getPoplarTensor().reinterpret(poplar::UNSIGNED_INT),
+        prog.getPoplarSequence(),
+        op.getBlank(),
+        *plan,
+        debugContext("loss"),
+        options);
+
+    snap::Tensor ctcLoss = snap::Tensor{result, graph()};
+
+    ctcLoss = applyReduction(prog, ctcLoss, targetLengths);
+
+    setOutTensor(CtcOp::getCtcLossOutIndex(), ctcLoss);
   }
 }
 

@@ -696,9 +696,10 @@ def test_nll_all_ingoreindex(op_tester):
 
 
 @pytest.mark.parametrize("blank", [0, 1])
+@pytest.mark.parametrize("step_type", ["infer", "train"])
 @pytest.mark.parametrize("reduction", ["none", "mean", "sum"])
 @pytest.mark.parametrize("zero_infinity", [False, True])
-def test_ctc_loss(op_tester, blank, reduction, zero_infinity):
+def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
     np.random.seed(0)
     reductionTypeMap = {
         "none": popart.ReductionType.NoReduction,
@@ -757,11 +758,14 @@ def test_ctc_loss(op_tester, blank, reduction, zero_infinity):
         # logsoftmax inside the CTC loss. If this is the case the gradient of
         # log_probs would nott match (but the gradient of logits should still
         # match when this is the case as logsoftmax is idempotent).
-        return [
-            ctc, logits, log_probs,
-            popart.reservedGradientPrefix() + logits,
-            popart.reservedGradientPrefix() + ctc
-        ]
+        if step_type == 'infer':
+            return [ctc, logits, log_probs]
+        else:
+            return [
+                ctc, logits, log_probs,
+                popart.reservedGradientPrefix() + logits,
+                popart.reservedGradientPrefix() + ctc
+            ]
 
     def reference(ref_data):
 
@@ -780,10 +784,13 @@ def test_ctc_loss(op_tester, blank, reduction, zero_infinity):
         ctc = loss(log_probs, targets, input_lengths, target_lengths)
         ctc.retain_grad()
 
-        d__ctc = ref_data.getOutputTensorGrad(0)
-        ctc.backward(torch.tensor(d__ctc))
-        return [ctc, logits, log_probs, logits.grad, ctc.grad]
+        if step_type == 'infer':
+            return [ctc, logits, log_probs]
+        else:
+            d__ctc = ref_data.getOutputTensorGrad(0)
+            ctc.backward(torch.tensor(d__ctc))
+            return [ctc, logits, log_probs, logits.grad, ctc.grad]
 
     op_tester.atol = 1e-07
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train', seed=8)
+    op_tester.run(init_builder, reference, step_type=step_type, seed=8)
