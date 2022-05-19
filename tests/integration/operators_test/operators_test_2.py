@@ -1113,55 +1113,6 @@ def test_convtranspose_pytorch_attributes(op_tester):
              outshape=True)
 
 
-def test_convtranspose_debug(op_tester):
-    x = np.array([[[
-        [0., 1., 2.],  # (1, 1, 3, 3)
-        [3., 4., 5.],
-        [6., 7., 8.]
-    ]]]).astype(np.float32)
-
-    W = np.array([[
-        [
-            [1., 1., 1.],  # (1, 2, 3, 3)
-            [1., 1., 1.],
-            [1., 1., 1.]
-        ],
-        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]
-    ]]).astype(np.float32)
-
-    y = np.random.rand(1, 2, 10, 8).astype(np.float32)
-
-    # y = np.array([[
-    #     [
-    #         [0., 1., 3., 3., 2.],  # (1, 2, 5, 5)
-    #         [3., 8., 15., 12., 7.],
-    #         [9., 21., 36., 27., 15.],
-    #         [9., 20., 33., 24., 13.],
-    #         [6., 13., 21., 15., 8.]
-    #     ],
-    #     [[0., 1., 3., 3., 2.], [3., 8., 15., 12., 7.],
-    #      [9., 21., 36., 27., 15.], [9., 20., 33., 24., 13.],
-    #      [6., 13., 21., 15., 8.]]
-    # ]]).astype(np.float32)
-
-    def init_builder(builder):
-        d = builder.addInputTensor(y)
-        f = builder.addInputTensor(W)
-        o = builder.aiOnnxOpset11.conv([d, f],
-                                       dilations=[3, 2],
-                                       pads=[0, 0, -1, -1])
-        builder.addOutputTensor(o)
-        # return [o]
-        return [o, popart.reservedGradientPrefix() + d]
-
-    def reference(_):  # ref_data is an unused argument
-        return [None, None]
-
-    op_tester.setPatterns(['ConvDataGrad'], enableRuntimeAsserts=False)
-    # op_tester.run(init_builder, reference, step_type='infer')
-    op_tester.run(init_builder, reference, step_type='train')
-
-
 def test_where_0(op_tester):
     condition = np.array([[1, 0], [1, 1]], dtype=np.bool)
     x = np.array([[1, 2], [3, 4]], dtype=np.float32)
