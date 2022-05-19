@@ -133,8 +133,7 @@ void defaultAnnotate(ShiftGraphGrower *grower,
       pg.getIr().getSessionOptions().executionPhaseSettings.phases > 1) {
     grower->annotateExecutionPhase();
   }
-  if (pg.getIr().getSessionOptions().enablePipelining &&
-      annotateForFasterSwapping) {
+  if (pg.getIr().getSessionOptions().enablePipelining) {
     grower->annotatePipelineStages();
   }
   if ((pg.getIr().autoRecomputationEnabled() ||

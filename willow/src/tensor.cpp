@@ -304,6 +304,21 @@ view::Regions Tensor::modifiedRegionsByOps(std::vector<Op *> ops,
   return modifiedRegions;
 }
 
+std::set<Op *, POpCmp> Tensor::getInplaceModifiers() const {
+  std::set<Op *, POpCmp> ops;
+  anyAlias([&ops](Tensor *t) {
+    auto consumers = t->consumers.getOps();
+    for (auto c : consumers) {
+      if (c->modifies()) {
+        ops.insert(c);
+      }
+    }
+    // Continue until all aliases have been visited
+    return false;
+  });
+  return ops;
+}
+
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
   std::set<OpId> visited;
   return getVirtualGraphIdAndTileSetUnsafe(visited).first;

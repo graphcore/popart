@@ -290,6 +290,12 @@ public:
   view::Regions modifiedRegionsByOps(std::vector<OpId> opIds,
                                      Aliases &aliases) const;
 
+  /**
+   * Find operations that modify a tensor
+   * \return All operations that (direct and indirectly) modify this tensor
+   */
+  std::set<Op *, POpCmp> getInplaceModifiers() const;
+
   // Backtrack through input and parent graph tensors in order to get data from
   // initializer tensors (if they exist).
   // When ops are performed on initializers (e.g. slice), the

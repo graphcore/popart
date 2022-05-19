@@ -120,13 +120,48 @@ public:
    */
   void remapConsumers();
 
+  /**
+   * Create or return a safe non-modified version of a tensor. Allows the safe
+   * and correct recomputation of operations that consume an input tensor
+   * that is modified by an operation in the graph, or modifies an input
+   * tensor itself
+   * \param originalTensor   Tensor to be backed up before it is inplace
+   *                         modified
+   * \param originalOp       Original non-recomputed consumer of the original
+   *                         tensor
+   * \param recomputedOp     Recomputed consumer of the original tensor
+   * \param inplaceModifiers Operations that inplace modify the tensor
+   * \return                 Replacement backup tensor, or nullptr if the tensor
+   *                         does not need a replacement
+   */
+  Tensor *
+  getInplaceModifiedBackupTensor(Tensor *originalTensor,
+                                 Op *originalOp,
+                                 Op *recomputedOp,
+                                 std::set<Op *, POpCmp> inplaceModifiers);
+
 private:
   Graph &graph;
+
+  // Cached schedule
   std::vector<Op *> schedule;
+
+  // Map of original tensor to recomputed tensors
   std::map<std::pair<TensorId, ExplicitRecomputeTensorContext>, TensorId>
       recomputedTensorMap;
+
+  // Map of pipeline stages to associated virtual graph IDs
   std::map<PipelineStage, std::set<VGraphId>> pipelineStageVGraphIdMap;
+
+  // Map of original operation to final loss relation
   std::map<Op *, graphutils::OpFinalLossRelation, POpCmp> relationMap;
+
+  // Map of recomputed operation to original operation
+  std::map<Op *, Op *, POpCmp> recomputeMap;
+
+  // Map of inplace modified tensors to non-modified backups
+  std::map<std::tuple<TensorId, std::set<OpId>, std::set<OpId>>, TensorId>
+      inplaceModifiedBackupMap;
 };
 
 /**

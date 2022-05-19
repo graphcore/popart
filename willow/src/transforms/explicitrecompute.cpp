@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include "popart/operators.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <iterator>
@@ -14,8 +15,10 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/explicitrecompute.hpp>
 
 #include "popart/basicoptionals.hpp"
@@ -221,6 +224,9 @@ void ExplicitRecomputeHelper::cloneRecomputeOps() {
 
         registerRecomputedOpRelation(cloneOp);
 
+        // Register relationship between original and cloned operation
+        recomputeMap[cloneOp] = op;
+
         for (auto &in : op->input->tensorMap()) {
           // Consume forward produced tensor initially
           cloneOp->connectInTensor(in.first, in.second->id);
@@ -242,7 +248,123 @@ void ExplicitRecomputeHelper::cloneRecomputeOps() {
   }
 }
 
+Tensor *ExplicitRecomputeHelper::getInplaceModifiedBackupTensor(
+    Tensor *originalTensor,
+    Op *originalOp,
+    Op *recomputedOp,
+    std::set<Op *, POpCmp> inplaceModifiers) {
+
+  OpsBeforeKey keys;
+
+  // Count modifiers after the loss, i.e. inplace modifying operations that have
+  // a path from the loss and are thereby part of the backward pass
+  unsigned numModifiersAfterLoss = 0;
+  for (auto modifier : inplaceModifiers) {
+    keys[modifier] = {recomputedOp};
+    if (relationMap.at(modifier) == graphutils::OpFinalLossRelation::FromLoss) {
+      numModifiersAfterLoss++;
+    }
+  }
+
+  // We check if a recomputed operation can be scheduled early enough to avoid
+  // consuming mangled values. If so, the inplace modified input tensor does not
+  // need to be backed up. This could be improved, since this check
+  // will force some recomputations to occur too early, rendering them less
+  // useful or completely useless. Some additional tensors could be backed up to
+  // allow recomputing later, although the heuristics for that are difficult.
+  // Backup of tensors should not occur too aggressively either, i.e. it is
+  // typically the case that weight updates occur after recomputation anyways.
+
+  // Check if the graph can be scheduled such that the inplace modifiers occur
+  // after the recomputed operation. However, if there are any modifiers that
+  // do occur before the loss, i.e.
+  // inplaceModifiers.size() != numModifiersAfterLoss
+  // then we will backup the inplace modified tensor regardless, such that we
+  // don't force the recomputation to occur before the inplace modifier in the
+  // forward pass, and thereby before the loss, because ideally
+  // recomputation should be scheduled as part of the backward pass in order
+  // to minimize liveness
+  if (graph.isSchedulable(keys) &&
+      (inplaceModifiers.size() == numModifiersAfterLoss)) {
+    // No issue to schedule modifiers after recompute, and no modifiers before
+    // the loss
+    return nullptr;
+  }
+
+  // Capture the state of the tensor by checking inplace modifying operations
+  // before and after the original non-recomputed consumer of the tensor
+  std::set<OpId> opsBefore;
+  std::set<OpId> opsAfter;
+
+  std::map<Op *, int, POpCmp> opToPosition;
+
+  for (int i = 0; i < schedule.size(); ++i) {
+    opToPosition[schedule.at(i)] = i;
+  }
+
+  int currentPos = -1;
+
+  auto currentPosIt = opToPosition.find(originalOp);
+
+  if (currentPosIt != opToPosition.end()) {
+    currentPos = currentPosIt->second;
+  }
+
+  // Check if a modifier is scheduled before or after the original consumer
+  // of the tensor
+  for (auto modifier : inplaceModifiers) {
+    auto modifierPosIt = opToPosition.find(modifier);
+    if (modifierPosIt != opToPosition.end()) {
+      auto modifierPos = modifierPosIt->second;
+      if (currentPos <= modifierPos) {
+        opsAfter.insert(modifier->id);
+      } else if (currentPos > modifierPos) {
+        opsBefore.insert(modifier->id);
+      }
+    }
+  }
+
+  // Check if a backup tensor already exists for the same state of the tensor
+  // (i.e. same modifiers before and after the original consumer)
+  if (inplaceModifiedBackupMap.find(
+          {originalTensor->id, opsBefore, opsAfter}) ==
+      inplaceModifiedBackupMap.end()) {
+
+    // No new
+    auto newId = graph.getIr().createIntermediateTensorId(originalTensor->id);
+    IdentityOp *identityOp = graph.createConnectedOp<IdentityOp>(
+        {{IdentityOp::getInIndex(), originalTensor->id}},
+        {{IdentityOp::getOutIndex(), newId}},
+        Onnx::Operators::Identity_1,
+        originalOp->settings);
+
+    // Ensure the IdentityOp that backs up the tensor before it is modified
+    // occurs right before the original consumer, such that we capture the
+    // tensor's values exactly as when the original operation consumes the
+    // tensor. Note that the originalOp itself may modify the tensor too!
+    graph.topoCons->insert(identityOp, originalOp, false);
+
+    // Same modifiers before identityOp as before originalOp
+    for (auto opId : opsBefore) {
+      graph.topoCons->insert(graph.getOp(opId), identityOp, false);
+    }
+
+    // Same modifiers after identityOp as before originalOp
+    for (auto opId : opsAfter) {
+      graph.topoCons->insert(identityOp, graph.getOp(opId), false);
+    }
+
+    // Register backup tensor ID
+    inplaceModifiedBackupMap[{originalTensor->id, opsBefore, opsAfter}] = newId;
+  }
+
+  // Return backup tensor ID
+  return originalTensor->getGraph().getTensor(
+      inplaceModifiedBackupMap.at({originalTensor->id, opsBefore, opsAfter}));
+}
+
 void ExplicitRecomputeHelper::remapConsumers() {
+
   for (auto recomputedTensor : recomputedTensorMap) {
     Tensor *originalTensor =
         graph.getTensors().get(recomputedTensor.first.first);
@@ -271,6 +393,40 @@ void ExplicitRecomputeHelper::remapConsumers() {
               consumer->debugName(),
               originalTensor->id,
               recomputedTensor.second);
+        }
+      }
+    }
+  }
+
+  // Remap inplace overwritten inputs such that recomputation results in the
+  // same output as the original computation
+  for (auto &op : graph.getOps()) {
+    auto consumer = op.second.get();
+    for (auto originalTensor : consumer->input->tensors()) {
+      if (consumer->settings.recomputeType == RecomputeType::Recomputed) {
+        auto inplaceModifiers = originalTensor->getInplaceModifiers();
+        if (!inplaceModifiers.empty()) {
+
+          auto backupTensor =
+              getInplaceModifiedBackupTensor(originalTensor,
+                                             recomputeMap.at(consumer),
+                                             consumer,
+                                             inplaceModifiers);
+
+          if (backupTensor) {
+            logging::transform::trace(
+                "[ExplicitRecompute] Op {} has to consume backup tensor "
+                "{}->{}.",
+                consumer->debugName(),
+                originalTensor->id,
+                backupTensor->id);
+
+            auto indices = consumer->input->indices(originalTensor);
+            for (auto i : indices) {
+              consumer->disconnectInTensor(i, originalTensor);
+              consumer->connectInTensor(i, backupTensor->id);
+            }
+          }
         }
       }
     }
