@@ -51,14 +51,25 @@ public:
   void appendOutlineAttributes(popart::OpSerialiserBase &os) const override;
 };
 
-class LeakyReluGradOp : public ElementWiseNonLinearUnaryGradOp,
-                        public LeakyReluOpBaseAttributes {
+class LeakyReluGradOp : public Op, public LeakyReluOpBaseAttributes {
 public:
   LeakyReluGradOp(const LeakyReluOp &);
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   std::unique_ptr<Op> clone() const final;
 
   void appendAttributes(popart::OpSerialiserBase &os) const override;
   void appendOutlineAttributes(popart::OpSerialiserBase &os) const override;
+  // The index at which the output of the LeakyRelu
+  // is an input to this LeakyReluGradOp
+  static InIndex getLeakyReluInIndex() { return 1; }
+
+  // Get the input index for the gradient of the output of the LeakyRelu, for
+  // this LeakyReluGradOp.
+  static InIndex getGradLeakyReluInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace popart

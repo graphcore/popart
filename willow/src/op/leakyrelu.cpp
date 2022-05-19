@@ -84,12 +84,28 @@ void LeakyReluInplaceOp::appendOutlineAttributes(
 }
 
 LeakyReluGradOp::LeakyReluGradOp(const LeakyReluOp &fwdop)
-    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::LeakyReluGrad,
-                                      fwdop),
+    : Op(Onnx::GradOperators::LeakyReluGrad, fwdop.getSettings()),
       LeakyReluOpBaseAttributes(fwdop.getAlpha()) {}
 
-std::unique_ptr<Op> LeakyReluGradOp::clone() const {
-  return std::make_unique<LeakyReluGradOp>(*this);
+void LeakyReluGradOp::setup() {
+  outInfo(getOutIndex()) = inInfo(getGradLeakyReluInIndex());
+}
+
+const std::vector<GradInOutMapper> &LeakyReluGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradLeakyReluInIndex(),
+       LeakyReluOp::getOutIndex(),
+       GradOpInType::GradOut},
+      {getLeakyReluInIndex(), LeakyReluOp::getOutIndex(), GradOpInType::Out}};
+  return inInfo;
+}
+
+const std::map<int, int> &LeakyReluGradOp::gradOutToNonGradIn() const {
+  // the grad-op's output at index 0 corresponds
+  // to the non-grad-op's input at index 0
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), LeakyReluOp::getInIndex()}};
+  return outInfo;
 }
 
 void LeakyReluGradOp::appendAttributes(popart::OpSerialiserBase &os) const {
@@ -101,6 +117,10 @@ void LeakyReluGradOp::appendOutlineAttributes(
     popart::OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute(ALPHA_ATTRIBUTE, getAlpha());
+}
+
+std::unique_ptr<Op> LeakyReluGradOp::clone() const {
+  return std::make_unique<LeakyReluGradOp>(*this);
 }
 
 namespace {

@@ -99,8 +99,8 @@ LeakyReluGradOpx::LeakyReluGradOpx(Op *op, Devicex *devicex)
 void LeakyReluGradOpx::grow(snap::program::Sequence &prog) const {
   auto &op = getOp<LeakyReluGradOp>();
 
-  auto grad  = getInTensor(LeakyReluGradOp::getGradInIndex());
-  auto input = getInTensor(LeakyReluGradOp::getFwdArgInIndex());
+  auto grad  = getInTensor(LeakyReluGradOp::getGradLeakyReluInIndex());
+  auto input = getInTensor(LeakyReluGradOp::getLeakyReluInIndex());
 
   auto alpha = op.getAlpha();
 
