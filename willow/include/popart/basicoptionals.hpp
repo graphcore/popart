@@ -2,8 +2,11 @@
 #ifndef GUARD_NEURALNET_BASICOPTIONALS_HPP
 #define GUARD_NEURALNET_BASICOPTIONALS_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <ostream>
+#include <string>
+#include <popart/graphid.hpp>
 #include <popart/names.hpp>
 #include <popart/tensorlocation.hpp> // IWYU pragma: keep
 
@@ -74,9 +77,43 @@ public:
 
   void reset() noexcept { isSet = false; }
 
-private:
+protected:
   bool isSet;
   T value;
+};
+
+/**
+ * Template specialisation to get around an issue with deleted default
+ * constructor of GraphId.
+ */
+class OptionalGraphId : public BasicOptional<GraphId, 11> {
+public:
+  using BasicOptional::BasicOptional;
+
+  /**
+   * Construct a new Optional Graph Id object
+   *
+   * Can't use BasicOptional() as this will try to call deleted GraphId(),
+   * instead use empty string in GraphId(""), but set isSet false.
+   */
+  OptionalGraphId() : BasicOptional(GraphId("")) { isSet = false; };
+
+  OptionalGraphId &operator=(const OptionalGraphId &) = default;
+
+  /**
+   * Construct a new Optional Graph Id object
+   *
+   * See :Implicit declaration of copy functions [depr.impldec]
+   * The implicit definition of a copy constructor as defaulted is deprecated if
+   * the class has a user-declared copy assignment operator or a user-declared
+   * destructor. The implicit definition of a copy assignment operator as
+   * defaulted is deprecated if the class has a user-declared copy constructor
+   * or a user-declared destructor (15.4, 15.8). In a future revision of this
+   * International Standard, these implicit definitions could become deleted
+   * (11.4).
+   */
+  OptionalGraphId(OptionalGraphId &&)      = default;
+  OptionalGraphId(const OptionalGraphId &) = default;
 };
 
 template <class T, uint32_t V>
@@ -119,6 +156,9 @@ using OptionalBatchSerializedPhase = BasicOptional<BatchSerializedPhase, 7>;
 using OptionalTensorLocation       = BasicOptional<TensorLocation, 9>;
 using OptionalStochasticRoundingMethod =
     BasicOptional<StochasticRoundingMethod, 10>;
+// using OptionalGraphId = BasicOptional<GraphId, 11>; // See above
+
+using OptionalCodeMemoryType = BasicOptional<CodeMemoryType, 12>;
 
 template <typename T, uint32_t V>
 std::ostream &operator<<(std::ostream &ost, const BasicOptional<T, V> &bo) {

@@ -21,6 +21,10 @@ class Sequence;
 } // namespace program
 } // namespace snap
 
+namespace poplar {
+enum class FunctionBufferMappingType;
+}
+
 namespace popart {
 class Op;
 class TensorInfo;
@@ -130,6 +134,30 @@ public:
   void post(snap::Graph &graph,
             snap::program::Sequence &prog,
             poplar::DebugContext context) override;
+};
+
+class ExternalCodeLoadDescriptorx : public ExchangeDescriptorx {
+public:
+  ExternalCodeLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
+  void pre(snap::Graph &graph,
+           snap::program::Sequence &prog,
+           poplar::DebugContext context) override;
+  void exchange(snap::Graph &graph,
+                snap::program::Sequence &prog,
+                poplar::DebugContext context) override;
+  void post(snap::Graph &graph,
+            snap::program::Sequence &prog,
+            poplar::DebugContext context) override;
+
+  /**
+   * Get the Function Buffer Mapping Type corresponding to the op's source /
+   * destination types and locations, taken from the ExchangeDescriptor.
+   *
+   * \param 1 CodeMemoryType The destination code memory type to lookup.
+   * \returns poplar::FunctionBufferMappingType
+   */
+  poplar::FunctionBufferMappingType
+      getFunctionBufferMappingType(CodeMemoryType);
 };
 
 std::unique_ptr<ExchangeDescriptorx>

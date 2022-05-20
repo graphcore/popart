@@ -16,6 +16,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <popef/Types.hpp>
+#include <poplar/FunctionBufferMappingType.hpp>
+#include <poplar/Graph.hpp>
+#include <poplar/GraphElements.hpp>
 #include <popops/Zero.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -87,7 +91,9 @@ std::ostream &operator<<(std::ostream &out, PopPrograms::ProgramIndex index) {
   case PopPrograms::ProgramIndex::N:
     out << "N";
     break;
-  default: { throw internal_error("Invalid value for ProgramIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramIndex");
+  }
   };
 
   return out;
@@ -156,7 +162,9 @@ std::ostream &operator<<(std::ostream &out,
     out << "N";
     break;
   }
-  default: { throw internal_error("Invalid value for ProgramFragmentIndex"); }
+  default: {
+    throw internal_error("Invalid value for ProgramFragmentIndex");
+  }
   };
   return out;
 }
@@ -405,6 +413,28 @@ void PopPrograms::addPipelineCycle(PipelineInfo pInfo,
   // outlined across pipelineCycles AND merged across pipelineStages.
   ss << logging::format("\n  IpuCopies");
   sq.add(snap::program::Call(ir_lowering_p->graph(), pipelineIpuCopyFunction));
+}
+
+void PopPrograms::addFunctionBuffers(const GraphId gid,
+                                     poplar::FunctionBufferMappingType fbmt) {
+  auto &g = ir_lowering_p->ir().getGraph(gid);
+
+  if (hasFunctionBuffer(gid, fbmt)) {
+    // Do nothing - a previous code load op has already created a buffer for
+    // this function.
+  } else {
+    FunctionBuffers func_vec;
+    auto &graph_progs = ir_lowering_p->getFragmentFunctions(g);
+
+    for (auto f : graph_progs) {
+      auto buffer =
+          ir_lowering_p->graph().getPoplarGraph().addFunctionBuffer(f, fbmt);
+      func_vec.push_back({f, buffer});
+    }
+    std::pair<const GraphId, poplar::FunctionBufferMappingType> pair = {gid,
+                                                                        fbmt};
+    functionBuffers.emplace(pair, func_vec);
+  }
 }
 
 unsigned PopPrograms::addCustomProgram(const snap::program::Program &program) {
