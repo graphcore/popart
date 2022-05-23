@@ -212,8 +212,22 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
         options, "ipuVersion", getPoplarDefaultIpuModelVersion());
     poplar::IPUModel ipuModel(ipuVersion.c_str());
 
-    ipuModel.numIPUs     = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
-    ipuModel.tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
+    ipuModel.numIPUs = mapFind(options, "numIPUs", int(ipuModel.numIPUs));
+
+    // It is possible to use a custom Model configuration by setting ipu
+    // version to "ipu:config_file", in which case the number of tiles
+    // shouldn't be overwritten
+    auto it = options.find("tilesPerIPU");
+    if (ipuVersion.find("ipu:") == std::string::npos) {
+      ipuModel.tilesPerIPU = mapFind(options, "tilesPerIPU", defaultFewTiles);
+    } else if (it != options.end()) {
+      std::string logFile = ipuVersion;
+      logFile.erase(logFile.find("ipu:"), 4);
+      logging::devicex::warn("The option tilesPerIPU is ignored and the number"
+                             " of tiles is taken from the config file {}",
+                             logFile);
+    }
+
     ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
