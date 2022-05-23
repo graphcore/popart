@@ -1,6 +1,6 @@
 
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#include <boost/functional/hash.hpp>
+#include <boost/container_hash/hash.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <builder_impl.hpp>
 #include <graphfromlosstolossupdater.hpp>
@@ -491,7 +491,10 @@ void Ir::compareWithSavedHash(const HashesMap &cacheEntries) {
   hashMatched_ = cacheEntries.count(*hash_) > 0;
 }
 
-void Ir::computeHash() { hash_ = std::hash<Ir>()(*this); }
+void Ir::computeHash(size_t hashSeed) {
+  hash_ = hashSeed;
+  boost::hash_combine(*hash_, *this);
+}
 
 void Ir::verifyPipelineSettings() const {
   if (!getSessionOptions().enablePipelining) {
@@ -1164,12 +1167,12 @@ void Ir::verifyConstExprFolding() {
   }
 }
 
-void Ir::prepareCache(const HashesMap &cacheEntries) {
+void Ir::prepareCache(const HashesMap &cacheEntries, size_t hashSeed) {
   if (getDeviceInfo() == nullptr) {
     throw("Device info must be set before calling prepareCache.");
   }
 
-  computeHash();
+  computeHash(hashSeed);
 
   compareWithSavedHash(cacheEntries);
   if (hashMatched()) {
@@ -1179,7 +1182,9 @@ void Ir::prepareCache(const HashesMap &cacheEntries) {
   }
 }
 
-void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
+void Ir::prepare(const IrBundle &gb,
+                 const HashesMap &cacheEntries,
+                 size_t hashSeed) {
   auto tryDumpIr = [&](auto logLevel) {
     auto irDumpDest = getPopartEnvVar("IR_DUMP");
     if (irDumpDest) {
@@ -1199,7 +1204,7 @@ void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
   };
 
   try {
-    prepareImpl(gb, cacheEntries);
+    prepareImpl(gb, cacheEntries, hashSeed);
   } catch (...) {
     tryDumpIr(logging::Level::Err);
     throw;
@@ -1207,7 +1212,9 @@ void Ir::prepare(const IrBundle &gb, const HashesMap &cacheEntries) {
   tryDumpIr(logging::Level::Debug);
 }
 
-void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
+void Ir::prepareImpl(const IrBundle &gb,
+                     const HashesMap &cacheEntries,
+                     size_t hashSeed) {
   setDeviceInfo(gb.deviceInfo);
 
   if (isPrepared()) {
@@ -1256,7 +1263,7 @@ void Ir::prepareImpl(const IrBundle &gb, const HashesMap &cacheEntries) {
   // the rest of the Ir preparation if true.
   setIrBundleHash(std::hash<popart::IrBundle>()(gb));
 
-  computeHash();
+  computeHash(hashSeed);
   compareWithSavedHash(cacheEntries);
   if (hashMatched()) {
     logging::ir::info("Ir hash matched cached value. Skipping Ir preparation");
@@ -4202,8 +4209,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t std::hash<popart::IrBundle>::
-operator()(const popart::IrBundle &bundle) const {
+std::size_t
+std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

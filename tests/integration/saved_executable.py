@@ -192,6 +192,30 @@ def test_simple_cache_hit(tmp_path, capfd):
 
 
 @tu.requires_ipu
+def test_cache_miss_on_engine_option_change(tmp_path, capfd):
+    """ Test that if we change engine options that affect the executable between
+    runs then we don't get a cache hit. """
+    popart.getLogger().setLevel('DEBUG')
+
+    opts1 = popart.SessionOptions()
+    opts1.enableEngineCaching = True
+    opts1.cachePath = str(tmp_path / 'saved_graph')
+    opts1.engineOptions["opt.enableInlining"] = "false"
+
+    opts2 = popart.SessionOptions()
+    opts2.enableEngineCaching = True
+    opts2.cachePath = str(tmp_path / 'saved_graph')
+    opts2.engineOptions["opt.enableInlining"] = "true"
+
+    run_session(2, opts1)
+    assert loaded_saved_executable(capfd) is False
+
+    # Check engine caching works for two identical sessions.
+    run_session(2, opts2)
+    assert loaded_saved_executable(capfd) is False
+
+
+@tu.requires_ipu
 def test_cache_environment_variable(tmp_path, capfd):
     """
     Test chaching enabled via env POPART_CACHE_DIR

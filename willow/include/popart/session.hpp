@@ -606,6 +606,20 @@ protected:
    *  The name of the session.
    */
   std::string name;
+
+private:
+  /**
+   * Get a hash seed for this session that incorporates various contributing
+   * factors that could affect the compilation process (example: Poplar engine
+   * options). Note, we pass in, e.g., userOptions instead of using the member
+   * userOptions because the member is not guaranteed to be set yet at all
+   * call sites.
+   * \param userOptions The user options to use.
+   * \param deviceInfo The device to use.
+   * \return size_t The hash seed.
+   */
+  size_t getEngineCacheHashSeed(const SessionOptions &userOptions,
+                                const DeviceInfo &deviceInfo) const;
 };
 
 /**

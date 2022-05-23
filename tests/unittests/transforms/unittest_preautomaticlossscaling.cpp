@@ -212,14 +212,14 @@ BOOST_AUTO_TEST_CASE(TestToTrackTensorsUnset) {
   Ir ir;
   Graph &g = ir.getMainGraph();
 
-  ir.computeHash();
+  ir.computeHash(0u);
   auto hashBefore = ir.getHash();
 
   PreAutomaticLossScale transform;
   bool applyResult = transform.apply(g);
   BOOST_TEST(applyResult == false);
 
-  ir.computeHash();
+  ir.computeHash(0u);
   auto hashAfter = ir.getHash();
 
   BOOST_TEST(hashBefore == hashAfter);

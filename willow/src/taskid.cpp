@@ -1,5 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#include <boost/functional/hash.hpp>
+#include <boost/container_hash/hash.hpp>
 #include <cstddef>
 #include <ostream>
 #include <string>

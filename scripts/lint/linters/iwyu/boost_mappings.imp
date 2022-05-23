@@ -48,7 +48,7 @@
   { include: ["\"boost/assert.hpp\"", "public", "<boost/test/unit_test.hpp>", "public"] },
 
 
-  #{ symbol: ["boost::hash_combine", "private", "<boost/functional/hash.hpp>", "public"] },
+  #{ symbol: ["boost::hash_combine", "private", "<boost/container_hash/hash.hpp>", "public"] },
 
   { include: ["<trompeloeil.hpp>", "private", "<boost/trompeloeil.hpp>", "public"] },
   { include: ["\"trompeloeil.hpp\"", "private", "<boost/trompeloeil.hpp>", "public"] },
@@ -65,8 +65,8 @@
   { include: ["\"boost/numeric/conversion/converter_policies.hpp\"", "public", "<boost/lexical_cast.hpp>", "public"] },
 
 
-  { include: ["<boost/container_hash/extensions.hpp>", "public", "<boost/functional/hash.hpp>", "public"] },
-  { include: ["\"boost/container_hash/extensions.hpp\"", "public", "<boost/functional/hash.hpp>", "public"] },
+  { include: ["<boost/container_hash/extensions.hpp>", "public", "<boost/container_hash/hash.hpp>", "public"] },
+  { include: ["\"boost/container_hash/extensions.hpp\"", "public", "<boost/container_hash/hash.hpp>", "public"] },
 
 
   { include: ["<boost/iterator/iterator_facade.hpp>", "public", "<boost/filesystem.hpp>", "public"] },

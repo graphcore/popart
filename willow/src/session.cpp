@@ -1,7 +1,9 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
+#include <boost/container_hash/hash.hpp>
 #include <boost/filesystem.hpp>
 
+#include <poplar/EngineOptions.hpp>
 #include <poprithms/logging/timepartitionlogger.hpp>
 
 #include <cstddef>
@@ -42,6 +44,8 @@
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/voiddata.hpp"
+
+#include "engineoptionscreator.hpp"
 
 namespace popart {
 class IStepIO;
@@ -108,7 +112,11 @@ Session::Session(std::shared_ptr<Ir> ir_,
 
   ir->setIsPrepared();
   ir->setDeviceInfo(*deviceInfo_);
-  ir->prepareCache(cacheEntries);
+
+  size_t hashSeed =
+      getEngineCacheHashSeed(ir->getSessionOptions(), *deviceInfo_);
+
+  ir->prepareCache(cacheEntries, hashSeed);
 }
 
 void Session::updateEngineCache() {
@@ -763,6 +771,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
   {
     const auto prepareTimer =
         timePartitionLogger.scopedStopwatch("Preparing IR");
+    size_t hashSeed = getEngineCacheHashSeed(userOptions, *deviceInfo);
     ir->prepare({modelProto,
                  perk,
                  df,
@@ -772,13 +781,26 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                  userOptions,
                  patterns,
                  name},
-                cacheEntries);
+                cacheEntries,
+                hashSeed);
   }
   {
     const auto setDeviceTimer =
         timePartitionLogger.scopedStopwatch("Setting device");
     setDevice(deviceInfo);
   }
+}
+
+size_t Session::getEngineCacheHashSeed(const SessionOptions &userOptions,
+                                       const DeviceInfo &deviceInfo) const {
+  size_t hash = 0u;
+
+  // Add Poplar engine options to hash.
+  EngineOptionsCreator engineOptionsCreator(userOptions,
+                                            deviceInfo.getTarget());
+  boost::hash_combine(hash, engineOptionsCreator.getEngineOptions());
+
+  return hash;
 }
 
 InferenceSession::~InferenceSession() = default;

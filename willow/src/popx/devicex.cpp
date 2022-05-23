@@ -53,6 +53,8 @@
 #include "popart/util.hpp"
 #include "popart/voiddata.hpp"
 
+#include <engineoptionscreator.hpp>
+
 namespace popart {
 namespace popx {
 
@@ -548,57 +550,9 @@ Devicex::Devicex(Executablex &exe, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
-  if (ir().getSessionOptions().enablePrefetchDatastreams) {
-    logging::devicex::info("Setting engine options for prefetch data streams "
-                           "(exchange.streamBufferOverlap = hostRearrangeOnly, "
-                           "exchange.enablePrefetch = true");
-    lowering().engineOptions.set("exchange.streamBufferOverlap",
-                                 "hostRearrangeOnly");
-    lowering().engineOptions.set("exchange.enablePrefetch", "true");
-  } else {
-    lowering().engineOptions.set("exchange.enablePrefetch", "false");
-  }
-
-  if (ir().getSessionOptions().enableDistributedReplicatedGraphs) {
-    logging::devicex::info("Setting firstRuntimeReplica {}",
-                           ir().getSessionOptions().globalReplicaOffset);
-
-    logging::devicex::info("Setting numberRuntimeReplica {}",
-                           ir().getSessionOptions().replicatedGraphCount);
-
-    std::string firstRuntimeReplica =
-        std::to_string(ir().getSessionOptions().globalReplicaOffset);
-    std::string numberRuntimeReplica =
-        std::to_string(ir().getSessionOptions().replicatedGraphCount);
-
-    lowering().engineOptions.set("target.syncReplicasIndependently", "true");
-    lowering().engineOptions.set("target.firstRuntimeReplica",
-                                 firstRuntimeReplica);
-    lowering().engineOptions.set("target.numberRuntimeReplica",
-                                 numberRuntimeReplica);
-  }
-
-  // The engine option `target.deterministicWorkers=true` ensures that random
-  // behaviour is deterministic on all hardware but comes at the cost of
-  // some performance. Note that we expect actual random Ops to be explicitly
-  // seeded (so they are not affected) so the only time we actually need this
-  // option is when the user enables stochastic rounding. We set this to
-  // "false" when stochastic rounding is not enabled for a small performance
-  // boost. Note that we avoid setting the option all together if the user
-  // sets it explicitly.
-  if (ir().getSessionOptions().engineOptions.find(
-          "target.deterministicWorkers") ==
-      ir().getSessionOptions().engineOptions.end()) {
-    auto detWorkerValue =
-        (ir().getSessionOptions().enableStochasticRounding) ? "true" : "false";
-    lowering().engineOptions.set("target.deterministicWorkers", detWorkerValue);
-  }
-
-  for (auto it : ir().getSessionOptions().engineOptions) {
-    logging::devicex::info(
-        "Setting engine option {} = {}", it.first, it.second);
-    lowering().engineOptions.set(it.first, it.second);
-  }
+  EngineOptionsCreator engineOptionsCreator{ir().getSessionOptions(),
+                                            deviceInfo_->getTarget()};
+  lowering().engineOptions = engineOptionsCreator.getOptionFlags();
 
   for (auto it : ir().getSessionOptions().reportOptions) {
     logging::devicex::info(

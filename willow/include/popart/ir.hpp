@@ -232,19 +232,27 @@ public:
 
   void compareWithSavedHash(const HashesMap &cacheEntries);
 
-  // Prepare the IR based on the IrBundle configuration.
-  // If engine caching is enabled then the IR hash which is
-  // based on the IrBundle and the forward graph will be
-  // compared to a saved file. If the hash matches then
-  // the rest of the Ir preparation will be skipped.
-  void prepare(const IrBundle &, const HashesMap &cacheEntries = {});
+  /**
+   * Prepare the IR based on the IrBundle configuration. If engine caching is
+   * enabled then the IR hash which is based on the IrBundle and the forward
+   * graph will be compared to a saved file. If the hash matches then the rest
+   * of the Ir preparation will be skipped.
+   * \param bundle The bundle to prepare.
+   * \param cacheEntries The engine cache.
+   * \param hashSeed The seed to initiate the IR hash with -- this hash should
+   *   encorporate non-IR factors that could affect the compilation such as
+   *   engine options and session options.
+   */
+  void prepare(const IrBundle &bundle,
+               const HashesMap &cacheEntries = {},
+               size_t hashSeed               = 0u);
 
   // Prepare the IR based for a "IR model"
   // If engine caching is enabled then the IR hash which is
   // based on the IR graph will be compared to a saved file.
   // If the hash matches then the rest of the Ir preparation
   // will be skipped.
-  void prepareCache(const HashesMap &cacheEntries);
+  void prepareCache(const HashesMap &cacheEntries, size_t hashSeed);
 
   // Called once the IR 'prepare' is complete to finalize DebugInfo for each Op
   void finalizeOpDebugInfo();
@@ -606,7 +614,8 @@ private:
   // Unique id of each IR instance
   const uint64_t id;
 
-  void prepareImpl(const IrBundle &, const HashesMap &cacheEntries);
+  void
+  prepareImpl(const IrBundle &, const HashesMap &cacheEntries, size_t hashSeed);
 
   // Accessors for the tensors in the top-level graph
   const Tensors &getTensors() const;
@@ -792,7 +801,7 @@ public:
   getAccumulateOuterFragmentBinConstraints(const Graph &graph) const;
 
   size_t getHash() const;
-  void computeHash();
+  void computeHash(size_t hashSeed);
   size_t getIrBundleHash() const;
   void setIrBundleHash(size_t);
 
@@ -826,14 +835,22 @@ private:
 } // namespace popart
 
 namespace std {
+
 template <> struct hash<popart::Ir> {
   std::size_t operator()(const popart::Ir &ir) const;
 };
-
 template <> struct hash<popart::IrBundle> {
   std::size_t operator()(const popart::IrBundle &irBundle) const;
 };
 
 } // namespace std
+
+namespace popart {
+
+inline std::size_t hash_value(const popart::Ir &ir) {
+  return std::hash<popart::Ir>()(ir);
+}
+
+} // namespace popart
 
 #endif

@@ -13,7 +13,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def build_and_run(cache_path):
+def build_and_run(cache_path, engine_options=None):
     ir = popxl.Ir()
     main = ir.main_graph
     with main:
@@ -56,6 +56,9 @@ def build_and_run(cache_path):
     opts.enableExplicitMainLoops = True
     opts.aliasZeroCopy = True
     opts.explicitRecomputation = True
+    if engine_options is not None:
+        for k, v in engine_options.items():
+            opts.engineOptions[k] = v
 
     # Enable engine caching
     opts.enableEngineCaching = True
@@ -83,35 +86,56 @@ def build_and_run(cache_path):
     return output
 
 
+def loaded_saved_executable(capfd):
+    """ Check the log output to see if an engine was compiled, or if a cached
+        engine was used. """
+    _, stderr = capfd.readouterr()
+    startedEngineCompilation = False
+    loadedPoplarExecutable = False
+    for line in stderr.splitlines():
+        if 'Starting compilation' in line:
+            startedEngineCompilation = True
+        elif 'Loading serialized PopART executable' in line:
+            loadedPoplarExecutable = True
+
+    assert startedEngineCompilation != loadedPoplarExecutable
+    return startedEngineCompilation
+
+
 @tu.requires_ipu
 def test_model_caching(tmp_path, capfd):
-
-    # Check the log output to see if an engine was compiled,
-    # or if a cached engine was used.
-    def loaded_saved_executable():
-        _, stderr = capfd.readouterr()
-        startedEngineCompilation = False
-        loadedPoplarExecutable = False
-        for line in stderr.splitlines():
-            if 'Starting compilation' in line:
-                startedEngineCompilation = True
-            elif 'Loading serialized PopART executable' in line:
-                loadedPoplarExecutable = True
-
-        assert startedEngineCompilation != loadedPoplarExecutable
-        return startedEngineCompilation
+    """ Test if the first time we run a model we get a cache miss, and the
+    second time we get a cache hit. """
 
     popart.getLogger().setLevel('DEBUG')
     cache_path = str(tmp_path / 'model_caching')
 
     result0 = build_and_run(cache_path)
-    assert loaded_saved_executable() is True
+    assert loaded_saved_executable(capfd) is True
 
     result1 = build_and_run(cache_path)
-    assert loaded_saved_executable() is False
+    assert loaded_saved_executable(capfd) is False
     assert result0 == result1
 
     shutil.rmtree(cache_path)
 
     build_and_run(cache_path)
-    assert loaded_saved_executable() is True
+    assert loaded_saved_executable(capfd) is True
+
+
+@tu.requires_ipu
+def test_model_caching_miss_on_engine_option_change(tmp_path, capfd):
+    """ Test that if we change engine options that affect the executable between
+    runs then we don't get a cache hit. """
+
+    popart.getLogger().setLevel('DEBUG')
+    cache_path = str(tmp_path / 'model_caching')
+
+    result0 = build_and_run(cache_path,
+                            engine_options={"opt.enableInlining": "false"})
+    assert loaded_saved_executable(capfd) is True
+
+    result1 = build_and_run(cache_path,
+                            engine_options={"opt.enableInlining": "true"})
+    assert loaded_saved_executable(capfd) is True
+    assert result0 == result1
