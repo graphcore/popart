@@ -52,7 +52,7 @@ std::vector<Op *> ContiguateCollectivesTransform::applyToOps(
         "can not be set to AccumulateOuterFragmentSchedule::Serial");
   }
 
-  std::set<Op *> opsToProcess;
+  std::set<Op *, POpCmp> opsToProcess;
   std::vector<Op *> schedule =
       graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
   for (auto op : schedule) {
@@ -94,13 +94,13 @@ bool ContiguateCollectivesTransform::checkCollectiveOp<ReplicatedAllGatherOp>(
 }
 
 template <typename BaseType>
-std::vector<BaseType *> ContiguateCollectivesTransform::lookForMatchingOps(
+std::set<BaseType *, POpCmp> ContiguateCollectivesTransform::lookForMatchingOps(
     BaseType *baseOp,
     const std::vector<Op *> &schedule,
-    std::set<Op *> &opsToProcess) {
+    std::set<Op *, POpCmp> &opsToProcess) {
 
   auto &graph = baseOp->getGraph();
-  std::vector<BaseType *> allMatches{baseOp};
+  std::set<BaseType *, POpCmp> allMatches{baseOp};
   std::vector<Op *> allDataDependencies{graph.getOp(baseOp->id)};
   for (Op *op : schedule) {
     if (opsToProcess.count(op) > 0) {
@@ -125,7 +125,7 @@ std::vector<BaseType *> ContiguateCollectivesTransform::lookForMatchingOps(
 
         if (groupCheck && collTypeCheck && dtypeCheck && dataDependencyCheck &&
             executionContextCheck) {
-          allMatches.emplace_back(candidate);
+          allMatches.insert(candidate);
           allDataDependencies.emplace_back(op);
         }
       }
@@ -138,12 +138,15 @@ template <typename BaseType>
 void ContiguateCollectivesTransform::processOp(
     BaseType *baseOp,
     const std::vector<Op *> &schedule,
-    std::set<Op *> &opsToProcess) const {
+    std::set<Op *, POpCmp> &opsToProcess) const {
   auto &graph = baseOp->getGraph();
 
-  // Find matching ops
-  std::vector<BaseType *> allMatches =
+  // Find matching ops and place them in a sorted set
+  // this ensures that the the matches are processed in a
+  // deterministic order
+  std::set<BaseType *, POpCmp> allMatches =
       lookForMatchingOps(baseOp, schedule, opsToProcess);
+
   std::vector<std::string> allMatchNames;
   for (auto op : allMatches) {
     allMatchNames.emplace_back("\t" + op->debugName() + "\n");

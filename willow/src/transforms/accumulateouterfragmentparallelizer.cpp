@@ -17,6 +17,7 @@
 #include <popart/op.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
+#include <popart/pointercomparators.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/topocons.hpp>
@@ -38,18 +39,20 @@ using namespace std;
 namespace popart {
 namespace {
 // An efficient way to check for intersection in sorted ranges.
-template <class SortedContainerType>
-bool efficientOverlapCheck(const SortedContainerType &set1,
-                           const SortedContainerType &set2) {
-  auto it1 = set1.begin();
-  auto it2 = set2.begin();
-  while (it1 != set1.end() && it2 != set2.end()) {
-    if (*it1 < *it2)
+template <typename T, typename Comparator>
+bool efficientOverlapCheck(const std::set<T, Comparator> &sorted1,
+                           const std::set<T, Comparator> &sorted2) {
+  Comparator comparator;
+  auto it1 = sorted1.begin();
+  auto it2 = sorted2.begin();
+  while (it1 != sorted1.end() && it2 != sorted2.end()) {
+    if (comparator(*it1, *it2)) {
       ++it1;
-    else if (*it2 < *it1)
+    } else if (comparator(*it2, *it1)) {
       ++it2;
-    else
+    } else {
       return true;
+    }
   }
   return false;
 }
@@ -70,39 +73,35 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
     : graph{graph}, ops{op}, adjacentOps{}, remoteLoadOps{}, remoteStoreOps{},
       virtualGraphId{op->hasVirtualGraphId() ? op->getVirtualGraphId()
                                              : unusedVGraphId},
-      tensorIds{} {
-  gatherTensorIds(op, tensorIds);
+      tensors{} {
+  gatherTensors(op, tensors);
 
   // Populate adjacentOps.
   adjacentOps.clear();
   for (auto op : ops) {
     auto afters = graph->topoCons->getAfters(op);
-    adjacentOps.insert(adjacentOps.end(), afters.begin(), afters.end());
+    adjacentOps.insert(afters.begin(), afters.end());
     auto befores = graph->topoCons->getBefores(op);
-    adjacentOps.insert(adjacentOps.end(), befores.begin(), befores.end());
+    adjacentOps.insert(befores.begin(), befores.end());
   }
-  std::sort(adjacentOps.begin(), adjacentOps.end());
 
-  // Populate remoteLoadOps
   remoteLoadOps.clear();
-  std::copy_if(ops.begin(),
-               ops.end(),
-               std::back_inserter(remoteLoadOps),
-               [](Op *op) { return op->isConvertibleTo<RemoteLoadOp>(); });
-
-  // Populate remoteStoreOps
   remoteStoreOps.clear();
-  std::copy_if(ops.begin(),
-               ops.end(),
-               std::back_inserter(remoteStoreOps),
-               [](Op *op) { return op->isConvertibleTo<RemoteStoreOp>(); });
-
-  // Populate remoteStoreOps
   multiExchangeOps.clear();
-  std::copy_if(ops.begin(),
-               ops.end(),
-               std::back_inserter(multiExchangeOps),
-               [](Op *op) { return op->isConvertibleTo<MultiExchangeOp>(); });
+  for (auto op : ops) {
+    // Populate remoteLoadOps
+    if (op->isConvertibleTo<RemoteLoadOp>()) {
+      remoteLoadOps.insert(op);
+    }
+    // Populate remoteStoreOps
+    if (op->isConvertibleTo<RemoteStoreOp>()) {
+      remoteStoreOps.insert(op);
+    }
+    // Populate multiExchange ops
+    if (op->isConvertibleTo<MultiExchangeOp>()) {
+      multiExchangeOps.insert(op);
+    }
+  }
 
   // Calculate numLoadBytes.
   numLoadBytes = calcNumLoadBytes();
@@ -125,28 +124,34 @@ AccumulateOuterFragmentParallelizer::OpCluster::OpCluster(const Graph *graph,
   }
 }
 
-void AccumulateOuterFragmentParallelizer::OpCluster::gatherTensorIds(
+bool AccumulateOuterFragmentParallelizer::OpCluster::isGradientClippingCluster()
+    const {
+  // Check if any of the ops is a gradient clipping op
+  return std::any_of(ops.begin(), ops.end(), [](const Op *op) {
+    return op->isGradientClippingOp();
+  });
+}
+
+void AccumulateOuterFragmentParallelizer::OpCluster::gatherTensors(
     const Op *op,
-    TensorIds &tensorIds) {
-  tensorIds.reserve(op->input->tensors().size() + op->output->tensors().size());
+    Tensors &tensors) {
   for (const auto tensor : op->input->tensors()) {
     if (!isOptimizerLikeTensor(tensor)) {
-      tensorIds.push_back(tensor->id);
+      tensors.insert(tensor);
     }
   }
   for (const auto tensor : op->output->tensors()) {
     if (!isOptimizerLikeTensor(tensor)) {
-      tensorIds.push_back(tensor->id);
+      tensors.insert(tensor);
     }
   }
-  std::sort(tensorIds.begin(), tensorIds.end());
 }
 
 bool AccumulateOuterFragmentParallelizer::OpCluster::overlaps(
     const OpCluster &rhs) const {
   // Check if the same tensors are used. Trying to avoid using a double loop
   // here for efficiency reasons.
-  if (efficientOverlapCheck(rhs.tensorIds, tensorIds)) {
+  if (efficientOverlapCheck(rhs.tensors, tensors)) {
     return true;
   }
 
@@ -155,16 +160,10 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::overlaps(
   auto option1Size = rhs.ops.size() + adjacentOps.size();
   auto option2Size = ops.size() + rhs.adjacentOps.size();
   if (option1Size < option2Size) {
-    if (efficientOverlapCheck(rhs.ops, adjacentOps)) {
-      return true;
-    }
+    return efficientOverlapCheck(rhs.ops, adjacentOps);
   } else {
-    if (efficientOverlapCheck(ops, rhs.adjacentOps)) {
-      return true;
-    }
+    return efficientOverlapCheck(ops, rhs.adjacentOps);
   }
-
-  return false;
 }
 
 bool AccumulateOuterFragmentParallelizer::OpCluster::hasRemoteOp() const {
@@ -177,30 +176,22 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::hasRemoteOp() const {
 
 void AccumulateOuterFragmentParallelizer::OpCluster::absorb(
     const OpCluster &rhs) {
-  ops.insert(ops.end(), rhs.ops.begin(), rhs.ops.end());
-  std::sort(ops.begin(), ops.end());
-  adjacentOps.insert(
-      adjacentOps.end(), rhs.adjacentOps.begin(), rhs.adjacentOps.end());
-  std::sort(adjacentOps.begin(), adjacentOps.end());
-  tensorIds.insert(tensorIds.end(), rhs.tensorIds.begin(), rhs.tensorIds.end());
-  std::sort(tensorIds.begin(), tensorIds.end());
-  remoteLoadOps.insert(
-      remoteLoadOps.end(), rhs.remoteLoadOps.begin(), rhs.remoteLoadOps.end());
-  remoteStoreOps.insert(remoteStoreOps.end(),
-                        rhs.remoteStoreOps.begin(),
-                        rhs.remoteStoreOps.end());
-  multiExchangeOps.insert(multiExchangeOps.end(),
-                          rhs.multiExchangeOps.begin(),
+  ops.insert(rhs.ops.begin(), rhs.ops.end());
+  adjacentOps.insert(rhs.adjacentOps.begin(), rhs.adjacentOps.end());
+  tensors.insert(rhs.tensors.begin(), rhs.tensors.end());
+  remoteLoadOps.insert(rhs.remoteLoadOps.begin(), rhs.remoteLoadOps.end());
+  remoteStoreOps.insert(rhs.remoteStoreOps.begin(), rhs.remoteStoreOps.end());
+  multiExchangeOps.insert(rhs.multiExchangeOps.begin(),
                           rhs.multiExchangeOps.end());
   numLoadBytes = calcNumLoadBytes();
   loadShapes.insert(rhs.loadShapes.begin(), rhs.loadShapes.end());
 }
 
 bool AccumulateOuterFragmentParallelizer::OpCluster::hasVirtualGraphId() const {
-  if (!ops[0]->hasVirtualGraphId()) {
+  if (!(*ops.begin())->hasVirtualGraphId()) {
     return false;
   } else {
-    auto vid = ops[0]->getVirtualGraphId();
+    auto vid = (*ops.begin())->getVirtualGraphId();
     for (auto op : ops) {
       if (!op->hasVirtualGraphId() || op->getVirtualGraphId() != vid) {
         return false;
@@ -212,8 +203,9 @@ bool AccumulateOuterFragmentParallelizer::OpCluster::hasVirtualGraphId() const {
 
 VGraphId
 AccumulateOuterFragmentParallelizer::OpCluster::getVirtualGraphId() const {
-  return ops[0]->hasVirtualGraphId() ? ops[0]->getVirtualGraphId()
-                                     : unusedVGraphId;
+  return (*ops.begin())->hasVirtualGraphId()
+             ? (*ops.begin())->getVirtualGraphId()
+             : unusedVGraphId;
 }
 
 int64_t
@@ -303,7 +295,7 @@ bool AccumulateOuterFragmentParallelizer::apply(Graph &graph) const {
         auto &clusters = it1->second;
         if (!clusters.empty()) {
           opClustersToParallelize.push_back(clusters.front());
-          clusters.pop_front();
+          clusters.erase(clusters.begin());
         }
 
         // Update it1.
@@ -376,21 +368,32 @@ vector<vector<Op *>> AccumulateOuterFragmentParallelizer::getBinConstraints(
   // Sort the groups by combined loaded bytes.
   sortOpClusters(clusters);
 
-  vector<vector<Op *>> postBinConstaints;
+  vector<vector<Op *>> gradientClippingPhase;
+  vector<vector<Op *>> emptyTensorListPhase;
+  vector<vector<Op *>> finalClustersPhase;
   for (auto cluster : clusters) {
-    if (cluster.tensorIds.empty()) {
-      // If a cluster's tensorIds is empty then it only
+    if (cluster.isGradientClippingCluster()) {
+      gradientClippingPhase.push_back({cluster.ops.begin(), cluster.ops.end()});
+    } else if (cluster.tensors.empty()) {
+      // If a cluster's tensors is empty then it only
       // consumes/produces optimizerLikeTensors. These should be placed at
       // the start to avoid scheduling conflicts between data and
       // bin constraints.
-      binConstraints.push_back(cluster.ops);
+      emptyTensorListPhase.push_back({cluster.ops.begin(), cluster.ops.end()});
     } else {
-      postBinConstaints.push_back(cluster.ops);
+      finalClustersPhase.push_back({cluster.ops.begin(), cluster.ops.end()});
     }
   }
 
-  binConstraints.insert(
-      binConstraints.end(), postBinConstaints.begin(), postBinConstaints.end());
+  binConstraints.insert(binConstraints.end(),
+                        gradientClippingPhase.begin(),
+                        gradientClippingPhase.end());
+  binConstraints.insert(binConstraints.end(),
+                        emptyTensorListPhase.begin(),
+                        emptyTensorListPhase.end());
+  binConstraints.insert(binConstraints.end(),
+                        finalClustersPhase.begin(),
+                        finalClustersPhase.end());
 
   std::string debugString;
   for (size_t constraintIdx = 0; constraintIdx < binConstraints.size();
@@ -447,16 +450,6 @@ AccumulateOuterFragmentParallelizer::getGradientClippingClusters(
           ExecutionContext::AccumulateOuterFragment) {
         gradCluster.absorb({&graph, x});
         opSearch.pushInputProducers(x);
-
-        // All ops which are tied to another op in the gradient clipping
-        // cluster must themselves be in the gradient clipping cluster
-        // For instance when merging collectives
-        for (auto before : graph.topoCons->getTiedBefores(x)) {
-          opSearch.push(before);
-        }
-        for (auto after : graph.topoCons->getTiedAfters(x)) {
-          opSearch.push(after);
-        }
       }
     }
 
@@ -468,6 +461,25 @@ AccumulateOuterFragmentParallelizer::getGradientClippingClusters(
       if (x->isGradientClippingOp()) {
         gradCluster.absorb({&graph, x});
         opSearch.pushOutputConsumers(x);
+      }
+    }
+
+    // All ops which are tied to another op in the gradient clipping
+    // cluster should be included in the gradient clipping cluster
+    // so that they can be be scheduled correctly. For example when merging
+    // collectives
+    for (Op *x : gradCluster.ops) {
+      opSearch.push(x);
+    }
+    while (!opSearch.empty()) {
+      Op *x = opSearch.pop();
+      for (auto before : graph.topoCons->getTiedBefores(x)) {
+        gradCluster.absorb({&graph, before});
+        opSearch.push(before);
+      }
+      for (auto after : graph.topoCons->getTiedAfters(x)) {
+        gradCluster.absorb({&graph, after});
+        opSearch.push(after);
       }
     }
 
@@ -556,8 +568,8 @@ void AccumulateOuterFragmentParallelizer::populateOpClusters(
       const auto vid = cluster.getVirtualGraphId();
       clustersMap[vid].push_back(cluster);
     } else {
-      logging::warn("Unexpectedly encountered ops in the outer fragment "
-                    "without a virtual graph id");
+      logging::warn("A cluster in the outer fragment contains multiple virtual "
+                    "graph ids. It cannot be automatically parallelized");
     }
   }
 }
@@ -582,18 +594,42 @@ void AccumulateOuterFragmentParallelizer::filterOpClusters(
 }
 
 void AccumulateOuterFragmentParallelizer::sortOpClusters(
-    // Sort op groups in descending order of the number
+    // Sort op groups in ascending order of the number
     // of bytes that are loaded. This is so we can better
     // parallelise similar groups across virtual graphs.
     OpClusters &clusters) const {
-  clusters.sort([](const OpCluster &c1, const OpCluster &c2) {
-    // Descending order of size.
-    return c1.numLoadBytes < c2.numLoadBytes;
-  });
+
+  POpCmp opCmp;
+  std::stable_sort(
+      clusters.begin(),
+      clusters.end(),
+      [&opCmp](const OpCluster &c1, const OpCluster &c2) {
+        if (c1.isGradientClippingCluster() && !c2.isGradientClippingCluster()) {
+          return true;
+        } else if (c2.isGradientClippingCluster() &&
+                   c1.isGradientClippingCluster()) {
+          return false;
+        } else if (c1.isGradientClippingCluster() &&
+                   c2.isGradientClippingCluster()) {
+          throw error(
+              "[AccumulateOuterFragmentParallelizer::sortOpClusters] There "
+              "is more than one gradient clipping cluster per virtual "
+              "graph id. This is very unexepected.");
+        } else if (c1.numLoadBytes != c2.numLoadBytes) {
+          // Ascending order of size.
+          return c1.numLoadBytes < c2.numLoadBytes;
+        } else {
+          // There may be cases where the clusters may have the same
+          // numLoadBytes, e.g. same size variables so we introduce a secondary
+          // order based on the first op in each cluster to make sure ordering
+          // is always well-defined
+          return opCmp(*c1.ops.begin(), *c2.ops.begin());
+        }
+      });
 }
 
 void AccumulateOuterFragmentParallelizer::sortOpClusters(
-    // Sort op groups in descending order of the number
+    // Sort op groups in ascending order of the number
     // of bytes that are loaded. This is so we can better
     // parallelise similar groups across virtual graphs.
     OpClustersMap &clustersMap) const {
@@ -609,11 +645,9 @@ void AccumulateOuterFragmentParallelizer::tryToParallelizeOpClusters(
   OpCluster::Ops remoteLoadOps;
   OpCluster::Ops remoteStoreOps;
   for (auto cluster : opClusters) {
-    remoteLoadOps.insert(remoteLoadOps.end(),
-                         cluster.remoteLoadOps.begin(),
+    remoteLoadOps.insert(cluster.remoteLoadOps.begin(),
                          cluster.remoteLoadOps.end());
-    remoteStoreOps.insert(remoteStoreOps.end(),
-                          cluster.remoteStoreOps.begin(),
+    remoteStoreOps.insert(cluster.remoteStoreOps.begin(),
                           cluster.remoteStoreOps.end());
   }
 

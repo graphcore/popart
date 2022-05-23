@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <popart/pointercomparators.hpp>
 #include <popart/transforms/transform.hpp>
 
 #include "popart/names.hpp"
@@ -58,10 +59,10 @@ public:
    * \return a vector of collective ops that can be merged with the baseOp
    */
   template <typename BaseType>
-  static std::vector<BaseType *>
+  static std::set<BaseType *, POpCmp>
   lookForMatchingOps(BaseType *baseOp,
                      const std::vector<Op *> &schedule,
-                     std::set<Op *> &opsToProcess);
+                     std::set<Op *, POpCmp> &opsToProcess);
 
   /**
    *  Processing baseOp involves finding all other collective ops in the graph
@@ -77,7 +78,7 @@ public:
   template <typename BaseType>
   void processOp(BaseType *baseOp,
                  const std::vector<Op *> &schedule,
-                 std::set<Op *> &opsToProcess) const;
+                 std::set<Op *, POpCmp> &opsToProcess) const;
 };
 } // namespace popart
 

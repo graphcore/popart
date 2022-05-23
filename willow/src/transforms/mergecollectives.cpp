@@ -103,7 +103,6 @@ std::unique_ptr<MultiOpType> MergeCollectivesTransform::constructMultiOp(
   multiOp->setup();
 
   multiOp->setVirtualGraphId(baseOp->getVirtualGraphId());
-  multiOp->settings.executionContext = baseOp->settings.executionContext;
   if (baseOp->hasPipelineStage()) {
     multiOp->setPipelineStage(baseOp->getPipelineStage());
   }
@@ -260,6 +259,20 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
                                     inputVirtualGraphIdAndTileSet,
                                     outputVirtualGraphIdAndTileSet);
   OpId multiOpId = multiOp->id;
+
+  // Transfer settings
+  multiOp->settings.executionContext = baseOp->settings.executionContext;
+
+  bool containsGradientClippingOps =
+      std::any_of(matchingOps.begin(), matchingOps.end(), [](const Op *op) {
+        return op->isGradientClippingOp();
+      });
+  multiOp->settings.gradientClippingOp = containsGradientClippingOps;
+  bool containsOptimizerOps =
+      std::any_of(matchingOps.begin(), matchingOps.end(), [](const Op *op) {
+        return op->isOptimizerOp();
+      });
+  multiOp->settings.optimizerOp = containsOptimizerOps;
 
   // Connect input, outputs and linked indices
   InIndex inputIndex{0};

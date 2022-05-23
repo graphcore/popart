@@ -47,8 +47,10 @@ protected:
   // IDs to check this quickly.
   class OpCluster {
   public:
-    using Ops       = std::vector<Op *>;
-    using TensorIds = std::vector<TensorId>;
+    // Using sorted sets ensures that the ops and tensors are processed in a
+    // deterministic order, and enables fast overlap checks between clusters
+    using Ops     = std::set<Op *, POpCmp>;
+    using Tensors = std::set<Tensor *, PTensorCmp>;
 
     OpCluster(const Graph *graph, Op *op);
     OpCluster() = delete;
@@ -67,9 +69,13 @@ protected:
     // pick max)
     int64_t calcNumLoadBytes() const;
 
-    // Get the tensor IDs for op's inputs and outputs and put them in the
-    // tensorIds set.
-    static void gatherTensorIds(const Op *op, TensorIds &tensorIds);
+    // Gradient clipping clusters require special treatment and can be
+    // identified with this function
+    bool isGradientClippingCluster() const;
+
+    // Get the tensors for op's inputs and outputs and put them in the
+    // tensors set.
+    static void gatherTensors(const Op *op, Tensors &tensors);
 
     // The graph.
     const Graph *graph;
@@ -89,14 +95,14 @@ protected:
     std::set<Shape> loadShapes;
     // VGraphId as shared by the ops in this group.
     VGraphId virtualGraphId;
-    // The tensors IDs that are inputs/outputs of ops in this group. This set is
+    // The tensors that are inputs/outputs of ops in this group. This set is
     // used to detect overlaps between groups with reasonable efficiency. This
     // vector is sorted so overlap checks are quick.
-    TensorIds tensorIds;
+    Tensors tensors;
   };
 
-  using Ops           = std::vector<Op *>;
-  using OpClusters    = std::list<OpCluster>;
+  using Ops           = std::set<Op *, POpCmp>;
+  using OpClusters    = std::vector<OpCluster>;
   using OpClustersMap = std::map<VGraphId, OpClusters>;
 
   // Get a partitioning of ops in the accumulate outer fragment.
