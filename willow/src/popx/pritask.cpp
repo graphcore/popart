@@ -398,8 +398,7 @@ PriTasks::getLinearised(std::set<DependencyType> dependencies,
 
   std::set<DependencyType> removeDepTypes = {DependencyType::Output,
                                              DependencyType::Scheduler,
-                                             DependencyType::Tensor,
-                                             DependencyType::SubGraph};
+                                             DependencyType::Tensor};
 
   for (auto &x : tasksMapCopy) {
     dependantsOf[x.first] = {};

@@ -143,24 +143,6 @@ std::ostream &operator<<(std::ostream &ost, const TileSet &ts) {
   return ost;
 }
 
-std::ostream &operator<<(std::ostream &ost, const CodeMemoryType &cmt) {
-  switch (cmt) {
-  case (CodeMemoryType::Buffer): {
-    ost << "Buffer";
-    break;
-  }
-  case (CodeMemoryType::ExecutableMemory): {
-    ost << "ExecutableMemory";
-    break;
-  }
-  default: {
-    throw error("Unexpected value for CodeMemoryType {}",
-                static_cast<int>(cmt));
-  }
-  }
-  return ost;
-}
-
 std::ostream &operator<<(std::ostream &ost,
                          const ReplicatedTensorSharding &rts) {
   switch (rts) {

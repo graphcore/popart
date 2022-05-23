@@ -38,15 +38,6 @@ enum class TileSet {
   N = 3
 };
 
-/**
- * Enum for specifying the location type that code will be copied from or to.
- * One of:
- *
- * Buffer - Stored in non-executable buffer memory.
- * ExecutableMemory - Stored in executable memory.
- */
-enum class CodeMemoryType { Buffer = 0, ExecutableMemory, N };
-
 using VGraphIdAndTileSet = std::pair<VGraphId, TileSet>;
 
 struct VGraphIdAndTileSetCmp {
@@ -186,7 +177,6 @@ std::ostream &operator<<(std::ostream &, const VGraphIdAndTileSet &);
 std::ostream &operator<<(std::ostream &, const VGraphIdAndTileSetSet &);
 std::ostream &operator<<(std::ostream &, const TensorStorage &);
 std::ostream &operator<<(std::ostream &, const TileSet &);
-std::ostream &operator<<(std::ostream &, const CodeMemoryType &);
 std::ostream &operator<<(std::ostream &, const ReplicatedTensorSharding &);
 std::ostream &operator<<(std::ostream &, const TensorLocation &);
 

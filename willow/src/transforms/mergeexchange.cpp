@@ -14,7 +14,6 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
-#include <popart/op/exchange/codecopy.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/exchange/remote.hpp>
@@ -118,7 +117,6 @@ bool isMergeableOp(Op *const op) {
          op->isConvertibleTo<RemoteStoreOp>() ||
          op->isConvertibleTo<HostLoadOp>() ||
          op->isConvertibleTo<HostStoreOp>() ||
-         op->isConvertibleTo<ExternalCodeCopyOp>() ||
          op->isConvertibleTo<MultiExchangeOp>();
 }
 } // namespace

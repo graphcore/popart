@@ -14,7 +14,6 @@
 #include <poplar/TensorCloneMethod.hpp>
 #include <popops/HostSliceTensor.hpp>
 #include <popart/ir.hpp>
-#include <popart/op/exchange/codecopy.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/popx/op/exchange/exchangex.hpp>
@@ -232,21 +231,6 @@ getExchangeDescriptorx(Devicex *dv_p, ExchangeDescriptor descriptor) {
       throw internal_error("Unexpected exchange direction {}",
                            descriptor.getDirection());
     }
-  } else if (descriptor.isCodeCopy()) {
-    switch (descriptor.getDirection()) {
-    case ExchangeDirection::Load: {
-      return std::make_unique<ExternalCodeLoadDescriptorx>(dv_p, descriptor);
-      break;
-    }
-    case ExchangeDirection::Store: {
-      throw error(
-          "ExchangeDirection::Store not support for ExternalCodeLoad op.");
-      break;
-    }
-    default:
-      throw internal_error("Unexpected exchange direction {}",
-                           descriptor.getDirection());
-    }
   } else {
     throw internal_error("Unexpected exchange descriptor.");
   }
@@ -266,11 +250,6 @@ RemoteLoadDescriptorx::RemoteLoadDescriptorx(Devicex *dv_p_,
 
 RemoteStoreDescriptorx::RemoteStoreDescriptorx(Devicex *dv_p_,
                                                ExchangeDescriptor descriptor_)
-    : ExchangeDescriptorx(dv_p_, descriptor_) {}
-
-ExternalCodeLoadDescriptorx::ExternalCodeLoadDescriptorx(
-    Devicex *dv_p_,
-    ExchangeDescriptor descriptor_)
     : ExchangeDescriptorx(dv_p_, descriptor_) {}
 
 void HostLoadDescriptorx::pre(snap::Graph &graph,
@@ -548,55 +527,6 @@ void RemoteStoreDescriptorx::exchange(snap::Graph &graph,
 void RemoteStoreDescriptorx::post(snap::Graph &graph,
                                   snap::program::Sequence &prog,
                                   poplar::DebugContext context) {}
-
-void ExternalCodeLoadDescriptorx::pre(snap::Graph &graph,
-                                      snap::program::Sequence &prog,
-                                      poplar::DebugContext context) {
-  auto fbmt =
-      getFunctionBufferMappingType(*descriptor.getDestinationCodeMemoryType());
-  dv_p->lowering().addFunctionBuffers(*descriptor.getGraphToLoadId(), fbmt);
-}
-
-void ExternalCodeLoadDescriptorx::exchange(snap::Graph &graph,
-                                           snap::program::Sequence &prog,
-                                           poplar::DebugContext context) {
-  auto gid = *descriptor.getGraphToLoadId();
-  auto fbmt =
-      getFunctionBufferMappingType(*descriptor.getDestinationCodeMemoryType());
-  if (dv_p->lowering().hasFunctionBuffer(gid, fbmt)) {
-    auto graph_progs = dv_p->lowering().getFunctionBuffer(gid, fbmt);
-
-    for (auto pair : graph_progs) {
-      auto f      = pair.first;
-      auto buffer = pair.second;
-
-      prog.getPoplarSequence().add(poplar::program::Copy(buffer, f, context));
-    }
-
-  } else {
-    throw error("No poplar::FunctionBuffer found for graph id {}", gid.str());
-  }
-}
-
-void ExternalCodeLoadDescriptorx::post(snap::Graph &graph,
-                                       snap::program::Sequence &prog,
-                                       poplar::DebugContext context) {}
-
-poplar::FunctionBufferMappingType
-ExternalCodeLoadDescriptorx::getFunctionBufferMappingType(
-    CodeMemoryType destination) {
-  switch (destination) {
-  case popart::CodeMemoryType::Buffer:;
-    throw error(
-        "LocationType `Buffer` not yet supported for ExternalCodeLoadOp");
-  case popart::CodeMemoryType::ExecutableMemory:
-    return poplar::FunctionBufferMappingType::REMOTE;
-  case popart::CodeMemoryType::N:
-  default:
-    break;
-  }
-  throw error("Unsupported LocationType for ExternalCodeLoadOp");
-}
 
 } // namespace popx
 } // namespace popart

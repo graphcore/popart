@@ -3875,11 +3875,7 @@ const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }
 Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
 
 Graph &Ir::getGraph(const GraphId &graphId) const {
-  if (graphs.find(graphId) != graphs.end()) {
-    return *graphs.at(graphId);
-  } else {
-    throw error("Graph not found for GraphId {}, IR id {}", graphId, this->id);
-  }
+  return *graphs.at(graphId);
 }
 
 void Ir::setMainGraphPathFromLoss() {
@@ -4206,8 +4202,8 @@ std::size_t std::hash<popart::Ir>::operator()(const popart::Ir &ir) const {
   return seed;
 }
 
-std::size_t
-std::hash<popart::IrBundle>::operator()(const popart::IrBundle &bundle) const {
+std::size_t std::hash<popart::IrBundle>::
+operator()(const popart::IrBundle &bundle) const {
   size_t seed = 0;
 
   boost::hash_combine(

@@ -24,7 +24,7 @@ def check_can_get_graph(ir, graphId):
 
 def check_cant_get_graph(ir, graphId):
     """ Helper function, test an IR has a Graph with ID graphId. """
-    with pytest.raises(popart.popart_exception):
+    with pytest.raises(IndexError):
         ir.getGraph(graphId)
 
 

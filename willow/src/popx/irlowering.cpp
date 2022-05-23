@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <ext/new_allocator.h>
 #include <fstream>
 #include <functional>
 #include <gcl/TileAllocation.hpp>
@@ -18,6 +17,7 @@
 #include <snap/DataStream.hpp>
 #include <snap/Graph.hpp>
 #include <snap/Program.hpp>
+#include <snap/RemoteBuffer.hpp>
 #include <snap/Tensor.hpp>
 #include <snap/poplin/codelets.hpp>
 #include <snap/popnn/codelets.hpp>
@@ -35,9 +35,7 @@
 #include <poplar/CodeletFileType.hpp>
 #include <poplar/CycleCount.hpp>
 #include <poplar/Executable.hpp>
-#include <poplar/FunctionBufferMappingType.hpp>
 #include <poplar/Graph.hpp>
-#include <poplar/GraphElements.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <poplar/ProfileValue.hpp>
 #include <poplar/Program.hpp>
@@ -55,6 +53,7 @@
 #include <poplin/MatMul.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
+#include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
 #include <popops/Zero.hpp>
@@ -69,7 +68,6 @@
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
 #include <popart/op/convbase.hpp>
-#include <popart/op/exchange/codecopy.hpp>
 #include <popart/op/exchange/hostcopy.hpp>
 #include <popart/op/exchange/multiexchange.hpp>
 #include <popart/op/getrandomseed.hpp>
@@ -138,6 +136,8 @@
 namespace snap {
 class Function;
 } // namespace snap
+
+namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
@@ -1481,11 +1481,6 @@ IrLowering::getFragmentFunction(const Graph &_graph,
   return progs_.getFragmentFunction(_graph, subgraphPart, graph());
 }
 
-void IrLowering::addFunctionBuffers(const GraphId gid,
-                                    poplar::FunctionBufferMappingType fbmt) {
-  progs().addFunctionBuffers(gid, fbmt);
-}
-
 void IrLowering::addPipelinedCopyTasks(PriTasks &tasks) {
   auto schedule =
       ir().getMainGraph().getOpSchedule({}, RequireOptimalSchedule::Yes);
@@ -1923,7 +1918,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  auto addGraphOpsToDeps = [this, &deps](const Graph *graph) {
+  auto addGraphOpsToDeps = [&](const Graph *graph) {
     const auto schedule = graph->getOpSchedule({}, RequireOptimalSchedule::Yes);
 
     logging::devicex::debug("Add Graph Ops to dependencies, for {} Ops",
@@ -1955,26 +1950,6 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
 
   for (auto &graph : op->getCalledGraphs()) {
     addGraphOpsToDeps(graph);
-  }
-
-  // Make sure sub-graph op tasks run before remote code tasks.
-  if (ExternalCodeCopyOp *codeCopy = dynamic_cast<ExternalCodeCopyOp *>(op)) {
-    auto &graph =
-        ir().getGraph(*codeCopy->getExchangeDescriptor(0).getGraphToLoadId());
-    const auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
-
-    logging::devicex::debug("Add Graph Ops to op {}'s dependencies, for {} Ops",
-                            op->debugName(),
-                            schedule.size());
-
-    for (auto graphOp : schedule) {
-      // Add a Subgraph dependency as above, we do not need to worry about
-      // Tensor dependencies.
-      PriTaskDependency taskId = {opTaskId(graphOp), DependencyType::SubGraph};
-      if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
-        deps.push_back(taskId);
-      }
-    }
   }
 
   logging::devicex::debug("Adding PriTaskDep to the order of the Ir schedule");
@@ -2029,28 +2004,28 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   };
 
   if (HostLoadOp *hlop = dynamic_cast<HostLoadOp *>(op)) {
-    auto hostStreamDependency =
+    auto hostStreamDepencendy =
         PriTaskDependency(streamFromHostTaskId(hlop->getHostStreamTensorId()),
                           DependencyType::Tensor);
     logging::devicex::trace(
-        "Op {} depends on stream {}", op->debugName(), hostStreamDependency);
-    deps.push_back(hostStreamDependency);
+        "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+    deps.push_back(hostStreamDepencendy);
   }
 
   if (HostStoreOp *hsop = dynamic_cast<HostStoreOp *>(op)) {
-    auto hostStreamDependency = PriTaskDependency(
+    auto hostStreamDepencendy = PriTaskDependency(
         streamToHostTaskId(hsop->getHostStreamTensorId(), true),
         DependencyType::Tensor);
     logging::devicex::trace(
-        "Op {} depends on stream {}", op->debugName(), hostStreamDependency);
-    deps.push_back(hostStreamDependency);
+        "Op {} depends on stream {}", op->debugName(), hostStreamDepencendy);
+    deps.push_back(hostStreamDepencendy);
   }
 
   if (MultiExchangeOp *exchangeOp = dynamic_cast<MultiExchangeOp *>(op)) {
     for (int index = 0; index < exchangeOp->getNumExchanges(); ++index) {
       auto descriptor = exchangeOp->getExchangeDescriptor(index);
       if (descriptor.isHostExchange()) {
-        auto hostStreamDependency =
+        auto hostStreamDepencendy =
             ((descriptor.getDirection() == ExchangeDirection::Store)
                  ? PriTaskDependency(
                        streamToHostTaskId(descriptor.getHostStreamTensorId(),
@@ -2064,8 +2039,8 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
             op->debugName(),
             index,
             descriptor.getDirection(),
-            hostStreamDependency);
-        deps.push_back(hostStreamDependency);
+            hostStreamDepencendy);
+        deps.push_back(hostStreamDepencendy);
       }
     }
   }
@@ -3292,18 +3267,16 @@ void IrLowering::prepareGraph() {
   // Call(A) > Convolution > AddBias
   // (due to Opx output directed acyclic graph)
   // Convolution > AddBias > Call(A)
-  // (due to AddBias creating the tensor mapping for "bias" based on
-  // "conv_out")
+  // (due to AddBias creating the tensor mapping for "bias" based on "conv_out")
   //
   // Two-step linearisation separates growing Opx and creating Poplar
   // tensors, from adding the Poplar sequences, resulting from growing Opx,
   // together to form a linear order, in which the Opx are executed.
   //
-  // With two-step task linearisation, there are multiple types of
-  // dependencies: Call(A) depends on all Op tasks within graph A (SUBGRAPH
-  // dependency) Call(B) depends on all Op tasks within graph B (SUBGRAPH
-  // dependency) Convolution depends on "data" and "weight" (OUTPUT or TENSOR
-  // dependency,
+  // With two-step task linearisation, there are multiple types of dependencies:
+  // Call(A) depends on all Op tasks within graph A (SUBGRAPH dependency)
+  // Call(B) depends on all Op tasks within graph B (SUBGRAPH dependency)
+  // Convolution depends on "data" and "weight" (OUTPUT or TENSOR dependency,
   //       depending on the creator and populator of those tensors)
   // Convolution depends on Call(A) (SCHEDULE dependency)
   //
@@ -3316,9 +3289,9 @@ void IrLowering::prepareGraph() {
   // can be grown independently from growing Call(A), thereby removing the
   // circular dependency.
   //
-  // The linearized order in which Opx are grown for the example above
-  // becomes: InitOp(x) > RemoteLoad(x) > Convolution > InitOp(y) >
-  // RemoteLoad(y) > AddBias > Call(A) > Call(B) > Call(B)
+  // The linearized order in which Opx are grown for the example above becomes:
+  // InitOp(x) > RemoteLoad(x) > Convolution > InitOp(y) > RemoteLoad(y) >
+  // AddBias > Call(A) > Call(B) > Call(B)
   //
   // Step 2:
   // As soon as all data paths in a given graph (here A, B or C) are grown,
@@ -3327,13 +3300,13 @@ void IrLowering::prepareGraph() {
   // The Poplar sequences can be emplaced in graph functions (for subgraphs)
   // or the main sequence (main graph) according to SCHEDULER dependencies
   // (following the IR scheduler order).
-  // All TENSOR dependencies can be ignored for emplacing sequences, since
-  // they are only necessary to create the weight tensors (InitOp outputs) in
-  // step 1.
+  // All TENSOR dependencies can be ignored for emplacing sequences, since they
+  // are only necessary to create the weight tensors (InitOp outputs) in step 1.
   //
-  // The linearized order in which sequences are emplaced for the example
-  // above becomes: InitOp(x) > RemoteLoad(x) > InitOp(y) > RemoteLoad(y) >
-  // Call(A) > Convolution > AddBias > Call(B) > Call(B)
+  // The linearized order in which sequences are emplaced for the example above
+  // becomes:
+  // InitOp(x) > RemoteLoad(x) > InitOp(y) > RemoteLoad(y) > Call(A)
+  // > Convolution > AddBias > Call(B) > Call(B)
 
   // Mappings for each task from final sequence to intermediate sequence
   std::map<TaskId, SequenceMap> seqs;
@@ -3347,10 +3320,13 @@ void IrLowering::prepareGraph() {
                                             *this,
                                             true);
 
-  logging::devicex::debug(
-      "Creating linear task schedule with OUTPUT and SCHEDULER dependencies.");
-  auto emplaceSchedule = tasks.getLinearised(
-      {DependencyType::Output, DependencyType::Scheduler}, *this, false);
+  logging::devicex::debug("Creating linear task schedule with OUTPUT, "
+                          "SUBGRAPH and SCHEDULER dependencies.");
+  auto emplaceSchedule = tasks.getLinearised({DependencyType::Output,
+                                              DependencyType::SubGraph,
+                                              DependencyType::Scheduler},
+                                             *this,
+                                             false);
 
   auto emplaceTaskSeqs = [&](std::set<TaskId> filter) {
     // 2.) Add intermediate sequences in final sequence
@@ -3389,8 +3365,8 @@ void IrLowering::prepareGraph() {
     std::set<TaskId> subgraphTaskNames =
         createTask.getDependenciesOfTypes({DependencyType::SubGraph});
     if (subgraphTaskNames.size() > 0) {
-      // Make sure the subgraph sequences are emplaced before the
-      // scopeFragments of the called graphs are constructed.
+      // Make sure the subgraph sequences are emplaced before the scopeFragments
+      // of the called graphs are constructed.
       logging::devicex::trace("  Task depends on {} subgraph tasks",
                               subgraphTaskNames.size());
       emplaceTaskSeqs(subgraphTaskNames);
@@ -3518,9 +3494,8 @@ poplar::Executable IrLowering::getExecutable() {
       // If the compilations throws an exception due to memory
       // allocation i.e. the program does not fit show graph profile and
       // re-throw the exception In certain cases poplar will throw the error
-      // without a graph profile. The following engine option needs to be set
-      // to enable the graph profile in this case
-      // "debug.allowOutOfMemory":"true"
+      // without a graph profile. The following engine option needs to be set to
+      // enable the graph profile in this case "debug.allowOutOfMemory":"true"
       progressLogger.complete();
       logging::devicex::err("Memory allocation error : {}", e.what());
       throw devicex_memory_allocation_err(e, reportOptions);
@@ -3624,8 +3599,8 @@ PriTask IrLowering::fromHostTask(Tensor *tensor, snap::program::Sequence &sq) {
     if (tensors_.hasViewChangers(tensor->id)) {
       if (tensors_.get(tensor->id).numElements() >
           tensors_.getView(tensor->id).numElements()) {
-        // The view is not covering the whole tensor, therefore it is
-        // necessary to zero-init it
+        // The view is not covering the whole tensor, therefore it is necessary
+        // to zero-init it
         popops::zero(graph().getPoplarGraph(),
                      tensors_.get(tensor->id).getPoplarTensor(),
                      seqs.getSequence(&sq).getPoplarSequence(),
@@ -3684,8 +3659,8 @@ PriTask IrLowering::toHostTask(Tensor *tensor,
         stype == ToHostStreamType::SumAnchor
             ? tensors_.getView(anchorSumPrefix() + tensor->id)
             : tensors_.getView(tensor->id);
-    // verify that number of elements of poplar Tensor and poplar Stream are
-    // the same
+    // verify that number of elements of poplar Tensor and poplar Stream are the
+    // same
     auto nElmsStream = poplarStream.numElements();
     auto nElmsTensor = anchorTensor.numElements();
     if (nElmsStream != nElmsTensor) {

@@ -9,7 +9,6 @@
 
 #include "popart/basicoptionals.hpp"
 #include "popart/error.hpp"
-#include "popart/graphid.hpp"
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op/exchange/exchange.hpp"
@@ -66,15 +65,6 @@ ExchangeDescriptor::ExchangeDescriptor(ExchangeDirection direction_,
     : direction(direction_), remoteBufferId(id_), hostStreamTensorId(),
       vgid(vgid_), tileSet(tileSet_), numInputs(numInputs_),
       numOutputs(numOutputs_), inplace(inplace_) {}
-
-ExchangeDescriptor::ExchangeDescriptor(
-    ExchangeDirection direction_,
-    GraphId id_,
-    TileSet destination_,
-    CodeMemoryType destinationCodeMemoryType_)
-    : direction(direction_), graphToLoadId(id_),
-      destinationCodeMemoryType(destinationCodeMemoryType_),
-      tileSet(destination_), numInputs(0), numOutputs(0), inplace(false) {}
 
 std::ostream &operator<<(std::ostream &ost, const ExchangeDirection &ed) {
   switch (ed) {

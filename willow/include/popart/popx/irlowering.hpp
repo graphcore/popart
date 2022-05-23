@@ -17,8 +17,6 @@
 #include <utility>
 #include <vector>
 #include <poplar/Executable.hpp>
-#include <poplar/FunctionBufferMappingType.hpp>
-#include <poplar/GraphElements.hpp>
 #include <poplar/OptionFlags.hpp>
 #include <poplar/ReplicatedStreamMode.hpp>
 #include <poplar/Type.hpp>
@@ -37,7 +35,6 @@
 
 #include "popart/datatype.hpp"
 #include "popart/error.hpp"
-#include "popart/graphid.hpp"
 #include "popart/logging.hpp"
 #include "popart/op.hpp"
 #include "popart/popx/debugcontextx.hpp"
@@ -58,6 +55,7 @@ struct MatMulParams;
 namespace snap {
 class Function;
 class Graph;
+class RemoteBuffer;
 
 namespace program {
 class Sequence;
@@ -528,49 +526,6 @@ public:
   // that can be called and return a specific one.
   snap::Function &getFragmentFunction(const Graph &graph,
                                       SubgraphPartIndex subgraphPart);
-
-  /**
-   * Add a vector of pairs {f, buffer} for a given graph id,
-   * FunctionBufferMappingType pair. This is enough for an
-   * [Internal|External]CodeCopy op to move code from the buffer in to the
-   * function. Note the subgraphpartitioner may have split this into multiple
-   * functions, so we require a vector of these for each graph.
-   *
-   * \param gid The graph id to add the functions and buffers for.
-   * \param fbmt The FunctionBufferMappingType to add the vector for.
-   */
-  void addFunctionBuffers(const GraphId gid,
-                          poplar::FunctionBufferMappingType fbmt);
-
-  // Shorthand storage type for storing functionbuffers.
-  using FunctionBuffers =
-      std::vector<std::pair<const poplar::Function, poplar::FunctionBuffer>>;
-  /**
-   * Get the Function Buffers for the given GraphId and
-   * FunctionBufferMappingType. Wrapper around popprograms function.
-   *
-   * \param gid The GraphId to lookup.
-   * \param fbmt The FunctionBufferMappingType to lookup.
-   * \returns FunctionBuffers the vector of functions and buffers.
-   */
-  FunctionBuffers getFunctionBuffer(const GraphId gid,
-                                    poplar::FunctionBufferMappingType fbmt) {
-    return progs().getFunctionBuffer(gid, fbmt);
-  }
-
-  /**
-   * Returns true if a functionBuffer vector exists for the given graphId /
-   * FunctionBufferMappingType. Wrapper around popprograms function.
-   *
-   * \param gid The graph id to lookup.
-   * \param fbmt The FunctionBufferMappingType to lookup.
-   * \returns true If pairs exist.
-   * \returns false Otherwise.
-   */
-  bool hasFunctionBuffer(const GraphId gid,
-                         poplar::FunctionBufferMappingType fbmt) {
-    return progs().hasFunctionBuffer(gid, fbmt);
-  }
 
   // A forward search of graph:
   //   - from inputs of the graph
