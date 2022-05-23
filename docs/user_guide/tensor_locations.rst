@@ -151,8 +151,8 @@ per-instance replication settings automatically:
 
 For more information about PopRun and PopDist, refer to the `user guide <https://docs.graphcore.ai/projects/poprun-user-guide/>`__, including details about the installation of Horovod if you are using the MPI communication protocol.
 
-When using distributed instances across two or more IPU Pods, the gateway link
-transfer speeds (IPU MK1, MK2) are lower than the IPU link speed within the Pod.
+When using distributed instances across two or more IPU Pods, the GW-Link
+transfer speeds (IPU MK1, MK2) are lower than the IPU-Link speed within the Pod.
 It is therefore more beneficial to load replica sharded tensors from streaming
 memory and ``AllGather`` across the replicated instances within a Pod rather
 than across all replicas.
