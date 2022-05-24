@@ -96,7 +96,7 @@ public:
    * Can't use BasicOptional() as this will try to call deleted GraphId(),
    * instead use empty string in GraphId(""), but set isSet false.
    */
-  OptionalGraphId() : BasicOptional(GraphId("")) { isSet = false; };
+  OptionalGraphId() : BasicOptional(GraphId("")) { isSet = false; }
 
   OptionalGraphId &operator=(const OptionalGraphId &) = default;
 
