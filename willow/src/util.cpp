@@ -175,9 +175,10 @@ std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
             graph.getTensors().get(inverseLossScaleId));
       } else {
         throw error("[AutomaticLossScale transform] Unable to find inverse "
-                    "loss scale tensor, '{}', in graph '{}'",
+                    "loss scale tensor, '{}', in graph '{}' for tensor '{}'",
                     inverseLossScaleId,
-                    graph.id);
+                    graph.id,
+                    variable->id);
       }
     }
   }
