@@ -45,7 +45,7 @@ void error::logMessage() {
   }
 #endif
 
-  logging::err(oss.str());
+  logging::err("{}", oss.str());
 }
 
 ErrorSource getErrorSource(const std::exception &e) {
