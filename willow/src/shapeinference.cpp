@@ -222,6 +222,11 @@ auto splitShapeInferenceFun = [](popart::ShapeInferenceContext &ctx) {
   }
 };
 
+auto tensorRemapShapeInferenceFun = [](popart::ShapeInferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+  propagateShapeFromInputToOutput(ctx, 0, 0);
+};
+
 // Shape inference is the process of infering the shape of the outputs of
 // a node in the ONNX graph. It is run each time a new node is added to the
 // model. It is executed inside BuilderImpl::runShapeInference via one of two
@@ -255,5 +260,9 @@ static popart::RegisterShapeInferenceFunction
 
 static popart::RegisterShapeInferenceFunction
     splitRegister11(popart::Onnx::Operators::Split_11, splitShapeInferenceFun);
+
+static popart::RegisterShapeInferenceFunction
+    tensorRemapRegister(popart::Onnx::CustomOperators::TensorRemap_1,
+                        tensorRemapShapeInferenceFun);
 
 } // namespace popart
