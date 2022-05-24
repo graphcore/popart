@@ -3882,7 +3882,11 @@ const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }
 Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
 
 Graph &Ir::getGraph(const GraphId &graphId) const {
-  return *graphs.at(graphId);
+  if (graphs.find(graphId) != graphs.end()) {
+    return *graphs.at(graphId);
+  } else {
+    throw error("Graph not found for GraphId {}, IR id {}", graphId, this->id);
+  }
 }
 
 void Ir::setMainGraphPathFromLoss() {

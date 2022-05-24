@@ -13,9 +13,15 @@
 #include <utility>
 #include <vector>
 #include <popef/Types.hpp>
+#include <popart/graphid.hpp>
 #include <popart/names.hpp>
 #include <popart/popx/pritask.hpp>
 
+namespace poplar {
+class Function;
+class FunctionBuffer;
+enum class FunctionBufferMappingType;
+} // namespace poplar
 namespace snap {
 class Graph;
 } // namespace snap
@@ -196,6 +202,50 @@ public:
                         std::ostringstream &ss) const;
 
   /**
+   * Add a vector of pairs {f, buffer} for a given graph id. This is enough for
+   * a [Internal|External]CodeCopy op to move code from the buffer in to
+   * the function. Note the subgraphpartitioner may have split this into
+   * multiple functions, so we require a vector of these for each graph.
+   *
+   * \param pair The graph id, FunctionBufferMappingType pair to add the
+   * functions and buffers for.
+   * \param funcVec The vector of functions and buffers.
+   */
+  void addFunctionBuffers(const GraphId gid,
+                          poplar::FunctionBufferMappingType fbmt);
+
+  // Shorthand storage type for storing functionbuffers.
+  using FunctionBuffers =
+      std::vector<std::pair<const poplar::Function, poplar::FunctionBuffer>>;
+
+  /**
+   * Get the Function Buffers for the given GraphId and
+   * FunctionBufferMappingType
+   *
+   * \param gid The GraphId to lookup.
+   * \param fbmt The FunctionBufferMappingType to lookup.
+   * \returns FunctionBuffers the vector of functions and buffers.
+   */
+  FunctionBuffers getFunctionBuffer(const GraphId gid,
+                                    poplar::FunctionBufferMappingType fbmt) {
+    return functionBuffers.at({gid, fbmt});
+  }
+
+  /**
+   * Returns true if a functionBuffer vector exists for the given graphId and
+   * FunctionBufferMappingType.
+   *
+   * \param gid The graph id to lookup.
+   * \param fbmt The FunctionBufferMappingType to lookup.
+   * \returns true If pairs exist.
+   * \returns false Otherwise.
+   */
+  bool hasFunctionBuffer(const GraphId gid,
+                         poplar::FunctionBufferMappingType fbmt) {
+    return functionBuffers.count({gid, fbmt}) > 0;
+  }
+
+  /**
    * Add a custom program
    * \param program       Program to add
    * \return              Index of the popart/snap/poplar program
@@ -244,6 +294,17 @@ private:
 
   // Custom programs
   std::vector<snap::program::Program> customPrograms;
+
+  // Map of the {graph id, FunctionBufferMappingType}'s and their associated
+  // functions and buffers for use in loading the code for the graph execution
+  // on / off chip. Note that there may be multiple functions per graph so a
+  // vector of functions / buffers is stored. Furthermore these are indexed by
+  // {graphid, FunctionBufferMappingType} in case different
+  // FunctionBufferMappingTypes are required for multiple call ops for the same
+  // graph.
+  std::map<std::pair<const GraphId, poplar::FunctionBufferMappingType>,
+           FunctionBuffers>
+      functionBuffers;
 
 public:
   void initWithSnapGraph(snap::Graph &);

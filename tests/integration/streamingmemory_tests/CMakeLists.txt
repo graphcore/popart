@@ -10,6 +10,8 @@ add_popart_cpp_unit_test(executionphase_sharding_test executionphase_sharding_te
 add_popart_cpp_unit_test(executionphase_initop_accumulator_test executionphase_initop_accumulator_test.cpp VARIANTS "IpuModel")
 add_popart_cpp_unit_test(streamingmemoryopinserter_test streamingmemoryopinserter_test.cpp VARIANTS "Cpu")
 add_popart_cpp_unit_test(host_stream_op_schedule_test host_stream_op_schedule_test.cpp VARIANTS "IpuModel")
+add_popart_cpp_unit_test(functionbuffers_test functionbuffers_test.cpp VARIANTS "IpuModel")
+add_popart_cpp_unit_test(functionbuffers_test_nested functionbuffers_test_nested.cpp VARIANTS "IpuModel")
 
 add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_weight_update or test_onchip_memory" VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_test_0 streamingmemory_test_0.py MATCHEXPR "test_replicated_sgd0_weight_update" VARIANTS "Hw")

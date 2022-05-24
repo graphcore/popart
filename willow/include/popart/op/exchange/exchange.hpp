@@ -10,6 +10,7 @@
 #include <popart/op.hpp>
 
 #include "popart/basicoptionals.hpp"
+#include "popart/graphid.hpp"
 #include "popart/names.hpp"
 #include "popart/tensorlocation.hpp"
 
@@ -171,16 +172,60 @@ public:
                      int numOutputs,
                      bool inplace);
 
+  /**
+   * Create an ExchangeDescriptor for an External code copy op.
+   *
+   * \param direction \p Load (from host) or \p Store (to host)
+   * \param id GraphId of the graph to load.
+   * \param destination The destination TileSet to load to .
+   * \param destinationType The destination memory type to load to.
+   */
+  ExchangeDescriptor(ExchangeDirection direction,
+                     GraphId id,
+                     TileSet destination,
+                     CodeMemoryType destinationType);
+
   const ExchangeDirection &getDirection() const { return direction; }
 
-  bool isRemoteExchange() const { return hostStreamTensorId.empty(); }
+  bool isRemoteExchange() const {
+    return hostStreamTensorId.empty() && !static_cast<bool>(graphToLoadId);
+  }
 
   bool isHostExchange() const { return !hostStreamTensorId.empty(); }
+
+  /**
+   * Returns true if this exchange descriptor is is associated with a code copy
+   * operation.
+   *
+   * \return true If it is associated with a code copy op.
+   * \return false Otherwise.
+   */
+  bool isCodeCopy() const { return static_cast<bool>(graphToLoadId); }
 
   const RemoteBufferId &getRemoteBufferId() const { return remoteBufferId; }
   void setRemoteBufferId(RemoteBufferId id) { remoteBufferId = id; }
 
   const TensorId &getHostStreamTensorId() const { return hostStreamTensorId; }
+
+  /**
+   * GraphId of the graph which this op will load code for.
+   *
+   * \return const OptionalGraphId& Id in question.
+   */
+  const OptionalGraphId &getGraphToLoadId() const { return graphToLoadId; }
+
+  /**
+   * Get the Destination Location the code will be sent to, if this is an
+   * ExchangeDescriptor for an ExternalCodeLoadOp
+   *
+   * \returns OptionalLocationType One of:
+   *
+   * Buffer - Stored in non-executable buffer memory.
+   * ExecutableMemory - Stored in executable memory.
+   */
+  OptionalCodeMemoryType getDestinationCodeMemoryType() const {
+    return destinationCodeMemoryType;
+  }
 
   /**
    * Get an identifier representing which resource (landing pad tensor) this
@@ -203,6 +248,12 @@ private:
 
   /// Only set for remote exchanges
   RemoteBufferId remoteBufferId;
+
+  // Only set for code load operations.
+  OptionalGraphId graphToLoadId;
+
+  // Type of memory this op will be loading to (buffer / executable)
+  OptionalCodeMemoryType destinationCodeMemoryType;
 
   /// Only set for host exchanges
   TensorId hostStreamTensorId;
