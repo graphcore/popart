@@ -428,12 +428,6 @@ Op definition for PopART IR
 .. doxygenclass:: popart::GradInOutMapper
    :members:
 
-.. doxygenenum:: popart::RecomputeType
-
-.. doxygenenum:: popart::ExecutionContext
-
-.. doxygenenum:: popart::GradOpInType
-
 .. code-block:: cpp
 
   #include <popart/operatoridentifier.hpp>
@@ -478,6 +472,13 @@ Op definition for PopART IR
 
 .. doxygenclass:: popart::OpManager
    :members:
+
+.. doxygenenum:: popart::RecomputeType
+
+.. doxygenenum:: popart::ExecutionContext
+
+.. doxygenenum:: popart::GradOpInType
+
 
 .. code-block:: cpp
 
@@ -1436,7 +1437,6 @@ Graph
 
 .. doxygentypedef:: popart::graphutils::CallStack
 .. doxygentypedef:: popart::graphutils::TensorAndCallStack
-
 
 
 Region
