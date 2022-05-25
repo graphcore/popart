@@ -28,6 +28,7 @@ list(
   # ${popart_op_headers_dir}/matmul.hpp # Manually bound
   ${popart_op_headers_dir}/exchange/hostcopy.hpp
   ${popart_op_headers_dir}/exchange/remote.hpp
+  # ${popart_op_headers_dir}/exchange/codecopy.hpp # Manually bound
   ${popart_op_headers_dir}/incrementmod.hpp
   ${popart_op_headers_dir}/init.hpp
   ${popart_op_headers_dir}/mul.hpp
@@ -200,6 +201,7 @@ add_popart_python_module(
   bindings/op/varupdate.cpp
   bindings/op/accumulatorscale.cpp
   bindings/op/accumulatorzero.cpp
+  bindings/op/codecopy.cpp
   # End ops
   bindings/scope.cpp
   bindings/tensor.cpp

@@ -20,11 +20,12 @@
 #include <popart/op/averagepool.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/concat.hpp>
-#include <popart/op/conv.hpp>    // IWYU pragma: keep
-#include <popart/op/ipucopy.hpp> // IWYU pragma: keep
-#include <popart/op/loop.hpp>    // IWYU pragma: keep
-#include <popart/op/matmul.hpp>  // IWYU pragma: keep
-#include <popart/op/maxpool.hpp> // IWYU pragma: keep
+#include <popart/op/conv.hpp>              // IWYU pragma: keep
+#include <popart/op/exchange/codecopy.hpp> // IWYU pragma: keep
+#include <popart/op/ipucopy.hpp>           // IWYU pragma: keep
+#include <popart/op/loop.hpp>              // IWYU pragma: keep
+#include <popart/op/matmul.hpp>            // IWYU pragma: keep
+#include <popart/op/maxpool.hpp>           // IWYU pragma: keep
 #include <popart/op/resize.hpp>
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
 
@@ -403,6 +404,21 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         return self.createOp<ConcatInplaceOp>(axis, settings);
       },
       py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  g.def(
+      "createOp_ExternalCodeCopyOp",
+      [](Graph &self,
+         const popart::OperatorIdentifier opid,
+         const GraphId &gid,
+         const CodeMemoryType destinationType_,
+         const Op::Settings &settings) {
+        return self.createOp<ExternalCodeCopyOp>(
+            opid, gid, destinationType_, settings);
+      },
+      py::arg("opid"),
+      py::arg("graphid"),
+      py::arg("destinationType"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }
@@ -882,6 +898,25 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("in"),
       py::arg("out"),
       py::arg("axis"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+  g.def(
+      "createConnectedOp_ExternalCodeCopyOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         const OperatorIdentifier &opid,
+         const GraphId &gid,
+         const CodeMemoryType destinationType_,
+         const Op::Settings &settings) {
+        return self.createConnectedOp<ExternalCodeCopyOp>(
+            in, out, opid, gid, destinationType_, settings);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("graphid"),
+      py::arg("destinationType"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

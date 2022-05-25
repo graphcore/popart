@@ -18,6 +18,7 @@
 #include "bindings/op/adamupdater.hpp"
 #include "bindings/op/argminmax.hpp"
 #include "bindings/op/call.hpp"
+#include "bindings/op/codecopy.hpp"
 #include "bindings/op/concat.hpp"
 #include "bindings/op/conv.hpp"
 #include "bindings/op/enums.hpp"
@@ -101,6 +102,8 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindPool(m);
     op::bindArgMinMax(m);
     op::bindResize(m);
+    // Exchange
+    { op::exchange::bindCodeCopy(m); }
   }
   // Transforms
   {

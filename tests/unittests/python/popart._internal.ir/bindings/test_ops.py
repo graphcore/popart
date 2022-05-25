@@ -1210,3 +1210,38 @@ def test_allreduce_op(connected, identicalInputs, identicalGradInputs) -> None:
             op.connectInTensor(i, in_)
             op.connectOutTensor(i, out_)
         op.setup()
+
+
+@pytest.mark.parametrize("connected", [True, False])
+def test_codecopy_op(connected) -> None:
+    """Test CodeCopy.
+    """
+    graphids = ["load1"]
+    ir, graphs = create_ir()
+    load1 = ir.createGraph(graphids[0])
+
+    main = graphs[0]
+
+    num_inputs = _ir.NumInputs(0, 0)
+    ins: Dict[int, str] = {}
+    outs: Dict[int, str] = {}
+
+    opid = _ir.OperatorIdentifier("ai.graphcore", "CodeCopyOp", 0, num_inputs,
+                                  0)
+    settings = _ir.Settings(main, "CodeCopy")
+
+    if connected:
+        op = main.createConnectedOp_ExternalCodeCopyOp(
+            ins,
+            outs,
+            opid,
+            load1.id,
+            _ir.CodeLocation.ExecutableMemory,
+            settings=settings)
+    else:
+        op = main.createOp_ExternalCodeCopyOp(
+            opid,
+            load1.id,
+            _ir.CodeLocation.ExecutableMemory,
+            settings=settings)
+        op.setup()

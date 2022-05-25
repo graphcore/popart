@@ -42,6 +42,11 @@ void bindTensorLocation(py::module &m) {
       m, "ReplicatedTensorSharding", py::module_local())
       .value("Off", ReplicatedTensorSharding::Off)
       .value("On", ReplicatedTensorSharding::On);
+
+  py::enum_<CodeMemoryType>(m, "CodeLocation", py::module_local())
+      .value("ExecutableMemory", CodeMemoryType::ExecutableMemory)
+      .value("Buffer", CodeMemoryType::Buffer)
+      .value("N", CodeMemoryType::N);
 }
 
 } // namespace ir
