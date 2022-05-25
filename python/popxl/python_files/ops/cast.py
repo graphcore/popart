@@ -33,7 +33,7 @@ def cast(t: Tensor, data_type: dtype) -> Tensor:
     opid = _ir.OperatorIdentifier("ai.onnx", "Cast", 9, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_CastOp(
         {0: t.id},
-        {0: g._create_tensor_id(f"{t.id}_{data_type._name}")},
+        {0: g._create_tensor_id(f"{t.name}_{data_type._name}")},
         _to=data_type._pb_dtype,
         opid=opid,
         settings=settings,
