@@ -6,12 +6,6 @@ from popxl import dtypes
 import numpy as np
 import shutil
 
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
-
 
 def build_and_run(cache_path, engine_options=None):
     ir = popxl.Ir()
@@ -42,20 +36,8 @@ def build_and_run(cache_path, engine_options=None):
     parent_seed = 1984
     seed_tensors = popxl.create_seeds(parent_seed, batches_per_step=1)
 
-    ## Run the program
-    ir = ir._pb_ir  # Internal ir
+    opts = ir._pb_ir.getSessionOptions()
 
-    dataFlow = popart.DataFlow(
-        batchesPerStep=1,
-        anchorTensors={z_d2h.tensor_id: popart.AnchorReturnType("All")})
-    ir.setDataFlow(dataFlow)
-    ir.updateVertices()
-
-    opts = ir.getSessionOptions()
-    opts.useHostCopyOps = True
-    opts.enableExplicitMainLoops = True
-    opts.aliasZeroCopy = True
-    opts.explicitRecomputation = True
     if engine_options is not None:
         for k, v in engine_options.items():
             opts.engineOptions[k] = v
@@ -64,26 +46,15 @@ def build_and_run(cache_path, engine_options=None):
     opts.enableEngineCaching = True
     opts.cachePath = cache_path
 
-    with tu.create_test_device() as device:
-        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
+    session = popxl.Session(ir, "ipu_hw")
 
-        session.prepareDevice()
+    with session:
+        outputs = session.run({
+            x_h2d: np.array(3.0, dtype='float32'),
+            seed_h2d: seed_tensors
+        })
 
-        # Create buffers for anchors
-        anchors = session.initAnchorArrays()
-
-        inputs = {
-            x_h2d.tensor_id: np.array(3.0, dtype='float32'),
-            seed_h2d.tensor_id: seed_tensors,
-        }
-
-        # Run the model
-        stepio = popart.PyStepIO(inputs=inputs, outputs=anchors)
-        session.weightsFromHost()
-        session.run(stepio)
-        output = anchors['z_stream']
-
-    return output
+    return outputs[z_d2h]
 
 
 def loaded_saved_executable(capfd):
@@ -102,7 +73,6 @@ def loaded_saved_executable(capfd):
     return startedEngineCompilation
 
 
-@tu.requires_ipu
 def test_model_caching(tmp_path, capfd):
     """ Test if the first time we run a model we get a cache miss, and the
     second time we get a cache hit. """
@@ -123,7 +93,6 @@ def test_model_caching(tmp_path, capfd):
     assert loaded_saved_executable(capfd) is True
 
 
-@tu.requires_ipu
 def test_model_caching_miss_on_engine_option_change(tmp_path, capfd):
     """ Test that if we change engine options that affect the executable between
     runs then we don't get a cache hit. """

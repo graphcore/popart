@@ -9,15 +9,6 @@ import popxl
 import popxl.ops as ops
 from popxl.remote_buffer import RemoteBuffer
 from popxl.dtypes import dtype
-import popart._internal.ir as _ir
-import popart
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 
 def test_remote_buffer() -> None:
@@ -29,7 +20,7 @@ def test_remote_buffer() -> None:
     d_type_1 = np.dtype("float32")
     d_type_2 = np.dtype("float16")
 
-    data = {}
+    data: Dict[str, np.ndarray] = {}
 
     # Store and load data for the first tensor
     data["store_in_1"] = np.random.rand(*shape_1).astype(d_type_1)
@@ -55,40 +46,11 @@ def test_remote_buffer() -> None:
         "load_out_2",
         "load_out_3_inplace",
     )
-    t_ids = {label: d2h_streams[label].tensor_id for label in labels}
+    tensor_d2h = {label: d2h_streams[label] for label in labels}
 
-    # Setup the anchors
-    anchor_tensors = {
-        t_ids[stream]: popart.AnchorReturnType("All")
-        for stream in t_ids.keys()
-    }
-
-    # Set the data flow
-    bps = 1
-    data_flow = popart.DataFlow(bps, anchor_tensors)
-    ir.setDataFlow(data_flow)
-
-    # Set options
-    opts = ir.getSessionOptions()
-    opts.useHostCopyOps = True
-
-    # Prepare graph
-    ir.updateVertices()
-    ir.setIsPrepared()
-
-    # Create an IR inference session
-    with tu.create_test_device(numIpus=1) as device:
-        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-
-        session.prepareDevice()
-
-        # Create buffers for anchors
-        anchors = session.initAnchorArrays()
-
-        # Run the model
-        step_io = popart.PyStepIO({}, anchors)
-        session.weightsFromHost()
-        session.run(step_io)
+    session = popxl.Session(ir, "ipu_model")
+    with session:
+        outputs = session.run()
 
     # Assert that the tensors are correct
     remote_load_scenarios = (
@@ -102,8 +64,8 @@ def test_remote_buffer() -> None:
         # Get data to assert
         store_in_data = data[f"store_in_{scenario.replace('_inplace', '')}"]
         load_in_data_before_op_call = data[f"load_in_{scenario}"]
-        load_in_data_after_op_call = anchors[t_ids[f"load_in_{scenario}"]]
-        load_out_data = anchors[t_ids[f"load_out_{scenario}"]]
+        load_in_data_after_op_call = outputs[tensor_d2h[f"load_in_{scenario}"]]
+        load_out_data = outputs[tensor_d2h[f"load_out_{scenario}"]]
         shape = shape_1 if "1" in scenario else shape_2
         d_type = d_type_1 if "1" in scenario else d_type_2
         inplace = True if "inplace" in scenario else False
@@ -125,7 +87,7 @@ def test_remote_buffer() -> None:
 
 
 def build_model(data: Dict[str, np.array]
-                ) -> Tuple[_ir.Ir, Dict[str, DeviceToHostStream]]:
+                ) -> Tuple[popxl.Ir, Dict[str, DeviceToHostStream]]:
     """Build a model for storing and loading tensors from the remote buffer.
 
     Args:
@@ -171,12 +133,12 @@ def build_model(data: Dict[str, np.array]
                 offset=offset_tensor_1,
                 t=tensors["load_in_1_inplace"])
             # Anchor the input tensors to the load operator
-            d2h_streams = make_anchor(d2h_streams, tensors, "load_in_1")
-            d2h_streams = make_anchor(d2h_streams, tensors,
+            d2h_streams = make_stream(d2h_streams, tensors, "load_in_1")
+            d2h_streams = make_stream(d2h_streams, tensors,
                                       "load_in_1_inplace")
             # Anchor the output tensors of the load operator
-            d2h_streams = make_anchor(d2h_streams, tensors, "load_out_1")
-            d2h_streams = make_anchor(d2h_streams, tensors,
+            d2h_streams = make_stream(d2h_streams, tensors, "load_out_1")
+            d2h_streams = make_stream(d2h_streams, tensors,
                                       "load_out_1_inplace")
 
             # Store and load the second and third tensor using a new buffer id
@@ -204,18 +166,18 @@ def build_model(data: Dict[str, np.array]
                 t=tensors["load_in_3_inplace"])
 
             # Anchor the input tensors to the load operator
-            d2h_streams = make_anchor(d2h_streams, tensors, "load_in_2")
-            d2h_streams = make_anchor(d2h_streams, tensors,
+            d2h_streams = make_stream(d2h_streams, tensors, "load_in_2")
+            d2h_streams = make_stream(d2h_streams, tensors,
                                       "load_in_3_inplace")
             # Anchor the output tensors of the load operator
-            d2h_streams = make_anchor(d2h_streams, tensors, "load_out_2")
-            d2h_streams = make_anchor(d2h_streams, tensors,
+            d2h_streams = make_stream(d2h_streams, tensors, "load_out_2")
+            d2h_streams = make_stream(d2h_streams, tensors,
                                       "load_out_3_inplace")
 
-    return ir._pb_ir, d2h_streams
+    return ir, d2h_streams
 
 
-def make_anchor(d2h_streams: Dict[str, str], tensors: Dict[str, Variable],
+def make_stream(d2h_streams: Dict[str, str], tensors: Dict[str, Variable],
                 label: str) -> Dict[str, str]:
     """Insert device to host anchors.
 

@@ -342,7 +342,7 @@ def get_test_var_values(test_variables, trained_weights_data_dict
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='MNIST training in Popart',
+        description='MNIST training in PopXL',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--batch-size',

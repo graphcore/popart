@@ -1,19 +1,10 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import sys
-from pathlib import Path
-from typing import List
-
 import numpy as np
 import popart
-import popart._internal.ir as _ir
 import popxl
 import popxl.ops as ops
 import pytest
 from popxl import Tensor
-
-# `import test_util` requires adding to sys.path
-sys.path.append(str(Path(__file__).resolve().parents[3] / "integration"))
-import test_util as tu
 
 _BATCH_SIZE = 6
 _IN_FEATURES = 8
@@ -64,11 +55,8 @@ def test_inplacing_ambiguity_0():
 
     m_d2h = host_store_and_return_d2h_stream(main, m)
 
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [m_d2h], device=device)
-
     with pytest.raises(popart.popart_exception) as e_info:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     assert (e_info.value.args[0].startswith("Inplacing ambiguity detected."))
 
 
@@ -100,11 +88,8 @@ def test_inplacing_ambiguity_subgraph():
 
         m_d2h = host_store_and_return_d2h_stream(main, m)
 
-        with tu.create_test_device() as device:
-            session = setup_ir(ir, [m_d2h], device=device)
-
         with pytest.raises(popart.popart_exception) as e_info:
-            session.checkInplacingAmbiguity()
+            _ = setup_ir(ir)
         assert (
             e_info.value.args[0].startswith("Inplacing ambiguity detected."))
 
@@ -136,13 +121,10 @@ def test_inplacing_ambiguity_subgraph_1():
         inplace_graph = ir.create_graph(inplace_, w0)
         w0, m = ops.call(inplace_graph, w0, inputs_dict={inplace_.w1: w1})
 
-        m_d2h = host_store_and_return_d2h_stream(main, m)
-
-        with tu.create_test_device() as device:
-            session = setup_ir(ir, [m_d2h], device=device)
+        _ = host_store_and_return_d2h_stream(main, m)
 
         with pytest.raises(popart.popart_exception) as e_info:
-            session.checkInplacingAmbiguity()
+            _ = setup_ir(ir)
         assert (
             e_info.value.args[0].startswith("Inplacing ambiguity detected."))
 
@@ -176,13 +158,10 @@ def test_inplacing_ambiguity_subgraph_2():
         inplace_graph = ir.create_graph(inplace_, x0)
         x0, m = ops.call(inplace_graph, x0, inputs_dict={inplace_.w1: w1})
 
-        m_d2h = host_store_and_return_d2h_stream(main, m)
-
-        with tu.create_test_device() as device:
-            session = setup_ir(ir, [m_d2h], device=device)
+        _ = host_store_and_return_d2h_stream(main, m)
 
         with pytest.raises(popart.popart_exception) as e_info:
-            session.checkInplacingAmbiguity()
+            _ = setup_ir(ir)
         assert (
             e_info.value.args[0].startswith("Inplacing ambiguity detected."))
 
@@ -213,14 +192,11 @@ def test_inplacing_ambiguity_false_positive():
         d = ops.var_updates.copy_var_update_(a, b)
         e = d + 5
 
-    d_d2h = host_store_and_return_d2h_stream(main, e)
-    e_d2h = host_store_and_return_d2h_stream(main, e)
-
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [d_d2h, e_d2h], device=device)
+    _ = host_store_and_return_d2h_stream(main, e)
+    _ = host_store_and_return_d2h_stream(main, e)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
@@ -245,14 +221,11 @@ def test_inplacing_ambiguity_false_positive_2():
         c = ops.relu_(
             a)  #if this were gelu_, there would be a genuine ambiguity.
 
-    b_d2h = host_store_and_return_d2h_stream(main, b)
-    c_d2h = host_store_and_return_d2h_stream(main, c)
-
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
+    _ = host_store_and_return_d2h_stream(main, b)
+    _ = host_store_and_return_d2h_stream(main, c)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
@@ -285,11 +258,8 @@ def test_inplacing_ambiguity_subgraph_3():
         ops.host_store(b_d2h, b)
         ops.host_store(c_d2h, c)
 
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
-
     with pytest.raises(popart.popart_exception) as e_info:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
@@ -324,11 +294,8 @@ def test_inplacing_ambiguity_subgraph_4():
         ops.host_store(b_d2h, b)
         ops.host_store(c_d2h, c)
 
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [b_d2h, c_d2h], device=device)
-
     try:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     except popart.popart_exception as e_info:
         pytest.fail(f"Unexpected popart failure: `{e_info}`")
 
@@ -355,13 +322,10 @@ def test_inplacing_ambiguity_subgraph_5():
         c = ops.relu_(a)
         d = ops.add_(b, c)
 
-    d_d2h = host_store_and_return_d2h_stream(main, d)
-
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [d_d2h], device=device)
+    _ = host_store_and_return_d2h_stream(main, d)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
@@ -385,48 +349,30 @@ def test_inplacing_ambiguity_subgraph_6():
         c = ops.relu(a)
         d = ops.add_(b, c)
 
-    d_d2h = host_store_and_return_d2h_stream(main, d)
-
-    with tu.create_test_device() as device:
-        session = setup_ir(ir, [d_d2h], device=device)
+    _ = host_store_and_return_d2h_stream(main, d)
 
     try:
-        session.checkInplacingAmbiguity()
+        _ = setup_ir(ir)
     except popart.popart_exception as e_info:
         pytest.fail(f"Unexpected popart failure {e_info}")
 
 
-def setup_ir(ir: popxl.Ir, host_stores: List[popxl.DeviceToHostStream],
-             device: tu.DeviceContext) -> popart.InferenceSession:
+def setup_ir(ir: popxl.Ir) -> popxl.Session:
     """Simple function to take an ir and create a session for.
 
     Args:
         ir (popxl.Ir): The ir to prepare
-        host_stores (List[popxl.DeviceToHostStream]): The d2h streams to use in the anchors.
-        device (DeviceContext): The device to create the session on.
 
     Returns:
-        popart.InferenceSession: The session using the ir.
+        popxl.Session: The session using the ir.
     """
-    arts = {}
-
-    art_all = popart.AnchorReturnType("All")
-    for s in host_stores:
-        arts[s.tensor_id] = art_all
-
-    bps = 1
-    dataFlow = popart.DataFlow(bps, arts)
-    ir._pb_ir.setDataFlow(dataFlow)
-
-    ir._pb_ir.updateVertices()
-    ir._pb_ir.setPatterns(
-        _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal))
 
     opts = ir._pb_ir.getSessionOptions()
     # The option here should be set when creating a popxl.Ir but we add them here to be explicit.
     opts.enableInplaceAmbiguityChecking = True
 
-    session = popart.InferenceSession.fromIr(ir=ir._pb_ir, deviceInfo=device)
+    session = popxl.Session(ir, "ipu_model")
+
     ir._pb_ir.logIr()
 
     return session

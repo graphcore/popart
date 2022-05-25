@@ -2,19 +2,12 @@
 """Test dot visualizer functionality in popxl"""
 from typing import Optional
 import pytest
-import popart
 import os
 import tempfile
 import numpy as np
 import popxl
 import popxl.ops as ops
-
-# `import test_util` requires adding to sys.path
-import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 _TENSOR_SHAPE = (3, 11, 5)
 
@@ -99,9 +92,7 @@ def run_test(ir: popxl.Ir, save_dir: Optional[str],
         # Obtain the model
         build_model_with_dot_checkpoints(ir, str(check_dir))
 
-        # NOTE: This InferenceSession sets the FINAL check
-        with tu.create_test_device() as device:
-            _ = popart.InferenceSession.fromIr(ir=ir_pb, deviceInfo=device)
+        _ = popxl.Session(ir, "ipu_model")
 
         dot_files = list(check_dir.glob('*.dot'))
         assert len(dot_files) == expected_dot_file_count

@@ -1,21 +1,14 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import pytest
-import popart
 import popxl
 import popxl.ops as ops
 import numpy as np
-
-# `import test_util` requires adding to sys.path
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-import test_util as tu
 
 
 @pytest.mark.parametrize('tiedgather', [False, True])
 @pytest.mark.parametrize('uint', [False, True])
 def test_gather_out_of_range(tiedgather, uint):
-    """Tests wether the output of gather/tiedgather produces zeros for out of range (OOR) indices."""
+    """Tests whether the output of gather/tiedgather produces zeros for out of range (OOR) indices."""
     n_samples = 10
     sample_max = (2**32) // 2 - 1
     weight_size = 20
@@ -49,33 +42,12 @@ def test_gather_out_of_range(tiedgather, uint):
             ops.host_store(y_d2h, t)
             d2hs += [y_d2h]
 
-    ## Run the program
-    ir = ir._pb_ir  # Internal ir
+    session = popxl.Session(ir, "ipu_model")
 
-    dataFlow = popart.DataFlow(batchesPerStep=1,
-                               anchorTensors={
-                                   y_d2h.tensor_id:
-                                   popart.AnchorReturnType("All")
-                                   for y_d2h in d2hs
-                               })
-    ir.setDataFlow(dataFlow)
+    with session:
+        outputs = session.run()
+    y_zero_false_np = outputs[d2hs[0]]
+    y_zero_true_np = outputs[d2hs[1]]
 
-    ir.updateVertices()
-
-    with tu.create_test_device() as device:
-        session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-
-        session.prepareDevice()
-
-        # Create buffers for anchors
-        anchors = session.initAnchorArrays()
-
-        # Run the model
-        stepio = popart.PyStepIO(inputs={}, outputs=anchors)
-        session.weightsFromHost()
-        session.run(stepio)
-        y_zero_false_np = anchors['y_zero_false_stream']
-        y_zero_true_np = anchors['y_zero_true_stream']
-
-        ## Test
-        assert (y_zero_true_np == 0).all()
+    ## Test
+    assert (y_zero_true_np == 0).all()

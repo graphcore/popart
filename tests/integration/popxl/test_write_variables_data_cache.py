@@ -16,7 +16,6 @@ class TestWriteVariablesData:
     # they are not populated by IR but during second executablex constructor - deserialized
     # version. The issue was fixed by updating weights when calling write_variable_data.
     def test_write_variables_data_cache(self, tmp_path):
-        opts = popart.SessionOptions()
         popart.getLogger().setLevel('DEBUG')
         os.environ['POPXL_CACHE_DIR'] = str(tmp_path / 'cache')
         ir = popxl.Ir()

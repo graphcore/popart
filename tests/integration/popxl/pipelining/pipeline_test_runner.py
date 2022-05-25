@@ -125,9 +125,9 @@ class PipelineTestRunner:
         Returns:
             (tuple): tuple containing:
 
-                session (popart.InferenceSession): The inference session
-                t_in_id (str): The tensor id for the input tensor
-                t_out_id (str): The tensor id for the output tensor
+                session (popxl.Session): The popxl session
+                t_in_h2d (HostToDeviceStream): The host to device stream for the input
+                t_out_d2h (DeviceToHostStream): The device to host stream for the output.
         """
         # Build the model
         t_in_h2d, t_out_d2h = self.model(self.ir, self.stream_input_shape,

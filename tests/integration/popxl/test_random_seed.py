@@ -1,5 +1,4 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import popart
 import popxl
 import popxl.ops as ops
 from popxl import dtypes
@@ -22,38 +21,11 @@ def test_random_seed_setup():
         ops.host_store(y_d2h, y)
 
     replicas = 4
+    ir.replication_factor = replicas
     parent_seed = 1984
     seed_tensors = popxl.create_seeds(parent_seed, replicas=replicas)
 
-    ## Run the program
-    ir = ir._pb_ir  # Internal ir
+    session = popxl.Session(ir, "ipu_model")
 
-    y_id = y_d2h.tensor_id
-
-    dataFlow = popart.DataFlow(
-        batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")})
-    ir.setDataFlow(dataFlow)
-
-    opts = ir.getSessionOptions()
-    opts.useHostCopyOps = True
-    opts.enableExplicitMainLoops = True
-    opts.aliasZeroCopy = True
-    opts.explicitRecomputation = True
-    opts.enableReplicatedGraphs = True
-    opts.replicatedGraphCount = replicas
-
-    ir.updateVertices()
-
-    device = popart.DeviceManager().createIpuModelDevice({"numIPUs": replicas})
-    session = popart.InferenceSession.fromIr(ir=ir, deviceInfo=device)
-
-    session.prepareDevice()
-
-    # Create buffers for anchors
-    anchors = session.initAnchorArrays()
-
-    # Run the model
-    stepio = popart.PyStepIO(inputs={seed_h2d.tensor_id: seed_tensors},
-                             outputs=anchors)
-    session.weightsFromHost()
-    session.run(stepio)
+    with session:
+        _ = session.run({seed_h2d: seed_tensors})

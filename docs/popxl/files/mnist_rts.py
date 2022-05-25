@@ -477,7 +477,7 @@ def main() -> None:
 
 def parser():
     parser = argparse.ArgumentParser(
-        description='MNIST training in Popart',
+        description='MNIST training in PopXL',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--batch-size',
                         type=int,

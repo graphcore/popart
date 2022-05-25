@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import popart
 import popxl
 
 # `import test_util` requires adding to sys.path
