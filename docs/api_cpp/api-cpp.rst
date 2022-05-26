@@ -115,16 +115,34 @@ Data input and output (IStepIO)
 
 .. code-block:: cpp
 
-  #include <popart/stepio_generic.hpp>
+  #include <popart/stepio.hpp>
 
-.. doxygenclass:: popart::StepIOGeneric
-  :members:
+.. doxygenclass:: popart::StepIO
 
 .. doxygenclass:: popart::StepIOCallback
   :members:
 
 .. doxygenclass:: popart::IWeightsIO
 
+.. doxygenclass:: popart::WeightsIO
+
+.. doxygenstruct:: popart::IArrayAccessor
+
+.. code-block:: cpp
+
+  #include <popart/stepio_generic.hpp>
+
+.. doxygenclass:: popart::StepIOGeneric
+  :members:
+
+.. doxygenstruct:: popart::ArrayInfo
+
+.. code-block:: cpp
+
+  #include <popart/iarray.hpp>
+
+.. doxygenclass:: popart::IArray
+  :members:
 
 Tensors
 -------
@@ -1611,7 +1629,6 @@ Other classes
 .. doxygenclass:: popart::ReplicaEqualAnalysisProxy
 .. doxygenclass:: popart::ReplicatedTensorShardingTracer
 .. doxygenclass:: popart::TensorLocationInfo
-.. doxygenclass:: popart::WeightsIO
 .. doxygenclass:: popart::popx::InputCreatorCandidate
 .. doxygenclass:: popart::popx::InputMultiCreatorCandidate
 .. doxygenclass:: popart::popx::IsInfx
