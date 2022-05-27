@@ -96,17 +96,11 @@ to update each shard of the RTS variable tensor.
 
     ......
     if params["W1"].shards is not None:
-        grad_w_1 = ops.collectives.replicated_reduce_scatter(
-            grad_w_1,
-            op='local',
-            configure_output_for_replicated_tensor_sharding=True)
+        grad_w_1 = ops.collectives.replica_sharded_slice(grad_w_1)
 
     ......
     if params["W0"].shards is not None:
-        grad_w_0 = ops.collectives.replicated_reduce_scatter(
-            grad_w_0,
-            op='local',
-            configure_output_for_replicated_tensor_sharding=True)
+        grad_w_0 = ops.collectives.replica_sharded_slice(grad_w_0)
 
 When you update a variable tensor, and if a remote buffer is used, you also need to restore the updated value to the right place as well.
 

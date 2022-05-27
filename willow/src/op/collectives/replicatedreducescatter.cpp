@@ -63,12 +63,16 @@ void ReplicatedReduceScatterOp::setup() {
   auto replicationFactor = globalReplicationFactor;
   int64_t nelms          = inInfo_.nelms();
 
-  if (getGCLCommGroup().replicaGroupSize > 0 &&
-      (getGCLCommGroup().type == CommGroupType::Consecutive ||
-       getGCLCommGroup().type == CommGroupType::Orthogonal)) {
-    replicationFactor = getGCLCommGroup().replicaGroupSize;
-  } else if (getGCLCommGroup().type == CommGroupType::None)
+  auto shardingDomain = getGCLCommGroup();
+  if (shardingDomain.replicaGroupSize > 0) {
+    if (shardingDomain.type == CommGroupType::Consecutive) {
+      replicationFactor = shardingDomain.replicaGroupSize;
+    } else if (shardingDomain.type == CommGroupType::Orthogonal) {
+      replicationFactor = replicationFactor / shardingDomain.replicaGroupSize;
+    }
+  } else if (shardingDomain.type == CommGroupType::None) {
     replicationFactor = 1;
+  }
 
   // ceil(numElements / replicationFactor)
   auto outElms = (nelms + replicationFactor - 1) / replicationFactor;

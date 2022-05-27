@@ -333,11 +333,11 @@ void Devicex::remoteBufferWeightsToHost() {
       unsigned returnedPerGroup = returned / groups;
 
       // Lamba expression that does the reading op automatically
-      auto copyFromRemoteBuffer = [&](char *from, unsigned replica_id) {
+      auto copyFromRemoteBuffer = [&](char *to, unsigned replica_id) {
         pEngine->copyFromRemoteBuffer(
             lowering().getExchangeBundle().getRemoteBufferName(
                 remoteBufferInfo.first),
-            from,
+            to,
             static_cast<int>(remoteBufferInfo.second),
             replica_id);
       };
@@ -1218,13 +1218,12 @@ void Devicex::loadEngineAndConnectStreams() {
       auto id = tensor->id;
 
       auto groups = tensor->getVariableSettings().groups(replicationFactor);
-      auto returned =
+      auto returnAll =
           tensor->getVariableSettings().numReplicasReturningVariable(
-              replicationFactor);
+              replicationFactor) == replicationFactor;
 
       for (auto g = 0; g < groups.size(); g++) {
-        auto group     = groups[g];
-        bool returnAll = replicationFactor == returned;
+        auto group = groups[g];
 
         for (auto i = 0; i < group.size(); i++) {
           // return if first in group

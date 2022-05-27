@@ -21,8 +21,7 @@ with ir.main_graph, popxl.in_sequence():
 
     # Create a variable and shard it across replicas
     y = popxl.variable([3, 4])
-    sharded_y = ops.collectives.replicated_reduce_scatter(
-        y, 'local', None, configure_output_for_replicated_tensor_sharding=True)
+    sharded_y = ops.collectives.replica_sharded_slice(y)
 
     # Add each shard of y to each shard of x
     ops.var_updates.accumulate_(loaded_x, sharded_y)

@@ -173,12 +173,16 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
     if (auto collective =
             dynamic_cast<CollectivesBaseOp *>(dv_p->ir().getOp(opId.first))) {
       auto shardingDomain = collective->getGCLCommGroup();
-      if (shardingDomain.replicaGroupSize > 0 &&
-          (shardingDomain.type == CommGroupType::Consecutive ||
-           shardingDomain.type == CommGroupType::Orthogonal)) {
-        replicationFactor = shardingDomain.replicaGroupSize;
-      } else if (shardingDomain.type == CommGroupType::None)
+      if (shardingDomain.replicaGroupSize > 0) {
+        if (shardingDomain.type == CommGroupType::Consecutive) {
+          replicationFactor = shardingDomain.replicaGroupSize;
+        } else if (shardingDomain.type == CommGroupType::Orthogonal) {
+          replicationFactor =
+              globalReplicationFactor / shardingDomain.replicaGroupSize;
+        }
+      } else if (shardingDomain.type == CommGroupType::None) {
         replicationFactor = 1;
+      }
     }
   }
 

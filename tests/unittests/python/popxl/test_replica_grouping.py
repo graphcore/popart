@@ -86,8 +86,8 @@ stride_and_size_examples = [
         "commSize": 2,
         # ->
         "inputs": {
-            "stride": 8,
-            "group_size": 2,
+            "stride": 2,
+            "group_size": 8,
         }
     },
     # ---------------------- Note: VariableSettings for TMP_4 on a pod256
@@ -97,8 +97,8 @@ stride_and_size_examples = [
         "commSize": 64,
         # ->
         "inputs": {
-            "stride": 4,
-            "group_size": 64,
+            "stride": 64,
+            "group_size": 4,
         }
     },
     # -------------------------- Default values
@@ -131,12 +131,12 @@ class TestVariableReplicaGrouping:
 
         Args:
             settings (Dict[str, Any]): The expected settings.
-            v1 (popxl.Variable): The variable to test.
+            replica_grouping: The grouping to test.
         """
-        assert replica_grouping._to_variable_settings(
-        ).getSharedVariableDomain().replicaGroupSize == settings["commSize"]
-        assert replica_grouping._to_variable_settings(
-        ).getSharedVariableDomain().type == settings["commType"]
+        variable_comm_group = replica_grouping._to_variable_settings(
+        ).getSharedVariableDomain()
+        assert variable_comm_group.type == settings["commType"]
+        assert variable_comm_group.replicaGroupSize == settings["commSize"]
 
     def _get_weights_array(
             self,

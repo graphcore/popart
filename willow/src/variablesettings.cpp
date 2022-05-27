@@ -88,8 +88,9 @@ VariableSettings::numReplicasReturningVariable(unsigned replicaCount) const {
   case CommGroupType::All:
     return 1;
   case CommGroupType::Consecutive:
-  case CommGroupType::Orthogonal:
     return replicaCount / sharedVariableDomain.replicaGroupSize;
+  case CommGroupType::Orthogonal:
+    return sharedVariableDomain.replicaGroupSize;
   case CommGroupType::None:
     logging::err(
         "Unreachable point, logic should have circumvented this case.\n");
@@ -117,13 +118,19 @@ unsigned VariableSettings::groupCount(unsigned replicaCount) const {
   case CommGroupType::None:
     return replicaCount;
   case CommGroupType::Consecutive:
-  case CommGroupType::Orthogonal:
     if (!sharedVariableDomain.replicaGroupSize) {
       throw internal_error("Attempting to use 0 as a CommGroupSize, "
                            "groups of type {} must have legal size.\n",
                            sharedVariableDomain.type);
     }
     return replicaCount / sharedVariableDomain.replicaGroupSize;
+  case CommGroupType::Orthogonal:
+    if (!sharedVariableDomain.replicaGroupSize) {
+      throw internal_error("Attempting to use 0 as a CommGroupSize, "
+                           "groups of type {} must have legal size.\n",
+                           sharedVariableDomain.type);
+    }
+    return sharedVariableDomain.replicaGroupSize;
   case CommGroupType::N:
   default:
     throw internal_error("Bad CommGroupType {} in VariableSetting.\n",
@@ -138,8 +145,9 @@ unsigned VariableSettings::getRealGroupSize(unsigned replicaCount) const {
   case CommGroupType::None:
     return 1;
   case CommGroupType::Consecutive:
-  case CommGroupType::Orthogonal:
     return sharedVariableDomain.replicaGroupSize;
+  case CommGroupType::Orthogonal:
+    return replicaCount / sharedVariableDomain.replicaGroupSize;
   default:
     throw internal_error("Bad CommGroupType {} in VariableSetting.\n",
                          sharedVariableDomain.type);
@@ -254,20 +262,16 @@ VariableSettings::groups(unsigned replicaCount) const {
     }
     return groups;
   }
+  auto totalGroups = groupCount(replicaCount);
+  auto groupInc    = (sharedVariableDomain.type == CommGroupType::Orthogonal)
+                      ? sharedVariableDomain.replicaGroupSize
+                      : 1;
+  auto groupSize = getRealGroupSize(replicaCount);
 
-  auto returned = numReplicasReturningVariable(replicaCount);
-
-  auto groupCount = sharedVariableDomain.replicaGroupSize
-                        ? replicaCount / sharedVariableDomain.replicaGroupSize
-                        : returned;
-  auto groupInc = sharedVariableDomain.type != CommGroupType::Orthogonal
-                      ? 1
-                      : sharedVariableDomain.replicaGroupSize;
-
-  for (auto groupIdx = 0; groupIdx < groupCount; groupIdx++) {
+  for (auto groupIdx = 0; groupIdx < totalGroups; groupIdx++) {
     group      = std::vector<std::int64_t>();
     auto start = getGroupRepresentative(groupIdx);
-    auto end   = start + (groupInc * sharedVariableDomain.replicaGroupSize);
+    auto end   = start + (groupInc * groupSize);
     for (auto repId = start; repId < end; repId += groupInc) {
       group.push_back(repId);
     }

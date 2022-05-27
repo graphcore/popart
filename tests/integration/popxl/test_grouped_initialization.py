@@ -218,8 +218,6 @@ def create_simple_model(
 
     default_rg = rg if rg else ir.replica_grouping()
     num_groups = default_rg.num_groups
-    shared_variable_domain = default_rg._to_variable_settings(
-    ).getSharedVariableDomain()
 
     weights_array = get_weights_array(full_weights_shape, num_groups)
     weights_array_init = get_weights_array(full_weights_shape, num_groups)
@@ -258,7 +256,7 @@ def create_simple_model(
         W_gathered = W_loaded
         if rts:
             W_gathered = ops.collectives.replicated_all_gather(
-                W_loaded, shared_variable_domain)
+                W_loaded, default_rg)
 
         # Create linear model with required shapes and grouping
         linear = Linear(full_weights_shape)
@@ -298,7 +296,7 @@ def create_simple_model(
             if rts:
                 # Scatter W_grad
                 W_grad = ops.collectives.replicated_reduce_scatter(
-                    W_grad, 'add', shared_variable_domain, True)
+                    W_grad, 'add', default_rg, True)
 
             # Update W in-place
             ops.var_updates.accumulate_(W_loaded, W_grad, -1.0)

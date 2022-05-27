@@ -87,8 +87,7 @@ def test_remote_replia_sharded_variable_gather():
 
         updated_x = full_x + y
 
-        updated_shard = ops.collectives.replicated_reduce_scatter(
-            updated_x, 'local', None, True)
+        updated_shard = ops.collectives.replica_sharded_slice(updated_x)
         ops.remote_store(buffer, 0, updated_shard)
 
         y_d2h = popxl.d2h_stream(updated_x.shape, updated_x.dtype)
@@ -119,8 +118,7 @@ def test_replia_sharded_variable_gather():
 
         updated_x = ops.scaled_add_(full_x, y)
 
-        updated_shard = ops.collectives.replicated_reduce_scatter(
-            updated_x, 'local', None, True)
+        updated_shard = ops.collectives.replica_sharded_slice(updated_x)
         # Extra copy_var_update_ required to update `loaded_x`
         ops.var_updates.copy_var_update_(loaded_x, updated_shard)
 

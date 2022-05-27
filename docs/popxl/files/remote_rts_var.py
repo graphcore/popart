@@ -30,11 +30,7 @@ with ir.main_graph, popxl.in_sequence():
     ops.var_updates.accumulate_(full_x, y)
 
     # Scatter the updated full x to each buffer across replicas
-    updated_shard = ops.collectives.replicated_reduce_scatter(
-        full_x,
-        'local',
-        None,
-        configure_output_for_replicated_tensor_sharding=True)
+    updated_shard = ops.collectives.replica_sharded_slice(full_x)
     ops.remote_store(buffer, 0, updated_shard)
 
 # Execute the ir

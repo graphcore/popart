@@ -1947,12 +1947,14 @@ RemoteLoadInplaceOp *StreamingMemoryOpInserter::insertRemoteLoadOp(
       // (initInfo.nelms() - 1) / replicationFactor + 1
 
       auto rf = replicationFactor;
-      if (tensorConfig.location.shardingDomain.replicaGroupSize > 0 &&
-          (tensorConfig.location.shardingDomain.type ==
-               CommGroupType::Consecutive ||
-           tensorConfig.location.shardingDomain.type ==
-               CommGroupType::Orthogonal)) {
-        rf = tensorConfig.location.shardingDomain.replicaGroupSize;
+      if (tensorConfig.location.shardingDomain.replicaGroupSize > 0) {
+        if (tensorConfig.location.shardingDomain.type ==
+            CommGroupType::Consecutive) {
+          rf = tensorConfig.location.shardingDomain.replicaGroupSize;
+        } else if (tensorConfig.location.shardingDomain.type ==
+                   CommGroupType::Orthogonal) {
+          rf = rf / tensorConfig.location.shardingDomain.replicaGroupSize;
+        }
       }
 
       Shape oldShape = initInfo.shape();

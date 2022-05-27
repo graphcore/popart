@@ -42,7 +42,7 @@ class Session:
                     `DeviceSelectionCriterion` == `Random`.
                 "ipu_model": IPU model.
                 "cpu": CPU model. Does not support replication.
-                Defaults to "ipu_model".
+                Defaults to "cpu".
             num_ipus: (int): The number of IPU devices to use. This is automatically determined if not provided.
 
         Raises:
@@ -544,6 +544,15 @@ class Session:
         # Let exceptions propagate
 
     # Private methods
+    def _get_ipus_per_replica(self) -> int:
+        ir_ipus = set(ipu for g in self._ir.getAllGraphs()
+                      for ipu in g.getAllVirtualGraphIds(True))
+        if not ir_ipus:
+            raise RuntimeError(
+                f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
+                "nothing, try adding more operations to your graphs.")
+        return max(ir_ipus) + 1
+
     def _get_ipu_count(self) -> int:
         """Return the number of ipus required by this session and ir.
 
@@ -555,17 +564,8 @@ class Session:
         Returns:
             int: The number of ipus required by this session + ir.
         """
-        ir_ipus = set(ipu for g in self._ir.getAllGraphs()
-                      for ipu in g.getAllVirtualGraphIds(True))
-        if ir_ipus:
-            num_ipus = max(ir_ipus) + 1
-        else:
-            # Edge case : ir_ipus = {}, no graphs found, this leads to an incomprehensible error.
-            raise RuntimeError(
-                f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
-                "nothing, try adding more operations to your graphs.")
-        if self._ir.getSessionOptions().enableReplicatedGraphs:
-            num_ipus *= self._ir.getSessionOptions().replicatedGraphCount
+        num_ipus = self._get_ipus_per_replica()
+        num_ipus *= self.ir.replication_factor
         return 2**math.ceil(math.log2(num_ipus))
 
     def _expected_outputs(self) -> List[DeviceToHostStream]:

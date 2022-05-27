@@ -1029,9 +1029,13 @@ def replica_sharded_variable(
 
     _dtype = dtype or dtypes.dtype.as_dtype(dtype)
 
-    opts = gcg().ir._pb_ir.getSessionOptions()
-    replicas: int = opts.replicatedGraphCount
-    shard_shape: Tuple[int, ...] = (data.size // replicas, )
+    replicas = gcg().ir.replication_factor
+    data_size: int = data.size  # TODO: Handle non np inputs
+    if replica_grouping:
+        data_size = data_size // replica_grouping.num_groups
+        replicas = replica_grouping.group_size
+
+    shard_shape: Tuple[int, ...] = (data_size // replicas, )
     buffer = remote_buffer(shard_shape, _dtype, 1)
 
     # Create a remote RTS variable

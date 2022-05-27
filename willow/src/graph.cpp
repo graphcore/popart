@@ -183,7 +183,8 @@ void Graph::addVarInit(const TensorId &name,
                        const DebugContext &debugContext) {
   auto replicationFactor =
       this->getIr().getSessionOptions().globalReplicationFactor;
-  if (auto num_groups = vs.groupCount(replicationFactor) > 1) {
+  auto num_groups = vs.groupCount(replicationFactor);
+  if (num_groups > 1) {
     if (info.shape().at(0) != num_groups) {
       throw popart::error(
           "Incorrect size of tensor {}. Tensor shape at index 0 ({}) "

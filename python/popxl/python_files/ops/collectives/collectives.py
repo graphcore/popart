@@ -13,12 +13,11 @@ OP_MAP = {
     'max': _ir.CollectiveOperator.Max,
     'and': _ir.CollectiveOperator.LogicalAnd,
     'or': _ir.CollectiveOperator.LogicalOr,
-    'square_add': _ir.CollectiveOperator.SquareAdd,
-    'local': _ir.CollectiveOperator.Local,
+    'square_add': _ir.CollectiveOperator.SquareAdd
 }
 
 CollectiveOps = Literal['add', 'mean', 'mul', 'min', 'max', 'and', 'or',
-                        'square_add', 'local']
+                        'square_add']
 
 
 def to_collective_op(op: CollectiveOps) -> _ir.CollectiveOperator:

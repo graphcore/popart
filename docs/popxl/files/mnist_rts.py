@@ -233,10 +233,7 @@ def calculate_grads(dy, outputs, params, linears,
     grad_x_1 = grads_1[x1]
     grad_w_1 = grads_1[W1]
     if params["W1"].shards is not None:
-        grad_w_1 = ops.collectives.replicated_reduce_scatter(
-            grad_w_1,
-            op='local',
-            configure_output_for_replicated_tensor_sharding=True)
+        grad_w_1 = ops.collectives.replica_sharded_slice(grad_w_1)
     grad_b_1 = grads_1[b1]
     # grad_1 end
     # grad_0 begin
@@ -251,10 +248,7 @@ def calculate_grads(dy, outputs, params, linears,
                                   grad_x_1,
                                   inputs_dict=activations_0)
     if params["W0"].shards is not None:
-        grad_w_0 = ops.collectives.replicated_reduce_scatter(
-            grad_w_0,
-            op='local',
-            configure_output_for_replicated_tensor_sharding=True)
+        grad_w_0 = ops.collectives.replica_sharded_slice(grad_w_0)
     # grad_0 end
     grads = {"W0": grad_w_0, "b0": grad_b_0, "W1": grad_w_1, "b1": grad_b_1}
 

@@ -19,7 +19,7 @@ class ReplicaGrouping:
     @classmethod
     def _from_params(cls,
                      ir: 'Ir',
-                     stride: Optional[int] = 1,
+                     stride: int = 1,
                      group_size: Optional[int] = None) -> 'ReplicaGrouping':
         self = super().__new__(cls)
         self._ir = ir
@@ -64,8 +64,8 @@ class ReplicaGrouping:
         elif comm_group.type == _ir.CommGroupType.Orthogonal:
             self = ReplicaGrouping._from_params(
                 ir,
-                group_size=comm_group.replicaGroupSize,
-                stride=replicas // comm_group.replicaGroupSize)
+                group_size=replicas // comm_group.replicaGroupSize,
+                stride=comm_group.replicaGroupSize)
         else:
             raise ValueError(
                 f"VariableSettings with num_replicas={replicas}, "
@@ -138,41 +138,39 @@ class ReplicaGrouping:
         Returns:
             VariableSettings: The popart equivalent of ReplicaGroupings.
         """
-
-        replicas: int = self._ir.replication_factor
-        comm_group: _ir.CommGroup
+        comm_group = self._to_comm_group()
         if retrieval_mode is None or retrieval_mode == "one_per_group":
             var_ret_mode = VariableRetrievalMode.OnePerGroup
         elif retrieval_mode == "all_replicas":
             var_ret_mode = VariableRetrievalMode.AllReplicas
         else:
             raise ValueError(f"Invalid retrieval_mode: {retrieval_mode}")
+        variable_settings = VariableSettings(comm_group, var_ret_mode)
+        variable_settings.verify()
+        return variable_settings
 
-        # If replica_grouping.group_size==1 => use CommGroupType::None
+    def _to_comm_group(self) -> _ir.CommGroup:
+        replicas = self._ir.replication_factor
+
         if self.group_size == 1:
-            comm_group = _ir.CommGroup(type=_ir.CommGroupType.Ungrouped,
-                                       replicaGroupSize=0)
+            return _ir.CommGroup(type=_ir.CommGroupType.Ungrouped,
+                                 replicaGroupSize=0)
         # If replica_grouping.group_size==N => use CommGroupType::All
         elif self.group_size == replicas:
-            comm_group = _ir.CommGroup(type=_ir.CommGroupType.All,
-                                       replicaGroupSize=0)
+            return _ir.CommGroup(type=_ir.CommGroupType.All,
+                                 replicaGroupSize=0)
         # If replica_grouping.stride==1 (and replica_grouping.group_size divides N) =>
         # use CommGroupType::Consecutive with size=replica_grouping.group_size
         elif self.stride == 1 and (replicas % self.group_size == 0):
-            comm_group = _ir.CommGroup(type=_ir.CommGroupType.Consecutive,
-                                       replicaGroupSize=self.group_size)
+            return _ir.CommGroup(type=_ir.CommGroupType.Consecutive,
+                                 replicaGroupSize=self.group_size)
         # If replica_grouping.stride==N/replica_grouping.group_size =>
-        # use CommGroupType::Orthogonal with size=replica_grouping.group_size
+        # use CommGroupType::Orthogonal with size=replica_grouping.stride
         elif (replicas % self.group_size == 0) and self.stride == (
                 replicas // self.group_size):
-            comm_group = _ir.CommGroup(type=_ir.CommGroupType.Orthogonal,
-                                       replicaGroupSize=self.group_size)
-        else:
-            raise ValueError(
-                f"Replica grouping with num_replicas={replicas}, "
-                f"stride={self.stride} and group_size={self.group_size} is not currently supported"
-            )
-        variable_settings = VariableSettings(comm_group, var_ret_mode)
-
-        variable_settings.verify()
-        return variable_settings
+            return _ir.CommGroup(type=_ir.CommGroupType.Orthogonal,
+                                 replicaGroupSize=self.stride)
+        raise ValueError(
+            f"Replica grouping with num_replicas={replicas}, "
+            f"stride={self.stride} and group_size={self.group_size} is not currently supported"
+        )
