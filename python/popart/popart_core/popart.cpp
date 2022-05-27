@@ -1350,6 +1350,10 @@ PYBIND11_MODULE(popart_core, m) {
         "disableGradAccumulationTensorStreams",
         &SessionOptions::disableGradAccumulationTensorStreams,
         DOC(popart, SessionOptions, disableGradAccumulationTensorStreams));
+    cls.def_readwrite(
+        "disableOptimizerStateTensorStreams",
+        &SessionOptions::disableOptimizerStateTensorStreams,
+        DOC(popart, SessionOptions, disableOptimizerStateTensorStreams));
     cls.def_readwrite("enableOutlining",
                       &SessionOptions::enableOutlining,
                       DOC(popart, SessionOptions, enableOutlining));
@@ -2098,7 +2102,7 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(
         "updateEngineCache",
         [](TrainingSession &session) { session.updateEngineCache(); },
-        DOC(popart, TrainingSession, updateEngineCache));
+        DOC(popart, Session, updateEngineCache));
 
     cls.def(
         "compileAndExport",

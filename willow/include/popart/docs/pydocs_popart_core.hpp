@@ -31,6 +31,26 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
+static const char *__doc_onnx_GraphProto = R"doc()doc";
+
+static const char *__singlelinedoc_onnx_GraphProto = R"doc()doc";
+
+static const char *__doc_onnx_ModelProto = R"doc()doc";
+
+static const char *__singlelinedoc_onnx_ModelProto = R"doc()doc";
+
+static const char *__doc_onnx_TensorProto = R"doc()doc";
+
+static const char *__singlelinedoc_onnx_TensorProto = R"doc()doc";
+
+static const char *__doc_onnx_TensorProto_2 = R"doc()doc";
+
+static const char *__singlelinedoc_onnx_TensorProto_2 = R"doc()doc";
+
+static const char *__doc_onnx_TensorProto_3 = R"doc()doc";
+
+static const char *__singlelinedoc_onnx_TensorProto_3 = R"doc()doc";
+
 static const char *__doc_popart_AccumulateOuterFragmentSchedule =
     R"doc(Enum type that determines how the operations in the accumulate outer fragment
 will be scheduled accross virtual graphs (only relevant to pipelined modes).)doc";
@@ -656,47 +676,54 @@ static const char *__doc_popart_AddPatternName_AddPatternName = R"doc()doc";
 static const char *__singlelinedoc_popart_AddPatternName_AddPatternName =
     R"doc()doc";
 
-static const char *__doc_popart_AiGraphcoreOpset1 = R"doc()doc";
+static const char *__doc_popart_AiGraphcoreOpset1 =
+    R"doc(Class that represents the AI Graphcore opset.)doc";
 
-static const char *__singlelinedoc_popart_AiGraphcoreOpset1 = R"doc()doc";
+static const char *__singlelinedoc_popart_AiGraphcoreOpset1 =
+    R"doc(Class that represents the AI Graphcore opset.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_AiGraphcoreOpset1 =
-    R"doc()doc";
+    R"doc(Constructor for the AiGraphcoreOpset1 class.
+
+
+Args:
+ impl_: A pointer to an implementation of the Builder class.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_AiGraphcoreOpset1 =
-    R"doc()doc";
+    R"doc(Constructor for the AiGraphcoreOpset1 class. Args: impl_: A pointer to an implementation of the Builder class.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_abort =
-    R"doc(Add abort operation to the model.
+    R"doc(Add an abort operation to the model.
 
 The operation can be conditional or unconditional.
 
 Args:
- args: Optional input tensor to test condition)doc";
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_abort =
-    R"doc(Add abort operation to the model. The operation can be conditional or unconditional. Args: args: Optional input tensor to test condition)doc";
+    R"doc(Add an abort operation to the model. The operation can be conditional or unconditional. Args: args: A vector of input tensor ids. debugContext: Optional debug information.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_atan2 =
-    R"doc(Add an ``atan2`` operation to the model.
+    R"doc(Add an ``atan2`:code:` operation to the model.
 
-Returns the element-wise angle theta as a tensor, -pi < theta <= pi, such
-that for two input tensors x and y and given r != 0,
-x = r cos theta, and
-y = r sin theta, element-wise.
+Returns the element-wise angle theta as a tensor.
+For :math:` -\pi < \theta \le \pi `, such
+that for two input tensors :math:`x` and :math:`y` and given :math:` r \ne 0 `,
+then :math:` x = r \cos\theta `, and :math:` y = r \sin\theta `, element-wise.
 
-In the case of x > 0, theta = arctan(y/x).
+In the case of :math:` x > 0 ` , :math:` \theta = arctan(y/x)` .
 
 
 Args:
- args: Vector of input tensor ids: [y, x].
- name: Optional identifier for operation.
+ args: A vector of input tensor ids: [`y:code:`, `x`].
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor containing element wise theta values.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_atan2 =
-    R"doc(Add an ``atan2`` operation to the model. Returns the element-wise angle theta as a tensor, -pi < theta <= pi, such that for two input tensors x and y and given r != 0, x = r cos theta, and y = r sin theta, element-wise. In the case of x > 0, theta = arctan(y/x). Args: args: Vector of input tensor ids: [y, x]. name: Optional identifier for operation. Returns: The name of the result tensor containing element wise theta values.)doc";
+    R"doc(Add an ``atan2`:code:` operation to the model. Returns the element-wise angle theta as a tensor. For :math:` -\pi < \theta \le \pi `, such that for two input tensors :math:`x` and :math:`y` and given :math:` r \ne 0 `, then :math:` x = r \cos\theta `, and :math:` y = r \sin\theta `, element-wise. In the case of :math:` x > 0 ` , :math:` \theta = arctan(y/x)` . Args: args: A vector of input tensor ids: [`y:code:`, `x`]. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwiseGenericOp =
     R"doc()doc";
@@ -707,104 +734,111 @@ static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwiseGenericOp =
 static const char *__doc_popart_AiGraphcoreOpset1_bitwiseand =
     R"doc(Add a bitwise AND operation to the model.
 
-The operation computes the bitwise AND of given two integer tensors.
+The operation computes the bitwise AND of two integer tensors.
 
 Args:
  args: Two broadcastable input tensors of type integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwiseand =
-    R"doc(Add a bitwise AND operation to the model. The operation computes the bitwise AND of given two integer tensors. Args: args: Two broadcastable input tensors of type integer. Returns: The name of the result tensor.)doc";
+    R"doc(Add a bitwise AND operation to the model. The operation computes the bitwise AND of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwisenot =
     R"doc(Add a bitwise NOT operation to the model.
 
-The operation computes the bitwise NOT of a given integer tensor.
+The operation computes the bitwise NOT of an integer tensor.
 
 Args:
- args: Input tensor of type integer.
+ args: An input tensor of type integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwisenot =
-    R"doc(Add a bitwise NOT operation to the model. The operation computes the bitwise NOT of a given integer tensor. Args: args: Input tensor of type integer. Returns: The name of the result tensor.)doc";
+    R"doc(Add a bitwise NOT operation to the model. The operation computes the bitwise NOT of an integer tensor. Args: args: An input tensor of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwiseor =
     R"doc(Add a bitwise OR operation to the model.
 
-The operation computes the bitwise OR of given two integer tensors.
+The operation computes the bitwise OR of two integer tensors.
 
 Args:
  args: Two broadcastable input tensors of type integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwiseor =
-    R"doc(Add a bitwise OR operation to the model. The operation computes the bitwise OR of given two integer tensors. Args: args: Two broadcastable input tensors of type integer. Returns: The name of the result tensor.)doc";
+    R"doc(Add a bitwise OR operation to the model. The operation computes the bitwise OR of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwisexnor =
     R"doc(Add a bitwise XNOR operation to the model.
 
-The operation computes the bitwise XNOR of given two integer tensors.
+The operation computes the bitwise XNOR of two integer tensors.
 
 Args:
  args: Two broadcastable input tensors of type integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwisexnor =
-    R"doc(Add a bitwise XNOR operation to the model. The operation computes the bitwise XNOR of given two integer tensors. Args: args: Two broadcastable input tensors of type integer. Returns: The name of the result tensor.)doc";
+    R"doc(Add a bitwise XNOR operation to the model. The operation computes the bitwise XNOR of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwisexor =
     R"doc(Add a bitwise XOR operation to the model.
 
-The operation computes the bitwise XOR of given two integer tensors.
+The operation computes the bitwise XOR of two integer tensors.
 
 Args:
  args: Two broadcastable input tensors of type integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_bitwisexor =
-    R"doc(Add a bitwise XOR operation to the model. The operation computes the bitwise XOR of given two integer tensors. Args: args: Two broadcastable input tensors of type integer. Returns: The name of the result tensor.)doc";
+    R"doc(Add a bitwise XOR operation to the model. The operation computes the bitwise XOR of two integer tensors. Args: args: Two broadcastable input tensors of type integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_call =
-    R"doc(Add a call operation to the model
+    R"doc(Add a call operation to the model.
 
 This is a Poplar extension, to expose manual code re-use to
 the builder.
 
 
 Args:
- args: Vector of input tensor ids.
+ args: A vector of input tensor ids.
  callee: The subgraph to call into.
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
  A vector of tensors; the subgraph outputs.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_call =
-    R"doc(Add a call operation to the model This is a Poplar extension, to expose manual code re-use to the builder. Args: args: Vector of input tensor ids. callee: The subgraph to call into. debugContext: Optional debug context. Returns: A vector of tensors; the subgraph outputs.)doc";
+    R"doc(Add a call operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: A vector of input tensor ids. callee: The subgraph to call into. debugContext: Optional debug information. Returns: A vector of tensors; the subgraph outputs.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_copyvarupdate =
-    R"doc(Copies a tensor to an initalised tensor (variable)
+    R"doc(Copies a tensor to an initalised tensor (variable).
 
 This is used to update an initalised tensor (a variable created using
-addInitializedInputTensor) which retains its value between iterations, by
+addInitializedInputTensor()) which retains its value between iterations, by
 setting the value to the value of another tensor (the updater). The purpose
 is to manually update the tensor in use cases for variables other than
 trained parameters (weights) or tensors used by other ops.
 
 
 Args:
- args: A vector of the input tensors [tensor to update, updater]
- debugContext: Optional debug context.
+ args: A vector of the input tensor ids containing the tensor to be
+      updated, :code:`tensor` and the tensor containing the values for the update,
+      :code:`updater` as [:code:`tensor`, :code:`updater`].
+ debugContext: Optional debug information.
 
 Returns:
  An alias to the updated variable: to ensure correct ordering of
@@ -812,7 +846,7 @@ Returns:
  should operate on the updated variable.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_copyvarupdate =
-    R"doc(Copies a tensor to an initalised tensor (variable) This is used to update an initalised tensor (a variable created using addInitializedInputTensor) which retains its value between iterations, by setting the value to the value of another tensor (the updater). The purpose is to manually update the tensor in use cases for variables other than trained parameters (weights) or tensors used by other ops. Args: args: A vector of the input tensors [tensor to update, updater] debugContext: Optional debug context. Returns: An alias to the updated variable: to ensure correct ordering of the updated variable, you should use this variable for any op which should operate on the updated variable.)doc";
+    R"doc(Copies a tensor to an initalised tensor (variable). This is used to update an initalised tensor (a variable created using addInitializedInputTensor()) which retains its value between iterations, by setting the value to the value of another tensor (the updater). The purpose is to manually update the tensor in use cases for variables other than trained parameters (weights) or tensors used by other ops. Args: args: A vector of the input tensor ids containing the tensor to be updated, :code:`tensor` and the tensor containing the values for the update, :code:`updater` as [:code:`tensor`, :code:`updater`]. debugContext: Optional debug information. Returns: An alias to the updated variable: to ensure correct ordering of the updated variable, you should use this variable for any op which should operate on the updated variable.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_ctcbeamsearchdecoder =
     R"doc(Add a connectionist temporal classification (CTC) beam search decoder
@@ -823,52 +857,60 @@ the input \p logProbs with lengths \p dataLengths.
 
 
 Args:
- args: Vector of input tensor ids. These are [logProbs, dataLengths],
-     where logProbs is of shape [maxTime, batchSize, numClasses], and
-     dataLengths is of shape [batchSize].
+ args: A vector of input tensor ids. These are [:code:`logProbs`,
+     :code:`dataLengths`], where :code:`logProbs` is of shape [:code:`maxTime`, :code:`batchSize`, *
+     :code:`numClasses`], and :code:`dataLengths` is of shape [:code:`batchSize`].
  blank: The integer representing the blank class.
  beamWidth: The number of beams to use when decoding.
  topPaths: The number of most likely decoded paths to return, must be
-     less than or equal to \p beamWidth.
- debugContext: Optional debug context.
+      less than or equal to \p beamWidth.
+ debugContext: Optional debug information.
+
 
 Returns:
- The names of the result tensors. These are [labelProbs,
- labelLengths, decodedLabels], where labelProbs is of shape [batchSize,
- topPaths], labelLengths is of shape [batchSize, topPaths], and
- decodedLabels is of shape [batchSize, topPaths, maxTime].)doc";
+ The names of the result tensors. These are [:code:`labelProbs,
+ `labelLengths:code:`, `decodedLabels:code:`], where
+ `labelProbs:code:` is of shape
+ [`batchSize:code:`, `topPaths:code:`], `labelLengths:code:` is of shape [`batchSize:code:`,
+ `topPaths:code:`], and `decodedLabels:code:` is of shape [`batchSize:code:`,
+ `topPaths:code:`, `maxTime`].)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_ctcbeamsearchdecoder =
-    R"doc(Add a connectionist temporal classification (CTC) beam search decoder operation to the model. Calculate the most likely \p topPaths labels and their probabilities given the input \p logProbs with lengths \p dataLengths. Args: args: Vector of input tensor ids. These are [logProbs, dataLengths], where logProbs is of shape [maxTime, batchSize, numClasses], and dataLengths is of shape [batchSize]. blank: The integer representing the blank class. beamWidth: The number of beams to use when decoding. topPaths: The number of most likely decoded paths to return, must be less than or equal to \p beamWidth. debugContext: Optional debug context. Returns: The names of the result tensors. These are [labelProbs, labelLengths, decodedLabels], where labelProbs is of shape [batchSize, topPaths], labelLengths is of shape [batchSize, topPaths], and decodedLabels is of shape [batchSize, topPaths, maxTime].)doc";
+    R"doc(Add a connectionist temporal classification (CTC) beam search decoder operation to the model. Calculate the most likely \p topPaths labels and their probabilities given the input \p logProbs with lengths \p dataLengths. Args: args: A vector of input tensor ids. These are [:code:`logProbs`, :code:`dataLengths`], where :code:`logProbs` is of shape [:code:`maxTime`, :code:`batchSize`, * :code:`numClasses`], and :code:`dataLengths` is of shape [:code:`batchSize`]. blank: The integer representing the blank class. beamWidth: The number of beams to use when decoding. topPaths: The number of most likely decoded paths to return, must be less than or equal to \p beamWidth. debugContext: Optional debug information. Returns: The names of the result tensors. These are [:code:`labelProbs, `labelLengths:code:`, `decodedLabels:code:`], where `labelProbs:code:` is of shape [`batchSize:code:`, `topPaths:code:`], `labelLengths:code:` is of shape [`batchSize:code:`, `topPaths:code:`], and `decodedLabels:code:` is of shape [`batchSize:code:`, `topPaths:code:`, `maxTime`].)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_ctcloss =
     R"doc(Add a connectionist temporal classification (CTC) loss operation to the
 model.
 
-With T being maximum input length, N being batch size, C being number of
-classes, S being a maximum target length, this op calculates the CTC loss
-for a logarithmised probabilities tensor with shape [T, N, C], a class
-target tensor with shape [N, S], an input lengths tensor [N] and a target
-lengths tensor [N].
+With maximum input length :code:`T`, batch size :code:`N`, number of classes :code:`C` and
+maximum target length :code:`S`, this op calculates the CTC loss for a
+logarithmised probabilities tensor with shape [:code:`T`, :code:`N`, :code:`C`], a class
+target tensor with shape [:code:`N`, :code:`S`], an input lengths tensor [:code:`N`] and a
+target lengths tensor [:code:`N`].
 
-Note that C includes a blank class (default=0). The probabilities tensor
-is padded as required. Target sequences are also padded and are
-populated with values less than equal to C, not including the blank class,
-up to their respective target lengths. Note that target lengths cannot
-exceed input lengths.
+Note that :code:`C` includes a blank class (default=0). The probabilities tensor
+is padded as required. Target sequences are also padded and are populated
+with values less than or equal to :code:`C`, not including the blank class, up to
+their respective target lengths. Note that target lengths cannot exceed
+input lengths.
 
 
 Args:
- args: [log_probs,targets,input_lengths,target_lengths]
- reduction: Type of reduction to perform on the individual losses
+ args: A vector of input tensor ids [:code:`log_probs`,:code:`targets`,
+      :code:`input_lengths`, :code:`target_lengths`].
+ reduction: The type of reduction to perform on the individual losses.
  blank: The integer representing the blank class.
- debugContext: Optional debug context
+ outDataType: The data type of the output tensors. Default =
+      :code:`UNDEFINED`.
+ zeroInfinity: If :code:`true` infinite losses and the associated
+      gradients are zeroed-out. Default = :code:`false`.
+ debugContext: Optional debug information
 
 Returns:
- The name of the result tensor)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_ctcloss =
-    R"doc(Add a connectionist temporal classification (CTC) loss operation to the model. With T being maximum input length, N being batch size, C being number of classes, S being a maximum target length, this op calculates the CTC loss for a logarithmised probabilities tensor with shape [T, N, C], a class target tensor with shape [N, S], an input lengths tensor [N] and a target lengths tensor [N]. Note that C includes a blank class (default=0). The probabilities tensor is padded as required. Target sequences are also padded and are populated with values less than equal to C, not including the blank class, up to their respective target lengths. Note that target lengths cannot exceed input lengths. Args: args: [log_probs,targets,input_lengths,target_lengths] reduction: Type of reduction to perform on the individual losses blank: The integer representing the blank class. debugContext: Optional debug context Returns: The name of the result tensor)doc";
+    R"doc(Add a connectionist temporal classification (CTC) loss operation to the model. With maximum input length :code:`T`, batch size :code:`N`, number of classes :code:`C` and maximum target length :code:`S`, this op calculates the CTC loss for a logarithmised probabilities tensor with shape [:code:`T`, :code:`N`, :code:`C`], a class target tensor with shape [:code:`N`, :code:`S`], an input lengths tensor [:code:`N`] and a target lengths tensor [:code:`N`]. Note that :code:`C` includes a blank class (default=0). The probabilities tensor is padded as required. Target sequences are also padded and are populated with values less than or equal to :code:`C`, not including the blank class, up to their respective target lengths. Note that target lengths cannot exceed input lengths. Args: args: A vector of input tensor ids [:code:`log_probs`,:code:`targets`, :code:`input_lengths`, :code:`target_lengths`]. reduction: The type of reduction to perform on the individual losses. blank: The integer representing the blank class. outDataType: The data type of the output tensors. Default = :code:`UNDEFINED`. zeroInfinity: If :code:`true` infinite losses and the associated gradients are zeroed-out. Default = :code:`false`. debugContext: Optional debug information Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_ctcloss_2 = R"doc()doc";
 
@@ -876,165 +918,183 @@ static const char *__singlelinedoc_popart_AiGraphcoreOpset1_ctcloss_2 =
     R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_depthtospace =
-    R"doc(Add the ``DepthToSpace`` to the model.
-(This allows DepthToSpace_11 to be targeted from earlier opsets.)
+    R"doc(Add a depth-to-space operation to the model.
 
-The purpose of Depth to Space, also known as pixel shuffling, is to
-rearrange data from the depth (channels) dimension into the spacial (width
-and height) dimensions. It is an efficient means of learning upsampling
-alongside mixing convolution with bilinear interpolation and using
-transpose convolution.
+This allows DepthToSpace_11 to be targeted from earlier opsets.
 
-https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+The purpose of a depth-to-space operation, also known as pixel shuffling,
+is to rearrange data from the depth (channels) dimension into the spatial
+(width and height) dimensions. It is an efficient means of learning
+upsampling alongside mixing convolution with bilinear interpolation and
+using transpose convolution.
+
+
+See Also:
+ `ONNX DepthToSpace operator <https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace>`_.
 
 
 Args:
- args: Vector containing single tensor input id.
- blocksize: Indicates the scale factor: if the input is [N, C, H, W]
-     and the blocksize is B, the output will be [N, C/(B*B), H*B, W*B].
+ args: A vector containing a single tensor id of the input tensor
+ of shape [:code:`N`,:code:`C`,:code:`H`,:code:`W`], where :code:`N` is the batch axis, :code:`C` is the
+ channel or depth, :code:`H` is the height and :code:`W` is the width.
+ blocksize: The size of the blocks to be moved. If the input is
+ [:code:`N`, :code:`C`, :code:`H`, :code:`W`] and the blocksize is :code:`B`, the output will be
+ [:code:`N`, :code:`C/(B*B)`, :code:`H*B`, :code:`W*B`].
  mode: Specifies how the data is rearranged:
-    * "DCR": depth-column-row order
-    * "CRD": column-row-depth order
- debugContext: Optional debug context.
+ * "DCR" (Default): depth-column-row order
+ * "CRD": column-row-depth order
+ debugContext: Optional debug information.
 
 Returns:
  A tensor which is a rearrangement of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_depthtospace =
-    R"doc(Add the ``DepthToSpace`` to the model. (This allows DepthToSpace_11 to be targeted from earlier opsets.) The purpose of Depth to Space, also known as pixel shuffling, is to rearrange data from the depth (channels) dimension into the spacial (width and height) dimensions. It is an efficient means of learning upsampling alongside mixing convolution with bilinear interpolation and using transpose convolution. https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace Args: args: Vector containing single tensor input id. blocksize: Indicates the scale factor: if the input is [N, C, H, W] and the blocksize is B, the output will be [N, C/(B*B), H*B, W*B]. mode: Specifies how the data is rearranged: * "DCR": depth-column-row order * "CRD": column-row-depth order debugContext: Optional debug context. Returns: A tensor which is a rearrangement of the input tensor.)doc";
+    R"doc(Add a depth-to-space operation to the model. This allows DepthToSpace_11 to be targeted from earlier opsets. The purpose of a depth-to-space operation, also known as pixel shuffling, is to rearrange data from the depth (channels) dimension into the spatial (width and height) dimensions. It is an efficient means of learning upsampling alongside mixing convolution with bilinear interpolation and using transpose convolution. See Also: `ONNX DepthToSpace operator <https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace>`_. Args: args: A vector containing a single tensor id of the input tensor of shape [:code:`N`,:code:`C`,:code:`H`,:code:`W`], where :code:`N` is the batch axis, :code:`C` is the channel or depth, :code:`H` is the height and :code:`W` is the width. blocksize: The size of the blocks to be moved. If the input is [:code:`N`, :code:`C`, :code:`H`, :code:`W`] and the blocksize is :code:`B`, the output will be [:code:`N`, :code:`C/(B*B)`, :code:`H*B`, :code:`W*B`]. mode: Specifies how the data is rearranged: * "DCR" (Default): depth-column-row order * "CRD": column-row-depth order debugContext: Optional debug information. Returns: A tensor which is a rearrangement of the input tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_detach =
     R"doc(Add a detach operation to the model.
 
 
-
 Args:
- args: Vector of input tensor ids.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_detach =
-    R"doc(Add a detach operation to the model. Args: args: Vector of input tensor ids. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a detach operation to the model. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicadd =
-    R"doc(Add a dynamic add operation to the model.
+    R"doc( Add a dynamic add operation to the model.
 
-Creates a copy of ``tensor`` with ``slice`` added at ``offset.``
-For example:
+ Creates a copy of a tensor, ``tensor``, with a slice tensor, ``slice``,
+ added at an offset position, ``offset.``
+ For example:
+```
+  out = tensor
+  out[offset] += slice
+``:code:`
 
-    out = tensor, out[offset] += slice
-
-
-Args:
- args: Vector of input tensor ids: [tensor, offset, slice].
- axes: Axes along which to add.
- sizes: Size of the slice in each axis.
- debugContext: Optional debug context.
+ Args:
+  args: A vector of input tensor ids: [`tensor:code:`, `offset:code:`, `slice`].
+  axes: The axes along which to add the slice.
+  sizes: The size of the slice along each axis.
+  debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+  The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_dynamicadd =
-    R"doc(Add a dynamic add operation to the model. Creates a copy of ``tensor`` with ``slice`` added at ``offset.`` For example: out = tensor, out[offset] += slice Args: args: Vector of input tensor ids: [tensor, offset, slice]. axes: Axes along which to add. sizes: Size of the slice in each axis. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a dynamic add operation to the model. Creates a copy of a tensor, ``tensor``, with a slice tensor, ``slice``, added at an offset position, ``offset.`` For example: ``` out = tensor out[offset] += slice ``:code:` Args: args: A vector of input tensor ids: [`tensor:code:`, `offset:code:`, `slice`]. axes: The axes along which to add the slice. sizes: The size of the slice along each axis. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicslice =
-    R"doc(Add a dynamic slice operation to the model.
+    R"doc( Add a dynamic slice operation to the model.
 
-Creates a new slice tensor.
-For example:
+ Creates a new slice tensor, ``slice``, at offset position, ``offset``, in a
+ tensor, ``tensor.``
+ For example:
+ ```
+  slice = tensor[offset]
+```
 
-    slice = tensor[offset]
-
-
-Args:
- args: Vector of input tensor ids: [tensor, offset].
- axes: Axes along which to slice.
- sizes: Size of the slice in each axis.
- debugContext: Optional debug context.
+ Args:
+  args: A vector of input tensor ids: [tensor, offset].
+  axes: The axes along which to slice.
+  sizes: The size of the slice along each axis.
+  noOverlap: Indicates whether the slice regions overlap or not. If 1,
+       slice regions do not overlap, otherwise they do overlap.
+  debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+  The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_dynamicslice =
-    R"doc(Add a dynamic slice operation to the model. Creates a new slice tensor. For example: slice = tensor[offset] Args: args: Vector of input tensor ids: [tensor, offset]. axes: Axes along which to slice. sizes: Size of the slice in each axis. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a dynamic slice operation to the model. Creates a new slice tensor, ``slice``, at offset position, ``offset``, in a tensor, ``tensor.`` For example: ``` slice = tensor[offset] ``` Args: args: A vector of input tensor ids: [tensor, offset]. axes: The axes along which to slice. sizes: The size of the slice along each axis. noOverlap: Indicates whether the slice regions overlap or not. If 1, slice regions do not overlap, otherwise they do overlap. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamicupdate =
-    R"doc(Add a dynamic update operation to the model.
+    R"doc( Add a dynamic update operation to the model.
 
-Creates a copy of a ``tensor`` with a ``slice`` inserted at ``offset.``
-For example:
+ Creates a copy of a tensor, ``tensor``, and updates the elements of the
+ copied tensor at offset position, ``offset``, with the elements contained
+ in the slice tensor, ``slice``,
+ For example:
+ ```
+  out = tensor
+  out[offset] = slice
+```
 
-    out = tensor, out[offset] = slice
-
-
-Args:
- args: Vector of input tensor ids: [tensor, offset, slice].
- axes: Axes along which to update.
- sizes: Size of the slice in each axis.
- debugContext: Optional debug context.
+ Args:
+  args: A vector of input tensor ids: [tensor, offset, slice].
+  axes: The axes along which to update.
+  sizes: The size of the slice along each axis.
+  noOverlap: Indicates whether the updates overlap or not. If 1,
+       the updates do not overlap, otherwise they do overlap.
+  debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+  The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_dynamicupdate =
-    R"doc(Add a dynamic update operation to the model. Creates a copy of a ``tensor`` with a ``slice`` inserted at ``offset.`` For example: out = tensor, out[offset] = slice Args: args: Vector of input tensor ids: [tensor, offset, slice]. axes: Axes along which to update. sizes: Size of the slice in each axis. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a dynamic update operation to the model. Creates a copy of a tensor, ``tensor``, and updates the elements of the copied tensor at offset position, ``offset``, with the elements contained in the slice tensor, ``slice``, For example: ``` out = tensor out[offset] = slice ``` Args: args: A vector of input tensor ids: [tensor, offset, slice]. axes: The axes along which to update. sizes: The size of the slice along each axis. noOverlap: Indicates whether the updates overlap or not. If 1, the updates do not overlap, otherwise they do overlap. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_dynamiczero =
     R"doc(Add a dynamic zero operation to the model.
 
-Creates a copy of ``tensor`` with a slice at ``offset`` set to zero.
+Creates a copy of a tensor, ``tensor``, with a slice tensor at offset
+position, ``offset`` set to zero.
 For example:
-
-    out = tensor, out[offset] = 0.0
-
+```
+ out = tensor
+ out[offset] = 0.0
+```
 
 Args:
- args: Vector of input tensor ids [tensor, offset].
- axes: Axes along which to erase.
- sizes: Size of the slice in each axis.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids: [tensor, offset].
+ axes: The axes along which to zero elements.
+ sizes: The size of the slice along each axis.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_dynamiczero =
-    R"doc(Add a dynamic zero operation to the model. Creates a copy of ``tensor`` with a slice at ``offset`` set to zero. For example: out = tensor, out[offset] = 0.0 Args: args: Vector of input tensor ids [tensor, offset]. axes: Axes along which to erase. sizes: Size of the slice in each axis. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a dynamic zero operation to the model. Creates a copy of a tensor, ``tensor``, with a slice tensor at offset position, ``offset`` set to zero. For example: ``` out = tensor out[offset] = 0.0 ``` Args: args: A vector of input tensor ids: [tensor, offset]. axes: The axes along which to zero elements. sizes: The size of the slice along each axis. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_expm1 =
-    R"doc(Add ``expm1`` operation to the model.
-It computes exp(x) - 1.
-Calculates the element-wise exponential of the input tensor and
-subtracts one.
+    R"doc(Add a ``expm1`` operation to the model.
+
+This calculates the element-wise exponential of the input tensor and
+subtracts one: :math:` exp(x) - 1 `.
 
 
 Args:
- args: Vector of input tensor ids.
- name: Optional identifier for operation.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_expm1 =
-    R"doc(Add ``expm1`` operation to the model. It computes exp(x) - 1. Calculates the element-wise exponential of the input tensor and subtracts one. Args: args: Vector of input tensor ids. name: Optional identifier for operation. Returns: The name of the result tensor.)doc";
+    R"doc(Add a ``expm1`` operation to the model. This calculates the element-wise exponential of the input tensor and subtracts one: :math:` exp(x) - 1 `. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_fmod =
-    R"doc(Add fmod operation to the model.
+    R"doc(Add an :code:`fmod` operation to the model.
 
-This is equivalent to C's fmod function. The result has the same sign as
-the dividend.
+This is equivalent to the C :code:`fmod` function. The result has the same sign
+as the dividend.
 
 
 Args:
- args: Input tensors.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
  Computes the element-wise remainder of division. The remainder has
  the same sign as the dividend.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_fmod =
-    R"doc(Add fmod operation to the model. This is equivalent to C's fmod function. The result has the same sign as the dividend. Args: args: Input tensors. Returns: Computes the element-wise remainder of division. The remainder has the same sign as the dividend.)doc";
+    R"doc(Add an :code:`fmod` operation to the model. This is equivalent to the C :code:`fmod` function. The result has the same sign as the dividend. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: Computes the element-wise remainder of division. The remainder has the same sign as the dividend.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_gelu =
     R"doc(Add a GELU operation to the model.
@@ -1043,14 +1103,14 @@ This is a Poplar extension.
 
 
 Args:
- args: Vector of input tensor ids.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_gelu =
-    R"doc(Add a GELU operation to the model. This is a Poplar extension. Args: args: Vector of input tensor ids. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a GELU operation to the model. This is a Poplar extension. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_getOpsetVersion = R"doc()doc";
 
@@ -1066,16 +1126,18 @@ The group will be created from a strided input.
 
 
 Args:
- args: A vector of input tensors: [x, scale, bias].
+ args: A vector of input tensor ids for input data :code:`x`, scale :code:`scale`,
+      and bias :code:`bias` as [:code:`x`, :code:`scale`, :code:`bias`].
  num_groups: The number of groups to separate the channels into.
  epsilon: The epsilon value to use to avoid division by zero.
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
- A vector of tensors: [y, mean, var].)doc";
+ A vector of output tensor ids for output data :code:`y`, the mean :code:`mean`
+and the variance :code:`var` as [:code:`y`, :code:`mean`, :code:`var`].)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_groupnormalization =
-    R"doc(Add a group normalization operation to the model. This is a Poplar extension. The group will be created from a strided input. Args: args: A vector of input tensors: [x, scale, bias]. num_groups: The number of groups to separate the channels into. epsilon: The epsilon value to use to avoid division by zero. debugContext: Optional debug context. Returns: A vector of tensors: [y, mean, var].)doc";
+    R"doc(Add a group normalization operation to the model. This is a Poplar extension. The group will be created from a strided input. Args: args: A vector of input tensor ids for input data :code:`x`, scale :code:`scale`, and bias :code:`bias` as [:code:`x`, :code:`scale`, :code:`bias`]. num_groups: The number of groups to separate the channels into. epsilon: The epsilon value to use to avoid division by zero. debugContext: Optional debug information. Returns: A vector of output tensor ids for output data :code:`y`, the mean :code:`mean` and the variance :code:`var` as [:code:`y`, :code:`mean`, :code:`var`].)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_identityloss =
     R"doc(Add an identity loss operation to the model.
@@ -1084,63 +1146,71 @@ Calculates the loss using the identity operator.
 
 
 Args:
- args: Vector of input tensor ids.
- reduction: Type of reduction to perform on the individual losses.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ reduction: The type of reduction to perform on the individual losses.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_identityloss =
-    R"doc(Add an identity loss operation to the model. Calculates the loss using the identity operator. Args: args: Vector of input tensor ids. reduction: Type of reduction to perform on the individual losses. debugContext: Optional debug context. Returns: The name of the result tensor)doc";
+    R"doc(Add an identity loss operation to the model. Calculates the loss using the identity operator. Args: args: A vector of input tensor ids. reduction: The type of reduction to perform on the individual losses. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_incrementmod =
-    R"doc(Add an incrementmod (y = (x + increment) % modulus) operation to the model.
+    R"doc(Add an incrementmod operation to the model.
+
+The operation is of the form :code:`y = (x + increment) % modulus`.
 
 
 Args:
- args: Vector with single input tensor id.
- increment: Scalar increment
- modulus: Scalar modulus
+ args: A vector with a single input tensor id.
+ increment: A scalar increment
+ modulus: A scalar modulus
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_incrementmod =
-    R"doc(Add an incrementmod (y = (x + increment) % modulus) operation to the model. Args: args: Vector with single input tensor id. increment: Scalar increment modulus: Scalar modulus Returns: The name of the result tensor.)doc";
+    R"doc(Add an incrementmod operation to the model. The operation is of the form :code:`y = (x + increment) % modulus`. Args: args: A vector with a single input tensor id. increment: A scalar increment modulus: A scalar modulus debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_init =
     R"doc(Add an init operation to the model.
 
 
 Args:
- shape: Shape of the tensor to initialise.
- data_type: Data type to initialise tensor with.
- init_type: Mode of tensor initialisations.
- batch_axis: Axis relative to batch size.
- debugContext: Optional debug context.
+ shape: The shape of the tensor to initialise.
+ data_type: The data type to initialise tensor with. The value is the
+      integer attribute taken from the DataType enum.
+ init_type: The mode of the tensor initialisation. The value is the
+      integer attribute taken from the InitType enum.
+ batch_axis: Batch axis specifies the axis that the batches are split
+      along and is a literal integer.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_init =
-    R"doc(Add an init operation to the model. Args: shape: Shape of the tensor to initialise. data_type: Data type to initialise tensor with. init_type: Mode of tensor initialisations. batch_axis: Axis relative to batch size. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add an init operation to the model. Args: shape: The shape of the tensor to initialise. data_type: The data type to initialise tensor with. The value is the integer attribute taken from the DataType enum. init_type: The mode of the tensor initialisation. The value is the integer attribute taken from the InitType enum. batch_axis: Batch axis specifies the axis that the batches are split along and is a literal integer. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_init_2 =
     R"doc(Add an init operation to the model.
 
 
 Args:
- shape: Shape of the tensor to initialise.
- data_type: Data type to initialise tensor with.
- init_type: Mode of tensor initialisations.
- debugContext: Optional debug context.
+ shape: The shape of the tensor to initialise.
+ data_type: The data type to initialise tensor with. The value is the
+      integer attribute taken from the DataType enum.
+ init_type: The mode of the tensor initialisation. The value is the
+      integer attribute taken from the InitType enum.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_init_2 =
-    R"doc(Add an init operation to the model. Args: shape: Shape of the tensor to initialise. data_type: Data type to initialise tensor with. init_type: Mode of tensor initialisations. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add an init operation to the model. Args: shape: The shape of the tensor to initialise. data_type: The data type to initialise tensor with. The value is the integer attribute taken from the DataType enum. init_type: The mode of the tensor initialisation. The value is the integer attribute taken from the InitType enum. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_l1loss =
     R"doc(Add an ``l1`` loss operation to the model.
@@ -1150,167 +1220,170 @@ a zero target.
 
 
 Args:
- args: Vector of input tensor ids.
- lambda: Scale factor of L1 loss.
- reduction: Type of reduction to perform on the individual losses.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ lambda: The scale factor of the L1 loss.
+ reduction: The type of reduction to perform on the individual losses.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_l1loss =
-    R"doc(Add an ``l1`` loss operation to the model. Calculates the mean absolute error between each element in the input with a zero target. Args: args: Vector of input tensor ids. lambda: Scale factor of L1 loss. reduction: Type of reduction to perform on the individual losses. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add an ``l1`` loss operation to the model. Calculates the mean absolute error between each element in the input with a zero target. Args: args: A vector of input tensor ids. lambda: The scale factor of the L1 loss. reduction: The type of reduction to perform on the individual losses. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_log1p =
-    R"doc(Add ``log1p`` operation to the model.
-It computes log(x + 1).
-This calculates the element-wise logarithm of the
-input tensor plus one.
+    R"doc(Add a ``log1p`` operation to the model.
+
+This calculates the element-wise logarithm of the input tensor plus one:
+:math:` log(x + 1) `.
 
 
 Args:
- args: Vector of input tensor ids.
+ args: A vector of input tensor ids.
  name: Optional identifier for operation.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_log1p =
-    R"doc(Add ``log1p`` operation to the model. It computes log(x + 1). This calculates the element-wise logarithm of the input tensor plus one. Args: args: Vector of input tensor ids. name: Optional identifier for operation. Returns: The name of the result tensor.)doc";
+    R"doc(Add a ``log1p`` operation to the model. This calculates the element-wise logarithm of the input tensor plus one: :math:` log(x + 1) `. Args: args: A vector of input tensor ids. name: Optional identifier for operation. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_lstm = R"doc()doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_lstm = R"doc()doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_multiconv =
-    R"doc(Add a multi-convolution to the model.
+    R"doc( Add a multi-convolution operation to the model.
 
-Using this multi-convolution API ensures that the convolutions are
-executed in parallel on the device.
+ Using this multi-convolution API ensures that the convolutions are
+ executed in parallel on the device.
 
-Functionally, a multi-convolution is equivalent to a series of single
-convolutions. Using this multi-convolution API is always equivalent to
-calling the single-convolution API (conv) once for each argument.
+ Functionally, a multi-convolution is equivalent to a series of single
+ convolutions. Using this multi-convolution API is always equivalent to
+ calling the single-convolution API (conv) once for each argument.
 
-For example, calling:
+ For example, calling:
+ ```
+     A0 = conv({X0, W0, B0})
+     A1 = conv({X1, W1})
+```
+ is functionally equivalent to calling:
+```
+     {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
+```
+ It is possible that any two convolutions cannot be executed in parallel
+ due to topological constraints. For example, the following:
+```
+     B = conv({A, W0});
+     C = B + A
+     D = conv({C, W1});
+```
+ cannot be converted to:
+```
+     {B, D} = multiconv({{A, W0}, {C, W1}}).
+``:code:`
+ Note that it is not possible to create such a cycle by adding a
+ multi-convolution with this API.
 
-    A0 = conv({X0, W0, B0})
-    A1 = conv({X1, W1})
+ Calls to multiconv() are mapped to
+ poplar::poplin::multiconv::convolution().
 
-Is functionally equivalent to calling:
-
-    {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}).
-
-It is possible that any two convolutions cannot be executed in parallel
-due to topological constraints. For example, the following:
-
-    B = conv({A, W0});
-    C = B + A
-    D = conv({C, W1});
-
-Cannot be converted to:
-
-    {B, D} = multiconv({{A, W0}, {C, W1}}).
-
-Note that it is not possible to create such a cycle by adding a
-multi-convolution with this API.
-
-Calls to multiconv() are mapped to
-poplar::poplin::multiconv::convolution().
-
-All input vectors must be either empty, or equal in length to
-the number of convolutions. Note that groups for each convolution are
-automatically inferred from the shapes of the data and weight inputs.
+ All input vectors must be either empty, or equal in length to
+ the number of convolutions. Note that groups for each convolution are
+ automatically inferred from the shapes of the data and weight inputs.
 
 
-Args:
- tensors: List of [DataId, WeightId, BiasId (optional)] for each
-        convolution.
- dilations: The dilations attributes for each convolution.
- inDilations: The input dilations attributes for each convolution.
- pads: The pads for each convolution.
- outPads: The output padding for each convolution.
- strides: The strides for each convolution.
- availableMemoryProportions: The available memory proportions per conv, each [0, 1).
- partialsTypes: The partials type per convolution.
- planType: Run convolutions in parallel or series.
- perConvReservedTiles: Tiles to reserve per convolution when planning.
- cycleBackOff: Cycle back-off proportion, [0, 1).
- enableConvDithering: Enable convolution dithering per convolution. If
-        true, then convolutions with different parameters will be laid out
-        from different tiles in an effort to improve tile balance in models.
- debugContext: Optional debug context.
+ Args:
+  tensors: List of tensor ids for input tensors for data, weights and
+       biases as [`data:code:`, `weight:code:`,`bias:code:`] for each convolution. `bias:code:` is
+       optional.
+  dilations: The dilations attributes for each convolution.
+  inDilations: The input dilations attributes for each convolution.
+  pads: The pads for each convolution.
+  outPads: The output padding for each convolution.
+  strides: The strides for each convolution.
+  availableMemoryProportions: The available memory proportions per
+      convolution, each [0, 1).
+  partialsTypes: The partials type per convolution.
+  planType: Run convolutions in parallel or series.
+  perConvReservedTiles: The number of tiles to reserve per convolution
+      when planning.
+  cycleBackOff: Cycle back-off proportion, [0, 1).
+  enableConvDithering: Enable convolution dithering per convolution. If
+      `true:code:`, then convolutions with different parameters will be laid out
+      from different tiles in an effort to improve tile balance in models.
+  debugContext: Optional debug information.
 
 
 Returns:
- The TensorId of the output tensor from each convolution.
+  A vector of tensor ids of the output tensor from each convolution.
 
 
 See Also:
- `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion`)doc";
+  `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using `availableMemoryProportion`.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_multiconv =
-    R"doc(Add a multi-convolution to the model. Using this multi-convolution API ensures that the convolutions are executed in parallel on the device. Functionally, a multi-convolution is equivalent to a series of single convolutions. Using this multi-convolution API is always equivalent to calling the single-convolution API (conv) once for each argument. For example, calling: A0 = conv({X0, W0, B0}) A1 = conv({X1, W1}) Is functionally equivalent to calling: {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}). It is possible that any two convolutions cannot be executed in parallel due to topological constraints. For example, the following: B = conv({A, W0}); C = B + A D = conv({C, W1}); Cannot be converted to: {B, D} = multiconv({{A, W0}, {C, W1}}). Note that it is not possible to create such a cycle by adding a multi-convolution with this API. Calls to multiconv() are mapped to poplar::poplin::multiconv::convolution(). All input vectors must be either empty, or equal in length to the number of convolutions. Note that groups for each convolution are automatically inferred from the shapes of the data and weight inputs. Args: tensors: List of [DataId, WeightId, BiasId (optional)] for each convolution. dilations: The dilations attributes for each convolution. inDilations: The input dilations attributes for each convolution. pads: The pads for each convolution. outPads: The output padding for each convolution. strides: The strides for each convolution. availableMemoryProportions: The available memory proportions per conv, each [0, 1). partialsTypes: The partials type per convolution. planType: Run convolutions in parallel or series. perConvReservedTiles: Tiles to reserve per convolution when planning. cycleBackOff: Cycle back-off proportion, [0, 1). enableConvDithering: Enable convolution dithering per convolution. If true, then convolutions with different parameters will be laid out from different tiles in an effort to improve tile balance in models. debugContext: Optional debug context. Returns: The TensorId of the output tensor from each convolution. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion`)doc";
+    R"doc(Add a multi-convolution operation to the model. Using this multi-convolution API ensures that the convolutions are executed in parallel on the device. Functionally, a multi-convolution is equivalent to a series of single convolutions. Using this multi-convolution API is always equivalent to calling the single-convolution API (conv) once for each argument. For example, calling: ``` A0 = conv({X0, W0, B0}) A1 = conv({X1, W1}) ``` is functionally equivalent to calling: ``` {A0, A1} = multiconv({{X0, W0, B0}, {X1, Q1}). ``` It is possible that any two convolutions cannot be executed in parallel due to topological constraints. For example, the following: ``` B = conv({A, W0}); C = B + A D = conv({C, W1}); ``` cannot be converted to: ``` {B, D} = multiconv({{A, W0}, {C, W1}}). ``:code:` Note that it is not possible to create such a cycle by adding a multi-convolution with this API. Calls to multiconv() are mapped to poplar::poplin::multiconv::convolution(). All input vectors must be either empty, or equal in length to the number of convolutions. Note that groups for each convolution are automatically inferred from the shapes of the data and weight inputs. Args: tensors: List of tensor ids for input tensors for data, weights and biases as [`data:code:`, `weight:code:`,`bias:code:`] for each convolution. `bias:code:` is optional. dilations: The dilations attributes for each convolution. inDilations: The input dilations attributes for each convolution. pads: The pads for each convolution. outPads: The output padding for each convolution. strides: The strides for each convolution. availableMemoryProportions: The available memory proportions per convolution, each [0, 1). partialsTypes: The partials type per convolution. planType: Run convolutions in parallel or series. perConvReservedTiles: The number of tiles to reserve per convolution when planning. cycleBackOff: Cycle back-off proportion, [0, 1). enableConvDithering: Enable convolution dithering per convolution. If `true:code:`, then convolutions with different parameters will be laid out from different tiles in an effort to improve tile balance in models. debugContext: Optional debug information. Returns: A vector of tensor ids of the output tensor from each convolution. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using `availableMemoryProportion`.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_nllloss =
     R"doc(Add a negative log-likelihood loss operation to the model.
 
-Calculates the nll loss given a probability tensor over classes, and
-a target tensor containing class labels.
+Calculates the negative log likelihood (NLL) loss given a probability
+tensor over classes, and a target tensor containing class labels.
 
 
 Args:
- args: Vector of input tensor ids: probability and tensor.
- reduction: Type of reduction to perform on the individual losses.
+ args: A vector of input tensor ids: probability and tensor.
+ reduction: The type of reduction to perform on the individual losses.
  ignoreIndex: Optional class index to ignore in loss calculation.
- inputIsLogProbability: Specifies if the input tensor contains
-                              log-probabilities or raw probabilities
-                              (false, default).
- debugContext: Optional debug context.
+ inputIsLogProbability: If :code:`true` the input tensor contains
+     log-probabilities, otherwise raw probabilities. Default = :code:`false`.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_nllloss =
-    R"doc(Add a negative log-likelihood loss operation to the model. Calculates the nll loss given a probability tensor over classes, and a target tensor containing class labels. Args: args: Vector of input tensor ids: probability and tensor. reduction: Type of reduction to perform on the individual losses. ignoreIndex: Optional class index to ignore in loss calculation. inputIsLogProbability: Specifies if the input tensor contains log-probabilities or raw probabilities (false, default). debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a negative log-likelihood loss operation to the model. Calculates the negative log likelihood (NLL) loss given a probability tensor over classes, and a target tensor containing class labels. Args: args: A vector of input tensor ids: probability and tensor. reduction: The type of reduction to perform on the individual losses. ignoreIndex: Optional class index to ignore in loss calculation. inputIsLogProbability: If :code:`true` the input tensor contains log-probabilities, otherwise raw probabilities. Default = :code:`false`. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_nop =
     R"doc(Add a no-op operation to the model.
 
 
 Args:
- args: Vector of input tensor ids.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_nop =
-    R"doc(Add a no-op operation to the model. Args: args: Vector of input tensor ids. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a no-op operation to the model. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_packedDataBlock =
     R"doc(Add a packedDataBlock operator to the model.
 
-Unpack packed sequences of data according to lengths and offsets tensors,
-and call the callback on the unpacked sequences.
+Unpack packed sequences of data and call the callback function on the
+unpacked sequences.
 
 
 Args:
- args: Input tensors.
+ args: A vector of input tensor ids.
  maxSequenceLengths: The maximum length of a sequence in each of the
-        data inputs.
+     data inputs.
  resultSize: The size of the first dimension of the
-        result tensor.
+     result tensor.
  callbackBatchSize: The number of batches to pass
-        to the callback.
+     to the callback.
  callback: The callback function.
  debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_packedDataBlock =
-    R"doc(Add a packedDataBlock operator to the model. Unpack packed sequences of data according to lengths and offsets tensors, and call the callback on the unpacked sequences. Args: args: Input tensors. maxSequenceLengths: The maximum length of a sequence in each of the data inputs. resultSize: The size of the first dimension of the result tensor. callbackBatchSize: The number of batches to pass to the callback. callback: The callback function. debugContext: Optional debug information. Returns: The name of the result tensor.)doc";
+    R"doc(Add a packedDataBlock operator to the model. Unpack packed sequences of data and call the callback function on the unpacked sequences. Args: args: A vector of input tensor ids. maxSequenceLengths: The maximum length of a sequence in each of the data inputs. resultSize: The size of the first dimension of the result tensor. callbackBatchSize: The number of batches to pass to the callback. callback: The callback function. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_printtensor =
     R"doc(Add a print tensor operation to the model.
@@ -1319,146 +1392,181 @@ This is a Poplar extension.
 
 
 Args:
- args: Vector of tensor ids to print.
- print_gradient:
- debugContext: Optional debug context.
- title:
+ args: A vector of tensor ids to print.
+ print_gradient: Indicates whether the gradient tensor(s) associated
+      with the input tensor(s) are also printed. If 1, the gradient
+      tensor(s) are also printed, otherwise the gradient tensor(s) are not
+      printed.
+ debugContext: Optional debug information.
+ title: An optional title to print.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_printtensor =
-    R"doc(Add a print tensor operation to the model. This is a Poplar extension. Args: args: Vector of tensor ids to print. print_gradient: debugContext: Optional debug context. title: Returns: The name of the result tensor.)doc";
+    R"doc(Add a print tensor operation to the model. This is a Poplar extension. Args: args: A vector of tensor ids to print. print_gradient: Indicates whether the gradient tensor(s) associated with the input tensor(s) are also printed. If 1, the gradient tensor(s) are also printed, otherwise the gradient tensor(s) are not printed. debugContext: Optional debug information. title: An optional title to print. Returns: The tensor id of the result tensor.)doc";
 
-static const char *__doc_popart_AiGraphcoreOpset1_reducemedian = R"doc()doc";
+static const char *__doc_popart_AiGraphcoreOpset1_reducemedian =
+    R"doc(Add reducemedian operation to the model.
+
+This method computes the median values along the specified axes. In the
+case of an even number of elements, the lower of the two medians is
+selected. By default, the input tensor is reduced over all axes.
+Additionally, the operation also returns the indices of found median values
+in the reduction axis. If reduction is performed over multiple axes, the
+indices are "flattened" over the reduced axes, similar to
+:code:`numpy.ndarray.flat`. The index may not be the first occurrence of the
+median value found in the input tensor.
+
+
+Args:
+ args: A vector with a single input tensor id.
+ axes: The axes over which the reduction is performed.
+ keepdims: If 1, the result tensors are of equal size as the
+      input, but with reduction axes of size 1. Otherwise, the reduction
+      axes are squeezed and the result tensors have fewer dimensions
+      compared to the input. Default = 1.
+ debugContext: Optional debug information.
+
+Returns:
+ The names of the two result tensors, one for median values and one
+ for indices.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_reducemedian =
-    R"doc()doc";
+    R"doc(Add reducemedian operation to the model. This method computes the median values along the specified axes. In the case of an even number of elements, the lower of the two medians is selected. By default, the input tensor is reduced over all axes. Additionally, the operation also returns the indices of found median values in the reduction axis. If reduction is performed over multiple axes, the indices are "flattened" over the reduced axes, similar to :code:`numpy.ndarray.flat`. The index may not be the first occurrence of the median value found in the input tensor. Args: args: A vector with a single input tensor id. axes: The axes over which the reduction is performed. keepdims: If 1, the result tensors are of equal size as the input, but with reduction axes of size 1. Otherwise, the reduction axes are squeezed and the result tensors have fewer dimensions compared to the input. Default = 1. debugContext: Optional debug information. Returns: The names of the two result tensors, one for median values and one for indices.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_remainder =
-    R"doc(Add remainder operation to the model.
+    R"doc(Add a remainder operation to the model.
 
-This is equivalent to Python's modulo operator %. The result has the same
+This is equivalent to Python's modulo operator :code:`%`. The result has the same
 sign as the divisor.
 
 Args:
- args: Input tensors.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
  Computes the element-wise remainder of division. The remainder has
  the same sign as the divisor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_remainder =
-    R"doc(Add remainder operation to the model. This is equivalent to Python's modulo operator %. The result has the same sign as the divisor. Args: args: Input tensors. Returns: Computes the element-wise remainder of division. The remainder has the same sign as the divisor.)doc";
+    R"doc(Add a remainder operation to the model. This is equivalent to Python's modulo operator :code:`%`. The result has the same sign as the divisor. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: Computes the element-wise remainder of division. The remainder has the same sign as the divisor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_replicatedallreduce =
-    R"doc(DEPRECATED: Add a replicated all-reduce operation to the model.
+    R"doc(DEPRECATED: Add a replicated allreduce operation to the model.
 
 This is a Poplar extension, to expose manual code re-use to
 the builder.
 
 
 Args:
- args: Vector of input tensor ids to reduce across.
+ args: A vector of input tensor ids to reduce across.
  commGroup: GCL CommGroup parameter.
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_replicatedallreduce =
-    R"doc(DEPRECATED: Add a replicated all-reduce operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: Vector of input tensor ids to reduce across. commGroup: GCL CommGroup parameter. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(DEPRECATED: Add a replicated allreduce operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: A vector of input tensor ids to reduce across. commGroup: GCL CommGroup parameter. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_replicatedallreduce_2 =
-    R"doc(Add a replicated all-reduce operation to the model
+    R"doc(Add a replicated allreduce operation to the model.
 
 This is a Poplar extension, to expose manual code re-use to
-the builder
+the builder.
 
 
 Args:
- args:               Vector of input tensor ids to reduce across
- collectiveOperator: GCL collective operator
- commGroup:          GCL CommGroup parameter
- debugContext:       Optional debug context
+ args: A vector of input tensor ids to reduce across
+ collectiveOperator: A Graphcore Communication Library (GCL)
+      collective operator.
+ commGroup: A GCL CommGroup parameter.
+ debugContext: Optional debug information
 
 Returns:
- The name of the result tensor)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_replicatedallreduce_2 =
-    R"doc(Add a replicated all-reduce operation to the model This is a Poplar extension, to expose manual code re-use to the builder Args: args:               Vector of input tensor ids to reduce across collectiveOperator: GCL collective operator commGroup:          GCL CommGroup parameter debugContext:       Optional debug context Returns: The name of the result tensor)doc";
+    R"doc(Add a replicated allreduce operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: A vector of input tensor ids to reduce across collectiveOperator: A Graphcore Communication Library (GCL) collective operator. commGroup: A GCL CommGroup parameter. debugContext: Optional debug information Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_replicatedreducescatter =
-    R"doc(Add a replicated reduce-scatter operation to the model
+    R"doc(Add a replicated reduce-scatter operation to the model.
 
 This is a Poplar extension, to expose manual code re-use to
-the builder
+the builder.
 
 
 Args:
- args:               Vector of input tensor ids to reduce across
- collectiveOperator: GCL collective operator
- commGroup:          GCL CommGroup parameter
- debugContext:       Optional debug context
+ args: A vector of input tensor ids to reduce across.
+ collectiveOperator: A Graphcore Communication Library (GCL)
+      collective operator.
+ commGroup: A GCL CommGroup parameter.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_replicatedreducescatter =
-    R"doc(Add a replicated reduce-scatter operation to the model This is a Poplar extension, to expose manual code re-use to the builder Args: args:               Vector of input tensor ids to reduce across collectiveOperator: GCL collective operator commGroup:          GCL CommGroup parameter debugContext:       Optional debug context Returns: The name of the result tensor)doc";
+    R"doc(Add a replicated reduce-scatter operation to the model. This is a Poplar extension, to expose manual code re-use to the builder. Args: args: A vector of input tensor ids to reduce across. collectiveOperator: A Graphcore Communication Library (GCL) collective operator. commGroup: A GCL CommGroup parameter. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_reshape =
-    R"doc(Add reshape operation to the model.
-Reshape the input tensor.
-This reshape takes the shape to reshape into as an attribute
-instead of a tensor input as the ONNX reshape op.
+    R"doc(Add a reshape operation to the model.
+
+This reshapes an input tensor.
+This reshape takes the target shape as an attribute
+instead of a tensor input as for the ONNX reshape op.
 
 
 Args:
- arg: Vector with single input tensor id.
- shape: The shape of the output Tensor. The output Tensor
-     must contain the same number of elements as the input Tensor.
- name: Optional identifier for operation.
+ arg: The tensor id of the input tensor.
+ shape: The shape of the output tensor. The output tensor
+     must contain the same number of elements as the input tensor.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_reshape =
-    R"doc(Add reshape operation to the model. Reshape the input tensor. This reshape takes the shape to reshape into as an attribute instead of a tensor input as the ONNX reshape op. Args: arg: Vector with single input tensor id. shape: The shape of the output Tensor. The output Tensor must contain the same number of elements as the input Tensor. name: Optional identifier for operation. Returns: The name of the result tensor.)doc";
+    R"doc(Add a reshape operation to the model. This reshapes an input tensor. This reshape takes the target shape as an attribute instead of a tensor input as for the ONNX reshape op. Args: arg: The tensor id of the input tensor. shape: The shape of the output tensor. The output tensor must contain the same number of elements as the input tensor. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_reverse =
     R"doc(Add a reverse operator to the model.
 
-Reverse, or 'flip', the tensor along the specified dimensions
+This reverses or flips the tensor along the specified dimensions.
 
 
 Args:
- args: Input tensors.
- dimensions: Dimensions along which to reverse the tensor. If this is
-        empty then this is equivalent to the identity operator
+ args: A vector of input tensor ids.
+ dimensions: The dimensions along which to reverse the tensor. If
+      this is empty then this is equivalent to the identity operator.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the reversed tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_reverse =
-    R"doc(Add a reverse operator to the model. Reverse, or 'flip', the tensor along the specified dimensions Args: args: Input tensors. dimensions: Dimensions along which to reverse the tensor. If this is empty then this is equivalent to the identity operator Returns: The name of the result tensor.)doc";
+    R"doc(Add a reverse operator to the model. This reverses or flips the tensor along the specified dimensions. Args: args: A vector of input tensor ids. dimensions: The dimensions along which to reverse the tensor. If this is empty then this is equivalent to the identity operator. debugContext: Optional debug information. Returns: The tensor id of the reversed tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_round =
-    R"doc(Add a ``Round`` operation to the model.
-(This allows ``Round_11`` to be targeted from earlier opsets.)
+    R"doc(Add a rounding operation to the model.
 
-https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round
+This allows ``Round_11`` to be targeted from earlier opsets.
+
+
+See Also:
+ `ONNX Round operator <https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round>`_.
 
 
 Args:
- args: Vector of input tensor ids.
- debugContext: Optional debug context.
+ args: A vector of input tensor ids.
+ debugContext: Optional debug information.
 
 Returns:
  The normalized output tensor ids.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_round =
-    R"doc(Add a ``Round`` operation to the model. (This allows ``Round_11`` to be targeted from earlier opsets.) https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round Args: args: Vector of input tensor ids. debugContext: Optional debug context. Returns: The normalized output tensor ids.)doc";
+    R"doc(Add a rounding operation to the model. This allows ``Round_11`` to be targeted from earlier opsets. See Also: `ONNX Round operator <https://github.com/onnx/onnx/blob/master/docs/Operators.md#Round>`_. Args: args: A vector of input tensor ids. debugContext: Optional debug information. Returns: The normalized output tensor ids.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_scale =
     R"doc(Add a scale operation to the model.
@@ -1467,78 +1575,110 @@ This is a Poplar extension.
 
 
 Args:
- args: Vector of input tensor ids.
+ args: A vector of input tensor ids.
  scale: The scale to apply.
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_scale =
-    R"doc(Add a scale operation to the model. This is a Poplar extension. Args: args: Vector of input tensor ids. scale: The scale to apply. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a scale operation to the model. This is a Poplar extension. Args: args: A vector of input tensor ids. scale: The scale to apply. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_scaledadd =
     R"doc(Add a scaled add operation to the model.
 
-    X = scale0 * T0 + scale1 * T1
+The scaled add operation takes the form:
+```
+ X = scale0 * T0 + scale1 * T1
+```
+where ``scale0`` is the scale factor to be applied to tensor \T0 and
+``scale1`` is the scale factor to be applied to tensor \T1.
 
 
 Args:
- args: Vector of input tensor ids: [T0, T1, scale0, scale1].
+ args: A vector of input tensor ids: [T0, T1, scale0, scale1].
  scale0: The scale to apply (if no ``scale0`` tensor is supplied).
  scale1: The scale to apply (if no ``scale1`` tensor is supplied).
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_scaledadd =
-    R"doc(Add a scaled add operation to the model. X = scale0 * T0 + scale1 * T1 Args: args: Vector of input tensor ids: [T0, T1, scale0, scale1]. scale0: The scale to apply (if no ``scale0`` tensor is supplied). scale1: The scale to apply (if no ``scale1`` tensor is supplied). debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a scaled add operation to the model. The scaled add operation takes the form: ``` X = scale0 * T0 + scale1 * T1 ``` where ``scale0`` is the scale factor to be applied to tensor \T0 and ``scale1`` is the scale factor to be applied to tensor \T1. Args: args: A vector of input tensor ids: [T0, T1, scale0, scale1]. scale0: The scale to apply (if no ``scale0`` tensor is supplied). scale1: The scale to apply (if no ``scale1`` tensor is supplied). debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_scatterreduce =
-    R"doc(Add a scatterreduce operation to the model
+    R"doc(Add a scatterreduce operation to the model.
 
-Reduces all the values from the src tensor at the indices specified along
-the given axis. Generally, src and index tensors are required to have the
-same shape, however, for two-dimensional inputs they can be different if
-the following requirements are met: src is of shape [N, M], index is of
-shape [N, 1] and reduction axis is 0. The result in such cases is the same
-as if the index tensor was broadcasted to [N, M].
+Reduces all the values from the source tensor:code:` `src`:code:` at the indices
+specified along the given axis by `index:code:`. Generally, the `src:code:` and `index:code:`
+tensors are required to have the same shape. However, for two-dimensional
+inputs they can be different if the following requirements are met: `src:code:`
+is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0.
+The result in such cases is the same as if the index tensor was broadcasted
+to [N, M].
 
+```
  for i in range(axis_size):
      output[i] = reduce(src[index == i])
-
+``:code:`
 
 Args:
- args: list of [src, index] tensors
- axis_size: Size in the reduced axis
- axis: Axis to reduce along (default = -1)
- reduction: The type of reduction to apply (default = "sum")
+ args: A vector of tensor ids as [`src:code:`, `index:code:`].
+ axis_size: The size of the reduced axis.
+ axis: The axis to reduce along. Default = -1.
+ reduction: The type of reduction to apply. Default =
+      `ScatterReduction::Sum`.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_scatterreduce =
-    R"doc(Add a scatterreduce operation to the model Reduces all the values from the src tensor at the indices specified along the given axis. Generally, src and index tensors are required to have the same shape, however, for two-dimensional inputs they can be different if the following requirements are met: src is of shape [N, M], index is of shape [N, 1] and reduction axis is 0. The result in such cases is the same as if the index tensor was broadcasted to [N, M]. for i in range(axis_size): output[i] = reduce(src[index == i]) Args: args: list of [src, index] tensors axis_size: Size in the reduced axis axis: Axis to reduce along (default = -1) reduction: The type of reduction to apply (default = "sum") Returns: The name of the result tensor.)doc";
+    R"doc(Add a scatterreduce operation to the model. Reduces all the values from the source tensor:code:` `src`:code:` at the indices specified along the given axis by `index:code:`. Generally, the `src:code:` and `index:code:` tensors are required to have the same shape. However, for two-dimensional inputs they can be different if the following requirements are met: `src:code:` is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0. The result in such cases is the same as if the index tensor was broadcasted to [N, M]. ``` for i in range(axis_size): output[i] = reduce(src[index == i]) ``:code:` Args: args: A vector of tensor ids as [`src:code:`, `index:code:`]. axis_size: The size of the reduced axis. axis: The axis to reduce along. Default = -1. reduction: The type of reduction to apply. Default = `ScatterReduction::Sum`. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_sequenceslice =
-    R"doc(Slice a 2D tensor based on offsets specified by a tensor.
+    R"doc( Slice a 2D tensor based on offsets.
 
-The outermost dimension is sliced;
-tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...]
-for each entry in tN/tInOffset/tOutOffset; entries after the first tN==0
-may be ignored. Unreferenced elements of tOut are zeroed if zeroUnused is
-set. The same output element should not be written by multiple inputs.
+ The outermost dimension is sliced. For the following:
+  * :code:`source` is the source tensor.
+  * :code:`destination` is the destination tensor.
+  * :code:`N` is the number of elements to copy.
+  * :code:`sourceOffset` is the first element read from the source tensor.
+  * :code:`destinationOffset` is the first element written to in the destination
+     tensor.
+ Then, for each entry in :code:`N`, :code:`sourceOffset` and :code:`destinationOffset`:
+```
+ destination[destinationOffset:destinationOffset+N][...] =
+ source[sourceOffset:sourceOffset+N][...]
+ ``:code:`
+ Entries after the first `N==0:code:` may be ignored.
+ Unreferenced elements of `destination:code:` are zeroed if `zeroUnused:code:` is
+ set. The same output element should not be written by multiple inputs.
 
-tIn and tOut must have rank greater than or equal to 2. The outer dimension
-is sliced; the product of the inner dimensions must match. tInOffset,
-tOutOffset and tN must be 1d and the same size. \param [source,
-destination, N, sourceOffset, destinationOffset] \param zeroUnused Whether
-to zero unreferenced tOut elements. \param debugContext     Optional debug
-context.)doc";
+ `source:code:` and `destination:code:` must have rank greater than or equal to 2. The
+ outer dimension
+ is sliced; the product of the inner dimensions must match. `sourceOffset:code:`,
+ `destinationOffset:code:` and `N` must be 1-dimensional and of the same size.
+ For example:
+
+```
+ N = [1, 1, 1]
+ sourceOffset = [0, 2, 4]
+ destinationOffset = [0, 1, 2]
+``:code:`
+
+ Args:
+  args: A vector of input tensor ids for the following tensors
+       [`source:code:`, `destination:code:`, `N:code:`, `sourceOffset:code:`, `destinationOffset:code:`].
+  zeroUnused: Determines whether to zero unreferenced `destination`
+       elements. If 1, the unreferenced elements are zeroed, otherwise they
+       are not zeroed.
+  debugContext: Optional debug information.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_sequenceslice =
-    R"doc(Slice a 2D tensor based on offsets specified by a tensor. The outermost dimension is sliced; tOut[tOutOffset:tOutOffset+tN][...] = tIn[tInOffset:tInOffset+tN][...] for each entry in tN/tInOffset/tOutOffset; entries after the first tN==0 may be ignored. Unreferenced elements of tOut are zeroed if zeroUnused is set. The same output element should not be written by multiple inputs. tIn and tOut must have rank greater than or equal to 2. The outer dimension is sliced; the product of the inner dimensions must match. tInOffset, tOutOffset and tN must be 1d and the same size. \param [source, destination, N, sourceOffset, destinationOffset] \param zeroUnused Whether to zero unreferenced tOut elements. \param debugContext     Optional debug context.)doc";
+    R"doc(Slice a 2D tensor based on offsets. The outermost dimension is sliced. For the following: * :code:`source` is the source tensor. * :code:`destination` is the destination tensor. * :code:`N` is the number of elements to copy. * :code:`sourceOffset` is the first element read from the source tensor. * :code:`destinationOffset` is the first element written to in the destination tensor. Then, for each entry in :code:`N`, :code:`sourceOffset` and :code:`destinationOffset`: ``` destination[destinationOffset:destinationOffset+N][...] = source[sourceOffset:sourceOffset+N][...] ``:code:` Entries after the first `N==0:code:` may be ignored. Unreferenced elements of `destination:code:` are zeroed if `zeroUnused:code:` is set. The same output element should not be written by multiple inputs. `source:code:` and `destination:code:` must have rank greater than or equal to 2. The outer dimension is sliced; the product of the inner dimensions must match. `sourceOffset:code:`, `destinationOffset:code:` and `N` must be 1-dimensional and of the same size. For example: ``` N = [1, 1, 1] sourceOffset = [0, 2, 4] destinationOffset = [0, 1, 2] ``:code:` Args: args: A vector of input tensor ids for the following tensors [`source:code:`, `destination:code:`, `N:code:`, `sourceOffset:code:`, `destinationOffset:code:`]. zeroUnused: Determines whether to zero unreferenced `destination` elements. If 1, the unreferenced elements are zeroed, otherwise they are not zeroed. debugContext: Optional debug information.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_shapeddropout =
     R"doc(Add a shaped dropout operation to the model.
@@ -1547,59 +1687,61 @@ Applies a shaped dropout to the input tensor. This operator requires a
 shape parameter that is used to define the shape of the dropout mask so
 that strongly correlated features in the input tensor can be preserved.
 The provided shape must be broadcastable to the input tensor.  Note that
-this operation targets the poprand library function of the same name.
+this operation targets the :code:`poprand` library function of the same name.
 
 
 Args:
- args: Vector of input tensor ids.
- shape: Shape of dropout mask. Must be broadcastable to the input.
- ratio: Probability of dropping an input feature (default = 0.5).
- name: Optional identifier for operation.
+ args: A vector of input tensor ids.
+ shape: The shape of dropout mask. This must be broadcastable to the
+      input.
+ ratio: The probability of dropping an input feature. Default = 0.5.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_shapeddropout =
-    R"doc(Add a shaped dropout operation to the model. Applies a shaped dropout to the input tensor. This operator requires a shape parameter that is used to define the shape of the dropout mask so that strongly correlated features in the input tensor can be preserved. The provided shape must be broadcastable to the input tensor.  Note that this operation targets the poprand library function of the same name. Args: args: Vector of input tensor ids. shape: Shape of dropout mask. Must be broadcastable to the input. ratio: Probability of dropping an input feature (default = 0.5). name: Optional identifier for operation. Returns: The name of the result tensor.)doc";
+    R"doc(Add a shaped dropout operation to the model. Applies a shaped dropout to the input tensor. This operator requires a shape parameter that is used to define the shape of the dropout mask so that strongly correlated features in the input tensor can be preserved. The provided shape must be broadcastable to the input tensor.  Note that this operation targets the :code:`poprand` library function of the same name. Args: args: A vector of input tensor ids. shape: The shape of dropout mask. This must be broadcastable to the input. ratio: The probability of dropping an input feature. Default = 0.5. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_slice =
-    R"doc(Add a slice to the model
-This version of slice takes the starts, the ends and the axes as attributes
-rather than tensor inputs. This reduces the amount of ops as constant
+    R"doc(Add a slice to the model.
+
+This version of slice uses the :code:`starts`, :code:`ends` and :code:`axes` attributes
+rather than tensor inputs. This reduces the number of ops as constant
 tensors are treated as ops while attributes are not.
 
 
 Args:
- args: List of input tensor ids
- axes: The 'axes' attribute
- ends: The 'ends' attribute
- starts: The 'starts' attribute
- name: Optional identifier for the operation
+ args: A vector of input tensor ids.
+ ends: The :code:`ends` attribute.
+ starts: The :code:`starts` attribute.
+ axes: The :code:`axes` attribute.
+ debugContext: Optional debug information.
 
 Returns:
- The normalized output tensor ids)doc";
+ The normalized output tensor id.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_slice =
-    R"doc(Add a slice to the model This version of slice takes the starts, the ends and the axes as attributes rather than tensor inputs. This reduces the amount of ops as constant tensors are treated as ops while attributes are not. Args: args: List of input tensor ids axes: The 'axes' attribute ends: The 'ends' attribute starts: The 'starts' attribute name: Optional identifier for the operation Returns: The normalized output tensor ids)doc";
+    R"doc(Add a slice to the model. This version of slice uses the :code:`starts`, :code:`ends` and :code:`axes` attributes rather than tensor inputs. This reduces the number of ops as constant tensors are treated as ops while attributes are not. Args: args: A vector of input tensor ids. ends: The :code:`ends` attribute. starts: The :code:`starts` attribute. axes: The :code:`axes` attribute. debugContext: Optional debug information. Returns: The normalized output tensor id.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_subsample =
     R"doc(Add a sub-sample operation to the model.
 
 This is a Poplar extension.
 
-If multiple tensors are provided that strides will applied to them all.
+If multiple tensors are provided, the strides will be applied to them all.
 
 
 Args:
- args: Vector of tensor ids to sub-sample.
+ args: A vector of tensor ids to sub-sample.
  strides: The strides to use.
- debugContext: Optional debug context.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_subsample =
-    R"doc(Add a sub-sample operation to the model. This is a Poplar extension. If multiple tensors are provided that strides will applied to them all. Args: args: Vector of tensor ids to sub-sample. strides: The strides to use. debugContext: Optional debug context. Returns: The name of the result tensor.)doc";
+    R"doc(Add a sub-sample operation to the model. This is a Poplar extension. If multiple tensors are provided, the strides will be applied to them all. Args: args: A vector of tensor ids to sub-sample. strides: The strides to use. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_swish =
     R"doc(Add a swish operation to the model.
@@ -1609,58 +1751,66 @@ as the SiLU activation.
 
 
 Args:
- args: Vector with single input tensor id.
+ args: A vector with a single input tensor id.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor.)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_swish =
-    R"doc(Add a swish operation to the model. The operation computes the swish activation function, also known as the SiLU activation. Args: args: Vector with single input tensor id. Returns: The name of the result tensor.)doc";
+    R"doc(Add a swish operation to the model. The operation computes the swish activation function, also known as the SiLU activation. Args: args: A vector with a single input tensor id. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_tensorremap =
-    R"doc(Add a tensor remap operation to the model
+    R"doc(Add a tensor remap operation to the model.
 
 Changes the tensor layout to conform to the downstream consumers, which
 means the consumers can read the tensor without having to rearrange it.
 
 
 Args:
- args:      [tensor_to_remap] Single tensor that should be copied
-                  to a new tensor with a tensor layout conforming to the
-                  downstream consumer.
- remapType: Type of remap to perform on the forward/backward pass.
-                  (backward pass remapping requires the Op to exist in the
-                  IR  before autodiff).
-                  FwdBwdReverse: Remap the tensor in the forward pass,
-                                 reverse-apply the remapping in the
-                                 backward pass. That means the gradient
-                                 tensor of the input to this Op will have
-                                 the same layout as the input tensor itself.
-                  FwdBwd:        Remap the tensor in the forward pass and
-                                 backward pass independently.
-                  Fwd:           Only remap the tensor in the forward pass,
-                                 use identity for the backward pass.
- name:      Optional identifier for operation
+ args: The tensor id of the tensor to remap. This is a single tensor
+      that should be copied to a new tensor with a tensor layout conforming
+      to the downstream consumer.
+ remap_type: The type of remap to perform on the forward/backward
+      pass. Backward pass remapping requires the op to exist in the
+      IR before autodiff. The value is the integer attribute value of the
+      enum TensorRemapType.
+ debugContext: Optional debug information.
 
 Returns:
- The name of the result tensor)doc";
+ The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_tensorremap =
-    R"doc(Add a tensor remap operation to the model Changes the tensor layout to conform to the downstream consumers, which means the consumers can read the tensor without having to rearrange it. Args: args:      [tensor_to_remap] Single tensor that should be copied to a new tensor with a tensor layout conforming to the downstream consumer. remapType: Type of remap to perform on the forward/backward pass. (backward pass remapping requires the Op to exist in the IR  before autodiff). FwdBwdReverse: Remap the tensor in the forward pass, reverse-apply the remapping in the backward pass. That means the gradient tensor of the input to this Op will have the same layout as the input tensor itself. FwdBwd:        Remap the tensor in the forward pass and backward pass independently. Fwd:           Only remap the tensor in the forward pass, use identity for the backward pass. name:      Optional identifier for operation Returns: The name of the result tensor)doc";
+    R"doc(Add a tensor remap operation to the model. Changes the tensor layout to conform to the downstream consumers, which means the consumers can read the tensor without having to rearrange it. Args: args: The tensor id of the tensor to remap. This is a single tensor that should be copied to a new tensor with a tensor layout conforming to the downstream consumer. remap_type: The type of remap to perform on the forward/backward pass. Backward pass remapping requires the op to exist in the IR before autodiff. The value is the integer attribute value of the enum TensorRemapType. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
-static const char *__doc_popart_AiOnnxMlOpset1 = R"doc()doc";
+static const char *__doc_popart_AiOnnxMlOpset1 =
+    R"doc(Class that represents the AI ONNX ML opset.)doc";
 
-static const char *__singlelinedoc_popart_AiOnnxMlOpset1 = R"doc()doc";
+static const char *__singlelinedoc_popart_AiOnnxMlOpset1 =
+    R"doc(Class that represents the AI ONNX ML opset.)doc";
 
-static const char *__doc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 = R"doc()doc";
+static const char *__doc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 =
+    R"doc(Constructor for the AiOnnxMlOpset1 class.
+
+
+Args:
+ impl_: A pointer to an implementation of the Builder class.)doc";
 
 static const char *__singlelinedoc_popart_AiOnnxMlOpset1_AiOnnxMlOpset1 =
-    R"doc()doc";
+    R"doc(Constructor for the AiOnnxMlOpset1 class. Args: impl_: A pointer to an implementation of the Builder class.)doc";
 
 static const char *__doc_popart_AiOnnxMlOpset1_getOpsetVersion = R"doc()doc";
 
 static const char *__singlelinedoc_popart_AiOnnxMlOpset1_getOpsetVersion =
     R"doc()doc";
+
+static const char *__doc_popart_AliasModel = R"doc()doc";
+
+static const char *__singlelinedoc_popart_AliasModel = R"doc()doc";
+
+static const char *__doc_popart_AliasModel_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_AliasModel_2 = R"doc()doc";
 
 static const char *__doc_popart_Aliases = R"doc()doc";
 
@@ -2239,9 +2389,11 @@ static const char *__doc_popart_BuilderImpl = R"doc()doc";
 
 static const char *__singlelinedoc_popart_BuilderImpl = R"doc()doc";
 
-static const char *__doc_popart_Builder_Builder = R"doc()doc";
+static const char *__doc_popart_Builder_Builder =
+    R"doc(Constructor for the Builder class.)doc";
 
-static const char *__singlelinedoc_popart_Builder_Builder = R"doc()doc";
+static const char *__singlelinedoc_popart_Builder_Builder =
+    R"doc(Constructor for the Builder class.)doc";
 
 static const char *__doc_popart_Builder_addInitializedInputTensor =
     R"doc(Add a new pre-initialized input tensor to the model.
@@ -2252,10 +2404,10 @@ Args:
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInitializedInputTensor =
-    R"doc(Add a new pre-initialized input tensor to the model. Args: initData: The initial data of the input tensor. debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new pre-initialized input tensor to the model. Args: initData: The initial data of the input tensor. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInitializedInputTensor_2 =
     R"doc(Add a new pre-initialized input tensor to the model.
@@ -2263,232 +2415,254 @@ static const char *__doc_popart_Builder_addInitializedInputTensor_2 =
 
 Args:
  initData: The initial data of the input tensor.
- variableSettings:
+ variableSettings: The settings that determine how variables are
+      retrieved from replicas.
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInitializedInputTensor_2 =
-    R"doc(Add a new pre-initialized input tensor to the model. Args: initData: The initial data of the input tensor. variableSettings: debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new pre-initialized input tensor to the model. Args: initData: The initial data of the input tensor. variableSettings: The settings that determine how variables are retrieved from replicas. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor =
-    R"doc(Add a new input tensor to the model (with \p TensorInfo).
+    R"doc(Add a new input tensor to the model.
 
 
 Args:
- tensorInfo: The shape and type of the input tensor.
+ tensorInfo: The shape and data type of the input tensor.
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInputTensor =
-    R"doc(Add a new input tensor to the model (with \p TensorInfo). Args: tensorInfo: The shape and type of the input tensor. debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new input tensor to the model. Args: tensorInfo: The shape and data type of the input tensor. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor_2 =
-    R"doc(Add a new input tensor to the model (with data type and shape).
+    R"doc(Add a new input tensor to the model.
 
 
 Args:
- dataType: The type of the input tensor.
+ dataType: The data type of the input tensor.
  shape: The shape of the input tensor.
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInputTensor_2 =
-    R"doc(Add a new input tensor to the model (with data type and shape). Args: dataType: The type of the input tensor. shape: The shape of the input tensor. debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new input tensor to the model. Args: dataType: The data type of the input tensor. shape: The shape of the input tensor. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor_3 =
-    R"doc(Add a new input tensor to the model (with \p TensorInfo and additional
-settings for \p TileSet and \p ExchangeStrategy).
+    R"doc(Add a new input tensor to the model.
 
 
 Args:
- tensorInfo: The shape and type of the input tensor.
- InputSettings: Settings for \p TileSet and \p ExchangeStrategy
+ tensorInfo: The shape and data type of the input tensor.
+ InputSettings: Settings for \p TileSet and \p ExchangeStrategy.
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInputTensor_3 =
-    R"doc(Add a new input tensor to the model (with \p TensorInfo and additional settings for \p TileSet and \p ExchangeStrategy). Args: tensorInfo: The shape and type of the input tensor. InputSettings: Settings for \p TileSet and \p ExchangeStrategy debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new input tensor to the model. Args: tensorInfo: The shape and data type of the input tensor. InputSettings: Settings for \p TileSet and \p ExchangeStrategy. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensor_4 =
-    R"doc(Add a new input tensor to the model (with data type and shape,
-with \p TensorInfo and additional settings for \p TileSet and
-\p ExchangeStrategy).
+    R"doc(Add a new input tensor to the model.
 
 
 Args:
- dataType: The type of the input tensor.
+ dataType: The data type of the input tensor.
  shape: The shape of the input tensor.
- InputSettings: Settings for \p TileSet and \p ExchangeStrategy
+ InputSettings: Settings for \p TileSet and \p ExchangeStrategy.
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInputTensor_4 =
-    R"doc(Add a new input tensor to the model (with data type and shape, with \p TensorInfo and additional settings for \p TileSet and \p ExchangeStrategy). Args: dataType: The type of the input tensor. shape: The shape of the input tensor. InputSettings: Settings for \p TileSet and \p ExchangeStrategy debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new input tensor to the model. Args: dataType: The data type of the input tensor. shape: The shape of the input tensor. InputSettings: Settings for \p TileSet and \p ExchangeStrategy. debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_addInputTensorFromParentGraph =
-    R"doc(Add a new named input tensor to the model.
+    R"doc(Add a new named input tensor (from the parent graph) to the model.
 
 
 Args:
  tensorId: The identifier string of the input tensor. This identifier
-     must already exist in the parent GraphProto's name scope and must
-     appear topologically before this sub-graph.)doc";
+      must already exist in the name scope of the parent :code:`GraphProto` and
+      must appear topologically before this sub-graph.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addInputTensorFromParentGraph =
-    R"doc(Add a new named input tensor to the model. Args: tensorId: The identifier string of the input tensor. This identifier must already exist in the parent GraphProto's name scope and must appear topologically before this sub-graph.)doc";
+    R"doc(Add a new named input tensor (from the parent graph) to the model. Args: tensorId: The identifier string of the input tensor. This identifier must already exist in the name scope of the parent :code:`GraphProto` and must appear topologically before this sub-graph.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: An ``int64_t`` value of the attribute to add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: An ``int64_t`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: An ``int64_t`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_2 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A ``std::vector<int64_t>`` value of the attribute to
-                       add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+      add.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_2 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::vector<int64_t>`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::vector<int64_t>`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_3 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A ``float`` value of the attribute to add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_3 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``float`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``float`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_4 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: The ``std::vector<float>`` value of the attribute to
-                       add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+      add.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_4 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: The ``std::vector<float>`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: The ``std::vector<float>`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_5 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A ``std::string`` value of the attribute to add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_5 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::string`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::string`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
-static const char *__doc_popart_Builder_addNodeAttribute_6 = R"doc()doc";
+static const char *__doc_popart_Builder_addNodeAttribute_6 =
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
+
+
+Args:
+ attributeName: The name of the attribute to add.
+ attributeValue: A ``char`` value of the attribute to add.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_6 =
-    R"doc()doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``char`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_7 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A ``std::vector<std::string>`` value of the attribute
-                       to add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+      to add.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_7 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::vector<std::string>`` value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A ``std::vector<std::string>`` value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_8 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A bool value of the attribute to add.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_8 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A bool value of the attribute to add. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A bool value of the attribute to add. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addNodeAttribute_9 =
     R"doc(Add an attribute to the ONNX node which is uniquely identified by the
-outputs.
-This functions will throw an exception if it can't find the unique
-node or the attribute already exists.
+output tensors.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute already exists.
 
 
 Args:
  attributeName: The name of the attribute to add.
  attributeValue: A constant tensor initializer.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addNodeAttribute_9 =
-    R"doc(Add an attribute to the ONNX node which is uniquely identified by the outputs. This functions will throw an exception if it can't find the unique node or the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A constant tensor initializer. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Add an attribute to the ONNX node which is uniquely identified by the output tensors. This function will throw an exception if it cannot find the unique node or if the attribute already exists. Args: attributeName: The name of the attribute to add. attributeValue: A constant tensor initializer. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_addOutputTensor =
-    R"doc(Adds one of the outputs from a node in the graph into the list of output
-tensors.)doc";
+    R"doc(Add an output tensor from a node in the graph into the list of output
+tensors.
+
+
+Args:
+ arg0: The tensor id of the output tensor to be added.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addOutputTensor =
-    R"doc(Adds one of the outputs from a node in the graph into the list of output tensors.)doc";
+    R"doc(Add an output tensor from a node in the graph into the list of output tensors. Args: arg0: The tensor id of the output tensor to be added.)doc";
 
 static const char *__doc_popart_Builder_addUntypedInputTensor =
     R"doc(Add a new input tensor without a type or shape to the model.
@@ -2498,10 +2672,10 @@ Args:
  debugContext: Optional debug information.
 
 Returns:
- The unique name of the input tensor.)doc";
+ The tensor id of the input tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_addUntypedInputTensor =
-    R"doc(Add a new input tensor without a type or shape to the model. Args: debugContext: Optional debug information. Returns: The unique name of the input tensor.)doc";
+    R"doc(Add a new input tensor without a type or shape to the model. Args: debugContext: Optional debug information. Returns: The tensor id of the input tensor.)doc";
 
 static const char *__doc_popart_Builder_aiGraphcoreOpset1 =
     R"doc(Return the builder interface for ai.graphcore opset 1.)doc";
@@ -2540,10 +2714,10 @@ static const char *__singlelinedoc_popart_Builder_aiOnnxOpset7 =
     R"doc(Return the builder interface for ai.onnx opset 7.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset8 =
-    R"doc(Return the builder interface for ai.onnx opset 7.)doc";
+    R"doc(Return the builder interface for ai.onnx opset 8.)doc";
 
 static const char *__singlelinedoc_popart_Builder_aiOnnxOpset8 =
-    R"doc(Return the builder interface for ai.onnx opset 7.)doc";
+    R"doc(Return the builder interface for ai.onnx opset 8.)doc";
 
 static const char *__doc_popart_Builder_aiOnnxOpset9 =
     R"doc(Return the builder interface for ai.onnx opset 9.)doc";
@@ -2554,28 +2728,33 @@ static const char *__singlelinedoc_popart_Builder_aiOnnxOpset9 =
 static const char *__doc_popart_Builder_checkpointOutput =
     R"doc(Add checkpoint operations to the model.
 
-This is the same as an identity but is recomputeType Checkpoint by default.
+This is the same as an identity op but RecomputeType is :code:`Checkpoint`
+by default.
 Use this to checkpoint a subset of an operation's output tensors.
 
 
 Args:
- nodeOutputNames: Tensors to checkpoint.
+ nodeOutputNames: The tensors to checkpoint.
 
 Returns:
  The checkpointed tensors.)doc";
 
 static const char *__singlelinedoc_popart_Builder_checkpointOutput =
-    R"doc(Add checkpoint operations to the model. This is the same as an identity but is recomputeType Checkpoint by default. Use this to checkpoint a subset of an operation's output tensors. Args: nodeOutputNames: Tensors to checkpoint. Returns: The checkpointed tensors.)doc";
+    R"doc(Add checkpoint operations to the model. This is the same as an identity op but RecomputeType is :code:`Checkpoint` by default. Use this to checkpoint a subset of an operation's output tensors. Args: nodeOutputNames: The tensors to checkpoint. Returns: The checkpointed tensors.)doc";
 
 static const char *__doc_popart_Builder_children = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Builder_children = R"doc()doc";
 
 static const char *__doc_popart_Builder_clearAttribute =
-    R"doc(Unset an attribute that will be set on all subsequent operations.)doc";
+    R"doc(Unset an attribute that will be set on all subsequent operations.
+
+
+Args:
+ attribute: The name of the attribute to unset.)doc";
 
 static const char *__singlelinedoc_popart_Builder_clearAttribute =
-    R"doc(Unset an attribute that will be set on all subsequent operations.)doc";
+    R"doc(Unset an attribute that will be set on all subsequent operations. Args: attribute: The name of the attribute to unset.)doc";
 
 static const char *__doc_popart_Builder_configure = R"doc()doc";
 
@@ -2598,24 +2777,49 @@ and validates it.
 
 Args:
  modelProtoOrFilename: Either an ONNX model protobuf, or the name of a
-                             file containing an ONNX model protobuf.)doc";
+      file containing an ONNX model protobuf.)doc";
 
 static const char *__singlelinedoc_popart_Builder_createFromOnnxModel =
     R"doc(Create a builder which loads a serialized ONNX ModelProto into the builder and validates it. Args: modelProtoOrFilename: Either an ONNX model protobuf, or the name of a file containing an ONNX model protobuf.)doc";
 
 static const char *__doc_popart_Builder_createSubgraphBuilder =
-    R"doc(Return a Builder for a graph which is nested inside this Builder's graph.)doc";
+    R"doc(Create a builder for a graph which is nested inside this builder's graph.)doc";
 
 static const char *__singlelinedoc_popart_Builder_createSubgraphBuilder =
-    R"doc(Return a Builder for a graph which is nested inside this Builder's graph.)doc";
+    R"doc(Create a builder for a graph which is nested inside this builder's graph.)doc";
 
-static const char *__doc_popart_Builder_customOp = R"doc()doc";
+static const char *__doc_popart_Builder_customOp =
+    R"doc( Return the output tensors from a custom op added to the model.
 
-static const char *__singlelinedoc_popart_Builder_customOp = R"doc()doc";
 
-static const char *__doc_popart_Builder_customOp_2 = R"doc()doc";
+Args:
+ opid: The id of the operator.
+ opsetVersion: The version of the opset.
+ inputs: The tensor ids of the A vector of input tensor ids.
+ numOutputs: The number of output tensors.
+ attributes: The map of attributes and their values to be added.
+ debugContext: Optional debug information.
 
-static const char *__singlelinedoc_popart_Builder_customOp_2 = R"doc()doc";
+Returns:
+   The output tensors.)doc";
+
+static const char *__singlelinedoc_popart_Builder_customOp =
+    R"doc(Return the output tensors from a custom op added to the model. Args: opid: The id of the operator. opsetVersion: The version of the opset. inputs: The tensor ids of the A vector of input tensor ids. numOutputs: The number of output tensors. attributes: The map of attributes and their values to be added. debugContext: Optional debug information. Returns: The output tensors.)doc";
+
+static const char *__doc_popart_Builder_customOp_2 =
+    R"doc( Add a custom op to the model.
+
+
+Args:
+ opid: The id of the operator.
+ opsetVersion: The version of the opset.
+ inputs: The tensor ids of the A vector of input tensor ids.
+ outputs: The tensor ids of the output tensors.
+ attributes: The map of attributes and their values to be added.
+ debugContext: Optional debug information.)doc";
+
+static const char *__singlelinedoc_popart_Builder_customOp_2 =
+    R"doc(Add a custom op to the model. Args: opid: The id of the operator. opsetVersion: The version of the opset. inputs: The tensor ids of the A vector of input tensor ids. outputs: The tensor ids of the output tensors. attributes: The map of attributes and their values to be added. debugContext: Optional debug information.)doc";
 
 static const char *__doc_popart_Builder_embedReplicationFactor =
     R"doc(Embed the value of replicationFactor into the OnnxModel.
@@ -2627,156 +2831,252 @@ Args:
 static const char *__singlelinedoc_popart_Builder_embedReplicationFactor =
     R"doc(Embed the value of replicationFactor into the OnnxModel. Should be interpreted as 1 if not present in the model. Args: replicationFactor: The replication factor.)doc";
 
-static const char *__doc_popart_Builder_excludePatterns = R"doc()doc";
+static const char *__doc_popart_Builder_excludePatterns =
+    R"doc(Set the patterns to be excluded.
 
-static const char *__singlelinedoc_popart_Builder_excludePatterns = R"doc()doc";
 
-static const char *__doc_popart_Builder_excludePatterns_2 = R"doc()doc";
+Args:
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ patternNames: The vector of pattern names to be excluded.)doc";
+
+static const char *__singlelinedoc_popart_Builder_excludePatterns =
+    R"doc(Set the patterns to be excluded. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. patternNames: The vector of pattern names to be excluded.)doc";
+
+static const char *__doc_popart_Builder_excludePatterns_2 =
+    R"doc(Set the patterns to be excluded.
+
+
+Args:
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node.
+ patternNames: The vector of pattern names to be excluded.)doc";
 
 static const char *__singlelinedoc_popart_Builder_excludePatterns_2 =
-    R"doc()doc";
+    R"doc(Set the patterns to be excluded. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node. patternNames: The vector of pattern names to be excluded.)doc";
 
 static const char *__doc_popart_Builder_executionPhase =
     R"doc(Set the execution phase that computes the given node.
 
+Applies when creating a graph for a multi-IPU configuration.
+
+
 Args:
- nodeOutputName: Name of the output tensor of the ONNX node.
- value: The index of the virtual graph that computes this node.)doc";
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: The index of the virtual graph that computes this node.
+      Default=0.)doc";
 
 static const char *__singlelinedoc_popart_Builder_executionPhase =
-    R"doc(Set the execution phase that computes the given node. Args: nodeOutputName: Name of the output tensor of the ONNX node. value: The index of the virtual graph that computes this node.)doc";
+    R"doc(Set the execution phase that computes the given node. Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: The index of the virtual graph that computes this node. Default=0.)doc";
 
-static const char *__doc_popart_Builder_executionPhase_2 = R"doc()doc";
+static const char *__doc_popart_Builder_executionPhase_2 =
+    R"doc(Set the execution phase.
+
+Applies when creating a graph for a multi-IPU configuration.
+
+
+Args:
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
+ value: The index of the virtual graph that computes this node.)doc";
 
 static const char *__singlelinedoc_popart_Builder_executionPhase_2 =
-    R"doc()doc";
+    R"doc(Set the execution phase. Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. value: The index of the virtual graph that computes this node.)doc";
 
 static const char *__doc_popart_Builder_getAllNodeAttributeNames =
     R"doc(Get all the attribute names from the ONNX node.
-This functions will throw an exception if it can't find the unique
+This function will throw an exception if it cannot find the unique
 node.
 
 
 Args:
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node used to find the node in the ONNX model.
+
+Returns:
+ The attribute names associated with the ONNX node.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getAllNodeAttributeNames =
-    R"doc(Get all the attribute names from the ONNX node. This functions will throw an exception if it can't find the unique node. Args: nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Get all the attribute names from the ONNX node. This function will throw an exception if it cannot find the unique node. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: The attribute names associated with the ONNX node.)doc";
 
 static const char *__doc_popart_Builder_getAttribute =
-    R"doc(Get an attribute that has been set for all subsequent operations.)doc";
+    R"doc(Get an attribute that has been set for all subsequent operations.
+
+
+Args:
+ attribute: The name of the attribute to get.
+
+Returns:
+ The attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getAttribute =
-    R"doc(Get an attribute that has been set for all subsequent operations.)doc";
+    R"doc(Get an attribute that has been set for all subsequent operations. Args: attribute: The name of the attribute to get. Returns: The attribute.)doc";
 
 static const char *__doc_popart_Builder_getAttribute_2 =
-    R"doc(Get the current attribute value.)doc";
+    R"doc(Get the attribute value.
+
+
+Args:
+ attribute: The name of the attribute.
+
+Returns:
+ The value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getAttribute_2 =
-    R"doc(Get the current attribute value.)doc";
+    R"doc(Get the attribute value. Args: attribute: The name of the attribute. Returns: The value of the attribute.)doc";
 
-static const char *__doc_popart_Builder_getBoolNodeAttribute = R"doc()doc";
+static const char *__doc_popart_Builder_getBoolNodeAttribute =
+    R"doc(Get the value of an attribute for the ONNX node where the value is a
+boolean.
+
+This function will throw an exception if it cannot find the unique node or
+if the attribute does not exist.
+
+
+Args:
+ attributeName: The name of the attribute for which the value is
+     required.
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+     node used to find the node in the ONNX model.
+
+Returns:
+ Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getBoolNodeAttribute =
-    R"doc()doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a boolean. This function will throw an exception if it cannot find the unique node or if the attribute does not exist. Args: attributeName: The name of the attribute for which the value is required. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getExecutionPhase =
-    R"doc(A convenience function for getting the execution phase attribute.)doc";
+    R"doc(Get the execution phase attribute.
+
+
+Returns:
+ The execution phase.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getExecutionPhase =
-    R"doc(A convenience function for getting the execution phase attribute.)doc";
+    R"doc(Get the execution phase attribute. Returns: The execution phase.)doc";
 
-static const char *__doc_popart_Builder_getExecutionPhase_2 = R"doc()doc";
+static const char *__doc_popart_Builder_getExecutionPhase_2 =
+    R"doc(Get the execution phase for a single output tensor.
+This only applies to a multi-IPU system.
+
+This function will throw an exception if the execution phase has not been
+set in the current scope.
+
+
+Args:
+ nodeOutputNames: The tensor id of the output tensor of the ONNX node
+      used to find the node in the ONNX model.
+
+Returns:
+ The execution phase associated with the ONNX node.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getExecutionPhase_2 =
-    R"doc()doc";
+    R"doc(Get the execution phase for a single output tensor. This only applies to a multi-IPU system. This function will throw an exception if the execution phase has not been set in the current scope. Args: nodeOutputNames: The tensor id of the output tensor of the ONNX node used to find the node in the ONNX model. Returns: The execution phase associated with the ONNX node.)doc";
 
-static const char *__doc_popart_Builder_getExecutionPhase_3 = R"doc()doc";
+static const char *__doc_popart_Builder_getExecutionPhase_3 =
+    R"doc(Get the execution phase for a set of output tensors.
+This only applies to a multi-IPU system.
+
+This function will throw an exception if the execution phase has not been
+set in the current scope.
+
+
+Args:
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node used to find the node in the ONNX model.
+
+Returns:
+ The execution phase associated with the ONNX node.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getExecutionPhase_3 =
-    R"doc()doc";
+    R"doc(Get the execution phase for a set of output tensors. This only applies to a multi-IPU system. This function will throw an exception if the execution phase has not been set in the current scope. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: The execution phase associated with the ONNX node.)doc";
 
 static const char *__doc_popart_Builder_getFloatNodeAttribute =
-    R"doc(Get the ``float`` value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist or it has not been set to the
+    R"doc(Get the value of an attribute for the ONNX node where the value is a
+``float.``
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute does not exist or if it has not been set to the
 ``float`` type.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getFloatNodeAttribute =
-    R"doc(Get the ``float`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist or it has not been set to the ``float`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a ``float.`` This function will throw an exception if it cannot find the unique node or if the attribute does not exist or if it has not been set to the ``float`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getFloatVectorNodeAttribute =
-    R"doc(Get the ``std::vector<float>`` value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist.
+    R"doc(Get the value of an attribute for the ONNX node where the value is a ``std::vector<float>.``
+
+This function will throw an exception if it cannot find
+the unique node or if the attribute does not exist.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getFloatVectorNodeAttribute =
-    R"doc(Get the ``std::vector<float>`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a ``std::vector<float>.`` This function will throw an exception if it cannot find the unique node or if the attribute does not exist. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getInputTensorIds =
     R"doc(Return a list of ONNX graph input tensor ids.
 
 
 Returns:
- A vector of input tensor names.)doc";
+ A vector of input tensor ids.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getInputTensorIds =
-    R"doc(Return a list of ONNX graph input tensor ids. Returns: A vector of input tensor names.)doc";
+    R"doc(Return a list of ONNX graph input tensor ids. Returns: A vector of input tensor ids.)doc";
 
 static const char *__doc_popart_Builder_getInt64NodeAttribute =
-    R"doc(Get the ``int64_t`` value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist or it has not been set to the
+    R"doc(Get the value of an attribute for the ONNX node where the value is a
+``int64_t.``
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute does not exist or if it has not been set to the
 ``int64_t`` type.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getInt64NodeAttribute =
-    R"doc(Get the ``int64_t`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist or it has not been set to the ``int64_t`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a ``int64_t.`` This function will throw an exception if it cannot find the unique node or if the attribute does not exist or if it has not been set to the ``int64_t`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getInt64VectorNodeAttribute =
-    R"doc(Get the ``std::vector<int64_t>`` value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist or it has not been set to the
+    R"doc(Get the value of an attribute for the ONNX node where the value is a
+``std::vector<int64_t>.``
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute does not exist or if it has not been set to the
 ``std::vector<int64_t>`` type.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getInt64VectorNodeAttribute =
-    R"doc(Get the ``std::vector<int64_t>`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist or it has not been set to the ``std::vector<int64_t>`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a ``std::vector<int64_t>.`` This function will throw an exception if it cannot find the unique node or if the attribute does not exist or if it has not been set to the ``std::vector<int64_t>`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getModelProto =
     R"doc(Retrieve the ONNX serialized ModelProto.
@@ -2793,266 +3093,319 @@ static const char *__singlelinedoc_popart_Builder_getModelProto =
     R"doc(Retrieve the ONNX serialized ModelProto. Args: humanReadable: If true, return a human readable text representation of the model, otherwise use a binary format. Returns: A serialized ONNX ModelProto.)doc";
 
 static const char *__doc_popart_Builder_getNameScope =
-    R"doc(Get the current namescope stack using the default delimiter.
+    R"doc(Get the current name scope stack using the default delimiter.
 
 
 Args:
- name: Optional string to concatenate to the end of the stack
+ name: (Optional) A string to concatenate to the end of the stack.
 
 Returns:
- A string of the concatenated namescope stack.)doc";
+ A string of the concatenated name scope stack.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getNameScope =
-    R"doc(Get the current namescope stack using the default delimiter. Args: name: Optional string to concatenate to the end of the stack Returns: A string of the concatenated namescope stack.)doc";
+    R"doc(Get the current name scope stack using the default delimiter. Args: name: (Optional) A string to concatenate to the end of the stack. Returns: A string of the concatenated name scope stack.)doc";
 
 static const char *__doc_popart_Builder_getOutputTensorIds =
     R"doc(Return a list of ONNX graph output tensor ids.
 
 
 Returns:
- A vector of output tensor names.)doc";
+ A vector of output tensor ids.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getOutputTensorIds =
-    R"doc(Return a list of ONNX graph output tensor ids. Returns: A vector of output tensor names.)doc";
+    R"doc(Return a list of ONNX graph output tensor ids. Returns: A vector of output tensor ids.)doc";
 
 static const char *__doc_popart_Builder_getParent =
-    R"doc(Returns the parent graph of this graph or null if there is no parent.)doc";
+    R"doc(Return the parent graph of this builder or null if there is no parent.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getParent =
-    R"doc(Returns the parent graph of this graph or null if there is no parent.)doc";
+    R"doc(Return the parent graph of this builder or null if there is no parent.)doc";
 
 static const char *__doc_popart_Builder_getPartialsType =
     R"doc(Get the partials type for the given node.
 
 
 Args:
- nodeOutputName: Name of the output tensor of the ONNX node.)doc";
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+
+Returns:
+ The partials type.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getPartialsType =
-    R"doc(Get the partials type for the given node. Args: nodeOutputName: Name of the output tensor of the ONNX node.)doc";
+    R"doc(Get the partials type for the given node. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. Returns: The partials type.)doc";
 
 static const char *__doc_popart_Builder_getPipelineStage =
-    R"doc(A convenience function for getting the pipeline stage attribute.)doc";
+    R"doc(Get the pipeline stage attribute.
+
+
+Returns:
+ The pipeline stage.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getPipelineStage =
-    R"doc(A convenience function for getting the pipeline stage attribute.)doc";
+    R"doc(Get the pipeline stage attribute. Returns: The pipeline stage.)doc";
 
 static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass =
-    R"doc(Return whether the given node will have its output recomputed in the
-backward pass.
+    R"doc(Check if a node will have its output recomputed in the backward pass.
 
 
 Args:
- nodeOutputName: Name of the output tensor of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
+
+Returns:
+ :code:`true` if the output will be recomputed; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getRecomputeOutputInBackwardPass =
-    R"doc(Return whether the given node will have its output recomputed in the backward pass. Args: nodeOutputName: Name of the output tensor of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Check if a node will have its output recomputed in the backward pass. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: :code:`true` if the output will be recomputed; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Builder_getRecomputeOutputInBackwardPass_2 =
-    R"doc(Return whether the given node will have its output recomputed in the
-backward pass.
+    R"doc(Check if a node will have its output recomputed in the backward pass.
 
 
 Args:
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
+
+Returns:
+ :code:`true` if the output will be recomputed; :code:`false` otherwise.)doc";
 
 static const char
     *__singlelinedoc_popart_Builder_getRecomputeOutputInBackwardPass_2 =
-        R"doc(Return whether the given node will have its output recomputed in the backward pass. Args: nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+        R"doc(Check if a node will have its output recomputed in the backward pass. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: :code:`true` if the output will be recomputed; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Builder_getStringNodeAttribute =
-    R"doc(Get the ``std::string`` value of the attribute for the ONNX node.
-This functions will throw an exception if it can't find the unique
+    R"doc(Get the value of an attribute for the ONNX node where the value is a
+string.
+
+This function will throw an exception if it cannot find the unique
 node or the attribute does not exist or it has not been set to the
 ``std::string`` type.
 
 
 Args:
- attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ attributeName: The name of the attribute for which the value is
+     required.
+ nodeOutputNames: The tensor ids of the output tensors of the
+      ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getStringNodeAttribute =
-    R"doc(Get the ``std::string`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist or it has not been set to the ``std::string`` type. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a string. This function will throw an exception if it cannot find the unique node or the attribute does not exist or it has not been set to the ``std::string`` type. Args: attributeName: The name of the attribute for which the value is required. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getStringVectorNodeAttribute =
-    R"doc(Get the ``std::vector<std::string>`` value of the attribute for the ONNX
-node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist.
+    R"doc(Get the value of an attribute for the ONNX node where the value is a vector
+of strings.
+
+This function will throw an exception if it cannot find the unique
+node or if the attribute does not exist.
 
 
 Args:
- attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.
+ attributeName: The name of the attribute for which the value is
+     required.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
 
 Returns:
  Value of the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getStringVectorNodeAttribute =
-    R"doc(Get the ``std::vector<std::string>`` value of the attribute for the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
+    R"doc(Get the value of an attribute for the ONNX node where the value is a vector of strings. This function will throw an exception if it cannot find the unique node or if the attribute does not exist. Args: attributeName: The name of the attribute for which the value is required. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: Value of the attribute.)doc";
 
 static const char *__doc_popart_Builder_getTensorDataType =
     R"doc(Return a tensor type from either
-the input, output, or value_info lists in the GraphProto.
+the :code:`input`, :code:`output`, or :code:`value_info` lists in :code:`GraphProto`.
 
 
 Args:
- id: Tensor id.
+ id: The id of tensor id for which the type is required.
 
 Returns:
- A tensor type.)doc";
+ The data type of the tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getTensorDataType =
-    R"doc(Return a tensor type from either the input, output, or value_info lists in the GraphProto. Args: id: Tensor id. Returns: A tensor type.)doc";
+    R"doc(Return a tensor type from either the :code:`input`, :code:`output`, or :code:`value_info` lists in :code:`GraphProto`. Args: id: The id of tensor id for which the type is required. Returns: The data type of the tensor.)doc";
 
 static const char *__doc_popart_Builder_getTensorDtypeString =
     R"doc(Return an ONNX graph tensor type as a lower case string, from either
-the input, output, or value_info lists in the GraphProto.
+the :code:`input`, :code:`output`, or :code:`value_info` lists in :code:`GraphProto`.
 
 
 Args:
- id: Tensor id.
+ id: The id of the tensor for which the type is required.
 
 Returns:
- A lower case string of tensor type.)doc";
+ A lower case string of the tensor data type.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getTensorDtypeString =
-    R"doc(Return an ONNX graph tensor type as a lower case string, from either the input, output, or value_info lists in the GraphProto. Args: id: Tensor id. Returns: A lower case string of tensor type.)doc";
+    R"doc(Return an ONNX graph tensor type as a lower case string, from either the :code:`input`, :code:`output`, or :code:`value_info` lists in :code:`GraphProto`. Args: id: The id of the tensor for which the type is required. Returns: A lower case string of the tensor data type.)doc";
 
 static const char *__doc_popart_Builder_getTensorShape =
-    R"doc(Return an ONNX graph tensor shape, from either the input,
-output, or value_info lists in the GraphProto.
+    R"doc(Return an ONNX graph tensor shape, from either the :code:`input`,
+:code:`output`, or :code:`value_info` lists in :code:`GraphProto`.
 
 
 Args:
- id: Tensor id.
+ id: The id of the tensor for which dimensions are required.
 
 Returns:
- A vector of tensor dimensions.)doc";
+ A vector of the tensor dimensions.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getTensorShape =
-    R"doc(Return an ONNX graph tensor shape, from either the input, output, or value_info lists in the GraphProto. Args: id: Tensor id. Returns: A vector of tensor dimensions.)doc";
+    R"doc(Return an ONNX graph tensor shape, from either the :code:`input`, :code:`output`, or :code:`value_info` lists in :code:`GraphProto`. Args: id: The id of the tensor for which dimensions are required. Returns: A vector of the tensor dimensions.)doc";
 
 static const char *__doc_popart_Builder_getTrainableTensorIds =
     R"doc(Return a list of ONNX graph initialized tensor ids.
 
 These tensors are stored in the :code:`initialized` section of the ONNX
-GraphProto structure..
+:code:`GraphProto` structure..
 
 
 Returns:
- A vector of tensor names.)doc";
+ A vector of names of initialized tensors.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getTrainableTensorIds =
-    R"doc(Return a list of ONNX graph initialized tensor ids. These tensors are stored in the :code:`initialized` section of the ONNX GraphProto structure.. Returns: A vector of tensor names.)doc";
+    R"doc(Return a list of ONNX graph initialized tensor ids. These tensors are stored in the :code:`initialized` section of the ONNX :code:`GraphProto` structure.. Returns: A vector of names of initialized tensors.)doc";
 
 static const char *__doc_popart_Builder_getValueTensorIds =
     R"doc(Return a list of ONNX graph value tensor ids.
 
 These tensors are stored in the :code:`value_info` section
-of the ONNX GraphProto structure.
+of the ONNX :code:`GraphProto` structure.
 
 
 Returns:
- A vector of output tensor names.)doc";
+ A vector of value tensor names.)doc";
 
 static const char *__singlelinedoc_popart_Builder_getValueTensorIds =
-    R"doc(Return a list of ONNX graph value tensor ids. These tensors are stored in the :code:`value_info` section of the ONNX GraphProto structure. Returns: A vector of output tensor names.)doc";
+    R"doc(Return a list of ONNX graph value tensor ids. These tensors are stored in the :code:`value_info` section of the ONNX :code:`GraphProto` structure. Returns: A vector of value tensor names.)doc";
 
 static const char *__doc_popart_Builder_getVirtualGraph =
-    R"doc(A convenience function for getting the virtual graph attribute.)doc";
-
-static const char *__singlelinedoc_popart_Builder_getVirtualGraph =
-    R"doc(A convenience function for getting the virtual graph attribute.)doc";
-
-static const char *__doc_popart_Builder_getVirtualGraph_2 =
-    R"doc(Get the index of the virtual graph that computes this node. This applies
-in a multi IPU system.
-
-
-Args:
- nodeOutputName: Name of the output tensor of the ONNX node used to
-                       find the node in the ONNX model.)doc";
-
-static const char *__singlelinedoc_popart_Builder_getVirtualGraph_2 =
-    R"doc(Get the index of the virtual graph that computes this node. This applies in a multi IPU system. Args: nodeOutputName: Name of the output tensor of the ONNX node used to find the node in the ONNX model.)doc";
-
-static const char *__doc_popart_Builder_getVirtualGraph_3 =
-    R"doc(Get the index of the virtual graph that computes this node. This applies
-in a multi IPU system.
-
-
-Args:
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
-
-static const char *__singlelinedoc_popart_Builder_getVirtualGraph_3 =
-    R"doc(Get the index of the virtual graph that computes this node. This applies in a multi IPU system. Args: nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
-
-static const char *__doc_popart_Builder_hasAttribute = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Builder_hasAttribute = R"doc()doc";
-
-static const char *__doc_popart_Builder_hasAttribute_2 =
-    R"doc(Check if an attribute is set.)doc";
-
-static const char *__singlelinedoc_popart_Builder_hasAttribute_2 =
-    R"doc(Check if an attribute is set.)doc";
-
-static const char *__doc_popart_Builder_hasParent =
-    R"doc(Returns true if this builder represents a subgraph.)doc";
-
-static const char *__singlelinedoc_popart_Builder_hasParent =
-    R"doc(Returns true if this builder represents a subgraph.)doc";
-
-static const char *__doc_popart_Builder_hasValueInfo =
-    R"doc(Return whether or not the specified tensor has value info
-
-A tensor may not have value info if has simply does not exist or if
-shape inference  failed
+    R"doc(Get the virtual graph attribute.
 
 
 Returns:
- A boolean.)doc";
+ The virtual graph.)doc";
+
+static const char *__singlelinedoc_popart_Builder_getVirtualGraph =
+    R"doc(Get the virtual graph attribute. Returns: The virtual graph.)doc";
+
+static const char *__doc_popart_Builder_getVirtualGraph_2 =
+    R"doc(Get the index of the virtual graph that computes this node.
+This applies in a multi IPU system.
+
+This function will throw an exception if the virtual graph has not been set
+in the current scope.
+
+
+Args:
+ nodeOutputName: The tensor id of the output tensor of the ONNX node
+      used to find the node in the ONNX model.
+
+Returns:
+ The virtual graph associated with the ONNX node.)doc";
+
+static const char *__singlelinedoc_popart_Builder_getVirtualGraph_2 =
+    R"doc(Get the index of the virtual graph that computes this node. This applies in a multi IPU system. This function will throw an exception if the virtual graph has not been set in the current scope. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node used to find the node in the ONNX model. Returns: The virtual graph associated with the ONNX node.)doc";
+
+static const char *__doc_popart_Builder_getVirtualGraph_3 =
+    R"doc(Get the index of the virtual graph that computes this node based on
+multiple output tensors. This applies in a multi IPU system.
+
+This function will throw an exception if the virtual graph has not been set
+in the current scope.
+
+
+Args:
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node used to find the node in the ONNX model.
+
+Returns:
+ The virtual graph associated with the ONNX node.)doc";
+
+static const char *__singlelinedoc_popart_Builder_getVirtualGraph_3 =
+    R"doc(Get the index of the virtual graph that computes this node based on multiple output tensors. This applies in a multi IPU system. This function will throw an exception if the virtual graph has not been set in the current scope. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: The virtual graph associated with the ONNX node.)doc";
+
+static const char *__doc_popart_Builder_hasAttribute =
+    R"doc(Check if an attribute exists.
+
+
+Args:
+ attribute: The name of the attribute to check.
+
+Returns:
+ :code:`true` if the attribute exists; :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Builder_hasAttribute =
+    R"doc(Check if an attribute exists. Args: attribute: The name of the attribute to check. Returns: :code:`true` if the attribute exists; :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Builder_hasAttribute_2 =
+    R"doc(Check if an attribute is set.
+
+
+Args:
+ attribute: The name of the attribute to check.
+
+Returns:
+ :code:`true` if the attribute is set; :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Builder_hasAttribute_2 =
+    R"doc(Check if an attribute is set. Args: attribute: The name of the attribute to check. Returns: :code:`true` if the attribute is set; :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Builder_hasParent =
+    R"doc(Check if this builder represents a subgraph.
+
+
+Returns:
+ If :code:`true` then the builder represents a subgraph. If :code:`false` then
+ the builder does not represent a subgraph.)doc";
+
+static const char *__singlelinedoc_popart_Builder_hasParent =
+    R"doc(Check if this builder represents a subgraph. Returns: If :code:`true` then the builder represents a subgraph. If :code:`false` then the builder does not represent a subgraph.)doc";
+
+static const char *__doc_popart_Builder_hasValueInfo =
+    R"doc(Check if a tensor has value info.
+
+A tensor may not have value info if this either does not exist or if
+shape inference has failed.
+
+
+Returns:
+ :code:`True` if the tensor has value info; :code:`false` otherwise..)doc";
 
 static const char *__singlelinedoc_popart_Builder_hasValueInfo =
-    R"doc(Return whether or not the specified tensor has value info A tensor may not have value info if has simply does not exist or if shape inference  failed Returns: A boolean.)doc";
+    R"doc(Check if a tensor has value info. A tensor may not have value info if this either does not exist or if shape inference has failed. Returns: :code:`True` if the tensor has value info; :code:`false` otherwise..)doc";
 
 static const char *__doc_popart_Builder_impl = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Builder_impl = R"doc()doc";
 
 static const char *__doc_popart_Builder_isInitializer =
-    R"doc(Returns true if the ONNX tensor is in the initializer list
-of the GraphProto.
+    R"doc(Check if the ONNX tensor is in the initializer list
+of :code:`GraphProto`.
 
 
 Args:
- id: Tensor id.
+ id: A tensor id.
 
 Returns:
- A boolean.)doc";
+ :code:`True` if the tensor is in the initializer list; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Builder_isInitializer =
-    R"doc(Returns true if the ONNX tensor is in the initializer list of the GraphProto. Args: id: Tensor id. Returns: A boolean.)doc";
+    R"doc(Check if the ONNX tensor is in the initializer list of :code:`GraphProto`. Args: id: A tensor id. Returns: :code:`True` if the tensor is in the initializer list; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Builder_loadModelProto =
     R"doc(Load a serialized ONNX ModelProto into the builder and validate it.
 
 
 Args:
- modelProtoOrFilename: Either an ONNX model protobuf, or the name of a
-                             file containing an ONNX model protobuf.)doc";
+ modelProtoOrFilename: An ONNX model protobuf, or the name of a
+     file containing an ONNX model protobuf.)doc";
 
 static const char *__singlelinedoc_popart_Builder_loadModelProto =
-    R"doc(Load a serialized ONNX ModelProto into the builder and validate it. Args: modelProtoOrFilename: Either an ONNX model protobuf, or the name of a file containing an ONNX model protobuf.)doc";
+    R"doc(Load a serialized ONNX ModelProto into the builder and validate it. Args: modelProtoOrFilename: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf.)doc";
 
 static const char *__doc_popart_Builder_nChildren = R"doc()doc";
 
@@ -3060,34 +3413,59 @@ static const char *__singlelinedoc_popart_Builder_nChildren = R"doc()doc";
 
 static const char *__doc_popart_Builder_nodeHasAttribute =
     R"doc(Check whether the ONNX node has an attribute set.
-This functions will throw an exception if it can't find the unique
+
+This function will throw an exception if it cannot find the unique
 node.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
+
+Returns:
+ :code:`true` if the node has an attribute set; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Builder_nodeHasAttribute =
-    R"doc(Check whether the ONNX node has an attribute set. This functions will throw an exception if it can't find the unique node. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Check whether the ONNX node has an attribute set. This function will throw an exception if it cannot find the unique node. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. Returns: :code:`true` if the node has an attribute set; :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Builder_outputTensorLocation = R"doc()doc";
+static const char *__doc_popart_Builder_outputTensorLocation =
+    R"doc(Set a value for the output tensor location attribute.
+
+
+Args:
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: The location of the tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_outputTensorLocation =
-    R"doc()doc";
+    R"doc(Set a value for the output tensor location attribute. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: The location of the tensor.)doc";
 
 static const char *__doc_popart_Builder_parent = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Builder_parent = R"doc()doc";
 
-static const char *__doc_popart_Builder_pipelineStage = R"doc()doc";
+static const char *__doc_popart_Builder_pipelineStage =
+    R"doc(Set the value on the pipeline stage attribute.
 
-static const char *__singlelinedoc_popart_Builder_pipelineStage = R"doc()doc";
 
-static const char *__doc_popart_Builder_pipelineStage_2 = R"doc()doc";
+Args:
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: The value to be set.)doc";
 
-static const char *__singlelinedoc_popart_Builder_pipelineStage_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Builder_pipelineStage =
+    R"doc(Set the value on the pipeline stage attribute. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: The value to be set.)doc";
+
+static const char *__doc_popart_Builder_pipelineStage_2 =
+    R"doc(Set the value on the pipeline stage attribute.
+
+
+Args:
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node.
+ value: The value to be set.)doc";
+
+static const char *__singlelinedoc_popart_Builder_pipelineStage_2 =
+    R"doc(Set the value on the pipeline stage attribute. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node. value: The value to be set.)doc";
 
 static const char *__doc_popart_Builder_popNameScope =
     R"doc(Remove the last entry in the name scope stack.)doc";
@@ -3099,59 +3477,81 @@ static const char *__doc_popart_Builder_pushNameScope =
     R"doc(Push a name onto the name scope stack.
 
 The names of tensors and nodes added to the ONNX graph will be prefixed
-with a concatenation of the names in the name stack.)doc";
+with a concatenation of the names in the name scope stack.
+
+Args:
+ name: The tensor name to be pushed onto the name scope stack.)doc";
 
 static const char *__singlelinedoc_popart_Builder_pushNameScope =
-    R"doc(Push a name onto the name scope stack. The names of tensors and nodes added to the ONNX graph will be prefixed with a concatenation of the names in the name stack.)doc";
+    R"doc(Push a name onto the name scope stack. The names of tensors and nodes added to the ONNX graph will be prefixed with a concatenation of the names in the name scope stack. Args: name: The tensor name to be pushed onto the name scope stack.)doc";
 
-static const char *__doc_popart_Builder_recomputeOutput = R"doc()doc";
+static const char *__doc_popart_Builder_recomputeOutput =
+    R"doc(Enable recomputation of the output of the node in the backward pass.
 
-static const char *__singlelinedoc_popart_Builder_recomputeOutput = R"doc()doc";
+
+Args:
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: (Optional) The type of the recompute.)doc";
+
+static const char *__singlelinedoc_popart_Builder_recomputeOutput =
+    R"doc(Enable recomputation of the output of the node in the backward pass. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: (Optional) The type of the recompute.)doc";
 
 static const char *__doc_popart_Builder_recomputeOutputInBackwardPass =
-    R"doc(Enable/disable recomputation of the output of the node in the backward
+    R"doc(Enable or disable recomputation of the output of the node in the backward
 pass.
 
 
 Args:
- nodeOutputName: Name of the output tensor of the ONNX node.
- value: If the recompute is enabled/disabled.)doc";
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: (Optional) The type of the recompute. Default:
+      :code:`RecomputeType::Recompute`.)doc";
 
 static const char *__singlelinedoc_popart_Builder_recomputeOutputInBackwardPass =
-    R"doc(Enable/disable recomputation of the output of the node in the backward pass. Args: nodeOutputName: Name of the output tensor of the ONNX node. value: If the recompute is enabled/disabled.)doc";
+    R"doc(Enable or disable recomputation of the output of the node in the backward pass. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: (Optional) The type of the recompute. Default: :code:`RecomputeType::Recompute`.)doc";
 
 static const char *__doc_popart_Builder_recomputeOutputInBackwardPass_2 =
-    R"doc(Enable/disable recomputation of the output of the node in the backward
+    R"doc(Enable or disable recomputation of the output of the node in the backward
 pass.
 
 
 Args:
- nodeOutputNames: Names of the output tensors of the ONNX node.
- value: If the recompute is enabled/disabled.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+      node.
+ value: (Optional) The type of the recompute. Default:
+      :code:`RecomputeType::Recompute`.)doc";
 
 static const char *__singlelinedoc_popart_Builder_recomputeOutputInBackwardPass_2 =
-    R"doc(Enable/disable recomputation of the output of the node in the backward pass. Args: nodeOutputNames: Names of the output tensors of the ONNX node. value: If the recompute is enabled/disabled.)doc";
+    R"doc(Enable or disable recomputation of the output of the node in the backward pass. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node. value: (Optional) The type of the recompute. Default: :code:`RecomputeType::Recompute`.)doc";
 
 static const char *__doc_popart_Builder_removeNodeAttribute =
     R"doc(Remove an attribute from the ONNX node.
-This functions will throw an exception if it can't find the unique
-node or the attribute does not exist.
+This function will throw an exception if it cannot find the unique
+node or if the attribute does not exist.
 
 
 Args:
  attributeName: The name of the attribute to find.
- nodeOutputNames: Names of the output tensors of the ONNX node used to
-                        find the node in the ONNX model.)doc";
+ nodeOutputNames: The tensor ids of the output tensors of the ONNX
+     node used to find the node in the ONNX model.)doc";
 
 static const char *__singlelinedoc_popart_Builder_removeNodeAttribute =
-    R"doc(Remove an attribute from the ONNX node. This functions will throw an exception if it can't find the unique node or the attribute does not exist. Args: attributeName: The name of the attribute to find. nodeOutputNames: Names of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
+    R"doc(Remove an attribute from the ONNX node. This function will throw an exception if it cannot find the unique node or if the attribute does not exist. Args: attributeName: The name of the attribute to find. nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model.)doc";
 
 static const char *__doc_popart_Builder_reshape_const =
-    R"doc(This is a helper function that will add a constant and a reshape using the
-provided domain.)doc";
+    R"doc( Add a constant and a reshape a tensor using the provided domain.
+
+
+Args:
+ t: The builder interface.
+ args: The tensor ids of the tensors to be updated.
+ shape: The shape information to be used.
+ name: (Optional) The name of the updated tensor. Default: None.
+
+Returns:
+   The tensor id of the updated tensor.)doc";
 
 static const char *__singlelinedoc_popart_Builder_reshape_const =
-    R"doc(This is a helper function that will add a constant and a reshape using the provided domain.)doc";
+    R"doc(Add a constant and a reshape a tensor using the provided domain. Args: t: The builder interface. args: The tensor ids of the tensors to be updated. shape: The shape information to be used. name: (Optional) The name of the updated tensor. Default: None. Returns: The tensor id of the updated tensor.)doc";
 
 static const char *__doc_popart_Builder_saveInitializersExternally =
     R"doc(Save tensor data externally.
@@ -3162,14 +3562,14 @@ saved separately.
 
 
 Args:
- ids: The names of tensors whose data is to be saved externally.
+ ids: The names of tensors for which data is to be saved externally.
  fn: The name of a file containing the binary tensor data. This
-        can be an absolute or relative path. If a relative path, when
-        the ONNX model is saved, external tensor data will be written
-        to a path relative to your current working directory.)doc";
+     can be an absolute or relative path. If a relative path, when
+     the ONNX model is saved, external tensor data will be written
+     to a path relative to the current working directory.)doc";
 
 static const char *__singlelinedoc_popart_Builder_saveInitializersExternally =
-    R"doc(Save tensor data externally. The model data cannot exceed 2GB - the maximum size of a Protobuf message. To avoid this, for large models ONNX tensor data can be saved separately. Args: ids: The names of tensors whose data is to be saved externally. fn: The name of a file containing the binary tensor data. This can be an absolute or relative path. If a relative path, when the ONNX model is saved, external tensor data will be written to a path relative to your current working directory.)doc";
+    R"doc(Save tensor data externally. The model data cannot exceed 2GB - the maximum size of a Protobuf message. To avoid this, for large models ONNX tensor data can be saved separately. Args: ids: The names of tensors for which data is to be saved externally. fn: The name of a file containing the binary tensor data. This can be an absolute or relative path. If a relative path, when the ONNX model is saved, external tensor data will be written to a path relative to the current working directory.)doc";
 
 static const char *__doc_popart_Builder_saveModelProto =
     R"doc(Save the builder's ONNX ModelProto into the builder and validate it.
@@ -3182,18 +3582,25 @@ static const char *__singlelinedoc_popart_Builder_saveModelProto =
     R"doc(Save the builder's ONNX ModelProto into the builder and validate it. Args: fn: The name of a file containing an ONNX model protobuf.)doc";
 
 static const char *__doc_popart_Builder_setAttribute =
-    R"doc(Set an attribute that will be set on all subsequent operations.)doc";
+    R"doc(Set the value of an attribute that will be set on all subsequent
+operations.
+
+
+Args:
+ attribute: The name of the attribute to set.
+ value: The value to set on the attribute.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setAttribute =
-    R"doc(Set an attribute that will be set on all subsequent operations.)doc";
+    R"doc(Set the value of an attribute that will be set on all subsequent operations. Args: attribute: The name of the attribute to set. value: The value to set on the attribute.)doc";
 
 static const char *__doc_popart_Builder_setAvailableMemoryProportion =
-    R"doc(Set the available memory for the given node. Used on the convolution op.
+    R"doc(Set the available memory proportion for the given node.
+
+This is used in the convolution op.
 
 
 See Also:
- `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion`
-
+ `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion`.
 
 
 Args:
@@ -3201,10 +3608,12 @@ Args:
  availableMemoryProportion: The available memory proportion [0, 1).)doc";
 
 static const char *__singlelinedoc_popart_Builder_setAvailableMemoryProportion =
-    R"doc(Set the available memory for the given node. Used on the convolution op. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion` Args: nodeOutputName: Name of the output tensor of the ONNX node. availableMemoryProportion: The available memory proportion [0, 1).)doc";
+    R"doc(Set the available memory proportion for the given node. This is used in the convolution op. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion`. Args: nodeOutputName: Name of the output tensor of the ONNX node. availableMemoryProportion: The available memory proportion [0, 1).)doc";
 
 static const char *__doc_popart_Builder_setAvailableMemoryProportion_2 =
-    R"doc(Set the available memory for the given node. Used on the convolution op.
+    R"doc(Set the available memory proportion for the given node.
+
+This is used in the convolution op.
 
 
 See Also:
@@ -3213,32 +3622,34 @@ See Also:
 
 
 Args:
- nodeOutputNames: Names of all the output tensors of the ONNX node.
+ nodeOutputNames: The tensor ids of the output tensors of the
+ ONNX node used to find the node in the ONNX model.
  availableMemoryProportion: The available memory proportion [0, 1).)doc";
 
 static const char *__singlelinedoc_popart_Builder_setAvailableMemoryProportion_2 =
-    R"doc(Set the available memory for the given node. Used on the convolution op. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion` Args: nodeOutputNames: Names of all the output tensors of the ONNX node. availableMemoryProportion: The available memory proportion [0, 1).)doc";
+    R"doc(Set the available memory proportion for the given node. This is used in the convolution op. See Also: `Optimising Temporary Memory Usage for Convolutions and Matmuls on the IPU <https://docs.graphcore.ai/projects/available-memory/>`_ for some practical examples of using :code:`availableMemoryProportion` Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. availableMemoryProportion: The available memory proportion [0, 1).)doc";
 
 static const char *__doc_popart_Builder_setEnableConvDithering =
     R"doc(Enable convolution dithering.
 
 
 Args:
- nodeOutputName: Name of the output tensor of the ONNX node.
- value: 1, if convolution dithering should be enabled. 0, otherwise.)doc";
+ nodeOutputName: The tensor id of the output tensor of the ONNX node.
+ value: The value to enable convolution. This should be 1 to enable
+     convolution dithering and 0 otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setEnableConvDithering =
-    R"doc(Enable convolution dithering. Args: nodeOutputName: Name of the output tensor of the ONNX node. value: 1, if convolution dithering should be enabled. 0, otherwise.)doc";
+    R"doc(Enable convolution dithering. Args: nodeOutputName: The tensor id of the output tensor of the ONNX node. value: The value to enable convolution. This should be 1 to enable convolution dithering and 0 otherwise.)doc";
 
 static const char *__doc_popart_Builder_setGraphName =
-    R"doc(Specifies a graph name.
+    R"doc(Set a graph name.
 
 
 Args:
- name: String to name the graph.)doc";
+ name: The string to name the graph.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setGraphName =
-    R"doc(Specifies a graph name. Args: name: String to name the graph.)doc";
+    R"doc(Set a graph name. Args: name: The string to name the graph.)doc";
 
 static const char *__doc_popart_Builder_setInplacePreferences = R"doc()doc";
 
@@ -3246,66 +3657,75 @@ static const char *__singlelinedoc_popart_Builder_setInplacePreferences =
     R"doc()doc";
 
 static const char *__doc_popart_Builder_setParent =
-    R"doc(Sets the parent graph of this builder.
+    R"doc(Set the parent graph of this builder.
 
 
 Args:
- parent: the builder to become a parent.)doc";
+ parent: The builder to set as the parent of this builder.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setParent =
-    R"doc(Sets the parent graph of this builder. Args: parent: the builder to become a parent.)doc";
+    R"doc(Set the parent graph of this builder. Args: parent: The builder to set as the parent of this builder.)doc";
 
 static const char *__doc_popart_Builder_setPartialsType =
-    R"doc(Set the partials type for the given node. Used on the convolution op.
+    R"doc(Set the partials type for the given node.
+
+This is used in the convolution op.
 
 
 Args:
  nodeOutputName: Name of the output tensor of the ONNX node.
- partialsType: The type for the partials. Can be either FLOAT or HALF.)doc";
+ partialsType: The type for the partials. Options are: :code:`FLOAT` or
+:code:`HALF`.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setPartialsType =
-    R"doc(Set the partials type for the given node. Used on the convolution op. Args: nodeOutputName: Name of the output tensor of the ONNX node. partialsType: The type for the partials. Can be either FLOAT or HALF.)doc";
+    R"doc(Set the partials type for the given node. This is used in the convolution op. Args: nodeOutputName: Name of the output tensor of the ONNX node. partialsType: The type for the partials. Options are: :code:`FLOAT` or :code:`HALF`.)doc";
 
 static const char *__doc_popart_Builder_setSerializeMatMul =
-    R"doc(Set the settings for matmuls that should be serialized. This option
-will split a matmul into separate smaller matmuls that will be executed in
-series. This will also serialize the grad operations if training.
+    R"doc(Set the settings for matmuls that should be serialized.
 
+This option will split a matmul into separate smaller matmuls that will be
+executed in series. This will also serialize the grad operations during
+training.
 
 
 Args:
- nodeOutputNames: Name of the output matmul tensors of the ONNX node.
- mode: Which dimension of the mat mul to serialize on (choose from
-     'input_channels', 'output_channels', 'reducing_dim', 'none').
- factor: The number of serialised matmuls, must be a factor of the
-     dimensions to serialise on.)doc";
+ nodeOutputNames: The tensor ids of the output matmul tensors of the
+      ONNX node.
+ mode: The dimension of the matmul to serialize on. Options
+      are: 'input_channels', 'output_channels', 'reducing_dim', 'none'.
+ factor: The number of serialised matmuls. This must be a factor of
+      the dimensions to serialise on.)doc";
 
 static const char *__singlelinedoc_popart_Builder_setSerializeMatMul =
-    R"doc(Set the settings for matmuls that should be serialized. This option will split a matmul into separate smaller matmuls that will be executed in series. This will also serialize the grad operations if training. Args: nodeOutputNames: Name of the output matmul tensors of the ONNX node. mode: Which dimension of the mat mul to serialize on (choose from 'input_channels', 'output_channels', 'reducing_dim', 'none'). factor: The number of serialised matmuls, must be a factor of the dimensions to serialise on.)doc";
+    R"doc(Set the settings for matmuls that should be serialized. This option will split a matmul into separate smaller matmuls that will be executed in series. This will also serialize the grad operations during training. Args: nodeOutputNames: The tensor ids of the output matmul tensors of the ONNX node. mode: The dimension of the matmul to serialize on. Options are: 'input_channels', 'output_channels', 'reducing_dim', 'none'. factor: The number of serialised matmuls. This must be a factor of the dimensions to serialise on.)doc";
 
 static const char *__doc_popart_Builder_virtualGraph =
-    R"doc(Set the virtual graph that computes the given node.  Applies when creating
-a graph for a multi-IPU configuration.
+    R"doc(Set the virtual graph that computes the given node.
+
+Applies when creating a graph for a multi-IPU configuration.
 
 
 Args:
  nodeOutputName: Name of the output tensor of the ONNX node.
- value: The index of the virtual graph that computes this node.)doc";
+ value: The index of the virtual graph that computes this node.
+      Default=0.)doc";
 
 static const char *__singlelinedoc_popart_Builder_virtualGraph =
-    R"doc(Set the virtual graph that computes the given node.  Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputName: Name of the output tensor of the ONNX node. value: The index of the virtual graph that computes this node.)doc";
+    R"doc(Set the virtual graph that computes the given node. Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputName: Name of the output tensor of the ONNX node. value: The index of the virtual graph that computes this node. Default=0.)doc";
 
 static const char *__doc_popart_Builder_virtualGraph_2 =
-    R"doc(Set the virtual graph that computes the given node.  Applies when creating
-a graph for a multi-IPU configuration.
+    R"doc(Set the virtual graph that computes the given node.
+
+Applies when creating a graph for a multi-IPU configuration.
 
 
 Args:
- nodeOutputNames: Names of the output tensors of the ONNX node.
+ nodeOutputNames: The tensor ids of the output tensors of the
+     ONNX node used to find the node in the ONNX model.
  value: The index of the virtual graph that computes this node.)doc";
 
 static const char *__singlelinedoc_popart_Builder_virtualGraph_2 =
-    R"doc(Set the virtual graph that computes the given node.  Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputNames: Names of the output tensors of the ONNX node. value: The index of the virtual graph that computes this node.)doc";
+    R"doc(Set the virtual graph that computes the given node. Applies when creating a graph for a multi-IPU configuration. Args: nodeOutputNames: The tensor ids of the output tensors of the ONNX node used to find the node in the ONNX model. value: The index of the virtual graph that computes this node.)doc";
 
 static const char *__doc_popart_ClipNormSettings =
     R"doc(A data structure used to represent a maximum value constraint on
@@ -3581,26 +4001,72 @@ static const char *__doc_popart_CommGroup =
 
 Examples of derived sub-groups:
 - IPU-link domain sub-rack:
-  ```
+
+  .. code-block:: python
     type == Consecutive && replicaGroupSize == 64/replica-size/N
- 
-```
 
   where N is power of two and replicaGroupSize > 1.
+
 - Complete IPU-link domain / full rack:
-  ```
+
+  .. code-block:: python
     type == Consecutive && replicaGroupSize == 64/replica-size
- 
-```
 
 - Using GW-links only:
-  ```
-    type == Orthogonal && replicaGroupSize == 64/replica-size
- 
-```)doc";
+
+  .. code-block:: python
+    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
 
 static const char *__singlelinedoc_popart_CommGroup =
-    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: ``` type == Consecutive && replicaGroupSize == 64/replica-size/N ``` where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: ``` type == Consecutive && replicaGroupSize == 64/replica-size ``` - Using GW-links only: ``` type == Orthogonal && replicaGroupSize == 64/replica-size ```)doc";
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+
+static const char *__doc_popart_CommGroup_2 =
+    R"doc(Class to specify sub-groups of replicas.
+
+Examples of derived sub-groups:
+- IPU-link domain sub-rack:
+
+  .. code-block:: python
+    type == Consecutive && replicaGroupSize == 64/replica-size/N
+
+  where N is power of two and replicaGroupSize > 1.
+
+- Complete IPU-link domain / full rack:
+
+  .. code-block:: python
+    type == Consecutive && replicaGroupSize == 64/replica-size
+
+- Using GW-links only:
+
+  .. code-block:: python
+    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+
+static const char *__singlelinedoc_popart_CommGroup_2 =
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+
+static const char *__doc_popart_CommGroup_3 =
+    R"doc(Class to specify sub-groups of replicas.
+
+Examples of derived sub-groups:
+- IPU-link domain sub-rack:
+
+  .. code-block:: python
+    type == Consecutive && replicaGroupSize == 64/replica-size/N
+
+  where N is power of two and replicaGroupSize > 1.
+
+- Complete IPU-link domain / full rack:
+
+  .. code-block:: python
+    type == Consecutive && replicaGroupSize == 64/replica-size
+
+- Using GW-links only:
+
+  .. code-block:: python
+    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+
+static const char *__singlelinedoc_popart_CommGroup_3 =
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
 
 static const char *__doc_popart_CommGroupType =
     R"doc(PopART equivalent of GCL CommGroupType. Each of these enumeration constants
@@ -3644,9 +4110,13 @@ then there are m = N/k groups of size k:
 static const char *__singlelinedoc_popart_CommGroupType_Orthogonal =
     R"doc(Groups are sliced orthogonal to the replica ordering. If there are N replicas denoted {0, ... N-1} and group size is k, then there are m = N/k groups of size k: {0, m, 2m, ...}, {1, m+1, 2m+1, ...} ... {m-1, 2m-1, ... N-1})doc";
 
-static const char *__doc_popart_CommGroup_CommGroup = R"doc()doc";
+static const char *__doc_popart_CommGroup_CommGroup =
+    R"doc(Default CommGroup constructor.
 
-static const char *__singlelinedoc_popart_CommGroup_CommGroup = R"doc()doc";
+Sets type to CommGroupType::All and replicaGroupSize to 0.)doc";
+
+static const char *__singlelinedoc_popart_CommGroup_CommGroup =
+    R"doc(Default CommGroup constructor. Sets type to CommGroupType::All and replicaGroupSize to 0.)doc";
 
 static const char *__doc_popart_CommGroup_CommGroup_2 =
     R"doc(Construct CommGroup
@@ -3668,16 +4138,15 @@ static const char *__doc_popart_CommGroup_operator_ne = R"doc()doc";
 static const char *__singlelinedoc_popart_CommGroup_operator_ne = R"doc()doc";
 
 static const char *__doc_popart_CommGroup_replicaGroupSize =
-    R"doc(Replica group size */)doc";
+    R"doc(Replica group size.)doc";
 
 static const char *__singlelinedoc_popart_CommGroup_replicaGroupSize =
-    R"doc(Replica group size */)doc";
+    R"doc(Replica group size.)doc";
 
-static const char *__doc_popart_CommGroup_type =
-    R"doc(Replica group type */)doc";
+static const char *__doc_popart_CommGroup_type = R"doc(Replica group type.)doc";
 
 static const char *__singlelinedoc_popart_CommGroup_type =
-    R"doc(Replica group type */)doc";
+    R"doc(Replica group type.)doc";
 
 static const char *__doc_popart_ConstSGD =
     R"doc(Stochastic Gradient Descent (SGD) optimizer with constant learning rate,
@@ -3704,6 +4173,10 @@ Args:
 
 static const char *__singlelinedoc_popart_ConstSGD_ConstSGD =
     R"doc(Constructor. Args: learningRate: A constant learning rate. weightDecay: A constant weight decay value. lossScaling: A constant loss scaling value. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights).)doc";
+
+static const char *__doc_popart_ConstVoidData = R"doc()doc";
+
+static const char *__singlelinedoc_popart_ConstVoidData = R"doc()doc";
 
 static const char *__doc_popart_Consumers = R"doc()doc";
 
@@ -3850,6 +4323,10 @@ static const char *__doc_popart_DataFlow_DataFlow_5 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DataFlow_DataFlow_5 = R"doc()doc";
 
+static const char *__doc_popart_DataFlow_SessionOptions = R"doc()doc";
+
+static const char *__singlelinedoc_popart_DataFlow_SessionOptions = R"doc()doc";
+
 static const char *__doc_popart_DataFlow_anchors = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DataFlow_anchors = R"doc()doc";
@@ -3933,12 +4410,12 @@ static const char *__singlelinedoc_popart_DataFlow_v_rps = R"doc()doc";
 
 static const char *__doc_popart_DataType =
     R"doc(There is a one-to-one correspondence
-between ``popart::DataTypes``
-and ``ONNX_NAMESPACE::TensorProto_DataTypes``, or
+between ``popart::DataTypes`` and
+``ONNX_NAMESPACE::TensorProto_DataTypes``, which is equivalent to
 ``decltype(ONNX_NAMESPACE::TensorProto().data_type()).``)doc";
 
 static const char *__singlelinedoc_popart_DataType =
-    R"doc(There is a one-to-one correspondence between ``popart::DataTypes`` and ``ONNX_NAMESPACE::TensorProto_DataTypes``, or ``decltype(ONNX_NAMESPACE::TensorProto().data_type()).``)doc";
+    R"doc(There is a one-to-one correspondence between ``popart::DataTypes`` and ``ONNX_NAMESPACE::TensorProto_DataTypes``, which is equivalent to ``decltype(ONNX_NAMESPACE::TensorProto().data_type()).``)doc";
 
 static const char *__doc_popart_DeveloperSettings =
     R"doc(NOTE: These options are not subject to deprecation notices and may be)doc";
@@ -3978,10 +4455,17 @@ static const char *__doc_popart_DeviceInfo = R"doc(Represents a device)doc";
 static const char *__singlelinedoc_popart_DeviceInfo =
     R"doc(Represents a device)doc";
 
-static const char *__doc_popart_DeviceInfo_2 = R"doc(Represents a device)doc";
+static const char *__doc_popart_DeviceInfo_2 = R"doc()doc";
 
-static const char *__singlelinedoc_popart_DeviceInfo_2 =
-    R"doc(Represents a device)doc";
+static const char *__singlelinedoc_popart_DeviceInfo_2 = R"doc()doc";
+
+static const char *__doc_popart_DeviceInfo_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_DeviceInfo_3 = R"doc()doc";
+
+static const char *__doc_popart_DeviceInfo_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_DeviceInfo_4 = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_DeviceInfo = R"doc()doc";
 
@@ -4053,6 +4537,11 @@ static const char *__doc_popart_DeviceInfo_getId =
 
 static const char *__singlelinedoc_popart_DeviceInfo_getId =
     R"doc(Get the device id.)doc";
+
+static const char *__doc_popart_DeviceInfo_getIpuVersion = R"doc()doc";
+
+static const char *__singlelinedoc_popart_DeviceInfo_getIpuVersion =
+    R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_getNumIpus =
     R"doc(Get the number of IPUs in the device.)doc";
@@ -5130,6 +5619,42 @@ static const char *__doc_popart_GradientTensorTrackingMethod_N =
 static const char *__singlelinedoc_popart_GradientTensorTrackingMethod_N =
     R"doc(The number of ``GradientTensorTrackingMethod`` values.)doc";
 
+static const char *__doc_popart_Graph = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph = R"doc()doc";
+
+static const char *__doc_popart_Graph_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_2 = R"doc()doc";
+
+static const char *__doc_popart_Graph_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_3 = R"doc()doc";
+
+static const char *__doc_popart_Graph_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_4 = R"doc()doc";
+
+static const char *__doc_popart_Graph_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_5 = R"doc()doc";
+
+static const char *__doc_popart_Graph_6 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_6 = R"doc()doc";
+
+static const char *__doc_popart_Graph_7 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_7 = R"doc()doc";
+
+static const char *__doc_popart_Graph_8 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_8 = R"doc()doc";
+
+static const char *__doc_popart_Graph_9 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Graph_9 = R"doc()doc";
+
 static const char *__doc_popart_GraphTransformer = R"doc()doc";
 
 static const char *__singlelinedoc_popart_GraphTransformer = R"doc()doc";
@@ -5264,6 +5789,22 @@ Args:
 static const char
     *__singlelinedoc_popart_GraphTransformer_saveInitializersExternally =
         R"doc(The model data cannot exceed 2GB - the maximum size of a Protobuf message. To prevent this for large models, ONNX tensor data can be saved separately. Args: ids: The names of tensors whose data is to be saved externally. fn: The name of a file containing the binary tensor data.)doc";
+
+static const char *__doc_popart_IStepIO = R"doc()doc";
+
+static const char *__singlelinedoc_popart_IStepIO = R"doc()doc";
+
+static const char *__doc_popart_IStepIO_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_IStepIO_2 = R"doc()doc";
+
+static const char *__doc_popart_IWeightsIO = R"doc()doc";
+
+static const char *__singlelinedoc_popart_IWeightsIO = R"doc()doc";
+
+static const char *__doc_popart_IWeightsIO_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_IWeightsIO_2 = R"doc()doc";
 
 static const char *__doc_popart_IdentityGradOp = R"doc()doc";
 
@@ -5523,14 +6064,31 @@ Args:
       ONNX model protobuf.
  dataFlow: Configuration for the data feeds and fetches.
  deviceInfo: The type of device that this session uses.
- inputShapeInfo: A compilation of information that is know about the
-      tensors in the IR.
- userOptions: The user configuration options for the Session class.
- patterns: The optimization patterns to apply.
- name: The name of this inference session. Default: "inference".)doc";
+ inputShapeInfo: (Optional) The sizes and dtypes of the input
+      tensors. This
+      is used to specify the sizes of the input tensors in the case that
+      the ONNX model does not include this information. The Poplar graph
+      programmming framework uses statically allocated memory buffers and
+      so it needs to know the size of tensors before the compilation.
+      Default: InputShapeInfo().
+ userOptions: (Optional) The user configuration options for the
+      Session class. Default: SessionOptions().
+ patterns: (Optional) A user-selected set of graph transformation
+      patterns which will be applied to the graph. If this is not
+      specified, a default set of optimisation transformations will be
+      applied. Default: Patterns().
+ name: (Optional) The name of this inference session. Default:
+      "inference".)doc";
 
 static const char *__singlelinedoc_popart_InferenceSession_createFromOnnxModel =
-    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. deviceInfo: The type of device that this session uses. inputShapeInfo: A compilation of information that is know about the tensors in the IR. userOptions: The user configuration options for the Session class. patterns: The optimization patterns to apply. name: The name of this inference session. Default: "inference".)doc";
+    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programmming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "inference".)doc";
+
+static const char *__doc_popart_InferenceSession_popxlSetEngineIsLoaded =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_InferenceSession_popxlSetEngineIsLoaded =
+        R"doc()doc";
 
 static const char *__doc_popart_InitOp = R"doc()doc";
 
@@ -5711,6 +6269,17 @@ static const char *__doc_popart_InputSettings_tileSet_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_InputSettings_tileSet_2 = R"doc()doc";
 
+static const char *__doc_popart_InputShapeInfo =
+    R"doc(Class that contains what is known about the input tensors (as TensorInfo
+objects) in the IR prior to compilation.
+
+This knowledge can sometimes be compiled into the IR, and for certain
+backends is even required, for example the IPU requires all Stream Tensor
+shapes.)doc";
+
+static const char *__singlelinedoc_popart_InputShapeInfo =
+    R"doc(Class that contains what is known about the input tensors (as TensorInfo objects) in the IR prior to compilation. This knowledge can sometimes be compiled into the IR, and for certain backends is even required, for example the IPU requires all Stream Tensor shapes.)doc";
+
 static const char *__doc_popart_Instrumentation =
     R"doc(Enum type used to specify an instrumentation type.)doc";
 
@@ -5738,6 +6307,22 @@ static const char *__singlelinedoc_popart_Instrumentation_Outer =
 static const char *__doc_popart_Ir = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir = R"doc()doc";
+
+static const char *__doc_popart_Ir_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_2 = R"doc()doc";
+
+static const char *__doc_popart_Ir_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_3 = R"doc()doc";
+
+static const char *__doc_popart_Ir_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_4 = R"doc()doc";
+
+static const char *__doc_popart_Ir_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_5 = R"doc()doc";
 
 static const char *__doc_popart_IrBundle = R"doc()doc";
 
@@ -5844,6 +6429,10 @@ static const char *__doc_popart_Ir_addAdditionalModelProtoTensors = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_addAdditionalModelProtoTensors =
     R"doc()doc";
+
+static const char *__doc_popart_Ir_addAnchor = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Ir_addAnchor = R"doc()doc";
 
 static const char *__doc_popart_Ir_addOp = R"doc()doc";
 
@@ -6551,9 +7140,21 @@ static const char *__doc_popart_Ir_pipelineInfo = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Ir_pipelineInfo = R"doc()doc";
 
-static const char *__doc_popart_Ir_prepare = R"doc()doc";
+static const char *__doc_popart_Ir_prepare =
+    R"doc(Prepare the IR based on the IrBundle configuration. If engine caching is
+enabled then the IR hash which is based on the IrBundle and the forward
+graph will be compared to a saved file. If the hash matches then the rest
+of the Ir preparation will be skipped.
 
-static const char *__singlelinedoc_popart_Ir_prepare = R"doc()doc";
+Args:
+ bundle: The bundle to prepare.
+ cacheEntries: The engine cache.
+ hashSeed: The seed to initiate the IR hash with -- this hash should
+   encorporate non-IR factors that could affect the compilation such as
+   engine options and session options.)doc";
+
+static const char *__singlelinedoc_popart_Ir_prepare =
+    R"doc(Prepare the IR based on the IrBundle configuration. If engine caching is enabled then the IR hash which is based on the IrBundle and the forward graph will be compared to a saved file. If the hash matches then the rest of the Ir preparation will be skipped. Args: bundle: The bundle to prepare. cacheEntries: The engine cache. hashSeed: The seed to initiate the IR hash with -- this hash should encorporate non-IR factors that could affect the compilation such as engine options and session options.)doc";
 
 static const char *__doc_popart_Ir_prepareCache = R"doc()doc";
 
@@ -7142,6 +7743,11 @@ static const char
     *__singlelinedoc_popart_MultiCollectiveBaseOp_MultiCollectiveBaseOp =
         R"doc()doc";
 
+static const char *__doc_popart_MultiCollectiveBaseOp_clone = R"doc()doc";
+
+static const char *__singlelinedoc_popart_MultiCollectiveBaseOp_clone =
+    R"doc()doc";
+
 static const char
     *__doc_popart_MultiCollectiveBaseOp_getCorrespondingLinkedIndexTensor =
         R"doc()doc";
@@ -7247,6 +7853,10 @@ static const char *__doc_popart_MultiCollectiveBaseOp_setup = R"doc()doc";
 
 static const char *__singlelinedoc_popart_MultiCollectiveBaseOp_setup =
     R"doc()doc";
+
+static const char *__doc_popart_MutableVoidData = R"doc()doc";
+
+static const char *__singlelinedoc_popart_MutableVoidData = R"doc()doc";
 
 static const char *__doc_popart_NllGradOp = R"doc()doc";
 
@@ -7439,7 +8049,11 @@ static const char *__doc_popart_NllOp_setup = R"doc()doc";
 
 static const char *__singlelinedoc_popart_NllOp_setup = R"doc()doc";
 
-static const char *__doc_popart_Op =
+static const char *__doc_popart_Op = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Op = R"doc()doc";
+
+static const char *__doc_popart_Op_2 =
     R"doc(Parent class for the concrete ``Ops`` implementations.
 
 The ``poplar`` implementation which the ``Op`` represents can be found in the
@@ -7449,7 +8063,45 @@ See
 https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
 for further details.)doc";
 
-static const char *__singlelinedoc_popart_Op =
+static const char *__singlelinedoc_popart_Op_2 =
+    R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
+
+static const char *__doc_popart_Op_3 =
+    R"doc(Parent class for the concrete ``Ops`` implementations.
+
+The ``poplar`` implementation which the ``Op`` represents can be found in the
+corresponding \see Opx class, and will be lowered to ``poplar.``
+
+See
+https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
+for further details.)doc";
+
+static const char *__singlelinedoc_popart_Op_3 =
+    R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
+
+static const char *__doc_popart_Op_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Op_4 = R"doc()doc";
+
+static const char *__doc_popart_Op_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Op_5 = R"doc()doc";
+
+static const char *__doc_popart_Op_6 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Op_6 = R"doc()doc";
+
+static const char *__doc_popart_Op_7 =
+    R"doc(Parent class for the concrete ``Ops`` implementations.
+
+The ``poplar`` implementation which the ``Op`` represents can be found in the
+corresponding \see Opx class, and will be lowered to ``poplar.``
+
+See
+https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
+for further details.)doc";
+
+static const char *__singlelinedoc_popart_Op_7 =
     R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
 
 static const char *__doc_popart_OpCreator = R"doc()doc";
@@ -7790,6 +8442,18 @@ static const char *__singlelinedoc_popart_OpManager_registerOp = R"doc()doc";
 static const char *__doc_popart_OpSerialiserBase = R"doc()doc";
 
 static const char *__singlelinedoc_popart_OpSerialiserBase = R"doc()doc";
+
+static const char *__doc_popart_OpSerialiserBase_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OpSerialiserBase_2 = R"doc()doc";
+
+static const char *__doc_popart_OpSerialiserBase_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OpSerialiserBase_3 = R"doc()doc";
+
+static const char *__doc_popart_OpSerialiserBase_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OpSerialiserBase_4 = R"doc()doc";
 
 static const char *__doc_popart_Op_Op =
     R"doc(Constructor of the ``Op`` class.
@@ -8998,7 +9662,43 @@ static const char *__doc_popart_Op_uses = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_uses = R"doc()doc";
 
-static const char *__doc_popart_Optimizer =
+static const char *__doc_popart_OperatorIdentifier = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_2 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_3 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_4 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_5 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_6 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_6 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_7 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_7 = R"doc()doc";
+
+static const char *__doc_popart_OperatorIdentifier_8 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_OperatorIdentifier_8 = R"doc()doc";
+
+static const char *__doc_popart_Optimizer = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Optimizer = R"doc()doc";
+
+static const char *__doc_popart_Optimizer_2 =
     R"doc(Interface for describing an Optimizer and, internally, how to grow the
 optimiser step for each weight.
 
@@ -9019,8 +9719,12 @@ optimiser step for each weight.
    example, trying to replace an SGD Optimizer with an Adam Optimizer
    would throw.)doc";
 
-static const char *__singlelinedoc_popart_Optimizer =
+static const char *__singlelinedoc_popart_Optimizer_2 =
     R"doc(Interface for describing an Optimizer and, internally, how to grow the optimiser step for each weight. - The end-user facing interface constructed by the user to describe what kind of optimiser to use. - Then also used internally by the Ir to grow the optimiser step for each weight. - Stores OptimizerValues for optimizer parameters like learning rate, loss scaling, etc. \sa OptimiserValue. - Optimizer stores the values for each weight - they can have different values. There is a "default" for all weights, then you can specify specific values for specific weights. This is encapsulated by an OptimizerValueMap, which is a sparse map from weight to value, with unspecified values implying the default. \sa OptimizerValueMap. - At runtime, the user can dynamically update the Optimizer, e.g. by setting new OptimizerValues. validReplacement determines whether the new Optimizer is interchangable with the one the Ir was built for. For example, trying to replace an SGD Optimizer with an Adam Optimizer would throw.)doc";
+
+static const char *__doc_popart_Optimizer_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Optimizer_3 = R"doc()doc";
 
 static const char *__doc_popart_OptimizerReductionType =
     R"doc(Reduction mode when doing data-parallel training over replicated graphs.
@@ -9349,9 +10053,9 @@ static const char *__doc_popart_Optimizer_validReplacement = R"doc()doc";
 static const char *__singlelinedoc_popart_Optimizer_validReplacement =
     R"doc()doc";
 
-static const char *__doc_popart_PTensorCmp = R"doc()doc";
+static const char *__doc_popart_Pattern = R"doc()doc";
 
-static const char *__singlelinedoc_popart_PTensorCmp = R"doc()doc";
+static const char *__singlelinedoc_popart_Pattern = R"doc()doc";
 
 static const char *__doc_popart_PatternCreator = R"doc()doc";
 
@@ -9469,54 +10173,54 @@ static const char *__singlelinedoc_popart_Patterns_create =
     R"doc(Create a set of pattern to be run. Args: patterns: A vector of pattern names of patterns to be run.)doc";
 
 static const char *__doc_popart_Patterns_enableAtan2Arg0GradOp =
-    R"doc(Enable or disable Atan2Arg0GradOp.
+    R"doc(Enable or disable Atan2Arg0GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableAtan2Arg0GradOp =
-    R"doc(Enable or disable Atan2Arg0GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable Atan2Arg0GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableAtan2Arg1GradOp =
-    R"doc(Enable or disable Atan2Arg1GradOp.
+    R"doc(Enable or disable Atan2Arg1GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableAtan2Arg1GradOp =
-    R"doc(Enable or disable Atan2Arg1GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable Atan2Arg1GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableConvFlipWeightsDoubleFlip =
-    R"doc(Enable or disable ConvFlipWeightsDoubleFlip.
+    R"doc(Enable or disable ConvFlipWeightsDoubleFlipPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableConvFlipWeightsDoubleFlip =
-    R"doc(Enable or disable ConvFlipWeightsDoubleFlip. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable ConvFlipWeightsDoubleFlipPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableConvFlipWeightsGradOp =
-    R"doc(Enable or disable ConvFlipWeightsGradOp.
+    R"doc(Enable or disable ConvFlipWeightsGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableConvFlipWeightsGradOp =
-    R"doc(Enable or disable ConvFlipWeightsGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable ConvFlipWeightsGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableCosGradOp =
-    R"doc(Enable or disable CosGradOp.
+    R"doc(Enable or disable CosGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableCosGradOp =
-    R"doc(Enable or disable CosGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable CosGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableDecomposeBinaryConstScalar =
     R"doc(Enable or disable DecomposeBinaryConstScalar.
@@ -9529,44 +10233,44 @@ static const char *__singlelinedoc_popart_Patterns_enableDecomposeBinaryConstSca
     R"doc(Enable or disable DecomposeBinaryConstScalar. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableDivArg0GradOp =
-    R"doc(Enable or disable DivArg0GradOp.
+    R"doc(Enable or disable DivArg0GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableDivArg0GradOp =
-    R"doc(Enable or disable DivArg0GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable DivArg0GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableDivArg1GradOp =
-    R"doc(Enable or disable DivArg1GradOp.
+    R"doc(Enable or disable DivArg1GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableDivArg1GradOp =
-    R"doc(Enable or disable DivArg1GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable DivArg1GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableExpGradOp =
-    R"doc(Enable or disable ExpGradOp.
+    R"doc(Enable or disable ExpGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableExpGradOp =
-    R"doc(Enable or disable ExpGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable ExpGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableExpm1GradOp =
-    R"doc(Enable or disable Expm1GradOp.
+    R"doc(Enable or disable Expm1GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableExpm1GradOp =
-    R"doc(Enable or disable Expm1GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable Expm1GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableInPlace =
     R"doc(Enable or disable InPlace.
@@ -9579,44 +10283,44 @@ static const char *__singlelinedoc_popart_Patterns_enableInPlace =
     R"doc(Enable or disable InPlace. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableInitAccumulate =
-    R"doc(Enable or disable InitAccumulate.
+    R"doc(Enable or disable InitAccumulatePattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableInitAccumulate =
-    R"doc(Enable or disable InitAccumulate. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable InitAccumulatePattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableLambSerialisedWeight =
-    R"doc(Enable or disable LambSerialisedWeight.
+    R"doc(Enable or disable LambSerialisedWeightPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableLambSerialisedWeight =
-    R"doc(Enable or disable LambSerialisedWeight. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable LambSerialisedWeightPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableLog1pGradOp =
-    R"doc(Enable or disable Log1pGradOp.
+    R"doc(Enable or disable Log1pGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableLog1pGradOp =
-    R"doc(Enable or disable Log1pGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable Log1pGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableLogGradOp =
-    R"doc(Enable or disable LogGradOp.
+    R"doc(Enable or disable LogGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableLogGradOp =
-    R"doc(Enable or disable LogGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable LogGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableMatMulLhsGradOp =
     R"doc(Enable or disable MatMulLhsGradOp.
@@ -9649,24 +10353,24 @@ static const char *__singlelinedoc_popart_Patterns_enableMatMulRhsGradOp =
     R"doc(Enable or disable MatMulRhsGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableMulArgGradOp =
-    R"doc(Enable or disable MulArgGradOp.
+    R"doc(Enable or disable MulArgGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableMulArgGradOp =
-    R"doc(Enable or disable MulArgGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable MulArgGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableNegativeOneScale =
-    R"doc(Enable or disable NegativeOneScale.
+    R"doc(Enable or disable NegativeOneScalePattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableNegativeOneScale =
-    R"doc(Enable or disable NegativeOneScale. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable NegativeOneScalePattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableNlllWithSoftMaxGradDirect =
     R"doc(Enable or disable NlllWithSoftMaxGradDirect.
@@ -9679,14 +10383,14 @@ static const char *__singlelinedoc_popart_Patterns_enableNlllWithSoftMaxGradDire
     R"doc(Enable or disable NlllWithSoftMaxGradDirect. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableOpToIdentity =
-    R"doc(Enable or disable OpToIdentity.
+    R"doc(Enable or disable OpToIdentityPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableOpToIdentity =
-    R"doc(Enable or disable OpToIdentity. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable OpToIdentityPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enablePattern = R"doc()doc";
 
@@ -9731,24 +10435,24 @@ static const char *__singlelinedoc_popart_Patterns_enablePostNRepl =
     R"doc(Enable or disable PostNRepl. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enablePowArg0GradOp =
-    R"doc(Enable or disable PowArg0GradOp.
+    R"doc(Enable or disable PowArg0GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enablePowArg0GradOp =
-    R"doc(Enable or disable PowArg0GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable PowArg0GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enablePowArg1GradOp =
-    R"doc(Enable or disable PowArg1GradOp.
+    R"doc(Enable or disable PowArg1GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enablePowArg1GradOp =
-    R"doc(Enable or disable PowArg1GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable PowArg1GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enablePreUniRepl =
     R"doc(Enable or disable PreUniRepl.
@@ -9761,34 +10465,34 @@ static const char *__singlelinedoc_popart_Patterns_enablePreUniRepl =
     R"doc(Enable or disable PreUniRepl. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableRandomNormalLikeOpPattern =
-    R"doc(Enable or disable RandomNormalLikeOpPattern.
+    R"doc(Enable or disable RandomNormalLikeOp.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableRandomNormalLikeOpPattern =
-    R"doc(Enable or disable RandomNormalLikeOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable RandomNormalLikeOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableRandomUniformLikeOpPattern =
-    R"doc(Enable or disable RandomUniformLikeOpPattern.
+    R"doc(Enable or disable RandomUniformLikeOp.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableRandomUniformLikeOpPattern =
-    R"doc(Enable or disable RandomUniformLikeOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable RandomUniformLikeOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableReciprocalGradOp =
-    R"doc(Enable or disable ReciprocalGradOp.
+    R"doc(Enable or disable ReciprocalGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableReciprocalGradOp =
-    R"doc(Enable or disable ReciprocalGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable ReciprocalGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableRuntimeAsserts =
     R"doc(Enable or disable runtime asserts.
@@ -9825,54 +10529,54 @@ static const char *__singlelinedoc_popart_Patterns_enableSoftMaxGradDirect =
     R"doc(Enable or disable SoftMaxGradDirect. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableSplitGather =
-    R"doc(Enable or disable SplitGather.
+    R"doc(Enable or disable SplitGatherPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableSplitGather =
-    R"doc(Enable or disable SplitGather. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable SplitGatherPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableSqrtGradOp =
-    R"doc(Enable or disable SqrtGradOp.
+    R"doc(Enable or disable SqrtGradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableSqrtGradOp =
-    R"doc(Enable or disable SqrtGradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable SqrtGradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableSubtractArg1GradOp =
-    R"doc(Enable or disable SubtractArg1GradOp.
+    R"doc(Enable or disable SubtractArg1GradOpPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableSubtractArg1GradOp =
-    R"doc(Enable or disable SubtractArg1GradOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable SubtractArg1GradOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableTiedGather =
-    R"doc(Enable or disable TiedGather.
+    R"doc(Enable or disable TiedGatherPattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableTiedGather =
-    R"doc(Enable or disable TiedGather. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable TiedGatherPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableTiedGatherAccumulate =
-    R"doc(Enable or disable TiedGatherAccumulate.
+    R"doc(Enable or disable TiedGatherAccumulatePattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableTiedGatherAccumulate =
-    R"doc(Enable or disable TiedGatherAccumulate. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable TiedGatherAccumulatePattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableUpdateInplacePrioritiesForIpu =
     R"doc(Enable or disable UpdateInplacePrioritiesForIpu.
@@ -9886,24 +10590,24 @@ static const char
         R"doc(Enable or disable UpdateInplacePrioritiesForIpu. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableUpsampleToResize =
-    R"doc(Enable or disable UpsampleToResize.
+    R"doc(Enable or disable UpsampleToResizePattern.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableUpsampleToResize =
-    R"doc(Enable or disable UpsampleToResize. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable UpsampleToResizePattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__doc_popart_Patterns_enableZerosLikeOpPattern =
-    R"doc(Enable or disable ZerosLikeOpPattern.
+    R"doc(Enable or disable ZerosLikeOp.
 
 
 Args:
  v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_enableZerosLikeOpPattern =
-    R"doc(Enable or disable ZerosLikeOpPattern. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
+    R"doc(Enable or disable ZerosLikeOp. Args: v: If :code:`true` then enable pattern. If :code:`false` then disable pattern.)doc";
 
 static const char
     *__doc_popart_Patterns_ensureAllMandatoryPreAliasPatternsAreEnabled =
@@ -9985,27 +10689,27 @@ static const char *__doc_popart_Patterns_inplaceEnabled = R"doc()doc";
 static const char *__singlelinedoc_popart_Patterns_inplaceEnabled = R"doc()doc";
 
 static const char *__doc_popart_Patterns_isAtan2Arg0GradOpEnabled =
-    R"doc(Check if Atan2Arg0GradOp is enabled.
+    R"doc(Check if Atan2Arg0GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isAtan2Arg0GradOpEnabled =
-    R"doc(Check if Atan2Arg0GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if Atan2Arg0GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isAtan2Arg1GradOpEnabled =
-    R"doc(Check if Atan2Arg1GradOp is enabled.
+    R"doc(Check if Atan2Arg1GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isAtan2Arg1GradOpEnabled =
-    R"doc(Check if Atan2Arg1GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if Atan2Arg1GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isConvFlipWeightsDoubleFlipEnabled =
-    R"doc(Check if ConvFlipWeightsDoubleFlip is enabled.
+    R"doc(Check if ConvFlipWeightsDoubleFlipPattern is enabled.
 
 
 Returns:
@@ -10013,27 +10717,27 @@ Returns:
 
 static const char
     *__singlelinedoc_popart_Patterns_isConvFlipWeightsDoubleFlipEnabled =
-        R"doc(Check if ConvFlipWeightsDoubleFlip is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+        R"doc(Check if ConvFlipWeightsDoubleFlipPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isConvFlipWeightsGradOpEnabled =
-    R"doc(Check if ConvFlipWeightsGradOp is enabled.
+    R"doc(Check if ConvFlipWeightsGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isConvFlipWeightsGradOpEnabled =
-    R"doc(Check if ConvFlipWeightsGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if ConvFlipWeightsGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isCosGradOpEnabled =
-    R"doc(Check if CosGradOp is enabled.
+    R"doc(Check if CosGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isCosGradOpEnabled =
-    R"doc(Check if CosGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if CosGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isDecomposeBinaryConstScalarEnabled =
     R"doc(Check if DecomposeBinaryConstScalar is enabled.
@@ -10047,114 +10751,114 @@ static const char
         R"doc(Check if DecomposeBinaryConstScalar is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isDivArg0GradOpEnabled =
-    R"doc(Check if DivArg0GradOp is enabled.
+    R"doc(Check if DivArg0GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isDivArg0GradOpEnabled =
-    R"doc(Check if DivArg0GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if DivArg0GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isDivArg1GradOpEnabled =
-    R"doc(Check if DivArg1GradOp is enabled.
+    R"doc(Check if DivArg1GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isDivArg1GradOpEnabled =
-    R"doc(Check if DivArg1GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if DivArg1GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isExpGradOpEnabled =
-    R"doc(Check if ExpGradOp is enabled.
+    R"doc(Check if ExpGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isExpGradOpEnabled =
-    R"doc(Check if ExpGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if ExpGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isExpandCastEnabled =
-    R"doc(Check if ExpandCast is enabled.
+    R"doc(Check if ExpandCastPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isExpandCastEnabled =
-    R"doc(Check if ExpandCast is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if ExpandCastPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isExpm1GradOpEnabled =
-    R"doc(Check if Expm1GradOp is enabled.
+    R"doc(Check if Expm1GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isExpm1GradOpEnabled =
-    R"doc(Check if Expm1GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if Expm1GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isFmodArg0GradOpEnabled =
-    R"doc(Check if FmodArg0GradOp is enabled.
+    R"doc(Check if FmodArg0GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isFmodArg0GradOpEnabled =
-    R"doc(Check if FmodArg0GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if FmodArg0GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isInPlaceEnabled =
-    R"doc(Check if InPlaceEnabled() { return inplace is enabled.
+    R"doc(Check if InPlace is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isInPlaceEnabled =
-    R"doc(Check if InPlaceEnabled() { return inplace is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if InPlace is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isInitAccumulateEnabled =
-    R"doc(Check if InitAccumulate is enabled.
+    R"doc(Check if InitAccumulatePattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isInitAccumulateEnabled =
-    R"doc(Check if InitAccumulate is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if InitAccumulatePattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isLambSerialisedWeightEnabled =
-    R"doc(Check if LambSerialisedWeight is enabled.
+    R"doc(Check if LambSerialisedWeightPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isLambSerialisedWeightEnabled =
-    R"doc(Check if LambSerialisedWeight is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if LambSerialisedWeightPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isLog1pGradOpEnabled =
-    R"doc(Check if Log1pGradOp is enabled.
+    R"doc(Check if Log1pGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isLog1pGradOpEnabled =
-    R"doc(Check if Log1pGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if Log1pGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isLogGradOpEnabled =
-    R"doc(Check if LogGradOp is enabled.
+    R"doc(Check if LogGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isLogGradOpEnabled =
-    R"doc(Check if LogGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if LogGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isMandatory =
     R"doc(Check if a pattern is mandatory.
@@ -10225,24 +10929,24 @@ static const char *__singlelinedoc_popart_Patterns_isMatMulRhsGradOpEnabled =
     R"doc(Check if MatMulRhsGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isMulArgGradOpEnabled =
-    R"doc(Check if MulArgGradOp is enabled.
+    R"doc(Check if MulArgGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isMulArgGradOpEnabled =
-    R"doc(Check if MulArgGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if MulArgGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isNegativeOneScaleEnabled =
-    R"doc(Check if NegativeOneScale is enabled.
+    R"doc(Check if NegativeOneScalePattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isNegativeOneScaleEnabled =
-    R"doc(Check if NegativeOneScale is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if NegativeOneScalePattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isNlllWithSoftMaxGradDirectEnabled =
     R"doc(Check if NlllWithSoftMaxGradDirect is enabled.
@@ -10256,14 +10960,14 @@ static const char
         R"doc(Check if NlllWithSoftMaxGradDirect is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isOpToIdentityEnabled =
-    R"doc(Check if OpToIdentity is enabled.
+    R"doc(Check if OpToIdentityPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isOpToIdentityEnabled =
-    R"doc(Check if OpToIdentity is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if OpToIdentityPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isPatternEnabled = R"doc()doc";
 
@@ -10307,24 +11011,24 @@ static const char *__singlelinedoc_popart_Patterns_isPostNReplEnabled =
     R"doc(Check if PostNRepl is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isPowArg0GradOpEnabled =
-    R"doc(Check if PowArg0GradOp is enabled.
+    R"doc(Check if PowArg0GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isPowArg0GradOpEnabled =
-    R"doc(Check if PowArg0GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if PowArg0GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isPowArg1GradOpEnabled =
-    R"doc(Check if PowArg1GradOp is enabled.
+    R"doc(Check if PowArg1GradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isPowArg1GradOpEnabled =
-    R"doc(Check if PowArg1GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if PowArg1GradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isPreUniReplEnabled =
     R"doc(Check if PreUniRepl is enabled.
@@ -10337,7 +11041,7 @@ static const char *__singlelinedoc_popart_Patterns_isPreUniReplEnabled =
     R"doc(Check if PreUniRepl is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isRandomNormalLikeOpPatternEnabled =
-    R"doc(Check if RandomNormalLikeOpPattern is enabled.
+    R"doc(Check if RandomNormalLikeOp is enabled.
 
 
 Returns:
@@ -10345,10 +11049,10 @@ Returns:
 
 static const char
     *__singlelinedoc_popart_Patterns_isRandomNormalLikeOpPatternEnabled =
-        R"doc(Check if RandomNormalLikeOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+        R"doc(Check if RandomNormalLikeOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isRandomUniformLikeOpPatternEnabled =
-    R"doc(Check if RandomUniformLikeOpPattern is enabled.
+    R"doc(Check if RandomUniformLikeOp is enabled.
 
 
 Returns:
@@ -10356,17 +11060,17 @@ Returns:
 
 static const char
     *__singlelinedoc_popart_Patterns_isRandomUniformLikeOpPatternEnabled =
-        R"doc(Check if RandomUniformLikeOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+        R"doc(Check if RandomUniformLikeOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isReciprocalGradOpEnabled =
-    R"doc(Check if ReciprocalGradOp is enabled.
+    R"doc(Check if ReciprocalGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isReciprocalGradOpEnabled =
-    R"doc(Check if ReciprocalGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if ReciprocalGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isSinGradOpEnabled =
     R"doc(Check if SinGradOp is enabled.
@@ -10389,24 +11093,24 @@ static const char *__singlelinedoc_popart_Patterns_isSoftMaxGradDirectEnabled =
     R"doc(Check if SoftMaxGradDirect is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isSplitGatherEnabled =
-    R"doc(Check if SplitGather is enabled.
+    R"doc(Check if SplitGatherPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isSplitGatherEnabled =
-    R"doc(Check if SplitGather is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if SplitGatherPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isSqrtGradOpEnabled =
-    R"doc(Check if SqrtGradOp is enabled.
+    R"doc(Check if SqrtGradOpPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isSqrtGradOpEnabled =
-    R"doc(Check if SqrtGradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if SqrtGradOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isSubtractArg1GradOpEnabled =
     R"doc(Check if SubtractArg1GradOp is enabled.
@@ -10419,24 +11123,24 @@ static const char *__singlelinedoc_popart_Patterns_isSubtractArg1GradOpEnabled =
     R"doc(Check if SubtractArg1GradOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isTiedGatherAccumulateEnabled =
-    R"doc(Check if TiedGatherAccumulate is enabled.
+    R"doc(Check if TiedGatherAccumulatePattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isTiedGatherAccumulateEnabled =
-    R"doc(Check if TiedGatherAccumulate is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if TiedGatherAccumulatePattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isTiedGatherEnabled =
-    R"doc(Check if TiedGather is enabled.
+    R"doc(Check if TiedGatherPattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isTiedGatherEnabled =
-    R"doc(Check if TiedGather is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if TiedGatherPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char
     *__doc_popart_Patterns_isUpdateInplacePrioritiesForIpuEnabled =
@@ -10451,24 +11155,24 @@ static const char
         R"doc(Check if UpdateInplacePrioritiesForIpu is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isUpsampleToResizeEnabled =
-    R"doc(Check if UpsampleToResize is enabled.
+    R"doc(Check if UpsampleToResizePattern is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isUpsampleToResizeEnabled =
-    R"doc(Check if UpsampleToResize is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if UpsampleToResizePattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_isZerosLikeOpPatternEnabled =
-    R"doc(Check if ZerosLikeOpPattern is enabled.
+    R"doc(Check if ZerosLikeOp is enabled.
 
 
 Returns:
  :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Patterns_isZerosLikeOpPatternEnabled =
-    R"doc(Check if ZerosLikeOpPattern is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
+    R"doc(Check if ZerosLikeOp is enabled. Returns: :code:`true` if pattern is enabled; :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Patterns_operator_eq =
     R"doc(Equality operator.
@@ -10499,6 +11203,10 @@ static const char *__doc_popart_Patterns_updateInplacePrioritiesForIpuEnabled =
 static const char
     *__singlelinedoc_popart_Patterns_updateInplacePrioritiesForIpuEnabled =
         R"doc()doc";
+
+static const char *__doc_popart_PreAliasPattern = R"doc()doc";
+
+static const char *__singlelinedoc_popart_PreAliasPattern = R"doc()doc";
 
 static const char *__doc_popart_PreAliasPatternManager = R"doc()doc";
 
@@ -10749,6 +11457,11 @@ static const char *__singlelinedoc_popart_RemoteBufferInfo_info = R"doc()doc";
 static const char *__doc_popart_RemoteBufferInfo_repeats = R"doc()doc";
 
 static const char *__singlelinedoc_popart_RemoteBufferInfo_repeats =
+    R"doc()doc";
+
+static const char *__doc_popart_ReplicaEqualAnalysisProxy = R"doc()doc";
+
+static const char *__singlelinedoc_popart_ReplicaEqualAnalysisProxy =
     R"doc()doc";
 
 static const char *__doc_popart_ReplicatedCollectivesSettings =
@@ -11308,12 +12021,28 @@ static const char *__doc_popart_SGD_weightDecays = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_weightDecays = R"doc()doc";
 
+static const char *__doc_popart_Scope = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Scope = R"doc()doc";
+
+static const char *__doc_popart_Scope_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Scope_2 = R"doc()doc";
+
+static const char *__doc_popart_Scope_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Scope_3 = R"doc()doc";
+
 static const char *__doc_popart_Session =
     R"doc(Session is a runtime instance that provides an interface for executing ONNX
 graphs on IPU hardware.)doc";
 
 static const char *__singlelinedoc_popart_Session =
     R"doc(Session is a runtime instance that provides an interface for executing ONNX graphs on IPU hardware.)doc";
+
+static const char *__doc_popart_Session_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Session_2 = R"doc()doc";
 
 static const char *__doc_popart_SessionOptions = R"doc()doc";
 
@@ -11603,11 +12332,25 @@ static const char
     *__doc_popart_SessionOptions_disableGradAccumulationTensorStreams =
         R"doc(If true, the weight gradient tensors are not saved off the device
 when ``devicex.weightsFromHost()`` is called. Note: this option is
-overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``.)doc";
+overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``.
+Note that weight gradient tensors that are also optimiser tensors will
+only be disabled if both disableGradAccumulationTensorStreams and
+disableOptimizerStateTensorStreams are true.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_disableGradAccumulationTensorStreams =
-        R"doc(If true, the weight gradient tensors are not saved off the device when ``devicex.weightsFromHost()`` is called. Note: this option is overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``.)doc";
+        R"doc(If true, the weight gradient tensors are not saved off the device when ``devicex.weightsFromHost()`` is called. Note: this option is overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
+
+static const char *__doc_popart_SessionOptions_disableOptimizerStateTensorStreams =
+    R"doc(If true, streaming of optimizer tensors is disabled. This setting can be
+used to conserve memory if you are not interested in check pointing
+optimizer state. Note that weight gradient tensors that are also optimiser
+tensors will only be disabled if both disableGradAccumulationTensorStreams
+and disableOptimizerStateTensorStreams are true.)doc";
+
+static const char
+    *__singlelinedoc_popart_SessionOptions_disableOptimizerStateTensorStreams =
+        R"doc(If true, streaming of optimizer tensors is disabled. This setting can be used to conserve memory if you are not interested in check pointing optimizer state. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
 
 static const char *__doc_popart_SessionOptions_dotChecks =
     R"doc(When to write :code:`.dot` files during Ir construction.)doc";
@@ -12432,10 +13175,33 @@ static const char *__doc_popart_Session_getDevice_2 =
 static const char *__singlelinedoc_popart_Session_getDevice_2 =
     R"doc(Get the device associated with the Session.)doc";
 
+static const char *__doc_popart_Session_getEngineCacheHashSeed =
+    R"doc(Get a hash seed for this session that incorporates various contributing
+factors that could affect the compilation process (example: Poplar engine
+options). Note, we pass in, e.g., userOptions instead of using the member
+userOptions because the member is not guaranteed to be set yet at all
+call sites.
+
+Args:
+ userOptions: The user options to use.
+ deviceInfo: The device to use.
+
+Returns:
+ size_t The hash seed.)doc";
+
+static const char *__singlelinedoc_popart_Session_getEngineCacheHashSeed =
+    R"doc(Get a hash seed for this session that incorporates various contributing factors that could affect the compilation process (example: Poplar engine options). Note, we pass in, e.g., userOptions instead of using the member userOptions because the member is not guaranteed to be set yet at all call sites. Args: userOptions: The user options to use. deviceInfo: The device to use. Returns: size_t The hash seed.)doc";
+
 static const char *__doc_popart_Session_getExecutable =
     R"doc(Get the executable associated with the Session.)doc";
 
 static const char *__singlelinedoc_popart_Session_getExecutable =
+    R"doc(Get the executable associated with the Session.)doc";
+
+static const char *__doc_popart_Session_getExecutable_2 =
+    R"doc(Get the executable associated with the Session.)doc";
+
+static const char *__singlelinedoc_popart_Session_getExecutable_2 =
     R"doc(Get the executable associated with the Session.)doc";
 
 static const char *__doc_popart_Session_getInfo =
@@ -12773,6 +13539,12 @@ Args:
 static const char *__singlelinedoc_popart_Session_setDevice =
     R"doc(Select a device type. Args: deviceInfo: The type of device that this session uses.)doc";
 
+static const char *__doc_popart_Session_setDeviceInfo =
+    R"doc(Set the DeviceInfo of the Session.)doc";
+
+static const char *__singlelinedoc_popart_Session_setDeviceInfo =
+    R"doc(Set the DeviceInfo of the Session.)doc";
+
 static const char *__doc_popart_Session_setRNGState =
     R"doc(Set state of the random number generator.)doc";
 
@@ -12825,6 +13597,13 @@ skipped.)doc";
 
 static const char *__singlelinedoc_popart_Session_tryLoadExecutable =
     R"doc(Attempt to load a serialized executable. If successful then IR preparation and ``snap::Graph`` compilation are skipped.)doc";
+
+static const char *__doc_popart_Session_updateEngineCache =
+    R"doc(Update cacheEntries from engine cache directory
+and update ir::hashMatched_ with the updated cacheEntries)doc";
+
+static const char *__singlelinedoc_popart_Session_updateEngineCache =
+    R"doc(Update cacheEntries from engine cache directory and update ir::hashMatched_ with the updated cacheEntries)doc";
 
 static const char *__doc_popart_Session_updateExternallySavedTensorLocations =
     R"doc(Update the tensor locations of tensors in the session's ONNX model.
@@ -13027,6 +13806,42 @@ static const char *__doc_popart_Tensor = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensor = R"doc()doc";
 
+static const char *__doc_popart_Tensor_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_2 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_3 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_4 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_5 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_6 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_6 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_7 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_7 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_8 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_8 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_9 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_9 = R"doc()doc";
+
+static const char *__doc_popart_Tensor_10 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_10 = R"doc()doc";
+
 static const char *__doc_popart_TensorData = R"doc()doc";
 
 static const char *__singlelinedoc_popart_TensorData = R"doc()doc";
@@ -13081,6 +13896,11 @@ static const char *__doc_popart_TensorData_resetData_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_TensorData_resetData_2 = R"doc()doc";
 
+static const char *__doc_popart_TensorData_resetDataInExecutablex = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorData_resetDataInExecutablex =
+    R"doc()doc";
+
 static const char *__doc_popart_TensorData_resetDataWithNonMatchingSize =
     R"doc()doc";
 
@@ -13097,6 +13917,34 @@ static const char *__singlelinedoc_popart_TensorData_setIsSyncedWithIPU =
 static const char *__doc_popart_TensorData_size = R"doc()doc";
 
 static const char *__singlelinedoc_popart_TensorData_size = R"doc()doc";
+
+static const char *__doc_popart_TensorIndexMap = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorIndexMap = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo_2 = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo_3 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo_3 = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo_4 = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo_5 = R"doc()doc";
+
+static const char *__doc_popart_TensorInfo_6 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_TensorInfo_6 = R"doc()doc";
 
 static const char *__doc_popart_TensorLocation =
     R"doc(Class that describes the memory characteristics of one or multiple tensors.
@@ -13478,6 +14326,15 @@ static const char *__doc_popart_Tensor_getGraphOutputIndex = R"doc()doc";
 static const char *__singlelinedoc_popart_Tensor_getGraphOutputIndex =
     R"doc()doc";
 
+static const char *__doc_popart_Tensor_getInplaceModifiers =
+    R"doc(Find operations that modify a tensor
+
+Returns:
+ All operations that (direct and indirectly) modify this tensor)doc";
+
+static const char *__singlelinedoc_popart_Tensor_getInplaceModifiers =
+    R"doc(Find operations that modify a tensor Returns: All operations that (direct and indirectly) modify this tensor)doc";
+
 static const char *__doc_popart_Tensor_getIr = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensor_getIr = R"doc()doc";
@@ -13818,6 +14675,10 @@ static const char *__doc_popart_Tensors = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensors = R"doc()doc";
 
+static const char *__doc_popart_Tensors_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensors_2 = R"doc()doc";
+
 static const char *__doc_popart_Tensors_M = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensors_M = R"doc()doc";
@@ -13869,22 +14730,6 @@ static const char *__singlelinedoc_popart_Tensors_addVarInit_3 = R"doc()doc";
 static const char *__doc_popart_Tensors_addVarInit_4 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensors_addVarInit_4 = R"doc()doc";
-
-static const char *__doc_popart_Tensors_addVarInitWithLeadingGroupDim =
-    R"doc(In PopXL, instead of the user pasing a tensor of shape 'device_shape', the
-user initialises the variable with an array of size (num_groups,
-*device_shape). Because of this, we need to ensure that the tensor on
-device is of shape 'device_shape', but the data is initialised with shape
-(num_groups, *device_shape), ensuring that each group receives it's own
-data. Therefore we need to remove the leading num_groups dimension when
-setting the on-device TensorInfo.
-
-
-Args:
- dc: DebugContext to aid with debugging.)doc";
-
-static const char *__singlelinedoc_popart_Tensors_addVarInitWithLeadingGroupDim =
-    R"doc(In PopXL, instead of the user pasing a tensor of shape 'device_shape', the user initialises the variable with an array of size (num_groups, *device_shape). Because of this, we need to ensure that the tensor on device is of shape 'device_shape', but the data is initialised with shape (num_groups, *device_shape), ensuring that each group receives it's own data. Therefore we need to remove the leading num_groups dimension when setting the on-device TensorInfo. Args: dc: DebugContext to aid with debugging.)doc";
 
 static const char *__doc_popart_Tensors_append = R"doc()doc";
 
@@ -14066,14 +14911,24 @@ Args:
  loss: The identifier of the final scalar loss tensor for training.
  optimizer: The name of an optimizer to use when training.
  deviceInfo: The type of device that this session uses.
- inputShapeInfo: The information about the shapes of the input
-      and output tensors.
- userOptions: The user configuration options for the Session class.
- patterns: The optimization patterns to apply.
- name: The name of this inference session. Default: "training".)doc";
+ inputShapeInfo: (Optional) The sizes and dtypes of the input
+      tensors. This
+      is used to specify the sizes of the input tensors in the case that
+      the ONNX model does not include this information. The Poplar graph
+      programmming framework uses statically allocated memory buffers and
+      so it needs to know the size of tensors before the compilation.
+      Default: InputShapeInfo().
+ userOptions: (Optional) The user configuration options for the
+      Session class. Default: SessionOptions().
+ patterns: (Optional) A user-selected set of graph transformation
+      patterns which will be applied to the graph. If this is not
+      specified, a default set of optimisation transformations will be
+      applied. Default: Patterns().
+ name: (Optional) The name of this inference session. Default:
+      "training".)doc";
 
 static const char *__singlelinedoc_popart_TrainingSession_createFromOnnxModel =
-    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. loss: The identifier of the final scalar loss tensor for training. optimizer: The name of an optimizer to use when training. deviceInfo: The type of device that this session uses. inputShapeInfo: The information about the shapes of the input and output tensors. userOptions: The user configuration options for the Session class. patterns: The optimization patterns to apply. name: The name of this inference session. Default: "training".)doc";
+    R"doc(Create a session for inference from an ONNX model. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. dataFlow: Configuration for the data feeds and fetches. loss: The identifier of the final scalar loss tensor for training. optimizer: The name of an optimizer to use when training. deviceInfo: The type of device that this session uses. inputShapeInfo: (Optional) The sizes and dtypes of the input tensors. This is used to specify the sizes of the input tensors in the case that the ONNX model does not include this information. The Poplar graph programmming framework uses statically allocated memory buffers and so it needs to know the size of tensors before the compilation. Default: InputShapeInfo(). userOptions: (Optional) The user configuration options for the Session class. Default: SessionOptions(). patterns: (Optional) A user-selected set of graph transformation patterns which will be applied to the graph. If this is not specified, a default set of optimisation transformations will be applied. Default: Patterns(). name: (Optional) The name of this inference session. Default: "training".)doc";
 
 static const char *__doc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer from the host.
@@ -14093,12 +14948,6 @@ Args:
 
 static const char *__singlelinedoc_popart_TrainingSession_updateOptimizerFromHost =
     R"doc(Update the optimizer from the host. This method updates the optimizer and the associated hyperparameters but not the optimizer state tensors. **NOTE**: The optimizer parameter has to be compatible with the optimizer passed to the TrainingSession constructor. For example, you cannot call this function with an :code:`SDG1` optimizer if you created the session with an :code:`SDG0` optimizer. This is because it is not possible to change the IR after a session has been constructed. Args: optimizer: A pointer to a popart::Optimizer.)doc";
-
-static const char *__doc_popart_TrainingSession_updateEngineCache =
-    R"doc(Update cache entries from engine cache directory.)doc";
-
-static const char *__singlelinedoc_popart_TrainingSession_updateEngineCache =
-    R"doc(Update cache entries from engine cache directory.)doc";
 
 static const char *__doc_popart_VGraphIdAndTileSetCmp = R"doc()doc";
 
@@ -14144,34 +14993,37 @@ where *first* means the one with the lowest replica ID.)doc";
 static const char *__singlelinedoc_popart_VariableRetrievalMode_OnePerGroup =
     R"doc(Returns one variable per group (defined by the ``VariableSettings::sharedVariableDomain`` ``CommGroup)``, automatically returns the *first* replica of each group, where *first* means the one with the lowest replica ID.)doc";
 
-static const char *__doc_popart_VariableSettings = R"doc()doc";
+static const char *__doc_popart_VariableSettings =
+    R"doc(A class to dictate behaviour of variables and reductions of such across
+multiple graphs.)doc";
 
-static const char *__singlelinedoc_popart_VariableSettings = R"doc()doc";
+static const char *__singlelinedoc_popart_VariableSettings =
+    R"doc(A class to dictate behaviour of variables and reductions of such across multiple graphs.)doc";
 
 static const char *__doc_popart_VariableSettings_VariableSettings =
-    R"doc("Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to
-OnePerGroup)doc";
+    R"doc( "Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to
+OnePerGroup.)doc";
 
 static const char *__singlelinedoc_popart_VariableSettings_VariableSettings =
-    R"doc("Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to OnePerGroup)doc";
+    R"doc("Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to OnePerGroup.)doc";
 
 static const char *__doc_popart_VariableSettings_VariableSettings_2 =
-    R"doc(Defaults VariableRetrievalMode to OnePerGroup)doc";
+    R"doc(Defaults VariableRetrievalMode to OnePerGroup.)doc";
 
 static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_2 =
-    R"doc(Defaults VariableRetrievalMode to OnePerGroup)doc";
+    R"doc(Defaults VariableRetrievalMode to OnePerGroup.)doc";
 
 static const char *__doc_popart_VariableSettings_VariableSettings_3 =
-    R"doc()doc";
+    R"doc(Defaults CommGroup to [All, 0].)doc";
 
 static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_3 =
-    R"doc()doc";
+    R"doc(Defaults CommGroup to [All, 0].)doc";
 
 static const char *__doc_popart_VariableSettings_VariableSettings_4 =
-    R"doc()doc";
+    R"doc(Entirely custom VariableSettings.)doc";
 
 static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_4 =
-    R"doc()doc";
+    R"doc(Entirely custom VariableSettings.)doc";
 
 static const char *__doc_popart_VariableSettings_getGroupRepresentative =
     R"doc(Get the default *first* member of a group
@@ -14279,10 +15131,11 @@ Returns:
 static const char *__singlelinedoc_popart_VariableSettings_operator_ne =
     R"doc(Compare two variable-settings Args: other: VariableSettings to compare these settings to. Returns: False if all internal elements are the same)doc";
 
-static const char *__doc_popart_VariableSettings_retrievalMode = R"doc()doc";
+static const char *__doc_popart_VariableSettings_retrievalMode =
+    R"doc(Dictates how Variable retrieval is conducted.)doc";
 
 static const char *__singlelinedoc_popart_VariableSettings_retrievalMode =
-    R"doc()doc";
+    R"doc(Dictates how Variable retrieval is conducted.)doc";
 
 static const char *__doc_popart_VariableSettings_shapeOnHost =
     R"doc(Takes the shape of a tensor on a replica and returns it's full ONNX shape.
@@ -14322,10 +15175,11 @@ static const char *__singlelinedoc_popart_VariableSettings_shapeOnReplica =
     R"doc(The shape Onnx reads holds an extra outer dimension in certain cases, where the outer dimension represents the number of returning replica variables. This function takes an Onnx full-shape and removes the outer dimension safely (ie. checks if the outer dimension matches an expected outer dimension). A quick-function to avoid duplicate code. Args: full_shape:   The shape as presented by Onnx. replicaCount: The local replication factor, used to calculate the return factor. name:         The TensorId of the function, used to give good error feedback. Returns: The shape of the data on the replica.)doc";
 
 static const char *__doc_popart_VariableSettings_sharedVariableDomain =
-    R"doc()doc";
+    R"doc(How this Variable is grouped across graph replication.)doc";
 
 static const char
-    *__singlelinedoc_popart_VariableSettings_sharedVariableDomain = R"doc()doc";
+    *__singlelinedoc_popart_VariableSettings_sharedVariableDomain =
+        R"doc(How this Variable is grouped across graph replication.)doc";
 
 static const char *__doc_popart_VariableSettings_verify =
     R"doc(Runs test to see if the VariableSettings are invalid, and throws an error
@@ -14424,6 +15278,14 @@ static const char *__singlelinedoc_popart_anchorFinalPrefix = R"doc()doc";
 static const char *__doc_popart_anchorSumPrefix = R"doc()doc";
 
 static const char *__singlelinedoc_popart_anchorSumPrefix = R"doc()doc";
+
+static const char *__doc_popart_any = R"doc()doc";
+
+static const char *__singlelinedoc_popart_any = R"doc()doc";
+
+static const char *__doc_popart_any_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_any_2 = R"doc()doc";
 
 static const char *__doc_popart_bwdGradIdToFwdId =
     R"doc(Given the id of a grad tensor \p bwdId in a backward graph \p bwdGraph,
@@ -14649,6 +15511,9 @@ Note: We don't need the name of the tensor which the resulting TensorId is an
 edge-grad of, the edge-gradient is uniquely defined by the the edge it flows
 on in the forward pass (input at 'index' to 'opId')
 
+Note: When subgraph input is an edge grad it is possible that the edge grad
+have an id constructed not like by getEdgeGradId(). See growGradSumOp().
+
 
 Args:
  opId: The id of the operator consuming tenId
@@ -14658,7 +15523,7 @@ Returns:
  The new TensorId of the edge-gradient)doc";
 
 static const char *__singlelinedoc_popart_getEdgeGradId =
-    R"doc(Creates a TensorId of the edge-gradient along the edge where tensor is consumed by *opId* at index *index* Note: We don't need the name of the tensor which the resulting TensorId is an edge-grad of, the edge-gradient is uniquely defined by the the edge it flows on in the forward pass (input at 'index' to 'opId') Args: opId: The id of the operator consuming tenId index: The index at which the operator is consuming the tensor Returns: The new TensorId of the edge-gradient)doc";
+    R"doc(Creates a TensorId of the edge-gradient along the edge where tensor is consumed by *opId* at index *index* Note: We don't need the name of the tensor which the resulting TensorId is an edge-grad of, the edge-gradient is uniquely defined by the the edge it flows on in the forward pass (input at 'index' to 'opId') Note: When subgraph input is an edge grad it is possible that the edge grad have an id constructed not like by getEdgeGradId(). See growGradSumOp(). Args: opId: The id of the operator consuming tenId index: The index at which the operator is consuming the tensor Returns: The new TensorId of the edge-gradient)doc";
 
 static const char *__doc_popart_getErrorSource = R"doc()doc";
 
@@ -14726,6 +15591,10 @@ static const char *__singlelinedoc_popart_hash_value_2 = R"doc()doc";
 static const char *__doc_popart_hash_value_3 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_hash_value_3 = R"doc()doc";
+
+static const char *__doc_popart_hash_value_4 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_hash_value_4 = R"doc()doc";
 
 static const char *__doc_popart_internal_error =
     R"doc(Exception class specific to internal errors
@@ -15113,7 +15982,15 @@ static const char *__doc_popart_operator_lshift_18 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_18 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_19 =
+static const char *__doc_popart_operator_lshift_19 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_19 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_20 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_20 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_21 =
     R"doc(Write a string representation of patterns to an output stream.
 
 
@@ -15127,16 +16004,8 @@ Returns:
  An output stream containing the string representation of the
 patterns.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_19 =
+static const char *__singlelinedoc_popart_operator_lshift_21 =
     R"doc(Write a string representation of patterns to an output stream. Args: os: An output stream that the the string representation should be written to. \param patterns The patterns for which the string representation is created. Returns: An output stream containing the string representation of the patterns.)doc";
-
-static const char *__doc_popart_operator_lshift_20 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_operator_lshift_20 = R"doc()doc";
-
-static const char *__doc_popart_operator_lshift_21 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_operator_lshift_21 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_22 = R"doc()doc";
 
@@ -15150,7 +16019,15 @@ static const char *__doc_popart_operator_lshift_24 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_24 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_25 =
+static const char *__doc_popart_operator_lshift_25 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_25 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_26 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_26 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_27 =
     R"doc(Write a representation of an SGDAccumulatorAndMomentum to an output stream.
 
 
@@ -15161,16 +16038,8 @@ Args:
 Returns:
  The same output stream for chaining.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_25 =
+static const char *__singlelinedoc_popart_operator_lshift_27 =
     R"doc(Write a representation of an SGDAccumulatorAndMomentum to an output stream. Args: os: Output stream. sgdAccMm: SGDAccumulatorAndMomentum reference. Returns: The same output stream for chaining.)doc";
-
-static const char *__doc_popart_operator_lshift_26 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_operator_lshift_26 = R"doc()doc";
-
-static const char *__doc_popart_operator_lshift_27 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_operator_lshift_27 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_28 = R"doc()doc";
 
@@ -15192,7 +16061,15 @@ static const char *__doc_popart_operator_lshift_32 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_32 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_33 =
+static const char *__doc_popart_operator_lshift_33 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_33 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_34 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_34 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_35 =
     R"doc(Args:
  os: Stream to append VariableRetrievalMode vrm to.
  vrm: VariableRetrievalMode to add to the stream.
@@ -15200,10 +16077,10 @@ static const char *__doc_popart_operator_lshift_33 =
 Returns:
  Input stream with vrm appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_33 =
+static const char *__singlelinedoc_popart_operator_lshift_35 =
     R"doc(Args: os: Stream to append VariableRetrievalMode vrm to. vrm: VariableRetrievalMode to add to the stream. Returns: Input stream with vrm appended to the end of it)doc";
 
-static const char *__doc_popart_operator_lshift_34 =
+static const char *__doc_popart_operator_lshift_36 =
     R"doc(Args:
  os: Stream to append VariableSettings vrm to.
  vs: VariableSettings to add to the stream.
@@ -15211,7 +16088,7 @@ static const char *__doc_popart_operator_lshift_34 =
 Returns:
  Input stream with vs appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_34 =
+static const char *__singlelinedoc_popart_operator_lshift_36 =
     R"doc(Args: os: Stream to append VariableSettings vrm to. vs: VariableSettings to add to the stream. Returns: Input stream with vs appended to the end of it)doc";
 
 static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
@@ -15733,6 +16610,11 @@ static const char *__doc_popart_popx_Devicex_serializeExecutable_2 =
     R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_serializeExecutable_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_setDeviceInfo = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_setDeviceInfo =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_setEngineIsLoaded = R"doc()doc";
@@ -16362,6 +17244,10 @@ static const char *__doc_poprithms_logging_TimePartitionLogger = R"doc()doc";
 
 static const char *__singlelinedoc_poprithms_logging_TimePartitionLogger =
     R"doc()doc";
+
+static const char *__doc_pva_Report = R"doc()doc";
+
+static const char *__singlelinedoc_pva_Report = R"doc()doc";
 
 static const char *__doc_std_hash = R"doc()doc";
 

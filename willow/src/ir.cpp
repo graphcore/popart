@@ -2521,11 +2521,40 @@ bool Ir::streamingIsDisabledForTensor(const Tensor *tensor) const {
     return true;
   }
 
-  // 2. The tensor is an Gradient Accl tensor, but the user
-  //    has turned off streaming for this kind of tensor
-  if ((!tensor->isOptimizerStateTensor() && tensor->isAccumulatorTensor()) &&
-      getSessionOptions().disableGradAccumulationTensorStreams) {
-    return true;
+  // 2. Disable streaming as per the following table:
+  //
+  //  .----- tensor->isOptimizerStateTensor()
+  //  | .--- tensor->isAccumulatorTensor()
+  //  | |
+  //  v v  | Disable if expression holds
+  // ======|=======================================
+  //  N N  | false
+  //  N Y  | disableAccu
+  //  Y N  | disableOpt
+  //  Y Y  | disableAccu && disableOpt
+  // ======|=======================================
+  //
+  // Where:
+  //   disableAccu = getSessionOptions().disableGradAccumulationTensorStreams
+  //   disableOpt  = getSessionOptions().disableOptimiserStateTensorStreams
+
+  if (tensor->isAccumulatorTensor() || tensor->isOptimizerStateTensor()) {
+
+    bool disable = true;
+
+    if (tensor->isAccumulatorTensor() &&
+        !getSessionOptions().disableGradAccumulationTensorStreams) {
+      disable = false;
+    }
+
+    if (tensor->isOptimizerStateTensor() &&
+        !getSessionOptions().disableOptimizerStateTensorStreams) {
+      disable = false;
+    }
+
+    if (disable) {
+      return true;
+    }
   }
 
   // 3. The tensor is remote
@@ -2549,11 +2578,24 @@ bool Ir::storingIsDisabledForTensor(const Tensor *tensor) const {
     return true;
   }
 
-  // 2. The tensor is an Gradient Accl tensor, but the user
-  //    has turned off streaming for this kind of tensor
-  if ((!tensor->isOptimizerStateTensor() && tensor->isAccumulatorTensor()) &&
-      getSessionOptions().disableGradAccumulationTensorStreams) {
-    return true;
+  // 2. Disable storing (see comment in Ir::streamingIsDisabledForTensor).
+  if (tensor->isAccumulatorTensor() || tensor->isOptimizerStateTensor()) {
+
+    bool disable = true;
+
+    if (tensor->isAccumulatorTensor() &&
+        !getSessionOptions().disableGradAccumulationTensorStreams) {
+      disable = false;
+    }
+
+    if (tensor->isOptimizerStateTensor() &&
+        !getSessionOptions().disableOptimizerStateTensorStreams) {
+      disable = false;
+    }
+
+    if (disable) {
+      return true;
+    }
   }
 
   // 3. Tensor is variable but has a producer

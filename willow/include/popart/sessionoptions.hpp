@@ -734,7 +734,17 @@ struct SessionOptions {
   /// If true, the weight gradient tensors are not saved off the device
   /// when \c devicex.weightsFromHost() is called. Note: this option is
   /// overridden if #syntheticDataMode is not #SyntheticDataMode::Off.
+  /// Note that weight gradient tensors that are also optimiser tensors will
+  /// only be disabled if both disableGradAccumulationTensorStreams and
+  /// disableOptimizerStateTensorStreams are true.
   bool disableGradAccumulationTensorStreams = false;
+
+  /// If true, streaming of optimizer tensors is disabled. This setting can be
+  /// used to conserve memory if you are not interested in checkpointing
+  /// optimizer state. Note that weight gradient tensors that are also optimiser
+  /// tensors will only be disabled if both disableGradAccumulationTensorStreams
+  /// and disableOptimizerStateTensorStreams are true.
+  bool disableOptimizerStateTensorStreams = false;
 
   /// If false, the backend will build the Poplar graph but not compile it
   /// into an Engine.  In this case, no execution can be performed,
