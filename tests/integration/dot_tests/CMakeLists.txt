@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-# Tests of visualization file logic 
+# Tests of visualization file logic
 # to run only these tests with ctest, consider using something like,
 # `ctest -R _dot_ -j5 -VV'.
 

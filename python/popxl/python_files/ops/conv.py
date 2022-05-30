@@ -66,7 +66,7 @@ def conv(t: Tensor,
             C is the number of channel, H and W are the height and width; If the input is a 3D image, the size is (N, C, D, H, W), where
             N is the batch size, C is the number of channel, D is the depth, H and W are the height and width.
         weight (Tensor):
-            The weight tensor that will be used in the convolutions; If the input is a 3D tensor, the weight size is (M, C/group, k), 
+            The weight tensor that will be used in the convolutions; If the input is a 3D tensor, the weight size is (M, C/group, k),
             where C is the number of channels, k is the length of the kernel, M is the number of feature maps. If the input is a 2D image,
             the weight size is (M, C/group, kH, kW), where C is the number of channels, kH and kW are the height and width of the kernel,
             M is the number of feature maps. If the input is a 3D image, the weight size is (M, C/group, kD, kH, kW), where C is the number
@@ -97,7 +97,7 @@ def conv(t: Tensor,
             different tiles in an effort to improve tile balance in models.
     Returns:
         out (Tensor):
-            Output data tensor that contains the result of the convolution. The output dimensions are functions of the kernel size, 
+            Output data tensor that contains the result of the convolution. The output dimensions are functions of the kernel size,
             stride size, and pad lengths.
     """
     ctx = get_current_context()

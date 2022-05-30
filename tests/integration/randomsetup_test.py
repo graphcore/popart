@@ -569,7 +569,7 @@ def get_anchor_step(run, anchor, step, slice):
 def slice_to_str(slice):
     """
     A way of printing slices relatively unverbosely. Most of the time, we don't
-    use the slices feature in tests, and it's clearer to print "whole" as 
+    use the slices feature in tests, and it's clearer to print "whole" as
     opposed to "Slice(index=0, total_slices=1)".
     """
     if slice == whole:

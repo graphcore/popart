@@ -118,9 +118,9 @@ def test_session_ctxtmgr_does_weights_from_host_on_enter():
     they can immediately call `run` and not get garbage.
 
     NOTE: We cannot check the value of a weight was set on device by doing
-          `session.get_tenor_data(w)` (and no call to `run`) because this will 
+          `session.get_tenor_data(w)` (and no call to `run`) because this will
           be a nop as it will detect the weights are not yet out of sync and do
-          nothing.  
+          nothing.
     """
 
     ir = popxl.Ir()

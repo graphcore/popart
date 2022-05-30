@@ -3,7 +3,7 @@
 # (1) that the constant expressions (ce's) are correctly found, and
 # (2) that the outputs are correctly computed statically on host.
 # to run only these tests with ctest, consider using something like,
-# `ctest -R ce_test -j5 -VV'. Hope that works. 
+# `ctest -R ce_test -j5 -VV'. Hope that works.
 
 add_popart_cpp_unit_test(cast_ce_test cast_ce_test.cpp)
 add_popart_cpp_unit_test(scale_ce_test scale_ce_test.cpp)

@@ -22,7 +22,7 @@ def test_get_tensor_data_elides_weights_to_host_if_host_weights_are_in_sync(
     Test get_tensor_data will not result in a run of the WeightsToHost program
     if the host weights are currently in sync.
 
-    That is, if no program has been run since the last get_tensor_data call. 
+    That is, if no program has been run since the last get_tensor_data call.
     """
 
     import re

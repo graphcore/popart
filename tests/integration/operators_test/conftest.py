@@ -142,7 +142,7 @@ def op_tester(tmpdir):
             assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
         def setPatterns(self, patterns, enableRuntimeAsserts=None):
-            """ Accept either a Patterns instance, a list of strings or a PatternsLevel. If enableRuntimeAsserts 
+            """ Accept either a Patterns instance, a list of strings or a PatternsLevel. If enableRuntimeAsserts
                 is set you will get an error if you don't enable all mandatory patterns.
             """
             if isinstance(patterns, popart.Patterns):

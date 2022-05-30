@@ -32,4 +32,3 @@ struct IrLowering {
   cycleCountIds @3: List(TensorId);
   programHandleIndices @4: ProgramHandleIndices;
 }
-

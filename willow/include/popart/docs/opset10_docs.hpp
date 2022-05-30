@@ -155,8 +155,8 @@ result 100. There are some string literals reserved for special floating-point v
 "+INF" (and "INF"), "-INF", and "NaN" are positive infinity, negative infinity, and not-a-number, respectively.
 Any string which can exactly match "+INF" in a case-insensitive way would be mapped to positive infinite. Similarly,
 this case-insensitive rule is applied to "INF" and "NaN". When casting from numeric tensors
-to string tensors, plain floating-point representation (such as "314.15926") would be used. 
-Converting non-numerical-literal string such as "Hello World!" is an undefined behavior. Cases 
+to string tensors, plain floating-point representation (such as "314.15926") would be used.
+Converting non-numerical-literal string such as "Hello World!" is an undefined behavior. Cases
 of converting string representing floating-point arithmetic value, such as "2.718", to INT is an undefined behavior.
 
 Conversion from a numerical type to any numerical type is always allowed.
@@ -909,16 +909,16 @@ This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; fo
 
 static const char *__doc_popart_mod_opset10 =
     R"doc(
-  Performs element-wise binary modulus (with Numpy-style broadcasting support). 
+  Performs element-wise binary modulus (with Numpy-style broadcasting support).
     The sign of the remainder is the same as that of the Divisor.
-  
-    Mod operator can also behave like C fmod() or numpy.fmod. In this case, the sign of the remainder however, will be the same as the Dividend 
+
+    Mod operator can also behave like C fmod() or numpy.fmod. In this case, the sign of the remainder however, will be the same as the Dividend
     (in contrast to integer mod). To force a behavior like numpy.fmod() an 'fmod' Attribute is provided.
-    This attribute is set to 0 by default causing the behavior to be like integer mod. 
+    This attribute is set to 0 by default causing the behavior to be like integer mod.
     Setting this attribute to 1 causes the remainder to be calculated similar to that of numpy.fmod().
 
     If the input type is floating point, then `fmod` attribute must be set to 1.
-  
+
     In case of dividend being zero, the results will be platform dependent.
 
   This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; for more details please check [the doc](Broadcasting.md).
@@ -1461,8 +1461,8 @@ values are computed in the outer graph, they need to be passed in as extra state
 
 static const char *__doc_popart_scatter_opset10 =
     R"doc(
-Given `data`, `updates` and `indices` input tensors of rank r >= 1, write the values provided by `updates` 
-into the first input, `data`, along `axis` dimension of `data` (by default outer-most one as axis=0) at corresponding `indices`. 
+Given `data`, `updates` and `indices` input tensors of rank r >= 1, write the values provided by `updates`
+into the first input, `data`, along `axis` dimension of `data` (by default outer-most one as axis=0) at corresponding `indices`.
 For each entry in `updates`, the target index in `data` is specified by corresponding entry in `indices`
 for dimension = axis, and index in source for dimension != axis. For instance, in a 2-D tensor case,
 data[indices[i][j]][j] = updates[i][j] if axis = 0, or data[i][indices[i][j]] = updates[i][j] if axis = 1,
@@ -1729,7 +1729,7 @@ shape [a_1, a_2, ..., a_n, r] and integer argument k, return two outputs:
   -Index tensor of shape [a_1, a_2, ..., a_{axis-1}, k, a_{axis+1}, ... a_n] which
    contains the indices of the top k elements (original indices from the input
    tensor).
-   
+
 Given two equivalent values, this operator uses the indices along the axis  as
  a tiebreaker. That is, the element with the lower index will appear first.
 )doc";

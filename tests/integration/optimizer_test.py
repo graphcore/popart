@@ -118,7 +118,7 @@ def test_constsgd_vs_sgd():
     In this test we run training with two sessions - one with an SGD optimizer
     (learnRate streamed from host), one with a ConstSGD optimizer, otherwise
     identical.
-    We show that if the learning rates match, the training updates are 
+    We show that if the learning rates match, the training updates are
     identical, otherwise they differ.
     """
     anchorNames = {"L1:0": popart.AnchorReturnType("All")}

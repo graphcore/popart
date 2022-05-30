@@ -281,9 +281,9 @@ def ipu(ipu: int):
 @contextmanager
 def in_sequence(mode: Union[bool, Literal['pass']] = True):
     """Force ops created in this context to execute in the order that they are created.
-    
+
     This is achieved by adding topological constraints (topocons) to the scheduling graph.
-    
+
     Args:
         mode:
             - ``True``: Ensure each op within the context is executed in a linear schedule

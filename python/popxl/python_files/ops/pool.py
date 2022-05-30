@@ -117,7 +117,7 @@ def max_pool(t: Tensor,
              storage_order: Optional[bool] = None) -> Tensor:
     """
     max_pool consumes an input tensor `t` and applies max pooling across the tensor according to kernel sizes,
-    stride sizes, and pad lengths. 
+    stride sizes, and pad lengths.
     Max pooling consisting of computing the max on all values of a subset of the input tensor according to
     the kernel size and downsampling the data into the output tensor Y for further processing.
 

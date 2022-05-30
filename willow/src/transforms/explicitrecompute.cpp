@@ -65,18 +65,18 @@ ExplicitRecomputeTensorContext::ExplicitRecomputeTensorContext(
     : isForwardOp(isForwardOp_), executionPhase(executionPhase_),
       pipelineStage(pipelineStage_) {}
 
-bool ExplicitRecomputeTensorContext::
-operator<(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator<(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) < getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::
-operator==(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator==(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) == getTensorContextTuple(rhs);
 }
 
-bool ExplicitRecomputeTensorContext::
-operator!=(const ExplicitRecomputeTensorContext &rhs) const {
+bool ExplicitRecomputeTensorContext::operator!=(
+    const ExplicitRecomputeTensorContext &rhs) const {
   return getTensorContextTuple(*this) != getTensorContextTuple(rhs);
 }
 

@@ -45,7 +45,7 @@ void bindCreateOpFunctionToGraphClass(py::class_<Graph> g) {
   {#- Multiple constructors using py::overload_cast -#}
   {%- for ctor in op["constructors"] -%}
 
-    .def("createOp_{{op["name"]}}", py::overload_cast<{{ctor["full_args"]}}>(&Graph::createOp<{{op["name"]}}, {{ctor["full_args"]}}>), 
+    .def("createOp_{{op["name"]}}", py::overload_cast<{{ctor["full_args"]}}>(&Graph::createOp<{{op["name"]}}, {{ctor["full_args"]}}>),
     {% for arg in ctor["args"] -%}
      py::arg("
         {%- if arg["arg_name"]|length > 0 -%}
@@ -71,7 +71,7 @@ void bindCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
   {%- if op["constructors"]|length == 1 -%}
   {#- Single constructor -#}
 
-    .def("createConnectedOp_{{op["name"]}}", &Graph::createConnectedOp<{{op["name"]}}, {{op["constructors"][-1]["full_args"]}}>, 
+    .def("createConnectedOp_{{op["name"]}}", &Graph::createConnectedOp<{{op["name"]}}, {{op["constructors"][-1]["full_args"]}}>,
     py::arg("in") ,
     py::arg("out"),
     {% for arg in op["constructors"][-1]["args"] %}

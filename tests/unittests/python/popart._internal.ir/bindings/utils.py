@@ -169,7 +169,7 @@ def add_random_tensor(id_: str, t_type: "_ir.TensorType", shape: List[int],
 def make_main_graph(num_inputs: int = 2
                     ) -> Tuple[_ir.Ir, List[_ir.Tensor], List[_ir.Tensor]]:
     """
-    Creates the following graph, with num_inputs inputs, 
+    Creates the following graph, with num_inputs inputs,
     alternating data inputs and variable inputs.
 
     Init (act) Init (var)  Init (act) Init (var)
@@ -263,7 +263,7 @@ def make_main_graph(num_inputs: int = 2
 
 def make_sub_graph(ir: _ir.Ir, ins: Dict[int, _ir.TensorInfo]) -> _ir.Graph:
     """
-    Makes the following subgraph, with len(ins) inputs. 
+    Makes the following subgraph, with len(ins) inputs.
 
     input0  input1  input2  ...  input n
     |       |       |            |

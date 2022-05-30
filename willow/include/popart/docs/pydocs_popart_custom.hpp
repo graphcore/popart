@@ -33,8 +33,8 @@ strings, except with DOC(custom, ...), see below for an example.
 
 // clang-format off
 static const char *__doc_custom_Session_exampleFunction =
-    R"doc(This is an example of a custom doc string for a function. 
-    It would be accessed with DOC(custom, Session, exampleFunction) 
+    R"doc(This is an example of a custom doc string for a function.
+    It would be accessed with DOC(custom, Session, exampleFunction)
     in the last argument of the pybind11 binding.)doc";
 
 static const char *__doc_custom_PyStepIO_class =
@@ -89,16 +89,16 @@ static const char *__doc_custom_PyStepIOCallback_init =
     R"doc(Construct a new PyStepIOCallback instance.
 
 Args:
-    input_callback: 
+    input_callback:
         Callable object that the PyStepIOCallback instance will use when ``IStepIO::in()`` is called.
         See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-    input_complete_callback: 
+    input_complete_callback:
         Callable object that the PyStepIOCallback instance will use when ``IStepIO::inComplete()`` is called.
         See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-    output_callback: 
+    output_callback:
         Callable object that the PyStepIOCallback instance will use when ``IStepIO::out()`` is called.
         See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
-    output_complete_callback: 
+    output_complete_callback:
         Callable object that the PyStepIOCallback instance will use when ``IStepIO::outComplete()`` is called.
         See `IStepIO <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#data-input-and-output-istepio>`_ for details on how to implement this method.
     )doc";

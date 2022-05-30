@@ -110,7 +110,7 @@ static const char *__doc_popart_batchnormalization_opset8 =
     Carries out batch normalization as described in the paper
     https://arxiv.org/abs/1502.03167. Depending on the mode it is being run,
     there are multiple cases for the number of outputs, which we list below:
-    
+
     Output case #1: Y, mean, var, saved_mean, saved_var (training mode)
     Output case #2: Y (test mode)
         This operator has **optional** inputs/outputs. See [the doc](IR.md) for more details about the representation of optional arguments. An empty string may be used in the place of an actual argument's name to indicate a missing argument. Trailing optional arguments (those not followed by an argument that is present) may also be simply omitted.
@@ -1163,7 +1163,7 @@ be encoded as a ScanLoop. Note that the loop-body is a nested graph, and it dire
 values are computed in the outer graph, they need to be passed in as extra state_variables.
 
     graph rnn-encoding {
-      %H_0 = ... 
+      %H_0 = ...
       %X = ...
       %Y_h, %Y = Scan[body = <graph rnn-cell-1>, num_scan_inputs=1]("", %H_0, %X)
       return %Y, %Y_h
@@ -1186,7 +1186,7 @@ values are computed in the outer graph, they need to be passed in as extra state
       %Accumulate = Identity(%Ht)
       return %Ht, %Accumulate
     }
- 
+
 )doc";
 
 static const char *__doc_popart_selu_opset8 =

@@ -12,7 +12,7 @@ def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
               output_size: Tuple[int], spatial_scale: float,
               sampling_ratio: int) -> Tensor:
     """
-    roi_align consumes an input tensor `t` and region of interests (RoIs) to apply pooling across each RoI. Currently only 
+    roi_align consumes an input tensor `t` and region of interests (RoIs) to apply pooling across each RoI. Currently only
     supports average pooling, max pooling is not supported yet.
 
     Args:

@@ -8,10 +8,10 @@ BUILD_DIR = build
 SOURCES = custom_op.cpp
 TARGET = $(BUILD_DIR)/custom_op.so
 
-all: create_build_dir custom_op 
+all: create_build_dir custom_op
 
 .PHONY: create_build_dir
-create_build_dir: 
+create_build_dir:
 	mkdir -p $(BUILD_DIR)
 
 custom_op: custom_op.cpp

@@ -11,4 +11,3 @@ MODEL=${THIS_DIR}/$1
 shift
 
 python ${MODEL} $@
-

@@ -17,7 +17,7 @@ def onehot(t: Tensor, num_classes: Tensor, values: Tensor,
         t: Tensor
             Input tensor containing indices.
         num_classes: Tensor
-            Scalar specifying the number of classes in one-hot tensor. 
+            Scalar specifying the number of classes in one-hot tensor.
         values: Tensor
             The value used for filling locations specified in 't' input tensor
         axis: int

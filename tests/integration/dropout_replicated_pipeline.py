@@ -18,7 +18,7 @@ nIPUs = replicationFactor * nVirtualGraphs
 
 def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     """
-    Test of pipelining with dropout, recomputation, graph replication, 
+    Test of pipelining with dropout, recomputation, graph replication,
     gradient accumulation
     """
     #Has dependencies on T12562. T12976, T13098 for full support

@@ -19,7 +19,7 @@ final class PopartTestLinter extends ArcanistExternalLinter {
     return dirname(__FILE__) . '/../../check_test_has_cmake_entry.py';
   }
 
-  // An error is thrown if this method is not present. 
+  // An error is thrown if this method is not present.
   public function getInstallInstructions() {
     return pht('');
   }

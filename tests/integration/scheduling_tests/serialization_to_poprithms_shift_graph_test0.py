@@ -9,7 +9,7 @@ import test_util as tu
 
 def test_add_serialization(tmpdir):
     """
-    enable serialization to poprithms shift graphs, and assert that 
+    enable serialization to poprithms shift graphs, and assert that
     at least 1 json file is written to a temporary directory.
     """
 

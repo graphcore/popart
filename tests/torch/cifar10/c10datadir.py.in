@@ -4,4 +4,3 @@ import tempfile
 
 # This is set from torch/CMakeLists.txt, its default is "tempfile.gettempdir()"
 c10datadir = Path(@C10_PYSTRING_DIR@) / 'cifar10data'
-

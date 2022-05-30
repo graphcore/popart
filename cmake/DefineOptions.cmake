@@ -93,7 +93,7 @@ foreach(dep ${popart_deps_with_var_needed_for_bwd_compat})
   string(TOUPPER ${dep} DEP_UPPER)
   set(dep_old_var ${DEP_UPPER}_INSTALL_DIR)
   set(dep_root ${dep}_ROOT)
-  
+
   if(DEFINED ${dep_old_var})
     message(DEPRECATION "Using the variable ${dep_old_var} to point Popart at ${dep} is deprecated. Please use ${dep_root} instead.")
     set(${dep_root} ${${dep_old_var}})

@@ -75,6 +75,8 @@ repos:
         rev: v2.3.0
         hooks:
         -   id: check-yaml
+            # This file starts with @ which is a reserved yml character
+            exclude: popart.prodinfo.yml
         -   id: check-json
         -   id: check-merge-conflict
         -   id: debug-statements

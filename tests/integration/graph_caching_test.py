@@ -681,7 +681,7 @@ def test_outlining_bca3():
 def test_outlining_bca4():
     """
     In this test we check that for the case of 2 2d tensors they can all
-    use the same matmul 
+    use the same matmul
     """
 
     popart.getLogger().setLevel("TRACE")

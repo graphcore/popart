@@ -30,7 +30,7 @@ X0Wm - MatMul  X1Wm - MatMul ... .    |
                     NLLLoss ----------'
                        |
                     (Anchor)
-                    
+
 Expectation: Anchor streams (Anchor) and inputs (X0, ..., X1, Labels),
              which are copied from the host to the IPU (streams),
              or from the IPU to the host (anchors),

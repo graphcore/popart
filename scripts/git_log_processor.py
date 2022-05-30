@@ -1,6 +1,6 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 """
-A script for extracting summarized commit messages. 
+A script for extracting summarized commit messages.
 """
 
 import subprocess

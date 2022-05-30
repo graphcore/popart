@@ -7,7 +7,7 @@
   unnecessary. Please do not add to it.
   ------------------------------------------------------------------------------
 
-  A SuperProjectConfig.cmake file is used to configure the view itself, not 
+  A SuperProjectConfig.cmake file is used to configure the view itself, not
   Popart. It is run as part of the CBT super-project. It is not run as part of
   Popart's own build.
 
@@ -21,7 +21,7 @@
   Popart CMake variables should be defined in Popart's actual CMake files, not
   this file. It is correct to force the user to configure the view like
   -DPOPART_CMAKE_ARGS="-DSOME_ARG=1", instead of -DSOME_ARG=1 (expecting that
-  this file will pass through the variable to Popart itself). 
+  this file will pass through the variable to Popart itself).
 
   The below code for enabling this is for backwards compatability only as this
   had already been done, causing bugs - see T32416.
@@ -36,22 +36,22 @@
 
   Usage:
     _popart_pass_through_cache_var(<var> [PATH])
- 
+
   Implicitly passes through a variable to Popart that has been defined directly
   on the super project, like -Dvar=val, instead of explicitly like
   -DPOPART_CMAKE_ARGS=-Dvar=val.
- 
+
   In general, for a path, an absolute path should be given, but for backwards
   compatibility we support paths relative to the view build dir. Popart itself
   (not the superproject, which this file is part of) documents that it expects
   an absolute path; thus if you pass a relative path in POPART_CMAKE_ARGS, it
   will not get evalulated correctly.
- 
+
   If user for some reason defined both directly and in POPART_CMAKE_ARGS, the
   definition in POPART_CMAKE_ARGS will get overwritten with this definition.
 ]]
 macro(_popart_pass_through_cache_var var is_path)
-  if(DEFINED ${var})   
+  if(DEFINED ${var})
     set(_val "${${var}}")
 
     if("${is_path}" STREQUAL "PATH")

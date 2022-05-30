@@ -7,20 +7,20 @@
 # note that the linter does not use this script for formatting.
 cf_version=$(python3 scripts/get_clang_format_version.py)
 if [[ "${cf_version}" -lt 9 ]];
-then 
+then
   echo "Clang-format version should be 9.0.0 or greater. On OS/X this is currently (Jan 2020) the default, on Ubuntu consider installing clang-format locally with linuxbrew if you cannot install to filesystem"
-  echo "The value returned from scripts/get_clang_format_version.py was ${cf_version}" 
+  echo "The value returned from scripts/get_clang_format_version.py was ${cf_version}"
   exit
 fi
 
 
 yapf_version=$(python3 scripts/get_yapf_version.py)
 if [[ "${yapf_version}" -ne 27 ]];
-then 
-  echo "Yapf version should be 0.27.x in format.sh" 
+then
+  echo "Yapf version should be 0.27.x in format.sh"
   echo "On OS/X, this is currently (July 2019) the default when installed with brew. "
   echo  "Also, consider pip3 install yapf==0.27.0 (pip install yapf==0.27.0)"
-  echo "The value returned from scripts/get_yapf_version.py was ${yapf_version}" 
+  echo "The value returned from scripts/get_yapf_version.py was ${yapf_version}"
   exit
 fi
 

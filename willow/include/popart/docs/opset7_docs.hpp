@@ -110,7 +110,7 @@ static const char *__doc_popart_batchnormalization_opset7 =
     Carries out batch normalization as described in the paper
     https://arxiv.org/abs/1502.03167. Depending on the mode it is being run,
     there are multiple cases for the number of outputs, which we list below:
-    
+
     Output case #1: Y, mean, var, saved_mean, saved_var (training mode)
     Output case #2: Y (test mode)
         This operator has **optional** inputs/outputs. See [the doc](IR.md) for more details about the representation of optional arguments. An empty string may be used in the place of an actual argument's name to indicate a missing argument. Trailing optional arguments (those not followed by an argument that is present) may also be simply omitted.

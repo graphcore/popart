@@ -105,7 +105,7 @@ def test_pipelining_recomp(cast_type):
       2. If tensor consumed by multiple pipeline stages, it is stashed.
       3. If tensor consumed by later pipeline stage on different virtual graph,
          it will be IpuCopy'd.
-    
+
     We simply test no error is thrown during compilation or runtime. Other tests
     make sufficient numerical checks.
     """

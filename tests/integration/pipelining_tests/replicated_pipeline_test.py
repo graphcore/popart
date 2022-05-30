@@ -339,7 +339,7 @@ If you pass four data samples through your model in non-replicated mode, you get
  four weight updates, w0 -> w1 -> w2 -> w3
 If you pass four data samples through your model with replication factor = 4 you
  get a single weight update: w0 -> w4.
-where w4 != w3.  
+where w4 != w3.
 
 For the test:
 
@@ -347,6 +347,6 @@ No Pipelining + Replication
 vs
 Pipelining + Replication
 
-You'd expect this to be non-equal because of the 'continuous updates' in 
+You'd expect this to be non-equal because of the 'continuous updates' in
  pipelining,
 """

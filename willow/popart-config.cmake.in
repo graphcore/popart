@@ -44,7 +44,7 @@
 #
 #   popart_CMAKE_CONFIG_DIR : The directory containing the popart config files.
 #   popart_INCLUDE_DIR      : Popart's include directory.
-#   popart_LIB_DIR          : The directory where Popart's libraries have been 
+#   popart_LIB_DIR          : The directory where Popart's libraries have been
 #                             installed.
 #   popart_LIB              : Path to the popart library.
 #
@@ -84,7 +84,7 @@ include(CMakeFindDependencyMacro)
 # CMake set for us (that we very much use), the dependency's config file will
 # overwrite them!
 #
-# I keep this as a macro to maintain the same semantics as find_dependency as 
+# I keep this as a macro to maintain the same semantics as find_dependency as
 # much as possible.
 macro(_safe_find_dependency)
   set(_old_PACKAGE_PREFIX_DIR "${PACKAGE_PREFIX_DIR}")

@@ -9,7 +9,7 @@ def test_deprecated_prefetchBufferingDepthMap_option(capfd, tensor_map):
     Test deprecation of prefetchBufferingDepthMap.
     Regardless of what we set it to, the following should happen:
     * A warning is shown to indicate that the option is deprecated
-    * The option gets mapped directly to it's non-deprecated alias, 
+    * The option gets mapped directly to it's non-deprecated alias,
       bufferingDepthMap. We test this by checking that bufferingDepthMap
       is set to the same value as prefetchBufferingDepthMap
     """
@@ -30,8 +30,8 @@ def test_deprecated_defaultPrefetchBufferingDepth_option(capfd, value):
     Test deprecation of defaultPrefetchBufferingDepth.
     Regardless of what we set these options to, the following should happen:
     * A warning is shown to indicate that the option is deprecated
-    * The option gets mapped directly to it's non-deprecated alias, 
-      defaultBufferingDepth. We test this by checking that defaultBufferingDepth 
+    * The option gets mapped directly to it's non-deprecated alias,
+      defaultBufferingDepth. We test this by checking that defaultBufferingDepth
       is set to the same value as defaultPrefetchBufferingDepth
     """
     opts = popart.SessionOptions()

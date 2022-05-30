@@ -135,7 +135,7 @@ def interpolate(
             x_original = x_interpolated / scale,
 
             if coordinate_transformation_mode is "tf_crop_and_resize",
-            x_original = length_interpolated > 1 ? start_x * (length_original - 1) + x_interpolated * (end_x - start_x) * (length_original - 1) / (length_interpolated - 1) : 
+            x_original = length_interpolated > 1 ? start_x * (length_original - 1) + x_interpolated * (end_x - start_x) * (length_original - 1) / (length_interpolated - 1) :
                                                    0.5 * (start_x + end_x) * (length_original - 1).
     Returns:
         out (Tensor):
