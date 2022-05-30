@@ -34,9 +34,8 @@ void bindCodeCopy(py::module &m) {
   sm = sm.def_submodule("op", "Python bindings for PopART ops.");
   sm = sm.def_submodule("exchange", "Python bindings for PopART exchange ops.");
 
-  py::class_<ExternalCodeCopyOp,
-             popart::Op,
-             std::shared_ptr<ExternalCodeCopyOp>>(sm, "ExternalCodeCopyOp")
+  py::class_<RemoteCodeLoadOp, popart::Op, std::shared_ptr<RemoteCodeLoadOp>>(
+      sm, "RemoteCodeLoadOp")
       .def(py::init<const popart::OperatorIdentifier &,
                     const GraphId &,
                     const CodeMemoryType,

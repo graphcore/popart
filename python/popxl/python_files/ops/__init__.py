@@ -5,6 +5,7 @@ from .call import call, call_with_info, CallSiteInfo
 from .cast import cast
 from .concat import concat, concat_
 from .conv import conv, PadType
+from .code_copy import remote_code_load
 from .roialign import roi_align
 from .argminmax import argmin, argmax
 from .interpolate import interpolate
@@ -31,7 +32,6 @@ from .ipu_copy import ipu_copy
 from .l1 import l1
 from .l2 import l2
 from .lamb import lamb_square
-from .code_copy import code_copy
 from .logical_and import logical_and
 from .logical_not import logical_not
 from .logical_or import logical_or

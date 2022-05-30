@@ -136,9 +136,9 @@ public:
             poplar::DebugContext context) override;
 };
 
-class ExternalCodeLoadDescriptorx : public ExchangeDescriptorx {
+class RemoteCodeLoadOpDescriptorx : public ExchangeDescriptorx {
 public:
-  ExternalCodeLoadDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
+  RemoteCodeLoadOpDescriptorx(Devicex *dv_p_, ExchangeDescriptor descriptor);
   void pre(snap::Graph &graph,
            snap::program::Sequence &prog,
            poplar::DebugContext context) override;

@@ -1958,7 +1958,7 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   }
 
   // Make sure sub-graph op tasks run before remote code tasks.
-  if (ExternalCodeCopyOp *codeCopy = dynamic_cast<ExternalCodeCopyOp *>(op)) {
+  if (RemoteCodeLoadOp *codeCopy = dynamic_cast<RemoteCodeLoadOp *>(op)) {
     auto &graph =
         ir().getGraph(*codeCopy->getExchangeDescriptor(0).getGraphToLoadId());
     const auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);

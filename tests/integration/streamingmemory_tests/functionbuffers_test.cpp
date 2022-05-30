@@ -133,16 +133,16 @@ std::pair<std::vector<float>, uint64_t> runTestCase(bool codeCopy) {
     TensorId weights    = "W" + layerId;
     TensorId callOut    = "out" + layerId;
     g.getTensors().addVarInit(weights, tInfo, weightsHost[i].data());
-    ExternalCodeCopyOp *remote;
+    RemoteCodeLoadOp *remote;
     if (codeCopy) {
       // Add this to the main graph, but loads code for
       // callGraph.
       GraphId gid = callGraph.id;
 
-      remote = g.createConnectedOp<ExternalCodeCopyOp>(
+      remote = g.createConnectedOp<RemoteCodeLoadOp>(
           {},
           {},
-          Onnx::CustomOperators::ExternalCodeCopy,
+          Onnx::CustomOperators::RemoteCodeLoad,
           gid,
           CodeMemoryType::ExecutableMemory,
           Op::Settings{g, "CodeCopy"});

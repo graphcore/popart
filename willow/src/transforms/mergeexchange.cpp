@@ -118,7 +118,7 @@ bool isMergeableOp(Op *const op) {
          op->isConvertibleTo<RemoteStoreOp>() ||
          op->isConvertibleTo<HostLoadOp>() ||
          op->isConvertibleTo<HostStoreOp>() ||
-         op->isConvertibleTo<ExternalCodeCopyOp>() ||
+         op->isConvertibleTo<RemoteCodeLoadOp>() ||
          op->isConvertibleTo<MultiExchangeOp>();
 }
 } // namespace

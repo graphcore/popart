@@ -1231,7 +1231,7 @@ def test_codecopy_op(connected) -> None:
     settings = _ir.Settings(main, "CodeCopy")
 
     if connected:
-        op = main.createConnectedOp_ExternalCodeCopyOp(
+        op = main.createConnectedOp_RemoteCodeLoadOp(
             ins,
             outs,
             opid,
@@ -1239,9 +1239,8 @@ def test_codecopy_op(connected) -> None:
             _ir.CodeLocation.ExecutableMemory,
             settings=settings)
     else:
-        op = main.createOp_ExternalCodeCopyOp(
-            opid,
-            load1.id,
-            _ir.CodeLocation.ExecutableMemory,
-            settings=settings)
+        op = main.createOp_RemoteCodeLoadOp(opid,
+                                            load1.id,
+                                            _ir.CodeLocation.ExecutableMemory,
+                                            settings=settings)
         op.setup()

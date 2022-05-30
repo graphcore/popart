@@ -22,12 +22,12 @@ struct OperatorIdentifier;
  * ExternalCopyOps encapsulate those "copies of code" that require an external
  * exchange (e.g. involving streaming memory).
  * NOTE: Currently only copying from streaming memory to executable on chip
- * memory is supported for ExternalCodeCopyOps.
- * NOTE: ExternalCodeCopyOps are derived from ExchangeBaseOps which are
+ * memory is supported for RemoteCodeLoadOps.
+ * NOTE: RemoteCodeLoadOps are derived from ExchangeBaseOps which are
  * suitable for external exchanges, and can be merged using the mergeexchange
  * transform.
  */
-class ExternalCodeCopyOp : public ExchangeBaseOp {
+class RemoteCodeLoadOp : public ExchangeBaseOp {
 public:
   /**
    * Construct a new External Code Copy Op.
@@ -38,13 +38,13 @@ public:
    *  One of:
    *  Buffer - Stored in non-executable buffer memory.
    *  ExecutableMemory - Stored in executable memory.
-   * Note: The destination TileSet (Compute / IO) is detemined by the op's
+   * Note: The destination TileSet (Compute / IO) is determined by the op's
    * TileSet attribute.
    */
-  ExternalCodeCopyOp(const OperatorIdentifier &,
-                     const GraphId &gid,
-                     const CodeMemoryType destinationType,
-                     const Op::Settings &);
+  RemoteCodeLoadOp(const OperatorIdentifier &,
+                   const GraphId &gid,
+                   const CodeMemoryType destinationType,
+                   const Op::Settings &);
 
   /**
    * Get the Exchange Descriptor object. \sa ExchangeDescriptor
@@ -70,7 +70,7 @@ public:
   /**
    * Construct a new Internal Code Copy Op. This copies code to or from Buffers
    * and Executable memory on the device. This is in contrast to the
-   * ExternalCodeCopyOp that copies from streaming memory on to the device.
+   * RemoteCodeLoadOp that copies from streaming memory on to the device.
    * InternalCopyOps encapsulate copies that only require an internal exchange.
    *
    * NOTE: InternalCopyOps do not involve external exchanges and are thus not

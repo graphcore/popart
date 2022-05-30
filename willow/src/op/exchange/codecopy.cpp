@@ -17,10 +17,10 @@
 namespace popart {
 struct OperatorIdentifier;
 
-ExternalCodeCopyOp::ExternalCodeCopyOp(const OperatorIdentifier &_opid,
-                                       const GraphId &gid,
-                                       const CodeMemoryType destinationType_,
-                                       const Op::Settings &settings_)
+RemoteCodeLoadOp::RemoteCodeLoadOp(const OperatorIdentifier &_opid,
+                                   const GraphId &gid,
+                                   const CodeMemoryType destinationType_,
+                                   const Op::Settings &settings_)
     : ExchangeBaseOp(_opid, settings_), graphId(gid),
       destinationType(destinationType_) {
   if (!this->getIr().hasGraph(gid)) {
@@ -32,7 +32,7 @@ ExternalCodeCopyOp::ExternalCodeCopyOp(const OperatorIdentifier &_opid,
   settings.schedulePriority = std::numeric_limits<double>::lowest();
 }
 
-void ExternalCodeCopyOp::setup() {
+void RemoteCodeLoadOp::setup() {
   if (destinationType == CodeMemoryType::ExecutableMemory &&
       settings.tileSet == TileSet::Compute) {
     ; // Supported
@@ -46,37 +46,37 @@ void ExternalCodeCopyOp::setup() {
   }
 }
 
-std::unique_ptr<Op> ExternalCodeCopyOp::clone() const {
-  return std::make_unique<ExternalCodeCopyOp>(*this);
+std::unique_ptr<Op> RemoteCodeLoadOp::clone() const {
+  return std::make_unique<RemoteCodeLoadOp>(*this);
 }
 
-void ExternalCodeCopyOp::appendOutlineAttributes(OpSerialiserBase &os) const {
+void RemoteCodeLoadOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
   os.appendAttribute("gid", graphId);
   os.appendAttribute("destinationType", destinationType);
 }
 
-ExchangeDescriptor ExternalCodeCopyOp::getExchangeDescriptor(int index) const {
+ExchangeDescriptor RemoteCodeLoadOp::getExchangeDescriptor(int index) const {
   return ExchangeDescriptor(
       ExchangeDirection::Load, graphId, settings.tileSet, destinationType);
 }
 
-static OpDefinition ExternalCodeCopyOpDef(
+static OpDefinition RemoteCodeLoadOpDef(
     {OpDefinition::Inputs(),
      OpDefinition::Outputs(),
      OpDefinition::Attributes({{"graphId", {"*"}},
                                {"destinationCodeMemoryType", {"*"}}})});
 
-static OpCreator<ExternalCodeCopyOp> ExternalCodeCopyOpCreator(
-    OpDefinitions({{Onnx::CustomOperators::ExternalCodeCopy,
-                    ExternalCodeCopyOpDef}}),
+static OpCreator<RemoteCodeLoadOp> RemoteCodeLoadOpCreator(
+    OpDefinitions({{Onnx::CustomOperators::RemoteCodeLoad,
+                    RemoteCodeLoadOpDef}}),
     [](const OpCreatorInfo &info) {
       GraphId graphId =
           info.attributes.getAttribute<Attributes::String>("graphId");
       int destinationCodeMemoryType =
           info.attributes.getAttribute<Attributes::Int>(
               "destinationCodeMemoryType");
-      return std::unique_ptr<ExternalCodeCopyOp>(new ExternalCodeCopyOp(
+      return std::unique_ptr<RemoteCodeLoadOp>(new RemoteCodeLoadOp(
           info.opid,
           graphId,
           static_cast<CodeMemoryType>(destinationCodeMemoryType),

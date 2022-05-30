@@ -156,8 +156,8 @@ std::pair<std::vector<float>, uint64_t> runTestCase(bool codeCopy) {
       Op::Settings{g, "HostLoad"},
       dataStream);
 
-  ExternalCodeCopyOp *remote;
-  ExternalCodeCopyOp *remoteOne;
+  RemoteCodeLoadOp *remote;
+  RemoteCodeLoadOp *remoteOne;
 
   TensorId outCallOne;
 
@@ -184,10 +184,10 @@ std::pair<std::vector<float>, uint64_t> runTestCase(bool codeCopy) {
       // callGraphTwo.
       GraphId gid = graphTwo.id;
 
-      remoteOne = graphOne.createConnectedOp<ExternalCodeCopyOp>(
+      remoteOne = graphOne.createConnectedOp<RemoteCodeLoadOp>(
           {},
           {},
-          Onnx::CustomOperators::ExternalCodeCopy,
+          Onnx::CustomOperators::RemoteCodeLoad,
           gid,
           CodeMemoryType::ExecutableMemory,
           Op::Settings{graphOne, "CodeCopy2"});
@@ -225,10 +225,10 @@ std::pair<std::vector<float>, uint64_t> runTestCase(bool codeCopy) {
       // callGraph.
       GraphId gid = graphOne.id;
 
-      remote = g.createConnectedOp<ExternalCodeCopyOp>(
+      remote = g.createConnectedOp<RemoteCodeLoadOp>(
           {},
           {},
-          Onnx::CustomOperators::ExternalCodeCopy,
+          Onnx::CustomOperators::RemoteCodeLoad,
           gid,
           CodeMemoryType::ExecutableMemory,
           Op::Settings{g, "CodeCopy1"});

@@ -20,9 +20,9 @@ class Devicex;
  * Opx for the external code copy op.
  *
  */
-class ExternalCodeCopyOpx : public ExchangeBaseOpx {
+class RemoteCodeLoadOpx : public ExchangeBaseOpx {
 public:
-  ExternalCodeCopyOpx(Op *, Devicex *);
+  RemoteCodeLoadOpx(Op *, Devicex *);
   void grow(snap::program::Sequence &) const final;
 };
 

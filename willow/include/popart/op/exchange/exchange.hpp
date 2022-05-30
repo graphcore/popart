@@ -216,7 +216,7 @@ public:
 
   /**
    * Get the Destination Location the code will be sent to, if this is an
-   * ExchangeDescriptor for an ExternalCodeLoadOp
+   * ExchangeDescriptor for an RemoteCodeLoadOpOp
    *
    * \returns OptionalLocationType One of:
    *

@@ -407,13 +407,13 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("settings"),
       py::return_value_policy::reference);
   g.def(
-      "createOp_ExternalCodeCopyOp",
+      "createOp_RemoteCodeLoadOp",
       [](Graph &self,
          const popart::OperatorIdentifier opid,
          const GraphId &gid,
          const CodeMemoryType destinationType_,
          const Op::Settings &settings) {
-        return self.createOp<ExternalCodeCopyOp>(
+        return self.createOp<RemoteCodeLoadOp>(
             opid, gid, destinationType_, settings);
       },
       py::arg("opid"),
@@ -901,7 +901,7 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("settings"),
       py::return_value_policy::reference);
   g.def(
-      "createConnectedOp_ExternalCodeCopyOp",
+      "createConnectedOp_RemoteCodeLoadOp",
       [](Graph &self,
          const std::map<InIndex, TensorId> &in,
          const std::map<OutIndex, TensorId> &out,
@@ -909,7 +909,7 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
          const GraphId &gid,
          const CodeMemoryType destinationType_,
          const Op::Settings &settings) {
-        return self.createConnectedOp<ExternalCodeCopyOp>(
+        return self.createConnectedOp<RemoteCodeLoadOp>(
             in, out, opid, gid, destinationType_, settings);
       },
       py::arg("in"),

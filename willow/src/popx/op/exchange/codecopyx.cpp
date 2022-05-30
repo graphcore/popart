@@ -19,20 +19,20 @@ class Op;
 namespace popx {
 class Devicex;
 
-// ExternalCodeCopyOpx
-ExternalCodeCopyOpx::ExternalCodeCopyOpx(Op *op, Devicex *devicex)
+// RemoteCodeLoadOpx
+RemoteCodeLoadOpx::RemoteCodeLoadOpx(Op *op, Devicex *devicex)
     : ExchangeBaseOpx(op, devicex) {
-  verifyOp<ExternalCodeCopyOp>(op);
+  verifyOp<RemoteCodeLoadOp>(op);
 }
 
-void ExternalCodeCopyOpx::grow(snap::program::Sequence &prog) const {
-  auto &externalCodeCopyOp = getOp<ExternalCodeCopyOp>();
+void RemoteCodeLoadOpx::grow(snap::program::Sequence &prog) const {
+  auto &remoteCodeLoadOp = getOp<RemoteCodeLoadOp>();
   std::shared_ptr<ExchangeDescriptorx> descriptorx =
-      getExchangeDescriptorx(dv_p, externalCodeCopyOp.getExchangeDescriptor(0));
+      getExchangeDescriptorx(dv_p, remoteCodeLoadOp.getExchangeDescriptor(0));
 
   auto debug = debugContext(logging::format(
-      "ExternalCodeCopy Remote -> Device , graph: {}",
-      externalCodeCopyOp.getExchangeDescriptor(0).getGraphToLoadId()));
+      "RemoteCodeLoad Remote -> Device , graph: {}",
+      remoteCodeLoadOp.getExchangeDescriptor(0).getGraphToLoadId()));
 
   descriptorx->pre(graph(), prog, debug);
   descriptorx->exchange(graph(), prog, debug);
@@ -41,8 +41,8 @@ void ExternalCodeCopyOpx::grow(snap::program::Sequence &prog) const {
 
 namespace {
 
-OpxCreator<ExternalCodeCopyOpx>
-    ExternalCodeCopyOpxCreator(Onnx::CustomOperators::ExternalCodeCopy);
+OpxCreator<RemoteCodeLoadOpx>
+    RemoteCodeLoadOpxCreator(Onnx::CustomOperators::RemoteCodeLoad);
 } // namespace
 } // namespace popx
 } // namespace popart
