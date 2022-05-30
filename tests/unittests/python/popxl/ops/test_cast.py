@@ -11,10 +11,11 @@ class TestCast:
         g = ir.main_graph
 
         with g:
-            a = popxl.variable(1, popxl.float32)
+            a = popxl.variable(1, popxl.float32, name="t0")
             b = ops.cast(a, popxl.float16)
 
         assert b.dtype == popxl.float16
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Cast", _ir.op.CastOp, g)
+        assert b.id.count(a.id) == 1

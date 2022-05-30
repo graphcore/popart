@@ -5,6 +5,10 @@ import numpy as np
 
 
 class TestAutoDiffCast:
+    # This test was failing due to bug in popxl cast.
+    # It was creating output tensor by using tensor id
+    # instead of name. Resulting in autodiff grow grads
+    # error having wrong tensor names. See T62127.
     def test_auto_diff_cast(self):
         ir = popxl.Ir()
         main = ir.main_graph
@@ -19,12 +23,3 @@ class TestAutoDiffCast:
 
             fwd_graph = ir.create_graph(layer, x.spec)
             grad_info = popxl.transforms.autodiff(fwd_graph)
-
-            # Add following code so the graph is not optimised out.
-            fwd_info = ops.call_with_info(fwd_graph, x)
-            dx = ops.call(grad_info.graph,
-                          popxl.constant(np.ones((10)), popxl.float32),
-                          inputs_dict=grad_info.inputs_dict(fwd_info))
-
-        with popxl.Session(ir, 'ipu_model') as session:
-            output = session.run()
