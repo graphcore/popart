@@ -44,7 +44,7 @@ from .median import median
 from .min import min
 from .mul import mul
 from .negate import negate
-from .negative_log_likelihood import nll_loss_with_softmax_grad
+from .negative_log_likelihood import nll_loss, nll_loss_with_softmax_grad
 from .print_tensor import print_tensor
 from .prod import prod
 from .random_seed import split_random_seed
@@ -174,6 +174,7 @@ __all__ = [
     # mul.py
     "mul",
     # negative_log_likelihood.py
+    "nll_loss",
     "nll_loss_with_softmax_grad",
     # negate.py
     "negate",

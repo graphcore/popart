@@ -64,11 +64,11 @@ void NllOp::setup() {
   }
 
   if (!labelInInfo.getDataTypeInfo()->isFixedPoint()) {
-    throw error(
-        "Expected the label tensor NllOp to be fixed point, not the case "
-        "for input with info: {}. This error for Op {}. ",
-        labelInInfo,
-        str());
+    throw error("Expected the label tensor NllOp to be an integer data type "
+                "(fixed point), not the case "
+                "for input with info: {}. This error for Op {}. ",
+                labelInInfo,
+                str());
   }
 
   Shape outShape({});
