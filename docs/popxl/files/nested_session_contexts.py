@@ -1,12 +1,10 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-The intention of this example is to demonstrate the semantics of nested session
-contexts.
+The intention of this example is to demonstrate the semantics of nested session contexts.
 '''
 
 import popxl
 import popxl.ops as ops
-import numpy as np
 
 # Creating a model with PopXL
 ir = popxl.Ir()

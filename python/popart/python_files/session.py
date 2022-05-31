@@ -107,6 +107,8 @@ def makedirsAndCheckWritable(path):
 
 class InferenceSession(_InferenceSessionCore):
     """
+    Session for running inference.
+
     ``InferenceSession`` is a runtime instance that provides an interface for
     executing ONNX graphs on IPU hardware, without any automatic differentiation
     (backpropagation).
@@ -247,16 +249,18 @@ class InferenceSession(_InferenceSessionCore):
             raise popart.OutOfMemoryException(err)
 
     @classmethod
-    def fromIr(cls, ir, deviceInfo: popart.DeviceInfo,
+    def fromIr(cls,
+               ir: "Ir",
+               deviceInfo: popart.DeviceInfo,
                name: str = "fromIr") -> 'InferenceSession':
         """Create a session for inference from an IR.
 
         Arguments:
-            ir: The IR to create the session from.
+            ir (Ir): The IR to create the session from.
             deviceInfo::py:class:`~popart.DeviceInfo` object specifying the
                 device type (``IPU``, ``IPUModel`` or ``CPU``) and number of
                 each type.
-            name: The name of this inference session. Default: "fromIr".
+            name (str): The name of this inference session. Default: "fromIr".
 
         Returns:
             InferenceSession: An inference session.
@@ -271,6 +275,8 @@ class InferenceSession(_InferenceSessionCore):
 
 class TrainingSession(_TrainingSessionCore):
     """
+    Session for training.
+
     ``TrainingSession`` is a runtime instance that provides an interface for
     executing ONNX graphs on IPU hardware with training provided by optimizing a
     loss tensor using an optimizer and automatic differentiation

@@ -16,10 +16,13 @@ InterpolateCoordinateTransformationType = Literal[
 
 
 def _convert_interpolate_type(mode: InterpolateType) -> _ir.op.ResizeMode:
-    """Convert the given interpolate type to ir.op.ResizeMode
+    """Convert the given interpolate type to ir.op.ResizeMode.
 
     Args:
         mode (InterpolateType): The interpolate type to use
+
+    Raises:
+        ValueError: If an unsupported interpolation type is given
 
     Returns:
         _ir.op.ResizeMode: An internal IR object representing the interpolate type settings.
@@ -38,13 +41,17 @@ def _convert_interpolate_type(mode: InterpolateType) -> _ir.op.ResizeMode:
 
 def _convert_interpolate_nearest_type(
         mode: InterpolateNearestType) -> _ir.op.ResizeNearestMode:
-    """Convert the given interpolate nearest type to ir.op.ResizeNearestMode
+    """Convert the given interpolate nearest type to ir.op.ResizeNearestMode.
 
     Args:
         mode (InterpolateNearestType): The interpolate nearest type to use
 
+    Raises:
+        ValueError: If an unsupported interpolation type is given
+
     Returns:
-        _ir.op.ResizeNearestMode: An internal IR object representing the interpolate nearest type settings.
+        _ir.op.ResizeNearestMode: An internal IR object representing the interpolate nearest
+            type settings.
     """
     if mode == 'round_prefer_floor':
         return _ir.op.ResizeNearestMode.RoundPreferFloor
@@ -63,13 +70,21 @@ def _convert_interpolate_nearest_type(
 def _convert_interpolate_coordinate_transformation_type(
         mode: InterpolateCoordinateTransformationType
 ) -> _ir.op.ResizeCoordinateTransformationMode:
-    """Convert the given interpolate coordinate transformation type to ir.op.ResizeCoordinateTransformationMode
+    """
+    Convert the given interpolate coordinate transformation type.
+
+    The type will be coverted to ir.op.ResizeCoordinateTransformationMode.
 
     Args:
-        mode (InterpolateCoordinateTransformationType): The interpolate coordinate transformation type to use
+        mode (InterpolateCoordinateTransformationType): The interpolate coordinate transformation
+            type to use
+
+    Raises:
+        ValueError: If an unsupported interpolation type is given
 
     Returns:
-        _ir.op.ResizeCoordinateTransformationMode: An internal IR object representing the interpolate coordinate transformation type settings.
+        _ir.op.ResizeCoordinateTransformationMode: An internal IR object representing the
+            interpolate coordinate transformation type settings.
     """
     if mode == 'half_pixel':
         return _ir.op.ResizeCoordinateTransformationMode.HalfPixel

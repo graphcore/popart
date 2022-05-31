@@ -67,9 +67,12 @@ repos:
             entry: pylint
             language: system
             types: [python]
+            # -j 1 is needed for the linter not to hang
+            # https://github.com/PyCQA/pylint/issues/3899
             args:
               [
-                --rcfile=scripts/lint/linters/pylintrc
+                --rcfile=scripts/lint/linters/pylintrc,
+                -j 1
               ]
     -   repo: https://github.com/pre-commit/pre-commit-hooks
         rev: v2.3.0

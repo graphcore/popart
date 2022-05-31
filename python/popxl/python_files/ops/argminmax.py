@@ -10,10 +10,16 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 def argmax(t: Tensor, dim: Optional[int] = 0,
            keepdim: Optional[bool] = False) -> Tensor:
     """
-    Compute the indices of the max elements of the input tensor's element along the provided axis. The resulting tensor has the
-    same rank as the input if keepdim is True. If keepdim is False, then the resulting tensor has the reduced dimension pruned.
+    Compute the argmax of a tensor.
 
-    See also `PyTorch Tensor.argmax <https://pytorch.org/docs/stable/generated/torch.Tensor.argmax.html>`__, `NumPy argmax <https://numpy.org/doc/stable/reference/generated/numpy.argmax.html>`__, `ONNX ArgMax <https://github.com/onnx/onnx/blob/main/docs/Operators.md#ArgMax>`__.
+    Compute the indices of the max elements of the input tensor's element along the provided axis.
+    The resulting tensor has the same rank as the input if keepdim is True.
+    If keepdim is False, then the resulting tensor has the reduced dimension pruned.
+
+    See also
+    `PyTorch Tensor.argmax <https://pytorch.org/docs/stable/generated/torch.Tensor.argmax.html>`__,
+    `NumPy argmax <https://numpy.org/doc/stable/reference/generated/numpy.argmax.html>`__,
+    `ONNX ArgMax <https://github.com/onnx/onnx/blob/main/docs/Operators.md#ArgMax>`__.
 
     Args:
         t (Tensor):
@@ -49,10 +55,16 @@ def argmax(t: Tensor, dim: Optional[int] = 0,
 def argmin(t: Tensor, dim: Optional[int] = 0,
            keepdim: Optional[bool] = False) -> Tensor:
     """
-    Compute the indices of the min elements of the input tensor's element along the provided axis. The resulting tensor has the
-    same rank as the input if keepdim is True. If keepdim is False, then the resulting tensor has the reduced dimension pruned.
+    Compute the argmin of a tensor.
 
-    See also `PyTorch Tensor.argmin <https://pytorch.org/docs/stable/generated/torch.Tensor.argmin.html>`__, `NumPy argmin <https://numpy.org/doc/stable/reference/generated/numpy.argmin.html>`__, `ONNX ArgMin <https://github.com/onnx/onnx/blob/main/docs/Operators.md#ArgMin>`__.
+    Compute the indices of the min elements of the input tensor's element along the provided axis.
+    The resulting tensor has the same rank as the input if keepdim is True.
+    If keepdim is False, then the resulting tensor has the reduced dimension pruned.
+
+    See also
+    `PyTorch Tensor.argmin <https://pytorch.org/docs/stable/generated/torch.Tensor.argmin.html>`__,
+    `NumPy argmin <https://numpy.org/doc/stable/reference/generated/numpy.argmin.html>`__,
+    `ONNX ArgMin <https://github.com/onnx/onnx/blob/main/docs/Operators.md#ArgMin>`__.
 
     Args:
         t (Tensor):

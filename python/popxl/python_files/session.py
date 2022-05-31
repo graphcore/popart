@@ -451,18 +451,21 @@ class Session:
     # Properties:
     @property
     def ir(self) -> Ir:
-        """Return the associated Ir for this session. Read only.
+        """
+        Return the associated Ir for this session.
+
+        Read only.
         """
         return self.ir_
 
     @property
     def is_attached(self) -> bool:
-        """Return if the session is attached to a device
-        """
+        """Return if the session is attached to a device."""
         return self._device.isAttached
 
     def _set_device(self, device: popart.DeviceInfo):
-        """Change the Session to use a different device
+        """
+        Change the Session to use a different device.
 
         Args:
             device (popart.DeviceInfo): Device to use.

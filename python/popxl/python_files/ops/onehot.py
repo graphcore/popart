@@ -9,7 +9,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 def onehot(t: Tensor, num_classes: Tensor, values: Tensor,
            axis: int) -> Tensor:
     """
-    Produces a one-hot tensor based on inputs.
+    Produce a one-hot tensor based on inputs.
 
     See also `ONNX OneHot <https://github.com/onnx/onnx/blob/main/docs/Operators.md#OneHot>`__.
 

@@ -53,8 +53,11 @@ def create_seeds(seed: int,
 
 
 def uint64_to_two_uint32(num: int) -> Tuple[int, int]:
-    """Convert uint64 to two uint32 values. The return values are the
-    most-significant 32 bits and least-significant 32 bits."""
+    """
+    Convert uint64 to two uint32 values.
+
+    The return values are the most-significant 32 bits and least-significant 32 bits.
+    """
     num_bin = f"{num:064b}"
     if num < 0 or len(num_bin) != 64:
         raise ValueError(
@@ -65,8 +68,11 @@ def uint64_to_two_uint32(num: int) -> Tuple[int, int]:
 
 
 def two_uint32_to_uint64(a: int, b: int) -> int:
-    """Convert two uint32 values to a uint64. `a` is the most-significant 32 bits
-    and `b` is the least-significant 32 bits."""
+    """
+    Convert two uint32 values to a uint64.
+
+    `a` is the most-significant 32 bits and `b` is the least-significant 32 bits.
+    """
     a_bin = f"{a:032b}"
     b_bin = f"{b:032b}"
     if len(a_bin) != 32 or len(b_bin) != 32 or a < 0 or b < 0:
