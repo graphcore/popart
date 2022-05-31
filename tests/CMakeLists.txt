@@ -158,9 +158,9 @@ endfunction()
 #
 #
 # LABELS
-#
-# Semicolon separated list of labels to be set for this test
-#
+# Semicolon separated list of labels to be set for this test. Supported labels:
+#   - multicard: Run the Hw variant on the POD diff builder only, not the
+#                C200 builder.
 #
 # DUAL
 # A variation specification must be of the form "target:[config]"
@@ -223,7 +223,7 @@ function(add_popart_cpp_unit_test name)
 endfunction()
 
 # Python unit test function
-# Uses VARIANTS as above for add_popart_cpp_unit_test
+# Uses VARIANTS and LABELS as above for add_popart_cpp_unit_test
 # Takes optional MATCHEXPR parameter, which is a string that will be passed
 #   verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
 # Takes optional NUM_WORKERS parameter that is passed to pytest as `-n NUM_WORKERS`.
@@ -290,6 +290,8 @@ function(add_popart_py_unit_test name filename)
 
     set_tests_properties(${test_name} PROPERTIES
                          ENVIRONMENT "${test_env}")
+    set_tests_properties(${test_name} PROPERTIES
+                          LABELS "${test_args_LABELS}")
   endforeach()
 endfunction()
 

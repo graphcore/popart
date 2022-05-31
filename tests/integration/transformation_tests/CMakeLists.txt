@@ -28,4 +28,6 @@ add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py VARIANTS 
 add_popart_py_unit_test(batchserialize batchserialize.py)
 add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)
 
-add_popart_py_unit_test(overlapio overlapio.py VARIANTS Hw)
+# We run this test on the POD builder only to load balance across builders, as
+# it is a long test.
+add_popart_py_unit_test(overlapio overlapio.py VARIANTS Hw LABELS multicard)
