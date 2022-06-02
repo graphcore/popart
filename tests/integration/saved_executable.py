@@ -1,200 +1,313 @@
-# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import os
-import numpy as np
-import popart
-import pytest
-import onnx
+"""Module containing tests and helper functions related to saving executables."""
 
-# `import test_util` requires adding to sys.path
+# Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+
+import os
 import sys
 from pathlib import Path
+from typing import Tuple, Optional
+from typing_extensions import Literal
+
+import numpy as np
+import pytest
+import popart
+
+# `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-@tu.requires_ipu
-def test_simple_save_load(tmp_path, capfd):
+def get_add_model() -> Tuple[bytes, str, str, str]:
+    """Build a model that adds two tensors.
+
+    Returns:
+        Tuple: A tuple containing:
+            - The model proto
+            - The tensor name of the left hand side operand
+            - The tensor name of the right hand side operand
+            - The tensor name of the output tensor
     """
+    # Create a builder and construct a graph
+    builder = popart.Builder()
+
+    data_shape = popart.TensorInfo("FLOAT", [3])
+
+    lhs = builder.addInputTensor(data_shape)
+    rhs = builder.addInputTensor(data_shape)
+
+    output = builder.aiOnnx.add([lhs, rhs])
+    output = builder.aiOnnx.identity([output])
+
+    builder.addOutputTensor(output)
+
+    proto = builder.getModelProto()
+
+    return proto, lhs, rhs, output
+
+
+def get_subtract_model() -> Tuple[bytes, str, str, str]:
+    """Build a model that subtracts two tensors.
+
+    Returns:
+        Tuple: A tuple containing:
+            - The model proto
+            - The tensor name of the left hand side operand
+            - The tensor name of the right hand side operand
+            - The tensor name of the output tensor
+    """
+    # Create a builder and construct a graph
+    builder = popart.Builder()
+
+    data_shape = popart.TensorInfo("FLOAT", [3])
+
+    lhs = builder.addInputTensor(data_shape)
+    rhs = builder.addInputTensor(data_shape)
+
+    output = builder.aiOnnx.sub([lhs, rhs])
+    output = builder.aiOnnx.identity([output])
+
+    builder.addOutputTensor(output)
+
+    proto = builder.getModelProto()
+
+    return proto, lhs, rhs, output
+
+
+def create_inference_session(
+        device: popart.DeviceInfo,
+        bps: int,
+        opts: Optional[popart.SessionOptions] = None,
+        model: Literal["add_model", "subtract_model"] = "add_model"
+) -> Tuple[popart.InferenceSession, str, str, str]:
+    """Create an inference session.
+
+    Args:
+        device (popart.DeviceInfo): The device info to be used for the session
+        bps (int): Batches per step
+        opts (Optional[popart.SessionOptions], optional): The options to be used for the session.
+          Defaults to None.
+        model (Literal['add_model', 'subtract_model'], optional): Model to use.
+          Defaults to "add_model".
+
+    Raises:
+        ValueError: If an unsupported model is specified
+
+    Returns:
+        Tuple: A tuple containing:
+            - The inference session object
+            - The tensor name of the left hand side operand
+            - The tensor name of the right hand side operand
+            - The tensor name of the output tensor
+    """
+    if model == "add_model":
+        proto, lhs, rhs, output = get_add_model()
+    elif model == "subtract_model":
+        proto, lhs, rhs, output = get_subtract_model()
+    else:
+        raise ValueError(f"Model '{model}' not supported")
+
+    # Describe how to run the model
+    data_flow = popart.DataFlow(bps, {output: popart.AnchorReturnType("All")})
+
+    if opts is None:
+        opts = popart.SessionOptions()
+
+    # Create a session to compile and execute the graph
+    return popart.InferenceSession(fnModel=proto,
+                                   dataFlow=data_flow,
+                                   userOptions=opts,
+                                   deviceInfo=device), lhs, rhs, output
+
+
+def run_session_and_check_result(
+        session: popart.InferenceSession,
+        bps: int,
+        lhs: str,
+        rhs: str,
+        output: str,
+        model: Literal["add_model", "subtract_model"] = "add_model"):
+    """Run the session and check the result
+
+    Args:
+        session (popart.InferenceSession): The session to run
+        bps (int): Batches per step
+        lhs (str): Tensor name of the left hand side operand
+        rhs (str): Tensor name of the right hand side operand
+        output (str): Tensor name of the output tensor
+        model (Literal['add_model', 'subtract_model'], optional): Model to use.
+          Defaults to "add_model".
+
+    Raises:
+        ValueError: If an unsupported model is specified
+    """
+    # Compile graph
+    session.prepareDevice()
+
+    # Create buffers to receive results from the execution
+    anchors = session.initAnchorArrays()
+
+    # Generate some random input data
+    data_shape = [3]
+    data_shape.insert(0, bps)
+    data_a = np.random.random_sample(data_shape).astype(np.float32)
+    data_b = np.random.random_sample(data_shape).astype(np.float32)
+
+    stepio = popart.PyStepIO({lhs: data_a, rhs: data_b}, anchors)
+    session.run(stepio)
+
+    if model == "add_model":
+        assert np.allclose(anchors[output], data_a + data_b)
+    elif model == "subtract_model":
+        assert np.allclose(anchors[output], data_a - data_b)
+    else:
+        raise ValueError(f"Model '{model}' not supported")
+
+
+def run_model_test(bps: int,
+                   opts: Optional[popart.SessionOptions] = None,
+                   model: Literal["add_model", "subtract_model"] = "add_model"
+                   ) -> popart.InferenceSession:
+    """Test that the output is expected for a given model with given options.
+
+    Args:
+        bps (int): Batches per step
+        opts (Optional[popart.SessionOptions], optional): The options to be used for the session.
+          Defaults to None.
+        model (Literal['add_model', 'subtract_model'], optional): Model to use.
+          Defaults to "add_model".
+
+    Returns:
+        popart.InferenceSession: The session used in the test
+    """
+    with tu.create_test_device() as device:
+        session, lhs, rhs, output = create_inference_session(device=device,
+                                                             bps=bps,
+                                                             opts=opts,
+                                                             model=model)
+        run_session_and_check_result(session,
+                                     bps,
+                                     lhs,
+                                     rhs,
+                                     output,
+                                     model=model)
+    return session
+
+
+def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
+    """
+    Check whether an executable was loaded or not.
+
+    The output log of the POPART log level DEBUG will be used to check this.
+
+    Args:
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
+
+    Returns:
+        bool: True if the executable was loaded, False otherwise
+    """
+    _, stderr = capfd.readouterr()
+    started_engine_compilation = False
+    loaded_poplar_executable = False
+    for line in stderr.splitlines():
+        if 'Starting compilation' in line:
+            started_engine_compilation = True
+        elif 'Loading serialized PopART executable' in line:
+            loaded_poplar_executable = True
+
+    # Assert that we didn't both start a compilation AND load an executable
+    assert started_engine_compilation != loaded_poplar_executable
+    return not started_engine_compilation
+
+
+@tu.requires_ipu
+def test_manual_save_load(tmp_path: Path,
+                          capfd: pytest.CaptureFixture) -> None:
+    """
+    Perform the tests described below with explicit compilation and exporting of the cache file.
+
     Test:
     1. That engine caching works for two identical sessions
     2. That the cached engine isn't loaded for a different session
+
+    Args:
+        tmp_path (Path): Temporary directory
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
-
-    def _init_session(bps, device):
-        # Create a builder and construct a graph
-        builder = popart.Builder()
-
-        data_shape = [3]
-        data_info = popart.TensorInfo("FLOAT", data_shape)
-
-        a = builder.addInputTensor(data_info)
-        b = builder.addInputTensor(data_info)
-
-        o = builder.aiOnnx.add([a, b])
-
-        builder.addOutputTensor(o)
-
-        proto = builder.getModelProto()
-
-        # Describe how to run the model
-        dataFlow = popart.DataFlow(bps, {o: popart.AnchorReturnType("All")})
-
-        opts = popart.SessionOptions()
-
-        # Create a session to compile and execute the graph
-        return popart.InferenceSession(fnModel=proto,
-                                       dataFlow=dataFlow,
-                                       userOptions=opts,
-                                       deviceInfo=device), a, b, o
+    # Need to activate the logger in order to check whether we are compiling or loading from cache
+    popart.getLogger().setLevel('DEBUG')
 
     def compile_and_export(bps, filename):
         with tu.create_test_device() as device:
-            session, _, _, _ = _init_session(bps, device)
+            session, _, _, _ = create_inference_session(device=device, bps=bps)
             assert not os.path.isfile(filename)
             session.compileAndExport(filename)
             assert os.path.isfile(filename)
 
     def load_and_run(bps, filename):
         with tu.create_test_device() as device:
-            session, a, b, o = _init_session(bps, device)
+            session, lhs, rhs, output = create_inference_session(device=device,
+                                                                 bps=bps)
             if filename is not None:
                 session.loadExecutable(filename)
 
-            # Compile graph
-            session.prepareDevice()
+        run_session_and_check_result(session, bps, lhs, rhs, output)
 
-            # Create buffers to receive results from the execution
-            anchors = session.initAnchorArrays()
-
-            # Generate some random input data
-            data_shape = [3]
-            data_shape.insert(0, bps)
-            data_a = np.random.random_sample(data_shape).astype(np.float32)
-            data_b = np.random.random_sample(data_shape).astype(np.float32)
-
-            stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-            session.run(stepio)
-
-        assert np.allclose(anchors[o], data_a + data_b)
-
-    # Check the log output to see if an engine was compiled,
-    # or if a cached engine was used.
-    def loaded_saved_executable():
-        _, stderr = capfd.readouterr()
-        startedEngineCompilation = False
-        loadedPoplarExecutable = False
-        for line in stderr.splitlines():
-            if 'Starting compilation' in line:
-                startedEngineCompilation = True
-            elif 'Loading serialized PopART executable' in line:
-                loadedPoplarExecutable = True
-
-        assert startedEngineCompilation != loadedPoplarExecutable
-        return not startedEngineCompilation
-
-    popart.getLogger().setLevel('DEBUG')
-    exeFile = str(tmp_path / 'model.popart')
-    compile_and_export(2, exeFile)
-    assert loaded_saved_executable() is False
+    executable_path = str(tmp_path / 'model.popart')
+    compile_and_export(2, executable_path)
+    assert loaded_saved_executable(capfd) is False
 
     # Check the executable was loaded from the file.
-    load_and_run(2, exeFile)
-    assert loaded_saved_executable() is True
+    load_and_run(2, executable_path)
+    assert loaded_saved_executable(capfd) is True
 
     # Check it compiles if we don't load the file.
     load_and_run(2, None)
-    assert loaded_saved_executable() is False
-
-
-def run_session(bps, opts):
-    with tu.create_test_device() as device:
-
-        # Create a builder and construct a graph
-        builder = popart.Builder()
-
-        data_shape = [3]
-        data_info = popart.TensorInfo("FLOAT", data_shape)
-
-        a = builder.addInputTensor(data_info)
-        b = builder.addInputTensor(data_info)
-
-        o = builder.aiOnnx.add([a, b])
-
-        builder.addOutputTensor(o)
-
-        proto = builder.getModelProto()
-
-        # Describe how to run the model
-        dataFlow = popart.DataFlow(bps, {o: popart.AnchorReturnType("All")})
-
-        # Create a session to compile and execute the graph
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-
-        # Compile graph
-        session.prepareDevice()
-
-        # Create buffers to receive results from the execution
-        anchors = session.initAnchorArrays()
-
-        # Generate some random input data
-        data_shape.insert(0, bps)
-        data_a = np.random.random_sample(data_shape).astype(np.float32)
-        data_b = np.random.random_sample(data_shape).astype(np.float32)
-
-        stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-        session.run(stepio)
-
-        assert np.allclose(anchors[o], data_a + data_b)
-
-
-# Check the log output to see if an engine was compiled,
-# or if a cached engine was used.
-def loaded_saved_executable(capfd):
-    _, stderr = capfd.readouterr()
-    startedEngineCompilation = False
-    loadedPoplarExecutable = False
-    for line in stderr.splitlines():
-        if 'Starting compilation' in line:
-            startedEngineCompilation = True
-        elif 'Loading serialized PopART executable' in line:
-            loadedPoplarExecutable = True
-
-    assert startedEngineCompilation != loadedPoplarExecutable
-    return not startedEngineCompilation
+    assert loaded_saved_executable(capfd) is False
 
 
 @tu.requires_ipu
-def test_simple_cache_hit(tmp_path, capfd):
+def test_simple_cache_hit(tmp_path: Path, capfd: pytest.CaptureFixture):
     """
+    Perform the tests described below with the `enableEngineCaching` flag set to True.
+
     Test:
     1. That engine caching works for two identical sessions
     2. That the cached engine isn't loaded for a different session
+
+    Args:
+        tmp_path (Path): Temporary directory
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
+    # Need to activate the logger in order to check whether we are compiling or loading from cache
     popart.getLogger().setLevel('DEBUG')
 
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
     opts.cachePath = str(tmp_path / 'saved_graph')
 
-    run_session(2, opts)
+    run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is False
 
     # Check engine caching works for two identical sessions.
-    run_session(2, opts)
+    run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is True
 
     # Check the cached engine isn't loaded for a different session.
-    run_session(70, opts)
+    run_model_test(70, opts)
     assert loaded_saved_executable(capfd) is False
 
 
 @tu.requires_ipu
-def test_cache_miss_on_engine_option_change(tmp_path, capfd):
-    """ Test that if we change engine options that affect the executable between
-    runs then we don't get a cache hit. """
+def test_cache_miss_on_engine_option_change(
+        tmp_path: Path, capfd: pytest.CaptureFixture) -> None:
+    """
+    Test that no cache is hit if we change engine options affecting the executable between runs.
+
+    Args:
+        tmp_path (Path): Temporary directory
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
+    """
+    # Need to activate the logger in order to check whether we are compiling or loading from cache
     popart.getLogger().setLevel('DEBUG')
 
     opts1 = popart.SessionOptions()
@@ -207,165 +320,76 @@ def test_cache_miss_on_engine_option_change(tmp_path, capfd):
     opts2.cachePath = str(tmp_path / 'saved_graph')
     opts2.engineOptions["opt.enableInlining"] = "true"
 
-    run_session(2, opts1)
+    run_model_test(2, opts1)
     assert loaded_saved_executable(capfd) is False
 
     # Check engine caching works for two identical sessions.
-    run_session(2, opts2)
+    run_model_test(2, opts2)
     assert loaded_saved_executable(capfd) is False
 
 
 @tu.requires_ipu
 @pytest.mark.parametrize("varname", ["POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
-def test_cache_environment_variable(tmp_path, capfd, varname):
+def test_cache_environment_variable(
+        tmp_path: Path, capfd: pytest.CaptureFixture, varname: str) -> None:
+    """Test caching as enabled via env POPART_CACHE_DIR or POPXL_CACHE_DIR.
+
+    Args:
+        tmp_path (Path): Temporary directory
+        capfd (pytest.CaptureFixture): The output captured from the file descriptors
+        varname (str): Variable name to set as environmental variable
     """
-    Test caching as enabled via env POPART_CACHE_DIR or POPXL_CACHE_DIR
-    """
+    # Need to activate the logger in order to check whether we are compiling or loading from cache
     popart.getLogger().setLevel('DEBUG')
+
     os.environ[varname] = str(tmp_path / 'saved_graph')
 
     opts = popart.SessionOptions()
 
-    run_session(2, opts)
+    run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is False
 
     # Check engine caching works for two identical sessions.
-    run_session(2, opts)
+    run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is True
 
     del os.environ[varname]
 
 
 @tu.requires_ipu
-def test_bad_load(tmp_path):
+def test_bad_load(tmp_path: Path) -> None:
     """
-    Create 2 models with identical stream names
+    Create 2 models with identical stream names, check that the second model doesn't load the first.
+
+    Args:
+        tmp_path (Path): Temporary directory
     """
-
-    def get_add_model():
-        # Create a builder and construct a graph
-        builder = popart.Builder()
-
-        data_shape = popart.TensorInfo("FLOAT", [1])
-
-        a = builder.addInputTensor(data_shape)
-        b = builder.addInputTensor(data_shape)
-
-        o = builder.aiOnnx.add([a, b])
-        o = builder.aiOnnx.identity([o])
-
-        builder.addOutputTensor(o)
-
-        proto = builder.getModelProto()
-
-        return proto, a, b, o
-
-    def get_sub_model():
-        # Create a builder and construct a graph
-        builder = popart.Builder()
-
-        data_shape = popart.TensorInfo("FLOAT", [1])
-
-        a = builder.addInputTensor(data_shape)
-        b = builder.addInputTensor(data_shape)
-
-        o = builder.aiOnnx.sub([a, b])
-        o = builder.aiOnnx.identity([o])
-
-        builder.addOutputTensor(o)
-
-        proto = builder.getModelProto()
-
-        return proto, a, b, o
-
-    def run_test(proto, a, b, o, test):
-        with tu.create_test_device() as device:
-
-            # Describe how to run the model
-            dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
-
-            opts = popart.SessionOptions()
-            opts.enableEngineCaching = True
-            opts.cachePath = str(tmp_path / 'saved_graph')
-
-            # Create a session to compile and execute the graph
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=opts,
-                                              deviceInfo=device)
-
-            # Compile graph
-            session.prepareDevice()
-
-            # Create buffers to receive results from the execution
-            anchors = session.initAnchorArrays()
-
-            # Generate some random input data
-            data_a = np.random.rand(1).astype(np.float32)
-            data_b = np.random.rand(1).astype(np.float32)
-
-            stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-            session.run(stepio)
-
-            assert test(data_a, data_b, anchors[o])
+    opts = popart.SessionOptions()
+    opts.enableEngineCaching = True
+    opts.cachePath = str(tmp_path / 'saved_graph')
 
     print('Running first model')
-    run_test(*get_add_model(), lambda a, b, c: c == a + b)
+    run_model_test(bps=1, opts=opts, model="add_model")
     print()
+
     print('Running second model')
-    run_test(*get_sub_model(), lambda a, b, c: c == a - b)
+    run_model_test(bps=1, opts=opts, model="subtract_model")
     print()
 
 
 @tu.requires_ipu
-def test_get_reports(tmp_path):
-    def run_session(device):
-        # Create a builder and construct a graph
-        builder = popart.Builder()
+def test_get_reports(tmp_path: Path) -> None:
+    """Test that obtaining a report throws an error when using cached executables.
 
-        data_shape = popart.TensorInfo("FLOAT", [1])
+    Args:
+        tmp_path (Path): Temporary directory
+    """
+    opts = popart.SessionOptions()
+    opts.enableEngineCaching = True
+    opts.cachePath = str(tmp_path / 'saved_graph')
 
-        a = builder.addInputTensor(data_shape)
-        b = builder.addInputTensor(data_shape)
-
-        o = builder.aiOnnx.add([a, b])
-
-        builder.addOutputTensor(o)
-
-        proto = builder.getModelProto()
-
-        # Describe how to run the model
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
-
-        opts = popart.SessionOptions()
-        opts.enableEngineCaching = True
-        opts.cachePath = str(tmp_path / 'saved_graph')
-
-        # Create a session to compile and execute the graph
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-
-        # Compile graph
-        session.prepareDevice()
-
-        # Create buffers to receive results from the execution
-        anchors = session.initAnchorArrays()
-
-        # Generate some random input data
-        data_a = np.random.rand(1).astype(np.float32)
-        data_b = np.random.rand(1).astype(np.float32)
-
-        stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
-        session.run(stepio)
-
-        return session
-
-    with tu.create_test_device() as device:
-        run_session(device)
-    with tu.create_test_device() as device:
-        cached_session = run_session(device)
+    run_model_test(bps=1, opts=opts, model="add_model")
+    cached_session = run_model_test(bps=1, opts=opts, model="add_model")
 
     expected_error = 'Unable to get reports when using a cached executable.'
 
@@ -375,11 +399,13 @@ def test_get_reports(tmp_path):
     assert error == expected_error
 
 
-def test_implicit_pipelining_custom_fwd_only_cache(tmpdir):
-    """Test if running inference within the training session works
-    with caching
+def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
+    """Test if inference within the training session works with caching for explicit pipelining.
+
+    Args:
+        tmp_path (Path): Temporary directory
     """
-    filename = str(tmpdir / 'model.popart')
+    filename = str(tmp_path / 'model.popart')
 
     hidden_size = 5
     batches_per_step = 2
@@ -414,8 +440,8 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = popart.DataFlow(batches_per_step,
-                               {l1: popart.AnchorReturnType("All")})
+    data_flow = popart.DataFlow(batches_per_step,
+                                {l1: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     # Disable outlining to make debugging easier
@@ -433,7 +459,7 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmpdir):
 
     with tu.create_test_device(numIpus=4) as device0:
         session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
+                                         dataFlow=data_flow,
                                          userOptions=opts,
                                          loss=l1,
                                          optimizer=popart.ConstSGD(1),
@@ -447,7 +473,7 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmpdir):
 
         # New session
         session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
+                                         dataFlow=data_flow,
                                          userOptions=opts,
                                          loss=l1,
                                          optimizer=popart.ConstSGD(1),
