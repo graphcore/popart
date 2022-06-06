@@ -11,7 +11,8 @@ used to represent your custom operation in the IR:
     :language: cpp
     :name: leaky_relu_op_class
     :caption: Intermediate representation of Leaky ReLU
-    :lines: 91-120
+    :start-after: Op begin
+    :end-before: Op end
 
 .. only:: html
 
@@ -72,4 +73,6 @@ Leaky ReLU in
    virtual methods that may be helpful to advanced users. For Leaky ReLU, we
    have implemented the bare minimum and rely on the default implementations of
    these virtual functions. For advanced use cases, please read :cpp:class:`Op's
-   documentation<popart-cpp-api:popart::Op>`.
+   documentation<popart-cpp-api:popart::Op>`. Most of these methods are for
+   enabling other transforms to work with the op, like how ``getGradOps`` is
+   overriden to enable ``autodiff``.

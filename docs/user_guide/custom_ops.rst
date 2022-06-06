@@ -57,16 +57,18 @@ The two key base classes in PopART that define an op are:
   decoupled from the Poplar implementation.
 
 - ``Opx``: a Poplar implementation of the op. This is the code that will
-  actually be run on the IPU.
+  actually be run on the IPU. The Opx class also controls the behaviour of the
+  unwinding algorithm, which is how tensor layouts on IPU are decided.
 
-If the op is required for training, then a ``GradOp`` and ``GradOpx`` must also
-be defined for the gradient operation (see :numref:`fig_custom_op_OpGradOpOp`
-and :numref:`fig_custom_op_OpGradOpOpx`).
+If the op needs to be differentiable (for training), then a ``GradOp`` and
+``GradOpx`` must also be defined for the gradient operation (see
+:numref:`fig_custom_op_OpGradOpOp` and :numref:`fig_custom_op_OpGradOpOpx`).
 
 To make these classes visible to PopART, you must instantiate ``OpCreator`` and
 ``OpxCreator`` objects. These map from the string identifier of the new op
 (for example, "LeakyRelu"; see :numref:`define_op_identifier`) to constructors for
-your newly-defined ``Op`` and ``Opx`` C++ classes.
+your newly defined ``Op`` and ``Opx`` C++ classes, thus telling PopART how to
+lower from the ONNX Node to ``Op`` to ``Opx``.
 
 .. figure:: images/custom_op_OpGradOpOp.png
   :align: center
@@ -104,6 +106,11 @@ see everything in one place, it can be more difficult to follow. So, in this
 section the main elements of the ``LeakyRelu`` example are extracted with some
 more detailed descriptions of each method.
 
+Also note that it is good practice in C++ to put your code inside of a namespace
+(to avoid conflicts and for hierarchical organisation). However, this should be
+your own namespace, e.g. `my_custom_op`, and in particular NOT the `popart`
+namespace. Doing this can cause conflicts with members defined inside the
+PopART code itself.
 
 The op class
 ~~~~~~~~~~~~
@@ -118,13 +125,14 @@ The main methods that you need to override or implement are:
 * Attributes should be passed into the constructor and corresponding accessors
   defined.
 
-* ``clone()``: returns a copy of the op. Usually, this means returning a
+* ``clone()``: returns a clone of the op. Usually, this means returning a
   ``std::make_unique`` copy of the op. This must be implemented.
 
-* ``setup()``: sets the shape and type of the arguments to the op. This must set
-  the type and shape information for all the output `TensorInfo
+* ``setup()``: sets the shape and type of the output tensors of the op. This must
+  set the type and shape information for all the output `TensorInfo
   <https://docs.graphcore.ai/projects/popart-cpp-api/en/latest/api-cpp.html#_CPPv4N6popart10TensorInfoE>`__
-  objects.
+  objects. Usually, these are inferred from the input tensors. It must be
+  possible to safely call this function multiple times on the same op.
 
 
 * ``appendAttributes()``: appends attributes when serialising the op to a
@@ -377,6 +385,14 @@ For example, from `leaky_relu_custom_op.cpp
     const popart::OperatorIdentifier LeakyReluGrad_6 = {"ai.onnx", "LeakyReluGrad", 6};
   } // namespace CustomGradOperators
 
+The namespaces are not strictly required but are common practice in PopART.
+
+.. note::
+  Here, the ``domain`` is ``ai.onnx`` because we are providing an implementation of
+  the ``LeakyRelu`` op of the ``ai.onnx`` operator set defined by the authors
+  of ONNX. However, if you are inventing your own new op, the ``domain`` should be
+  your own new domain. Failing to do this can cause conflicts with ``OpCreators``
+  defined by others, including PopART itself.
 
 Define the op creator
 ~~~~~~~~~~~~~~~~~~~~~
@@ -496,10 +512,86 @@ Defining shape inference is optional, however you may encounter issues with
 operations later in your model if ONNX is not able to infer the input shape of
 an operation from earlier inputs.
 
-Using the op in a program
--------------------------
+Compiling and using the custom op
+---------------------------------
 
-The op can be referenced, using the values in the op identifier, in a Python
+Finally, you can compile the C++ code of your op into a shared library, then
+dynamically load the library from your Python application, then use
+:py:func:`popart.Builder.customOp` to create an ONNX Node in the model with your
+``OperatorIdentifier``. When you compile the model (by creating a ``Session``)
+PopART will find the ``OpCreator`` and ``OpxCreator``s you have dynamically
+loaded, and use them to create the ``Op`` and ``Opx``s you defined.
+
+Compiling the code
+~~~~~~~~~~~~~~~~~~
+
+The PopART headers are in C++11 so you need to compile with C++11 standard or newer.
+
+You must pass the define ``-DONNX_NAMESPACE=onnx``.
+
+You need to build a shared library. On gcc and clang this is done with ``-shared``.
+
+You must enable PopART and Poplar so the headers and shared libraries can be
+found (``source <poplar_sdk>/poplar/enable.sh`` and ``source <poplar_sdk>/popart/enable.sh``).
+To link against the libraries, you pass
+``-l<library-name-without-os-defined-prefix-and-extension>`` to the compiler.
+For example, ``-lpopart -lpoplar -lpoplin -lpopnn -lpopops -lpoputil -lpoprand``,
+if you need to use all of those libraries, as the "LeakyRelu" example does.
+
+To define the name of the output file, you pass ``-o <file_name>``, e.g. ``-o libcustom_op.so``.
+Note, on Linux, the convention is to prefix the name with ``lib`` and use the file
+extension ``.so``.
+
+It is recommended to use ``-fPIC`` when building a shared library that links PopART.
+
+You will probably want to pass ``-O3`` to instruct the compiler to optimise the
+produced code.
+
+Therefore, the final command might be:
+
+.. code-block:: bash
+  g++ \
+    -std=c++14 \
+    -fPIC \
+    -O3 \
+    -DONNX_NAMESPACE=onnx \
+    leaky_relu_custom_op.cpp \
+    -shared \
+    -lpopart -lpoplar -lpoplin -lpopnn -lpopops -lpoputil -lpoprand \
+    -o libleaky_relu_custom_op.so
+
+Alternatively, if you are using CMake to build your custom op, PopART defines a
+CMake package, so it can be found and linked against in the standard CMake way:
+
+.. code-block:: CMake
+
+  # If you want version 2.5 specifically. The `2.5` can be omitted.
+  find_package(popart 2.5 REQUIRED)
+
+  # Assuming `leaky_relu_custom_op` is the name of the target for your custom op
+  # shared library.
+  target_link_libraries(leaky_relu_custom_op PRIVATE popart)
+
+All of the above compiler flags will be automatically handled for you.
+
+As before, PopART must be enabled before configuring the CMake project. Enabling
+PopART sets the ``CMAKE_PREFIX_PATH`` environment variable so that ``find_package``
+can find the PopART CMake package.
+
+Using the compiled custom op in an application
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, as with compilation, Poplar and PopART must be enabled at runtime too, so
+the operating system can find the shared libraries of the SDK.
+
+In your application, the compiled library can be loaded from Python using the ``ctypes`` library:
+
+.. code-block:: python
+
+  import ctypes
+  ctypes.cdll.LoadLibrary(so_path) # path to compiled shared library
+
+The op can be referenced, using the values in the ``OpIdentifier``, in a Python
 program using the ``builder``. For example, from `run_leaky_relu.py
 <https://github.com/graphcore/tutorials/tree/sdk-release-2.5/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
 
@@ -512,8 +604,8 @@ program using the ``builder``. For example, from `run_leaky_relu.py
                                    attributes={"alpha": alpha})[0]
 
 
-
-Or the op can be referenced from an ONNX file using a `NodeProto
+Or, if directly importing an ONNX file with the builder, the op can be
+referenced like any other op. That is, using a `NodeProto
 <https://github.com/onnx/onnx/blob/master/onnx/onnx.proto#L191>`_
 definition that matches the domain, name and version of the op.
 

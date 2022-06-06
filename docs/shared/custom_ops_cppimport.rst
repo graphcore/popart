@@ -25,6 +25,7 @@ need to add the following comment to the first line of
     :language: cpp
     :name: leaky_relu_grad_op_class
     :lines: 1
+    :linenos:
 
 This comment is used by
 :ref:`cppimport <https://pypi.org/project/cppimport/>` as an opt-in
@@ -36,7 +37,8 @@ Then, at the end of the file, include the following multi-line comment:
 .. literalinclude:: files/leaky_relu_op_impl.cpp
     :language: cpp
     :name: leaky_relu_grad_op_class
-    :lines: 242-248
+    :start-after: cppimport-compilation begin
+    :end-before: cppimport-compilation end
 
 This contains all the information
 :ref:`cppimport <https://pypi.org/project/cppimport/>` needs to compile

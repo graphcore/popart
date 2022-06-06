@@ -49,6 +49,7 @@ namespace popx {
 class Devicex;
 } // namespace popx
 
+// ParamStruct begin
 /**
  * @brief Struct to encapsulate Leaky ReLU parameters.
  *
@@ -81,7 +82,9 @@ struct LeakyReluParams {
     return params;
   }
 };
+// ParamStruct end
 
+// GradOp begin
 /**
  * @brief Leaky ReLU gradient op.
  */
@@ -104,24 +107,30 @@ public:
    */
   void setup() override { outInfo(0) = inInfo(0); };
 
+  // GradOp-gradInputInfo begin
   const std::vector<popart::GradInOutMapper> &gradInputInfo() const override {
     static const std::vector<popart::GradInOutMapper> inInfo = {
         {0, 0, popart::GradOpInType::GradOut},
         {1, 0, popart::GradOpInType::In}};
     return inInfo;
   }
+  // GradOp-gradInputInfo end
 
   /**
    * @brief Return mapping to associated the outputs indices of LeakyReluGradOp
    * with inputs of the LeakyReluOp. \return const std::map<int, int>&
    */
+  // GradOp-gradOutToNonGradIn begin
   const std::map<int, int> &gradOutToNonGradIn() const override {
     // The Grad Op has 1 output, which is the gradient of the only input
     static const std::map<int, int> outInfo = {{0, 0}};
     return outInfo;
   }
+  // GradOp-gradOutToNonGradIn end
 };
+// GradOp end
 
+// Op begin
 /**
  * @brief Leaky ReLU op.
  */
@@ -160,6 +169,7 @@ namespace CustomGradOperators {
 const popart::OperatorIdentifier LeakyReluGradId =
     LeakyReluGradOp::defaultOperatorId();
 } // namespace CustomGradOperators
+// Op end
 
 namespace {
 // Registering in PopART.
@@ -177,6 +187,7 @@ static popart::OpCreator<LeakyReluOp> leakyReluOpCreator(
     true);
 } // namespace
 
+// Opx begin
 namespace pe = popops::expr;
 
 /**
@@ -212,6 +223,15 @@ public:
   }
 };
 
+// Registers that LeakyReluOpx can implement ops with OperatorIdentifier
+// CustomOperators::LeakyReluId
+namespace {
+popart::popx::OpxCreator<LeakyReluOpx>
+    LeakyReluOpxCreator({CustomOperators::LeakyReluId});
+}
+// Opx end
+
+// GradOpx begin
 /**
  * Leaky ReLU gradient operation implementation.
  */
@@ -248,12 +268,15 @@ public:
   }
 };
 
-// Necessary for registering in PopART
-static popart::popx::OpxCreator<LeakyReluOpx>
-    LeakyReluOpxCreator({CustomOperators::LeakyReluId});
-static popart::popx::OpxCreator<LeakyReluGradOpx>
+// Registers that LeakyReluGradOpx can implement ops with OperatorIdentifier
+// CustomGradOperators::LeakyReluGradId
+namespace {
+popart::popx::OpxCreator<LeakyReluGradOpx>
     LeakyReluGradOpxCreator({CustomGradOperators::LeakyReluGradId});
+}
+// GradOpx end
 
+// pybind begin
 /**
  * @brief Pybind11 custom op module declaration.
  * NOTE: make sure the name of the module correspond to the source filename!
@@ -269,9 +292,12 @@ PYBIND11_MODULE(leaky_relu_op_impl, m) {
   // params are pybinded).
   popart::ir::op::makeParameterizedOpBindings<LeakyReluOp>(m, "LeakyRelu");
 }
+// pybind end
+
 } // namespace popart
 
 // clang-format off
+// cppimport-compilation begin
 // cppimport configuration for compiling the pybind11 module.
 /*
 <%
@@ -280,3 +306,4 @@ cfg['libraries'] = ['popart']
 setup_pybind11(cfg)
 %>
 */
+// cppimport-compilation end

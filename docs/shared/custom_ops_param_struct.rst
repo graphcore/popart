@@ -11,7 +11,8 @@ parameter, ``alpha``, resulting in a struct defined as follows:
     :language: cpp
     :name: leaky_relu_op_params
     :caption: Struct that encapsulates Leaky ReLU parameters
-    :lines: 18-49
+    :start-after: ParamStruct begin
+    :end-before: ParamStruct end
 
 .. only:: html
 

@@ -12,7 +12,8 @@ class that derives from :cpp:class:`~popart-cpp-api:popart::popx::Opx`:
     :language: cpp
     :name: leaky_relu_opx_class
     :caption: Opx implementation of Leaky ReLU
-    :lines: 146-179
+    :start-after: Opx begin
+    :end-before: Opx end
 
 .. only:: html
 
@@ -39,4 +40,6 @@ For further details on how to write Poplar programs, see the
 
    Similar to the :cpp:class:`~popart-cpp-api:popart::Op` base class, the
    :cpp:func:`~popart-cpp-api:popart::popx::Opx::grow` class has a number
-   of additional virtual methods that may be helpful to advanced users.
+   of additional virtual methods that may be helpful to advanced users. In
+   particular, the methods that control the unwinding algorithm, which
+   determines tensor layouts on device.

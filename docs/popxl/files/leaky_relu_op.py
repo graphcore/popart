@@ -1,12 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import sys
 from pathlib import Path
-from typing import Optional
-
-import cppimport.import_hook  # pylint: disable=unused-import
-from popxl.context import get_current_context, op_debug_context
-from popxl.ops.utils import check_in_graph
-from popxl.tensor import Tensor
 
 # In the source dir the leaky_relu_impl op lives in docs/shared/files
 # We add this to the system path so this file can be ran from the source dir.
@@ -14,6 +8,17 @@ dir_shared = Path(__file__).parents[2].resolve()
 dir_shared_tests = dir_shared.joinpath("shared", "files")
 sys.path.append(str(dir_shared_tests))
 
+# leaky_relu begin
+
+from typing import Optional
+
+import cppimport.import_hook  # pylint: disable=unused-import
+from popxl.context import get_current_context, op_debug_context
+from popxl.ops.utils import check_in_graph
+from popxl.tensor import Tensor
+
+# The custom op and its pybinding will be automatically compiled by cppimport
+# into a module of this name.
 import leaky_relu_op_impl
 
 

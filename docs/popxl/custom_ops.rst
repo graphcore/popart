@@ -15,7 +15,9 @@ Custom operations
 PopXL ships with a large number of built-in operations as standard (see
 :numref:`sec_supported_operations`). However, in addition to this, PopXL has a
 mechanism to add *custom operations*. You can use this mechanism when you are
-unable to express the semantics you need via built-in operations
+unable to express the semantics you need via built-in operations. For example,
+if you need to target a specific Poplar/Poplibs API, or need control of the
+unwinding behaviour (which is how tensor layouts on device are decided).
 
 This section explains how to add custom operations to your model via an example
 operation: a *Leaky ReLU*. This operation is akin to a conventional ReLU
@@ -61,9 +63,10 @@ bindings, using an experimental template function
 
 .. literalinclude:: files/leaky_relu_op_impl.cpp
     :language: cpp
-    :name: leaky_relu_grad_op_class
-    :caption: Intermediate representation of Leaky ReLU's gradient operation
-    :lines: 223-237
+    :name: pybind-leaky-relu
+    :caption: Creating a Python binding of LeakyReluOp using Pybind11
+    :start-after: pybind begin
+    :end-before: pybind end
 
 .. only:: html
 
@@ -86,19 +89,19 @@ Python wrapper
 
 The last remaining step is to define a user-facing Python function which uses
 the Python bindings to provide a nice clean Pythonic interface for adding a
-Leaky ReLU to the IR:
+Leaky ReLU to the IR, similar to the other ops in PopXL:
 
 .. literalinclude:: files/leaky_relu_op.py
     :language: python
-    :name: leaky_relu_grad_op_class
+    :name: leaky_relu_popxl
     :caption: PopXL Python wrapper for Leaky ReLU
-    :lines: 2-10, 16-58
+    :start-after: leaky_relu begin
 
 .. only:: html
 
     :download:`Download <files/leaky_relu_op.py>`
 
-Note that in :numref:`leaky_relu_grad_op_class`, the module name
+Note that in :numref:`leaky_relu_popxl`, the module name
 ``leaky_relu_op_impl`` is based on the name of the
 :ref:`Pybind11 <https://github.com/pybind/pybind11>` module in
 :numref:`sec_custom_op_python_bindings`.
@@ -116,11 +119,13 @@ wrapper function your defined in :numref:`sec_custom_op_python_wrapper`. Then,
 you can use this function much like you can built-in PopXL operations:
 
 .. literalinclude:: files/run_leaky_relu.py
-    :language: cpp
+    :language: python
     :name: leaky_relu_use
     :caption: Using a custom operation in PopXL
     :emphasize-lines: 8, 35
-    :lines: 2-49
+    :start-after: run_leaky_relu begin
+    :end-before: run_leaky_relu end
+
 
 .. only:: html
 

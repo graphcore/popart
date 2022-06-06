@@ -14,7 +14,8 @@ that need to be implemented.
     :language: cpp
     :name: leaky_relu_grad_op_class
     :caption: Opx implementation of Leaky ReLU's gradient operation
-    :lines: 181-215
+    :start-after: GradOpx begin
+    :end-before: GradOpx end
 
 .. only:: html
 

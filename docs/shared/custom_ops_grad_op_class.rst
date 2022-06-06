@@ -11,7 +11,8 @@ the forward operation defined in :numref:`sec_custom_op_op_class`:
     :language: cpp
     :name: leaky_relu_grad_op_class
     :caption: Intermediate representation of Leaky ReLU's gradient operation
-    :lines: 51-89
+    :start-after: GradOp begin
+    :end-before: GradOp end
 
 .. only:: html
 
@@ -105,8 +106,10 @@ input at index 1 to be connected to the input of ``LeakyReluOp`` at index 0 (so
 
 .. literalinclude:: files/leaky_relu_op_impl.cpp
     :language: cpp
-    :name: leaky_relu_grad_op_connections
-    :lines: 75-76
+    :name: leaky_relu_grad_op_in_connections
+    :start-after: GradOp-gradInputInfo begin
+    :end-before: GradOp-gradInputInfo end
+    :dedent: 2
 
 The :cpp:func:`~popart-cpp-api:popart::Op::gradOutToNonGradIn` function is what
 the :ref:`autodiff <autodiff>` transform uses to determine what outputs a
@@ -122,5 +125,7 @@ The appropriate mapping is therefore as follows:
 
 .. literalinclude:: files/leaky_relu_op_impl.cpp
     :language: cpp
-    :name: leaky_relu_grad_op_connections
-    :lines: 86
+    :name: leaky_relu_grad_op_out_connections
+    :start-after: GradOp-gradOutToNonGradIn begin
+    :end-before: GradOp-gradOutToNonGradIn end
+    :dedent: 2
