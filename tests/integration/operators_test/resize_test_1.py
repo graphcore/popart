@@ -282,24 +282,17 @@ def test_resize_cubic(op_tester, data_shape, scales,
         # but the reset will only happen in backward pass(not forward pass),
         # so this is a bug in pytorch
         # so we temprarily comment this test
-        #([8], [1.12]),
+        #([8, 8], [1.12, 1.12]),
         # upsample
-        ([2], [8.0]),
         ([2, 2], [2.0, 3.0]),
         ([5, 3], [2.3, 2.5]),
         # downsample
         ([2, 8], [1.0, 3 / 8]),
         ([5, 4], [0.5, 0.5]),
-        # 3D
-        ([5, 3, 4], [2.3, 2.5, 0.5]),
     ])
-@pytest.mark.parametrize(
-    "coordinate_transformation_mode",
-    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
-def test_resize_cubic_grad(op_tester, data_shape, scales,
-                           coordinate_transformation_mode):
+def test_resize_cubic_grad(op_tester, data_shape, scales):
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
-
+    roi = np.array([], dtype=np.float32)
     scales = np.array([1.0, 1.0] + scales, dtype=np.float32)
 
     x_data_shape = [int(i * j) for i, j in zip(data.shape, scales)]
@@ -308,8 +301,12 @@ def test_resize_cubic_grad(op_tester, data_shape, scales,
     def init_builder(builder):
         d = builder.addInputTensor(data)
         x = builder.addInputTensor(x_data)
-        s = builder.aiOnnx.constant(scales)
-        o = builder.aiOnnx.resize([d, s])
+        s = builder.aiOnnxOpset11.constant(scales, False)
+        r = builder.aiOnnxOpset11.constant(roi, False)
+        o = builder.aiOnnxOpset11.resize(
+            [d, r, s],
+            mode="cubic",
+            coordinate_transformation_mode='pytorch_half_pixel')
         o = builder.aiOnnx.mul([o, x])
         builder.addOutputTensor(o)
         return [
@@ -321,7 +318,10 @@ def test_resize_cubic_grad(op_tester, data_shape, scales,
     def reference(ref_data):
         a = torch.tensor(data, requires_grad=True)
         s = [i for i in scales[2:]]
-        b = interpolate(a, s)
+        b = torch.nn.functional.interpolate(a,
+                                            scale_factor=s,
+                                            mode='bicubic',
+                                            align_corners=False)
         b.retain_grad()
         o = b * torch.tensor(x_data)
 
@@ -330,6 +330,8 @@ def test_resize_cubic_grad(op_tester, data_shape, scales,
         return [o, a.grad, None]
 
     op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
+    # according to our experience, 1e-6 should be a good abosolute tolerance
+    op_tester.atol = 1e-6
     op_tester.run(init_builder, reference, 'train')
 
 
