@@ -102,6 +102,10 @@ class Session:
 
         self._pb_session.prepareDevice(loadEngine=False)
 
+        # If an attached DeviceInfo is passed to the constructor then __enter__ won't setup the device
+        if self.is_attached:
+            self.weights_from_host()
+
     # Methods:
 
     def _assert_attached_before_runtime(self):

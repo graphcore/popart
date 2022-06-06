@@ -3285,6 +3285,8 @@ PYBIND11_MODULE(popart_core, m) {
           return dm.createOfflineIPUDevice(options);
         },
         py::arg("opts"));
+    cls.def("createOfflineIpuFromDeviceInfo",
+            &DeviceManager::createOfflineIpuFromDeviceInfo);
     cls.def("enumerateDevices",
             &DeviceManager::enumerateDevices,
             py::arg("pattern")        = SyncPattern::Full,

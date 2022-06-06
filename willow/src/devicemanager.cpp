@@ -166,6 +166,14 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
   return createHostDevice(DeviceType::OfflineIpu, options);
 }
 
+std::shared_ptr<DeviceInfo>
+DeviceManager::createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) {
+  for (auto p : providers) {
+    return p->createOfflineIpuFromDeviceInfo(deviceInfo);
+  }
+  throw internal_error("Could not find a provider to construct offline IPU.");
+}
+
 std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
     int numIpus,
     int tilesPerIPU,

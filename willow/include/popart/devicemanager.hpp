@@ -331,6 +331,9 @@ public:
   createHostDevice(DeviceType type,
                    const std::map<std::string, std::string> &options,
                    SyncPattern syncPattern = SyncPattern::Full) = 0;
+
+  virtual std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) = 0;
 };
 
 /// A class to manage devices.
@@ -555,14 +558,20 @@ public:
   createOfflineIPUDevice(std::map<std::string, std::string> &options);
 
   /**
-   * Set timeout (in seconds) for trying to attach to a device.
-   * If unable to attach to a device on the first try, the DeviceManager
-   * instance will periodically try to attach to the device until successfully
-   * attached or this timeout is reached.
-   * \note This only applies when trying to attach with
-   *      DeviceConnectionType::OnDemand.
+   * Create a simulated `OfflineIpu` device from the description of another
+   * device.
    *
-   * \param seconds The timeout (in seconds) for trying to attach to the device.
+   * \param deviceInfo The device to create a `OfflineIpu` version of.
+   * \return An `OfflineIpu` device.
+   */
+  std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo);
+
+  /** If unable to attach to a device on first try, the attach timeout
+   * set here is the length of time (in seconds) that the DeviceManager
+   * will wait to try and attach. Note: this only takes effect when trying
+   * to attach with a DeviceConnectionType::OnDemand DeviceConnectionType.
+   * \param seconds The attach timeout in seconds.
    */
   void setOnDemandAttachTimeout(const unsigned seconds);
 

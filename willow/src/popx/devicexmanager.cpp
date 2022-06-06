@@ -277,6 +277,13 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
   return nullptr;
 }
 
+std::shared_ptr<DeviceInfo>
+DevicexManager::createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) {
+  auto ipuTarget = poplar::Target(deviceInfo.getTarget());
+  return std::make_shared<DevicexOfflineIpuInfo>(
+      *this, ipuTarget, deviceInfo.getOptionFlags());
+}
+
 DevicexInfo::~DevicexInfo() {
   if (isAttached_) {
     writeToDeviceAccessLog("detach-on-destruct");

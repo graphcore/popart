@@ -156,11 +156,7 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
                 "sufficient IPUs available. If you have enabled the Poplar SDK you can "
                 "check device availability with the `gc-monitor` command-line utility."
             )
-        device = devices[0]
-        return dm.createOfflineIPUDevice({
-            "numIPUs": device.numIpus,
-            "ipuVersion": device.ipuVersion
-        })
+        return dm.createOfflineIpuFromDeviceInfo(devices[0])
     raise ValueError(f"Incorrect device type provided: {device_type}, must be "
                      "one of: `ipu_hw`, `ipu_model`, `cpu`")
 

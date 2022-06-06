@@ -44,6 +44,9 @@ public:
                    const std::map<std::string, std::string> &options,
                    SyncPattern syncPattern = SyncPattern::Full) override;
 
+  virtual std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) override;
+
 private:
 };
 
