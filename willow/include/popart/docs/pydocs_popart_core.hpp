@@ -3824,6 +3824,29 @@ static const char *__doc_popart_ClipNormSettings_weightIds = R"doc()doc";
 static const char *__singlelinedoc_popart_ClipNormSettings_weightIds =
     R"doc()doc";
 
+static const char *__doc_popart_CodeMemoryType =
+    R"doc(Enum for specifying the location type that code will be copied from or to.
+One of:
+
+Buffer - Stored in non-executable buffer memory.
+ExecutableMemory - Stored in executable memory.)doc";
+
+static const char *__singlelinedoc_popart_CodeMemoryType =
+    R"doc(Enum for specifying the location type that code will be copied from or to. One of: Buffer - Stored in non-executable buffer memory. ExecutableMemory - Stored in executable memory.)doc";
+
+static const char *__doc_popart_CodeMemoryType_Buffer = R"doc()doc";
+
+static const char *__singlelinedoc_popart_CodeMemoryType_Buffer = R"doc()doc";
+
+static const char *__doc_popart_CodeMemoryType_ExecutableMemory = R"doc()doc";
+
+static const char *__singlelinedoc_popart_CodeMemoryType_ExecutableMemory =
+    R"doc()doc";
+
+static const char *__doc_popart_CodeMemoryType_N = R"doc()doc";
+
+static const char *__singlelinedoc_popart_CodeMemoryType_N = R"doc()doc";
+
 static const char *__doc_popart_CollectiveOperator = R"doc()doc";
 
 static const char *__singlelinedoc_popart_CollectiveOperator = R"doc()doc";
@@ -4431,29 +4454,38 @@ static const char *
     __singlelinedoc_popart_DeveloperSettings_timePartitionLoggerThresholdPercentage =
         R"doc()doc";
 
-static const char *__doc_popart_DeviceConnectionType = R"doc()doc";
+static const char *__doc_popart_DeviceConnectionType =
+    R"doc(Controls when to connect to the IPU (if at all).)doc";
 
-static const char *__singlelinedoc_popart_DeviceConnectionType = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceConnectionType =
+    R"doc(Controls when to connect to the IPU (if at all).)doc";
 
-static const char *__doc_popart_DeviceConnectionType_Always = R"doc()doc";
+static const char *__doc_popart_DeviceConnectionType_Always =
+    R"doc(Attach to the IPU from the start (Default).)doc";
 
 static const char *__singlelinedoc_popart_DeviceConnectionType_Always =
-    R"doc()doc";
+    R"doc(Attach to the IPU from the start (Default).)doc";
 
-static const char *__doc_popart_DeviceConnectionType_Never = R"doc()doc";
+static const char *__doc_popart_DeviceConnectionType_Never =
+    R"doc(Never try to attach to an IPU.
+This is useful for offline compilation (:code:`DeviceType::OfflineIpu`.
+Trying to run an executable will throw an error.)doc";
 
 static const char *__singlelinedoc_popart_DeviceConnectionType_Never =
-    R"doc()doc";
+    R"doc(Never try to attach to an IPU. This is useful for offline compilation (:code:`DeviceType::OfflineIpu`. Trying to run an executable will throw an error.)doc";
 
-static const char *__doc_popart_DeviceConnectionType_OnDemand = R"doc()doc";
+static const char *__doc_popart_DeviceConnectionType_OnDemand =
+    R"doc(Wait until the compilation is complete and the executable is ready to be
+run before attaching to the IPU.)doc";
 
 static const char *__singlelinedoc_popart_DeviceConnectionType_OnDemand =
-    R"doc()doc";
+    R"doc(Wait until the compilation is complete and the executable is ready to be run before attaching to the IPU.)doc";
 
-static const char *__doc_popart_DeviceInfo = R"doc(Represents a device)doc";
+static const char *__doc_popart_DeviceInfo =
+    R"doc(Represents a specific device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo =
-    R"doc(Represents a device)doc";
+    R"doc(Represents a specific device.)doc";
 
 static const char *__doc_popart_DeviceInfo_2 = R"doc()doc";
 
@@ -4467,28 +4499,43 @@ static const char *__doc_popart_DeviceInfo_4 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_4 = R"doc()doc";
 
-static const char *__doc_popart_DeviceInfo_DeviceInfo = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_DeviceInfo =
+    R"doc(Constructor for the DeviceInfo class.
 
-static const char *__singlelinedoc_popart_DeviceInfo_DeviceInfo = R"doc()doc";
+Args:
+ _provider: The DeviceProvider instance for the device.
+ _type: The type of the device.
+ _connectionType: The setting for when to connect to the device, if at
+        all.
+ _flags: A set of Poplar option/value string flags.)doc";
+
+static const char *__singlelinedoc_popart_DeviceInfo_DeviceInfo =
+    R"doc(Constructor for the DeviceInfo class. Args: _provider: The DeviceProvider instance for the device. _type: The type of the device. _connectionType: The setting for when to connect to the device, if at all. _flags: A set of Poplar option/value string flags.)doc";
 
 static const char *__doc_popart_DeviceInfo_attach =
     R"doc(Attach to the device.
 
+
 Returns:
- True if successfully attached to the device.)doc";
+ :code:`true` if successfully attached to the device, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_attach =
-    R"doc(Attach to the device. Returns: True if successfully attached to the device.)doc";
+    R"doc(Attach to the device. Returns: :code:`true` if successfully attached to the device, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_DeviceInfo_attachTimeout = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_attachTimeout =
     R"doc()doc";
 
-static const char *__doc_popart_DeviceInfo_canCompileOffline = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_canCompileOffline =
+    R"doc(Get whether the device supports offline compilation.
+
+Returns:
+ :code:`true if the device supports offline compilation, otherwise
+ `false`.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_canCompileOffline =
-    R"doc()doc";
+    R"doc(Get whether the device supports offline compilation. Returns: :code:`true if the device supports offline compilation, otherwise `false`.)doc";
 
 static const char *__doc_popart_DeviceInfo_connectionType = R"doc()doc";
 
@@ -4512,25 +4559,32 @@ static const char *__doc_popart_DeviceInfo_flags = R"doc()doc";
 static const char *__singlelinedoc_popart_DeviceInfo_flags = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_getChildIds =
-    R"doc(Get the child device ids. The value returned by :code:`getId()` for a multi-IPU
+    R"doc(Get the child device IDs.
+The value returned by :code:`getId()` for a multi-IPU
 device is a 'parent ID' and does not relate to the IDs of the devices
 it comprises. This function, in the case of real devices, uses the Poplar
 API to work out which single-IPU device IDs it relates to. In the case
-of replication a device includes all IPUs involved, so a 2-IPU model with
+of replication, a device includes all IPUs involved, so a 2-IPU model with
 2x replication would expect to have 4 child IDs returned here.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getChildIds =
-    R"doc(Get the child device ids. The value returned by :code:`getId()` for a multi-IPU device is a 'parent ID' and does not relate to the IDs of the devices it comprises. This function, in the case of real devices, uses the Poplar API to work out which single-IPU device IDs it relates to. In the case of replication a device includes all IPUs involved, so a 2-IPU model with 2x replication would expect to have 4 child IDs returned here.)doc";
+    R"doc(Get the child device IDs. The value returned by :code:`getId()` for a multi-IPU device is a 'parent ID' and does not relate to the IDs of the devices it comprises. This function, in the case of real devices, uses the Poplar API to work out which single-IPU device IDs it relates to. In the case of replication, a device includes all IPUs involved, so a 2-IPU model with 2x replication would expect to have 4 child IDs returned here.)doc";
 
 static const char *__doc_popart_DeviceInfo_getConnectionType =
-    R"doc(Get the connection type of the device.)doc";
+    R"doc(Get the setting for when to connect to the device.
+
+
+Returns:
+ The setting for when to connect to the device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getConnectionType =
-    R"doc(Get the connection type of the device.)doc";
+    R"doc(Get the setting for when to connect to the device. Returns: The setting for when to connect to the device.)doc";
 
-static const char *__doc_popart_DeviceInfo_getDriverIds = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_getDriverIds =
+    R"doc(Get the version of the drivers on the IPU.)doc";
 
-static const char *__singlelinedoc_popart_DeviceInfo_getDriverIds = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceInfo_getDriverIds =
+    R"doc(Get the version of the drivers on the IPU.)doc";
 
 static const char *__doc_popart_DeviceInfo_getId =
     R"doc(Get the device id.)doc";
@@ -4538,10 +4592,11 @@ static const char *__doc_popart_DeviceInfo_getId =
 static const char *__singlelinedoc_popart_DeviceInfo_getId =
     R"doc(Get the device id.)doc";
 
-static const char *__doc_popart_DeviceInfo_getIpuVersion = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_getIpuVersion =
+    R"doc(Get the IPU version.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getIpuVersion =
-    R"doc()doc";
+    R"doc(Get the IPU version.)doc";
 
 static const char *__doc_popart_DeviceInfo_getNumIpus =
     R"doc(Get the number of IPUs in the device.)doc";
@@ -4556,19 +4611,25 @@ static const char *__singlelinedoc_popart_DeviceInfo_getNumWorkerContexts =
     R"doc(Get the number of worker contexts per tile.)doc";
 
 static const char *__doc_popart_DeviceInfo_getOnDemandAttachTimeout =
-    R"doc()doc";
+    R"doc(Get timeout (in seconds) for trying to attach to a device.
+
+Returns:
+ The timeout (in seconds) for trying to attach to
+ the device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getOnDemandAttachTimeout =
-    R"doc()doc";
+    R"doc(Get timeout (in seconds) for trying to attach to a device. Returns: The timeout (in seconds) for trying to attach to the device.)doc";
 
 static const char *__doc_popart_DeviceInfo_getOptionFlags = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getOptionFlags =
     R"doc()doc";
 
-static const char *__doc_popart_DeviceInfo_getTarget = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_getTarget =
+    R"doc(Get the Poplar target.)doc";
 
-static const char *__singlelinedoc_popart_DeviceInfo_getTarget = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceInfo_getTarget =
+    R"doc(Get the Poplar target.)doc";
 
 static const char *__doc_popart_DeviceInfo_getTilesPerIPU =
     R"doc(Get the number of tiles per IPU.)doc";
@@ -4577,10 +4638,14 @@ static const char *__singlelinedoc_popart_DeviceInfo_getTilesPerIPU =
     R"doc(Get the number of tiles per IPU.)doc";
 
 static const char *__doc_popart_DeviceInfo_getType =
-    R"doc(Get the type of the device.)doc";
+    R"doc(Get the type of the device.
+
+
+Returns:
+ The type of the device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_getType =
-    R"doc(Get the type of the device.)doc";
+    R"doc(Get the type of the device. Returns: The type of the device.)doc";
 
 static const char *__doc_popart_DeviceInfo_getVersion =
     R"doc(Get the version of the software on the IPU.)doc";
@@ -4589,10 +4654,14 @@ static const char *__singlelinedoc_popart_DeviceInfo_getVersion =
     R"doc(Get the version of the software on the IPU.)doc";
 
 static const char *__doc_popart_DeviceInfo_isAttached =
-    R"doc(True if attached.)doc";
+    R"doc(Check if attached to the device.
+
+
+Returns:
+ :code:`true` if attached to the device, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_isAttached =
-    R"doc(True if attached.)doc";
+    R"doc(Check if attached to the device. Returns: :code:`true` if attached to the device, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_DeviceInfo_isHwCompatible = R"doc()doc";
 
@@ -4604,10 +4673,20 @@ static const char *__doc_popart_DeviceInfo_provider = R"doc()doc";
 static const char *__singlelinedoc_popart_DeviceInfo_provider = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_setOnDemandAttachTimeout =
-    R"doc()doc";
+    R"doc(Set timeout (in seconds) for trying to attach to a device.
+If unable to attach to a device on the first try, the DeviceManager
+instance will periodically try to attach to the device until successfully
+attached or this timeout is reached.
+
+\note This only applies when trying to attach with
+     DeviceConnectionType::OnDemand.
+
+
+Args:
+ seconds: The timeout (in seconds) for trying to attach to the device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_setOnDemandAttachTimeout =
-    R"doc()doc";
+    R"doc(Set timeout (in seconds) for trying to attach to a device. If unable to attach to a device on the first try, the DeviceManager instance will periodically try to attach to the device until successfully attached or this timeout is reached. \note This only applies when trying to attach with DeviceConnectionType::OnDemand. Args: seconds: The timeout (in seconds) for trying to attach to the device.)doc";
 
 static const char *__doc_popart_DeviceInfo_toString =
     R"doc(Return a description of the device.)doc";
@@ -4615,24 +4694,28 @@ static const char *__doc_popart_DeviceInfo_toString =
 static const char *__singlelinedoc_popart_DeviceInfo_toString =
     R"doc(Return a description of the device.)doc";
 
-static const char *__doc_popart_DeviceInfo_tryAttachUntilTimeout = R"doc()doc";
+static const char *__doc_popart_DeviceInfo_tryAttachUntilTimeout =
+    R"doc(Periodically try to attach to the device until either the attach timeout is
+reached or successfully attached.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_tryAttachUntilTimeout =
-    R"doc()doc";
+    R"doc(Periodically try to attach to the device until either the attach timeout is reached or successfully attached.)doc";
 
 static const char *__doc_popart_DeviceInfo_type = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_type = R"doc()doc";
 
 static const char *__doc_popart_DeviceInfo_writeToDeviceAccessLog =
-    R"doc(Log an event for device debugging purposes. This event will get logged to
-the file location set by evironment variable
-POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. \param event A textual
-description of the device event. \param auxKeyVals Additional parameters
-to log.)doc";
+    R"doc(Log an event for device debugging purposes.
+This event will get logged to the file location defined by the evironment
+variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set.
+
+Args:
+ event: A text description of the event to be written to the log.
+ auxKeyVals: Optional additional parameters to log.)doc";
 
 static const char *__singlelinedoc_popart_DeviceInfo_writeToDeviceAccessLog =
-    R"doc(Log an event for device debugging purposes. This event will get logged to the file location set by evironment variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. \param event A textual description of the device event. \param auxKeyVals Additional parameters to log.)doc";
+    R"doc(Log an event for device debugging purposes. This event will get logged to the file location defined by the evironment variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set. Args: event: A text description of the event to be written to the log. auxKeyVals: Optional additional parameters to log.)doc";
 
 static const char *__doc_popart_DeviceManager =
     R"doc(A class to manage devices.)doc";
@@ -4644,39 +4727,42 @@ static const char *__doc_popart_DeviceManager_acquireAvailableDevice =
     R"doc(Finds an available hardware device, with a certain number of IPUs.
 This method will attach to the device if ``connectionType`` is equal to
 DeviceConnectionType::Always.
+Throws an error if there are less than ``numIpus`` IPUs available.
 
 Args:
  numIpus: The number of IPUs on the device [=1].
- tilesPerIPU: The number of tiles per IPU (0 will match any number)
-   [=0]
- pattern: The sync pattern to use.
+ tilesPerIPU: The number of tiles per IPU. An input of 0 will match
+      any number. (Default: 0).
+ pattern: The setting for when to synchronise in a multi-IPU
+      system. (Default: SyncPattern::Full).
  connectionType: The connection type, for deciding when to attach to
-   the device.
+      the device.
  selectionCriterion: How to select a device from the list of valid
-   selections.
+      selections.
 
 Returns:
  A device, which can be used with a session.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_acquireAvailableDevice =
-    R"doc(Finds an available hardware device, with a certain number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. selectionCriterion: How to select a device from the list of valid selections. Returns: A device, which can be used with a session.)doc";
+    R"doc(Finds an available hardware device, with a certain number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Throws an error if there are less than ``numIpus`` IPUs available. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU. An input of 0 will match any number. (Default: 0). pattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). connectionType: The connection type, for deciding when to attach to the device. selectionCriterion: How to select a device from the list of valid selections. Returns: A device, which can be used with a session.)doc";
 
 static const char *__doc_popart_DeviceManager_acquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info
+    R"doc(Allocates the hardware device by ID. This ID can be found running :code:`gc-info
  -l`. This method will attach to the device if ``connectionType`` is equal
 to DeviceConnectionType::Always.
 
 Args:
- id: The index of the IPU to be used.
- pattern: The sync pattern to use.
+ id: The ID of the IPU to be used.
+ pattern: The setting for when to synchronise in a multi-IPU
+      system. (Default: SyncPattern::Full).
  connectionType: The connection type, for deciding when to attach to
-   the device.
+      the device. (Default: DeviceConnectionType::Always).
 
 Returns:
  A device, which can be used with a session.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_acquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info -l`. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Args: id: The index of the IPU to be used. pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. Returns: A device, which can be used with a session.)doc";
+    R"doc(Allocates the hardware device by ID. This ID can be found running :code:`gc-info -l`. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. Args: id: The ID of the IPU to be used. pattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). connectionType: The connection type, for deciding when to attach to the device. (Default: DeviceConnectionType::Always). Returns: A device, which can be used with a session.)doc";
 
 static const char *__doc_popart_DeviceManager_attachTimeout = R"doc()doc";
 
@@ -4684,45 +4770,45 @@ static const char *__singlelinedoc_popart_DeviceManager_attachTimeout =
     R"doc()doc";
 
 static const char *__doc_popart_DeviceManager_createCpuDevice =
-    R"doc(Create a 'simulated' CPU device.
+    R"doc(Create a simulated CPU device for testing purposes.
 
 Returns:
- A device.)doc";
+ A simulated CPU device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createCpuDevice =
-    R"doc(Create a 'simulated' CPU device. Returns: A device.)doc";
+    R"doc(Create a simulated CPU device for testing purposes. Returns: A simulated CPU device.)doc";
 
 static const char *__doc_popart_DeviceManager_createDeviceManager =
     R"doc(Accessor for the device manager.
 
 Returns:
- A reference to the DeviceManager.)doc";
+ A reference to the DeviceManager instance.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createDeviceManager =
-    R"doc(Accessor for the device manager. Returns: A reference to the DeviceManager.)doc";
+    R"doc(Accessor for the device manager. Returns: A reference to the DeviceManager instance.)doc";
 
 static const char *__doc_popart_DeviceManager_createHostDevice =
-    R"doc(Create a 'simulated' device on the host.
+    R"doc(Create a simulated device on the host for testing purposes.
 
 
 Args:
- type: The type of device.
- options: Configuration settings for the host device.
+ type: The type of device to simulate.
+ options: The configuration settings for the host device.
 
 Returns:
- A device.)doc";
+ The requested device for testing purposes.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createHostDevice =
-    R"doc(Create a 'simulated' device on the host. Args: type: The type of device. options: Configuration settings for the host device. Returns: A device.)doc";
+    R"doc(Create a simulated device on the host for testing purposes. Args: type: The type of device to simulate. options: The configuration settings for the host device. Returns: The requested device for testing purposes.)doc";
 
 static const char *__doc_popart_DeviceManager_createIpuModelDevice =
-    R"doc(Create a 'simulated' IPU Model device.
+    R"doc(Create a simulated :code:`IpuModel` device for testing purposes.
 The following options are supported:
 
-* ``numIPUs``:         The number of IPUs to simulate [=1]
-* ``ge``:     The number of tiles per IPU [=defaultFewTiles]
-* ``compileIPUCode``:  Whether or not to compile real IPU code for
-  modelling
+   - :code:`numIPUs`: The number of IPUs to simulate (Default: 1).
+   - :code:`ge`: The number of tiles per IPU (Default: defaultFewTiles).
+   - :code:`compileIPUCode`:  Indicate whether or not to compile real IPU code
+          for modelling.
 
 
 Args:
@@ -4732,28 +4818,43 @@ Returns:
  A device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createIpuModelDevice =
-    R"doc(Create a 'simulated' IPU Model device. The following options are supported: * ``numIPUs``:         The number of IPUs to simulate [=1] * ``ge``:     The number of tiles per IPU [=defaultFewTiles] * ``compileIPUCode``:  Whether or not to compile real IPU code for modelling Args: options: Configuration settings for the IPU Model. Returns: A device.)doc";
+    R"doc(Create a simulated :code:`IpuModel` device for testing purposes. The following options are supported: - :code:`numIPUs`: The number of IPUs to simulate (Default: 1). - :code:`ge`: The number of tiles per IPU (Default: defaultFewTiles). - :code:`compileIPUCode`:  Indicate whether or not to compile real IPU code for modelling. Args: options: Configuration settings for the IPU Model. Returns: A device.)doc";
 
 static const char *__doc_popart_DeviceManager_createOfflineIPUDevice =
-    R"doc(Create a device resembling an IPU for offline compilation,
+    R"doc(Create a simulated :code:`OfflineIpu` device for testing purposes.
+This resembles an IPU and is used for offline compilation.
+
 The following options are supported:
 
-* ``numIPUs``:        The number of IPUs to compile for
-* ``ge``:    The number of tiles per IPU [=defaultManyTiles]
-* ``ipuVersion``:     The ipu architecture [="ipu1"]
-* ``syncPattern``:    The sync pattern to use:
-                      full/singlePipline/replicaAndLadder,
-                      defaults to full
+   - :code:`numIPUs`: The number of IPUs to compile for
+   - :code:`ge`: The number of tiles per IPU (Default: defaultManyTiles).
+   - :code:`ipuVersion`: The ipu architecture (Default: "ipu1").
+   - :code:`syncPattern`: The setting for synchronisation in a multi-IPU system.
 
 
 Args:
  options: Configuration settings for the IPU Model.
 
 Returns:
- A device.)doc";
+ A simulated :code:`OfflineIpu` device.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createOfflineIPUDevice =
-    R"doc(Create a device resembling an IPU for offline compilation, The following options are supported: * ``numIPUs``:        The number of IPUs to compile for * ``ge``:    The number of tiles per IPU [=defaultManyTiles] * ``ipuVersion``:     The ipu architecture [="ipu1"] * ``syncPattern``:    The sync pattern to use: full/singlePipline/replicaAndLadder, defaults to full Args: options: Configuration settings for the IPU Model. Returns: A device.)doc";
+    R"doc(Create a simulated :code:`OfflineIpu` device for testing purposes. This resembles an IPU and is used for offline compilation. The following options are supported: - :code:`numIPUs`: The number of IPUs to compile for - :code:`ge`: The number of tiles per IPU (Default: defaultManyTiles). - :code:`ipuVersion`: The ipu architecture (Default: "ipu1"). - :code:`syncPattern`: The setting for synchronisation in a multi-IPU system. Args: options: Configuration settings for the IPU Model. Returns: A simulated :code:`OfflineIpu` device.)doc";
+
+static const char *__doc_popart_DeviceManager_createOfflineIpuFromDeviceInfo =
+    R"doc(Create a simulated :code:`OfflineIpu` device from the description of another
+device.
+
+
+Args:
+ deviceInfo: The device to create a :code:`OfflineIpu` version of.
+
+Returns:
+ An :code:`OfflineIpu` device.)doc";
+
+static const char
+    *__singlelinedoc_popart_DeviceManager_createOfflineIpuFromDeviceInfo =
+        R"doc(Create a simulated :code:`OfflineIpu` device from the description of another device. Args: deviceInfo: The device to create a :code:`OfflineIpu` version of. Returns: An :code:`OfflineIpu` device.)doc";
 
 static const char *__doc_popart_DeviceManager_createSimDevice = R"doc()doc";
 
@@ -4761,53 +4862,71 @@ static const char *__singlelinedoc_popart_DeviceManager_createSimDevice =
     R"doc()doc";
 
 static const char *__doc_popart_DeviceManager_enumerate =
-    R"doc(See DeviceProvider::enumerate.)doc";
+    R"doc(Get the list of all devices that satisfy the specified criteria.
+
+
+Args:
+ devices: The list of devices.
+ requiredNumIPUs: The number of IPUs required.
+ syncPattern: The setting for when to synchronise in a multi-IPU
+      system.
+ type: The type of the device to use for compilation and execution.
+ connectionType: The setting for when to connect to the device.
+ requiredTilesPerIPU: The number of tiles per IPU required.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_enumerate =
-    R"doc(See DeviceProvider::enumerate.)doc";
+    R"doc(Get the list of all devices that satisfy the specified criteria. Args: devices: The list of devices. requiredNumIPUs: The number of IPUs required. syncPattern: The setting for when to synchronise in a multi-IPU system. type: The type of the device to use for compilation and execution. connectionType: The setting for when to connect to the device. requiredTilesPerIPU: The number of tiles per IPU required.)doc";
 
 static const char *__doc_popart_DeviceManager_enumerateDevices =
-    R"doc(Get the list of all devices fulfilling the specified criteria.
+    R"doc(Get the list of all devices with the required criteria.
 
 
 Args:
- pattern: Sync pattern.
- numIpus: Number of IPUs to request.
- deviceType: Type of device required.
- tilesPerIPU: The number of tiles per IPU required.
+ pattern: The setting for when to synchronise in a multi-IPU
+      system. (Default: SyncPattern::Full).
+ numIpus: The number of IPUs required. (Default: 1).
+ deviceType: The type of the device required. (Default:
+       DeviceType::Ipu).
+ connectionType: The setting for when to connect to the device.
+       (Default: DeviceConnectionType::Always).
+ tilesPerIPU: The number of tiles per IPU required. (Default: 0).
 
 Returns:
- List of requested IPUs.)doc";
+ The list of devices with the required criteria.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_enumerateDevices =
-    R"doc(Get the list of all devices fulfilling the specified criteria. Args: pattern: Sync pattern. numIpus: Number of IPUs to request. deviceType: Type of device required. tilesPerIPU: The number of tiles per IPU required. Returns: List of requested IPUs.)doc";
+    R"doc(Get the list of all devices with the required criteria. Args: pattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). numIpus: The number of IPUs required. (Default: 1). deviceType: The type of the device required. (Default: DeviceType::Ipu). connectionType: The setting for when to connect to the device. (Default: DeviceConnectionType::Always). tilesPerIPU: The number of tiles per IPU required. (Default: 0). Returns: The list of devices with the required criteria.)doc";
 
 static const char *__doc_popart_DeviceManager_getDevice =
-    R"doc(Get the Device object of a device by ID.
+    R"doc(Get the list of all devices with the required criteria.
 
 
 Args:
- syncPattern: Sync pattern.
- deviceManagerId: Number of IPUs to request.
+ syncPattern: The setting for when to synchronise in a multi-IPU
+      system. (Default: SyncPattern::Full).
+ deviceManagerId: The ID of the requested device. (Default: 0)
+ connectionType: The setting for when to connect to the device.
+      (Default: DeviceConnectionType::Always).
 
 Returns:
- List of requested IPUs.)doc";
+ The list of devices with the required criteria.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_getDevice =
-    R"doc(Get the Device object of a device by ID. Args: syncPattern: Sync pattern. deviceManagerId: Number of IPUs to request. Returns: List of requested IPUs.)doc";
+    R"doc(Get the list of all devices with the required criteria. Args: syncPattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). deviceManagerId: The ID of the requested device. (Default: 0) connectionType: The setting for when to connect to the device. (Default: DeviceConnectionType::Always). Returns: The list of devices with the required criteria.)doc";
 
 static const char *__doc_popart_DeviceManager_providers = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_providers = R"doc()doc";
 
 static const char *__doc_popart_DeviceManager_registerDeviceProvider =
-    R"doc(Used to register a device provider.
+    R"doc(Register a device provider.
 
 Args:
- provider: A provider.)doc";
+ provider: The device provider to be registered with the device
+       manager.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_registerDeviceProvider =
-    R"doc(Used to register a device provider. Args: provider: A provider.)doc";
+    R"doc(Register a device provider. Args: provider: The device provider to be registered with the device manager.)doc";
 
 static const char *__doc_popart_DeviceManager_setOnDemandAttachTimeout =
     R"doc(If unable to attach to a device on first try, the attach timeout
@@ -4822,48 +4941,49 @@ static const char *__singlelinedoc_popart_DeviceManager_setOnDemandAttachTimeout
     R"doc(If unable to attach to a device on first try, the attach timeout set here is the length of time (in seconds) that the DeviceManager will wait to try and attach. Note: this only takes effect when trying to attach with a DeviceConnectionType::OnDemand DeviceConnectionType. Args: seconds: The attach timeout in seconds.)doc";
 
 static const char *__doc_popart_DeviceManager_tryAcquireAvailableDevice =
-    R"doc(Finds an available hardware device, with a certain number of IPUs.
+    R"doc(Finds an available hardware device, with the specified number of IPUs.
 This method will attach to the device if ``connectionType`` is equal to
-DeviceConnectionType::Always. It will not except if this fails, making
-it suitable when polling for an available device when resources are
-constrained.
+DeviceConnectionType::Always. This method is suitable when polling for an
+available device when resources are constrained.
 
 Args:
- numIpus: The number of IPUs on the device [=1].
- tilesPerIPU: The number of tiles per IPU (0 will match any number)
-   [=0]
- pattern: The sync pattern to use.
- connectionType: The connection type, for deciding when to attach to
-   the device.
- selectionCriterion: How to select a device from the list of valid
-   selections.
+ numIpus: The number of IPUs on the device (Default: 1).
+ tilesPerIPU: The number of tiles per IPU. An input of 0 will match
+      any number. (Default: 0).
+ pattern: The setting for when to synchronise in a multi-IPU
+      system. (Default: SyncPattern::Full).
+ connectionType: The setting for when to connect to the device.
+       (Default: DeviceConnectionType::Always).
+ selectionCriterion: The method for selecting a device from the list
+       of valid selections. (Default: DeviceSelectionCriterion::First).
 
 Returns:
  A device, which can be used with a session. If no device is
  acquired, a nullptr is returned.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_tryAcquireAvailableDevice =
-    R"doc(Finds an available hardware device, with a certain number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. It will not except if this fails, making it suitable when polling for an available device when resources are constrained. Args: numIpus: The number of IPUs on the device [=1]. tilesPerIPU: The number of tiles per IPU (0 will match any number) [=0] pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. selectionCriterion: How to select a device from the list of valid selections. Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
+    R"doc(Finds an available hardware device, with the specified number of IPUs. This method will attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. This method is suitable when polling for an available device when resources are constrained. Args: numIpus: The number of IPUs on the device (Default: 1). tilesPerIPU: The number of tiles per IPU. An input of 0 will match any number. (Default: 0). pattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). connectionType: The setting for when to connect to the device. (Default: DeviceConnectionType::Always). selectionCriterion: The method for selecting a device from the list of valid selections. (Default: DeviceSelectionCriterion::First). Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
 
 static const char *__doc_popart_DeviceManager_tryAcquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info
+    R"doc(Allocates the hardware device by ID. This ID can be found running :code:`gc-info
  -l`. This method will try to attach to the device if ``connectionType`` is
-equal to DeviceConnectionType::Always. It will not except if this fails,
-making it suitable when polling for an available device when resources are
-constrained.
+ equal to DeviceConnectionType::Always. This method is suitable when
+polling for an available device when resources are constrained.
+
 
 Args:
- id: The index of the IPU to be used.
- pattern: The sync pattern to use.
+ id: The ID of the IPU to be used.
+ pattern: The setting for when to synchronise in a multi-IPU system.
+      (Default: SyncPattern::Full).
  connectionType: The connection type, for deciding when to attach to
-   the device.
+      the device. (Default: DeviceConnectionType::Always).
 
 Returns:
  A device, which can be used with a session. If no device is
- acquired, a nullptr is returned.)doc";
+acquired, a nullptr is returned.)doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_tryAcquireDeviceById =
-    R"doc(Allocates the hardware device by id. This id can be found running :code:`gc-info -l`. This method will try to attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. It will not except if this fails, making it suitable when polling for an available device when resources are constrained. Args: id: The index of the IPU to be used. pattern: The sync pattern to use. connectionType: The connection type, for deciding when to attach to the device. Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
+    R"doc(Allocates the hardware device by ID. This ID can be found running :code:`gc-info -l`. This method will try to attach to the device if ``connectionType`` is equal to DeviceConnectionType::Always. This method is suitable when polling for an available device when resources are constrained. Args: id: The ID of the IPU to be used. pattern: The setting for when to synchronise in a multi-IPU system. (Default: SyncPattern::Full). connectionType: The connection type, for deciding when to attach to the device. (Default: DeviceConnectionType::Always). Returns: A device, which can be used with a session. If no device is acquired, a nullptr is returned.)doc";
 
 static const char *__doc_popart_DeviceProvider =
     R"doc(The interface for device providers which are registered with the device
@@ -4880,67 +5000,119 @@ static const char *__singlelinedoc_popart_DeviceProvider_2 =
     R"doc(The interface for device providers which are registered with the device manager.)doc";
 
 static const char *__doc_popart_DeviceProvider_createHostDevice =
-    R"doc(Create a host device for testing.)doc";
-
-static const char *__singlelinedoc_popart_DeviceProvider_createHostDevice =
-    R"doc(Create a host device for testing.)doc";
-
-static const char *__doc_popart_DeviceProvider_enumerate =
-    R"doc(Get the list of all devices fulfilling the specified criteria.
+    R"doc(Create a host device for testing.
 
 
 Args:
- devices: Devices to get.
- requiredNumIPUs: Number of IPUs to request.
- syncPattern: Sync pattern.
- requiredTilesPerIPU: Number of tiles per IPU to request.)doc";
+ type: The type of the device to use for compilation and execution.
+ options: The configuration for the created device. See
+      createCpuDevice(), createIpuModelDevice(), createOfflineIPUDevice()
+      and createSimDevice() for more information about ``options.``
+ syncPattern: The setting for when to synchronise in a multi-IPU
+      system.
+
+Returns:
+ The device for use in testing.)doc";
+
+static const char *__singlelinedoc_popart_DeviceProvider_createHostDevice =
+    R"doc(Create a host device for testing. Args: type: The type of the device to use for compilation and execution. options: The configuration for the created device. See createCpuDevice(), createIpuModelDevice(), createOfflineIPUDevice() and createSimDevice() for more information about ``options.`` syncPattern: The setting for when to synchronise in a multi-IPU system. Returns: The device for use in testing.)doc";
+
+static const char *__doc_popart_DeviceProvider_createOfflineIpuFromDeviceInfo =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_DeviceProvider_createOfflineIpuFromDeviceInfo =
+        R"doc()doc";
+
+static const char *__doc_popart_DeviceProvider_enumerate =
+    R"doc(Get the list of all devices that satisfy the specified criteria.
+
+
+Args:
+ devices: The list of devices.
+ requiredNumIPUs: The number of IPUs required.
+ syncPattern: The setting for when to synchronise in a multi-IPU
+      system.
+ type: The type of the device to use for compilation and execution.
+ connectionType: The setting for when to connect to the device.
+ requiredTilesPerIPU: The number of tiles per IPU required.)doc";
 
 static const char *__singlelinedoc_popart_DeviceProvider_enumerate =
-    R"doc(Get the list of all devices fulfilling the specified criteria. Args: devices: Devices to get. requiredNumIPUs: Number of IPUs to request. syncPattern: Sync pattern. requiredTilesPerIPU: Number of tiles per IPU to request.)doc";
+    R"doc(Get the list of all devices that satisfy the specified criteria. Args: devices: The list of devices. requiredNumIPUs: The number of IPUs required. syncPattern: The setting for when to synchronise in a multi-IPU system. type: The type of the device to use for compilation and execution. connectionType: The setting for when to connect to the device. requiredTilesPerIPU: The number of tiles per IPU required.)doc";
 
-static const char *__doc_popart_DeviceProvider_getDevice = R"doc()doc";
+static const char *__doc_popart_DeviceProvider_getDevice =
+    R"doc(Get the list of all devices that satisfy the specified criteria.
+Throws an error if the connection type is DeviceConnectionType::Never.
+
+
+Args:
+ syncPattern: The setting for synchronisation on multi-IPU systems.
+ deviceManagerId: The ID of the requested device.
+ connectionType: The setting for when to connect to the device.
+
+Returns:
+ The list of all devices that satisfy the specified criteria.)doc";
 
 static const char *__singlelinedoc_popart_DeviceProvider_getDevice =
-    R"doc()doc";
+    R"doc(Get the list of all devices that satisfy the specified criteria. Throws an error if the connection type is DeviceConnectionType::Never. Args: syncPattern: The setting for synchronisation on multi-IPU systems. deviceManagerId: The ID of the requested device. connectionType: The setting for when to connect to the device. Returns: The list of all devices that satisfy the specified criteria.)doc";
 
-static const char *__doc_popart_DeviceSelectionCriterion = R"doc()doc";
+static const char *__doc_popart_DeviceSelectionCriterion =
+    R"doc(Controls how to select an available IPU.)doc";
 
 static const char *__singlelinedoc_popart_DeviceSelectionCriterion =
-    R"doc()doc";
+    R"doc(Controls how to select an available IPU.)doc";
 
 static const char *__doc_popart_DeviceSelectionCriterion_First = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceSelectionCriterion_First =
     R"doc()doc";
 
-static const char *__doc_popart_DeviceSelectionCriterion_Random = R"doc()doc";
+static const char *__doc_popart_DeviceSelectionCriterion_Random =
+    R"doc(Select the first device available. (Default).)doc";
 
 static const char *__singlelinedoc_popart_DeviceSelectionCriterion_Random =
-    R"doc()doc";
+    R"doc(Select the first device available. (Default).)doc";
 
-static const char *__doc_popart_DeviceType = R"doc()doc";
+static const char *__doc_popart_DeviceType =
+    R"doc(Defines the type of device to use for graph compilation and execution.)doc";
 
-static const char *__singlelinedoc_popart_DeviceType = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType =
+    R"doc(Defines the type of device to use for graph compilation and execution.)doc";
 
-static const char *__doc_popart_DeviceType_Cpu = R"doc()doc";
+static const char *__doc_popart_DeviceType_Cpu =
+    R"doc(Use CPU for graph compilation and execution.)doc";
 
-static const char *__singlelinedoc_popart_DeviceType_Cpu = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType_Cpu =
+    R"doc(Use CPU for graph compilation and execution.)doc";
 
-static const char *__doc_popart_DeviceType_Ipu = R"doc()doc";
+static const char *__doc_popart_DeviceType_Ipu =
+    R"doc(Use IPU for graph execution.)doc";
 
-static const char *__singlelinedoc_popart_DeviceType_Ipu = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType_Ipu =
+    R"doc(Use IPU for graph execution.)doc";
 
-static const char *__doc_popart_DeviceType_IpuModel = R"doc()doc";
+static const char *__doc_popart_DeviceType_IpuModel =
+    R"doc(Use the Poplar IPU Model for graph compilation and execution.
+The IPU Model will simulate the behaviour of the IPU hardware. It will not
+completely implement every aspect of a real IPU. (Default).)doc";
 
-static const char *__singlelinedoc_popart_DeviceType_IpuModel = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType_IpuModel =
+    R"doc(Use the Poplar IPU Model for graph compilation and execution. The IPU Model will simulate the behaviour of the IPU hardware. It will not completely implement every aspect of a real IPU. (Default).)doc";
 
-static const char *__doc_popart_DeviceType_OfflineIpu = R"doc()doc";
+static const char *__doc_popart_DeviceType_OfflineIpu =
+    R"doc(Compile graph for later execution.
+This can be done even if IPUs are not present.
+Offline graph compilation is also useful for verifying memory constraints.)doc";
 
-static const char *__singlelinedoc_popart_DeviceType_OfflineIpu = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType_OfflineIpu =
+    R"doc(Compile graph for later execution. This can be done even if IPUs are not present. Offline graph compilation is also useful for verifying memory constraints.)doc";
 
-static const char *__doc_popart_DeviceType_Sim = R"doc()doc";
+static const char *__doc_popart_DeviceType_Sim =
+    R"doc([For Graphcore intenal use only]
+Use a simulator for graph compilation and execution.)doc";
 
-static const char *__singlelinedoc_popart_DeviceType_Sim = R"doc()doc";
+static const char *__singlelinedoc_popart_DeviceType_Sim =
+    R"doc([For Graphcore intenal use only] Use a simulator for graph compilation and execution.)doc";
 
 static const char *__doc_popart_ErrorSource = R"doc()doc";
 
@@ -5098,16 +5270,61 @@ Args:
 static const char *__singlelinedoc_popart_ExchangeDescriptor_ExchangeDescriptor_2 =
     R"doc(Create an ExchangeDescriptor for a remote exchange Args: direction: \p Load (from host) or \p Store (to host) id: Remote buffer id vgid: Virtual graph for the exchange tileSet: Tile set for the exchange numInputs: Number of tensor inputs expected numOutputs: Number of tensor outputs expected inplace: If the output of the exchange should alias the input during \p Load)doc";
 
+static const char *__doc_popart_ExchangeDescriptor_ExchangeDescriptor_3 =
+    R"doc(Create an ExchangeDescriptor for an External code copy op.
+
+
+Args:
+ direction: \p Load (from host) or \p Store (to host)
+ id: GraphId of the graph to load.
+ destination: The destination TileSet to load to .
+ destinationType: The destination memory type to load to.)doc";
+
+static const char *__singlelinedoc_popart_ExchangeDescriptor_ExchangeDescriptor_3 =
+    R"doc(Create an ExchangeDescriptor for an External code copy op. Args: direction: \p Load (from host) or \p Store (to host) id: GraphId of the graph to load. destination: The destination TileSet to load to . destinationType: The destination memory type to load to.)doc";
+
+static const char *__doc_popart_ExchangeDescriptor_destinationCodeMemoryType =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_ExchangeDescriptor_destinationCodeMemoryType =
+        R"doc()doc";
+
 static const char *__doc_popart_ExchangeDescriptor_direction =
     R"doc(To IPU (load) or from IPU (store))doc";
 
 static const char *__singlelinedoc_popart_ExchangeDescriptor_direction =
     R"doc(To IPU (load) or from IPU (store))doc";
 
+static const char *__doc_popart_ExchangeDescriptor_getDestinationCodeMemoryType =
+    R"doc(Get the Destination Location the code will be sent to, if this is an
+ExchangeDescriptor for an RemoteCodeLoadOpOp
+
+
+Returns:
+ OptionalLocationType One of:
+
+Buffer - Stored in non-executable buffer memory.
+ExecutableMemory - Stored in executable memory.)doc";
+
+static const char
+    *__singlelinedoc_popart_ExchangeDescriptor_getDestinationCodeMemoryType =
+        R"doc(Get the Destination Location the code will be sent to, if this is an ExchangeDescriptor for an RemoteCodeLoadOpOp Returns: OptionalLocationType One of: Buffer - Stored in non-executable buffer memory. ExecutableMemory - Stored in executable memory.)doc";
+
 static const char *__doc_popart_ExchangeDescriptor_getDirection = R"doc()doc";
 
 static const char *__singlelinedoc_popart_ExchangeDescriptor_getDirection =
     R"doc()doc";
+
+static const char *__doc_popart_ExchangeDescriptor_getGraphToLoadId =
+    R"doc(GraphId of the graph which this op will load code for.
+
+
+Returns:
+ const OptionalGraphId& Id in question.)doc";
+
+static const char *__singlelinedoc_popart_ExchangeDescriptor_getGraphToLoadId =
+    R"doc(GraphId of the graph which this op will load code for. Returns: const OptionalGraphId& Id in question.)doc";
 
 static const char *__doc_popart_ExchangeDescriptor_getHostStreamTensorId =
     R"doc()doc";
@@ -5152,6 +5369,11 @@ static const char *__doc_popart_ExchangeDescriptor_getVGraphID = R"doc()doc";
 static const char *__singlelinedoc_popart_ExchangeDescriptor_getVGraphID =
     R"doc()doc";
 
+static const char *__doc_popart_ExchangeDescriptor_graphToLoadId = R"doc()doc";
+
+static const char *__singlelinedoc_popart_ExchangeDescriptor_graphToLoadId =
+    R"doc()doc";
+
 static const char *__doc_popart_ExchangeDescriptor_hostStreamTensorId =
     R"doc(Only set for host exchanges)doc";
 
@@ -5164,6 +5386,20 @@ static const char *__doc_popart_ExchangeDescriptor_inplace =
 
 static const char *__singlelinedoc_popart_ExchangeDescriptor_inplace =
     R"doc(Whether a remote loaded tensor should be inplaced)doc";
+
+static const char *__doc_popart_ExchangeDescriptor_isCodeCopy =
+    R"doc(Returns true if this exchange descriptor is is associated with a code copy
+operation.
+
+
+Returns:
+ true If it is associated with a code copy op.
+
+Returns:
+ false Otherwise.)doc";
+
+static const char *__singlelinedoc_popart_ExchangeDescriptor_isCodeCopy =
+    R"doc(Returns true if this exchange descriptor is is associated with a code copy operation. Returns: true If it is associated with a code copy op. Returns: false Otherwise.)doc";
 
 static const char *__doc_popart_ExchangeDescriptor_isHostExchange = R"doc()doc";
 
@@ -5359,45 +5595,51 @@ static const char *__doc_popart_ExchangeStrategy_OverlapStep =
 static const char *__singlelinedoc_popart_ExchangeStrategy_OverlapStep =
     R"doc(Preload values in the previous host training step for next step (implies OverlapLoops) - not supported yet)doc";
 
-static const char *__doc_popart_ExecutionContext = R"doc()doc";
+static const char *__doc_popart_ExecutionContext =
+    R"doc(Define the type of the execution context.)doc";
 
-static const char *__singlelinedoc_popart_ExecutionContext = R"doc()doc";
+static const char *__singlelinedoc_popart_ExecutionContext =
+    R"doc(Define the type of the execution context.)doc";
 
 static const char *__doc_popart_ExecutionContext_AccumulateOuterFragment =
-    R"doc()doc";
+    R"doc(Used to run the AccumulateOps after the gradient accumulation loop
+completes.)doc";
 
-static const char
-    *__singlelinedoc_popart_ExecutionContext_AccumulateOuterFragment =
-        R"doc()doc";
+static const char *__singlelinedoc_popart_ExecutionContext_AccumulateOuterFragment =
+    R"doc(Used to run the AccumulateOps after the gradient accumulation loop completes.)doc";
 
-static const char *__doc_popart_ExecutionContext_Normal = R"doc()doc";
+static const char *__doc_popart_ExecutionContext_Normal =
+    R"doc(Run the forward and backward passes (Default).)doc";
 
-static const char *__singlelinedoc_popart_ExecutionContext_Normal = R"doc()doc";
+static const char *__singlelinedoc_popart_ExecutionContext_Normal =
+    R"doc(Run the forward and backward passes (Default).)doc";
 
 static const char *__doc_popart_ExecutionContext_OptimizerFromHostFragment =
-    R"doc()doc";
+    R"doc(Used to stream the optimizer state from the host.)doc";
 
 static const char
     *__singlelinedoc_popart_ExecutionContext_OptimizerFromHostFragment =
-        R"doc()doc";
+        R"doc(Used to stream the optimizer state from the host.)doc";
 
-static const char *__doc_popart_ExecutionContext_Subgraph = R"doc()doc";
+static const char *__doc_popart_ExecutionContext_Subgraph =
+    R"doc(Program fragment used for subgraph-specific operations.)doc";
 
 static const char *__singlelinedoc_popart_ExecutionContext_Subgraph =
-    R"doc()doc";
+    R"doc(Program fragment used for subgraph-specific operations.)doc";
 
 static const char *__doc_popart_ExecutionContext_WeightsFromHostFragment =
-    R"doc()doc";
+    R"doc(Used to transfer weights from host to device.)doc";
 
 static const char
     *__singlelinedoc_popart_ExecutionContext_WeightsFromHostFragment =
-        R"doc()doc";
+        R"doc(Used to transfer weights from host to device.)doc";
 
 static const char *__doc_popart_ExecutionContext_WeightsToHostFragment =
-    R"doc()doc";
+    R"doc(Used to download weights from the device to the host.)doc";
 
-static const char *
-    __singlelinedoc_popart_ExecutionContext_WeightsToHostFragment = R"doc()doc";
+static const char
+    *__singlelinedoc_popart_ExecutionContext_WeightsToHostFragment =
+        R"doc(Used to download weights from the device to the host.)doc";
 
 static const char *__doc_popart_ExecutionPhaseIOSchedule =
     R"doc(Enum type to specify when to load tensors.)doc";
@@ -5536,14 +5778,26 @@ static const char
     *__singlelinedoc_popart_ExecutionPhaseSettings_weightIOSchedule =
         R"doc(The execution phase IO schedule for weight tensors.)doc";
 
-static const char *__doc_popart_GradInOutMapper = R"doc()doc";
+static const char *__doc_popart_GradInOutMapper =
+    R"doc(Class that represents the mapping between the indices of the input tensors
+to the gradient operation and the indices of these same tensors in the
+non-gradient operation.)doc";
 
-static const char *__singlelinedoc_popart_GradInOutMapper = R"doc()doc";
+static const char *__singlelinedoc_popart_GradInOutMapper =
+    R"doc(Class that represents the mapping between the indices of the input tensors to the gradient operation and the indices of these same tensors in the non-gradient operation.)doc";
 
-static const char *__doc_popart_GradInOutMapper_GradInOutMapper = R"doc()doc";
+static const char *__doc_popart_GradInOutMapper_GradInOutMapper =
+    R"doc(Constructor for the GradInOutMapper class.
+
+
+Args:
+ iGrad_: The index of the input tensor to the gradient operation.
+ iNonGrad_: The index of the gradient operation input tensor as it
+      is indexed in the non-gradient operation.
+ GradOpInType: The type of the input tensor to the gradient operation.)doc";
 
 static const char *__singlelinedoc_popart_GradInOutMapper_GradInOutMapper =
-    R"doc()doc";
+    R"doc(Constructor for the GradInOutMapper class. Args: iGrad_: The index of the input tensor to the gradient operation. iNonGrad_: The index of the gradient operation input tensor as it is indexed in the non-gradient operation. GradOpInType: The type of the input tensor to the gradient operation.)doc";
 
 static const char *__doc_popart_GradInOutMapper_iGrad = R"doc()doc";
 
@@ -5554,33 +5808,52 @@ static const char *__doc_popart_GradInOutMapper_iNonGrad = R"doc()doc";
 static const char *__singlelinedoc_popart_GradInOutMapper_iNonGrad =
     R"doc()doc";
 
-static const char *__doc_popart_GradInOutMapper_operator_eq = R"doc()doc";
+static const char *__doc_popart_GradInOutMapper_operator_eq =
+    R"doc(Check if the current GradInOutMapper object is equal to another
+GradInOutMapper object.
+
+
+Args:
+ rhs: A GradInOutMapper object to be compared to the current object.
+
+
+Returns:
+ :code:`true` if objects are equal, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_GradInOutMapper_operator_eq =
-    R"doc()doc";
+    R"doc(Check if the current GradInOutMapper object is equal to another GradInOutMapper object. Args: rhs: A GradInOutMapper object to be compared to the current object. Returns: :code:`true` if objects are equal, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_GradInOutMapper_type = R"doc()doc";
 
 static const char *__singlelinedoc_popart_GradInOutMapper_type = R"doc()doc";
 
 static const char *__doc_popart_GradOpInType =
-    R"doc(The relationship between the input tensor of a grad-op and the
-corresponding non-grad-op.)doc";
+    R"doc(Define the relationship between the input tensors of a gradient operation and
+the corresponding non-gradient operation.)doc";
 
 static const char *__singlelinedoc_popart_GradOpInType =
-    R"doc(The relationship between the input tensor of a grad-op and the corresponding non-grad-op.)doc";
+    R"doc(Define the relationship between the input tensors of a gradient operation and the corresponding non-gradient operation.)doc";
 
-static const char *__doc_popart_GradOpInType_GradOut = R"doc()doc";
+static const char *__doc_popart_GradOpInType_GradOut =
+    R"doc(Indicates that the input tensor to the gradient operation is an output
+gradient tensor of the non-gradient operation.)doc";
 
-static const char *__singlelinedoc_popart_GradOpInType_GradOut = R"doc()doc";
+static const char *__singlelinedoc_popart_GradOpInType_GradOut =
+    R"doc(Indicates that the input tensor to the gradient operation is an output gradient tensor of the non-gradient operation.)doc";
 
-static const char *__doc_popart_GradOpInType_In = R"doc()doc";
+static const char *__doc_popart_GradOpInType_In =
+    R"doc(Indicates that the input tensor to the gradient operation is an input
+tensor of the non-gradient operation (Default).)doc";
 
-static const char *__singlelinedoc_popart_GradOpInType_In = R"doc()doc";
+static const char *__singlelinedoc_popart_GradOpInType_In =
+    R"doc(Indicates that the input tensor to the gradient operation is an input tensor of the non-gradient operation (Default).)doc";
 
-static const char *__doc_popart_GradOpInType_Out = R"doc()doc";
+static const char *__doc_popart_GradOpInType_Out =
+    R"doc(Indicates that the input tensor to the gradient operation is an output
+tensor of the non-gradient operation.)doc";
 
-static const char *__singlelinedoc_popart_GradOpInType_Out = R"doc()doc";
+static const char *__singlelinedoc_popart_GradOpInType_Out =
+    R"doc(Indicates that the input tensor to the gradient operation is an output tensor of the non-gradient operation.)doc";
 
 static const char *__doc_popart_GradientTensorTrackingMethod =
     R"doc(Enum type to specify the method for selecting gradient tensors whose
@@ -8054,30 +8327,32 @@ static const char *__doc_popart_Op = R"doc()doc";
 static const char *__singlelinedoc_popart_Op = R"doc()doc";
 
 static const char *__doc_popart_Op_2 =
-    R"doc(Parent class for the concrete ``Ops`` implementations.
+    R"doc(Parent class for the concrete ``Op`` implementations.
 
-The ``poplar`` implementation which the ``Op`` represents can be found in the
-corresponding \see Opx class, and will be lowered to ``poplar.``
+The ``poplar`` implementation which the op represents can be found in the
+corresponding popx::Opx class, and will be lowered to ``poplar.``
 
-See
-https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
-for further details.)doc";
+
+See Also:
+ [Custom ops in the PopART User
+Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__singlelinedoc_popart_Op_2 =
-    R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
+    R"doc(Parent class for the concrete ``Op`` implementations. The ``poplar`` implementation which the op represents can be found in the corresponding popx::Opx class, and will be lowered to ``poplar.`` See Also: [Custom ops in the PopART User Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__doc_popart_Op_3 =
-    R"doc(Parent class for the concrete ``Ops`` implementations.
+    R"doc(Parent class for the concrete ``Op`` implementations.
 
-The ``poplar`` implementation which the ``Op`` represents can be found in the
-corresponding \see Opx class, and will be lowered to ``poplar.``
+The ``poplar`` implementation which the op represents can be found in the
+corresponding popx::Opx class, and will be lowered to ``poplar.``
 
-See
-https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
-for further details.)doc";
+
+See Also:
+ [Custom ops in the PopART User
+Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__singlelinedoc_popart_Op_3 =
-    R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
+    R"doc(Parent class for the concrete ``Op`` implementations. The ``poplar`` implementation which the op represents can be found in the corresponding popx::Opx class, and will be lowered to ``poplar.`` See Also: [Custom ops in the PopART User Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__doc_popart_Op_4 = R"doc()doc";
 
@@ -8092,17 +8367,18 @@ static const char *__doc_popart_Op_6 = R"doc()doc";
 static const char *__singlelinedoc_popart_Op_6 = R"doc()doc";
 
 static const char *__doc_popart_Op_7 =
-    R"doc(Parent class for the concrete ``Ops`` implementations.
+    R"doc(Parent class for the concrete ``Op`` implementations.
 
-The ``poplar`` implementation which the ``Op`` represents can be found in the
-corresponding \see Opx class, and will be lowered to ``poplar.``
+The ``poplar`` implementation which the op represents can be found in the
+corresponding popx::Opx class, and will be lowered to ``poplar.``
 
-See
-https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html
-for further details.)doc";
+
+See Also:
+ [Custom ops in the PopART User
+Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__singlelinedoc_popart_Op_7 =
-    R"doc(Parent class for the concrete ``Ops`` implementations. The ``poplar`` implementation which the ``Op`` represents can be found in the corresponding \see Opx class, and will be lowered to ``poplar.`` See https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html for further details.)doc";
+    R"doc(Parent class for the concrete ``Op`` implementations. The ``poplar`` implementation which the op represents can be found in the corresponding popx::Opx class, and will be lowered to ``poplar.`` See Also: [Custom ops in the PopART User Guide](https://docs.graphcore.ai/projects/popart-user-guide/en/latest/custom_ops.html).)doc";
 
 static const char *__doc_popart_OpCreator = R"doc()doc";
 
@@ -8460,34 +8736,60 @@ static const char *__doc_popart_Op_Op =
 
 
 Args:
- _opid:    The operator identifier specifying domain:type:version,
-                 minimum and maximum number of input tensors and number of
-                 output tensors
- settings: Object containing general Op settings such as graph, name
-                 and scope.)doc";
+ _opid: The operator identifier specifying domain:type:version,
+      minimum and maximum number of input tensors and number of output
+      tensors.
+ settings: The general op settings such as graph, name and scope.)doc";
 
 static const char *__singlelinedoc_popart_Op_Op =
-    R"doc(Constructor of the ``Op`` class. Args: _opid:    The operator identifier specifying domain:type:version, minimum and maximum number of input tensors and number of output tensors settings: Object containing general Op settings such as graph, name and scope.)doc";
+    R"doc(Constructor of the ``Op`` class. Args: _opid: The operator identifier specifying domain:type:version, minimum and maximum number of input tensors and number of output tensors. settings: The general op settings such as graph, name and scope.)doc";
 
-static const char *__doc_popart_Op_Op_2 = R"doc()doc";
+static const char *__doc_popart_Op_Op_2 =
+    R"doc(Copy constructor. \note This does NOT copy input and output.)doc";
 
-static const char *__singlelinedoc_popart_Op_Op_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_Op_2 =
+    R"doc(Copy constructor. \note This does NOT copy input and output.)doc";
 
-static const char *__doc_popart_Op_Settings = R"doc()doc";
+static const char *__doc_popart_Op_Settings =
+    R"doc(Structure to capture the settings for the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_Settings = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_Settings =
+    R"doc(Structure to capture the settings for the op.)doc";
 
-static const char *__doc_popart_Op_Settings_Settings = R"doc()doc";
+static const char *__doc_popart_Op_Settings_Settings =
+    R"doc(Constructor for the Settings structure.
 
-static const char *__singlelinedoc_popart_Op_Settings_Settings = R"doc()doc";
 
-static const char *__doc_popart_Op_Settings_Settings_2 = R"doc()doc";
+Args:
+ graph_: The graph the op belongs to.
+ name_: The name of the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_Settings_Settings_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_Settings_Settings =
+    R"doc(Constructor for the Settings structure. Args: graph_: The graph the op belongs to. name_: The name of the op.)doc";
 
-static const char *__doc_popart_Op_Settings_Settings_3 = R"doc()doc";
+static const char *__doc_popart_Op_Settings_Settings_2 =
+    R"doc(Constructor for the Settings structure.
 
-static const char *__singlelinedoc_popart_Op_Settings_Settings_3 = R"doc()doc";
+
+Args:
+ graph_: The graph the op belongs to.
+ name_: The name of the op.
+ scope_: The scope of the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_Settings_Settings_2 =
+    R"doc(Constructor for the Settings structure. Args: graph_: The graph the op belongs to. name_: The name of the op. scope_: The scope of the op.)doc";
+
+static const char *__doc_popart_Op_Settings_Settings_3 =
+    R"doc(Constructor for the Settings structure.
+
+
+Args:
+ graph_: The main graph.
+ name_: The name of the op.
+ parentId_: The ID of the debug info.)doc";
+
+static const char *__singlelinedoc_popart_Op_Settings_Settings_3 =
+    R"doc(Constructor for the Settings structure. Args: graph_: The main graph. name_: The name of the op. parentId_: The ID of the debug info.)doc";
 
 static const char *__doc_popart_Op_Settings_Settings_4 = R"doc()doc";
 
@@ -8498,9 +8800,18 @@ static const char *__doc_popart_Op_Settings_batchSerializedPhase = R"doc()doc";
 static const char *__singlelinedoc_popart_Op_Settings_batchSerializedPhase =
     R"doc()doc";
 
-static const char *__doc_popart_Op_Settings_copy = R"doc()doc";
+static const char *__doc_popart_Op_Settings_copy =
+    R"doc(Create a copy of the current settings with a new name.
 
-static const char *__singlelinedoc_popart_Op_Settings_copy = R"doc()doc";
+
+Args:
+ new_name: The name of the new settings.
+
+Returns:
+ A copy of the current settings with the new name.)doc";
+
+static const char *__singlelinedoc_popart_Op_Settings_copy =
+    R"doc(Create a copy of the current settings with a new name. Args: new_name: The name of the new settings. Returns: A copy of the current settings with the new name.)doc";
 
 static const char *__doc_popart_Op_Settings_debugInfoId = R"doc()doc";
 
@@ -8527,9 +8838,14 @@ static const char *__doc_popart_Op_Settings_extraOutlineAttributes =
 static const char *__singlelinedoc_popart_Op_Settings_extraOutlineAttributes =
     R"doc()doc";
 
-static const char *__doc_popart_Op_Settings_getIr = R"doc()doc";
+static const char *__doc_popart_Op_Settings_getIr =
+    R"doc(Get the IR associated with the main graph.
 
-static const char *__singlelinedoc_popart_Op_Settings_getIr = R"doc()doc";
+Returns:
+ The IR associated with the main graph.)doc";
+
+static const char *__singlelinedoc_popart_Op_Settings_getIr =
+    R"doc(Get the IR associated with the main graph. Returns: The IR associated with the main graph.)doc";
 
 static const char *__doc_popart_Op_Settings_gradientClippingOp = R"doc()doc";
 
@@ -8578,10 +8894,16 @@ static const char *__doc_popart_Op_Settings_scope = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_Settings_scope = R"doc()doc";
 
-static const char *__doc_popart_Op_Settings_setFromAttributes = R"doc()doc";
+static const char *__doc_popart_Op_Settings_setFromAttributes =
+    R"doc(Append the optional attributes to the Settings structure depending on
+whether the attribute has been set in the ONNX model.
+
+
+Args:
+ attributes: The attributes to be added to the Settings structure.)doc";
 
 static const char *__singlelinedoc_popart_Op_Settings_setFromAttributes =
-    R"doc()doc";
+    R"doc(Append the optional attributes to the Settings structure depending on whether the attribute has been set in the ONNX model. Args: attributes: The attributes to be added to the Settings structure.)doc";
 
 static const char *__doc_popart_Op_Settings_stochasticRoundingMethod =
     R"doc()doc";
@@ -8602,226 +8924,394 @@ static const char *__doc_popart_Op_Settings_vgraphId = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_Settings_vgraphId = R"doc()doc";
 
-static const char *__doc_popart_Op_adjustInSettings = R"doc()doc";
+static const char *__doc_popart_Op_adjustInSettings =
+    R"doc(Adjust the settings to be suitable as input at the input index.
 
-static const char *__singlelinedoc_popart_Op_adjustInSettings = R"doc()doc";
+Args:
+ InIndex: The input index where the settings are to be applied.
+ Settings: The settings to be adjusted.
 
-static const char *__doc_popart_Op_adjustOutSettings = R"doc()doc";
+Returns:
+ Adjusted settings suitable for input at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_adjustOutSettings = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_adjustInSettings =
+    R"doc(Adjust the settings to be suitable as input at the input index. Args: InIndex: The input index where the settings are to be applied. Settings: The settings to be adjusted. Returns: Adjusted settings suitable for input at the input index.)doc";
+
+static const char *__doc_popart_Op_adjustOutSettings =
+    R"doc(Adjust the settings to be suitable as output at an output index.
+
+Args:
+ OutIndex: The output index where the settings are to be applied.
+ Settings: The settings to be adjusted.
+
+Returns:
+ Adjusted settings suitable for output at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_adjustOutSettings =
+    R"doc(Adjust the settings to be suitable as output at an output index. Args: OutIndex: The output index where the settings are to be applied. Settings: The settings to be adjusted. Returns: Adjusted settings suitable for output at the output index.)doc";
 
 static const char *__doc_popart_Op_adjustShardPlans = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_adjustShardPlans = R"doc()doc";
 
-static const char *__doc_popart_Op_aliases = R"doc()doc";
+static const char *__doc_popart_Op_aliases =
+    R"doc(Return the input region which the op output will alias (for inplace and
+view-changing ops).
 
-static const char *__singlelinedoc_popart_Op_aliases = R"doc()doc";
+Args:
+ InIndex: The input index.
+ OutIndex: The output index.
 
-static const char *__doc_popart_Op_append = R"doc()doc";
+Returns:
+ The regions which the output will alias.
 
-static const char *__singlelinedoc_popart_Op_append = R"doc()doc";
+See Also:
+ For more information on views, refer to the [IPU Programmer's
+Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables).)doc";
 
-static const char *__doc_popart_Op_appendAttributes = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_aliases =
+    R"doc(Return the input region which the op output will alias (for inplace and view-changing ops). Args: InIndex: The input index. OutIndex: The output index. Returns: The regions which the output will alias. See Also: For more information on views, refer to the [IPU Programmer's Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables).)doc";
 
-static const char *__singlelinedoc_popart_Op_appendAttributes = R"doc()doc";
+static const char *__doc_popart_Op_append =
+    R"doc(Append this op to a stream.
 
-static const char *__doc_popart_Op_appendMore = R"doc()doc";
+Args:
+ ss: The stream to append the op to.)doc";
 
-static const char *__singlelinedoc_popart_Op_appendMore = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_append =
+    R"doc(Append this op to a stream. Args: ss: The stream to append the op to.)doc";
 
-static const char *__doc_popart_Op_appendOutlineAttributes = R"doc()doc";
+static const char *__doc_popart_Op_appendAttributes =
+    R"doc(Append attributes when serialising the op to a stream.
+This is used for debugging and also to generate the PopART IR hash.
+This hash is used to determine whether a Poplar cache can be reused so it
+is important that op attributes which may alter the Poplar compilation are
+appended to this stream. If this method is overridden, then it must also
+call the base class method.
+
+Args:
+ OpSerialiserBase: The stream to which the attributes should be
+       appended.)doc";
+
+static const char *__singlelinedoc_popart_Op_appendAttributes =
+    R"doc(Append attributes when serialising the op to a stream. This is used for debugging and also to generate the PopART IR hash. This hash is used to determine whether a Poplar cache can be reused so it is important that op attributes which may alter the Poplar compilation are appended to this stream. If this method is overridden, then it must also call the base class method. Args: OpSerialiserBase: The stream to which the attributes should be appended.)doc";
+
+static const char *__doc_popart_Op_appendMore =
+    R"doc(Append additional attributes to the stream.
+This method should be overridden if the derived class has additional
+attributes.
+
+Args:
+ OpSerialiserBase: The stream to which the attributes should be
+       appended.)doc";
+
+static const char *__singlelinedoc_popart_Op_appendMore =
+    R"doc(Append additional attributes to the stream. This method should be overridden if the derived class has additional attributes. Args: OpSerialiserBase: The stream to which the attributes should be appended.)doc";
+
+static const char *__doc_popart_Op_appendOutlineAttributes =
+    R"doc(Append the op attributes that are relevant for outlining ops.
+Ops should override this function if there are additional attributes.
+Two ops with identical type and outline attributes can be outlined and are
+supposed to be functionally equivalent.
+
+Args:
+ OpSerialiserBase: The stream to which the attributes should be
+       appended.)doc";
 
 static const char *__singlelinedoc_popart_Op_appendOutlineAttributes =
-    R"doc()doc";
+    R"doc(Append the op attributes that are relevant for outlining ops. Ops should override this function if there are additional attributes. Two ops with identical type and outline attributes can be outlined and are supposed to be functionally equivalent. Args: OpSerialiserBase: The stream to which the attributes should be appended.)doc";
 
-static const char *__doc_popart_Op_bwdRegMap = R"doc()doc";
+static const char *__doc_popart_Op_bwdRegMap =
+    R"doc(Map regions of the output tensor at the output index to the regions of the
+input tensor at the input index that these output regions alias.
 
-static const char *__singlelinedoc_popart_Op_bwdRegMap = R"doc()doc";
+Args:
+ InIndex: The op input index.
+ OutIndex: The op output index.)doc";
 
-static const char *__doc_popart_Op_calcAutoVirtualGraphCost = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_bwdRegMap =
+    R"doc(Map regions of the output tensor at the output index to the regions of the input tensor at the input index that these output regions alias. Args: InIndex: The op input index. OutIndex: The op output index.)doc";
+
+static const char *__doc_popart_Op_calcAutoVirtualGraphCost =
+    R"doc(Get approximate cost of activations between forward and backward graphs.)doc";
 
 static const char *__singlelinedoc_popart_Op_calcAutoVirtualGraphCost =
-    R"doc()doc";
+    R"doc(Get approximate cost of activations between forward and backward graphs.)doc";
 
-static const char *__doc_popart_Op_canBeReplacedByIdentity = R"doc()doc";
+static const char *__doc_popart_Op_canBeReplacedByIdentity =
+    R"doc(Check if the op can be replaced by the identity op.
+
+Returns:
+ :code:`true` if the op and be replaced by the identity op, :code:`false`
+ otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_canBeReplacedByIdentity =
-    R"doc()doc";
+    R"doc(Check if the op can be replaced by the identity op. Returns: :code:`true` if the op and be replaced by the identity op, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_canRecompute =
-    R"doc(If the Op can be recomputed (cloned to produce the same output twice).
+    R"doc(Check if the op can be recomputed.
+To recompute an op means to clone it to produce the same output.
 The function checks the safeness of recompute in the context of explicit
 recompute. It may still be unsafe for implicit recompute.
 
 Returns:
- If the Op can be recomputed.
- The default is to return hasSideEffect().)doc";
+ :code:`true` if the op can be recomputed, :code:`false` otherwise.
+Default: hasSideEffect().)doc";
 
 static const char *__singlelinedoc_popart_Op_canRecompute =
-    R"doc(If the Op can be recomputed (cloned to produce the same output twice). The function checks the safeness of recompute in the context of explicit recompute. It may still be unsafe for implicit recompute. Returns: If the Op can be recomputed. The default is to return hasSideEffect().)doc";
+    R"doc(Check if the op can be recomputed. To recompute an op means to clone it to produce the same output. The function checks the safeness of recompute in the context of explicit recompute. It may still be unsafe for implicit recompute. Returns: :code:`true` if the op can be recomputed, :code:`false` otherwise. Default: hasSideEffect().)doc";
 
-static const char *__doc_popart_Op_canShard = R"doc()doc";
+static const char *__doc_popart_Op_canShard =
+    R"doc(Check if the operation can be sharded into multiple operations.
 
-static const char *__singlelinedoc_popart_Op_canShard = R"doc()doc";
+Returns:
+ :code:`true` if the operation can be sharded, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_clone = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_canShard =
+    R"doc(Check if the operation can be sharded into multiple operations. Returns: :code:`true` if the operation can be sharded, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_clone = R"doc()doc";
+static const char *__doc_popart_Op_clone =
+    R"doc(Return a copy of the op.
+This method must be implemented. The compiler throws an error if this
+method is not implemented.)doc";
+
+static const char *__singlelinedoc_popart_Op_clone =
+    R"doc(Return a copy of the op. This method must be implemented. The compiler throws an error if this method is not implemented.)doc";
 
 static const char *__doc_popart_Op_configureForReplicatedTensorSharding =
-    R"doc()doc";
-
-static const char
-    *__singlelinedoc_popart_Op_configureForReplicatedTensorSharding =
-        R"doc()doc";
-
-static const char *__doc_popart_Op_configureShardedOp = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Op_configureShardedOp = R"doc()doc";
-
-static const char *__doc_popart_Op_connectInTensor =
-    R"doc(Connect existing tensor at index.
+    R"doc(Configure the op for replicated tensor sharding at specific indices.
 
 Args:
- index:    Input index at which to connect the tensor.
+ indices: The indices at which to configure the op for replicated
+      tensor sharding.
+ shardingDomain: The type and size of the replica group specified by a
+      CommGroup object.)doc";
+
+static const char *__singlelinedoc_popart_Op_configureForReplicatedTensorSharding =
+    R"doc(Configure the op for replicated tensor sharding at specific indices. Args: indices: The indices at which to configure the op for replicated tensor sharding. shardingDomain: The type and size of the replica group specified by a CommGroup object.)doc";
+
+static const char *__doc_popart_Op_configureShardedOp =
+    R"doc(Configure a sharded op.
+
+Args:
+ shardedOp: The sharded op to be configured.
+ settings_: The settings to apply to the sharded op.)doc";
+
+static const char *__singlelinedoc_popart_Op_configureShardedOp =
+    R"doc(Configure a sharded op. Args: shardedOp: The sharded op to be configured. settings_: The settings to apply to the sharded op.)doc";
+
+static const char *__doc_popart_Op_connectInTensor =
+    R"doc(Connect existing tensor to input index.
+
+Args:
+ index: The input index at which to connect the tensor.
  tensorId: The ID of the existing tensor.)doc";
 
 static const char *__singlelinedoc_popart_Op_connectInTensor =
-    R"doc(Connect existing tensor at index. Args: index:    Input index at which to connect the tensor. tensorId: The ID of the existing tensor.)doc";
+    R"doc(Connect existing tensor to input index. Args: index: The input index at which to connect the tensor. tensorId: The ID of the existing tensor.)doc";
 
 static const char *__doc_popart_Op_connectInTensor_2 =
-    R"doc(Connect existing tensor at index with source virtual graph.
+    R"doc(Connect an existing tensor to an index with the source virtual graph.
 
 Args:
- index:    Input index at which to connect the tensor.
+ inIndex: The input index at which to connect the tensor.
  tensorId: The ID of the existing tensor.
- vgid:     Virtual graph on which the existing tensor resides.)doc";
+ vgid: The virtual graph on which the existing tensor resides.)doc";
 
 static const char *__singlelinedoc_popart_Op_connectInTensor_2 =
-    R"doc(Connect existing tensor at index with source virtual graph. Args: index:    Input index at which to connect the tensor. tensorId: The ID of the existing tensor. vgid:     Virtual graph on which the existing tensor resides.)doc";
+    R"doc(Connect an existing tensor to an index with the source virtual graph. Args: inIndex: The input index at which to connect the tensor. tensorId: The ID of the existing tensor. vgid: The virtual graph on which the existing tensor resides.)doc";
 
 static const char *__doc_popart_Op_connectInTensorDispatch =
-    R"doc(Dispatcher to resolve issues with templated inheritance overloads.
-Will automatically derive the virtual graph ID of the input when required.
+    R"doc(Connect an existing tensor at an index with the source virtual graph.
 
-Connect existing tensor at index with source virtual graph.
+Dispatcher to resolve issues with templated inheritance overloads.
+This will automatically derive the virtual graph ID of the input when
+required.
+
 
 Args:
- index:    Input index at which to connect the tensor.
+ inIndex: The input index at which to connect the tensor.
  tensorId: The ID of the existing tensor.)doc";
 
 static const char *__singlelinedoc_popart_Op_connectInTensorDispatch =
-    R"doc(Dispatcher to resolve issues with templated inheritance overloads. Will automatically derive the virtual graph ID of the input when required. Connect existing tensor at index with source virtual graph. Args: index:    Input index at which to connect the tensor. tensorId: The ID of the existing tensor.)doc";
+    R"doc(Connect an existing tensor at an index with the source virtual graph. Dispatcher to resolve issues with templated inheritance overloads. This will automatically derive the virtual graph ID of the input when required. Args: inIndex: The input index at which to connect the tensor. tensorId: The ID of the existing tensor.)doc";
 
 static const char *__doc_popart_Op_connectInTensorLike =
-    R"doc(Connects the input tensor analogously to the other Op, which is useful
-when cloning graphs or Ops, because it avoids having to check if the Op
-requires special considerations when connecting inputs.
+    R"doc(Connects the input tensor analogously to another op.
+This is useful when cloning graphs or ops, because it avoids having to
+check if the op requires special considerations when connecting inputs.
 
-IpuCopyOp is currently the only Op where this applies, since a source
+IpuCopyOp is currently the only op where this applies, since a source
 virtual graph has to be specified when connecting it otherwise:
 
 ```
-void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
+  void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
 ```
 
 
-
 Args:
- other: An Op of the same type as the current Op, from which to
-              copy how the tensor at the corresponding index should be
-              connected.
+ other: An op of the same type as the current op, from which to
+      copy how the tensor at the corresponding index should be
+      connected.
  index: The input index to connect.
- tenId: The tensor to connect.)doc";
+ tenId: The ID of the tensor to connect.)doc";
 
 static const char *__singlelinedoc_popart_Op_connectInTensorLike =
-    R"doc(Connects the input tensor analogously to the other Op, which is useful when cloning graphs or Ops, because it avoids having to check if the Op requires special considerations when connecting inputs. IpuCopyOp is currently the only Op where this applies, since a source virtual graph has to be specified when connecting it otherwise: ``` void connectInTensor(InIndex, TensorId, uint64_t sourceIpu); ``` Args: other: An Op of the same type as the current Op, from which to copy how the tensor at the corresponding index should be connected. index: The input index to connect. tenId: The tensor to connect.)doc";
+    R"doc(Connects the input tensor analogously to another op. This is useful when cloning graphs or ops, because it avoids having to check if the op requires special considerations when connecting inputs. IpuCopyOp is currently the only op where this applies, since a source virtual graph has to be specified when connecting it otherwise: ``` void connectInTensor(InIndex, TensorId, uint64_t sourceIpu); ``` Args: other: An op of the same type as the current op, from which to copy how the tensor at the corresponding index should be connected. index: The input index to connect. tenId: The ID of the tensor to connect.)doc";
 
-static const char *__doc_popart_Op_connectOutTensor = R"doc()doc";
+static const char *__doc_popart_Op_connectOutTensor =
+    R"doc(Connect existing tensor to output index.
 
-static const char *__singlelinedoc_popart_Op_connectOutTensor = R"doc()doc";
+Args:
+ index: The output index at which to connect the tensor.
+ tensorId: The ID of the existing tensor.)doc";
 
-static const char *__doc_popart_Op_consumesGraphOutput = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_connectOutTensor =
+    R"doc(Connect existing tensor to output index. Args: index: The output index at which to connect the tensor. tensorId: The ID of the existing tensor.)doc";
 
-static const char *__singlelinedoc_popart_Op_consumesGraphOutput = R"doc()doc";
+static const char *__doc_popart_Op_consumesGraphOutput =
+    R"doc(Check if op consumes the outputs of the graph.
 
-static const char *__doc_popart_Op_copiesOptimizerTensors = R"doc()doc";
+
+Returns:
+ :code:`true` if op consumes graph outputs, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_consumesGraphOutput =
+    R"doc(Check if op consumes the outputs of the graph. Returns: :code:`true` if op consumes graph outputs, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_copiesOptimizerTensors =
+    R"doc(Check if this copies only optimizer tensors from one IPU to another.
+
+Returns:
+ :code:`true` if this op copies only optimizer tensors from one IPU to
+ another, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_copiesOptimizerTensors =
-    R"doc()doc";
+    R"doc(Check if this copies only optimizer tensors from one IPU to another. Returns: :code:`true` if this op copies only optimizer tensors from one IPU to another, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_createAndConnectOutTensor = R"doc()doc";
+static const char *__doc_popart_Op_createAndConnectOutTensor =
+    R"doc(Create an ActGrad (output) tensor and connect it to this op's output.
+
+Args:
+ OutIndex: The output index that the output tensor should be connected
+       to.
+ TensorId: The tensor ID of the tensor to be converted to an output
+       tensor.)doc";
 
 static const char *__singlelinedoc_popart_Op_createAndConnectOutTensor =
-    R"doc()doc";
+    R"doc(Create an ActGrad (output) tensor and connect it to this op's output. Args: OutIndex: The output index that the output tensor should be connected to. TensorId: The tensor ID of the tensor to be converted to an output tensor.)doc";
 
 static const char *__doc_popart_Op_debugInfo = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_debugInfo = R"doc()doc";
 
-static const char *__doc_popart_Op_debugName = R"doc()doc";
+static const char *__doc_popart_Op_debugName =
+    R"doc(Return the op name that is used for debug and profiling.)doc";
 
-static const char *__singlelinedoc_popart_Op_debugName = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_debugName =
+    R"doc(Return the op name that is used for debug and profiling.)doc";
 
-static const char *__doc_popart_Op_defaultConnectInTensor = R"doc()doc";
+static const char *__doc_popart_Op_defaultConnectInTensor =
+    R"doc(Connect a tensor to an input index.
+This method updates the input and updates consumers of the tensor with the
+tensor ID.
+
+Args:
+ InIndex: The input index to connect the tensor to.
+ TensorId: The tensor ID of the tensor to connect.)doc";
 
 static const char *__singlelinedoc_popart_Op_defaultConnectInTensor =
-    R"doc()doc";
+    R"doc(Connect a tensor to an input index. This method updates the input and updates consumers of the tensor with the tensor ID. Args: InIndex: The input index to connect the tensor to. TensorId: The tensor ID of the tensor to connect.)doc";
 
-static const char *__doc_popart_Op_disconnectAllInputs = R"doc()doc";
+static const char *__doc_popart_Op_disconnectAllInputs =
+    R"doc(Disconnect all input tensors from the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_disconnectAllInputs = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_disconnectAllInputs =
+    R"doc(Disconnect all input tensors from the op.)doc";
 
-static const char *__doc_popart_Op_disconnectAllOutputs = R"doc()doc";
+static const char *__doc_popart_Op_disconnectAllOutputs =
+    R"doc(Disconnect all output tensors from the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_disconnectAllOutputs = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_disconnectAllOutputs =
+    R"doc(Disconnect all output tensors from the op.)doc";
 
-static const char *__doc_popart_Op_disconnectInTensor = R"doc()doc";
+static const char *__doc_popart_Op_disconnectInTensor =
+    R"doc(Disconnect an input tensor from the op.
 
-static const char *__singlelinedoc_popart_Op_disconnectInTensor = R"doc()doc";
+Args:
+ tensor: The tensor to disconnect.)doc";
 
-static const char *__doc_popart_Op_disconnectInTensor_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_disconnectInTensor =
+    R"doc(Disconnect an input tensor from the op. Args: tensor: The tensor to disconnect.)doc";
 
-static const char *__singlelinedoc_popart_Op_disconnectInTensor_2 = R"doc()doc";
+static const char *__doc_popart_Op_disconnectInTensor_2 =
+    R"doc(Disconnect an input tensor from the op at a specific input index.
 
-static const char *__doc_popart_Op_disconnectInTensor_3 = R"doc()doc";
+Args:
+ tensor: The tensor to disconnect.
+ InIndex: The index of the input tensor in the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_disconnectInTensor_3 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_disconnectInTensor_2 =
+    R"doc(Disconnect an input tensor from the op at a specific input index. Args: tensor: The tensor to disconnect. InIndex: The index of the input tensor in the op.)doc";
 
-static const char *__doc_popart_Op_disconnectOutTensor = R"doc()doc";
+static const char *__doc_popart_Op_disconnectInTensor_3 =
+    R"doc(Disconnect an input tensor from the input index.
 
-static const char *__singlelinedoc_popart_Op_disconnectOutTensor = R"doc()doc";
+Args:
+ InIndex: The input index to disconnect the tensor from.)doc";
+
+static const char *__singlelinedoc_popart_Op_disconnectInTensor_3 =
+    R"doc(Disconnect an input tensor from the input index. Args: InIndex: The input index to disconnect the tensor from.)doc";
+
+static const char *__doc_popart_Op_disconnectOutTensor =
+    R"doc(Disconnect an output tensor from the op.
+
+Args:
+ tensor: The tensor to disconnect.)doc";
+
+static const char *__singlelinedoc_popart_Op_disconnectOutTensor =
+    R"doc(Disconnect an output tensor from the op. Args: tensor: The tensor to disconnect.)doc";
 
 static const char *__doc_popart_Op_doesAlias =
-    R"doc(Returns:
- True if there is an input which aliases an output.)doc";
+    R"doc(Check if any input tensor aliases any output tensor .
+
+Returns:
+ :code:`true` if any input tensor aliases any output tensor, otherwise
+ :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_doesAlias =
-    R"doc(Returns: True if there is an input which aliases an output.)doc";
+    R"doc(Check if any input tensor aliases any output tensor . Returns: :code:`true` if any input tensor aliases any output tensor, otherwise :code:`false`.)doc";
 
 static const char *__doc_popart_Op_doesAlias_2 =
-    R"doc(Returns:
- True if the input at \p inIndex aliases the output at \p outIndex.)doc";
+    R"doc(Check that the input tensor at an input index aliases the output tensor at
+an output index.
+
+Returns:
+ :code:`true` if the input tensor at \p inIndex aliases the output tensor
+ at \p outIndex, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_doesAlias_2 =
-    R"doc(Returns: True if the input at \p inIndex aliases the output at \p outIndex.)doc";
+    R"doc(Check that the input tensor at an input index aliases the output tensor at an output index. Returns: :code:`true` if the input tensor at \p inIndex aliases the output tensor at \p outIndex, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_finalizeDebugInfo = R"doc()doc";
+static const char *__doc_popart_Op_finalizeDebugInfo =
+    R"doc(Finalize DebugInfo.
+This method is called once after Ir::prepare() has completed.)doc";
 
-static const char *__singlelinedoc_popart_Op_finalizeDebugInfo = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_finalizeDebugInfo =
+    R"doc(Finalize DebugInfo. This method is called once after Ir::prepare() has completed.)doc";
 
 static const char *__doc_popart_Op_fwdPropagateIsReplicaEqual =
     R"doc(Determine whether output tensors are guaranteed to have an equal value
-across all replicas (terminology: are 'replica equal') given information
-about the replica equal-ness status of input tensors (and the same for any
-inputs that are modified by the Op).
+across all replicas.
+This means that they are "replica equal". The check is based on
+information about the replica equal status of input tensors (and the same
+for any inputs that are modified by the op).
 
 The default implementation sets each output tensor as being replica-equal
 if and only if all tensor inputs are replica-equal. For modified inputs,
-the default is to assume it's replica-equal only if there is an output that
-is deemed replica-equal that fully aliases all elements of the input. This
-default implementation is not correct for all Ops. Ops that need a
+the default is to assume it is replica-equal only if there is an output
+that is deemed replica-equal that fully aliases all elements of the input.
+This default implementation is not correct for all ops. Ops that need a
 specialized implementation should override this virtual function.
 
 
@@ -8832,223 +9322,515 @@ Args:
  proxy: A helper object passed in by the replica-equal analysis.
 
 Returns:
- A tuple comprising of 1) a mapping from output index to a replica
- equal status with an entry for each output tensor and 2) a vector of
- input indices for inputs that were modified by the op to a value that
- is not replica-equal.)doc";
+ A tuple comprising of:
+ -# a mapping from output index to a replica-equal status with an
+ entry for each output tensor.
+ -# a vector of input indices for inputs that were modified by the
+ op to a value that is not replica-equal.)doc";
 
 static const char *__singlelinedoc_popart_Op_fwdPropagateIsReplicaEqual =
-    R"doc(Determine whether output tensors are guaranteed to have an equal value across all replicas (terminology: are 'replica equal') given information about the replica equal-ness status of input tensors (and the same for any inputs that are modified by the Op). The default implementation sets each output tensor as being replica-equal if and only if all tensor inputs are replica-equal. For modified inputs, the default is to assume it's replica-equal only if there is an output that is deemed replica-equal that fully aliases all elements of the input. This default implementation is not correct for all Ops. Ops that need a specialized implementation should override this virtual function. Args: aliasModel: An alias model object. inputMap: A map that stores, for each input, whether the inputs are data-equivalent over all replicas. proxy: A helper object passed in by the replica-equal analysis. Returns: A tuple comprising of 1) a mapping from output index to a replica equal status with an entry for each output tensor and 2) a vector of input indices for inputs that were modified by the op to a value that is not replica-equal.)doc";
+    R"doc(Determine whether output tensors are guaranteed to have an equal value across all replicas. This means that they are "replica equal". The check is based on information about the replica equal status of input tensors (and the same for any inputs that are modified by the op). The default implementation sets each output tensor as being replica-equal if and only if all tensor inputs are replica-equal. For modified inputs, the default is to assume it is replica-equal only if there is an output that is deemed replica-equal that fully aliases all elements of the input. This default implementation is not correct for all ops. Ops that need a specialized implementation should override this virtual function. Args: aliasModel: An alias model object. inputMap: A map that stores, for each input, whether the inputs are data-equivalent over all replicas. proxy: A helper object passed in by the replica-equal analysis. Returns: A tuple comprising of: -# a mapping from output index to a replica-equal status with an entry for each output tensor. -# a vector of input indices for inputs that were modified by the op to a value that is not replica-equal.)doc";
 
-static const char *__doc_popart_Op_fwdRegMap = R"doc()doc";
+static const char *__doc_popart_Op_fwdRegMap =
+    R"doc(Map regions of the input tensor at the input index to the regions of the
+output tensor at the output index that these input regions alias.
 
-static const char *__singlelinedoc_popart_Op_fwdRegMap = R"doc()doc";
+Args:
+ InIndex: The op input index.
+ OutIndex: The op output index.)doc";
 
-static const char *__doc_popart_Op_getBatchSerializedPhase = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_fwdRegMap =
+    R"doc(Map regions of the input tensor at the input index to the regions of the output tensor at the output index that these input regions alias. Args: InIndex: The op input index. OutIndex: The op output index.)doc";
+
+static const char *__doc_popart_Op_getBatchSerializedPhase =
+    R"doc(Get the batch serialized phase.
+
+Returns:
+ The batch serialized phase that has been set for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_getBatchSerializedPhase =
-    R"doc()doc";
+    R"doc(Get the batch serialized phase. Returns: The batch serialized phase that has been set for the op.)doc";
 
-static const char *__doc_popart_Op_getCalledGraphIds = R"doc()doc";
+static const char *__doc_popart_Op_getCalledGraphIds =
+    R"doc(Get the IDs of all graphs that this op may call during its execution.
 
-static const char *__singlelinedoc_popart_Op_getCalledGraphIds = R"doc()doc";
+Returns:
+ A vector of IDs of all graphs that this op may call during its
+ execution.)doc";
 
-static const char *__doc_popart_Op_getCalledGraphIndex = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getCalledGraphIds =
+    R"doc(Get the IDs of all graphs that this op may call during its execution. Returns: A vector of IDs of all graphs that this op may call during its execution.)doc";
 
-static const char *__singlelinedoc_popart_Op_getCalledGraphIndex = R"doc()doc";
+static const char *__doc_popart_Op_getCalledGraphIndex =
+    R"doc(Get the index in the op where the graph is called.
 
-static const char *__doc_popart_Op_getCalledGraphs = R"doc()doc";
+Args:
+ id: The ID of the called graph.
 
-static const char *__singlelinedoc_popart_Op_getCalledGraphs = R"doc()doc";
+Returns:
+ The index at which the graph is called.)doc";
 
-static const char *__doc_popart_Op_getDebugInfo = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getCalledGraphIndex =
+    R"doc(Get the index in the op where the graph is called. Args: id: The ID of the called graph. Returns: The index at which the graph is called.)doc";
 
-static const char *__singlelinedoc_popart_Op_getDebugInfo = R"doc()doc";
+static const char *__doc_popart_Op_getCalledGraphs =
+    R"doc(Get all graphs that this op may call during its execution.
 
-static const char *__doc_popart_Op_getExecutionPhase = R"doc()doc";
+Returns:
+ A vector of all graphs that this op may call during its execution.)doc";
 
-static const char *__singlelinedoc_popart_Op_getExecutionPhase = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getCalledGraphs =
+    R"doc(Get all graphs that this op may call during its execution. Returns: A vector of all graphs that this op may call during its execution.)doc";
 
-static const char *__doc_popart_Op_getFollowingOp = R"doc()doc";
+static const char *__doc_popart_Op_getDebugInfo =
+    R"doc(Get the debug info of the op.
 
-static const char *__singlelinedoc_popart_Op_getFollowingOp = R"doc()doc";
+Returns:
+ The debug info for the op.)doc";
 
-static const char *__doc_popart_Op_getFollowingOp_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getDebugInfo =
+    R"doc(Get the debug info of the op. Returns: The debug info for the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getFollowingOp_2 = R"doc()doc";
+static const char *__doc_popart_Op_getExecutionPhase =
+    R"doc(Get the execution phase that has been set for the op.
 
-static const char *__doc_popart_Op_getFollowingOps = R"doc()doc";
+Returns:
+ The execution phase that has been set for the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getFollowingOps = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getExecutionPhase =
+    R"doc(Get the execution phase that has been set for the op. Returns: The execution phase that has been set for the op.)doc";
 
-static const char *__doc_popart_Op_getFollowingOps_2 = R"doc()doc";
+static const char *__doc_popart_Op_getFollowingOp =
+    R"doc(Get the op that consumes an output tensor at an output index.
 
-static const char *__singlelinedoc_popart_Op_getFollowingOps_2 = R"doc()doc";
+This will throw an error if there is more than one consumer op.
 
-static const char *__doc_popart_Op_getGradOps = R"doc()doc";
+Args:
+ outIndex: The index at which the output tensor is consumed.
 
-static const char *__singlelinedoc_popart_Op_getGradOps = R"doc()doc";
+Returns:
+ The op which consumes the output tensor at the output index.)doc";
 
-static const char *__doc_popart_Op_getGraph = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getFollowingOp =
+    R"doc(Get the op that consumes an output tensor at an output index. This will throw an error if there is more than one consumer op. Args: outIndex: The index at which the output tensor is consumed. Returns: The op which consumes the output tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getGraph = R"doc()doc";
+static const char *__doc_popart_Op_getFollowingOp_2 =
+    R"doc(Get the op that consumes an output tensor at an output index.
 
-static const char *__doc_popart_Op_getGraph_2 = R"doc()doc";
+This will throw an error if there is more than one consumer op, or if the
+consumer op cannot be converted to type :code:`T`.
 
-static const char *__singlelinedoc_popart_Op_getGraph_2 = R"doc()doc";
+Args:
+ outIndex: The index at which the output tensor is consumed.
 
-static const char *__doc_popart_Op_getHighSubgraphValue = R"doc()doc";
+Returns:
+ The op, converted to type :code:`T`, which consumes the output
+ tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getHighSubgraphValue = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getFollowingOp_2 =
+    R"doc(Get the op that consumes an output tensor at an output index. This will throw an error if there is more than one consumer op, or if the consumer op cannot be converted to type :code:`T`. Args: outIndex: The index at which the output tensor is consumed. Returns: The op, converted to type :code:`T`, which consumes the output tensor at the output index.)doc";
 
-static const char *__doc_popart_Op_getInBatchAxis = R"doc()doc";
+static const char *__doc_popart_Op_getFollowingOps =
+    R"doc(Get all ops that consume an output tensor at an output index.
 
-static const char *__singlelinedoc_popart_Op_getInBatchAxis = R"doc()doc";
 
-static const char *__doc_popart_Op_getInSettings = R"doc()doc";
+Args:
+ outIndex: The index at which the output tensor is consumed.
 
-static const char *__singlelinedoc_popart_Op_getInSettings = R"doc()doc";
+Returns:
+ A vector of ops which consume the output tensor at the output
+ index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getFollowingOps =
+    R"doc(Get all ops that consume an output tensor at an output index. Args: outIndex: The index at which the output tensor is consumed. Returns: A vector of ops which consume the output tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_getFollowingOps_2 =
+    R"doc(Get all ops that consume an output tensor at an output index.
+
+This will throw an error if not all of the consumer ops can be converted
+to type :code:`T`.
+
+Args:
+ outIndex: The index at which the output tensor is consumed.
+
+Returns:
+ A vector of ops, converted to type :code:`T`, which consume the output
+ tensor at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getFollowingOps_2 =
+    R"doc(Get all ops that consume an output tensor at an output index. This will throw an error if not all of the consumer ops can be converted to type :code:`T`. Args: outIndex: The index at which the output tensor is consumed. Returns: A vector of ops, converted to type :code:`T`, which consume the output tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_getGradOps =
+    R"doc(Determine the corresponding grad op for each op in the forward graph to
+automatically generate the backward pass.
+
+There can be a separate gradient op for each input or a single gradient
+op that generates gradients for all inputs.
+
+The mapping from the index of each output tensor of the gradient op to the
+index of each input tensor of the non-grad op is configured using the
+gradOutToNonGradIn() method that should be overridden in the grad op
+definitions.
+
+Throws an error if this op is already a gradient op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getGradOps =
+    R"doc(Determine the corresponding grad op for each op in the forward graph to automatically generate the backward pass. There can be a separate gradient op for each input or a single gradient op that generates gradients for all inputs. The mapping from the index of each output tensor of the gradient op to the index of each input tensor of the non-grad op is configured using the gradOutToNonGradIn() method that should be overridden in the grad op definitions. Throws an error if this op is already a gradient op.)doc";
+
+static const char *__doc_popart_Op_getGraph =
+    R"doc(Get the graph associated with the op.
+
+Returns:
+ The graph associated with the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getGraph =
+    R"doc(Get the graph associated with the op. Returns: The graph associated with the op.)doc";
+
+static const char *__doc_popart_Op_getGraph_2 =
+    R"doc(Get the graph associated with the op.
+
+Returns:
+ The graph associated with the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getGraph_2 =
+    R"doc(Get the graph associated with the op. Returns: The graph associated with the op.)doc";
+
+static const char *__doc_popart_Op_getHighSubgraphValue =
+    R"doc(Return the high subgraph value.)doc";
+
+static const char *__singlelinedoc_popart_Op_getHighSubgraphValue =
+    R"doc(Return the high subgraph value.)doc";
+
+static const char *__doc_popart_Op_getInBatchAxis =
+    R"doc(Get the batch axis for the input index.
+
+Returns:
+ The batch axis for the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getInBatchAxis =
+    R"doc(Get the batch axis for the input index. Returns: The batch axis for the input index.)doc";
+
+static const char *__doc_popart_Op_getInSettings =
+    R"doc(Return suitable settings for an op inserted before the input to an
+existing op.
+
+Args:
+ InIndex: The input index before which the op is inserted.
+
+Returns:
+ The settings for the op inserted before the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getInSettings =
+    R"doc(Return suitable settings for an op inserted before the input to an existing op. Args: InIndex: The input index before which the op is inserted. Returns: The settings for the op inserted before the input index.)doc";
 
 static const char *__doc_popart_Op_getInTensorData = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_getInTensorData = R"doc()doc";
 
-static const char *__doc_popart_Op_getInplaceVariant = R"doc()doc";
+static const char *__doc_popart_Op_getInplaceVariant =
+    R"doc(Instantiate a particular in-place variant of the op with a specified
+OperatorIdentifier from the vector returned by inplacePriorityDefault().
 
-static const char *__singlelinedoc_popart_Op_getInplaceVariant = R"doc()doc";
+Args:
+ OperatorIdentifier: The operator identifier of the op to be
+       instantiated.
+
+Returns:
+ An instance of the required op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getInplaceVariant =
+    R"doc(Instantiate a particular in-place variant of the op with a specified OperatorIdentifier from the vector returned by inplacePriorityDefault(). Args: OperatorIdentifier: The operator identifier of the op to be instantiated. Returns: An instance of the required op.)doc";
 
 static const char *__doc_popart_Op_getIntrospectionInVirtualGraphId =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an input index.
+
+Args:
+ InIndex: The input index.
+
+Returns:
+ The virtual graph ID and tile set at the input index.)doc";
 
 static const char *__singlelinedoc_popart_Op_getIntrospectionInVirtualGraphId =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an input index. Args: InIndex: The input index. Returns: The virtual graph ID and tile set at the input index.)doc";
 
 static const char *__doc_popart_Op_getIntrospectionInVirtualGraphId_2 =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an input index.
 
-static const char
-    *__singlelinedoc_popart_Op_getIntrospectionInVirtualGraphId_2 = R"doc()doc";
+Args:
+ InIndex: The input index.
+ visited: The set of labels associated with this operator to
+       distinguish it from other operators in the virtual graph.
+
+Returns:
+ The virtual graph ID and tile set at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getIntrospectionInVirtualGraphId_2 =
+    R"doc(Get virtual graph ID and tile set associated with an input index. Args: InIndex: The input index. visited: The set of labels associated with this operator to distinguish it from other operators in the virtual graph. Returns: The virtual graph ID and tile set at the input index.)doc";
 
 static const char *__doc_popart_Op_getIntrospectionOutVirtualGraphId =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an output index.
+
+Args:
+ OutIndex: The output index.
+
+Returns:
+ The virtual graph ID and tile set at the output index.)doc";
 
 static const char *__singlelinedoc_popart_Op_getIntrospectionOutVirtualGraphId =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an output index. Args: OutIndex: The output index. Returns: The virtual graph ID and tile set at the output index.)doc";
 
 static const char *__doc_popart_Op_getIntrospectionOutVirtualGraphId_2 =
-    R"doc()doc";
+    R"doc(Get virtual graph ID and tile set associated with an output index.
 
-static const char *
-    __singlelinedoc_popart_Op_getIntrospectionOutVirtualGraphId_2 = R"doc()doc";
+Args:
+ OutIndex: The output index.
+ visited: The set of labels associated with this operator to
+       distinguish it from other operators in the virtual graph.
 
-static const char *__doc_popart_Op_getIr = R"doc()doc";
+Returns:
+ The virtual graph ID and tile set at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getIr = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getIntrospectionOutVirtualGraphId_2 =
+    R"doc(Get virtual graph ID and tile set associated with an output index. Args: OutIndex: The output index. visited: The set of labels associated with this operator to distinguish it from other operators in the virtual graph. Returns: The virtual graph ID and tile set at the output index.)doc";
 
-static const char *__doc_popart_Op_getIr_2 = R"doc()doc";
+static const char *__doc_popart_Op_getIr =
+    R"doc(Get the IR associated with the op.
 
-static const char *__singlelinedoc_popart_Op_getIr_2 = R"doc()doc";
+Returns:
+ The IR associated with the op.)doc";
 
-static const char *__doc_popart_Op_getLowSubgraphValue = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getIr =
+    R"doc(Get the IR associated with the op. Returns: The IR associated with the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getLowSubgraphValue = R"doc()doc";
+static const char *__doc_popart_Op_getIr_2 =
+    R"doc(Get the IR associated with the op.
 
-static const char *__doc_popart_Op_getName = R"doc()doc";
+Returns:
+ The IR associated with the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getName = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getIr_2 =
+    R"doc(Get the IR associated with the op. Returns: The IR associated with the op.)doc";
 
-static const char *__doc_popart_Op_getNonGradInIndex = R"doc()doc";
+static const char *__doc_popart_Op_getLowSubgraphValue =
+    R"doc(Return the low subgraph value.)doc";
 
-static const char *__singlelinedoc_popart_Op_getNonGradInIndex = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getLowSubgraphValue =
+    R"doc(Return the low subgraph value.)doc";
+
+static const char *__doc_popart_Op_getName =
+    R"doc(Get the name of the op.
+
+Returns:
+ The name of the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getName =
+    R"doc(Get the name of the op. Returns: The name of the op.)doc";
+
+static const char *__doc_popart_Op_getNonGradInIndex =
+    R"doc(Return the index in the non-grad op which has an output edge-gradient
+tensor in the matching grad op.
+This method throws an error if the op this is called on is not a grad op.
+
+Args:
+ gradOpOutIndex: The index at which the grad op has an output of an
+       edge-gradient tensor.
+
+Returns:
+ The index in the non-grad op containing the input tensor
+ corresponding to the edge-gradient tensor in the grad op output.)doc";
+
+static const char *__singlelinedoc_popart_Op_getNonGradInIndex =
+    R"doc(Return the index in the non-grad op which has an output edge-gradient tensor in the matching grad op. This method throws an error if the op this is called on is not a grad op. Args: gradOpOutIndex: The index at which the grad op has an output of an edge-gradient tensor. Returns: The index in the non-grad op containing the input tensor corresponding to the edge-gradient tensor in the grad op output.)doc";
 
 static const char *__doc_popart_Op_getOptionalBatchSerializedPhase =
-    R"doc()doc";
+    R"doc(Get the optional batch serialized phase.
+
+Returns:
+ The optional batch serialized phase that has been set for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_getOptionalBatchSerializedPhase =
-    R"doc()doc";
+    R"doc(Get the optional batch serialized phase. Returns: The optional batch serialized phase that has been set for the op.)doc";
 
-static const char *__doc_popart_Op_getOptionalExecutionPhase = R"doc()doc";
+static const char *__doc_popart_Op_getOptionalExecutionPhase =
+    R"doc(Get the optional execution phase.
+
+Returns:
+ The optional execution phase that has been set for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_getOptionalExecutionPhase =
-    R"doc()doc";
+    R"doc(Get the optional execution phase. Returns: The optional execution phase that has been set for the op.)doc";
 
-static const char *__doc_popart_Op_getOptionalPipelineStage = R"doc()doc";
+static const char *__doc_popart_Op_getOptionalPipelineStage =
+    R"doc(Get the optional pipeline stage.
+
+Returns:
+ The optional pipeline stage that has been set for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_getOptionalPipelineStage =
-    R"doc()doc";
+    R"doc(Get the optional pipeline stage. Returns: The optional pipeline stage that has been set for the op.)doc";
 
 static const char *__doc_popart_Op_getOptionalStochasticRoundingMethod =
-    R"doc()doc";
+    R"doc(Get the optional stochastic rounding method.
 
-static const char *
-    __singlelinedoc_popart_Op_getOptionalStochasticRoundingMethod = R"doc()doc";
+Returns:
+ The optional stochastic rounding method that has been set for the
+ op.)doc";
 
-static const char *__doc_popart_Op_getOptionalVGraphId = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getOptionalStochasticRoundingMethod =
+    R"doc(Get the optional stochastic rounding method. Returns: The optional stochastic rounding method that has been set for the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getOptionalVGraphId = R"doc()doc";
+static const char *__doc_popart_Op_getOptionalVGraphId =
+    R"doc(Get the ID of the optional virtual graph.
 
-static const char *__doc_popart_Op_getOutBatchAxis = R"doc()doc";
+Returns:
+ The ID of the optional virtual graph.)doc";
 
-static const char *__singlelinedoc_popart_Op_getOutBatchAxis = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getOptionalVGraphId =
+    R"doc(Get the ID of the optional virtual graph. Returns: The ID of the optional virtual graph.)doc";
 
-static const char *__doc_popart_Op_getOutSettings = R"doc()doc";
+static const char *__doc_popart_Op_getOutBatchAxis =
+    R"doc(Get the batch axis for the output index.
 
-static const char *__singlelinedoc_popart_Op_getOutSettings = R"doc()doc";
+Returns:
+ The batch axis for the output index.)doc";
 
-static const char *__doc_popart_Op_getPipelineStage = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getOutBatchAxis =
+    R"doc(Get the batch axis for the output index. Returns: The batch axis for the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getPipelineStage = R"doc()doc";
+static const char *__doc_popart_Op_getOutSettings =
+    R"doc(Return suitable settings for an op inserted after the output to an
+existing op.
 
-static const char *__doc_popart_Op_getPrecedingOp = R"doc()doc";
+Args:
+ OutIndex: The output index after which the op is inserted.
 
-static const char *__singlelinedoc_popart_Op_getPrecedingOp = R"doc()doc";
+Returns:
+ The settings for the op inserted after the output index.)doc";
 
-static const char *__doc_popart_Op_getPrecedingOp_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getOutSettings =
+    R"doc(Return suitable settings for an op inserted after the output to an existing op. Args: OutIndex: The output index after which the op is inserted. Returns: The settings for the op inserted after the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getPrecedingOp_2 = R"doc()doc";
+static const char *__doc_popart_Op_getPipelineStage =
+    R"doc(Get the pipeline stage that has been set for the op.
+
+Returns:
+ The pipeline stage that has been set for the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_getPipelineStage =
+    R"doc(Get the pipeline stage that has been set for the op. Returns: The pipeline stage that has been set for the op.)doc";
+
+static const char *__doc_popart_Op_getPrecedingOp =
+    R"doc(Get the producer op of the input tensor at the input index.
+
+
+Args:
+ inIndex: The index at which the input tensor is produced.
+
+Returns:
+ The op which produces the input tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getPrecedingOp =
+    R"doc(Get the producer op of the input tensor at the input index. Args: inIndex: The index at which the input tensor is produced. Returns: The op which produces the input tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_getPrecedingOp_2 =
+    R"doc(Get the producer op of the input tensor at the input index.
+
+This will throw an error if the producer op cannot be converted to type
+:code:`T`. \param inIndex The index at which the input tensor is produced.
+
+Returns:
+ The op, converted to type :code:`T`, which produces the input
+ tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_getPrecedingOp_2 =
+    R"doc(Get the producer op of the input tensor at the input index. This will throw an error if the producer op cannot be converted to type :code:`T`. \param inIndex The index at which the input tensor is produced. Returns: The op, converted to type :code:`T`, which produces the input tensor at the input index.)doc";
 
 static const char *__doc_popart_Op_getReplicatedTensorShardingIndices =
-    R"doc()doc";
+    R"doc(Return which inputs and outputs are replicated tensor sharding pairs.)doc";
 
-static const char
-    *__singlelinedoc_popart_Op_getReplicatedTensorShardingIndices = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getReplicatedTensorShardingIndices =
+    R"doc(Return which inputs and outputs are replicated tensor sharding pairs.)doc";
 
-static const char *__doc_popart_Op_getScope = R"doc()doc";
+static const char *__doc_popart_Op_getScope =
+    R"doc(Get the scope associated with the op.
 
-static const char *__singlelinedoc_popart_Op_getScope = R"doc()doc";
+Returns:
+ The scope associated with the op.)doc";
 
-static const char *__doc_popart_Op_getSeedInIndex = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getScope =
+    R"doc(Get the scope associated with the op. Returns: The scope associated with the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_getSeedInIndex = R"doc()doc";
+static const char *__doc_popart_Op_getSeedInIndex =
+    R"doc(Check if the op requires a random seed.
+This is set to false by default and should be overridden and set to true if
+an IPU random seed tensor is required by the op. If, so it will be
+connected to inTensor(getSeedInIndex()) by the IR process.
 
-static const char *__doc_popart_Op_getSettings = R"doc()doc";
+Returns:
+ :code:`true` if the op requires a random seed, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_getSettings = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getSeedInIndex =
+    R"doc(Check if the op requires a random seed. This is set to false by default and should be overridden and set to true if an IPU random seed tensor is required by the op. If, so it will be connected to inTensor(getSeedInIndex()) by the IR process. Returns: :code:`true` if the op requires a random seed, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_getSettings_2 = R"doc()doc";
+static const char *__doc_popart_Op_getSettings =
+    R"doc(Get the settings associated with the op.
 
-static const char *__singlelinedoc_popart_Op_getSettings_2 = R"doc()doc";
+Returns:
+ The op settings.)doc";
 
-static const char *__doc_popart_Op_getShardReductionType = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getSettings =
+    R"doc(Get the settings associated with the op. Returns: The op settings.)doc";
+
+static const char *__doc_popart_Op_getSettings_2 =
+    R"doc(Get the settings associated with the op.
+
+Returns:
+ The op settings.)doc";
+
+static const char *__singlelinedoc_popart_Op_getSettings_2 =
+    R"doc(Get the settings associated with the op. Returns: The op settings.)doc";
+
+static const char *__doc_popart_Op_getShardReductionType =
+    R"doc(Get the reduction type to apply after sharding, if the output shape does
+not change.
+
+Args:
+ index: The output index at which to determine the reduction type.
+
+Returns:
+ The reduction type.)doc";
 
 static const char *__singlelinedoc_popart_Op_getShardReductionType =
-    R"doc()doc";
+    R"doc(Get the reduction type to apply after sharding, if the output shape does not change. Args: index: The output index at which to determine the reduction type. Returns: The reduction type.)doc";
 
-static const char *__doc_popart_Op_getShardRescaleFactor = R"doc()doc";
+static const char *__doc_popart_Op_getShardRescaleFactor =
+    R"doc(Get the scale factor to apply after sharding, if required.
+
+Args:
+ shardedOp: The sharded op.
+ index: The output index at which to determine the scale factor.
+
+Returns:
+ The scale factor. Default:1.0.)doc";
 
 static const char *__singlelinedoc_popart_Op_getShardRescaleFactor =
-    R"doc()doc";
+    R"doc(Get the scale factor to apply after sharding, if required. Args: shardedOp: The sharded op. index: The output index at which to determine the scale factor. Returns: The scale factor. Default:1.0.)doc";
 
-static const char *__doc_popart_Op_getStochasticRoundingMethod = R"doc()doc";
+static const char *__doc_popart_Op_getStochasticRoundingMethod =
+    R"doc(Get the stochastic rounding method.
+
+Returns:
+ The stochastic rounding method that has been set for the
+ op.)doc";
 
 static const char *__singlelinedoc_popart_Op_getStochasticRoundingMethod =
-    R"doc()doc";
+    R"doc(Get the stochastic rounding method. Returns: The stochastic rounding method that has been set for the op.)doc";
 
 static const char *__doc_popart_Op_getSubgraphEquivId =
-    R"doc(Get a string that represents the equivalence class that this Op belongs to.
-This is used by, e.g., transforms to determine if two ops are the same. If
-and only if two Ops return the same equivalence ID then those Ops can be
-considered of the same equivalence class.
+    R"doc(Get a string that represents the equivalence class that this op belongs to.
+This is used by, for example transforms, to determine if two ops are the
+same. If and only if two ops return the same equivalence ID then those ops
+can be considered of the same equivalence class.
 
 
 Args:
@@ -9057,324 +9839,569 @@ Args:
     uint64_t, std::string, std::vector<float>, std::vector<double>,
     std::vector<int64_t>, popart::Scope, bool, nonstd::optional<int64_t>,
     nonstd::optional<float>, nonstd::optional<double> or
-    std::map<TensorId, uint64_t>. We use this to add, e.g.,
+    std::map<TensorId, uint64_t>. We use this to add, for example
     replica-equalness properties to the equivalence ID, which is a property
-    that is calculated on-the-fly as opposed to stored in the Op.
+    that is calculated on-the-fly as opposed to stored in the op.
 
 Returns:
- std::string The equivalence ID.)doc";
+ The equivalence ID.)doc";
 
 static const char *__singlelinedoc_popart_Op_getSubgraphEquivId =
-    R"doc(Get a string that represents the equivalence class that this Op belongs to. This is used by, e.g., transforms to determine if two ops are the same. If and only if two Ops return the same equivalence ID then those Ops can be considered of the same equivalence class. Args: externalAttrs: Additional attributes by which to distinguish this op. The value types must be one of: float, double, int, int64_t, uint32_t, uint64_t, std::string, std::vector<float>, std::vector<double>, std::vector<int64_t>, popart::Scope, bool, nonstd::optional<int64_t>, nonstd::optional<float>, nonstd::optional<double> or std::map<TensorId, uint64_t>. We use this to add, e.g., replica-equalness properties to the equivalence ID, which is a property that is calculated on-the-fly as opposed to stored in the Op. Returns: std::string The equivalence ID.)doc";
+    R"doc(Get a string that represents the equivalence class that this op belongs to. This is used by, for example transforms, to determine if two ops are the same. If and only if two ops return the same equivalence ID then those ops can be considered of the same equivalence class. Args: externalAttrs: Additional attributes by which to distinguish this op. The value types must be one of: float, double, int, int64_t, uint32_t, uint64_t, std::string, std::vector<float>, std::vector<double>, std::vector<int64_t>, popart::Scope, bool, nonstd::optional<int64_t>, nonstd::optional<float>, nonstd::optional<double> or std::map<TensorId, uint64_t>. We use this to add, for example replica-equalness properties to the equivalence ID, which is a property that is calculated on-the-fly as opposed to stored in the op. Returns: The equivalence ID.)doc";
 
-static const char *__doc_popart_Op_getSubgraphInputs = R"doc()doc";
+static const char *__doc_popart_Op_getSubgraphInputs =
+    R"doc(Get all the producer ops of the tensors consumed at the input index.
 
-static const char *__singlelinedoc_popart_Op_getSubgraphInputs = R"doc()doc";
+Returns:
+ A map of producer ops for the tensors consumed at the input index.)doc";
 
-static const char *__doc_popart_Op_getSubgraphOutputs = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getSubgraphInputs =
+    R"doc(Get all the producer ops of the tensors consumed at the input index. Returns: A map of producer ops for the tensors consumed at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getSubgraphOutputs = R"doc()doc";
+static const char *__doc_popart_Op_getSubgraphOutputs =
+    R"doc(Get all the consumer ops of the tensors produced at the output index.
 
-static const char *__doc_popart_Op_getSubgraphValue = R"doc()doc";
+Returns:
+ A map of consumer ops for the tensors produced at the output
+index.)doc";
 
-static const char *__singlelinedoc_popart_Op_getSubgraphValue = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getSubgraphOutputs =
+    R"doc(Get all the consumer ops of the tensors produced at the output index. Returns: A map of consumer ops for the tensors produced at the output index.)doc";
 
-static const char *__doc_popart_Op_getVirtualGraphId = R"doc()doc";
+static const char *__doc_popart_Op_getSubgraphValue =
+    R"doc(Get the subgraph value.
+This is used by outlining algorithm to determine whether or not to outline
+ops. There are high bounding values retrieved by
+getHighSubgraphValue() (for expensive ops such as Conv) or low bounding
+values retrieved by getLowSubgraphValue() (for inexpensive ops such as
+Relu).
 
-static const char *__singlelinedoc_popart_Op_getVirtualGraphId = R"doc()doc";
+Returns:
+ The subgraph value. Default: 0.)doc";
 
-static const char *__doc_popart_Op_gradInputInfo = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getSubgraphValue =
+    R"doc(Get the subgraph value. This is used by outlining algorithm to determine whether or not to outline ops. There are high bounding values retrieved by getHighSubgraphValue() (for expensive ops such as Conv) or low bounding values retrieved by getLowSubgraphValue() (for inexpensive ops such as Relu). Returns: The subgraph value. Default: 0.)doc";
 
-static const char *__singlelinedoc_popart_Op_gradInputInfo = R"doc()doc";
+static const char *__doc_popart_Op_getVirtualGraphId =
+    R"doc(Get the ID of the  virtual graph.
 
-static const char *__doc_popart_Op_gradOutToNonGradIn = R"doc()doc";
+Returns:
+ The ID of the virtual graph.)doc";
 
-static const char *__singlelinedoc_popart_Op_gradOutToNonGradIn = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_getVirtualGraphId =
+    R"doc(Get the ID of the  virtual graph. Returns: The ID of the virtual graph.)doc";
+
+static const char *__doc_popart_Op_gradInputInfo =
+    R"doc(Get the mapping between input indices in the grad op (for inputs,
+outputs and grad outputs) to the input indices in the corresponding
+non-grad op.
+This method throws an error if the op this is called on is not a grad op.
+
+Returns:
+ The mapping between input indices in the grad op (for inputs,
+ outputs and grad outputs) to the input indices in the corresponding
+ non-grad op.)doc";
+
+static const char *__singlelinedoc_popart_Op_gradInputInfo =
+    R"doc(Get the mapping between input indices in the grad op (for inputs, outputs and grad outputs) to the input indices in the corresponding non-grad op. This method throws an error if the op this is called on is not a grad op. Returns: The mapping between input indices in the grad op (for inputs, outputs and grad outputs) to the input indices in the corresponding non-grad op.)doc";
+
+static const char *__doc_popart_Op_gradOutToNonGradIn =
+    R"doc(Get the mapping between the grad op outputs and the inputs of the
+corresponding non-grad op.
+This method throws an error if the op this is called on is not a grad op.)doc";
+
+static const char *__singlelinedoc_popart_Op_gradOutToNonGradIn =
+    R"doc(Get the mapping between the grad op outputs and the inputs of the corresponding non-grad op. This method throws an error if the op this is called on is not a grad op.)doc";
 
 static const char *__doc_popart_Op_growAliasModel =
-    R"doc(For certain tasks which involve analysing how Tensors alias each other,
-such as inplacing, a poprithms::memory::inplace::Graph, which corresponds
-to this Op's Graph, is constructed. The poprithms Graph can then be queried
-for aliasing information, and can have algorithms run on it.
+    R"doc(For certain tasks which involve analysing how tensors alias each other,
+such as inplacing, a
+[poprithms::memory::inplace::Graph](https://github.com/graphcore/poprithms)
+that corresponds to this op's graph is constructed. The Poprithms graph
+can then be queried for aliasing information, and can have algorithms run
+on it.
 
-To construct the poprithms Graph, each PopART Op defines what its
-poprithms equivalents Op are. This method inserts this Op's
-poprithms::memory::inplace::Op equivalents into the poprithms Graph, which
-is the container *popAliaser.*
+To construct the Poprithms graph, each PopART op defines what its
+Poprithms equivalent ops are. This method inserts this op's
+poprithms::memory::inplace::Op equivalents into the [Poprithms
+Graph](https://github.com/graphcore/poprithms), which is the container *popAliaser.*
 
-
-\pre All input tensors of this :code:`Op` have mappings in :code:`aliasModel`
-    before the call to :code:`aliasModel`.
-\post All output tensors of this :code:`Op` have mappings in :code:`aliasModel`
-    after to the call to :code:`aliasModel`.
-
+\pre All input tensors of this op have mappings in \p aliasModel
+    before the call to \p aliasModel.
+\post All output tensors of this op have mappings in \p aliasModel
+    after to the call to \p aliasModel.
 
 See Also:
- AliasModel)doc";
+ AliasModel.
+
+Args:
+ aliasModel: The mapping between this op's (PopART) graph and
+ the Poprithms graph.)doc";
 
 static const char *__singlelinedoc_popart_Op_growAliasModel =
-    R"doc(For certain tasks which involve analysing how Tensors alias each other, such as inplacing, a poprithms::memory::inplace::Graph, which corresponds to this Op's Graph, is constructed. The poprithms Graph can then be queried for aliasing information, and can have algorithms run on it. To construct the poprithms Graph, each PopART Op defines what its poprithms equivalents Op are. This method inserts this Op's poprithms::memory::inplace::Op equivalents into the poprithms Graph, which is the container *popAliaser.* \pre All input tensors of this :code:`Op` have mappings in :code:`aliasModel` before the call to :code:`aliasModel`. \post All output tensors of this :code:`Op` have mappings in :code:`aliasModel` after to the call to :code:`aliasModel`. See Also: AliasModel)doc";
+    R"doc(For certain tasks which involve analysing how tensors alias each other, such as inplacing, a [poprithms::memory::inplace::Graph](https://github.com/graphcore/poprithms) that corresponds to this op's graph is constructed. The Poprithms graph can then be queried for aliasing information, and can have algorithms run on it. To construct the Poprithms graph, each PopART op defines what its Poprithms equivalent ops are. This method inserts this op's poprithms::memory::inplace::Op equivalents into the [Poprithms Graph](https://github.com/graphcore/poprithms), which is the container *popAliaser.* \pre All input tensors of this op have mappings in \p aliasModel before the call to \p aliasModel. \post All output tensors of this op have mappings in \p aliasModel after to the call to \p aliasModel. See Also: AliasModel. Args: aliasModel: The mapping between this op's (PopART) graph and the Poprithms graph.)doc";
 
 static const char *__doc_popart_Op_growAliasModelMulti =
     R"doc(This method is a possible implementation of the virtual method
-growAliasModel, which can be used by Ops which do not have more than 1
+growAliasModel, which can be used by ops which do not have more than 1
 variant (that is, they have no "inplace" variants), and do no non-trivial
-view-changing. Examples: LSTM, Conv, Matmul, SumReduce, etc.)doc";
+view-changing. Examples: LSTM, Conv, Matmul and SumReduce.)doc";
 
 static const char *__singlelinedoc_popart_Op_growAliasModelMulti =
-    R"doc(This method is a possible implementation of the virtual method growAliasModel, which can be used by Ops which do not have more than 1 variant (that is, they have no "inplace" variants), and do no non-trivial view-changing. Examples: LSTM, Conv, Matmul, SumReduce, etc.)doc";
+    R"doc(This method is a possible implementation of the virtual method growAliasModel, which can be used by ops which do not have more than 1 variant (that is, they have no "inplace" variants), and do no non-trivial view-changing. Examples: LSTM, Conv, Matmul and SumReduce.)doc";
 
 static const char *__doc_popart_Op_hasAliasedModifiers =
     R"doc(Check if output is modified by any consumer.
 
 
 Args:
- out:   OutIndex to check.
+ out: The output index to check.
 
 Returns:
- True if any consumer of any aliased tensor downstream modifies
- a non-empty region, false otherwise.)doc";
+ :code:`true` if any consumer of any aliased tensor downstream modifies
+ a non-empty region, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_hasAliasedModifiers =
-    R"doc(Check if output is modified by any consumer. Args: out:   OutIndex to check. Returns: True if any consumer of any aliased tensor downstream modifies a non-empty region, false otherwise.)doc";
+    R"doc(Check if output is modified by any consumer. Args: out: The output index to check. Returns: :code:`true` if any consumer of any aliased tensor downstream modifies a non-empty region, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_hasBatchSerializedPhase = R"doc()doc";
+static const char *__doc_popart_Op_hasBatchSerializedPhase =
+    R"doc(Check if the op has a batch serialization phase set.
+
+Returns:
+ :code:`true` if the op has a batch serialization phase set, otherwise
+ :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_hasBatchSerializedPhase =
-    R"doc()doc";
+    R"doc(Check if the op has a batch serialization phase set. Returns: :code:`true` if the op has a batch serialization phase set, otherwise :code:`false`.)doc";
 
-static const char *__doc_popart_Op_hasExecutionPhase = R"doc()doc";
+static const char *__doc_popart_Op_hasExecutionPhase =
+    R"doc(Check if the op has an execution phase set.
 
-static const char *__singlelinedoc_popart_Op_hasExecutionPhase = R"doc()doc";
+Returns:
+ :code:`true` if the op has a execution phase set, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_hasInput = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_hasExecutionPhase =
+    R"doc(Check if the op has an execution phase set. Returns: :code:`true` if the op has a execution phase set, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_hasInput = R"doc()doc";
+static const char *__doc_popart_Op_hasInput =
+    R"doc(Check if the op has an input at the input index.
 
-static const char *__doc_popart_Op_hasOutput = R"doc()doc";
+Returns:
+ :code:`true` if the op has an input at the input index, otherwise
+:code:`false`.)doc";
 
-static const char *__singlelinedoc_popart_Op_hasOutput = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_hasInput =
+    R"doc(Check if the op has an input at the input index. Returns: :code:`true` if the op has an input at the input index, otherwise :code:`false`.)doc";
 
-static const char *__doc_popart_Op_hasPipelineStage = R"doc()doc";
+static const char *__doc_popart_Op_hasOutput =
+    R"doc(Check if the op has an output at the output index.
 
-static const char *__singlelinedoc_popart_Op_hasPipelineStage = R"doc()doc";
+Returns:
+ :code:`true` if the op has an output at the output index, otherwise
+ :code:`false`.)doc";
+
+static const char *__singlelinedoc_popart_Op_hasOutput =
+    R"doc(Check if the op has an output at the output index. Returns: :code:`true` if the op has an output at the output index, otherwise :code:`false`.)doc";
+
+static const char *__doc_popart_Op_hasPipelineStage =
+    R"doc(Check if the op has a pipeline stage set.
+
+Returns:
+ :code:`true` if the op has a pipeline stage set, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_hasPipelineStage =
+    R"doc(Check if the op has a pipeline stage set. Returns: :code:`true` if the op has a pipeline stage set, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_hasSideEffect =
-    R"doc(If the Op has any effect that is not captured by the (modification of)
-input or output tensors, such as modifying the state of the IPU or host
+    R"doc(Check if the op has any effect that is not captured by the (modification
+of) input or output tensors, such as modifying the state of the IPU or host
 system.
 
 Returns:
- If the Op has side effects. The default is false.)doc";
+ :code:`true` if the op has side effects, :code:`false` otherwise.
+ Default=:code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_hasSideEffect =
-    R"doc(If the Op has any effect that is not captured by the (modification of) input or output tensors, such as modifying the state of the IPU or host system. Returns: If the Op has side effects. The default is false.)doc";
+    R"doc(Check if the op has any effect that is not captured by the (modification of) input or output tensors, such as modifying the state of the IPU or host system. Returns: :code:`true` if the op has side effects, :code:`false` otherwise. Default=:code:`false`.)doc";
 
-static const char *__doc_popart_Op_hasStochasticRoundingMethod = R"doc()doc";
+static const char *__doc_popart_Op_hasStochasticRoundingMethod =
+    R"doc(Check if the op has a stochastic rounding method set.
+
+Returns:
+ :code:`true` if the op has a stochastic rounding method set, otherwise
+ :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_hasStochasticRoundingMethod =
-    R"doc()doc";
+    R"doc(Check if the op has a stochastic rounding method set. Returns: :code:`true` if the op has a stochastic rounding method set, otherwise :code:`false`.)doc";
 
-static const char *__doc_popart_Op_hasVirtualGraphId = R"doc()doc";
+static const char *__doc_popart_Op_hasVirtualGraphId =
+    R"doc(Check if the op has a virtual graph ID set.
 
-static const char *__singlelinedoc_popart_Op_hasVirtualGraphId = R"doc()doc";
+Returns:
+ :code:`true` if the op has a virtual graph ID set, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_hasVirtualGraphId =
+    R"doc(Check if the op has a virtual graph ID set. Returns: :code:`true` if the op has a virtual graph ID set, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_id = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_id = R"doc()doc";
 
-static const char *__doc_popart_Op_inId = R"doc()doc";
+static const char *__doc_popart_Op_inId =
+    R"doc(Get the ID of the input tensor at the input index.
 
-static const char *__singlelinedoc_popart_Op_inId = R"doc()doc";
+Args:
+ index: The input index.
 
-static const char *__doc_popart_Op_inId_2 = R"doc()doc";
+Returns:
+ The tensor ID of the tensor at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_inId_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inId =
+    R"doc(Get the ID of the input tensor at the input index. Args: index: The input index. Returns: The tensor ID of the tensor at the input index.)doc";
 
-static const char *__doc_popart_Op_inIndex = R"doc()doc";
+static const char *__doc_popart_Op_inId_2 =
+    R"doc(Get the ID of the input tensor at the input index.
 
-static const char *__singlelinedoc_popart_Op_inIndex = R"doc()doc";
+Args:
+ index: The input index.
 
-static const char *__doc_popart_Op_inInfo = R"doc()doc";
+Returns:
+ The tensor ID of the tensor at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_inInfo = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inId_2 =
+    R"doc(Get the ID of the input tensor at the input index. Args: index: The input index. Returns: The tensor ID of the tensor at the input index.)doc";
 
-static const char *__doc_popart_Op_inInfo_2 = R"doc()doc";
+static const char *__doc_popart_Op_inIndex =
+    R"doc(Get the input index of the tensor.
 
-static const char *__singlelinedoc_popart_Op_inInfo_2 = R"doc()doc";
+Args:
+ Tensor: The input tensor.
 
-static const char *__doc_popart_Op_inRank = R"doc()doc";
+Returns:
+ The input index of the tensor in the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_inRank = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inIndex =
+    R"doc(Get the input index of the tensor. Args: Tensor: The input tensor. Returns: The input index of the tensor in the op.)doc";
 
-static const char *__doc_popart_Op_inShape = R"doc()doc";
+static const char *__doc_popart_Op_inInfo =
+    R"doc(Get the info of the input tensor at the input index.
 
-static const char *__singlelinedoc_popart_Op_inShape = R"doc()doc";
+Args:
+ index: The input index.
 
-static const char *__doc_popart_Op_inTensor = R"doc()doc";
+Returns:
+ The tensor info of the tensor at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_inTensor = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inInfo =
+    R"doc(Get the info of the input tensor at the input index. Args: index: The input index. Returns: The tensor info of the tensor at the input index.)doc";
 
-static const char *__doc_popart_Op_inTensor_2 = R"doc()doc";
+static const char *__doc_popart_Op_inInfo_2 =
+    R"doc(Get the info of the input tensor at the input index.
 
-static const char *__singlelinedoc_popart_Op_inTensor_2 = R"doc()doc";
+Args:
+ index: The input index.
 
-static const char *__doc_popart_Op_inTensorCount = R"doc()doc";
+Returns:
+ The tensor info of the tensor at the input index.)doc";
 
-static const char *__singlelinedoc_popart_Op_inTensorCount = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inInfo_2 =
+    R"doc(Get the info of the input tensor at the input index. Args: index: The input index. Returns: The tensor info of the tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_inRank =
+    R"doc(Get the rank of the input tensor at the input index.
+
+Args:
+ index: The input index.
+
+Returns:
+ The rank of the tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_inRank =
+    R"doc(Get the rank of the input tensor at the input index. Args: index: The input index. Returns: The rank of the tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_inShape =
+    R"doc(Get the shape info of the input tensor at the input index.
+
+Args:
+ index: The input index.
+
+Returns:
+ The shape info of the tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_inShape =
+    R"doc(Get the shape info of the input tensor at the input index. Args: index: The input index. Returns: The shape info of the tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_inTensor =
+    R"doc(Get the input tensor at the input index.
+
+Args:
+ index: The input index.
+
+Returns:
+ The tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_inTensor =
+    R"doc(Get the input tensor at the input index. Args: index: The input index. Returns: The tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_inTensor_2 =
+    R"doc(Get the input tensor at the input index.
+
+Args:
+ index: The input index.
+
+Returns:
+ The tensor at the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_inTensor_2 =
+    R"doc(Get the input tensor at the input index. Args: index: The input index. Returns: The tensor at the input index.)doc";
+
+static const char *__doc_popart_Op_inTensorCount =
+    R"doc(Get the number of input tensors of this op.
+
+Returns:
+ The number of input tensors this op has.)doc";
+
+static const char *__singlelinedoc_popart_Op_inTensorCount =
+    R"doc(Get the number of input tensors of this op. Returns: The number of input tensors this op has.)doc";
 
 static const char *__doc_popart_Op_inheritPlacementAttributes =
-    R"doc(Helper function to set Op's placement attributes by inheriting them from
-other ops in the graph. Attributes that are set include:
-- Execution context
-- Pipeline stage
-- Execution phase
-- Virtual graph ID
-- Batch serial phase (optional)
+    R"doc(Helper function to set an op's placement attributes by inheriting them from
+other ops in the graph. The attributes that are set include:
+- Execution context.
+- Pipeline stage.
+- Execution phase.
+- Virtual graph ID.
+- Batch serial phase (optional).
 
 
 Args:
- inheritSerializations: Set batch serialial phase or not.
- aliasModel: An AliasModel containing alias info for this op's graph.)doc";
+ inheritSerializations: The indicator to enable or disable the batch
+      serialization phase. :code:`true` enables the batch serialization phase and
+      :code:`false` disables it.
+ aliasModel: An AliasModel object containing alias info for this op's
+      graph.)doc";
 
 static const char *__singlelinedoc_popart_Op_inheritPlacementAttributes =
-    R"doc(Helper function to set Op's placement attributes by inheriting them from other ops in the graph. Attributes that are set include: - Execution context - Pipeline stage - Execution phase - Virtual graph ID - Batch serial phase (optional) Args: inheritSerializations: Set batch serialial phase or not. aliasModel: An AliasModel containing alias info for this op's graph.)doc";
+    R"doc(Helper function to set an op's placement attributes by inheriting them from other ops in the graph. The attributes that are set include: - Execution context. - Pipeline stage. - Execution phase. - Virtual graph ID. - Batch serial phase (optional). Args: inheritSerializations: The indicator to enable or disable the batch serialization phase. :code:`true` enables the batch serialization phase and :code:`false` disables it. aliasModel: An AliasModel object containing alias info for this op's graph.)doc";
 
-static const char *__doc_popart_Op_inplacePriorityDefault = R"doc()doc";
+static const char *__doc_popart_Op_inplacePriorityDefault =
+    R"doc(Return the variants of this op (if any) which can
+modify / alias the inputs at the given indices.
+This function doesn't check for anchor violations
+or topological order violations. When there are several ops,
+they should be returned in descending order of preference
+If the op can be replaced by an in-place variant of itself, this method
+should be overridden to return a vector of <OperatorIdentifier, float>
+tuples in descending order of preference.)doc";
 
 static const char *__singlelinedoc_popart_Op_inplacePriorityDefault =
-    R"doc()doc";
+    R"doc(Return the variants of this op (if any) which can modify / alias the inputs at the given indices. This function doesn't check for anchor violations or topological order violations. When there are several ops, they should be returned in descending order of preference If the op can be replaced by an in-place variant of itself, this method should be overridden to return a vector of <OperatorIdentifier, float> tuples in descending order of preference.)doc";
 
 static const char *__doc_popart_Op_input = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_input = R"doc()doc";
 
 static const char *__doc_popart_Op_inputUnmodifiable =
-    R"doc(Check if input is unmodifiable or aliases an unmodifiable tensor.
+    R"doc(Check if the input index is unmodifiable or aliases an unmodifiable tensor.
 
 
 Args:
- in:    InIndex to check.
+ in: The input index to check.
 
 Returns:
- True if any connected variable tensor has a non-empty alias
- chain and is unmodifiable, false otherwise.)doc";
+ :code:`true` if any connected variable tensor has a non-empty alias
+ chain and is unmodifiable, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_inputUnmodifiable =
-    R"doc(Check if input is unmodifiable or aliases an unmodifiable tensor. Args: in:    InIndex to check. Returns: True if any connected variable tensor has a non-empty alias chain and is unmodifiable, false otherwise.)doc";
+    R"doc(Check if the input index is unmodifiable or aliases an unmodifiable tensor. Args: in: The input index to check. Returns: :code:`true` if any connected variable tensor has a non-empty alias chain and is unmodifiable, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_inputsUnmodifiable = R"doc()doc";
+static const char *__doc_popart_Op_inputsUnmodifiable =
+    R"doc(Check if any input indices are unmodifiable or alias an unmodifiable
+tensor.
 
-static const char *__singlelinedoc_popart_Op_inputsUnmodifiable = R"doc()doc";
 
-static const char *__doc_popart_Op_isChildOf = R"doc()doc";
+Returns:
+ :code:`true` if any connected variable tensor for all input indices has
+ a non-empty alias chain and is unmodifiable, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_isChildOf = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_inputsUnmodifiable =
+    R"doc(Check if any input indices are unmodifiable or alias an unmodifiable tensor. Returns: :code:`true` if any connected variable tensor for all input indices has a non-empty alias chain and is unmodifiable, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_isChildOf =
+    R"doc(Check if the graph is a child graph.
+A graph is a direct child of an op if the graph consumes any of the tensors
+the op produces.
+
+Args:
+ 1: The op that is being checked.
+
+Returns:
+ :code:`true` if the graph is a child graph, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_isChildOf =
+    R"doc(Check if the graph is a child graph. A graph is a direct child of an op if the graph consumes any of the tensors the op produces. Args: 1: The op that is being checked. Returns: :code:`true` if the graph is a child graph, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_isConvertibleTo = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_isConvertibleTo = R"doc()doc";
 
-static const char *__doc_popart_Op_isElementWiseUnary = R"doc()doc";
+static const char *__doc_popart_Op_isElementWiseUnary =
+    R"doc(Checks if the op is an element-wise unary op.
 
-static const char *__singlelinedoc_popart_Op_isElementWiseUnary = R"doc()doc";
+Returns:
+ :code:`true` if the op is an element-wise unary op, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_isExcludedFromPattern = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_isElementWiseUnary =
+    R"doc(Checks if the op is an element-wise unary op. Returns: :code:`true` if the op is an element-wise unary op, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_isExcludedFromPattern =
+    R"doc(Check if the op is excluded from a pattern.
+
+Returns:
+ :code:`true` if the op is excluded from a pattern, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_isExcludedFromPattern =
-    R"doc()doc";
+    R"doc(Check if the op is excluded from a pattern. Returns: :code:`true` if the op is excluded from a pattern, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_isGradientClippingOp = R"doc()doc";
+static const char *__doc_popart_Op_isGradientClippingOp =
+    R"doc(Check if op is a part of gradient clipping.)doc";
 
-static const char *__singlelinedoc_popart_Op_isGradientClippingOp = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_isGradientClippingOp =
+    R"doc(Check if op is a part of gradient clipping.)doc";
 
 static const char *__doc_popart_Op_isInplaceViewChange =
-    R"doc(Is this op a view changing op? E.g. does it not modify it's input, and is
-it an inplace op? Set at each op level. Examples: ReshapeInplaceOp,
-IdentityInplace, TransposeInplaceOp
+    R"doc(Check if this is an inplace op that changes a view.
+Examples of inplace ops that change views are:
+  * ReshapeInplaceOp
+  * IdentityInplaceOp
+  * TransposeInplaceOp.
 
+See Also:
+ For more information on views, refer to the [IPU Programmer's
+Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables).
 
 Returns:
- true If this is a view changing inplace op
-
-Returns:
- false Otherwise)doc";
+ :code:`true` if this is a view changing inplace op, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_isInplaceViewChange =
-    R"doc(Is this op a view changing op? E.g. does it not modify it's input, and is it an inplace op? Set at each op level. Examples: ReshapeInplaceOp, IdentityInplace, TransposeInplaceOp Returns: true If this is a view changing inplace op Returns: false Otherwise)doc";
+    R"doc(Check if this is an inplace op that changes a view. Examples of inplace ops that change views are: * ReshapeInplaceOp * IdentityInplaceOp * TransposeInplaceOp. See Also: For more information on views, refer to the [IPU Programmer's Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables). Returns: :code:`true` if this is a view changing inplace op, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_isIpuCopyOp = R"doc()doc";
+static const char *__doc_popart_Op_isIpuCopyOp =
+    R"doc(Check if this is an IpuCopyOp op.
 
-static const char *__singlelinedoc_popart_Op_isIpuCopyOp = R"doc()doc";
+Returns:
+ :code:`true` if this is an IpuCopyOp op, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_isLossOp = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_isIpuCopyOp =
+    R"doc(Check if this is an IpuCopyOp op. Returns: :code:`true` if this is an IpuCopyOp op, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_isLossOp = R"doc()doc";
+static const char *__doc_popart_Op_isLossOp =
+    R"doc(Check if this is a LossOp op, for example NllOp or L1Op.
+\note The op SumOp which adds the losses together is not
+a LossOp.
 
-static const char *__doc_popart_Op_isNorm = R"doc()doc";
+Returns:
+ :code:`true` if this is a LossOp op, :code:`false` otherwise.)doc";
 
-static const char *__singlelinedoc_popart_Op_isNorm = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_isLossOp =
+    R"doc(Check if this is a LossOp op, for example NllOp or L1Op. \note The op SumOp which adds the losses together is not a LossOp. Returns: :code:`true` if this is a LossOp op, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_isOptimizerOp = R"doc()doc";
+static const char *__doc_popart_Op_isNorm =
+    R"doc(Checks if the op is a norm op.
 
-static const char *__singlelinedoc_popart_Op_isOptimizerOp = R"doc()doc";
+Returns:
+ :code:`true` if the op is a norm op, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_isNorm =
+    R"doc(Checks if the op is a norm op. Returns: :code:`true` if the op is a norm op, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_isOptimizerOp =
+    R"doc(Check if op is part of the optimizer.)doc";
+
+static const char *__singlelinedoc_popart_Op_isOptimizerOp =
+    R"doc(Check if op is part of the optimizer.)doc";
 
 static const char *__doc_popart_Op_isOutlineable =
-    R"doc(Allow an op to exclude itself from caching. If this method returns false
-it will mean that any possible subgraph that this op is part of will
-not be cached.
+    R"doc(Check if op can be outlined.
+If this method returns :code:`false`, it will mean that any possible subgraph
+that this op is part of will not be cached.
 
 Returns:
- If an Op can be outlined. The default is enabled (return true).)doc";
+ :code:`true` if the op can be outlined, :code:`false` otherwise.
+ Default: :code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_Op_isOutlineable =
-    R"doc(Allow an op to exclude itself from caching. If this method returns false it will mean that any possible subgraph that this op is part of will not be cached. Returns: If an Op can be outlined. The default is enabled (return true).)doc";
+    R"doc(Check if op can be outlined. If this method returns :code:`false`, it will mean that any possible subgraph that this op is part of will not be cached. Returns: :code:`true` if the op can be outlined, :code:`false` otherwise. Default: :code:`true`.)doc";
 
-static const char *__doc_popart_Op_isOutplace = R"doc()doc";
+static const char *__doc_popart_Op_isOutplace =
+    R"doc(Check if this is an outplace op.
+This means that no input tensor aliases any output tensor.
 
-static const char *__singlelinedoc_popart_Op_isOutplace = R"doc()doc";
+Returns:
+ :code:`true` if this is an outplace op, otherwise
+ :code:`false`.)doc";
+
+static const char *__singlelinedoc_popart_Op_isOutplace =
+    R"doc(Check if this is an outplace op. This means that no input tensor aliases any output tensor. Returns: :code:`true` if this is an outplace op, otherwise :code:`false`.)doc";
 
 static const char *__doc_popart_Op_isOutplaceViewChange =
-    R"doc(Same as above for outplace (non-inplace) ops.
-Examples: ReshapeOp, IdentityOp, TransposeOp
+    R"doc(Check if this is an outplace op that changes a view.
+Examples of outplace ops that change views are:
+  * ReshapeOp
+  * IdentityOp
+  * TransposeOp.
 
+See Also:
+ For more information on views, refer to the [IPU Programmer's
+Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables).
 
 Returns:
- true If this is a view changing outplace op
-
-Returns:
- false Otherwise)doc";
+ :code:`true` if this is a view changing outplace op, otherwise
+ :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_isOutplaceViewChange =
-    R"doc(Same as above for outplace (non-inplace) ops. Examples: ReshapeOp, IdentityOp, TransposeOp Returns: true If this is a view changing outplace op Returns: false Otherwise)doc";
+    R"doc(Check if this is an outplace op that changes a view. Examples of outplace ops that change views are: * ReshapeOp * IdentityOp * TransposeOp. See Also: For more information on views, refer to the [IPU Programmer's Guide](https://docs.graphcore.ai/projects/ipu-programmers-guide/en/latest/programming_model.html#data-variables). Returns: :code:`true` if this is a view changing outplace op, otherwise :code:`false`.)doc";
 
-static const char *__doc_popart_Op_isParentOf = R"doc()doc";
+static const char *__doc_popart_Op_isParentOf =
+    R"doc(Check if the graph is a parent of the op.
+A graph is a parent of an op if and only if the op is a child of the graph.
 
-static const char *__singlelinedoc_popart_Op_isParentOf = R"doc()doc";
-
-static const char *__doc_popart_Op_isPipelineIpuCopyOp =
-    R"doc(Check if an Op is an IpuCopyOp that copies between pipeline stages
+Args:
+ 1: The op that is being checked.
 
 Returns:
- true if it is an IpuCopyOp that copies between pipeline stages)doc";
+ :code:`true` if the graph is a parent graph, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_isParentOf =
+    R"doc(Check if the graph is a parent of the op. A graph is a parent of an op if and only if the op is a child of the graph. Args: 1: The op that is being checked. Returns: :code:`true` if the graph is a parent graph, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_isPipelineIpuCopyOp =
+    R"doc(Check if the op is of the class IpuCopyOp that copies between pipeline
+stages.
+
+
+Returns:
+ :code:`true` if op is of the class IpuCopyOp and copies between pipeline
+stages, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_isPipelineIpuCopyOp =
-    R"doc(Check if an Op is an IpuCopyOp that copies between pipeline stages Returns: true if it is an IpuCopyOp that copies between pipeline stages)doc";
+    R"doc(Check if the op is of the class IpuCopyOp that copies between pipeline stages. Returns: :code:`true` if op is of the class IpuCopyOp and copies between pipeline stages, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_loopShard = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_loopShard = R"doc()doc";
 
 static const char *__doc_popart_Op_mapInplaceProposal =
-    R"doc(Translate a PopART inplacing proposal, which replaces this non-inplace Op
-with an inplace Op of type ``inplaceId,`` into an AliasModel equivalent.
+    R"doc(Translate a PopART inplacing proposal.
+This replaces an outplace op with an inplace op of type \p inplaceId,
+into an AliasModel equivalent.
 
 
 Args:
- aliasModel: Contains the mapping between this Op's (PopART) Graph and
-                   the poprithms Graph.
- inplaceId: The OperatorIdentifier to translate to the AliasModel
-                  equivalent.
+ aliasModel: The mapping between this op's (PopART) graph and
+      the Poprithms graph.
+ 2: The operator identifier to translate to the
+      AliasModel equivalent.
 
 
 Returns:
@@ -9382,88 +10409,138 @@ Returns:
 AliasModel and the second element is a input index.
 
 This method is defined as a void method which sets a value passed by
-reference, as opposed to a getter method, so that no poprithms headers need
+reference, as opposed to a getter method, so that no Poprithms headers need
 to be included in this file.)doc";
 
 static const char *__singlelinedoc_popart_Op_mapInplaceProposal =
-    R"doc(Translate a PopART inplacing proposal, which replaces this non-inplace Op with an inplace Op of type ``inplaceId,`` into an AliasModel equivalent. Args: aliasModel: Contains the mapping between this Op's (PopART) Graph and the poprithms Graph. inplaceId: The OperatorIdentifier to translate to the AliasModel equivalent. Returns: A tuple where the first element corresponds to an alias gate in the AliasModel and the second element is a input index. This method is defined as a void method which sets a value passed by reference, as opposed to a getter method, so that no poprithms headers need to be included in this file.)doc";
+    R"doc(Translate a PopART inplacing proposal. This replaces an outplace op with an inplace op of type \p inplaceId, into an AliasModel equivalent. Args: aliasModel: The mapping between this op's (PopART) graph and the Poprithms graph. 2: The operator identifier to translate to the AliasModel equivalent. Returns: A tuple where the first element corresponds to an alias gate in the AliasModel and the second element is a input index. This method is defined as a void method which sets a value passed by reference, as opposed to a getter method, so that no Poprithms headers need to be included in this file.)doc";
 
 static const char *__doc_popart_Op_mapInplaceProposalGate0 =
-    R"doc(Set the Proposal to open the poprithms::AliasGate which corresponds to this
-Op, at input index 0. For information on AliasGates and inplacing
-proposals, see the poprithms memory::inplace project.)doc";
+    R"doc(Set the proposal to open the poprithms::AliasGate which corresponds to this
+op, at input index 0. For information on AliasGate and inplacing
+proposals, see the [Poprithms
+memory::inplace](https://github.com/graphcore/poprithms) project.)doc";
 
 static const char *__singlelinedoc_popart_Op_mapInplaceProposalGate0 =
-    R"doc(Set the Proposal to open the poprithms::AliasGate which corresponds to this Op, at input index 0. For information on AliasGates and inplacing proposals, see the poprithms memory::inplace project.)doc";
+    R"doc(Set the proposal to open the poprithms::AliasGate which corresponds to this op, at input index 0. For information on AliasGate and inplacing proposals, see the [Poprithms memory::inplace](https://github.com/graphcore/poprithms) project.)doc";
 
-static const char *__doc_popart_Op_memOfOutputs = R"doc()doc";
+static const char *__doc_popart_Op_memOfOutputs =
+    R"doc(Return the total memory of used by all output tensors.)doc";
 
-static const char *__singlelinedoc_popart_Op_memOfOutputs = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_memOfOutputs =
+    R"doc(Return the total memory of used by all output tensors.)doc";
 
-static const char *__doc_popart_Op_modifies = R"doc()doc";
+static const char *__doc_popart_Op_modifies =
+    R"doc(Return the input region which this op modifies (for inplace ops).
 
-static const char *__singlelinedoc_popart_Op_modifies = R"doc()doc";
+Args:
+ InIndex: The input index.
+
+Returns:
+ The regions which this op modifies.)doc";
+
+static const char *__singlelinedoc_popart_Op_modifies =
+    R"doc(Return the input region which this op modifies (for inplace ops). Args: InIndex: The input index. Returns: The regions which this op modifies.)doc";
 
 static const char *__doc_popart_Op_modifies_2 =
-    R"doc(Is modifies(i) non-empty for any input index i?
+    R"doc(Check if op modifies a tensor at any index.
 
 
 Returns:
- True if modifies(i) is non-empty for any i,
- false otherwise.)doc";
+ :code:`true` if the op modifies a tensor at any index, otherwise
+ :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_Op_modifies_2 =
-    R"doc(Is modifies(i) non-empty for any input index i? Returns: True if modifies(i) is non-empty for any i, false otherwise.)doc";
+    R"doc(Check if op modifies a tensor at any index. Returns: :code:`true` if the op modifies a tensor at any index, otherwise :code:`false`.)doc";
 
 static const char *__doc_popart_Op_modifiesIndex =
-    R"doc(Check if an op modifies a tensor at a specific index in.
+    R"doc(Check if an op modifies a tensor at a specific index.
 
 
 Args:
- in:    Index to check.
+ in: The input index to check.
 
 Returns:
- True if it modifies the tensor,
- false otherwise.)doc";
+ :code:`true` if the op modifies the tensor, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_modifiesIndex =
-    R"doc(Check if an op modifies a tensor at a specific index in. Args: in:    Index to check. Returns: True if it modifies the tensor, false otherwise.)doc";
+    R"doc(Check if an op modifies a tensor at a specific index. Args: in: The input index to check. Returns: :code:`true` if the op modifies the tensor, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_modifiesTensor =
     R"doc(Check if an op modifies a tensor.
 
 
 Args:
- t:     Tensor to check.
+ t: The tensor to check.
 
 Returns:
- True if it modifies the tensor,
- false otherwise.)doc";
+ :code:`true` if it modifies the tensor, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_modifiesTensor =
-    R"doc(Check if an op modifies a tensor. Args: t:     Tensor to check. Returns: True if it modifies the tensor, false otherwise.)doc";
+    R"doc(Check if an op modifies a tensor. Args: t: The tensor to check. Returns: :code:`true` if it modifies the tensor, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_name = R"doc()doc";
+static const char *__doc_popart_Op_name = R"doc(Return the op name.)doc";
 
-static const char *__singlelinedoc_popart_Op_name = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_name =
+    R"doc(Return the op name.)doc";
 
-static const char *__doc_popart_Op_opInToOpOutIndex = R"doc()doc";
+static const char *__doc_popart_Op_opInToOpOutIndex =
+    R"doc(Get the the set of outputs to visit based on the input index (for graph
+traversal).
 
-static const char *__singlelinedoc_popart_Op_opInToOpOutIndex = R"doc()doc";
+Args:
+ in: The input index used to determine the set of outputs to visit.
 
-static const char *__doc_popart_Op_opInToSubgraphInIndex = R"doc()doc";
+Returns:
+ The set of outputs to visit based on the input index.)doc";
+
+static const char *__singlelinedoc_popart_Op_opInToOpOutIndex =
+    R"doc(Get the the set of outputs to visit based on the input index (for graph traversal). Args: in: The input index used to determine the set of outputs to visit. Returns: The set of outputs to visit based on the input index.)doc";
+
+static const char *__doc_popart_Op_opInToSubgraphInIndex =
+    R"doc(Get the input index for the subgraph corresponding to the op input index.
+
+Args:
+ subgraphIndex: The index of the subgraph from the set of subgraphs
+       called by this op (returned by getCalledGraphs()).
+ inIndex: The input index in the op.
+
+Returns:
+ The input index in the subgraph that corresponds to the input
+ index in the op, or -1 if the op input index is not used by the
+ subgraph.)doc";
 
 static const char *__singlelinedoc_popart_Op_opInToSubgraphInIndex =
-    R"doc()doc";
+    R"doc(Get the input index for the subgraph corresponding to the op input index. Args: subgraphIndex: The index of the subgraph from the set of subgraphs called by this op (returned by getCalledGraphs()). inIndex: The input index in the op. Returns: The input index in the subgraph that corresponds to the input index in the op, or -1 if the op input index is not used by the subgraph.)doc";
 
-static const char *__doc_popart_Op_opOutToOpInIndex = R"doc()doc";
+static const char *__doc_popart_Op_opOutToOpInIndex =
+    R"doc(Get the the set of inputs to visit based on the output index (for graph
+traversal).
 
-static const char *__singlelinedoc_popart_Op_opOutToOpInIndex = R"doc()doc";
+Args:
+ out: The output index used to determine the set of inputs to visit.
 
-static const char *__doc_popart_Op_opOutToSubgraphOutIndex = R"doc()doc";
+Returns:
+ The set of inputs to visit based on the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_opOutToOpInIndex =
+    R"doc(Get the the set of inputs to visit based on the output index (for graph traversal). Args: out: The output index used to determine the set of inputs to visit. Returns: The set of inputs to visit based on the output index.)doc";
+
+static const char *__doc_popart_Op_opOutToSubgraphOutIndex =
+    R"doc(Get the output index for the subgraph corresponding to the op output index.
+
+Args:
+ subgraphIndex: The index of the subgraph from the set of subgraphs
+       called by this op (returned by getCalledGraphs()).
+ outIndex: The output index in the op.
+
+Returns:
+ The output index in the subgraph that corresponds to the output
+ index in the op, or -1 if the op output index is not used by the
+ subgraph.)doc";
 
 static const char *__singlelinedoc_popart_Op_opOutToSubgraphOutIndex =
-    R"doc()doc";
+    R"doc(Get the output index for the subgraph corresponding to the op output index. Args: subgraphIndex: The index of the subgraph from the set of subgraphs called by this op (returned by getCalledGraphs()). outIndex: The output index in the op. Returns: The output index in the subgraph that corresponds to the output index in the op, or -1 if the op output index is not used by the subgraph.)doc";
 
 static const char *__doc_popart_Op_operator_assign = R"doc()doc";
 
@@ -9473,49 +10550,129 @@ static const char *__doc_popart_Op_opid = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_opid = R"doc()doc";
 
-static const char *__doc_popart_Op_optionalInputs = R"doc()doc";
+static const char *__doc_popart_Op_optionalInputs =
+    R"doc(Return the input indices of all optional inputs to the
+op.)doc";
 
-static const char *__singlelinedoc_popart_Op_optionalInputs = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_optionalInputs =
+    R"doc(Return the input indices of all optional inputs to the op.)doc";
 
-static const char *__doc_popart_Op_outId = R"doc()doc";
+static const char *__doc_popart_Op_outId =
+    R"doc(Get the ID of the output tensor at the output index.
 
-static const char *__singlelinedoc_popart_Op_outId = R"doc()doc";
+Args:
+ index: The output index.
 
-static const char *__doc_popart_Op_outId_2 = R"doc()doc";
+Returns:
+ The tensor ID of the tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_outId_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_outId =
+    R"doc(Get the ID of the output tensor at the output index. Args: index: The output index. Returns: The tensor ID of the tensor at the output index.)doc";
 
-static const char *__doc_popart_Op_outIndex = R"doc()doc";
+static const char *__doc_popart_Op_outId_2 =
+    R"doc(Get the ID of the output tensor at the output index.
 
-static const char *__singlelinedoc_popart_Op_outIndex = R"doc()doc";
+Args:
+ index: The output index.
 
-static const char *__doc_popart_Op_outInfo = R"doc()doc";
+Returns:
+ The tensor ID of the tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_outInfo = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_outId_2 =
+    R"doc(Get the ID of the output tensor at the output index. Args: index: The output index. Returns: The tensor ID of the tensor at the output index.)doc";
 
-static const char *__doc_popart_Op_outInfo_2 = R"doc()doc";
+static const char *__doc_popart_Op_outIndex =
+    R"doc(Get the output index of the tensor.
 
-static const char *__singlelinedoc_popart_Op_outInfo_2 = R"doc()doc";
+Args:
+ Tensor: The output tensor.
 
-static const char *__doc_popart_Op_outRank = R"doc()doc";
+Returns:
+ The output index of the tensor in the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_outRank = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_outIndex =
+    R"doc(Get the output index of the tensor. Args: Tensor: The output tensor. Returns: The output index of the tensor in the op.)doc";
 
-static const char *__doc_popart_Op_outShape = R"doc()doc";
+static const char *__doc_popart_Op_outInfo =
+    R"doc(Get the info of the output tensor at the output index.
 
-static const char *__singlelinedoc_popart_Op_outShape = R"doc()doc";
+Args:
+ index: The output index.
 
-static const char *__doc_popart_Op_outTensor = R"doc()doc";
+Returns:
+ The tensor info of the tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_outTensor = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_outInfo =
+    R"doc(Get the info of the output tensor at the output index. Args: index: The output index. Returns: The tensor info of the tensor at the output index.)doc";
 
-static const char *__doc_popart_Op_outTensor_2 = R"doc()doc";
+static const char *__doc_popart_Op_outInfo_2 =
+    R"doc(Get the info of the output tensor at the output index.
 
-static const char *__singlelinedoc_popart_Op_outTensor_2 = R"doc()doc";
+Args:
+ index: The output index.
 
-static const char *__doc_popart_Op_outTensorCount = R"doc()doc";
+Returns:
+ The tensor info of the tensor at the output index.)doc";
 
-static const char *__singlelinedoc_popart_Op_outTensorCount = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_outInfo_2 =
+    R"doc(Get the info of the output tensor at the output index. Args: index: The output index. Returns: The tensor info of the tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_outRank =
+    R"doc(Get the rank of the output tensor at the output index.
+
+Args:
+ index: The output index.
+
+Returns:
+ The rank of the tensor at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_outRank =
+    R"doc(Get the rank of the output tensor at the output index. Args: index: The output index. Returns: The rank of the tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_outShape =
+    R"doc(Get the shape info of the output tensor at the output index.
+
+Args:
+ index: The output index.
+
+Returns:
+ The shape info of the tensor at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_outShape =
+    R"doc(Get the shape info of the output tensor at the output index. Args: index: The output index. Returns: The shape info of the tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_outTensor =
+    R"doc(Get the output tensor at the output index.
+
+Args:
+ index: The output index.
+
+Returns:
+ The tensor at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_outTensor =
+    R"doc(Get the output tensor at the output index. Args: index: The output index. Returns: The tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_outTensor_2 =
+    R"doc(Get the output tensor at the output index.
+
+Args:
+ index: The output index.
+
+Returns:
+ The tensor at the output index.)doc";
+
+static const char *__singlelinedoc_popart_Op_outTensor_2 =
+    R"doc(Get the output tensor at the output index. Args: index: The output index. Returns: The tensor at the output index.)doc";
+
+static const char *__doc_popart_Op_outTensorCount =
+    R"doc(Get the number of output tensors of this op.
+
+Returns:
+ The number of output tensors this op has.)doc";
+
+static const char *__singlelinedoc_popart_Op_outTensorCount =
+    R"doc(Get the number of output tensors of this op. Returns: The number of output tensors this op has.)doc";
 
 static const char *__doc_popart_Op_output = R"doc()doc";
 
@@ -9526,141 +10683,265 @@ static const char *__doc_popart_Op_overwritesTensor =
 
 
 Args:
- t:     Tensor to check.
+ t: The tensor to check.
 
 Returns:
- True if it overwrites the tensor,
- false otherwise.)doc";
+ :code:`true` if it overwrites the tensor, :code:`false` otherwise.)doc";
 
 static const char *__singlelinedoc_popart_Op_overwritesTensor =
-    R"doc(Check if an op overwrites a tensor. Args: t:     Tensor to check. Returns: True if it overwrites the tensor, false otherwise.)doc";
+    R"doc(Check if an op overwrites a tensor. Args: t: The tensor to check. Returns: :code:`true` if it overwrites the tensor, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_prettyNpOut =
-    R"doc(Calculate numpy broadcast shape for two shapes or generate an error if
-the broadcast is not aligned. The error will have operator context.
-Note: If the RTS meta-shape is required, use prettyNpOut with TensorInfo
-instead.
+    R"doc(Calculate the NumPy broadcast shape for two shapes.
+This will throw an error if the broadcast is not aligned. The error will
+have operator context.
+Note: If the replicated tensor sharding meta-shape is required, use
+prettyNpOut with TensorInfo instead.
 
 Args:
- s0: First shape
- s1: Second shape
+ s0: The first shape.
+ s1: The second shape.
 
 Returns:
- Numpy-like broadcasted output shape)doc";
+ The NumPy-like broadcasted output shape.)doc";
 
 static const char *__singlelinedoc_popart_Op_prettyNpOut =
-    R"doc(Calculate numpy broadcast shape for two shapes or generate an error if the broadcast is not aligned. The error will have operator context. Note: If the RTS meta-shape is required, use prettyNpOut with TensorInfo instead. Args: s0: First shape s1: Second shape Returns: Numpy-like broadcasted output shape)doc";
+    R"doc(Calculate the NumPy broadcast shape for two shapes. This will throw an error if the broadcast is not aligned. The error will have operator context. Note: If the replicated tensor sharding meta-shape is required, use prettyNpOut with TensorInfo instead. Args: s0: The first shape. s1: The second shape. Returns: The NumPy-like broadcasted output shape.)doc";
 
 static const char *__doc_popart_Op_prettyNpOut_2 =
-    R"doc(Calculate numpy broadcast shape for two shapes or generate an error if
-the broadcast is not aligned. The error will have operator context.
+    R"doc(Calculate the NumPy broadcast shape for two shapes.
+This will throw an error if the broadcast is not aligned. The error will
+have operator context.
 
 Args:
- i0:            First tensor info containing shape and meta-shape
- i1:            Second tensor info containing shape and meta-shape
- checkDataType: If true, verifies that the data types are identical
-                      and throws an error if not.
+ i0: The info for the first tensor containing shape and meta-shape.
+ i1: The info for the second tensor containing shape and meta-shape.
+ checkDataType: Check that the data types are identical.
+      If :code:`true`, check that the data types are identical and throw an
+      error if they are not. If :code:`false`, do not check that data types are
+      identical.
 
 Returns:
- Numpy-like broadcast output info containing correct
- shape and meta-shape. The data type is taken from i0.)doc";
+ The NumPy-like broadcast output info containing the correct
+ shape and meta-shape. The data type is taken from \p i0.)doc";
 
 static const char *__singlelinedoc_popart_Op_prettyNpOut_2 =
-    R"doc(Calculate numpy broadcast shape for two shapes or generate an error if the broadcast is not aligned. The error will have operator context. Args: i0:            First tensor info containing shape and meta-shape i1:            Second tensor info containing shape and meta-shape checkDataType: If true, verifies that the data types are identical and throws an error if not. Returns: Numpy-like broadcast output info containing correct shape and meta-shape. The data type is taken from i0.)doc";
+    R"doc(Calculate the NumPy broadcast shape for two shapes. This will throw an error if the broadcast is not aligned. The error will have operator context. Args: i0: The info for the first tensor containing shape and meta-shape. i1: The info for the second tensor containing shape and meta-shape. checkDataType: Check that the data types are identical. If :code:`true`, check that the data types are identical and throw an error if they are not. If :code:`false`, do not check that data types are identical. Returns: The NumPy-like broadcast output info containing the correct shape and meta-shape. The data type is taken from \p i0.)doc";
 
-static const char *__doc_popart_Op_producesGraphOutput = R"doc()doc";
+static const char *__doc_popart_Op_producesGraphOutput =
+    R"doc(Check if op produces the outputs of the graph.
 
-static const char *__singlelinedoc_popart_Op_producesGraphOutput = R"doc()doc";
+
+Returns:
+ :code:`true` if op produces graph outputs, :code:`false` otherwise.)doc";
+
+static const char *__singlelinedoc_popart_Op_producesGraphOutput =
+    R"doc(Check if op produces the outputs of the graph. Returns: :code:`true` if op produces graph outputs, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_Op_pruneable = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_pruneable = R"doc()doc";
 
-static const char *__doc_popart_Op_requiresRandomSeed = R"doc()doc";
+static const char *__doc_popart_Op_requiresRandomSeed =
+    R"doc(Check if the op requires a random seed.
+This is set to :code:`false `by default and should be overridden and set to
+:code:`true` if an IPU random seed tensor is required by the op. If, so it will
+be connected to inTensor(getSeedInIndex()) by the IR process.
 
-static const char *__singlelinedoc_popart_Op_requiresRandomSeed = R"doc()doc";
+Returns:
+ :code:`true` if the op requires a random seed, :code:`false` otherwise.)doc";
 
-static const char *__doc_popart_Op_setBatchSerializedPhase = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_requiresRandomSeed =
+    R"doc(Check if the op requires a random seed. This is set to :code:`false `by default and should be overridden and set to :code:`true` if an IPU random seed tensor is required by the op. If, so it will be connected to inTensor(getSeedInIndex()) by the IR process. Returns: :code:`true` if the op requires a random seed, :code:`false` otherwise.)doc";
+
+static const char *__doc_popart_Op_setBatchSerializedPhase =
+    R"doc(Set the batch serialized phase.
+
+Args:
+ OptionalBatchSerializedPhase: The batch serialized phase to be set
+       for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_setBatchSerializedPhase =
-    R"doc()doc";
+    R"doc(Set the batch serialized phase. Args: OptionalBatchSerializedPhase: The batch serialized phase to be set for the op.)doc";
 
-static const char *__doc_popart_Op_setCalledSubgraphGradInfo = R"doc()doc";
+static const char *__doc_popart_Op_setCalledSubgraphGradInfo =
+    R"doc(Set information about the gradient graphs for this op's called subgraphs.
+If the op has called subgraphs, then this method will get called prior to
+:code:`getGradOps()` to provide the op with the information it needs to call the
+grad version of the called subgraphs.
+
+Args:
+ calledGraphsGradInfo: The mapping between the forward graph and
+       information on the gradient graph.)doc";
 
 static const char *__singlelinedoc_popart_Op_setCalledSubgraphGradInfo =
-    R"doc()doc";
+    R"doc(Set information about the gradient graphs for this op's called subgraphs. If the op has called subgraphs, then this method will get called prior to :code:`getGradOps()` to provide the op with the information it needs to call the grad version of the called subgraphs. Args: calledGraphsGradInfo: The mapping between the forward graph and information on the gradient graph.)doc";
 
-static const char *__doc_popart_Op_setExecutionPhase = R"doc()doc";
+static const char *__doc_popart_Op_setExecutionPhase =
+    R"doc(Set the execution phase for the op.
 
-static const char *__singlelinedoc_popart_Op_setExecutionPhase = R"doc()doc";
+Args:
+ OptionalExecutionPhase: The execution phase to be set for the op.)doc";
 
-static const char *__doc_popart_Op_setName = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_setExecutionPhase =
+    R"doc(Set the execution phase for the op. Args: OptionalExecutionPhase: The execution phase to be set for the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_setName = R"doc()doc";
+static const char *__doc_popart_Op_setName =
+    R"doc(Get the name of the op.
 
-static const char *__doc_popart_Op_setPipelineStage = R"doc()doc";
+Returns:
+ The name of the op.)doc";
 
-static const char *__singlelinedoc_popart_Op_setPipelineStage = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_setName =
+    R"doc(Get the name of the op. Returns: The name of the op.)doc";
 
-static const char *__doc_popart_Op_setScope = R"doc()doc";
+static const char *__doc_popart_Op_setPipelineStage =
+    R"doc(Set a pipeline stage for the op.
 
-static const char *__singlelinedoc_popart_Op_setScope = R"doc()doc";
+Args:
+ OptionalPipelineStage: The pipeline stage to be set for the op.)doc";
 
-static const char *__doc_popart_Op_setStochasticRoundingMethod = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_setPipelineStage =
+    R"doc(Set a pipeline stage for the op. Args: OptionalPipelineStage: The pipeline stage to be set for the op.)doc";
+
+static const char *__doc_popart_Op_setScope =
+    R"doc(Get the scope associated with the op.
+
+Returns:
+ The scope associated with the op.)doc";
+
+static const char *__singlelinedoc_popart_Op_setScope =
+    R"doc(Get the scope associated with the op. Returns: The scope associated with the op.)doc";
+
+static const char *__doc_popart_Op_setStochasticRoundingMethod =
+    R"doc(Set the optional stochastic rounding method.
+
+Args:
+ OptionalStochasticRoundingMethod: The optional stochastic rounding
+       method to be set for the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_setStochasticRoundingMethod =
-    R"doc()doc";
+    R"doc(Set the optional stochastic rounding method. Args: OptionalStochasticRoundingMethod: The optional stochastic rounding method to be set for the op.)doc";
 
-static const char *__doc_popart_Op_setVirtualGraphId = R"doc()doc";
+static const char *__doc_popart_Op_setVirtualGraphId =
+    R"doc(Set a virtual graph ID for the op.
 
-static const char *__singlelinedoc_popart_Op_setVirtualGraphId = R"doc()doc";
+Args:
+ OptionalVGraphId: The ID of the virtual graph to set on this op.)doc";
+
+static const char *__singlelinedoc_popart_Op_setVirtualGraphId =
+    R"doc(Set a virtual graph ID for the op. Args: OptionalVGraphId: The ID of the virtual graph to set on this op.)doc";
 
 static const char *__doc_popart_Op_settings = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_settings = R"doc()doc";
 
-static const char *__doc_popart_Op_setup = R"doc()doc";
+static const char *__doc_popart_Op_setup =
+    R"doc(Set the shape and type of the arguments to the op.
+This MUST set the type and shape information for all the output
+TensorInfo objects.)doc";
 
-static const char *__singlelinedoc_popart_Op_setup = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_setup =
+    R"doc(Set the shape and type of the arguments to the op. This MUST set the type and shape information for all the output TensorInfo objects.)doc";
 
-static const char *__doc_popart_Op_shard = R"doc()doc";
+static const char *__doc_popart_Op_shard =
+    R"doc(Shard an operation into multiple operations according to the new,
+already sharded input tensors.
 
-static const char *__singlelinedoc_popart_Op_shard = R"doc()doc";
+Args:
+ inputs: The sharded input tensors.
 
-static const char *__doc_popart_Op_shard_2 = R"doc()doc";
+Returns:
+ The sharded output tensors.)doc";
 
-static const char *__singlelinedoc_popart_Op_shard_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_shard =
+    R"doc(Shard an operation into multiple operations according to the new, already sharded input tensors. Args: inputs: The sharded input tensors. Returns: The sharded output tensors.)doc";
 
-static const char *__doc_popart_Op_str = R"doc()doc";
+static const char *__doc_popart_Op_shard_2 =
+    R"doc(Create an output sharding plan from sharding an op.
+The sharding plan also contains the individual input/output shards of an
+operation. When sharding an operation, the new plan is updated with the
+resulting sharded tensors.
 
-static const char *__singlelinedoc_popart_Op_str = R"doc()doc";
+Args:
+ plan: The input sharding.
 
-static const char *__doc_popart_Op_subgraphInToOpInIndex = R"doc()doc";
+Returns:
+ The plan after sharding the operation containing the resulting
+sharded tensors.)doc";
+
+static const char *__singlelinedoc_popart_Op_shard_2 =
+    R"doc(Create an output sharding plan from sharding an op. The sharding plan also contains the individual input/output shards of an operation. When sharding an operation, the new plan is updated with the resulting sharded tensors. Args: plan: The input sharding. Returns: The plan after sharding the operation containing the resulting sharded tensors.)doc";
+
+static const char *__doc_popart_Op_str = R"doc(Return the op ID.)doc";
+
+static const char *__singlelinedoc_popart_Op_str = R"doc(Return the op ID.)doc";
+
+static const char *__doc_popart_Op_subgraphInToOpInIndex =
+    R"doc(Get the input index for the op corresponding to the subgraph input index.
+
+Args:
+ subgraphIndex: The index of the subgraph from the set of subgraphs
+       called by this op (returned by getCalledGraphs()).
+ inIndex: The input index in the subgraph.
+
+Returns:
+ The input index in the op that corresponds to the input
+ index in the subgraph, or -1 if the subgraph input index is not used
+ by the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_subgraphInToOpInIndex =
-    R"doc()doc";
+    R"doc(Get the input index for the op corresponding to the subgraph input index. Args: subgraphIndex: The index of the subgraph from the set of subgraphs called by this op (returned by getCalledGraphs()). inIndex: The input index in the subgraph. Returns: The input index in the op that corresponds to the input index in the subgraph, or -1 if the subgraph input index is not used by the op.)doc";
 
-static const char *__doc_popart_Op_subgraphOutToOpOutIndex = R"doc()doc";
+static const char *__doc_popart_Op_subgraphOutToOpOutIndex =
+    R"doc(Get the output index for the op corresponding to the subgraph output index.
+
+Args:
+ subgraphIndex: The index of the subgraph from the set of subgraphs
+       called by this op (returned by getCalledGraphs()).
+ outIndex: The output index in the subgraph.
+
+Returns:
+ The output index in the op that corresponds to the output
+ index in the subgraph, or -1 if the subgraph output index is not used
+ by the op.)doc";
 
 static const char *__singlelinedoc_popart_Op_subgraphOutToOpOutIndex =
-    R"doc()doc";
+    R"doc(Get the output index for the op corresponding to the subgraph output index. Args: subgraphIndex: The index of the subgraph from the set of subgraphs called by this op (returned by getCalledGraphs()). outIndex: The output index in the subgraph. Returns: The output index in the op that corresponds to the output index in the subgraph, or -1 if the subgraph output index is not used by the op.)doc";
 
-static const char *__doc_popart_Op_toJSON = R"doc()doc";
+static const char *__doc_popart_Op_toJSON =
+    R"doc(Convert this op to JSON format and append it to a stream.
 
-static const char *__singlelinedoc_popart_Op_toJSON = R"doc()doc";
+Args:
+ ss: The stream to append the JSON-serialised op to.)doc";
 
-static const char *__doc_popart_Op_transferBaseProperties = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_toJSON =
+    R"doc(Convert this op to JSON format and append it to a stream. Args: ss: The stream to append the JSON-serialised op to.)doc";
+
+static const char *__doc_popart_Op_transferBaseProperties =
+    R"doc(Transfer the base properties from another op to this op.
+
+Args:
+ to: The op to transfer the base properties from.)doc";
 
 static const char *__singlelinedoc_popart_Op_transferBaseProperties =
-    R"doc()doc";
+    R"doc(Transfer the base properties from another op to this op. Args: to: The op to transfer the base properties from.)doc";
 
 static const char *__doc_popart_Op_unrollShard = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Op_unrollShard = R"doc()doc";
 
-static const char *__doc_popart_Op_uses = R"doc()doc";
+static const char *__doc_popart_Op_uses =
+    R"doc(Return the input region which this op uses.
 
-static const char *__singlelinedoc_popart_Op_uses = R"doc()doc";
+Args:
+ InIndex: The input index.
+
+Returns:
+ The regions which this op uses.)doc";
+
+static const char *__singlelinedoc_popart_Op_uses =
+    R"doc(Return the input region which this op uses. Args: InIndex: The input index. Returns: The regions which this op uses.)doc";
 
 static const char *__doc_popart_OperatorIdentifier = R"doc()doc";
 
@@ -11360,44 +12641,56 @@ static const char *__doc_popart_RecomputationType_Standard =
 static const char *__singlelinedoc_popart_RecomputationType_Standard =
     R"doc(Algorithm to pick checkpoints to try and minimise max liveness.)doc";
 
-static const char *__doc_popart_RecomputeType = R"doc()doc";
+static const char *__doc_popart_RecomputeType =
+    R"doc(Define the type of recomputation.)doc";
 
-static const char *__singlelinedoc_popart_RecomputeType = R"doc()doc";
+static const char *__singlelinedoc_popart_RecomputeType =
+    R"doc(Define the type of recomputation.)doc";
 
-static const char *__doc_popart_RecomputeType_2 = R"doc()doc";
+static const char *__doc_popart_RecomputeType_2 =
+    R"doc(Define the type of recomputation.)doc";
 
-static const char *__singlelinedoc_popart_RecomputeType_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_RecomputeType_2 =
+    R"doc(Define the type of recomputation.)doc";
 
-static const char *__doc_popart_RecomputeType_Checkpoint = R"doc()doc";
+static const char *__doc_popart_RecomputeType_Checkpoint =
+    R"doc(Do not recompute. Outputs from the op are kept from the forward pass.)doc";
 
 static const char *__singlelinedoc_popart_RecomputeType_Checkpoint =
-    R"doc()doc";
+    R"doc(Do not recompute. Outputs from the op are kept from the forward pass.)doc";
 
-static const char *__doc_popart_RecomputeType_Recompute = R"doc()doc";
+static const char *__doc_popart_RecomputeType_Recompute =
+    R"doc(Recompute operation.)doc";
 
-static const char *__singlelinedoc_popart_RecomputeType_Recompute = R"doc()doc";
+static const char *__singlelinedoc_popart_RecomputeType_Recompute =
+    R"doc(Recompute operation.)doc";
 
-static const char *__doc_popart_RecomputeType_Recomputed = R"doc()doc";
+static const char *__doc_popart_RecomputeType_Recomputed =
+    R"doc(For explicit recomputation, this marks a cloned operation that had
+RecomputeType::Recompute set. After cloning, the original op is changed to
+RecomputeType::Checkpoint, and the cloned op is changed to Recomputed.)doc";
 
 static const char *__singlelinedoc_popart_RecomputeType_Recomputed =
-    R"doc()doc";
+    R"doc(For explicit recomputation, this marks a cloned operation that had RecomputeType::Recompute set. After cloning, the original op is changed to RecomputeType::Checkpoint, and the cloned op is changed to Recomputed.)doc";
 
-static const char *__doc_popart_RecomputeType_Undefined = R"doc()doc";
+static const char *__doc_popart_RecomputeType_Undefined =
+    R"doc(Default value if RecomputeType has not been set.)doc";
 
-static const char *__singlelinedoc_popart_RecomputeType_Undefined = R"doc()doc";
+static const char *__singlelinedoc_popart_RecomputeType_Undefined =
+    R"doc(Default value if RecomputeType has not been set.)doc";
 
 static const char *__doc_popart_ReductionType =
-    R"doc(Defines the reduction operation to use over a sequence of tensors.
+    R"doc(Define the reduction operation to use over a sequence of tensors.
 
-Two use-cases for this enum type are:
-* denoting how to reduce individual losses produced by a LossOp over a
-  minibatch (specified by the LossOp :code:`reduction` parameter)
-* denoting how to reduce weight gradients over a number of replicas when
-  gradient accumulation is enabled (specified by the global
-  :code:`accumulationAndReplicationReductionType` session option))doc";
+The two use-cases for this enum type are:
+   * denoting how to reduce individual losses produced by a LossOp over a
+     minibatch (specified by the LossOp :code:`reduction` parameter)
+   * denoting how to reduce weight gradients over a number of replicas when
+     gradient accumulation is enabled (specified by the global session option
+     SessionOptions::accumulationAndReplicationReductionType).)doc";
 
 static const char *__singlelinedoc_popart_ReductionType =
-    R"doc(Defines the reduction operation to use over a sequence of tensors. Two use-cases for this enum type are: * denoting how to reduce individual losses produced by a LossOp over a minibatch (specified by the LossOp :code:`reduction` parameter) * denoting how to reduce weight gradients over a number of replicas when gradient accumulation is enabled (specified by the global :code:`accumulationAndReplicationReductionType` session option))doc";
+    R"doc(Define the reduction operation to use over a sequence of tensors. The two use-cases for this enum type are: * denoting how to reduce individual losses produced by a LossOp over a minibatch (specified by the LossOp :code:`reduction` parameter) * denoting how to reduce weight gradients over a number of replicas when gradient accumulation is enabled (specified by the global session option SessionOptions::accumulationAndReplicationReductionType).)doc";
 
 static const char *__doc_popart_ReductionType_Mean =
     R"doc(Take the mean of the input values.)doc";
@@ -11412,18 +12705,18 @@ static const char *__singlelinedoc_popart_ReductionType_N =
     R"doc(The number of ReductionType values.)doc";
 
 static const char *__doc_popart_ReductionType_NoReduction =
-    R"doc(Don't reduce the input values, keeping them stacked into a single
-tensor. So values :math:`t_1, ..., t_k` get collected
-into a tensor :math:`[t_1, ..., t_k]`.)doc";
+    R"doc(Do not reduce the input values. Keep them stacked into a single
+tensor. So values :math:`t_1, ..., t_k` get collected into a tensor
+:math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_NoReduction =
-    R"doc(Don't reduce the input values, keeping them stacked into a single tensor. So values :math:`t_1, ..., t_k` get collected into a tensor :math:`[t_1, ..., t_k]`.)doc";
+    R"doc(Do not reduce the input values. Keep them stacked into a single tensor. So values :math:`t_1, ..., t_k` get collected into a tensor :math:`[t_1, ..., t_k]`.)doc";
 
 static const char *__doc_popart_ReductionType_Sum =
-    R"doc(Sum the input values and do not scale the output.)doc";
+    R"doc(Sum the input values and do not scale the output (Default).)doc";
 
 static const char *__singlelinedoc_popart_ReductionType_Sum =
-    R"doc(Sum the input values and do not scale the output.)doc";
+    R"doc(Sum the input values and do not scale the output (Default).)doc";
 
 static const char *__doc_popart_RemoteBufferInfo =
     R"doc(Stores the shape and the numerical type of the remote buffer)doc";
@@ -12343,14 +13636,14 @@ static const char *
 
 static const char *__doc_popart_SessionOptions_disableOptimizerStateTensorStreams =
     R"doc(If true, streaming of optimizer tensors is disabled. This setting can be
-used to conserve memory if you are not interested in check pointing
+used to conserve memory if you are not interested in checkpointing
 optimizer state. Note that weight gradient tensors that are also optimiser
 tensors will only be disabled if both disableGradAccumulationTensorStreams
 and disableOptimizerStateTensorStreams are true.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_disableOptimizerStateTensorStreams =
-        R"doc(If true, streaming of optimizer tensors is disabled. This setting can be used to conserve memory if you are not interested in check pointing optimizer state. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
+        R"doc(If true, streaming of optimizer tensors is disabled. This setting can be used to conserve memory if you are not interested in checkpointing optimizer state. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
 
 static const char *__doc_popart_SessionOptions_dotChecks =
     R"doc(When to write :code:`.dot` files during Ir construction.)doc";
@@ -13754,23 +15047,34 @@ to a single Poplar function.)doc";
 static const char *__singlelinedoc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
     R"doc(Copy all inputs before the start of the subgraph, copy all outputs after all ops in the subgraph. With this strategy subgraphs will always map to a single Poplar function.)doc";
 
-static const char *__doc_popart_SyncPattern = R"doc()doc";
+static const char *__doc_popart_SyncPattern =
+    R"doc(Controls synchronisation in multi-IPU systems.)doc";
 
-static const char *__singlelinedoc_popart_SyncPattern = R"doc()doc";
+static const char *__singlelinedoc_popart_SyncPattern =
+    R"doc(Controls synchronisation in multi-IPU systems.)doc";
 
-static const char *__doc_popart_SyncPattern_Full = R"doc()doc";
+static const char *__doc_popart_SyncPattern_Full =
+    R"doc(Require all IPUs to synchronise on every communication between IPUs or
+between IPUs and host (Default).)doc";
 
-static const char *__singlelinedoc_popart_SyncPattern_Full = R"doc()doc";
+static const char *__singlelinedoc_popart_SyncPattern_Full =
+    R"doc(Require all IPUs to synchronise on every communication between IPUs or between IPUs and host (Default).)doc";
 
-static const char *__doc_popart_SyncPattern_ReplicaAndLadder = R"doc()doc";
+static const char *__doc_popart_SyncPattern_ReplicaAndLadder =
+    R"doc(Allow an IPU group to communicate with the host without requiring
+synchronisation between groups. This permits multiple IPU groups to
+alternate between performing host IO and computation.)doc";
 
 static const char *__singlelinedoc_popart_SyncPattern_ReplicaAndLadder =
-    R"doc()doc";
+    R"doc(Allow an IPU group to communicate with the host without requiring synchronisation between groups. This permits multiple IPU groups to alternate between performing host IO and computation.)doc";
 
-static const char *__doc_popart_SyncPattern_SinglePipeline = R"doc()doc";
+static const char *__doc_popart_SyncPattern_SinglePipeline =
+    R"doc(Allow IPUs to synchronise with the host independently, without having to
+synchronise with each other. This permits any one IPU to perform host IO
+while other IPUs are processing data.)doc";
 
 static const char *__singlelinedoc_popart_SyncPattern_SinglePipeline =
-    R"doc()doc";
+    R"doc(Allow IPUs to synchronise with the host independently, without having to synchronise with each other. This permits any one IPU to perform host IO while other IPUs are processing data.)doc";
 
 static const char *__doc_popart_SyntheticDataMode =
     R"doc(Enum type used to specify the data source for input tensors.)doc";
@@ -15901,46 +17205,49 @@ static const char *__doc_popart_operator_lshift_5 = R"doc()doc";
 static const char *__singlelinedoc_popart_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_6 =
-    R"doc(Write a representation of a DeviceType to an output stream.
+    R"doc(Write a representation of a DeviceType object to an output stream.
 
 
 Args:
- os: Output stream.
- dt: Device type reference.
+ os: The output stream to write to.
+ dt: The device type reference to be written to the output
+        stream.
 
 Returns:
  The same output stream for chaining.)doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_6 =
-    R"doc(Write a representation of a DeviceType to an output stream. Args: os: Output stream. dt: Device type reference. Returns: The same output stream for chaining.)doc";
+    R"doc(Write a representation of a DeviceType object to an output stream. Args: os: The output stream to write to. dt: The device type reference to be written to the output stream. Returns: The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_7 =
-    R"doc(Write a representation of a DeviceConnectionType to an output stream.
+    R"doc(Write a representation of a DeviceConnectionType object to an output stream.
 
 
 Args:
- os: Output stream.
- dct: Device connection type reference.
+ os: The output stream to write to.
+ dct: The device connection type reference to be written to the output
+        stream.
 
 Returns:
  The same output stream for chaining.)doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_7 =
-    R"doc(Write a representation of a DeviceConnectionType to an output stream. Args: os: Output stream. dct: Device connection type reference. Returns: The same output stream for chaining.)doc";
+    R"doc(Write a representation of a DeviceConnectionType object to an output stream. Args: os: The output stream to write to. dct: The device connection type reference to be written to the output stream. Returns: The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_8 =
-    R"doc(Write a representation of a SyncPattern to an output stream.
+    R"doc(Write a representation of a SyncPattern object to an output stream.
 
 
 Args:
- os: Output stream.
- sp: Sync pattern reference.
+ os: The output stream to write to.
+ sp: The sync pattern reference to be written to the output
+        stream.
 
 Returns:
  The same output stream for chaining.)doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_8 =
-    R"doc(Write a representation of a SyncPattern to an output stream. Args: os: Output stream. sp: Sync pattern reference. Returns: The same output stream for chaining.)doc";
+    R"doc(Write a representation of a SyncPattern object to an output stream. Args: os: The output stream to write to. sp: The sync pattern reference to be written to the output stream. Returns: The same output stream for chaining.)doc";
 
 static const char *__doc_popart_operator_lshift_9 = R"doc()doc";
 
@@ -16069,7 +17376,11 @@ static const char *__doc_popart_operator_lshift_34 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_34 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_35 =
+static const char *__doc_popart_operator_lshift_35 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_35 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_36 =
     R"doc(Args:
  os: Stream to append VariableRetrievalMode vrm to.
  vrm: VariableRetrievalMode to add to the stream.
@@ -16077,10 +17388,10 @@ static const char *__doc_popart_operator_lshift_35 =
 Returns:
  Input stream with vrm appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_35 =
+static const char *__singlelinedoc_popart_operator_lshift_36 =
     R"doc(Args: os: Stream to append VariableRetrievalMode vrm to. vrm: VariableRetrievalMode to add to the stream. Returns: Input stream with vrm appended to the end of it)doc";
 
-static const char *__doc_popart_operator_lshift_36 =
+static const char *__doc_popart_operator_lshift_37 =
     R"doc(Args:
  os: Stream to append VariableSettings vrm to.
  vs: VariableSettings to add to the stream.
@@ -16088,7 +17399,7 @@ static const char *__doc_popart_operator_lshift_36 =
 Returns:
  Input stream with vs appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_36 =
+static const char *__singlelinedoc_popart_operator_lshift_37 =
     R"doc(Args: os: Stream to append VariableSettings vrm to. vs: VariableSettings to add to the stream. Returns: Input stream with vs appended to the end of it)doc";
 
 static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
@@ -17198,13 +18509,31 @@ Returns:
 static const char *__singlelinedoc_popart_stripAllReservedPrefixes =
     R"doc(Creates a new TensorId where all prefixes are removed Args: id: The id to make the stripped TensorId from Returns: A new TensorId where the prefixes are stripped away)doc";
 
-static const char *__doc_popart_syncPatternFromString = R"doc()doc";
+static const char *__doc_popart_syncPatternFromString =
+    R"doc(Convert string input to a valid SyncPattern enum value.
+Throws an error if the input string does not correspond to a valid
+SyncPattern value.
 
-static const char *__singlelinedoc_popart_syncPatternFromString = R"doc()doc";
+Args:
+ str: The input string to be converted to a valid SyncPattern enum
+value. \returns A valid SyncPattern enum value.)doc";
 
-static const char *__doc_popart_syncPatternToString = R"doc()doc";
+static const char *__singlelinedoc_popart_syncPatternFromString =
+    R"doc(Convert string input to a valid SyncPattern enum value. Throws an error if the input string does not correspond to a valid SyncPattern value. Args: str: The input string to be converted to a valid SyncPattern enum value. \returns A valid SyncPattern enum value.)doc";
 
-static const char *__singlelinedoc_popart_syncPatternToString = R"doc()doc";
+static const char *__doc_popart_syncPatternToString =
+    R"doc(Convert a valid SyncPattern enum value to a string.
+Throws an error if the input does not correspond to a valid
+SyncPattern value.
+
+Args:
+ pattern: The input SyncPattern enum value to be converted to a string.
+
+Returns:
+ The string version of a valid SyncPattern enum value.)doc";
+
+static const char *__singlelinedoc_popart_syncPatternToString =
+    R"doc(Convert a valid SyncPattern enum value to a string. Throws an error if the input does not correspond to a valid SyncPattern value. Args: pattern: The input SyncPattern enum value to be converted to a string. Returns: The string version of a valid SyncPattern enum value.)doc";
 
 static const char *__doc_popart_toString = R"doc()doc";
 
