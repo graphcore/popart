@@ -94,7 +94,7 @@ def test_explicit_recomputation(tmpdir):
         assert np.allclose(lhs, rhs)
 
 
-def test_explicit_recomputation_pipelining(tmpdir):
+def test_explicit_recomputation_pipelining():
     """ Test that pipeline recomputation recomputes as expected """
     batches_per_step = 3
     dsize = 10

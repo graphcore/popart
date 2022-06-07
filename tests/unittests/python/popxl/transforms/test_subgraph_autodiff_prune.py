@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import pytest
 import numpy as np
 import popxl
 import popxl.ops as ops

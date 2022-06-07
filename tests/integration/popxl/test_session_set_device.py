@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-from itertools import product, chain
 import pytest
 import popxl
 from popxl import ops

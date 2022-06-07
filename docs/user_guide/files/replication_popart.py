@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import popart
 import numpy
-from popart import CommGroup, CommGroupType, Builder
+from popart import CommGroup, CommGroupType
 from popart import VariableRetrievalMode, VariableSettings
 
 builder = popart.Builder()

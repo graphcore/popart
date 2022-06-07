@@ -135,6 +135,7 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
     Raises:
         ValueError: If device_type == "cpu" and num_ipus > 1. This is not supported.
         ValueError: device_type is not one of "ipu_hw", "ipu_model", "cpu"
+        RuntimeError: If there are not enough available IPUs
 
     Returns:
         popart.DeviceInfo: The device info for the given options.

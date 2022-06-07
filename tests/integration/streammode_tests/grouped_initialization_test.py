@@ -651,8 +651,7 @@ DATA_SIZE = 5
 def instance(repl: int,
              vs: popart.VariableSettings,
              location=None,
-             length: int = 5,
-             RTS: bool = False) -> np.ndarray:
+             length: int = 5) -> np.ndarray:
     with tu.create_test_device(numIpus=repl) as device:
         shape = [O_DIM, CHANNELS, DATA_SIZE, DATA_SIZE]
 

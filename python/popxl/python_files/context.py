@@ -285,12 +285,12 @@ def in_sequence(mode: Union[bool, Literal['pass']] = True):
     This is achieved by adding topological constraints (topocons) to the scheduling graph.
 
     Args:
-        mode:
+        mode (Union[bool, Literal['pass']]):
             - ``True``: Ensure each op within the context is executed in a linear schedule
                 in the same order as created.
             - ``False``: Do not apply linear schedule constraint. If nested within an outer
                 ``in_sequence(True)`` context, the inner context as a whole will be scheduled
-                linearly with respect to ops in the outter context. For example:
+                linearly with respect to ops in the outer context. For example:
 
             .. code-block:: python
 
@@ -305,6 +305,9 @@ def in_sequence(mode: Union[bool, Literal['pass']] = True):
 
             - ``'pass'``: Do nothing when an op is created. Useful for transforms that want to
                 delay adding topocons to the graph
+
+    Raises:
+        TypeError: If None is passed to ``mode``
     """
 
     # We use `None` to specify an empty scope. It must not be passed here:

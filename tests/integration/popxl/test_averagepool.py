@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-from enum import auto
 import popxl
 import popxl.ops as ops
 import numpy as np

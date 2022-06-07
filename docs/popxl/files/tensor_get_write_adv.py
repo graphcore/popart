@@ -6,7 +6,6 @@ The intention of this example is to show how to write and read tensor data.
 import popxl
 import popxl.ops as ops
 import numpy as np
-import pytest
 
 # Creating a model with PopXL
 ir = popxl.Ir()

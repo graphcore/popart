@@ -15,7 +15,7 @@ TO_IR_ENUM_MAP: Dict[CODE_LOCATION, _ir.CodeLocation] = {
 
 
 def _to_code_location_enum(type_: CODE_LOCATION) -> _ir.CodeLocation:
-    """Convert a python string to a pybind _ir.CodeLocation
+    """Convert a python string to a pybind _ir.CodeLocation.
 
     Args:
         type_ (CODE_LOCATION): The destination string.
