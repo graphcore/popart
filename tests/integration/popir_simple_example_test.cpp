@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(PopirSimpleExampleTest) {
 
   auto dataFlow  = DataFlow(1, {{o, AnchorReturnType("All")}});
   auto optimizer = ConstSGD(0.01);
-  auto device    = createTestDevice(TEST_TARGET, 3);
+  auto device    = createTestDevice(TEST_TARGET, 1);
 
   auto session = TrainingSession::createFromOnnxModel(
       builder->getModelProto(), dataFlow, loss, optimizer, device);
