@@ -24,6 +24,16 @@ poplar::OptionFlags
 EngineOptionsCreator::deriveOptionFlags(const SessionOptions &sessionOptions) {
   poplar::OptionFlags engineOptions;
 
+  // TODO(T64572): Remove the if block below.
+  if (!sessionOptions.engineOptions.count("debug.retainDebugInformation")) {
+    logging::devicex::warn(
+        "The `debug.retainDebugInformation` engine option was implicitly set "
+        "to `true`. The default will change to `false` in a future release. "
+        "Set it to `true` explicitly if you want to query debug information "
+        "(for example, by calling `Session::getReport`).");
+    engineOptions.set("debug.retainDebugInformation", "true");
+  }
+
   if (sessionOptions.enablePrefetchDatastreams) {
     logging::devicex::info("Setting engine options for prefetch data streams "
                            "(exchange.streamBufferOverlap = hostRearrangeOnly, "
