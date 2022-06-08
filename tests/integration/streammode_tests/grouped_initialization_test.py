@@ -755,9 +755,7 @@ def test_locations():
 
     assert np.allclose(local, remote)
 
-    shard = instance(replication_factor,
-                     variable_setting,
-                     getOffChipLocation(group, True),
-                     RTS=True)
+    shard = instance(replication_factor, variable_setting,
+                     getOffChipLocation(group, True))
 
     assert np.allclose(local, shard)
