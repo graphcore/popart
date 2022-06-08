@@ -45,3 +45,6 @@ def test_session_passed_device(capfd):
         assert sess.run()[d2h] == 1
         assert num_weights_from_host(
         ) == 1, "Expected exactly 1 WeightsToHost when constructing Session with an attached Device."
+
+    # Explicitly detach
+    device.detach()
