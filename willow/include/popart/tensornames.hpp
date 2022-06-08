@@ -199,6 +199,10 @@ constexpr const char *reservedLossScalingPrefix() { return "lossScaling_"; }
 constexpr const char *reservedAutomaticLossScalePrefix() {
   return "AutomaticLossScaleProxy___";
 }
+// Used in automatic loss scaling (see `automaticlossscaling.hpp`).
+constexpr const char *reservedLossScaleUpdateFactorId() {
+  return "lossScaleUpdateFactor";
+}
 // SGD0 / SGD1 / SGD2 (part of reservedOptimizerPrefixes)
 constexpr const char *reservedDefaultScaledLearningRate0Prefix() {
   return "scaledLearningRate0___default___";

@@ -588,10 +588,6 @@ TensorId getStatisticsAccumulatorTensorId() {
   return reservedAccumPrefix() + std::string("autoLossScaleStats");
 }
 
-TensorId getLossScaleUpdateFactorTensorId() {
-  return std::string("lossScaleUpdateFactor");
-}
-
 Tensor *
 addOnesTensor(Graph &graph, const TensorId &tensorId, const TensorInfo info) {
   auto &ir = graph.getIr();
@@ -924,7 +920,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // Create variable tensor, initialised to 'ones' for input at
   // LossScaleUpdateOp::getLossScaleUpdateFactorInIndex
   Tensor *lsUpdateFactor = addOnesTensor(
-      graph, getLossScaleUpdateFactorTensorId(), lossScaleTensor->info);
+      graph, reservedLossScaleUpdateFactorId(), lossScaleTensor->info);
 
   lossScaleUpdateOp->connectInTensor(
       LossScaleUpdateOp::getLossScaleUpdateFactorInIndex(), lsUpdateFactor->id);

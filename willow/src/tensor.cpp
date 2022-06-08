@@ -1053,7 +1053,8 @@ bool Tensor::isRandomSeedTensor() const {
 }
 
 bool Tensor::isOptimizerStateTensor() const {
-  if (idIncludesPrefix(reservedOptimizerStatePrefixes())) {
+  if (idIncludesPrefix(reservedOptimizerStatePrefixes()) ||
+      id == reservedLossScaleUpdateFactorId()) {
     // sanity check that the accl tensor is of Variable type
     if (tensorType() != TensorType::Variable) {
       throw error(
