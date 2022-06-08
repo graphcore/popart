@@ -737,14 +737,14 @@ struct AutodiffSettings {
       AutodiffStitchStrategy::RecomputeAllNonInputs;
 };
 
-// Struct for development-specific configuration intended to be used by
-// PopART developers, as opposed to PopART users.
-//
-// \note These options are not subject to deprecation notices and may be
-// changed or removed at any time.
+/// Struct for development-specific configuration intended to be used by
+/// PopART developers, as opposed to PopART users.
+///
+/// NOTE: These options are not subject to deprecation notices and may be
+/// changed or removed at any time.
 struct DeveloperSettings {
-  // The minimum percentage of the total time a scope must take in order
-  // for it to be logged by the TimePartitionLogger.
+  /// The minimum percentage of the total time a scope must take in order
+  /// for it to be logged by the TimePartitionLogger.
   double timePartitionLoggerThresholdPercentage = 1.0f;
 };
 

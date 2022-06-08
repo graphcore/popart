@@ -4441,18 +4441,23 @@ static const char *__singlelinedoc_popart_DataType =
     R"doc(There is a one-to-one correspondence between ``popart::DataTypes`` and ``ONNX_NAMESPACE::TensorProto_DataTypes``, which is equivalent to ``decltype(ONNX_NAMESPACE::TensorProto().data_type()).``)doc";
 
 static const char *__doc_popart_DeveloperSettings =
-    R"doc(NOTE: These options are not subject to deprecation notices and may be)doc";
+    R"doc(Struct for development-specific configuration intended to be used by
+PopART developers, as opposed to PopART users.
+
+NOTE: These options are not subject to deprecation notices and may be
+changed or removed at any time.)doc";
 
 static const char *__singlelinedoc_popart_DeveloperSettings =
-    R"doc(NOTE: These options are not subject to deprecation notices and may be)doc";
+    R"doc(Struct for development-specific configuration intended to be used by PopART developers, as opposed to PopART users. NOTE: These options are not subject to deprecation notices and may be changed or removed at any time.)doc";
 
 static const char
     *__doc_popart_DeveloperSettings_timePartitionLoggerThresholdPercentage =
-        R"doc()doc";
+        R"doc(The minimum percentage of the total time a scope must take in order
+for it to be logged by the TimePartitionLogger.)doc";
 
 static const char *
     __singlelinedoc_popart_DeveloperSettings_timePartitionLoggerThresholdPercentage =
-        R"doc()doc";
+        R"doc(The minimum percentage of the total time a scope must take in order for it to be logged by the TimePartitionLogger.)doc";
 
 static const char *__doc_popart_DeviceConnectionType =
     R"doc(Controls when to connect to the IPU (if at all).)doc";
