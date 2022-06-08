@@ -41,64 +41,40 @@ Session options
 
   #include <popart/sessionoptions.hpp>
 
-.. doxygenstruct:: popart::SessionOptions
-  :members:
-
 .. doxygenenum:: popart::AccumulateOuterFragmentSchedule
-
-.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
-  :members:
-
 .. doxygenenum:: popart::AutodiffStitchStrategy
-
-.. doxygenstruct:: popart::AutodiffSettings
-  :members:
-
-.. doxygenstruct:: popart::AutomaticLossScalingSettings
-  :members:
-
-.. doxygenenum:: popart::GradientTensorTrackingMethod
-
 .. doxygenenum:: popart::BatchSerializationBatchSchedule
-
 .. doxygenenum:: popart::BatchSerializationMethod
-
-.. doxygenstruct:: popart::BatchSerializationSettings
-  :members:
-
 .. doxygenenum:: popart::BatchSerializationTransformContext
-
 .. doxygenenum:: popart::ExecutionPhaseIOSchedule
-
-.. doxygenstruct:: popart::ExecutionPhaseSettings
-  :members:
-
 .. doxygenenum:: popart::ExecutionPhaseSchedule
-
+.. doxygenenum:: popart::GradientTensorTrackingMethod
 .. doxygenenum:: popart::Instrumentation
-
 .. doxygenenum:: popart::IrSerializationFormat
-
 .. doxygenenum:: popart::MeanReductionStrategy
-
 .. doxygenenum:: popart::MergeVarUpdateType
-
 .. doxygenenum:: popart::RecomputationType
-
-.. doxygenenum:: popart::ReductionType
-
 .. doxygenenum:: popart::SubgraphCopyingStrategy
-
 .. doxygenenum:: popart::SyntheticDataMode
-
-.. doxygenstruct:: popart::TensorLocationSettings
-  :members:
-
 .. doxygenenum:: popart::VirtualGraphMode
+.. doxygenstruct:: popart::AccumulateOuterFragmentSettings
+.. doxygenstruct:: popart::AutodiffSettings
+.. doxygenstruct:: popart::AutomaticLossScalingSettings
+.. doxygenstruct:: popart::BatchSerializationSettings
+.. doxygenstruct:: popart::ExecutionPhaseSettings
+.. doxygenstruct:: popart::ReplicatedCollectivesSettings
+.. doxygenstruct:: popart::SessionOptions
+.. doxygenstruct:: popart::TensorLocationSettings
 
-.. doxygenstruct:: popart::DeveloperSettings
+.. code-block:: cpp
+
+  #include <popart/variablesettings.hpp>
 
 .. doxygenclass:: popart::VariableSettings
+
+.. code-block:: cpp
+
+  #include <popart/commgroup.hpp>
 
 .. doxygenclass:: popart::CommGroup
 
