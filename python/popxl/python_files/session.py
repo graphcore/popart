@@ -1,5 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import math
+from contextlib import ExitStack, contextmanager
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
 
 import numpy as np
@@ -477,6 +478,20 @@ class Session:
         self._device = device
         self._pb_session._setDeviceInfo(device)
 
+    @contextmanager
+    def _cleanup_on_error(self):
+        """This context manager will call `Session.__exit__` if an exception in
+        `Session.__enter__` is raised. Function calls which can raise unhandled
+        exceptions in `Session.__enter__` should use this context manager.
+
+        This function was inspired by the recipes in:
+        https://docs.python.org/3/library/contextlib.html#cleaning-up-in-an-enter-implementation
+        """
+        with ExitStack() as stack:
+            stack.push(self)
+            yield
+            stack.pop_all()
+
     def __enter__(self) -> 'Session':
         """
         Enter the context of this ``Session``.
@@ -511,7 +526,8 @@ class Session:
                     )
 
         if should_setup:
-            self.weights_from_host()
+            with self._cleanup_on_error():
+                self.weights_from_host()
 
         return self
 
@@ -534,7 +550,8 @@ class Session:
         should_teardown = not was_attached_or_device or isinstance(
             was_attached_or_device, popart.DeviceInfo)
         if should_teardown:
-            self.weights_to_host()
+            if exc_type is None:
+                self.weights_to_host()
             self._device.detach()
             self._pb_session.setEngineIsLoaded(False)
 
