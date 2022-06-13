@@ -19,29 +19,39 @@ class TestReplicaGrouping:
         with pytest.raises(RuntimeError):
             popxl.ReplicaGrouping()
 
-    @pytest.mark.parametrize(
-        'num_replicas, stride, group_size',
-        [
-            (8, 1, 8),  # 00000000
-            (8, 1, 2),  # 00112233
-            (8, 2, 4),  # 01010101
-            (8, 1, 4)  # 00001111
-        ])
-    def test_replica_grouping_construct(self, num_replicas, stride,
-                                        group_size):
+    @pytest.mark.parametrize('num_replicas, stride, group_size, assignment', [
+        (8, 1, 8, [0, 0, 0, 0, 0, 0, 0, 0]),
+        (8, 1, 2, [0, 0, 1, 1, 2, 2, 3, 3]),
+        (8, 2, 4, [0, 1, 0, 1, 0, 1, 0, 1]),
+        (8, 1, 4, [0, 0, 0, 0, 1, 1, 1, 1]),
+    ])
+    def test_replica_grouping_construct(self, num_replicas, stride, group_size,
+                                        assignment):
         """ Test constructing some replica grouping objects. """
         ir = popxl.Ir()
         ir.replication_factor = num_replicas
         rg = ir.replica_grouping(stride=stride, group_size=group_size)
         assert rg.stride == stride
         assert rg.group_size == group_size
+        assert rg.assignment == assignment
 
     def test_replica_grouping_repr(self):
         ir = popxl.Ir()
         ir.replication_factor = 8
         rg = ir.replica_grouping(stride=2, group_size=4)
         assert repr(
-            rg) == 'ReplicaGrouping(num_replicas=8, stride=2, group_size=4)'
+            rg
+        ) == 'ReplicaGrouping(num_replicas=8, stride=2, group_size=4, num_groups=2)'
+
+    def test_eq(self):
+        ir = popxl.Ir()
+        ir.replication_factor = 8
+        assert ir.replica_grouping(
+            stride=2, group_size=4) == ir.replica_grouping(stride=2,
+                                                           group_size=4)
+        assert ir.replica_grouping(
+            stride=2, group_size=2) != ir.replica_grouping(stride=2,
+                                                           group_size=4)
 
 
 # Some examples of the expected variable settings.
@@ -378,3 +388,73 @@ class TestVariableReplicaGrouping:
                 retrieval_mode=retrieval_mode)
 
             self._verify_variable(settings, v1)
+
+
+transpose_examples = [
+    {
+        "input": {
+            "stride": 1,
+            "group_size": 1,
+            "assignment":
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        },
+        "transpose": {
+            "stride": 1,
+            "group_size": 16,
+            "assignment": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        }
+    },
+    {
+        "input": {
+            "stride": 1,
+            "group_size": 4,
+            "assignment": [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]
+        },
+        "transpose": {
+            "stride": 4,
+            "group_size": 4,
+            "assignment": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
+        }
+    },
+    {
+        "input": {
+            "stride": 2,
+            "group_size": 8,
+            "assignment": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+        },
+        "transpose": {
+            "stride": 1,
+            "group_size": 2,
+            "assignment": [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7]
+        }
+    },
+    {
+        "input": {
+            "stride": 8,
+            "group_size": 2,
+            "assignment": [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7]
+        },
+        "transpose": {
+            "stride": 1,
+            "group_size": 8,
+            "assignment": [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
+        }
+    },
+]
+
+
+def test_transpose():
+    ir = popxl.Ir()
+    ir.replication_factor = 16
+    for i, example in enumerate(transpose_examples):
+        input = example['input']
+        rg = ir.replica_grouping(input['stride'], input['group_size'])
+        assert rg.assignment == input['assignment'], f'example {i}'
+
+        transpose = example['transpose']
+        rg_transpose = rg.transpose()
+        assert rg_transpose.stride == transpose['stride'], f'example {i}'
+        assert rg_transpose.group_size == transpose[
+            'group_size'], f'example {i}'
+        assert rg_transpose.assignment == transpose[
+            'assignment'], f'example {i}'

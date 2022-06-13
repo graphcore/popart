@@ -431,7 +431,7 @@ class Ir:
         return f"Ir[id={self.id}]"
 
     def replica_grouping(self,
-                         stride: Optional[int] = 1,
+                         stride: int = 1,
                          group_size: Optional[int] = None
                          ) -> 'ReplicaGrouping':
         """
@@ -447,34 +447,35 @@ class Ir:
         and ``group_size`` argument. The ``stride`` specifies the offset between
         replicas within a group and the ``group_size`` specifies the number of
         replicas within a group.
-
-        Group with ``stride`` 1 and ``group_size`` 2 for 8 replicas:
+        
+        Group with ``stride`` 1 and ``group_size`` 2 for 8 replicas):
 
         .. code-block:: python
-
-            0,0,1,1,2,2,3,3
+            ir.replica_grouping(1, 2).assignment
+            [0,0,1,1,2,2,3,3]
 
         Group with ``stride`` 1 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
-
-            0,0,0,0,1,1,1,1
+            ir.replica_grouping(1, 4).assignment
+            [0,0,0,0,1,1,1,1]
 
         Group with ``stride`` 2 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
-
-            0,1,0,1,0,1,0,1
+            ir.replica_grouping(2, 4).assignment
+            [0,1,0,1,0,1,0,1]
 
         Group with ``stride`` 4 and ``group_size`` 2 for 8 replicas:
 
         .. code-block:: python
-
-            0,1,2,3,0,1,2,3
+            ir.replica_grouping(4, 2).assignment
+            [0,1,2,3,0,1,2,3]
 
         Args:
-            stride (int): The offset between elements in a replica group.
-            group_size (int): The number of replicas in each replica group.
+            stride (int): The offset between elements in a replica group. Defaults to 1.
+            group_size (Optional[int]): The number of replicas in each replica group.
+                If not provided the `group_size = ir.replication_factor // stride`
 
         Returns:
             ReplicaGrouping: An object describing the replica grouping.

@@ -1,5 +1,5 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 from typing_extensions import Literal
 
 import popart._internal.ir as _ir
@@ -13,7 +13,7 @@ class ReplicaGrouping:
     def __init__(self):
         """ Not intended to be called directly, use :py:func:`~popxl.Ir.replica_grouping` instead."""
         raise RuntimeError(
-            "popxl.ReplicaGrouping cannot be constructed directly (use ir.replica_grouping)."
+            "popxl.ReplicaGrouping cannot be constructed directly (use `ir.replica_grouping`)."
         )
 
     @classmethod
@@ -24,10 +24,25 @@ class ReplicaGrouping:
         self = super().__new__(cls)
         self._ir = ir
         self._stride = stride
+        replicas = self._ir.replication_factor
+
         if group_size is None:
-            self._group_size = ir.replication_factor // stride
+            self._group_size = replicas // stride
         else:
             self._group_size = group_size
+
+        if stride > replicas:
+            raise ValueError(
+                f"Stride ({stride}) cannot be large then the number of replicas ({replicas})"
+            )
+        if not (replicas / stride).is_integer():
+            raise ValueError(
+                f"Stride ({stride}) must be a factor of the number of replicas ({replicas})"
+            )
+        if self._group_size > replicas:
+            raise ValueError(
+                f"Group size ({self._group_size}) cannot be large then the number of replicas ({replicas})"
+            )
 
         return self
 
@@ -102,9 +117,75 @@ class ReplicaGrouping:
         Returns:
             int: The number of replica groups.
         """
+        replicas = self._ir.replication_factor
         if self.group_size > 1:
-            return self._ir.replication_factor // self._group_size
-        return self._ir.replication_factor
+            return replicas // self._group_size
+        return replicas
+
+    @property
+    def assignment(self) -> List[int]:
+        """Obtain the group each replica is assigned to.
+
+        Examples (with `ir.replication_factor = 8`):
+
+        .. code-block:: python
+            ir.replica_grouping(stride=1, group_size=8).assignment
+            [0, 0, 0, 0, 0, 0, 0, 0]
+
+            ir.replica_grouping(stride=1, group_size=1).assignment
+            [0, 1, 2, 3, 4, 5, 6, 7]
+
+            ir.replica_grouping(stride=1, group_size=2).assignment
+            [0, 0, 1, 1, 2, 2, 3, 3]
+
+            ir.replica_grouping(stride=2, group_size=2).assignment
+            [0, 1, 0, 1, 2, 3, 2, 3]
+
+            ir.replica_grouping(stride=1, group_size=4).assignment
+            [0, 0, 0, 0, 1, 1, 1, 1]
+
+            ir.replica_grouping(stride=2, group_size=4).assignment
+            [0, 1, 0, 1, 0, 1, 0, 1]
+
+        Returns:
+            List[int]: A list where the index is the replica and value is the group index
+        """
+        assign = [None] * self._ir.replication_factor
+        offset = 0
+        for i in range(self.num_groups):
+            while assign[offset] is not None:
+                offset += 1
+            assign[offset:offset + self.group_size *
+                   self.stride:self.stride] = [i] * self.group_size
+
+        return assign
+
+    def transpose(self) -> "ReplicaGrouping":
+        """A replica grouping whereby the first element of each group is the first new group, the 
+        second element of each group is the second group etc.
+
+        Examples:
+        .. code-block:: python
+            [0, 0, 0, 0] -> [0, 1, 2, 3]
+            [0, 1, 0, 1] -> [0, 0, 1, 1]
+            [0, 0, 1, 1] -> [0, 1, 0, 1]
+            [0, 1, 2, 3] -> [0, 0, 0, 0]
+
+        Some transposes cannot be represented with just a stride and group size and therefore
+        cannot be created. For example for `num_replicas=8`, `stride=2` and `group_size=2`. The assignments
+        are `[0, 1, 0, 1, 2, 3, 2, 3]` and the transpose is `[0, 0, 1, 1, 0, 0, 1, 1]`.
+
+        Returns:
+            ReplicaGrouping: a "transpose" replica grouping of self
+        """
+        if self.stride > 1 and self.stride * self.group_size != self._ir.replication_factor:
+            raise ValueError(
+                "The transpose of this replica grouping cannot be represented with a replica grouping."
+            )
+
+        group_size = self.num_groups
+        stride = 1 if self.stride > 1 else self.group_size
+        return self._ir.replica_grouping(stride, group_size)
 
     def __repr__(self) -> str:
         """
@@ -114,7 +195,16 @@ class ReplicaGrouping:
             str: A string representation of this ReplicaGrouping instance.
         """
         return f"ReplicaGrouping(num_replicas={self._ir.replication_factor}, " \
-            f"stride={self.stride}, group_size={self.group_size})"
+            f"stride={self.stride}, group_size={self.group_size}, num_groups={self.num_groups})"
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, ReplicaGrouping):
+            raise TypeError(
+                f"Value must be of type popxl.ReplicaGrouping. Type: {type(other)}. Value: {other}."
+            )
+        return (self.stride == other.stride
+                and self.group_size == other.group_size
+                and self._ir == other._ir)
 
     def _to_variable_settings(
             self,
