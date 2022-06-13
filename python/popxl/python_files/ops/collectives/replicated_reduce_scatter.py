@@ -1,6 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-import warnings
-from typing import Dict, Optional
+from typing import Optional
 import popart._internal.ir as _ir
 from popxl import ReplicaGrouping
 from popxl.context import get_current_context

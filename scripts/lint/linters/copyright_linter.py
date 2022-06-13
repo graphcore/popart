@@ -163,9 +163,18 @@ class CopyrightLinter:
         else:
             _, filename = split
         filename.replace(".in", "")
+
+        delim = ""
         for regex, delim in COMMENT_DELIMITERS.items():
             if re.search(regex, filename):
                 break
+
+        if delim == "":
+            raise RuntimeError(
+                f"Could not find comment delimiter for {full_path}.\n"
+                "Possible solution: Add the file type delimiter to the "
+                "'COMMENT_DELIMITERS' variable.\n")
+
         return delim + " " + GC_COPYRIGHT_NOTICE
 
     def _partial_match(self, lines: List[str]):

@@ -122,8 +122,8 @@ def test_tensor_info_nelms(shape):
     (_ir.DataType.FLOAT16, [2, 2], 2),
     (_ir.DataType.INT8, [3, 3, 3], 1),
 ])
-def test_tensor_info_nelms(dType, shape, nBytesInDType):
-    """ Test the nelms() method of a popart._internal.ir.TensorInfo object. """
+def test_tensor_info_nbytes(dType, shape, nBytesInDType):
+    """ Test the nbytes() method of a popart._internal.ir.TensorInfo object. """
     tensorInfo = _ir.TensorInfo(dType, shape)
     assert tensorInfo.nbytes() == np.prod(shape) * nBytesInDType
 
@@ -148,7 +148,7 @@ def test_tensor_info_data_type(dType):
     (_ir.DataType.FLOAT16, "FLOAT16"),
     ("INT8", "INT8"),
 ])
-def test_tensor_info_data_type(dType, dTypeStr):
+def test_tensor_info_data_type_equals_str(dType, dTypeStr):
     """ Test the data_type() method of a popart._internal.ir.TensorInfo object.
     """
     tensorInfo = _ir.TensorInfo(dType, [5, 5])

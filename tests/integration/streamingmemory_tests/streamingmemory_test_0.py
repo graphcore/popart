@@ -331,7 +331,7 @@ def test_replicated_sgd1and2_weight_update(tmpdir, sgdType):
     elif sgdType == 'SGD2':
         sgdAccMm = popart.SGDAccumulatorAndMomentum.Separate
     else:
-        raise 'Unknown sgdType={sgdType} in test'
+        raise RuntimeError('Unknown sgdType={sgdType} in test')
 
     run_model(tmpdir,
               'phased.onnx',

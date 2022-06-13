@@ -221,7 +221,7 @@ class TestTensorIpuAndTileSet:
             a = popxl.variable(1) + 0
             assert a.tile_set == 'compute'
 
-    def test_ipu_defined_default(self):
+    def test_ipu_defined_default_with_io_tiles(self):
         ir = popxl.Ir()
         main = ir.main_graph
 

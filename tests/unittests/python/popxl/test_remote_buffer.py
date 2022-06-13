@@ -190,7 +190,7 @@ class TestRemoteBuffer:
 
         assert rb_1.remote_buffer_id == rb_2.remote_buffer_id
 
-    def test_set_remote_buffer_info(
+    def test_reset_remote_buffer_info(
             self, standard_remote_buffer: RemoteBuffer) -> None:
         """Test that it's possible to reset the remote buffer.
 

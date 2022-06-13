@@ -17,7 +17,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
         d2 = np.random.rand(*rhs).astype(np.float32)
         print(" result  {}".format(np.matmul(d1, d2).shape))
 
-        def init_builder(builder):
+        def init_builder_1(builder):
             i1 = builder.addInputTensor(d1)
             i2 = builder.addInputTensor(d2)
             t1 = builder.aiOnnx.matmul([i1, i2])
@@ -33,7 +33,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                 builder.addOutputTensor(t1)
                 return [t1]
 
-        def reference(_):  # ref_data is an unused argument
+        def reference_1(_):  # ref_data is an unused argument
             t1 = np.matmul(d1, d2)
             if t1.shape == ():
                 out = zeros(2) + t1
@@ -41,7 +41,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
             else:
                 return [t1]
 
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder_1, reference_1, 'infer')
 
     # Verify with torch
     print("")
@@ -74,7 +74,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
 
         print("Result  {}".format(np.matmul(d1, d2).shape))
 
-        def init_builder(builder):
+        def init_builder_2(builder):
             i1 = builder.addInputTensor(d1)
             i2 = builder.addInputTensor(d2)
             t1 = builder.aiOnnx.matmul([i1, i2])
@@ -100,7 +100,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                     popart.reservedGradientPrefix() + i2
                 ]
 
-        def reference(ref_data):
+        def reference_2(ref_data):
             t1 = torch.tensor(d1, requires_grad=True)
             t2 = torch.tensor(d2, requires_grad=True)
 
@@ -125,4 +125,4 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
             popart.PatternsLevel.Minimal).enablePattern(
                 "MatMulLhsGradOp", True).enablePattern("MatMulRhsGradOp", True)
 
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder_2, reference_2, 'train')

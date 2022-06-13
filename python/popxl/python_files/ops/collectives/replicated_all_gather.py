@@ -1,11 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Dict, Optional
+from typing import Optional
 import popart._internal.ir as _ir
 from popxl import ReplicaGrouping
 from popxl.context import get_current_context
 from popxl.tensor import Tensor
 from .collectives import CommGroup
-from popxl.ops.utils import check_in_graph, check_tensor_ipu_and_tile_set
+from popxl.ops.utils import check_in_graph
 
 
 def replicated_all_gather(t: Tensor,
