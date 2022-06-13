@@ -92,6 +92,7 @@ list(
   ${popart_op_headers_dir}/reducesumsquare.hpp
   ${popart_op_headers_dir}/max.hpp
   ${popart_op_headers_dir}/sqrt.hpp
+  ${popart_op_headers_dir}/histogram.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

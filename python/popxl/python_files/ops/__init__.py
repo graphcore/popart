@@ -25,6 +25,7 @@ from .gelu import gelu, gelu_
 from .group_norm import group_norm, layer_norm
 from .host_load import host_load
 from .host_store import host_store
+from .histogram import histogram
 from .increment_mod import increment_mod, increment_mod_
 from .init import init
 from .io_tile_copy import io_tile_copy
@@ -232,6 +233,8 @@ __all__ = [
     "transpose_",
     # where.py
     "where",
+    # histogram.py
+    "histogram",
     # sub-package popxl.ops.collectives
     "collectives",
     # sub-package popxl.ops.var_updates
