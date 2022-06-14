@@ -14,7 +14,7 @@ export VERSION="$5"   # exported as it's read by sphinx_resources
 echo "Generating HTML: ${DOC_TARGET_HTML}..."
 sphinx-build \
     -b html \
-    -c "@CMAKE_SOURCE_DIR@/../sphinx_resources/common" \
+    -c "@GRAPHCORE_SPHINX_RESOURCES_DIR@" \
     -D "breathe_projects.project=@PROJECT_BINARY_DIR@/docs/doxygen/xml" \
     ${DOC_SOURCE_DIR} \
     ${DOC_TARGET_HTML}
@@ -23,7 +23,7 @@ sphinx-build \
 echo "Generating LaTeX sources: ${DOC_TARGET_LATEX_SRC}..."
 sphinx-build \
     -b latex \
-    -c "@CMAKE_SOURCE_DIR@/../sphinx_resources/common" \
+    -c "@GRAPHCORE_SPHINX_RESOURCES_DIR@" \
     -D "breathe_projects.project=@PROJECT_BINARY_DIR@/docs/doxygen/xml" \
     ${DOC_SOURCE_DIR} \
     ${DOC_TARGET_LATEX_SRC}
