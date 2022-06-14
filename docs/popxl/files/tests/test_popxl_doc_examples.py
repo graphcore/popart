@@ -53,6 +53,20 @@ class TestPythonDocExamples(ExamplesTester):
                         file_dir=working_dir,
                         working_dir=working_dir)
 
+    def test_documentation_popxl_code_loading(self):
+        """Test the code loading example"""
+        filename = "code_loading.py"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
+    def test_documentation_popxl_nested_code_loading(self):
+        """Test the nested code loading example"""
+        filename = "code_loading_nested.py"
+        self.run_python(filename,
+                        file_dir=working_dir,
+                        working_dir=working_dir)
+
     def test_documentation_popxl_nested_session_contexts(self):
         """Test the nested Session contexts example"""
         filename = "nested_session_contexts.py"
