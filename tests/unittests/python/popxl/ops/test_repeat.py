@@ -400,8 +400,83 @@ class TestRepeat:
             graph = ir.create_graph(fn, x)
 
             with pytest.raises(ValueError) as e_info:
-                y, = ops.repeat(graph, 10, x)
+                ops.repeat(graph, 10, x)
             assert e_info.value.args[0].startswith("To repeat the subgraph")
+
+    def test_repeat_too_many_inputs_error(self):
+        """Test an error is thrown when too many positional inputs provided"""
+        ir = popxl.Ir()
+        main = ir.main_graph
+        with main:
+            x = popxl.variable(1)
+            y = popxl.variable(1)
+            z = popxl.variable(1)
+
+            def fn(x, y):
+                return x + 1, y + 2
+
+            graph = ir.create_graph(fn, x, y)
+
+            with pytest.raises(ValueError) as e_info:
+                ops.repeat(graph, 8, x, y, z)
+            assert e_info.value.args[0].startswith(
+                "Too many inputs have been provided")
+
+    def test_repeat_specified_twice_error(self):
+        """Test an error is thrown when an argument is specified positionally and via input_dict"""
+        ir = popxl.Ir()
+        main = ir.main_graph
+        with main:
+            x = popxl.variable(1)
+            y = popxl.variable(1)
+            z = popxl.variable(1)
+
+            def fn(x, y):
+                return x + 1, y + 2
+
+            graph = ir.create_graph(fn, x, y)
+
+            with pytest.raises(ValueError) as e_info:
+                ops.repeat(graph, 8, x, y, inputs_dict={graph.inputs[0]: z})
+            assert e_info.value.args[0].startswith(
+                "Graph input tensor is specified twice")
+
+    def test_repeat_missing_inputs_error(self):
+        """Test an error is thrown when an input is missing"""
+        ir = popxl.Ir()
+        main = ir.main_graph
+        with main:
+            x = popxl.variable(1)
+            y = popxl.variable(1)
+            z = popxl.variable(1)
+
+            def fn(x, y):
+                return x + 1, y + 2
+
+            graph = ir.create_graph(fn, x, y)
+
+            with pytest.raises(ValueError) as e_info:
+                ops.repeat(graph, 8, x)
+            assert e_info.value.args[0].startswith(
+                "Not enough inputs have been provided")
+
+    def test_repeat_missing_inputs_error(self):
+        """Test an error is thrown when an input is not in graph"""
+        ir = popxl.Ir()
+        main = ir.main_graph
+        with main:
+            x = popxl.variable(1)
+            y = popxl.variable(1)
+            z = popxl.variable(1)
+
+            def fn(x, y):
+                return x + 1, y + 2
+
+            graph = ir.create_graph(fn, x, y)
+
+            with pytest.raises(ValueError) as e_info:
+                ops.repeat(graph, 8, x, inputs_dict={x: y})
+            assert 'not in the called graph' in e_info.value.args[0]
 
     def test_not_by_ref(self):
         ir = popxl.Ir()

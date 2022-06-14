@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import sys
 import time
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Iterable, Union, Optional, TYPE_CHECKING, Sequence
 
 import numpy as np
 import popart
@@ -235,3 +235,54 @@ def _acquire_hw_device_with_timeout(num_ipus: int = 1,
     raise RuntimeError(
         "Reached timeout waiting for an available device. Check `gc-monitor` for current device usage."
     )
+
+
+def table_to_string(rows: Sequence[Sequence],
+                    delimiter: str = ' | ',
+                    header: bool = True):
+    """Create a string that resembles a table from inputs `rows`. Each item in rows represents a row
+    which will be delimited with `delimiter`. Each row should exactly have the same length.
+
+    Example:
+
+    .. code-block:: python
+
+        rows = [
+            ['num', 'foo', 'name'],
+            [3, "aaab", "args"],
+            [4, "barrrr", "kwargs"],
+            [3, "me", "inspect"],
+            [-1, "who", "popxl"],
+        ]
+        print(table_to_string(rows))
+
+    Output:
+
+    .. code-block:: none
+
+        num | foo    | name
+        -----------------------
+        3   | aaab   | args
+        4   | barrrr | kwargs
+        3   | me     | inspect
+        -1  | who    | popxl
+
+
+    Args:
+        rows (Sequence[Sequence]): A row by column nested sequence. Each item needs to be a string or stringable
+        delimiter (str): String used to delimit columns
+        header (bool): If true, the first row is underlined
+
+    Returns:
+        str: A string representation of the table
+    """
+    col_widths = [max(map(len, map(str, col))) for col in zip(*rows)]
+    output = ""
+    for i, row in enumerate(rows):
+        row_str = delimiter.join(f"{col: <{width}}"
+                                 for col, width in zip(row, col_widths)) + "\n"
+        output += row_str
+        if header and i == 0 and len(rows) > 1:
+            output += "-" * len(row_str) + "\n"
+
+    return output

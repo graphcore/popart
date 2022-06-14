@@ -99,7 +99,7 @@ class TestCall:
         # 4 call sites total
         assert len(g.tensors) == 8
         assert len(g.variables) == 4
-        assert num_op_of_type("Call", _ir.op.CallOp, g) == 4
+        assert num_op_of_type("Call", _ir.op.CallOp, g) == 5
 
         # Test subgraphs have unique scopes
         assert add_weight_graph0.name != add_weight_graph1.name

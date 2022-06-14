@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Iterable, List, Mapping, Optional, Tuple, Union, Dict
 
 import popart._internal.ir as _ir
 from popxl.context import get_current_context, op_debug_context
@@ -8,6 +8,8 @@ from popxl.ops.call import CallSiteInfo
 from popxl.tensor import Tensor
 
 from .utils import check_in_graph
+from ..utils import table_to_string
+from .call import _prep_inputs_pre_validation, _validate_inputs, _prep_inputs, _validate_connected_tensors
 
 
 @op_debug_context
@@ -87,12 +89,11 @@ def repeat(graph: Graph,
     return out_tensors
 
 
-def repeat_with_info(
-        graph: Graph,
-        repeat_count: int,
-        *inputs: Union[Tensor, Iterable[Tensor]],
-        inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
-) -> CallSiteInfo:
+def repeat_with_info(graph: Graph,
+                     repeat_count: int,
+                     *inputs: Union[Tensor, Iterable[Tensor]],
+                     inputs_dict: Optional[Mapping[Tensor, Tensor]] = None,
+                     check_inputs: bool = True) -> CallSiteInfo:
     """
     Repeatedly call a graph and return information about the call site.
 
@@ -175,6 +176,9 @@ def repeat_with_info(
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, Tensor]]):
             Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.
+        check_inputs (bool):
+            Check when called if all inputs have been provided. Defaults to True.
+
     Raises:
         ValueError: If repeat_count < 0.
         ValueError: If the number of explicitly passed inputs + the number of loop created inputs
@@ -185,12 +189,19 @@ def repeat_with_info(
         the repeat op.
     """
 
+    # Validate inputs
     if repeat_count < 0:
         raise ValueError(
             f"Repeat count must be >= 0. Repeat count: {repeat_count}. Graph: {graph}"
         )
 
-    inputs_dict = inputs_dict if (inputs_dict is not None) else {}
+    # The loop op requires the same number of inputs as outputs.
+    total_inputs = len(graph.inputs)
+    total_outputs = len(graph.outputs)
+    if total_inputs < total_outputs:
+        raise ValueError(
+            f"To repeat the subgraph ({graph.id}) the number of inputs must be greater than or equal to the number of outputs."
+            f" {total_inputs} < {total_outputs}")
 
     # For clarity, we rename our graphs:
     # - Bottom: The user provided bottom level graph. We call this with a call op. This has gone
@@ -209,39 +220,25 @@ def repeat_with_info(
     bottom_graph = graph
     pb_bottom_graph = bottom_graph._pb_graph
 
-    inputs_flat = []
-    for x in inputs:
-        if isinstance(x, (list, tuple)):
-            inputs_flat.extend(x)
-        else:
-            inputs_flat.append(x)
-
-    # The loop op requires the same number of inputs as outputs.
-    total_inputs = len(graph.inputs)
-    total_outputs = len(graph.outputs)
-    if total_inputs < total_outputs:
-        raise ValueError(
-            f"To repeat the subgraph ({graph.id}) the number of inputs must be greater than or equal to the number of outputs."
-            f" {total_inputs} < {total_outputs}")
-
     # Create the middle graph, call and loop ops
     pb_middle_graph, pb_callop, pb_loop_op = _setup_call_and_repeat(
         pb_ir, pb_top_graph, pb_bottom_graph)
 
     # set the number of times to loop
     pb_loop_op.setTripCountValue(repeat_count)
-    # Check all the parent tensors are in the right graph.
-    for _, parent_tensor in inputs_dict.items():
-        try:
-            check_in_graph(top_graph, parent_tensor=parent_tensor)
-        except ValueError:
-            raise ValueError(
-                f"Parent input tensor {parent_tensor} is not in parent graph {top_graph}."
-            )
+
+    # Prep and validate inputs
+    inputs, inputs_dict = _prep_inputs_pre_validation(inputs, inputs_dict)
+    _validate_inputs(top_graph, graph, inputs, inputs_dict)
+    inputs, inputs_dict = _prep_inputs(graph, inputs, inputs_dict)
 
     # 1, 2. Connect inputs.
-    _setup_inputs(inputs_flat, inputs_dict, pb_top_graph, pb_bottom_graph,
-                  pb_middle_graph, pb_callop, pb_loop_op)
+    connected_inputs = _setup_inputs(
+        inputs, inputs_dict, pb_top_graph, top_graph, pb_bottom_graph,
+        bottom_graph, pb_middle_graph, pb_callop, pb_loop_op, check_inputs)
+
+    _validate_connected_tensors(check_inputs, connected_inputs, graph, inputs,
+                                inputs_dict)
 
     # 3. Connect outputs.
     _ = _setup_outputs(pb_top_graph, pb_bottom_graph, pb_middle_graph,
@@ -324,9 +321,10 @@ def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
 
 def _setup_inputs(inputs: Iterable[Tensor],
                   inputs_dict: Mapping[Tensor, Tensor],
-                  pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
+                  pb_top_graph: _ir.Graph, top_graph: Graph,
+                  pb_bottom_graph: _ir.Graph, bottom_graph: Graph,
                   pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
-                  pb_loop_op: _ir.op.LoopOp) -> None:
+                  pb_loop_op: _ir.op.LoopOp, check_inputs: bool) -> None:
     """Set up the inputs.
 
     This is done in the following way:
@@ -357,32 +355,41 @@ def _setup_inputs(inputs: Iterable[Tensor],
     # Note: Only bottom_graph (which is called) has gone through the ir.get_graph process.
     # middle_graph (intentionally) has not, so we need to add loop inputs/outputs.
     # User defined indices start at 2 for loop ops.
-    sgInIdx = 0
-    for t in inputs:
-        callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
+    connected_inputs: List[Dict] = []
+    for graph_input_idx, parent_tensor in enumerate(inputs):
+        call_in_idx = pb_callop.subgraphInToOpInIndex(graph_input_idx)
         # Note the + 2 here
-        pb_loop_op.addLoopInput(sgInIdx + 2,
-                                _ir.addScope(pb_top_graph, t.name),
-                                _ir.addScope(pb_middle_graph, t.name), False)
-        pb_callop.connectInTensor(callInIdx,
-                                  _ir.addScope(pb_middle_graph, t.name))
-        sgInIdx += 1
+        pb_loop_op.addLoopInput(
+            call_in_idx + 2, _ir.addScope(pb_top_graph, parent_tensor.name),
+            _ir.addScope(pb_middle_graph, parent_tensor.name), False)
+        pb_callop.connectInTensor(
+            call_in_idx, _ir.addScope(pb_middle_graph, parent_tensor.name))
+        connected_inputs += [{
+            'graph_input_idx': graph_input_idx,
+            'parent_tensor': parent_tensor
+        }]
 
     # 2. Connect internally created inputs.
-    for sg_tensor, parent_tensor in inputs_dict.items():
-        sgInIdx = pb_bottom_graph.getInputIndex(sg_tensor.id)
-        callInIdx = pb_callop.subgraphInToOpInIndex(sgInIdx)
+    for graph_tensor, parent_tensor in inputs_dict.items():
+        graph_input_idx = pb_bottom_graph.getInputIndex(graph_tensor.id)
+        call_in_idx = pb_callop.subgraphInToOpInIndex(graph_input_idx)
 
         top_tensor_id = _ir.addScope(pb_top_graph, parent_tensor.id)
         pb_loop_op.addLoopInput(
-            sgInIdx + 2, top_tensor_id,
+            call_in_idx + 2, top_tensor_id,
             _ir.addScope(pb_middle_graph,
-                         _ir.removeScope(pb_bottom_graph, sg_tensor.id)),
+                         _ir.removeScope(pb_bottom_graph, graph_tensor.id)),
             False)
         pb_callop.connectInTensor(
-            callInIdx,
+            call_in_idx,
             _ir.addScope(pb_middle_graph,
-                         _ir.removeScope(pb_bottom_graph, sg_tensor.id)))
+                         _ir.removeScope(pb_bottom_graph, graph_tensor.id)))
+        connected_inputs += [{
+            'graph_input_idx': graph_input_idx,
+            'parent_tensor': parent_tensor
+        }]
+
+    return connected_inputs
 
 
 def _setup_outputs(pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
