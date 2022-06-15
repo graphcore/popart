@@ -83,9 +83,10 @@ void Tensors::removeIsolated(bool retainUsedIOTensors,
           !(retainAllIOTensors && isAllIOTensor) &&
           !(retainVarTensors && isVarTensor) &&
           !(retainConstTensors && isConstTensor)) {
-        M.erase(id);
+        // Note: we must log before the erase to avoid reading invalid memory.
         logging::ir::debug(
             "Removing isolated Tensor::{} {}", tensor->tensor_type(), id);
+        M.erase(id);
       }
     }
   }
