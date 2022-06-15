@@ -26,14 +26,7 @@ function(find_poplar_enable_script result_var)
 endfunction()
 
 if (BUILD_DOCS)
-  # TODO(T54155): Replace with find_package once sphinx_resources supports it
-  set(sphinx_resources_dir "${CMAKE_SOURCE_DIR}/../sphinx_resources/common")
-  if(NOT EXISTS "${sphinx_resources_dir}")
-    message(FATAL_ERROR "PopART cannot build docs, ${sphinx_resources_dir} not found")
-  else()
-    message("PopART found ${sphinx_resources_dir}")
-  endif()
-
+  find_package(graphcore_sphinx_resources REQUIRED)
   find_program(DOXYGEN doxygen)
   if(NOT DOXYGEN)
     message(FATAL_ERROR "PopART cannot build docs, doxygen not found")
@@ -58,20 +51,21 @@ if (BUILD_DOCS)
   # gen_docs.sh call can make use of this environment.
   set(venv "${CMAKE_CURRENT_BINARY_DIR}/venv")
   set(venv_activate "${venv}/bin/activate")
-  set(venv_requirements "${sphinx_resources_dir}/requirements.txt")
+  set(venv_requirements "${GRAPHCORE_SPHINX_RESOURCES_DIR}/requirements.txt")
 
   add_custom_command(
     OUTPUT ${venv}
     COMMAND ${VIRTUALENV} -p python3 ${venv}
+    COMMENT "Creating a python virtualenv"
     DEPENDS ${CMAKE_BINARY_DIR}/docs
   )
 
   add_custom_command(
     OUTPUT venv.stamp
-    COMMAND ${CMAKE_COMMAND} -E copy ${venv_requirements} requirements.txt
-    COMMAND . ${venv_activate} && pip install -r requirements.txt
+    COMMAND . ${venv_activate} && pip install -r ${venv_requirements}
     COMMAND . ${venv_activate} && pip install numpy
     COMMAND . ${venv_activate} && pip install typing_extensions
+    COMMENT "Setting up a python virtualenv for sphinx"
     DEPENDS ${venv} ${venv_requirements}
   )
 
@@ -105,13 +99,14 @@ if (BUILD_DOCS)
   set(SUPPORTED_POPART_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/popart_supported_ops_gen.rst)
   add_custom_command(
     OUTPUT ${SUPPORTED_POPART_OPS_GEN}
-    COMMAND
-        bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
-        python3 gen_popart_supported_ops.py ${SUPPORTED_POPART_OPS_GEN}
+    COMMAND . ${venv_activate} &&
+    bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    python3 gen_popart_supported_ops.py ${SUPPORTED_POPART_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating PopART supported ops in ${SUPPORTED_POPART_OPS_GEN}"
     DEPENDS popart-py
-            ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    venv.stamp
   )
 
   # Generate supported PopXL ops rst doc.
@@ -119,14 +114,14 @@ if (BUILD_DOCS)
   add_custom_command(
     OUTPUT ${SUPPORTED_POPXL_OPS_GEN}
     COMMAND
-        bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
-        python3 gen_popxl_supported_ops.py ${SUPPORTED_POPXL_OPS_GEN}
+    . ${venv_activate} && bash ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    python3 gen_popxl_supported_ops.py ${SUPPORTED_POPXL_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating PopXL supported ops in ${SUPPORTED_POPXL_OPS_GEN}"
     DEPENDS popart-py
-            ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/active_buildir.sh
+    venv.stamp
   )
-
 
   # For a given document directory DOC_SOURCE_DIR, get the source files,
   # returned in DOC_SOURCE_FILES.
