@@ -72,6 +72,7 @@ class Tensor;
 struct POpCmp;
 struct SessionOptions;
 class TensorInfo;
+class ProfileCacher;
 
 namespace liveness {
 // Forward declaration.
@@ -352,9 +353,6 @@ private:
 
   PriTask pipelinedCopyTask(Op *, TaskId prevTaskId);
 
-  // Return the name that will be passed when compiling the executable
-  std::string getPoplarGraphDebugName();
-
   // Determine stream properties.
   poplar::ReplicatedStreamMode getReplicatedStreamMode(Tensor *tensor) const;
   unsigned getBufferingDepth(Tensor *tensor) const;
@@ -469,7 +467,10 @@ public:
   // or compile `rootGraph' and try to save the generated executable before
   // returning it. After calling `getExecutable', `cachedExecutable' will always
   // be set to `nonstd::nullopt'.
-  poplar::Executable getExecutable();
+  poplar::Executable getExecutable(const ProfileCacher &ProfileCacher);
+
+  // Return the name that will be passed when compiling the executable
+  std::string getPoplarGraphDebugName();
 
   std::string getSerializedGraph() const;
 

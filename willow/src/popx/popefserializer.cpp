@@ -686,7 +686,6 @@ void serializePopefMetadata(const popart::popx::Executablex &executablex,
 }
 } // namespace
 
-/** To see description go to the function declaration. */
 void serializeEngineExecutable(std::ostream &out,
                                const popart::popx::Devicex &device) {
   const std::string programHash = std::to_string(device.ir().getHash());

@@ -135,6 +135,8 @@
 #include "popart/vendored/optional.hpp"
 #include "popart/vertex.hpp"
 
+#include <profilecacher.hpp>
+
 namespace snap {
 class Function;
 } // namespace snap
@@ -3484,7 +3486,8 @@ std::string IrLowering::getPoplarGraphDebugName() {
   return ir().getSessionName();
 }
 
-poplar::Executable IrLowering::getExecutable() {
+poplar::Executable
+IrLowering::getExecutable(const ProfileCacher &ProfileCacher) {
   if (!prepareGraphHasBeenCalled_) {
     throw internal_error("IrLowering::prepareGraph() must be called before"
                          " IrLowering::getExecutable() is called.");
@@ -3513,6 +3516,7 @@ poplar::Executable IrLowering::getExecutable() {
                             .releaseExecutable();
 
       logging::devicex::info("Graph compiled");
+      ProfileCacher.storeProfilesToCache();
       return executable;
     } catch (const poplar::graph_memory_allocation_error &e) {
       // If the compilations throws an exception due to memory

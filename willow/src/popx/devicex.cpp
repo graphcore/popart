@@ -54,6 +54,7 @@
 #include "popart/voiddata.hpp"
 
 #include <engineoptionscreator.hpp>
+#include <profilecacher.hpp>
 
 namespace popart {
 namespace popx {
@@ -1387,8 +1388,20 @@ void Devicex::prepare() {
         ir().timePartitionLogger().scopedStopwatch("Engine creation");
 
     try {
+      // Construct ProfileCacher in case cached executables is to be
+      // profiled
+      std::string cachedExecutablePathStr =
+          executable_.getCachePath(ir().getSessionOptions().cachePath);
+      auto profileCacher = ProfileCacher(ir().getSessionOptions(),
+                                         cachedExecutablePathStr,
+                                         lowering().getPoplarGraphDebugName());
 
-      auto executable = lowering().getExecutable();
+      // Obtain the executable
+      auto executable = lowering().getExecutable(profileCacher);
+      // Restore profiles from cache to the autoReport dir given a cache hit
+      if (lowering().usingCachedExecutable()) {
+        profileCacher.restoreProfilesFromCache();
+      }
       pEngine.reset(
           new poplar::Engine(std::move(executable), lowering().engineOptions));
 
@@ -1490,10 +1503,13 @@ void Devicex::serializeExecutable(const std::string &path) {
       logging::devicex::warn("Specified directory not found. "
                              "Creating {} directory ",
                              targetDir);
-      if (!boost::filesystem::create_directories(targetDir))
+      if (!boost::filesystem::create_directories(targetDir)) {
         throw error("Cannot create cache directory. Aborting.");
+      }
     }
   }
+
+  // Check that the filename is not a directory
   std::string filename = path;
   if (boost::filesystem::is_directory(target)) {
     filename = logging::format("{}/executable.popef", filename);
@@ -1504,10 +1520,13 @@ void Devicex::serializeExecutable(const std::string &path) {
   } else {
     logging::devicex::info("Saving serialized Executablex to {}", filename);
   }
+
+  // Check that one can open the file
   std::ofstream out(filename, std::ofstream::binary);
   if (!out.is_open()) {
     throw error("Unable to open file '{}'", filename);
   }
+
   serializeExecutable(out);
 }
 

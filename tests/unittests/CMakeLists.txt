@@ -5,7 +5,7 @@
 # consider mocking those dependencies so you are only testing one class. By
 # adding the `TEST_UTILS trompeloeil` you should have access to the trompeloeil
 # mocking framework. An example of a unit test that uses trompeloeil can be
-# found in `example_unittest.cpp`.
+# found in `unittest_example.cpp`.
 #
 # In unit tests, the code under test should not depend on timers, it should not
 # be creating or reading files, it should not be calling libraries such as
@@ -46,6 +46,7 @@
 
 # C++ unittests for main codebase:
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
+add_popart_cpp_unit_test(unittest_profilecacher unittest_profilecacher.cpp)
 add_popart_cpp_unit_test(unittest_fileoperations unittest_fileoperations.cpp)
 add_popart_cpp_unit_test(unittest_gen_operators unittest_gen_operators.cpp)
 add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS test-graphs-test-util)

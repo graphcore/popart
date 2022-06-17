@@ -185,6 +185,8 @@ bool Session::tryLoadExecutable() {
   }
 
   auto popartCachePath = cacheEntries.at(ir->getHash());
+  // NOTE: The ifstream constructor will call .open() on popartCachePath
+  //       If the file doesn't exist .is_open() will return false
   auto executableFs =
       std::make_shared<std::ifstream>(popartCachePath, std::ifstream::binary);
   if (executableFs->is_open()) {
