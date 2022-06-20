@@ -6,6 +6,7 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Optional, Set, Tuple, Union)
+from typing_extensions import Literal
 from weakref import WeakValueDictionary
 
 import popart
@@ -20,13 +21,17 @@ if TYPE_CHECKING:
 
 
 class Ir:
-    def __init__(self):
+    def __init__(self, replication: Union[int, Literal['popdist']] = 1):
         """
         PopXL intermediate representation (IR).
 
         An IR contains a main graph (property `main_graph`) and can create
         additional graphs using member methods such as :py:meth:`create_graph` and
         :py:meth:`create_empty_graph`.
+
+        Args:
+            replication (Union[int, Literal['popdist']], optional):
+                Set the replication_factor of the IR. Value of 'popdist' configures the IR with settings from popdist/poprun. Defaults to 1.
         """
         self._pb_ir = _ir.Ir()
         # Set better defaults for popxl programs.
@@ -41,6 +46,13 @@ class Ir:
         opts.enableExplicitMainLoops = True
         opts.explicitRecomputation = True
         opts.enableInplaceAmbiguityChecking = True
+
+        self._use_popdist = replication == 'popdist'
+        if self._use_popdist:
+            import popdist.popart
+            popdist.popart.configureSessionOptions(opts)
+        else:
+            self.replication_factor = replication
 
         Ir._ir_cache[self.id] = self
         self._graph_cache: Dict[str, Graph] = {}
@@ -399,6 +411,8 @@ class Ir:
         model so that 2 IPUs are used. If your model is pipelined across 4 IPUs, a `replication_factor`
         of 4 will use 16 IPUs total. If the training is done across multiple instances then the
         `replication_factor` is the number of replicas for this instance.
+
+        When using distributed replication this will return the global replication factor.
         """
         return self._pb_ir.getSessionOptions().getGlobalReplicationFactor()
 
@@ -412,6 +426,10 @@ class Ir:
         if value > 1:
             self._pb_ir.getSessionOptions().enableReplicatedGraphs = True
         self._pb_ir.getSessionOptions().replicatedGraphCount = value
+
+    @property
+    def instance_replication_factor(self) -> int:
+        return self._pb_ir.getSessionOptions().replicatedGraphCount
 
     @property
     def id(self) -> int:
@@ -447,7 +465,7 @@ class Ir:
         and ``group_size`` argument. The ``stride`` specifies the offset between
         replicas within a group and the ``group_size`` specifies the number of
         replicas within a group.
-        
+
         Group with ``stride`` 1 and ``group_size`` 2 for 8 replicas):
 
         .. code-block:: python

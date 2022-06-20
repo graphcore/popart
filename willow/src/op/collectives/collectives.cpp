@@ -75,6 +75,23 @@ bool CollectivesBaseOp::isCollectiveLinkedIndexTensor(Tensor *t) const {
   return false;
 }
 
+int64_t CollectivesBaseOp::getCommSize() const {
+  auto shardingDomain = getGCLCommGroup();
+  auto replicationFactor =
+      getIr().getSessionOptions().getGlobalReplicationFactor();
+  if (shardingDomain.replicaGroupSize > 0) {
+    if (shardingDomain.type == CommGroupType::Consecutive) {
+      return shardingDomain.replicaGroupSize;
+    } else if (shardingDomain.type == CommGroupType::Orthogonal) {
+      return replicationFactor / shardingDomain.replicaGroupSize;
+    }
+  }
+  if (shardingDomain.type == CommGroupType::None) {
+    return 1;
+  }
+  return replicationFactor;
+}
+
 MultiCollectiveBaseOp::MultiCollectiveBaseOp(
     const OperatorIdentifier &_opid,
     CommGroup group,

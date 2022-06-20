@@ -40,27 +40,14 @@ std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
 }
 
 void ReplicatedAllGatherOp::setup() {
-  auto globalReplicationFactor =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  auto replicationFactor = globalReplicationFactor;
-
-  auto shardingDomain = getGCLCommGroup();
-  if (shardingDomain.replicaGroupSize > 0) {
-    if (shardingDomain.type == CommGroupType::Consecutive) {
-      replicationFactor = shardingDomain.replicaGroupSize;
-    } else if (shardingDomain.type == CommGroupType::Orthogonal) {
-      replicationFactor = replicationFactor / shardingDomain.replicaGroupSize;
-    }
-  } else if (shardingDomain.type == CommGroupType::None) {
-    replicationFactor = 1;
-  }
+  auto commSize = getCommSize();
 
   DataType type =
       inTensor(ReplicatedAllGatherOp::getInIndex())->info.dataType();
   Shape shape = gatheredOutInfo.shape();
   if (gatheredOutInfo.shape().empty()) {
     gatheredOutInfo = inInfo(ReplicatedAllGatherOp::getInIndex());
-    Shape new_shape(1, replicationFactor * gatheredOutInfo.nelms());
+    Shape new_shape(1, commSize * gatheredOutInfo.nelms());
     shape = new_shape;
   }
   gatheredOutInfo.set(type, shape);
@@ -68,8 +55,8 @@ void ReplicatedAllGatherOp::setup() {
 
   logging::op::trace("[ReplicatedAllGatherOp] Global replication factor: {}, "
                      "sharding factor: {}",
-                     globalReplicationFactor,
-                     replicationFactor);
+                     getIr().getSessionOptions().getGlobalReplicationFactor(),
+                     commSize);
 }
 
 static OpDefinition::DataTypes T = {DataType::FLOAT,

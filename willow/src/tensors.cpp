@@ -242,13 +242,13 @@ void Tensors::addVarInit(const TensorId &name,
   logging::devicex::debug("AddVarInit.info {}, {}", name, info.shape());
   insert(name, std::unique_ptr<Tensor>(new Tensor(name, vs, graph, di)));
 
-  Tensor *init        = get(name);
-  init->info          = info;
-  Shape shape_on_host = info.shape();
-  Shape shape_on_replica =
-      vs.shapeOnReplica(shape_on_host,
-                        graph.getIr().getSessionOptions().replicatedGraphCount,
-                        name);
+  Tensor *init           = get(name);
+  init->info             = info;
+  Shape shape_on_host    = info.shape();
+  Shape shape_on_replica = vs.shapeOnReplica(
+      shape_on_host,
+      graph.getIr().getSessionOptions().getGlobalReplicationFactor(),
+      name);
 
   init->info = TensorInfo(info.dataType(), shape_on_replica);
 
@@ -307,9 +307,10 @@ void Tensors::addInit(const TensorId &name,
   TensorInfo info = TensorInfo(*pt);
   init->info      = TensorInfo(
       info.dataType(),
-      vs.shapeOnReplica(info.shape(),
-                        graph.getIr().getSessionOptions().replicatedGraphCount,
-                        name));
+      vs.shapeOnReplica(
+          info.shape(),
+          graph.getIr().getSessionOptions().getGlobalReplicationFactor(),
+          name));
   init->setTensorData(*pt);
 }
 

@@ -214,10 +214,10 @@ Shape VariableSettings::shapeOnReplica(const Shape full_shape,
   if (numGroups != full_shape[0]) {
     throw internal_error("Return mismatch with possibly appended "
                          "outer dimension ({}) of Tensor: \"{}\". "
-                         "should match replicatedGraphCount: {}",
+                         "should match numGroups: {}",
                          full_shape[0],
                          name,
-                         replicaCount);
+                         numGroups);
   }
 
   Shape reshape;

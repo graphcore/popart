@@ -60,7 +60,7 @@ from .replica_grouping import (ReplicaGrouping)
 from .streams import (HostToDeviceStream, DeviceToHostStream,
     h2d_stream, d2h_stream)
 from .tensor import (Tensor, variable, remote_variable,
-    remote_replica_sharded_variable, replica_sharded_variable, constant,
+    remote_replica_sharded_variable, replica_sharded_variable, replica_sharded_buffer, constant,
     graph_input, graph_output, TensorByRef, TensorSpec)
 from .tensorlocation import (TensorStorage, TensorLocation,
     ReplicatedTensorSharding, TileSet, ExecutionContext)

@@ -28,6 +28,7 @@ add_popart_py_unit_test(popxl-write_variables_data_cache test_write_variables_da
 add_popart_py_unit_test(popxl-test_session_passed_device test_session_passed_device.py VARIANTS Hw)
 # Running remote buffer test on POD system (multicard) to test interactions with GW
 add_popart_py_unit_test(popxl-test_session_remote_buffers test_session_remote_buffers.py VARIANTS Hw LABELS multicard)
+add_popart_py_unit_test(popxl-test_replica_sharding test_replica_sharding.py VARIANTS Hw LABELS multicard)
 
 
 # popxl-grouped_initialization test starts here

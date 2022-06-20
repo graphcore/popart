@@ -122,7 +122,8 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
 
 
 def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
-                    num_ipus: int = 1) -> popart.DeviceInfo:
+                    num_ipus: int = 1,
+                    use_popdist: bool = False) -> popart.DeviceInfo:
     """Return the PopART `DeviceInfo` object relating to the given parameters.
 
     Args:
@@ -149,6 +150,10 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
         return popart.DeviceManager().createIpuModelDevice(
             {"numIPUs": num_ipus})
     elif device_type == "ipu_hw":
+        if use_popdist:
+            import popdist.popart
+            return popdist.popart.getDevice()
+
         dm = popart.DeviceManager()
         devices = dm.enumerateDevices(numIpus=num_ipus)
         if len(devices) < 1:

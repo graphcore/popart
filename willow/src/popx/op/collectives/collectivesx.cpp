@@ -153,7 +153,6 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
     snap::Tensor tensor,
     ReplicatedTensorShardingIndicesIndex groupIndex) const {
   auto globalReplicationFactor = dv_p->lowering().getGlobalReplicationFactor();
-  auto replicationFactor       = globalReplicationFactor;
   auto group                   = getCollectiveLinkedGroup(groupIndex);
 
   TensorId tensorIdForCBR;
@@ -169,19 +168,23 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
         op_p->debugName());
   }
 
+  int64_t replicationFactor = globalReplicationFactor;
+  bool opCommSizeFound      = false;
   for (auto opId : group.collectiveOpIds) {
     if (auto collective =
             dynamic_cast<CollectivesBaseOp *>(dv_p->ir().getOp(opId.first))) {
-      auto shardingDomain = collective->getGCLCommGroup();
-      if (shardingDomain.replicaGroupSize > 0) {
-        if (shardingDomain.type == CommGroupType::Consecutive) {
-          replicationFactor = shardingDomain.replicaGroupSize;
-        } else if (shardingDomain.type == CommGroupType::Orthogonal) {
-          replicationFactor =
-              globalReplicationFactor / shardingDomain.replicaGroupSize;
+      if (collective->isConfigureOutputForReplicatedTensorSharding()) {
+        auto commSize = collective->getCommSize();
+        logging::trace(
+            "[CollectivesBaseOpx] CollectiveBaseOp {} has sharding factor {}",
+            collective->debugName(),
+            collective->getCommSize());
+        if (opCommSizeFound && commSize != replicationFactor) {
+          throw internal_error(
+              "ReplicatedTensorShardingGroup found with multiple commSizes.");
         }
-      } else if (shardingDomain.type == CommGroupType::None) {
-        replicationFactor = 1;
+        replicationFactor = commSize;
+        opCommSizeFound   = true;
       }
     }
   }
@@ -230,7 +233,7 @@ CollectivesBaseOpx::createCollectiveBalancedReorder(
 
     auto setCBR = [this, &cbrId, &replicationFactor, &globalReplicationFactor](
                       TensorId &tensorId) {
-      logging::opx::trace(
+      logging::opx::debug(
           "[CollectivesBaseOpx] CBR with ID {} created for {}, sharding "
           "factor: {}, global replication factor: {}",
           cbrId,

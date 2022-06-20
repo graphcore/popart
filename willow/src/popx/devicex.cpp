@@ -318,15 +318,20 @@ void Devicex::remoteBufferWeightsToHost() {
       CommGroup commGroup =
           tensor->getVariableSettings().getSharedVariableDomain();
 
-      unsigned replicas = getReplicationFactor();
+      // Note: Explcitly using instance replication factor as grouping/rts is
+      // not supported across instances
+      unsigned instanceReplicas = getReplicationFactor();
 
       // Get the number of replicas that return their copy of this variable
       unsigned returned =
-          tensor->getVariableSettings().numReplicasReturningVariable(replicas);
+          tensor->getVariableSettings().numReplicasReturningVariable(
+              instanceReplicas);
 
-      unsigned groups = tensor->getVariableSettings().groupCount(replicas);
+      unsigned groups =
+          tensor->getVariableSettings().groupCount(instanceReplicas);
+      // Number of replicas in each variable group for the current instance
       unsigned realGroupSize =
-          tensor->getVariableSettings().getRealGroupSize(replicas);
+          tensor->getVariableSettings().getRealGroupSize(instanceReplicas);
 
       // Number of elements in one instance of the Tensor.
       unsigned nelms = tensor->info.nelms();
@@ -358,23 +363,22 @@ void Devicex::remoteBufferWeightsToHost() {
 
         // Sharded v. Simply Remote
         if (tensor->tensorLocationInfo.isSharded()) {
-
-          // Replicated weight sharding, each replica holds 1/re-repfactor
-          // parts of the weight
+          // Replicated weight sharding, each replica holds parts of the weight
           const auto &cbr =
               executable_.getCollectiveBalancedHostRearrangement(tensor->id);
 
           auto cbr_nelms = cbr.getNumRearrangedTensorElems();
+          auto cbr_size  = cbr.getReplicationFactor();
 
           // Temporary buffer that can hold the padded weight shards
           // from all replicas in this group.
           std::vector<char> tmp(cbr_nelms * elemSize);
 
           // Iterate over group members, collect the Tensor's shards
-          for (unsigned group_member = 0; group_member < realGroupSize;
+          for (unsigned group_member = 0; group_member < cbr_size;
                group_member++) {
             unsigned replica_id = group_main + (group_member * group_increment);
-            unsigned addr = group_member * cbr_nelms * elemSize / realGroupSize;
+            unsigned addr = group_member * cbr_nelms * elemSize / cbr_size;
             copyFromRemoteBuffer(&tmp[addr], replica_id);
           }
 
@@ -382,7 +386,7 @@ void Devicex::remoteBufferWeightsToHost() {
           unsigned address;
           if (returned == groups) {
             address = group * nelms * elemSize;
-          } else if (returned == replicas) {
+          } else if (returned == instanceReplicas) {
             address = group_main * nelms * elemSize;
           } else {
             throw internal_error(
@@ -392,7 +396,7 @@ void Devicex::remoteBufferWeightsToHost() {
                 "r != R",
                 returned,
                 groups,
-                replicas);
+                instanceReplicas);
           }
 
           cbr.undoRearrangeForCollective(&tmp[0],
@@ -600,11 +604,16 @@ void Devicex::remoteBufferWeightsFromHost() {
       const auto data0Size  = tensor->tensorData()->size();
 
       // Various values uesed throughout the function
-      unsigned replicas = getReplicationFactor();
-      unsigned groups   = tensor->getVariableSettings().groupCount(replicas);
-      unsigned nelms    = tensor->info.nelms();
+
+      // Note: Explcitly using instance replication factor as grouping/rts is
+      // not supported across instances
+      unsigned instanceReplicas = getReplicationFactor();
+      unsigned groups =
+          tensor->getVariableSettings().groupCount(instanceReplicas);
+      unsigned nelms = tensor->info.nelms();
+      // Number of replicas in each variable group for the current instance
       unsigned realGroupSize =
-          tensor->getVariableSettings().getRealGroupSize(replicas);
+          tensor->getVariableSettings().getRealGroupSize(instanceReplicas);
       auto elemSize = tensor->info.getDataTypeInfo()->nbytes();
 
       CommGroup commGroup =
@@ -638,12 +647,12 @@ void Devicex::remoteBufferWeightsFromHost() {
 
         // Sharded v. Simply Remote
         if (tensor->tensorLocationInfo.isSharded()) {
-          // Replicated weight sharding, each replica holds 1/repfactor
-          // parts of the weight
+          // Replicated weight sharding, each replica holds parts of the weight
           const auto &cbr =
               executable_.getCollectiveBalancedHostRearrangement(initId);
 
           auto cbr_nelms = cbr.getNumRearrangedTensorElems();
+          auto cbr_size  = cbr.getReplicationFactor();
 
           // Temporary buffer that can hold the padded weight shards
           // for all replicas
@@ -664,7 +673,8 @@ void Devicex::remoteBufferWeightsFromHost() {
           for (unsigned group_member = 0; group_member < realGroupSize;
                group_member++) {
             unsigned replica_id = group_main + (group_member * group_increment);
-            unsigned addr = group_member * cbr_nelms * elemSize / realGroupSize;
+            unsigned cbr_member = group_member % cbr_size;
+            unsigned addr       = cbr_member * cbr_nelms * elemSize / cbr_size;
             copyToRemoteBuffer(&tmp[addr], replica_id);
           }
         } else {

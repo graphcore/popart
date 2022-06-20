@@ -44,7 +44,6 @@ class Session:
                 "ipu_model": IPU model.
                 "cpu": CPU model. Does not support replication.
                 Defaults to "cpu".
-            num_ipus: (int): The number of IPU devices to use. This is automatically determined if not provided.
 
         Raises:
             RuntimeError: If the desired device could not be acquired.
@@ -89,7 +88,8 @@ class Session:
             self._device = device_desc
         else:
             self._device = _to_device_info(device_type=device_desc,
-                                           num_ipus=self._get_ipu_count())
+                                           num_ipus=self._get_ipu_count(),
+                                           use_popdist=self.ir_._use_popdist)
 
         # Initialise stack of "was attached" states when entering the Session
         # context
@@ -400,7 +400,7 @@ class Session:
           `(d, r) + s.shape`
         where
           * `d` = `ir.num_host_transfers`
-          * `r` = `ir.replication_factor`
+          * `r` = `ir.instance_replication_factor`
         and all dimensions not >1 in `(d, r)` will be removed.
 
         Examples:
@@ -409,7 +409,7 @@ class Session:
         .. code-block:: python
 
           ir.num_host_transfers = 4
-          ir.replication_factor = 16
+          ir.instance_replication_factor = 16
           s.shape = (2, 4)
 
         Then the shape will be `(4, 16, 2, 4)`
@@ -418,7 +418,7 @@ class Session:
         .. code-block:: python
 
           ir.num_host_transfers = 1
-          ir.replication_factor = 16
+          ir.instance_replication_factor = 16
           s.shape = (2, 4)
 
         Then the shape will be `(16, 2, 4)`
@@ -427,7 +427,7 @@ class Session:
         .. code-block:: python
 
           ir.num_host_transfers = 4
-          ir.replication_factor = 1
+          ir.instance_replication_factor = 1
           s.shape = (2, 4)
 
         Then the shape will be `(4, 2, 4)`
@@ -436,7 +436,7 @@ class Session:
         .. code-block:: python
 
           ir.num_host_transfers = 1
-          ir.replication_factor = 1
+          ir.instance_replication_factor = 1
           s.shape = (2, 4)
 
         Then the shape will be `(2, 4)`
@@ -586,7 +586,7 @@ class Session:
             int: The number of ipus required by this session + ir.
         """
         num_ipus = self._get_ipus_per_replica()
-        num_ipus *= self.ir.replication_factor
+        num_ipus *= self.ir.instance_replication_factor
         return 2**math.ceil(math.log2(num_ipus))
 
     def _expected_outputs(self) -> List[DeviceToHostStream]:
@@ -683,13 +683,13 @@ class Session:
                     f"{stream_type_str} stream {s.tensor_id} is not large enough.\n"
                     f"It should be at least of size num_host_transfers = {self.ir.num_host_transfers}"
                 )
-        if self.ir.replication_factor > 1:
+        if self.ir.instance_replication_factor > 1:
             data_index += 1
-            if arr.shape[repl_index] != self.ir.replication_factor:
+            if arr.shape[repl_index] != self.ir.instance_replication_factor:
                 raise ValueError(
                     f"Dimension {repl_index} ({arr.shape[repl_index]}) for the array provided for {stream_type_str} "
                     f"stream {s.tensor_id} is the wrong size.\n"
-                    f"It should be of size replication_factor = {self.ir.replication_factor}"
+                    f"It should be of size replication_factor = {self.ir.instance_replication_factor}"
                 )
         if arr.squeeze().shape[data_index:] == ():
             # special case, difficult to compare dimensions on arrays with dimensions all 1's
@@ -740,6 +740,6 @@ class Session:
         _extra_input_dims: Tuple[int, ...] = tuple()
         if self.ir.num_host_transfers > 1:
             _extra_input_dims += (self.ir.num_host_transfers, )
-        if self.ir.replication_factor > 1:
-            _extra_input_dims += (self.ir.replication_factor, )
+        if self.ir.instance_replication_factor > 1:
+            _extra_input_dims += (self.ir.instance_replication_factor, )
         return _extra_input_dims

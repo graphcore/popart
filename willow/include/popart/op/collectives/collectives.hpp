@@ -73,6 +73,13 @@ public:
   void setGCLCommGroup(CommGroup group_) { group = group_; }
   CommGroup getGCLCommGroup() const { return group; }
 
+  /**
+   * Number of replicas the collective communicates across.
+   * This will be used to create a CollectiveBalanceReorder
+   * in lowering to improve the tile mapping when using RTS.
+   */
+  virtual int64_t getCommSize() const;
+
   void appendOutlineAttributes(OpSerialiserBase &os) const override;
 
   /**

@@ -57,25 +57,11 @@ std::unique_ptr<Op> ReplicatedReduceScatterOp::clone() const {
 void ReplicatedReduceScatterOp::setup() {
 
   const auto &inInfo_ = inInfo(getInIndex());
+  int64_t nelms       = inInfo_.nelms();
+  auto commSize       = getCommSize();
 
-  auto globalReplicationFactor =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  auto replicationFactor = globalReplicationFactor;
-  int64_t nelms          = inInfo_.nelms();
-
-  auto shardingDomain = getGCLCommGroup();
-  if (shardingDomain.replicaGroupSize > 0) {
-    if (shardingDomain.type == CommGroupType::Consecutive) {
-      replicationFactor = shardingDomain.replicaGroupSize;
-    } else if (shardingDomain.type == CommGroupType::Orthogonal) {
-      replicationFactor = replicationFactor / shardingDomain.replicaGroupSize;
-    }
-  } else if (shardingDomain.type == CommGroupType::None) {
-    replicationFactor = 1;
-  }
-
-  // ceil(numElements / replicationFactor)
-  auto outElms = (nelms + replicationFactor - 1) / replicationFactor;
+  // ceil(numElements / commSize)
+  auto outElms = (nelms + commSize - 1) / commSize;
 
   Shape metaShape;
   if (isConfigureOutputForReplicatedTensorSharding()) {
@@ -86,8 +72,8 @@ void ReplicatedReduceScatterOp::setup() {
 
   logging::op::trace("[ReplicatedReduceScatterOp] Global replication factor: "
                      "{}, sharding factor: {}",
-                     globalReplicationFactor,
-                     replicationFactor);
+                     getIr().getSessionOptions().getGlobalReplicationFactor(),
+                     commSize);
 }
 
 void ReplicatedReduceScatterOp::appendOutlineAttributes(

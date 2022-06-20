@@ -710,8 +710,7 @@ class Variable(Tensor, tensor_type="Variable"):
         dimension safely (ie. checks if the outer dimension matches an expected
         outer dimension).
         """
-        return tuple(self._pb_tensor.getVariableSettings().shapeOnReplica(
-            self.shape, self.ir.replication_factor, self.name))
+        return self.shape
 
     @property
     def shape_on_host(self):
@@ -966,11 +965,77 @@ def remote_replica_sharded_variable(
     var = remote_variable(data, remote_buffer, offset, dtype, name, downcast,
                           replica_grouping, retrieval_mode)
 
+    # Note: shardingDomain is not required to be set.
+    # It is only used by the StreamingMemoryOpInserter transform.
+    tensor_location = _ir.TensorLocation(_ir.TensorStorage.OffChip,
+                                         _ir.ReplicatedTensorSharding.On)
+
     var._pb_tensor.setTensorLocationInfo(
-        _ir.TensorLocation(_ir.TensorStorage.OffChip,
-                           _ir.ReplicatedTensorSharding.On),
-        remote_buffer.remote_buffer_id, offset)
+        tensor_location, remote_buffer.remote_buffer_id, offset)
     return var
+
+
+def replica_sharded_buffer(shape: Tuple[int, ...],
+                           dtype: dtypes.dtype,
+                           replica_grouping: Optional[ReplicaGrouping] = None,
+                           shard_grouping: Optional[ReplicaGrouping] = None,
+                           entries: int = 1):
+    """Create a RemoteBuffer for use with replicated tensor sharded variables.
+
+    Args:
+        shape (Tuple[int, ...]): Shape of the variable tensor (including any replica grouping dimensions).
+        dtype (dtypes.dtype): Dtype of the variable tensor.
+        replica_grouping (Optional[ReplicaGrouping], optional): ReplicaGrouping of the variable tensor. Defaults to All replicas.
+        shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
+        entries (int): Number of entries in the RemoteBuffer.
+
+    Returns:
+        RemoteBuffer
+    """
+    from popxl.remote_buffer import remote_buffer
+
+    shards = gcg().ir.replication_factor
+
+    if shard_grouping:
+        if replica_grouping:
+            if shard_grouping.stride != replica_grouping.stride:
+                raise ValueError(
+                    "shard_grouping.stride must equal the replica_grouping.stride"
+                )
+            if shard_grouping.group_size > replica_grouping.group_size:
+                raise ValueError(
+                    "shard_grouping.group_size must be <= the replica_grouping.group_size"
+                )
+        else:
+            if shard_grouping.stride > 1:
+                raise ValueError(
+                    "shard_grouping.stride must be 1 with the default replica_grouping"
+                )
+            if shard_grouping.group_size > shards:
+                raise ValueError(
+                    "shard_grouping.group_size must be <= the replication_factor"
+                )
+
+    data_size: int = np.prod(shape)
+    if replica_grouping:
+        data_size = data_size // replica_grouping.num_groups
+        shards = replica_grouping.group_size
+    if shard_grouping:
+        shards = shard_grouping.group_size
+
+    # ceiling division
+    shard_size = -(data_size // -shards)
+    shard_shape = (shard_size, )
+
+    buffer = remote_buffer(shard_shape, dtype, entries)
+
+    # set the meta_shape
+    if replica_grouping and replica_grouping.num_groups > 1:
+        buffer.meta_shape = shape[1:]
+    else:
+        buffer.meta_shape = shape
+
+    return buffer
 
 
 def replica_sharded_variable(
@@ -979,6 +1044,7 @@ def replica_sharded_variable(
         name: Optional[str] = None,
         downcast: bool = True,
         replica_grouping: Optional[ReplicaGrouping] = None,
+        shard_grouping: Optional[ReplicaGrouping] = None,
         retrieval_mode: Optional[
             Literal["one_per_group", "all_replicas"]] = "one_per_group"
 ) -> Tuple[Variable, Tensor]:
@@ -1007,15 +1073,13 @@ def replica_sharded_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
+        shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
             - "one_per_group": Return only the first replica's variable per group, this is the
                 default behaviour.
             - "all_replicas": Return all replica's variables in every group.
             Defaults to "one_per_group".
-
-    Raises:
-        RuntimeError: If non-default grouping is used.
 
     Returns:
         Tuple[Variable, Tensor]:
@@ -1025,18 +1089,10 @@ def replica_sharded_variable(
     """
 
     import popxl.ops as ops
-    from popxl.remote_buffer import remote_buffer
 
     _dtype = dtype or dtypes.dtype.as_dtype(dtype)
-
-    replicas = gcg().ir.replication_factor
-    data_size: int = data.size  # TODO: Handle non np inputs
-    if replica_grouping:
-        data_size = data_size // replica_grouping.num_groups
-        replicas = replica_grouping.group_size
-
-    shard_shape: Tuple[int, ...] = (data_size // replicas, )
-    buffer = remote_buffer(shard_shape, _dtype, 1)
+    buffer = replica_sharded_buffer(data.shape, _dtype, replica_grouping,
+                                    shard_grouping)
 
     # Create a remote RTS variable
     var = remote_replica_sharded_variable(data, buffer, 0, dtype, name,
