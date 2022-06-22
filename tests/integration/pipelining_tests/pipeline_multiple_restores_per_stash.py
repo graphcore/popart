@@ -13,7 +13,7 @@ import test_util as tu
 @tu.requires_ipu_model
 @pytest.mark.parametrize("explicit", [False, True])
 def test_2_restores_for_1_stash(explicit):
-    """
+    r"""
     The model:
            IPU0, PS0
      w0 ---.              IPU1, PS1      IPU0, PS2     IPU0, PS2
@@ -93,7 +93,7 @@ def test_2_restores_for_1_stash(explicit):
 # multiple recomputation
 @tu.requires_ipu_model
 def test_2_restores_for_1_stash_not_supported_with_recomp():
-    """
+    r"""
     The model:
          IPU0, PS0   IPU0, PS0
                  w0 ---.            IPU1, PS1      IPU0, PS2     IPU0, PS2

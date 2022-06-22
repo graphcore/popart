@@ -11,7 +11,7 @@ import test_util as tu
 
 @tu.requires_ipu_model
 def test_grad_tensor_consumed_by_multiple_pipeline_stages_recompute():
-    """
+    r"""
     The model:
 
          VG0, PS0       VG1, PS1      VG0, PS2      VG0, PS2

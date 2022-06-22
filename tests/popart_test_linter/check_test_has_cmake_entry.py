@@ -24,7 +24,7 @@ def is_probably_pytest_file(file_path):
                 return True
             elif re.match('class Test', line):
                 return True
-            elif re.match('\s*unittest\.main\(\)', line):
+            elif re.match(r'\s*unittest\.main\(\)', line):
                 return True
     return False
 
@@ -47,9 +47,9 @@ def check_for_test_entry(lint_path, cmakelists_path):
             # We catch commented out entires as these are not tests where the
             # cmake entry has been forgotten, but usually tests that are broken
             # and have a task to fix attached.
-            pattern = '(#\s*)?'
+            pattern = r'(#\s*)?'
             # Match instances of 'add_popart_py_unit_test(some_test_name '
-            pattern += 'add_popart_py_unit_test\(\S+ '
+            pattern += r'add_popart_py_unit_test\(\S+ '
             # Match only entries with the same lint_path
             pattern += f'{lint_path.name}'
             if re.match(pattern, line):

@@ -460,7 +460,7 @@ class TestRepeat:
             assert e_info.value.args[0].startswith(
                 "Not enough inputs have been provided")
 
-    def test_repeat_missing_inputs_error(self):
+    def test_repeat_missing_inputs_error_in_graph(self):
         """Test an error is thrown when an input is not in graph"""
         ir = popxl.Ir()
         main = ir.main_graph

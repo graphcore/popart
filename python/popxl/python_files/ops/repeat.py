@@ -7,8 +7,6 @@ from popxl.graph import Graph
 from popxl.ops.call import CallSiteInfo
 from popxl.tensor import Tensor
 
-from .utils import check_in_graph
-from ..utils import table_to_string
 from .call import _prep_inputs_pre_validation, _validate_inputs, _prep_inputs, _validate_connected_tensors
 
 
@@ -234,8 +232,14 @@ def repeat_with_info(graph: Graph,
 
     # 1, 2. Connect inputs.
     connected_inputs = _setup_inputs(
-        inputs, inputs_dict, pb_top_graph, top_graph, pb_bottom_graph,
-        bottom_graph, pb_middle_graph, pb_callop, pb_loop_op, check_inputs)
+        inputs=inputs,
+        inputs_dict=inputs_dict,
+        pb_top_graph=pb_top_graph,
+        pb_bottom_graph=pb_bottom_graph,
+        pb_middle_graph=pb_middle_graph,
+        pb_callop=pb_callop,
+        pb_loop_op=pb_loop_op,
+    )
 
     _validate_connected_tensors(check_inputs, connected_inputs, graph, inputs,
                                 inputs_dict)
@@ -321,10 +325,9 @@ def _setup_call_and_repeat(pb_ir: _ir.Ir, pb_top_graph: _ir.Graph,
 
 def _setup_inputs(inputs: Iterable[Tensor],
                   inputs_dict: Mapping[Tensor, Tensor],
-                  pb_top_graph: _ir.Graph, top_graph: Graph,
-                  pb_bottom_graph: _ir.Graph, bottom_graph: Graph,
+                  pb_top_graph: _ir.Graph, pb_bottom_graph: _ir.Graph,
                   pb_middle_graph: _ir.Graph, pb_callop: _ir.op.CallOp,
-                  pb_loop_op: _ir.op.LoopOp, check_inputs: bool) -> None:
+                  pb_loop_op: _ir.op.LoopOp) -> None:
     """Set up the inputs.
 
     This is done in the following way:

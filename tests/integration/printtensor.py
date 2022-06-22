@@ -57,7 +57,7 @@ def test_basic(capfd):
     # pattern to match a1 or a2
     a1_or_a2 = f'(?:{a1_pattern}|{a2_pattern})'
     # pattern to match tensor values
-    value_pattern = '{\d+,\d+,\d+}'
+    value_pattern = r'{\d+,\d+,\d+}'
     pat = f'{a1_or_a2}: {value_pattern}'
     matches = re.findall(pat, output)
 
@@ -129,13 +129,13 @@ def test_train(capfd):
     output = re.sub(chr(27), '', output)
 
     # Remove termcolor sequences
-    output = re.sub('\[\d\dm', '', output)
+    output = re.sub(r'\[\d\dm', '', output)
 
     # Remove popart log lines
-    output = re.sub('\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
+    output = re.sub(r'\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
 
     # remove all whitespace
-    output = re.sub('\s+', '', output)
+    output = re.sub(r'\s+', '', output)
 
     pattern = 'name:{{{{float,float},{float,float}}}}'
     pattern = re.sub('name', r'[\\w:]+', pattern)
@@ -214,13 +214,13 @@ def test_custom_title(capfd):
     output = re.sub(chr(27), '', output)
 
     # Remove termcolor sequences
-    output = re.sub('\[\d\dm', '', output)
+    output = re.sub(r'\[\d\dm', '', output)
 
     # Remove popart log lines
-    output = re.sub('\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
+    output = re.sub(r'\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
 
     # remove all whitespace
-    output = re.sub('\s+', '', output)
+    output = re.sub(r'\s+', '', output)
 
     pattern = 'name:{{{{float,float},{float,float}}}}'
     pattern = re.sub('name', r'[\\w:]+', pattern)

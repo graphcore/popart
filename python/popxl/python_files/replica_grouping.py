@@ -161,7 +161,9 @@ class ReplicaGrouping:
         return assign
 
     def transpose(self) -> "ReplicaGrouping":
-        """A replica grouping whereby the first element of each group is the first new group, the 
+        """Return the transpose of this replica grouping.
+
+        A replica grouping whereby the first element of each group is the first new group, the
         second element of each group is the second group etc.
 
         Examples:
@@ -174,6 +176,9 @@ class ReplicaGrouping:
         Some transposes cannot be represented with just a stride and group size and therefore
         cannot be created. For example for `num_replicas=8`, `stride=2` and `group_size=2`. The assignments
         are `[0, 1, 0, 1, 2, 3, 2, 3]` and the transpose is `[0, 0, 1, 1, 0, 0, 1, 1]`.
+
+        Raises:
+            ValueError: If the transpose cannot be represented with a replica grouping.
 
         Returns:
             ReplicaGrouping: a "transpose" replica grouping of self

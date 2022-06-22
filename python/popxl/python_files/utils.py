@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 import sys
 import time
-from typing import Iterable, Union, Optional, TYPE_CHECKING, Sequence
+from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 import numpy as np
 import popart
@@ -245,8 +245,10 @@ def _acquire_hw_device_with_timeout(num_ipus: int = 1,
 def table_to_string(rows: Sequence[Sequence],
                     delimiter: str = ' | ',
                     header: bool = True):
-    """Create a string that resembles a table from inputs `rows`. Each item in rows represents a row
-    which will be delimited with `delimiter`. Each row should exactly have the same length.
+    """Create a string that resembles a table from inputs `rows`.
+
+    Each item in rows represents a row which will be delimited with `delimiter`.
+    Each row should exactly have the same length.
 
     Example:
 

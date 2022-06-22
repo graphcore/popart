@@ -591,17 +591,18 @@ class ConstVoidData;
 
                     if op.inputs > 0:
                         f.write(
-                            "     * \param args List of input tensor ids\n")
+                            r"     * \param args List of input tensor ids" +
+                            "\n")
 
                     if op.min_output != op.max_output:
                         f.write(
-                            "     * \param num_outputs The number of output tensor ids\n"
-                        )
+                            r"     * \param num_outputs The number of output tensor ids"
+                            + "\n")
 
                     if int(opset_version) == 11 and op.name == 'Constant':
                         f.write(
                             format_method(
-                                """
+                                r"""
                             * \param value The 'value' attribute"
                             * \param is_value_sparse If true, set the 'sparse_value' attribute
                             """, 5))
@@ -609,20 +610,19 @@ class ConstVoidData;
                         for a in sorted(op.attributes,
                                         key=lambda x: x.hasDefault()):
                             if not a.isDeprecated():
-                                f.write(
-                                    "     * \param {} The '{}' attribute \n".
-                                    format(a.name, a.name))
+                                f.write(r"     * \param {} The '{}' attribute".
+                                        format(a.name, a.name) + "\n")
                     f.write(
-                        "     * \param name Optional identifier for the operation\n"
-                    )
+                        r"     * \param name Optional identifier for the operation"
+                        + "\n")
                     if op.max_output > 1:
                         f.write(
-                            "     * \\return A list of normalized output tensors\n"
-                        )
+                            r"     * \\return A list of normalized output tensors"
+                            + "\n")
                     else:
                         f.write(
-                            "     * \\return The normalized output tensor ids\n"
-                        )
+                            r"     * \\return The normalized output tensor ids"
+                            + "\n")
                     f.write("     */\n")
 
                     # Handle special case Constant_11

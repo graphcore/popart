@@ -238,7 +238,7 @@ class InferenceSession(_InferenceSessionCore):
                 once the device is ready.
 
         Raises:
-           :py:class:`popart.OutOfMemoryException`: If an out of memory event
+           popart.OutOfMemoryException: If an out of memory event
                 occurs.
         """
 
@@ -402,7 +402,7 @@ class TrainingSession(_TrainingSessionCore):
                 once the device is ready.
 
         Raises:
-            :py:class:`popart.OutOfMemoryException`: If an out of memory event
+            popart.OutOfMemoryException: If an out of memory event
                 occurs.
         """
 

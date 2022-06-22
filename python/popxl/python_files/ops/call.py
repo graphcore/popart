@@ -6,8 +6,8 @@ from popxl.context import get_current_context, debug_context_frame_offset, op_de
 from popxl.graph import Graph
 from popxl.tensor import Tensor, TensorLike
 
-from .utils import check_in_graph
-from ..utils import table_to_string
+from popxl.ops.utils import check_in_graph
+from popxl.utils import table_to_string
 
 
 # TODO: Bind subgraph op T53714
@@ -400,7 +400,7 @@ def _validate_connected_tensors(
             + [(d['graph_input_idx'], graph.inputs[d['graph_input_idx']].id, d['parent_tensor'].id)
                 for d in connected_inputs]
 
-        msg = ("Not enough inputs have been provided.\n" "\nMissing inputs:\n")
+        msg = ("Not enough inputs have been provided.\n\nMissing inputs:\n")
         msg += table_to_string(missing_inputs_tb)
         msg += "\n\nConnected inputs:\n"
         msg += table_to_string(connected_inputs_tb)

@@ -103,8 +103,8 @@ def get_child_jobs(baseurl):
 def get_test_time(baseurl, project):
     """Get the test time for a specific project for a child job."""
     regex = re.compile(
-        f"Test project (?:(?:/[^/\n]*)*)/{project}(?:.|\n)*?Total Test time \(real\) =(?:\s+)(\d+\.\d+)"
-    )
+        r"Test project (?:(?:/[^/\n]*)*)/" + f"{project}" +
+        r"(?:.|\n)*?Total Test time \(real\) =(?:\s+)(\d+\.\d+)")
     console_text = get_console_text(baseurl)
     matches = [float(m) for m in re.findall(regex, console_text)]
     assert (len(matches) <= 1)
@@ -115,7 +115,7 @@ def get_test_time(baseurl, project):
 
 def get_build_time(baseurl, project):
     """Get the build time for a specific project for a child job."""
-    regex = re.compile("(\d+)\t(\d+)\t(?:.*)+\n")
+    regex = re.compile(r"(\d+)\t(\d+)\t(?:.*)+\n")
     ninja_log = get_ninja_log(baseurl, project)
     min_millis = min([int(m[0]) for m in re.findall(regex, ninja_log)])
     max_millis = max([int(m[1]) for m in re.findall(regex, ninja_log)])

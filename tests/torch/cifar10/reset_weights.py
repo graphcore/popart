@@ -71,7 +71,7 @@ def compare_models(model_A0, model_A1, model_B0, model_B1):
     difference = 0.0
 
     for line in report.splitlines():
-        match = re.search(' =\s+(\d+)', line)
+        match = re.search(r' =\s+(\d+)', line)
         if match:
             difference += float(match.group(1))
 
