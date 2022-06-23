@@ -320,7 +320,6 @@ endif()
 
 add_subdirectory(testutil)
 add_subdirectory(integration)
-add_subdirectory(torch)
 add_subdirectory(onnx_backend)
 add_subdirectory(unittests)
 
