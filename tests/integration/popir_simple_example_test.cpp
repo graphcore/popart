@@ -93,7 +93,7 @@ const poplar::Graph &Graph::getPoplarGraph() const {
 
 } // namespace snap
 
-BOOST_AUTO_TEST_CASE(PopirSimpleExampleTest) {
+void run_test() {
   // Check that snap::Tensor::getPoplarTensor and snap::Graph::getPoplarGraph
   // have been successfully overridden
   {
@@ -141,4 +141,14 @@ BOOST_AUTO_TEST_CASE(PopirSimpleExampleTest) {
   auto session = TrainingSession::createFromOnnxModel(
       builder->getModelProto(), dataFlow, loss, optimizer, device);
   session->prepareDevice();
+}
+
+BOOST_AUTO_TEST_CASE(PopirSimpleExampleUsingNativeDispatchTest) {
+  setenv("POPIR_SNAP_DISPATCH", "native", 1);
+  run_test();
+}
+
+BOOST_AUTO_TEST_CASE(PopirSimpleExampleUsingPopirDispatchTest) {
+  setenv("POPIR_SNAP_DISPATCH", "popir", 1);
+  run_test();
 }
