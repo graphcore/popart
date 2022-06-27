@@ -318,9 +318,19 @@ want to upload coverage reports to elasticsearch."
   endif()
 endif()
 
+# Add subdirectories for tests:
 add_subdirectory(testutil)
-add_subdirectory(integration)
-add_subdirectory(onnx_backend)
+
+# Don't add integration tests in Debug mode on CI - this saves a lot of time on debug CI builds.
+if(( CMAKE_BUILD_TYPE STREQUAL "Debug" ) AND ( DEFINED ENV{CI} ))
+  message(STATUS "On a CI + Debug build, skipping integration tests...")
+else()
+  message(STATUS "Not on a CI + Debug build, adding integration tests...")
+  add_subdirectory(integration)
+  add_subdirectory(torch)
+  add_subdirectory(onnx_backend)
+endif()
+
 add_subdirectory(unittests)
 
 install(DIRECTORY .
