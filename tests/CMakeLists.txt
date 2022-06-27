@@ -327,7 +327,6 @@ if(( CMAKE_BUILD_TYPE STREQUAL "Debug" ) AND ( DEFINED ENV{CI} ))
 else()
   message(STATUS "Not on a CI + Debug build, adding integration tests...")
   add_subdirectory(integration)
-  add_subdirectory(torch)
   add_subdirectory(onnx_backend)
 endif()
 
