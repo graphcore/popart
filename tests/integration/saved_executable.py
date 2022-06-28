@@ -1,6 +1,9 @@
-"""Module containing tests and helper functions related to saving executables."""
-
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+"""
+Module containing tests and helper functions related to saving executables for PopART.
+
+See also tests/integration/popxl/test_cached_executables.py for PopXL tests
+"""
 
 import os
 import sys
