@@ -27,9 +27,7 @@ add_popart_py_unit_test(dynamicslice_test dynamicslice_test.py)
 add_popart_py_unit_test(dynamicupdate_test dynamicupdate_test.py)
 add_popart_py_unit_test(dynamicadd_test dynamicadd_test.py)
 add_popart_py_unit_test(dynamiczero_test dynamiczero_test.py)
-# TODO : T25525
-# too long to run as part of CI
-# add_popart_py_unit_test(dynamicslice_large_test dynamicslice_large_test.py VARIANTS Hw)
+add_popart_py_unit_test(dynamicslice_large_test dynamicslice_large_test.py VARIANTS Hw)
 add_popart_py_unit_test(elu_test elu_test.py)
 add_popart_py_unit_test(erf_test erf_test.py)
 add_popart_py_unit_test(exp_test exp_test.py)
