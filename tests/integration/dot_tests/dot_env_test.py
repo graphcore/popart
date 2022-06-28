@@ -1,6 +1,5 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 import popart
-import os
 import tempfile
 
 # `import test_util` requires adding to sys.path
@@ -10,7 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-def test_basic():
+def test_basic(monkeypatch):
     def run_test(expected_dot_file_count):
         builder = popart.Builder()
 
@@ -37,11 +36,11 @@ def test_basic():
                 dotFiles = list(Path(tmpdir).glob('*.dot'))
                 assert len(dotFiles) == expected_dot_file_count
 
-    os.environ['POPART_DOT_CHECKS'] = ''
+    monkeypatch.setenv("POPART_DOT_CHECKS", "")
     run_test(0)
 
-    os.environ['POPART_DOT_CHECKS'] = 'FWD0:FINAL'
+    monkeypatch.setenv("POPART_DOT_CHECKS", "FWD0:FINAL")
     run_test(2)
 
-    os.environ['POPART_DOT_CHECKS'] = 'FWD0:FWD1:FINAL'
+    monkeypatch.setenv("POPART_DOT_CHECKS", "FWD0:FWD1:FINAL")
     run_test(3)

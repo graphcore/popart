@@ -1,5 +1,4 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-import os
 import popart
 import popxl
 from popxl import ops
@@ -15,9 +14,9 @@ class TestWriteVariablesData:
     # For [A] the weights were not updated as in this case
     # they are not populated by IR but during second executablex constructor - deserialized
     # version. The issue was fixed by updating weights when calling write_variable_data.
-    def test_write_variables_data_cache(self, tmp_path):
+    def test_write_variables_data_cache(self, tmp_path, monkeypatch):
         popart.getLogger().setLevel('DEBUG')
-        os.environ['POPXL_CACHE_DIR'] = str(tmp_path / 'cache')
+        monkeypatch.setenv("POPXL_CACHE_DIR", str(tmp_path / 'cache'))
         ir = popxl.Ir()
         with ir.main_graph:
             v = popxl.variable(1, popxl.float32)
@@ -30,5 +29,3 @@ class TestWriteVariablesData:
             assert sess.run()[d2h] == 2
             sess.write_variable_data(v, 3)
             assert sess.run()[d2h] == 3
-
-        del os.environ['POPXL_CACHE_DIR']

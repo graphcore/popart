@@ -2,6 +2,7 @@
 """Test dot visualizer functionality in popxl"""
 from typing import Optional
 import pytest
+from pytest import MonkeyPatch
 import os
 import tempfile
 import numpy as np
@@ -15,21 +16,22 @@ _TENSOR_SHAPE = (3, 11, 5)
 @pytest.mark.parametrize("check_name, expected_dot_file_count",
                          (("", 0), ("FINAL", 1), ("FOO:BAR", 2), ("ALL", 3)))
 @pytest.mark.parametrize("use_environ", (True, False))
-def test_dot_check_with_environ_and_opts(check_name: str,
-                                         expected_dot_file_count: int,
-                                         use_environ: bool) -> None:
+def test_dot_check_with_environ_and_opts(
+        monkeypatch: MonkeyPatch, check_name: str,
+        expected_dot_file_count: int, use_environ: bool) -> None:
     """Test that the popxl DotVisualizer works with both POPART_DOT_CHECKS and dotChecks.
 
     Args:
+        monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
         check_name (str): The name of the check
         expected_dot_file_count (int): The expected number of dotfiles the input will produce
         use_environ (bool): Uses os.environ if true to set the checks, else it uses session.options
     """
     if use_environ:
         # Set the environment variables
-        os.environ['POPART_DOT_CHECKS'] = check_name
+        monkeypatch.setenv("POPART_DOT_CHECKS", check_name)
     else:
-        os.environ['POPART_DOT_CHECKS'] = ''
+        monkeypatch.setenv("POPART_DOT_CHECKS", "")
 
     # NOTE: Any session options need to be set prior to creating the model
     ir = popxl.Ir()

@@ -1,5 +1,4 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-import os
 import re
 
 import numpy as np
@@ -10,8 +9,11 @@ import test_util as tu
 
 
 # Standard conv and relu with setAvailableMemoryProportion setting
-def conv_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
-    os.environ["POPLIBS_LOG_LEVEL"] = "DEBUG"
+def conv_avail_memory(capfd,
+                      monkeypatch,
+                      apply_to_conv=True,
+                      avail_mem_prop=0.9):
+    monkeypatch.setenv("POPLIBS_LOG_LEVEL", "DEBUG")
 
     builder = popart.Builder()
 
@@ -82,14 +84,17 @@ def conv_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
                                              training_anchors))
 
     captured = capfd.readouterr()
-    os.environ["POPLIBS_LOG_LEVEL"] = "NONE"
+    monkeypatch.delenv("POPLIBS_LOG_LEVEL", raising=False)
 
     return captured.err
 
 
 # Standard matmul and relu with setAvailableMemoryProportion setting
-def matmul_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
-    os.environ["POPLIBS_LOG_LEVEL"] = "DEBUG"
+def matmul_avail_memory(capfd,
+                        monkeypatch,
+                        apply_to_conv=True,
+                        avail_mem_prop=0.9):
+    monkeypatch.setenv("POPLIBS_LOG_LEVEL", "DEBUG")
 
     builder = popart.Builder()
 
@@ -157,7 +162,7 @@ def matmul_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
                                              training_anchors))
 
         captured = capfd.readouterr()
-        os.environ["POPLIBS_LOG_LEVEL"] = "NONE"
+        monkeypatch.delenv("POPLIBS_LOG_LEVEL", raising=False)
 
     return captured.err
 
@@ -165,10 +170,10 @@ def matmul_avail_memory(capfd, apply_to_conv=True, avail_mem_prop=0.9):
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
-def test_conv_avail_memory_log(capfd):
+def test_conv_avail_memory_log(capfd, monkeypatch):
 
     avail_mem_prop = 0.6
-    output = conv_avail_memory(capfd, True, avail_mem_prop)
+    output = conv_avail_memory(capfd, monkeypatch, True, avail_mem_prop)
 
     # This is the available tile memory for the conv.
     # TODO: Update this if future chips have more memory per tile.
@@ -184,12 +189,12 @@ def test_conv_avail_memory_log(capfd):
 
 # Test outside [0,1) error
 @tu.requires_ipu_model
-def test_conv_avail_memory_error(capfd):
+def test_conv_avail_memory_error(capfd, monkeypatch):
 
     avail_mem_prop = 1.1  # Wrong value
 
     with pytest.raises(popart.popart_exception) as e_info:
-        conv_avail_memory(capfd, True, avail_mem_prop)
+        conv_avail_memory(capfd, monkeypatch, True, avail_mem_prop)
 
     assert (e_info.value.args[0].startswith(
         "availableMemoryProportion must be in (0,1]"))
@@ -198,10 +203,10 @@ def test_conv_avail_memory_error(capfd):
 # Test that poplar gets our instruction to set the available memory proportion.
 # Do this by matching the poplibs logs.
 @tu.requires_ipu_model
-def test_matmul_avail_memory_log(capfd):
+def test_matmul_avail_memory_log(capfd, monkeypatch):
 
     avail_mem_prop = 0.6
-    output = matmul_avail_memory(capfd, True, avail_mem_prop)
+    output = matmul_avail_memory(capfd, monkeypatch, True, avail_mem_prop)
 
     # This is the available tile memory for the matmul.
     # TODO: Update this if future chips have more memory per tile.

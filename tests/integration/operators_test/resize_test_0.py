@@ -10,9 +10,6 @@ import numbers
 
 import onnx.backend.test.case.node.resize as onnx_resize
 
-# Uncomment for debugging:
-# os.environ['POPART_LOG_LEVEL'] = 'TRACE'
-
 
 # For debugging failing tests, it can be useful to use known data, rather than random.
 # This is just a utility for easily swapping a call like

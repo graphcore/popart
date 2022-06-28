@@ -13,6 +13,7 @@ from typing_extensions import Literal
 
 import numpy as np
 import pytest
+from pytest import MonkeyPatch
 import popart
 import pva
 
@@ -334,19 +335,21 @@ def test_cache_miss_on_engine_option_change(
 
 @tu.requires_ipu
 @pytest.mark.parametrize("varname", ["POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
-def test_cache_environment_variable(
-        tmp_path: Path, capfd: pytest.CaptureFixture, varname: str) -> None:
+def test_cache_environment_variable(tmp_path: Path, monkeypatch: MonkeyPatch,
+                                    capfd: pytest.CaptureFixture,
+                                    varname: str) -> None:
     """Test caching as enabled via env POPART_CACHE_DIR or POPXL_CACHE_DIR.
 
     Args:
         tmp_path (Path): Temporary directory
+        monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
         varname (str): Variable name to set as environmental variable
     """
     # Need to activate the logger in order to check whether we are compiling or loading from cache
     popart.getLogger().setLevel('DEBUG')
 
-    os.environ[varname] = str(tmp_path / 'saved_graph')
+    monkeypatch.setenv(varname, str(tmp_path / 'saved_graph'))
 
     opts = popart.SessionOptions()
 
@@ -356,8 +359,6 @@ def test_cache_environment_variable(
     # Check engine caching works for two identical sessions.
     run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is True
-
-    del os.environ[varname]
 
 
 @tu.requires_ipu
@@ -426,16 +427,17 @@ def is_stored_restored(capfd: pytest.CaptureFixture) -> Tuple[bool, bool]:
 
 
 @tu.requires_ipu
-def test_manual_cached_profiling(tmp_path: Path,
+def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
                                  capfd: pytest.CaptureFixture) -> None:
     """Test that profiling works with cached executables.
 
     Args:
         tmp_path (Path): Temporary path
+        monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
     # Set the environment variable so that we can capture the output
-    os.environ["POPLAR_PROFILER_LOG_LEVEL"] = "DEBUG"
+    monkeypatch.setenv("POPLAR_PROFILER_LOG_LEVEL", "DEBUG")
     popart.getLogger().setLevel('INFO')
 
     # Set cache and profile directories
@@ -507,7 +509,8 @@ def test_manual_cached_profiling(tmp_path: Path,
 # TODO: T63870 - enable profiling_env_var True
 # @pytest.mark.parametrize("profiling_env_var", [False, True])
 @pytest.mark.parametrize("profiling_env_var", [False])
-def test_cached_profiling(tmp_path: Path, cache_env_var: Optional[str],
+def test_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
+                          cache_env_var: Optional[str],
                           profiling_env_var: bool) -> None:
     """Test profiling of cached executables.
 
@@ -517,6 +520,7 @@ def test_cached_profiling(tmp_path: Path, cache_env_var: Optional[str],
 
     Args:
         tmp_path (Path): Temporary directory
+        monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
         cache_env_var (Optional[str]): Variable name to set as environmental variable
         profiling_env_var (bool): Whether to specify the profiling as an environmental
             variable or as a session option
@@ -533,7 +537,7 @@ def test_cached_profiling(tmp_path: Path, cache_env_var: Optional[str],
     #       popart.SessionOptions in order for the SessionOption constructor to
     #       set the cache dir correctly
     if cache_env_var is not None:
-        os.environ[cache_env_var] = str(cache_dir)
+        monkeypatch.setenv(cache_env_var, str(cache_dir))
 
     opts = popart.SessionOptions()
 
@@ -549,8 +553,8 @@ def test_cached_profiling(tmp_path: Path, cache_env_var: Optional[str],
     if profiling_env_var:
         # TODO: T63870 - update environment variable
         #       (will probably not be POPLAR_ENGINE_OPTIONS in the future)
-        os.environ["POPLAR_ENGINE_OPTIONS"] = str(engine_option_dict).replace(
-            "'", '"')
+        monkeypatch.setenv("POPLAR_ENGINE_OPTIONS",
+                           str(engine_option_dict).replace("'", '"'))
     else:
         for key, val in engine_option_dict.items():
             opts.engineOptions[key] = val
@@ -582,12 +586,6 @@ def test_cached_profiling(tmp_path: Path, cache_env_var: Optional[str],
     assert report_2_profile.execution.totalCycles.total > 0
     assert report_2_cached_profile.execution.totalCycles.total == 0
     print("Second run was successful")
-
-    # Clear variables for reuse
-    if cache_env_var is not None:
-        del os.environ[cache_env_var]
-    if profiling_env_var:
-        del os.environ["POPLAR_ENGINE_OPTIONS"]
 
 
 def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
