@@ -259,23 +259,30 @@ void Devicex::popxlWeightsToTensorData() {
 
   auto tensors = executable_.getWeightTensors();
 
-  std::map<TensorId, MutableVoidData> Wdata;
-  std::transform(tensors.begin(),
-                 tensors.end(),
-                 std::inserter(Wdata, Wdata.end()),
-                 [replicas = getReplicationFactor()](Tensor *t) {
-                   MutableVoidData tData;
-                   tData.data     = t->tensorData()->data();
-                   auto hostShape = t->getVariableSettings().shapeOnHost(
-                       t->info.shape(), replicas);
+  // Copy from d2hWeightBuffers into the tensors of the weights.
+  d2hWeightBuffersToTensors(tensors);
 
-                   tData.info = t->info;
-                   tData.info.set(tData.info.dataType(), hostShape);
-                   return std::make_pair(t->id, tData);
-                 });
+  // There is a duplicate state created when loading serialised executables.
+  // Copies of the same tensors exist in both `executable_.tensors` and
+  // in the IR instance returned by `ir()`. The code below ensures that
+  // these states are in sync.
+  if (executable_.isDeserialized()) {
+    std::vector<Tensor *> tensorsIr;
+    for (const auto &t : tensors) {
+      if (ir().containsTensor(t->id)) {
+        try {
+          tensorsIr.push_back(ir().getTensor(t->id));
+        } catch (popart::error &err) {
+          throw error("[popxlWeightsToTensorData] Weight tensor with id {} has "
+                      "no corresponding tensor in IR. {}",
+                      t->id,
+                      err.what());
+        }
+      }
+    }
 
-  // Copy from d2hWeightBuffers into the TensorData of the weights.
-  d2hWeightBuffersToTensorData(Wdata);
+    d2hWeightBuffersToTensors(tensorsIr);
+  }
 }
 
 bool Devicex::popxlAreHostWeightsInSync() {
@@ -496,6 +503,29 @@ void Devicex::weightsToHost(
 
     d2hWeightBuffersToTensorData(onnxModelData);
   }
+}
+
+void Devicex::d2hWeightBuffersToTensors(const std::vector<Tensor *> &tensors) {
+
+  std::map<TensorId, MutableVoidData> Wdata;
+
+  // Prepare for d2hWeightBuffersToTensorData copy.
+  std::transform(tensors.begin(),
+                 tensors.end(),
+                 std::inserter(Wdata, Wdata.end()),
+                 [replicas = getReplicationFactor()](Tensor *t) {
+                   MutableVoidData tData;
+                   tData.data     = t->tensorData()->data();
+                   auto hostShape = t->getVariableSettings().shapeOnHost(
+                       t->info.shape(), replicas);
+
+                   tData.info = t->info;
+                   tData.info.set(tData.info.dataType(), hostShape);
+                   return std::make_pair(t->id, tData);
+                 });
+
+  // Copy from d2hWeightBuffers into the TensorData of the weights.
+  d2hWeightBuffersToTensorData(Wdata);
 }
 
 void Devicex::d2hWeightBuffersToTensorData(

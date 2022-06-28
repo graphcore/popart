@@ -19,13 +19,14 @@ import test_util as tu
 
 
 def create_ir_with_copy_var_update(
-        input_val: float,
-        add_val: int) -> Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]:
+        input_val: float, add_val: int,
+        init_val: float) -> Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]:
     """Creates an IR where the output of an operation is copied to another tensor.
 
     Args:
         input_val (float): Value to set in the input tensor
         add_val (int): Value to add to the input tensor
+        init_val (float) Value to set copied_output tensor
 
     Returns:
         Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]: Tuple containing:
@@ -38,7 +39,7 @@ def create_ir_with_copy_var_update(
         input_tensor = popxl.variable(input_val, name="input_tensor")
         output_tensor = input_tensor + add_val
 
-        copied_output = popxl.variable(0.,
+        copied_output = popxl.variable(init_val,
                                        dtype=popxl.float32,
                                        name="copied_output")
         popxl.ops.var_updates.copy_var_update_(copied_output, output_tensor)
@@ -93,7 +94,6 @@ def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
 
 
 @tu.requires_ipu
-@pytest.mark.skip(reason="Skip to be removed when merged with D69817")
 def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
                           capfd: pytest.CaptureFixture) -> None:
     """Test that get_tensors_data is working with engine caching.
@@ -113,13 +113,14 @@ def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
     input_val = 5.
     add_val = 10
     output_val = input_val + add_val
+    init_val = 0.
 
     # Check that no cache lingers from previous tests
     assert len(list(cache_path.glob("**/*.popef"))) == 0
 
-    # Compile and run without executable cache
+    # First run. Compile and run without executable cache
     ir, input_tensor, copied_output = create_ir_with_copy_var_update(
-        input_val, add_val)
+        input_val, add_val, init_val)
     sess = popxl.Session(ir, 'ipu_hw')
     run_and_compare(sess, input_tensor, copied_output, input_val, output_val)
 
@@ -127,10 +128,12 @@ def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
     # Check that the cache has been saved
     assert len(list(cache_path.glob("**/*.popef"))) == 1
 
-    # Run with executable cache
+    # Second run. Executable cache used
     ir, input_tensor, copied_output = create_ir_with_copy_var_update(
-        input_val, output_val)
+        input_val, add_val, init_val)
     sess = popxl.Session(ir, 'ipu_hw')
+    # This was failing before T62680. copied_output was not input_val + add_val
+    # but init_val.
     run_and_compare(sess, input_tensor, copied_output, input_val, output_val)
 
     assert loaded_saved_executable(capfd=capfd)

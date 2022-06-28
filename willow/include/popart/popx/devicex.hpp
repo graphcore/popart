@@ -108,6 +108,9 @@ private:
   void d2hWeightBuffersToTensorData(
       const std::map<TensorId, MutableVoidData> &onnxModelData);
 
+  // host stream -> tensors
+  void d2hWeightBuffersToTensors(const std::vector<Tensor *> &tensors);
+
 public:
   /// Copy data from the device, to the host buffers, to the
   /// `tensor.tensorData()` buffers. Will not run a WeightsToHost program if
