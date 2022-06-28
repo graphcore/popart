@@ -162,8 +162,6 @@ def test_matmul_infer_cached_by_default():
     cached.
     """
 
-    popart.getLogger().setLevel("TRACE")
-
     builder = popart.Builder()
 
     matmul_lhs_shape = popart.TensorInfo("FLOAT", [2, 3])
@@ -237,8 +235,6 @@ def test_matmul_train_cached_by_default():
     In this test we check that the default behaviour is for matmul to be
     cached.
     """
-
-    popart.getLogger().setLevel("TRACE")
 
     builder = popart.Builder()
 
@@ -331,8 +327,6 @@ def test_gemm_train_cached_by_default():
     In this test we check that the default behaviour is for matmul to be
     cached.
     """
-
-    popart.getLogger().setLevel("TRACE")
 
     builder = popart.Builder()
 
@@ -429,8 +423,6 @@ def test_outlining_bca1():
     cached.
     """
 
-    popart.getLogger().setLevel("TRACE")
-
     builder = popart.Builder()
 
     matmul_lhs_shape = popart.TensorInfo("FLOAT", [2, 3])
@@ -504,8 +496,6 @@ def test_outlining_bca2():
     In this test we check that the default behaviour is for matmul to be
     cached.
     """
-
-    popart.getLogger().setLevel("TRACE")
 
     builder = popart.Builder()
 
@@ -586,8 +576,6 @@ def test_outlining_bca3():
     In this test we check that the default behaviour is for matmul to be
     cached.
     """
-
-    popart.getLogger().setLevel("TRACE")
 
     builder = popart.Builder()
 
@@ -679,8 +667,6 @@ def test_outlining_bca4():
     In this test we check that for the case of 2 2d tensors they can all
     use the same matmul
     """
-
-    popart.getLogger().setLevel("TRACE")
 
     builder = popart.Builder()
 
