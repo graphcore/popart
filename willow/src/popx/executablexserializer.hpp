@@ -89,11 +89,10 @@ deserializeTensor(popart::Ir &ir,
                   bool deserializeData = true);
 
 /**
- * Deserialise executable.
+ * Serialise executable.
  * \param out The stream to serialise to.
  * \param executable The executable to serialise.
  */
-
 void serializePopartExecutable(std::ostream &out,
                                const popart::popx::Executablex &executable);
 
