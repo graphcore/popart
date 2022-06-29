@@ -144,5 +144,5 @@ def test_tensor_replication():
             in_1 = anchors[ip][batch, -1, 1, :, :, :, :]
 
             mx = anchors[ip].shape[len(anchors[ip].shape) - 1]
-            s = mx if mx <= 5 else 5
+            _ = mx if mx <= 5 else 5
             assert np.allclose(in_0, in_1, equal_nan=False)

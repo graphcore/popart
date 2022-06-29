@@ -19,8 +19,7 @@ def test_disabled_virtual_graphs():
     In this test we check that an error is thrown when doing pipelining
     if enableVirtualGraph session option is not set to true
     """
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map = get_simple_linear_model(
-    )
+    builder, _, _, _, _, anchor_map = get_simple_linear_model()
 
     opts = popart.SessionOptions()
     opts.enablePipelining = True
@@ -28,11 +27,11 @@ def test_disabled_virtual_graphs():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                              dataFlow=popart.DataFlow(
-                                                  10, anchor_map),
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            _ = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                        dataFlow=popart.DataFlow(
+                                            10, anchor_map),
+                                        userOptions=opts,
+                                        deviceInfo=device)
         assert e_info.value.args[0].startswith("Pipelining requires more than")
 
 
@@ -44,7 +43,6 @@ def test_one_ipu():
     """
     builder = popart.Builder()
     shape_d = [10]
-    shape_l = [1]
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     op0_out = builder.aiOnnx.sin([d0], "s0")
@@ -94,11 +92,10 @@ def test_enabled_recomputation(explicit):
     builder.virtualGraph(op3_out, 1)
 
     with tu.create_test_device(numIpus=2, tilesPerIPU=20) as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              10, anchor_map),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        _ = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                    dataFlow=popart.DataFlow(10, anchor_map),
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -126,11 +123,10 @@ def test_stream_tensors_to_multiple_ipus(explicit):
     builder.virtualGraph(op3_out, 1)
 
     with tu.create_test_device(numIpus=2, tilesPerIPU=20) as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              10, anchor_map),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        _ = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                    dataFlow=popart.DataFlow(10, anchor_map),
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -166,11 +162,10 @@ def test_sharding_multi_source(explicit):
     builder.virtualGraph(nll, 2)
 
     with tu.create_test_device(numIpus=3, tilesPerIPU=20) as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(
-                                              10, [op2_out]),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        _ = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                    dataFlow=popart.DataFlow(10, [op2_out]),
+                                    userOptions=opts,
+                                    deviceInfo=device)
 
 
 @tu.requires_ipu_model
@@ -515,8 +510,8 @@ def test_pipeline_stage_errors():
 
     def init_builder(builder):
         d0 = builder.addInputTensor(dummy_data, 'data0')
-        d1 = builder.addInputTensor(dummy_data, 'data1')
-        d2 = builder.addInputTensor(dummy_data, 'data2')
+        _ = builder.addInputTensor(dummy_data, 'data1')
+        _ = builder.addInputTensor(dummy_data, 'data2')
 
         s0 = builder.aiOnnx.sin([d0], "s0")
         m0 = builder.aiOnnx.mul([s0, d0])
@@ -570,9 +565,6 @@ def test_pipeline_stage_errors():
 def test_pipeline_stages_backwards_through_ipus(explicit):
     dummy_data = np.array([0.5, 1.0], dtype=np.float32)
     bps = 2
-
-    vgraph_ids = []
-    ps_ids = []
 
     def init_builder(builder):
         d0 = builder.addInputTensor(dummy_data, 'data0')
@@ -636,9 +628,6 @@ def test_multiple_stages_per_virtual_graph_inference(explicit):
     dummy_data = np.random.rand(2, 2).astype(np.float32)
     data = np.random.rand(bps, 2, 2).astype(np.float32)
     weights = np.random.rand(2, 2).astype(np.float32)
-
-    vgraph_ids = []
-    ps_ids = []
 
     def init_builder(builder):
         d0 = builder.addInputTensor(dummy_data, 'data0')
@@ -792,8 +781,6 @@ def test_multiple_stages_per_virtual_graph_training(inputType, explicit):
 @pytest.mark.parametrize("explicit", [False, True])
 def test_recomputation(inputType, explicit):
     accumulationFactor = 3
-    microBatchesPerStep = 3
-    bps = microBatchesPerStep // accumulationFactor
 
     data_type, f = (inputType.np_type,
                     1) if inputType is not None else (np.float32, 0.1)
@@ -846,7 +833,7 @@ def test_recomputation(inputType, explicit):
         with tu.create_test_device(numIpus=2) as device:
             session.prepare(init_builder, device=device)
 
-            anchors = session.run({'data0': data})
+            _ = session.run({'data0': data})
 
             # return the weights
             session._session.weightsToHost()
@@ -910,10 +897,6 @@ def test_internal_alias_ipucopy(explicit):
 def test_bad_auto_staging(explicit):
     bps = 4
     dummy_data = np.random.rand(2, 2).astype(np.float32)
-    data = np.random.rand(bps, 2, 2).astype(np.float32)
-
-    vgraph_ids = []
-    ps_ids = []
 
     def init_builder(builder):
         d0 = builder.addInputTensor(dummy_data, 'data0')
@@ -932,12 +915,6 @@ def test_bad_auto_staging(explicit):
 
         return [loss]
 
-    def ref(d0):
-        t0 = np.sin(d0)
-        t1 = np.sin(t0)
-        t2 = np.sin(t1)
-        return t2
-
     session = PopartTestSession()
     session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     session.options.enablePipelining = True
@@ -955,7 +932,13 @@ def test_bad_auto_staging(explicit):
         'Tensor Sin:0/1 is consumed in an earlier pipeline stage than it is produced'
     )
 
+    # TODO: T41431
     # The below lines should be uncommented when auto pipeline stage is improved.
+    # def ref(d0):
+    #     t0 = np.sin(d0)
+    #     t1 = np.sin(t0)
+    #     t2 = np.sin(t1)
+    #     return t2
     # assert len(sessionAnchors) == 1
     # result = [v for k, v in sessionAnchors.items()][0]
 
@@ -978,7 +961,6 @@ def test_pipeline_fwd_only_program_errors(mode):
     """
     builder = popart.Builder()
     shape_d = [10]
-    shape_l = [1]
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     d1 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape_d))
     op0_out = builder.aiOnnx.sin([d0], "s0")

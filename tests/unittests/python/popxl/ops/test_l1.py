@@ -13,6 +13,6 @@ class TestL1:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.l1(a, axis=[0, -1])
+            _ = ops.l1(a, axis=[0, -1])
         assert len(g.tensors) == 2
         assert contains_op_of_type("ReduceL1", _ir.op.ReduceL1Op, g)

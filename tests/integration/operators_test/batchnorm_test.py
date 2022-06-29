@@ -196,7 +196,7 @@ def test_batchnorm_train_0(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
             [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
         builder.addOutputTensor(o_y)
@@ -275,7 +275,7 @@ def test_batchnorm_train_1(op_tester):
             initializers[iMean] = mean
             iVar = builder.addInitializedInputTensor(var)
             initializers[iVar] = var
-            o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+            o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
                 [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
             builder.addOutputTensor(o_y)
@@ -354,11 +354,11 @@ def test_batchnorm_train_2(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
             [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
-        for x in range(15):
-            o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        for _ in range(15):
+            o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
                 [o_y, iScale, iB, o_mean, o_var], 5, epsilon, momentum)
 
         builder.addOutputTensor(o_y)
@@ -385,7 +385,7 @@ def test_batchnorm_train_2(op_tester):
         m.train()
         _y = m(_input)
 
-        for x in range(15):
+        for _ in range(15):
             _y = m(_y)
 
         _mean = m.state_dict()['running_mean']
@@ -1097,7 +1097,7 @@ def test_batchnorm_repeated():
         session.run(stepio)
         first_result = np.copy(anchors[o_y])
 
-        for i in range(0, 10):
+        for _ in range(0, 10):
             stepio = popart.PyStepIO(inputs, anchors)
             session.run(stepio)
 
@@ -1120,7 +1120,7 @@ def test_batchnorm_train_half_fp32var():
     iB = builder.addInitializedInputTensor(b)
     iMean = builder.addInitializedInputTensor(mean)
     iVar = builder.addInitializedInputTensor(var)
-    o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+    o_y, _, _, _, _ = builder.aiOnnx.batchnormalization(
         [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
     builder.addOutputTensor(o_y)
     lossId = builder.aiGraphcore.identityloss([o_y])

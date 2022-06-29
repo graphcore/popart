@@ -4,13 +4,8 @@ import popart
 import test_util as tu
 
 
-# test the case where the entire graph is computable as a const exprssion
+# test the case where the entire graph is computable as a const expression
 def test_all_constexpr():
-    d1 = np.random.rand(2, 2).astype(np.float32)
-    d2 = np.random.rand(2, 2).astype(np.float32)
-    d3 = np.random.rand(2, 2).astype(np.float32)
-    d4 = np.random.rand(2, 2).astype(np.float32)
-
     datas = [np.random.rand(2, 2).astype(np.float32) for _ in range(4)]
 
     builder = popart.Builder()

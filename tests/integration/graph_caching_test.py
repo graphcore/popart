@@ -190,7 +190,6 @@ def test_matmul_infer_cached_by_default():
 
     proto = builder.getModelProto()
 
-    anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
@@ -458,7 +457,6 @@ def test_outlining_bca1():
 
     proto = builder.getModelProto()
 
-    anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
@@ -541,7 +539,6 @@ def test_outlining_bca2():
 
     proto = builder.getModelProto()
 
-    anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
@@ -618,7 +615,6 @@ def test_outlining_bca3():
 
     proto = builder.getModelProto()
 
-    anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
             o: popart.AnchorReturnType("All"),
@@ -712,7 +708,6 @@ def test_outlining_bca4():
 
     proto = builder.getModelProto()
 
-    anchor_names = [o]
     dataFlow = popart.DataFlow(
         1, {
             o: popart.AnchorReturnType("All"),

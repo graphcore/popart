@@ -10,7 +10,7 @@ def test_virtual_graph_with():
     with g:
         x = popxl.variable(1)
         with popxl.io_tiles():
-            y = x + 1
+            _ = x + 1
 
     ops = g._pb_graph.getOps()
     assert len(ops) == 1

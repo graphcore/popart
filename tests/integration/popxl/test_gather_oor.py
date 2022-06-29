@@ -46,7 +46,7 @@ def test_gather_out_of_range(tiedgather, uint):
 
     with session:
         outputs = session.run()
-    y_zero_false_np = outputs[d2hs[0]]
+    _ = outputs[d2hs[0]]  # y_zero_false_np
     y_zero_true_np = outputs[d2hs[1]]
 
     ## Test

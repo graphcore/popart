@@ -17,7 +17,7 @@ class TestGroupNorm:
             x = popxl.variable(np.ones((2, 4)))
             weight = popxl.variable(np.ones(4))
             bias = popxl.variable(np.zeros(4))
-            y = ops.group_norm(x, weight, bias, groups)
+            _ = ops.group_norm(x, weight, bias, groups)
         assert len(g.tensors) == 6
         assert len(g.variables) == 3
         assert contains_op_of_type("GroupNormalization", _ir.op.GroupNormOp, g)
@@ -30,7 +30,7 @@ class TestGroupNorm:
             x = popxl.variable(np.ones((2, 4)))
             weight = popxl.variable(np.ones(4))
             bias = popxl.variable(np.zeros(4))
-            y = ops.layer_norm(x, weight, bias)
+            _ = ops.layer_norm(x, weight, bias)
         assert len(g.tensors) == 6
         assert len(g.variables) == 3
         assert contains_op_of_type("GroupNormalization", _ir.op.GroupNormOp, g)

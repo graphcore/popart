@@ -335,7 +335,7 @@ def run_test(batches_per_step: int, replication_factor: int, batch_size: int,
 
         # check_ops(sesstion_true, True, 2)
 
-        session_false, anchors_false, label_shape_false = get_model(
+        session_false, anchors_false, _ = get_model(
             input_shape=input_shape,
             weight_array=weight_array,
             batches_per_step=batches_per_step,

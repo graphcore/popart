@@ -12,7 +12,7 @@ class TestLambSquare:
 
         with g:
             a = popxl.variable(1)
-            b = ops.lamb_square(a)
+            _ = ops.lamb_square(a)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("LambSquare", _ir.op.LambSquareOp, g)

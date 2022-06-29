@@ -13,12 +13,6 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
     anchorIds = []
     anchorIds.append(popart.reservedGradientPrefix() + ip)
 
-    def add_layer(in_id):
-        w = builder.addInitializedInputTensor(
-            np.ones([dsize, dsize], np.float32))
-        matmul_id = builder.aiOnnx.matmul([in_id, w])
-        return matmul_id
-
     x = ip
     for i in range(3):
         w = builder.addInitializedInputTensor(

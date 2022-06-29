@@ -46,6 +46,6 @@ def test_sparse_data():
     dataFlow = popart.DataFlow(1, anchors)
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            sess = popart.InferenceSession(proto, dataFlow, device)
+            _ = popart.InferenceSession(proto, dataFlow, device)
     assert (e_info.value.args[0] ==
             "The Constant op attribute 'sparse_value' is not supported.")

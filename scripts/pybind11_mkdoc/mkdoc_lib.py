@@ -530,7 +530,7 @@ def extract_all(args):
         thr.start()
 
     print('Waiting for jobs to finish ..', file=sys.stderr)
-    for i in range(job_count):
+    for _ in range(job_count):
         job_semaphore.acquire()
 
     return output

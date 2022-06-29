@@ -14,7 +14,7 @@ class TestAdd:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = ops.add(a, b)
+            _ = ops.add(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Add", _ir.op.AddOp, g)
@@ -26,7 +26,7 @@ class TestAdd:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = a + b
+            _ = a + b
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Add", _ir.op.AddOp, g)
@@ -38,7 +38,7 @@ class TestAdd:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = ops.add_(a, b)
+            _ = ops.add_(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("AddLhsInplace", _ir.op.AddLhsInplaceOp, g)
@@ -61,7 +61,7 @@ class TestAdd:
 
         with g:
             a = popxl.variable(1)
-            c = a + 2
+            _ = a + 2
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1
@@ -73,7 +73,7 @@ class TestAdd:
 
         with g:
             a = popxl.variable(1)
-            c = 2 + a
+            _ = 2 + a
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1
@@ -89,7 +89,7 @@ class TestAdd:
                 b = popxl.variable(1) + 0
 
             with pytest.raises(ValueError):
-                c = a + b
+                _ = a + b
 
     def test_different_tile_sets(self):
         ir = popxl.Ir()
@@ -101,4 +101,4 @@ class TestAdd:
                 b = popxl.variable(1) + 0
 
             with pytest.raises(ValueError):
-                c = a + b
+                _ = a + b

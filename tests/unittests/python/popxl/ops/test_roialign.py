@@ -26,6 +26,6 @@ class TestRoiAlign:
             b = popxl.variable(np.random.randn(num_roi, 4))
             c = popxl.variable(
                 np.random.randint(0, batch_size, (num_roi), dtype=np.int32))
-            d = ops.roi_align(a, b, c, output_size, spatial_scale,
+            _ = ops.roi_align(a, b, c, output_size, spatial_scale,
                               sampling_ratio)
         assert contains_op_of_type("RoiAlign", _ir.op.RoiAlignOp, g)

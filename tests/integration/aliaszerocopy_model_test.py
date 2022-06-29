@@ -94,7 +94,7 @@ def test_streamingmemory_momentum(tmpdir):
 
         request_ipus = 2
 
-        with tu.create_test_device(2,
+        with tu.create_test_device(request_ipus,
                                    pattern=popart.SyncPattern.Full) as device:
             dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
 
@@ -121,10 +121,6 @@ def test_streamingmemory_momentum(tmpdir):
             post_proto = onnx.load(file_path)
 
         report = session.getReport()
-        max_tile_memory = max([
-            tile.memory.total.excludingGaps
-            for tile in report.compilation.tiles
-        ])
         total_memory = np.sum([
             tile.memory.total.excludingGaps
             for tile in report.compilation.tiles

@@ -44,7 +44,7 @@ def run_model(tmpdir,
     for i in range(num_layers):
         vgid = 0
         with builder.executionPhase(i * stride), builder.virtualGraph(vgid):
-            for j in range(3):
+            for _ in range(3):
                 out = add_layer(i, out)
 
         if i == num_layers - 1:

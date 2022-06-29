@@ -15,10 +15,8 @@ import pytest
 def test_weight_update(tmpdir, subgraphCopyingStrategy):
     def run(model_file_name, enableOutlining):
         dsize = 10
-        ratio = 0.5
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             w = builder.addInitializedInputTensor(
@@ -92,11 +90,9 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
 def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
     def run(enableOutlining):
         dsize = 10
-        ratio = 0.5
         batches_per_step = 2
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             w = builder.addInitializedInputTensor(

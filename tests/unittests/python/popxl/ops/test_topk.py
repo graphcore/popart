@@ -8,7 +8,6 @@ from utils import contains_op_of_type
 
 class TestTopK:
     def test_fn(self):
-        dim = 1
         ir = popxl.Ir()
         g = ir.main_graph
         with ir.main_graph:
@@ -17,7 +16,7 @@ class TestTopK:
             axis = 1
             largest = True
             sorted_ = True
-            res = ops.topk(t, k, axis, largest, sorted_)
+            _ = ops.topk(t, k, axis, largest, sorted_)
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("TopK", _ir.op.TopKOp, g)

@@ -14,7 +14,7 @@ class TestNegate:
 
         with g:
             a = popxl.variable(1)
-            c = ops.negate(a)
+            _ = ops.negate(a)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Neg", _ir.op.NegateOp, g)
@@ -25,7 +25,7 @@ class TestNegate:
 
         with g:
             a = popxl.variable(1)
-            c = -a
+            _ = -a
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Neg", _ir.op.NegateOp, g)

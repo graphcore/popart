@@ -21,7 +21,7 @@ def test_session_runtime_fns_guard_attached_behaviour():
     with ir.main_graph:
         w = popxl.variable(w_data)
         y = popxl.constant(2)
-        v = ops.var_updates.accumulate_(w, y)
+        _ = ops.var_updates.accumulate_(w, y)
 
     session: popxl.Session = mk_session_with_test_device(ir)
 
@@ -66,11 +66,11 @@ def test_reentry():
     with ir.main_graph:
         w = popxl.variable(1)
         y = popxl.constant(2)
-        v = ops.var_updates.accumulate_(w, y)
+        _ = ops.var_updates.accumulate_(w, y)
 
     session: popxl.Session = mk_session_with_test_device(ir)
 
-    for i in range(2):
+    for _ in range(2):
         # attach, loadEngineAndConnectStreams, weightsFromHost
         with session:
             pass
@@ -84,7 +84,7 @@ def test_session_ctxtmgr_attach_detach():
     with ir.main_graph:
         w = popxl.variable(1)
         y = popxl.constant(2)
-        v = ops.var_updates.accumulate_(w, y)
+        _ = ops.var_updates.accumulate_(w, y)
 
     session: popxl.Session = mk_session_with_test_device(ir)
 

@@ -8,7 +8,7 @@ def test_setLevel(capfd):
 
         builder = popart.Builder()
         i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 3]))
-        o = builder.aiOnnx.abs([i1])
+        _ = builder.aiOnnx.abs([i1])
 
         _, err = capfd.readouterr()
         return err

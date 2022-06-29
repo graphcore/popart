@@ -14,7 +14,7 @@ class TestAccumulate:
         with g:
             a = popxl.variable(1)
             b = popxl.constant(2)
-            c = ops.var_updates.copy_var_update_(a, b)
+            _ = ops.var_updates.copy_var_update_(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("CopyVarUpdate", _ir.op.CopyVarUpdateOp, g)

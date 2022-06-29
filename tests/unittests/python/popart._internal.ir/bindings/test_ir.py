@@ -100,8 +100,8 @@ def test_ir_graph_management3():
 def test_ir_graph_management4():
     """ Test we can get the main graph. """
     ir = _ir.Ir()
-    a = _ir.GraphId("A")
-    b = _ir.GraphId("B")
+    _ = _ir.GraphId("A")
+    _ = _ir.GraphId("B")
 
     mainGraph = ir.getMainGraph()
     assert ir.hasGraph(mainGraph.id)

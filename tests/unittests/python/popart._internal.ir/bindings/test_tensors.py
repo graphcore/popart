@@ -8,7 +8,7 @@ def test_tensors_construction():
     ir = Ir()
     gId = GraphId("g")
     graph = Graph(ir, gId)
-    ts = Tensors(graph)
+    _ = Tensors(graph)
 
 
 def test_get():

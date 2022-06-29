@@ -65,7 +65,7 @@ def test_basic(tmpdir):
 
         return anchors[o]
 
-    reference = run_conv_test(enableOutlining=False)
+    _ = run_conv_test(enableOutlining=False)
 
     popart.closePoplarDebugInfo()
     with open(filename) as json_file:

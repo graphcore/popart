@@ -82,7 +82,6 @@ def test_l1_training(op_tester):
 
             def init_builder(builder):
                 result = []
-                axes_reduce = []
                 tensor = builder.addInputTensor(data)
                 l1 = builder.aiGraphcore.l1loss([tensor],
                                                 scale,
@@ -153,6 +152,5 @@ def test_l1_reduction_equiv():
         er_anchors = getAnchors(True)
 
         # check they are equivalent
-        for (id0, a0), (id1, a1) in zip(lr_anchors.items(),
-                                        er_anchors.items()):
+        for (_, a0), (_, a1) in zip(lr_anchors.items(), er_anchors.items()):
             assert np.allclose(a0, a1)

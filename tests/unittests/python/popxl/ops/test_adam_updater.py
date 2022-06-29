@@ -15,7 +15,7 @@ class TestAdamUpdater:
         with g:
             m = popxl.variable(1, name='m')
             v = popxl.variable(2, name='v')
-            updater = ops.var_updates.adam_updater(m, v)
+            _ = ops.var_updates.adam_updater(m, v)
 
         assert len(g.tensors) == 3
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -32,11 +32,11 @@ class TestAdamUpdater:
             t = popxl.variable(2, name='t')
             b1 = 0.9
             b2 = 0.99
-            updater = ops.var_updates.adam_updater(m,
-                                                   v,
-                                                   time_step=t,
-                                                   beta1=b1,
-                                                   beta2=b2)
+            _ = ops.var_updates.adam_updater(m,
+                                             v,
+                                             time_step=t,
+                                             beta1=b1,
+                                             beta2=b2)
 
         assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -51,10 +51,7 @@ class TestAdamUpdater:
             t = popxl.variable(2, name='t')
             b1 = 0.9
             with pytest.raises(ValueError) as excinfo:
-                updater = ops.var_updates.adam_updater(m,
-                                                       v,
-                                                       time_step=t,
-                                                       beta1=b1)
+                _ = ops.var_updates.adam_updater(m, v, time_step=t, beta1=b1)
             message = str(excinfo.value)
         assert "Bias correction requires both beta1 and beta2 not None." in message
 
@@ -68,10 +65,7 @@ class TestAdamUpdater:
             v = popxl.variable(2, name='v')
             wd = popxl.constant(0.2, name='wd')
 
-            updater = ops.var_updates.adam_updater(m,
-                                                   v,
-                                                   weight=w,
-                                                   weight_decay=wd)
+            _ = ops.var_updates.adam_updater(m, v, weight=w, weight_decay=wd)
         assert len(g.tensors) == 5
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
@@ -85,10 +79,10 @@ class TestAdamUpdater:
             t = popxl.variable(1, name='t')
             wd = popxl.constant(0.2, name='wd')
             with pytest.raises(ValueError) as excinfo:
-                updater = ops.var_updates.adam_updater(m,
-                                                       v,
-                                                       time_step=t,
-                                                       weight_decay=wd)
+                _ = ops.var_updates.adam_updater(m,
+                                                 v,
+                                                 time_step=t,
+                                                 weight_decay=wd)
             message = str(excinfo.value)
         assert "Weight decay requires weight to be not None." in message
 
@@ -104,7 +98,7 @@ class TestAdamUpdater:
             wd = popxl.constant(0.2, name='wd')
             b1 = 0.9
             b2 = 0.99
-            updater = ops.var_updates.adam_updater(m, v, w, t, wd, b1, b2)
+            _ = ops.var_updates.adam_updater(m, v, w, t, wd, b1, b2)
 
         assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -116,7 +110,7 @@ class TestAdamUpdater:
         with g:
             m = popxl.variable(1, name='m')
             v = popxl.variable(2, name='v')
-            updater = ops.var_updates.lamb_updater(m, v)
+            _ = ops.var_updates.lamb_updater(m, v)
 
         assert len(g.tensors) == 3
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -133,11 +127,11 @@ class TestAdamUpdater:
             t = popxl.variable(2, name='t')
             b1 = 0.9
             b2 = 0.99
-            updater = ops.var_updates.lamb_updater(m,
-                                                   v,
-                                                   time_step=t,
-                                                   beta1=b1,
-                                                   beta2=b2)
+            _ = ops.var_updates.lamb_updater(m,
+                                             v,
+                                             time_step=t,
+                                             beta1=b1,
+                                             beta2=b2)
 
         assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -152,10 +146,7 @@ class TestAdamUpdater:
             t = popxl.variable(2, name='t')
             b1 = 0.9
             with pytest.raises(ValueError) as excinfo:
-                updater = ops.var_updates.lamb_updater(m,
-                                                       v,
-                                                       time_step=t,
-                                                       beta1=b1)
+                _ = ops.var_updates.lamb_updater(m, v, time_step=t, beta1=b1)
             message = str(excinfo.value)
         assert "Bias correction requires both beta1 and beta2 not None." in message
 
@@ -169,10 +160,7 @@ class TestAdamUpdater:
             v = popxl.variable(2, name='v')
             wd = popxl.constant(0.2, name='wd')
 
-            updater = ops.var_updates.lamb_updater(m,
-                                                   v,
-                                                   weight=w,
-                                                   weight_decay=wd)
+            _ = ops.var_updates.lamb_updater(m, v, weight=w, weight_decay=wd)
         assert len(g.tensors) == 5
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
@@ -186,10 +174,10 @@ class TestAdamUpdater:
             t = popxl.variable(1, name='t')
             wd = popxl.constant(0.2, name='wd')
             with pytest.raises(ValueError) as excinfo:
-                updater = ops.var_updates.lamb_updater(m,
-                                                       v,
-                                                       time_step=t,
-                                                       weight_decay=wd)
+                _ = ops.var_updates.lamb_updater(m,
+                                                 v,
+                                                 time_step=t,
+                                                 weight_decay=wd)
             message = str(excinfo.value)
         assert "Weight decay requires weight to be not None." in message
 
@@ -205,7 +193,7 @@ class TestAdamUpdater:
             wd = popxl.constant(0.2, name='wd')
             b1 = 0.9
             b2 = 0.99
-            updater = ops.var_updates.lamb_updater(m, v, w, t, wd, b1, b2)
+            _ = ops.var_updates.lamb_updater(m, v, w, t, wd, b1, b2)
 
         assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -219,7 +207,7 @@ class TestAdamUpdater:
             v = popxl.variable(2, name='v')
             t = popxl.variable(1, name='t')
 
-            updater = ops.var_updates.adamax_updater(m, v, time_step=t)
+            _ = ops.var_updates.adamax_updater(m, v, time_step=t)
         assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
 
@@ -231,7 +219,7 @@ class TestAdamUpdater:
             m = popxl.variable(1, name='m')
             v = popxl.variable(2, name='v')
             with pytest.raises(ValueError) as excinfo:
-                updater = ops.var_updates.adamax_updater(m, v)
+                _ = ops.var_updates.adamax_updater(m, v)
             message = str(excinfo.value)
             assert "AdaMax requires time_step not None." in message
 
@@ -246,10 +234,10 @@ class TestAdamUpdater:
             t = popxl.variable(1, name='t')
             wd = popxl.constant(0.2, name='wd')
 
-            updater = ops.var_updates.adamax_updater(m,
-                                                     v,
-                                                     weight=w,
-                                                     time_step=t,
-                                                     weight_decay=wd)
+            _ = ops.var_updates.adamax_updater(m,
+                                               v,
+                                               weight=w,
+                                               time_step=t,
+                                               weight_decay=wd)
         assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)

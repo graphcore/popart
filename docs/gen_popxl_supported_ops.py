@@ -21,7 +21,6 @@ def get_docstring_summary(obj):
     else:
         lines = obj.__doc__.splitlines()
         seen_text = False
-        seen_blank_line = False
         summary = ""
         for line in lines:
             stripped_line = line.strip()

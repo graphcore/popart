@@ -82,10 +82,10 @@ def test_no_min_value_at_model_build():
         userOpts = popart.SessionOptions()
 
         with pytest.raises(Exception) as exceptionInfo:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              deviceInfo=device,
-                                              userOptions=userOpts)
+            _ = popart.InferenceSession(fnModel=proto,
+                                        dataFlow=dataFlow,
+                                        deviceInfo=device,
+                                        userOptions=userOpts)
 
         assert str(exceptionInfo.value) == \
             "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'min' (tmin) has no data."
@@ -113,10 +113,10 @@ def test_no_max_value_at_model_build():
         userOpts = popart.SessionOptions()
 
         with pytest.raises(Exception) as exceptionInfo:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              deviceInfo=device,
-                                              userOptions=userOpts)
+            _ = popart.InferenceSession(fnModel=proto,
+                                        dataFlow=dataFlow,
+                                        deviceInfo=device,
+                                        userOptions=userOpts)
 
         assert str(exceptionInfo.value) == \
             "Op (ai.onnx.Clip:11), inputs=[d1] currently only supports constant min/max parameters. Input 'max' (tmax) has no data."

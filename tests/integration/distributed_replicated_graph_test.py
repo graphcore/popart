@@ -77,7 +77,7 @@ def is_gcd_size(size):
     reason="mpi4py needs to be installed. Test can only be run on a IPU pod")
 def test_distributed_replicated_allreduce():
     mpi_params = get_mpi_params()
-    mpi_size, mpi_rank = mpi_params
+    _, mpi_rank = mpi_params
 
     input_data = np.array(range(10), dtype=np.float32)
 
@@ -159,7 +159,7 @@ def test_distributed_replicated_weight_update():
         return result
 
     mpi_params = get_mpi_params()
-    mpi_size, mpi_rank = mpi_params
+    _, mpi_rank = mpi_params
     builder = popart.Builder()
     A = builder.addInitializedInputTensor(A_init, "A")
     B = builder.addInitializedInputTensor(B_init, "B")
@@ -267,7 +267,7 @@ def test_distributed_hierarchical_replicated_weight_update():
         return result
 
     mpi_params = get_mpi_params()
-    mpi_size, mpi_rank = mpi_params
+    _, mpi_rank = mpi_params
     builder = popart.Builder()
     A = builder.addInitializedInputTensor(A_init, "A")
     B = builder.addInitializedInputTensor(B_init, "B")
@@ -465,7 +465,7 @@ def replicated_tensor_sharding_core():
     tmp_path.mkdir(parents=True, exist_ok=True)
     file_path = str(tmp_path / args.filename)
     session.modelToHost(file_path)
-    post_proto = onnx.load(file_path)
+    _ = onnx.load(file_path)
 
 
 rts_configs = [
@@ -609,7 +609,7 @@ def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
         command.append("--optim")
         command.append(optim)
 
-        out = subprocess.run(command)
+        _ = subprocess.run(command)
 
     print(f"Testing {len(configs)} configurations")
 

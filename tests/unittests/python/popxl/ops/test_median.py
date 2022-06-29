@@ -13,6 +13,6 @@ class TestMeadian:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.median(a, axis=[0, -1])
+            _ = ops.median(a, axis=[0, -1])
         assert len(g.tensors) == 3
         assert contains_op_of_type("ReduceMedian", _ir.op.ReduceMedianOp, g)

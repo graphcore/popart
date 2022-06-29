@@ -122,8 +122,6 @@ class _Builder:
         return tensor_id
 
     def addInitializedInputTensor(self, data, debug_prefix=None):
-        shape = popart.TensorInfo(data)
-
         if debug_prefix:
             tensor_id = self._builder.addInitializedInputTensor(
                 data, debug_prefix)

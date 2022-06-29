@@ -17,7 +17,6 @@ def test_explicit_recomputation(tmpdir):
         dsize = 10
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id):
             np.random.seed(1)
@@ -100,7 +99,6 @@ def test_explicit_recomputation_pipelining():
     dsize = 10
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
-    d__ip = popart.reservedGradientPrefix() + ip
 
     def add_layer(in_id):
         np.random.seed(1)

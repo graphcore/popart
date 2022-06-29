@@ -257,8 +257,6 @@ def test_final_stage_recompute_0():
     input_shape = [batch_size, hidden_size]
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
         np.float32)
-    input_data = np.random.normal(
-        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
 
     builder = popart.Builder()
 

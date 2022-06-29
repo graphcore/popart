@@ -53,7 +53,7 @@ def test_aquire_device_by_id_1():
     invalidId = 999
     with pytest.raises(
             popart.poplar_exception,
-            match="No such device set id: '" + str(invalidId) + "'") as e:
+            match="No such device set id: '" + str(invalidId) + "'"):
         deviceManager.acquireDeviceById(invalidId)
 
 
@@ -65,9 +65,9 @@ def test_aquire_device_by_id_2():
     """
     deviceManager = popart.DeviceManager()
     deviceId = 0
-    with deviceManager.acquireDeviceById(deviceId) as device:
+    with deviceManager.acquireDeviceById(deviceId):
         with pytest.raises(popart.popart_exception,
-                           match="Failed to acquire device with id '0'") as e:
+                           match="Failed to acquire device with id '0'"):
             deviceManager.acquireDeviceById(deviceId)
 
 
@@ -104,7 +104,7 @@ def test_default_connection_type_1():
             popart.popart_exception,
             match=
             "Failed to acquire device with 256 IPUs. Ensure that there are sufficient IPUs available"
-    ) as e:
+    ):
         deviceManager.acquireAvailableDevice(ipus)
 
 
@@ -116,12 +116,12 @@ def test_default_connection_type_2():
     """
     deviceManager = popart.DeviceManager()
     availableIpus = len(deviceManager.enumerateDevices())
-    with deviceManager.acquireAvailableDevice(availableIpus) as d0:
+    with deviceManager.acquireAvailableDevice(availableIpus):
         with pytest.raises(
                 popart.popart_exception,
                 match=
                 f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available"
-        ) as e:
+        ):
             deviceManager.acquireAvailableDevice(1)
 
 
@@ -212,7 +212,7 @@ def test_prepareDevice_inference(loadEngine, capfd):
 
         popart.getLogger().setLevel('INFO')
         with pytest.raises(popart.popart_exception,
-                           match="no compiled engine") as e:
+                           match="no compiled engine"):
             session.loadEngineAndConnectStreams()
 
         # Compile graph

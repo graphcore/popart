@@ -77,7 +77,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         i5 = builder.addInputTensor(seq_lens)
         i6 = builder.addInputTensor(initial_h)
         i7 = builder.addInputTensor(initial_c)
-        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
+        Y, Y_h, _ = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
         Ys = builder.aiOnnx.squeeze([Y], [])
         Y2 = builder.aiOnnx.add([Ys, Y_h])
         builder.addOutputTensor(Y2)
@@ -564,7 +564,7 @@ def test_lstm_export_with_constantofshape(tmpdir):
                                       batch_first=True)
 
         def forward(self, x):
-            x, (h, c) = self.lstm(x)
+            x, (_, _) = self.lstm(x)
             return x
 
     net = RNNNet()
@@ -656,9 +656,9 @@ def test_lstm_extra_inputs(enable_pattern):
         i6 = builder.addInitializedInputTensor(d5)
         i7 = builder.addInitializedInputTensor(d6)
         # argument i5 is ignored by LSTM (but could be utilized to avoid unnecessary comps on padded inputs)
-        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7],
-                                          3,
-                                          clip=None)
+        Y, _, _ = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7],
+                                      3,
+                                      clip=None)
 
         l1_loss = builder.aiGraphcore.l1loss(
             [Y], 1.0, reduction=popart.ReductionType.Mean)
@@ -716,7 +716,7 @@ def test_lstm_extra_inputs(enable_pattern):
             session.prepareDevice()
             print("{0} graph preparation complete.".format(
                 session_type.capitalize(), ))
-        except popart.OutOfMemoryException as e:
+        except popart.OutOfMemoryException:
             print("Caught OutOfMemoryException during prepareDevice")
             raise
 
@@ -751,13 +751,13 @@ def test_lstm_extra_inputs(enable_pattern):
         # create training session
         print("Creating the training session")
 
-        training_session, anchors = create_session_anchors(proto,
-                                                           l1_loss,
-                                                           device,
-                                                           dataflow,
-                                                           session_options,
-                                                           training=True,
-                                                           optimizer=optimizer)
+        training_session, _ = create_session_anchors(proto,
+                                                     l1_loss,
+                                                     device,
+                                                     dataflow,
+                                                     session_options,
+                                                     training=True,
+                                                     optimizer=optimizer)
         training_session.weightsFromHost()
 
 
@@ -766,11 +766,9 @@ def test_poplar_tile_ex(op_tester):
     batch_size = 1
     hidden_size = 32
     input_size = hidden_size
-    dType_str = "FLOAT"
     dType = np.float32
 
     input_shape = [timesteps, batch_size, input_size]
-    d1 = popart.TensorInfo(dType_str, input_shape)
     d2 = np.random.normal(0, 1, [1, 4 * hidden_size, input_size]).astype(dType)
     d3 = np.random.normal(0, 1,
                           [1, 4 * hidden_size, hidden_size]).astype(dType)
@@ -807,7 +805,6 @@ def test_missing_seq_len(op_tester):
     input_size = 3
     hidden_size = 7
 
-    dType_str = "FLOAT16"
     dType = np.float16
     input_ = np.random.rand(batch_size, input_size, seq_length).astype(dType)
     input_weights = np.random.rand(1, 4 * hidden_size,
@@ -823,10 +820,10 @@ def test_missing_seq_len(op_tester):
         i1 = builder.aiOnnx.transpose([i1], perm=[2, 0, 1])
         i2 = builder.addInitializedInputTensor(input_weights)
         i3 = builder.addInitializedInputTensor(output_weights)
-        i4 = builder.addInitializedInputTensor(biases)
-        i5 = builder.addInputTensor(seq_lens)
+        _ = builder.addInitializedInputTensor(biases)
+        _ = builder.addInputTensor(seq_lens)
 
-        out, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
+        out, _, _ = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
         builder.addOutputTensor(out)
 
         return [out]

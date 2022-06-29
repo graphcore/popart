@@ -106,7 +106,7 @@ def test_engine_options_passed_to_engine():
 # This is to prevent confusion is a user has a typo in an flag.
 def test_set_bad_options():
     opts = popart.SessionOptions()
-    with pytest.raises(AttributeError) as e_info:
+    with pytest.raises(AttributeError):
         opts.foo = 'bar'
 
 

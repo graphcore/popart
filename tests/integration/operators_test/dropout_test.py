@@ -104,9 +104,9 @@ def test_dropout_training3():
     dsize = 10000  # large input size to make statistical assumptions accurate
     ratio = 0.2
     with tu.create_test_device() as device:
-        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                               ratio=ratio,
-                                                               device=device)
+        session, ip, out, _, anchors = get_dropout_session(dsize=dsize,
+                                                           ratio=ratio,
+                                                           device=device)
 
         # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
         ip_data = np.random.random_sample(dsize).astype(np.float32) + 1
@@ -177,8 +177,8 @@ def test_dropout_training4():
 def test_dropout_training_randomness():
     dsize = 100
     with tu.create_test_device() as device:
-        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                               device=device)
+        session, ip, out, _, anchors = get_dropout_session(dsize=dsize,
+                                                           device=device)
 
         ip_data = np.random.random_sample(dsize).astype(np.float32)
         stepio = popart.PyStepIO({ip: ip_data}, anchors)
@@ -201,8 +201,8 @@ def test_dropout_training_randomness():
 def test_dropout_training_set_seed():
     dsize = 100
     with tu.create_test_device() as device:
-        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                               device=device)
+        session, ip, out, _, anchors = get_dropout_session(dsize=dsize,
+                                                           device=device)
 
         ip_data = np.random.random_sample(dsize).astype(np.float32)
         stepio = popart.PyStepIO({ip: ip_data}, anchors)
@@ -226,9 +226,9 @@ def test_dropout_training6():
     dsize = 100
     bps = 2
     with tu.create_test_device() as device:
-        session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
-                                                               bps=bps,
-                                                               device=device)
+        session, ip, out, _, anchors = get_dropout_session(dsize=dsize,
+                                                           bps=bps,
+                                                           device=device)
 
         # Same data for each batch
         ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
@@ -250,7 +250,6 @@ def test_dropout_training7():
     ratio = 0.2
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
-    d__ip = popart.reservedGradientPrefix() + ip
     [d1] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     [d2] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
     out = builder.aiOnnx.add([d1, d2])
@@ -306,7 +305,7 @@ def test_dropout_training_replicated():
     replication_factor = 4
     dsize = 10
     with tu.create_test_device(replication_factor) as device:
-        session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+        session, ip, out, _, anchors = get_replicated_dropout_session(
             dsize=dsize,
             num_layers=1,
             ratio=0.3,
@@ -367,7 +366,7 @@ def test_replicated_with_multiple_batches_per_step():
     dsize = 100
     batches_per_step = 2
     with tu.create_test_device(replication_factor) as device:
-        session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+        session, ip, out, _, anchors = get_replicated_dropout_session(
             dsize=dsize,
             num_layers=1,
             ratio=0.3,
@@ -380,7 +379,6 @@ def test_replicated_with_multiple_batches_per_step():
         stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
         session.run(stepio)
-        ref_out = np.copy(anchors[out])
 
         # Another call should produce different results
         session.run(stepio)
@@ -412,7 +410,7 @@ def get_replicated_dropout_session(replication_factor=4,
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
     out = ip
-    for layer in range(num_layers):
+    for _ in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     loss = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(loss)
@@ -449,7 +447,7 @@ def get_dropout_session(dsize=100,
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize]))
     d__ip = popart.reservedGradientPrefix() + ip
     out = ip
-    for numl in range(num_layers):
+    for _ in range(num_layers):
         [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
     loss = builder.aiGraphcore.identityloss([out])
     builder.addOutputTensor(loss)

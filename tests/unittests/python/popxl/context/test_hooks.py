@@ -25,7 +25,7 @@ def test_hook():
     # Creating this graph will create
     # an AddOp on the new graph.
     # Ensure this does not trigger the hook.
-    sg = ir.create_graph(lambda y: y + 1, x)
+    _ = ir.create_graph(lambda y: y + 1, x)
     assert not called
 
     g.remove_op_created_hook(handle)

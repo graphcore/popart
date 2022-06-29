@@ -27,7 +27,6 @@ def unpack(data, offsets, lengths, sequenceLength):
 
 
 def pack(data, result, offsets, lengths):
-    sequences = []
     for i in range(data.shape[0]):
         offset = offsets[i]
         length = lengths[i]
@@ -94,9 +93,6 @@ def test_packed_data_block_reference(callbackBatchSize):
     data, sequenceOffsets = gen_packed_sequences(sequenceLengths, [5])
 
     maxSequenceLength = 10
-
-    unpacked_data = unpack(data, sequenceOffsets, sequenceLengths,
-                           maxSequenceLength)
 
     def unpacked_ref(data):
         dt = np.transpose(data, [0, 2, 1])

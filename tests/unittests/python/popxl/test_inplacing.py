@@ -53,7 +53,7 @@ def test_inplacing_ambiguity_0():
         m: Tensor = ops.relu_(w0)
         w0 += w1
 
-    m_d2h = host_store_and_return_d2h_stream(main, m)
+    _ = host_store_and_return_d2h_stream(main, m)
 
     with pytest.raises(popart.popart_exception) as e_info:
         _ = setup_ir(ir)
@@ -86,7 +86,7 @@ def test_inplacing_ambiguity_subgraph():
         inplace_graph = ir.create_graph(inplace_, w0, w1)
         w0, m = ops.call(inplace_graph, w0, w1)
 
-        m_d2h = host_store_and_return_d2h_stream(main, m)
+        _ = host_store_and_return_d2h_stream(main, m)
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = setup_ir(ir)

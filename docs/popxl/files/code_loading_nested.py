@@ -57,7 +57,7 @@ def example():
 
     # run the model
     with popxl.Session(ir, "ipu_model") as session:
-        outputs = session.run()
+        _ = session.run()
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ def get_simple_model_cycle_count(bps):
     d_shape = [200, 200]
     d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", d_shape))
     out = d0
-    for layer in range(100):
+    for _ in range(100):
         out = builder.aiOnnx.sin([out])
 
     opts = popart.SessionOptions()
@@ -89,7 +89,7 @@ def test_get_cycle_count_requires_run():
         session.prepareDevice()
 
         with pytest.raises(popart.popart_exception) as e_info:
-            cycles = session.getCycleCount()
+            _ = session.getCycleCount()
         assert e_info.value.args[0].startswith(
             "Must call run before getCycleCount")
 
@@ -111,7 +111,7 @@ def test_get_cycle_count_requires_instrumentation_option():
         session.run(stepio)
 
         with pytest.raises(popart.popart_exception) as e_info:
-            cycles = session.getCycleCount()
+            _ = session.getCycleCount()
         assert e_info.value.args[0].startswith(
             "SessionOption 'instrumentWithHardwareCycleCounter' must be")
 
@@ -139,14 +139,14 @@ def test_get_cycle_count_bad_id():
     with tu.create_test_device() as d:
         s = getInstrumentedSession({popart.Instrumentation.Outer}, d)
         with pytest.raises(popart.popart_exception) as e_info:
-            cycles = s.getCycleCount("inner_ipu_0")
+            _ = s.getCycleCount("inner_ipu_0")
         assert e_info.value.args[0].endswith(
             "Make sure you have set SessionOption::hardwareInstrumentations correctly."
         )
 
     with tu.create_test_device() as d:
         s = getInstrumentedSession({popart.Instrumentation.Inner}, d)
-        cycles = s.getCycleCount("inner_ipu_0")
+        _ = s.getCycleCount("inner_ipu_0")
 
 
 @tu.requires_ipu

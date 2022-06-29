@@ -15,7 +15,7 @@ class TestMul:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = ops.mul(a, b)
+            _ = ops.mul(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Mul", _ir.op.MulOp, g)
@@ -27,7 +27,7 @@ class TestMul:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = a * b
+            _ = a * b
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Mul", _ir.op.MulOp, g)
@@ -38,7 +38,7 @@ class TestMul:
 
         with g:
             a = popxl.variable(1)
-            c = a * 2
+            _ = a * 2
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1
@@ -50,7 +50,7 @@ class TestMul:
 
         with g:
             a = popxl.variable(1)
-            c = 2 * a
+            _ = 2 * a
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1

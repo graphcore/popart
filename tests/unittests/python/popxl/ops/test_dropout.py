@@ -15,7 +15,7 @@ class TestDropout:
         with g:
             x = popxl.variable(0)
             seed = popxl.variable(np.array([32, 32]), dtype=dtypes.uint32)
-            c = ops.dropout(x, seed, 0.3)
+            _ = ops.dropout(x, seed, 0.3)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Dropout", _ir.op.DropoutOp, g)

@@ -77,8 +77,7 @@ def test_session_multi_iteration():
                               linear.b: b
                           })
 
-    session, inputs, outputs = run_session(ir, [linear.h2d.spec], [linear.h2d],
-                                           bps)
+    _, inputs, outputs = run_session(ir, [linear.h2d.spec], [linear.h2d], bps)
 
     input_: np.ndarray = inputs[linear.h2d]
     output: np.ndarray = outputs[linear.d2h]
@@ -106,7 +105,7 @@ def test_session_input_types(data, shape, dtype):
         ops.host_store(y_d2h, y)
 
     with popxl.Session(ir, device_desc="ipu_model") as session:
-        outputs = session.run(inputs={x_h2d: data})
+        _ = session.run(inputs={x_h2d: data})
 # yapf: enable
 
 

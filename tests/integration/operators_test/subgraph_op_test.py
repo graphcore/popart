@@ -49,7 +49,7 @@ def test_nested_simple(op_tester):
         d = call_builder.aiOnnx.constant(i4, "d")
 
         # Inputs to loop
-        iter = loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
+        _ = loop_builder.addInputTensor(popart.TensorInfo("INT64", []))  # iter
         cond_in = loop_builder.addUntypedInputTensor(cond)
         a_in = loop_builder.addUntypedInputTensor(a)
 
@@ -82,7 +82,7 @@ def test_nested_simple(op_tester):
         d = i4
 
         x = a
-        for i in range(trip_count):
+        for _ in range(trip_count):
             x = np.matmul(x, b)
             x = x + c
             x = x + d
@@ -194,7 +194,8 @@ def test_nested_complex(op_tester):
         call_builder0.addOutputTensor(call0_loop1)
 
         # Loop 0
-        iter0 = loop_builder0.addInputTensor(popart.TensorInfo("INT64", []))
+        _ = loop_builder0.addInputTensor(popart.TensorInfo("INT64",
+                                                           []))  #iter0
         cond_in0 = loop_builder0.addUntypedInputTensor(cond0)
         a_in0 = loop_builder0.addUntypedInputTensor(a)
         loop0_loop1 = loop_builder0.aiOnnx.loop([m1, cond1, a_in0, d], 2,
@@ -214,7 +215,7 @@ def test_nested_complex(op_tester):
 
     def reference(_):  # ref_data is an unused argument
         a = i1
-        b = i2
+        _ = i2
         c = i3
         d = i4
         e = i5
@@ -230,7 +231,7 @@ def test_nested_complex(op_tester):
             return x
 
         x = a
-        for i in range(trip_count_0):
+        for _ in range(trip_count_0):
             x = fun(x, d)
         x += fun(a, e)
         return [x]

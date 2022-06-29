@@ -47,8 +47,8 @@ class TestReshape:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            with pytest.raises(ValueError) as excinfo:
-                c = ops.squeeze(a, axes=[2, 2])
+            with pytest.raises(ValueError):
+                _ = ops.squeeze(a, axes=[2, 2])
 
     def test_axes_too_large(self):
         ir = popxl.Ir()
@@ -56,8 +56,8 @@ class TestReshape:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            with pytest.raises(ValueError) as excinfo:
-                c = ops.squeeze(a, axes=[3])
+            with pytest.raises(ValueError):
+                _ = ops.squeeze(a, axes=[3])
 
     def test_axes_not_squeezable(self):
         ir = popxl.Ir()
@@ -65,5 +65,5 @@ class TestReshape:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            with pytest.raises(ValueError) as excinfo:
-                c = ops.squeeze(a, axes=[1])
+            with pytest.raises(ValueError):
+                _ = ops.squeeze(a, axes=[1])

@@ -17,7 +17,6 @@ sys.path.append(Path(__file__).resolve().parent.parent)
 def test_tensorremap(op_tester):
     num_matmuls = 5
     size = 128
-    axis = 1
 
     expand_shape = np.array([2, 16, size, size]).astype(np.int32)
 

@@ -13,7 +13,7 @@ class TestDiv:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = ops.div(a, b)
+            _ = ops.div(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Div", _ir.op.DivOp, g)
@@ -25,7 +25,7 @@ class TestDiv:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = a / b
+            _ = a / b
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Div", _ir.op.DivOp, g)
@@ -36,7 +36,7 @@ class TestDiv:
 
         with g:
             a = popxl.variable(1)
-            c = a / 2
+            _ = a / 2
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1
@@ -48,7 +48,7 @@ class TestDiv:
 
         with g:
             a = popxl.variable(1)
-            c = 2 / a
+            _ = 2 / a
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert len(g.constants) == 1

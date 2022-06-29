@@ -13,7 +13,7 @@ class TestExp:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.exp(a)
+            _ = ops.exp(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("Exp", _ir.op.ExpOp, g)
 
@@ -23,6 +23,6 @@ class TestExp:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.exp_(a)
+            _ = ops.exp_(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("ExpInplace", _ir.op.ExpInplaceOp, g)

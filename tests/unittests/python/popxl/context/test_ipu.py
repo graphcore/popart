@@ -10,7 +10,7 @@ def test_ipu_with():
     with g:
         x = popxl.variable(1)
         with popxl.ipu(0):
-            y = x + 1
+            _ = x + 1
 
     ops = g._pb_graph.getOpSchedule()
     assert len(ops) == 1

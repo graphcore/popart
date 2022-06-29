@@ -92,5 +92,5 @@ def test_abort_conditional_exception():
 
         inputs = {}
         stepio = popart.PyStepIO(inputs, anchors)
-        with pytest.raises(popart.poplar_runtime_error) as e_info:
+        with pytest.raises(popart.poplar_runtime_error):
             session.run(stepio)

@@ -20,9 +20,6 @@ import test_util as tu
 @tu.requires_ipu_model
 def test_call_pipelined_error():
     def run_test(force_error):
-        d0 = np.asarray([2, -1]).astype(np.int32)
-        d1 = np.asarray([-4, 3]).astype(np.int32)
-
         builder = popart.Builder()
 
         i0 = builder.addInputTensor(popart.TensorInfo("INT32", [2]))
@@ -57,11 +54,11 @@ def test_call_pipelined_error():
 
         with tu.create_test_device(numIpus=4, tilesPerIPU=20) as device:
             with pytest.raises(popart.popart_exception) as e_info:
-                session = popart.InferenceSession(
-                    fnModel=builder.getModelProto(),
-                    dataFlow=popart.DataFlow(10, [out]),
-                    userOptions=opts,
-                    deviceInfo=device)
+                _ = popart.InferenceSession(fnModel=builder.getModelProto(),
+                                            dataFlow=popart.DataFlow(
+                                                10, [out]),
+                                            userOptions=opts,
+                                            deviceInfo=device)
 
         print(e_info.value.args[0])
 
@@ -84,9 +81,6 @@ def test_call_pipelined_error():
 # Check that call ops created using the builder can be used when pipelining.
 @tu.requires_ipu_model
 def test_call_pipelined():
-    d0 = np.asarray([2, -1]).astype(np.int32)
-    d1 = np.asarray([-4, 3]).astype(np.int32)
-
     builder = popart.Builder()
 
     i0 = builder.addInputTensor(popart.TensorInfo("INT32", [2]))

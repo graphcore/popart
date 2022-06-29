@@ -16,9 +16,9 @@ class TestDetach:
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
             if inplace:
-                c = ops.detach_(a)
+                _ = ops.detach_(a)
             else:
-                c = ops.detach(a)
+                _ = ops.detach(a)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         if inplace:
@@ -34,9 +34,9 @@ class TestDetach:
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
             if inplace:
-                c = a.detach_()
+                _ = a.detach_()
             else:
-                c = a.detach()
+                _ = a.detach()
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         if inplace:

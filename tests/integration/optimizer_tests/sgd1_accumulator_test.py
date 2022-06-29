@@ -23,7 +23,6 @@ def test_accumulators_names_dont_clash(optType):
 
     builder = popart.Builder()
 
-    input_data = np.random.rand(4, 4).astype(np.float32)
     weights = ['weight1', 'weight2', 'weight3']
 
     d0 = builder.addInputTensor(popart.TensorInfo('FLOAT', [4, 4]), 'data0')

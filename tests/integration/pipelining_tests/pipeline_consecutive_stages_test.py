@@ -27,9 +27,6 @@ def test_pipeline_stage_merging():
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
         np.float32)
 
-    input_data = np.random.normal(
-        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
-
     builder = popart.Builder()
 
     x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),

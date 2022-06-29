@@ -100,7 +100,7 @@ def test_supported_input_type_float16():
 
         opts = popart.SessionOptions()
         opts.syntheticDataMode = popart.SyntheticDataMode.RandomNormal
-        session = popart.InferenceSession(
+        _ = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             userOptions=opts,
             deviceInfo=popart.DeviceManager().createCpuDevice(),

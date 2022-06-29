@@ -34,7 +34,7 @@ def getModelProto():
         scale = builder.addInitializedInputTensor(bn_data)
         mean = builder.addInitializedInputTensor(bn_data)
         var = builder.addInitializedInputTensor(bn_data)
-        bn, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+        bn, _, _, _, _ = builder.aiOnnx.batchnormalization(
             [r, scale, bias, mean, var], 5, 1e-05, 0.1)
 
     with builder.virtualGraph(1), builder.pipelineStage(1):

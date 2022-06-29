@@ -38,12 +38,12 @@ def test_raise_on_invalid_filters():
                           class_="TestLinter",
                           include=[1, 2, 3])
     with pytest.raises(ValueError):
-        linter = LinterUnderTest(config)
+        _ = LinterUnderTest(config)
 
     # Not nonetype but invalid regular expression field nonetheless
     config.include = dict()
     with pytest.raises(ValueError):
-        linter = LinterUnderTest(config)
+        _ = LinterUnderTest(config)
 
 
 def test_gives_correct_arc_message():

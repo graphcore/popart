@@ -10,7 +10,7 @@ def test_merge_exchange():
     main = ir.main_graph
     with main:
         with popxl.transforms.merge_exchange():
-            x = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
+            _ = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
             ops.host_store(popxl.d2h_stream((), popxl.float32),
                            popxl.constant(1.0))
 
@@ -29,7 +29,7 @@ def test_merge_exchange_targeted():
                        popxl.constant(1.0))
 
         with popxl.transforms.merge_exchange():
-            x = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
+            _ = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
             ops.host_store(popxl.d2h_stream((), popxl.float32),
                            popxl.constant(1.0))
 
@@ -47,7 +47,7 @@ def test_merge_exchange_remote():
     with main:
         with popxl.transforms.merge_exchange():
             buffer = popxl.remote_buffer((), popxl.float32, 1)
-            x = ops.remote_load(buffer, 0, "x")
+            _ = ops.remote_load(buffer, 0, "x")
             ops.remote_store(buffer, 0, popxl.constant(1.0))
 
     mg_ops = main._pb_graph.getOps()
@@ -63,7 +63,7 @@ def test_io_tile_exchange():
     with main, popxl.in_sequence(True):
         with popxl.transforms.io_tile_exchange():
             buffer = popxl.remote_buffer((), popxl.float32, 1)
-            x = ops.remote_load(buffer, 0, "x")
+            _ = ops.remote_load(buffer, 0, "x")
             ops.remote_store(buffer, 0, popxl.constant(1.0))
 
     mg_ops = main._pb_graph.getOps()

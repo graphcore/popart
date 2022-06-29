@@ -19,8 +19,8 @@ def test_in_sequence_with():
         # From a liveness perspective,
         #   these two Ops are in the wrong order.
         with popxl.in_sequence():
-            b = big + 1
-            a = small * 1
+            _ = big + 1
+            _ = small * 1
 
     ops = g._pb_graph.getOpSchedule()
     assert isinstance(ops[0], _ir.op.AddOp)
@@ -73,9 +73,9 @@ def test_nested_in_sequence():
         small = popxl.variable(1, name='small')
         big = popxl.variable(np.ones((2, 2), np.float32), name='big')
         with popxl.in_sequence(True):
-            d = big - 1
+            _ = big - 1
             badly_written_layer(small, big)
-            e = small / 1
+            _ = small / 1
 
     ops = g._pb_graph.getOpSchedule()
     assert is_sequence_of_ops(
@@ -100,8 +100,8 @@ def test_in_sequence_false_first():
         # From a liveness perspective,
         #   these two Ops are in the wrong order.
         with popxl.in_sequence(False):
-            b = big + 1
-            a = small * 1
+            _ = big + 1
+            _ = small * 1
 
     ops = g._pb_graph.getOpSchedule()
     assert isinstance(ops[0], _ir.op.MulOp)
@@ -116,10 +116,10 @@ def test_in_sequence_execution_context():
         x = popxl.variable(np.ones((2, 2), np.float32), name='big')
 
         with popxl.in_sequence(True):
-            y = x + 1
+            _ = x + 1
             with _execution_context(
                     _ir.ExecutionContext.WeightsFromHostFragment):
-                z = x - 1
+                _ = x - 1
 
     # If a topocon is created between (x+1) and (x-1) then a scheduling error will occur
     g._pb_graph.getOpSchedule()

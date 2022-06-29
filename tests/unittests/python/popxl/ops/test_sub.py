@@ -13,7 +13,7 @@ class TestSub:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = ops.sub(a, b)
+            _ = ops.sub(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Sub", _ir.op.SubtractOp, g)
@@ -25,7 +25,7 @@ class TestSub:
         with g:
             a = popxl.variable(1)
             b = popxl.variable(2)
-            c = a - b
+            _ = a - b
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 2
         assert contains_op_of_type("Sub", _ir.op.SubtractOp, g)
@@ -36,7 +36,7 @@ class TestSub:
 
         with g:
             a = popxl.variable(1)
-            c = a - 2
+            _ = a - 2
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 1
         assert len(ir.main_graph.constants) == 1
@@ -48,7 +48,7 @@ class TestSub:
 
         with g:
             a = popxl.variable(1)
-            c = 2 - a
+            _ = 2 - a
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 1
         assert len(ir.main_graph.constants) == 1

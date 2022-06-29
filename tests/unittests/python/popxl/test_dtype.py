@@ -25,7 +25,7 @@ def _get_torch_version():
 
 class Testdtype:
     def test_constructor(self):
-        with pytest.raises(TypeError) as excinfo:
+        with pytest.raises(TypeError):
             popxl.dtype()
 
     # TODO(T38031): Unskip this test.
@@ -69,7 +69,7 @@ class Testdtype:
             assert popxl_dtype == popxl.dtype.as_dtype(np_dtype)
             assert popxl_dtype.as_numpy() == np_dtype
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(ValueError):
             popxl.dtype.as_dtype(np.str)
 
     def test_conversion_string(self):

@@ -79,7 +79,6 @@ def test_loss_inputs_untouched():
     height = 32
     batchesPerStep = 5
     samplesPerBatch = 48
-    samplesPerMicroBatch = samplesPerBatch
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
 
     input_data = np.zeros(stepDataShape).astype(np.float32)

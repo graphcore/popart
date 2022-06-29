@@ -14,7 +14,7 @@ class TestPrintTensor:
 
         with g:
             a = popxl.variable(1)
-            c = ops.print_tensor(a)
+            _ = ops.print_tensor(a)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("PrintTensor", _ir.op.PrintTensorOp, g)

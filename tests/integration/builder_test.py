@@ -1288,7 +1288,7 @@ def test_load_onnx_model_from_other_builder():
 
     # Run a builder that imports the model of the other builder and check the
     # output is still the same
-    builder2 = popart.Builder(proto)
+    _ = popart.Builder(proto)
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
@@ -1332,7 +1332,7 @@ def test_load_onnx_model_from_file(tmpdir):
     builder2 = popart.Builder(str(filename))
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
-    optimizer = popart.ConstSGD(0.01)
+    _ = popart.ConstSGD(0.01)
 
     proto = builder2.getModelProto()
 
@@ -1418,11 +1418,11 @@ def test_builder_opsetDefaultVersions():
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
     # This will work as it will use opset 9 version of add
-    o1 = builder.aiOnnx.add([i1, i2], 'add_v9')
+    _ = builder.aiOnnx.add([i1, i2], 'add_v9')
 
     # This will not work as it will use opset 6 version of add
     with pytest.raises(TypeError) as e_info:
-        o1 = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
+        _ = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
     assert (
         "add(): incompatible function arguments. The following argument types are supported:"
         in e_info.value.args[0])
@@ -1445,7 +1445,7 @@ def test_builder_aiOnnxOpsetBuilderInterface():
     i2 = builder.addInitializedInputTensor(np.array([1, 5], dtype=np.float32))
 
     # Assert that Add is rerouted to builder interface class AiOnnx9
-    o1 = builder.aiOnnx.add([i1, i2], 'test_add_9')
+    _ = builder.aiOnnx.add([i1, i2], 'test_add_9')
     aiOnnxVersionAdd = f"{builder.aiOnnx}"
     assert (aiOnnxVersionAdd == "AiOnnx9")
 
@@ -1456,7 +1456,7 @@ def test_builder_aiOnnxOpsetBuilderInterface():
     i2 = pbuilder.addInitializedInputTensor(np.array([1, 1], dtype=np.float32))
 
     # Assert that Pow is rerouted to builder interface class AiOnnx7
-    o1 = pbuilder.aiOnnx.add([i1, i2], 'test_pow_7')
+    _ = pbuilder.aiOnnx.add([i1, i2], 'test_pow_7')
 
     aiOnnxVersionPow = f"{pbuilder.aiOnnx}"
     assert (aiOnnxVersionPow == "AiOnnx7")
@@ -1472,11 +1472,11 @@ def test_builder_opsetDefinesVersions():
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
     # This will work as it will use opset 6 version of add
-    o1 = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
+    _ = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
 
     # This will not work as it will use opset 9 version of add
     with pytest.raises(TypeError) as e_info:
-        o1 = builder.aiOnnx.add([i1, i2], 'add_v9')
+        _ = builder.aiOnnx.add([i1, i2], 'add_v9')
     assert (
         "add(): incompatible function arguments. The following argument types are supported:"
         in e_info.value.args[0])
@@ -1489,13 +1489,13 @@ def test_builder_opsetVersioning():
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
-    o1 = builder.aiOnnx.add([i1, i2], 'b')
+    _ = builder.aiOnnx.add([i1, i2], 'b')
 
-    o1 = builder.aiOnnxOpset9.add([i1, i2], 'a')
+    _ = builder.aiOnnxOpset9.add([i1, i2], 'a')
 
     # This will fail as we have already defined the opset as 9
     with pytest.raises(RuntimeError) as e_info:
-        o1 = builder.aiOnnxOpset6.add([i1, i2], 1, 0, 'a')
+        _ = builder.aiOnnxOpset6.add([i1, i2], 1, 0, 'a')
     assert (
         "Invalid opset 'aiOnnxOpset6' selected. Opset for domain ai.onnx already defined as 9"
         in e_info.value.args[0])
@@ -1571,13 +1571,13 @@ def test_add_untyped_input():
 
     # Adding an untyped input on a subgraph should be fine.
     sub_builder = builder.createSubgraphBuilder()
-    x = sub_builder.addUntypedInputTensor()
+    _ = sub_builder.addUntypedInputTensor()
 
 
 def test_save_model_to_file():
     builder = popart.Builder()
     i = builder.addInputTensor(popart.TensorInfo("FLOAT", [2]))
-    o = builder.aiOnnx.sqrt([i])
+    _ = builder.aiOnnx.sqrt([i])
 
     with TemporaryDirectory() as tmpdir:
         tmpfile = os.path.join(tmpdir, "model.onnx")
@@ -1615,7 +1615,7 @@ def test_conv_kernel_shape_mismatch():
     w = builder.addInputTensor(popart.TensorInfo("FLOAT", [256, 64, 1, 1]))
     # kernel shape, as inferred from weights shape = [1, 1]
     with pytest.raises(popart.popart_exception) as e_info:
-        o = builder.aiOnnx.conv(
+        _ = builder.aiOnnx.conv(
             [i, w],
             dilations=[1, 1],
             kernel_shape=[64, 64],  # not [1, 1]
@@ -1634,7 +1634,7 @@ def test_conv_invalid_kernel_shape():
     with pytest.raises(popart.popart_exception) as e_info:
         # Kernel [64, 64] not valid for spatial input [56, 56], given other
         # conv window parameters
-        o = builder.aiOnnx.conv([i, w],
+        _ = builder.aiOnnx.conv([i, w],
                                 dilations=[1, 1],
                                 strides=[1, 1],
                                 pads=[0, 0, 0, 0])
@@ -1699,7 +1699,7 @@ def test_opset_version_constructor_override():
 
     # Trying to override the constructor chosen opset version.
     with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
+        _ = builder.aiOnnxOpset8.add([a, b])
 
     assert e_info.value.args[0].startswith(
         "Invalid opset 'aiOnnxOpset8' selected. Opset "
@@ -1711,11 +1711,11 @@ def test_opset_version_opset_choice_override():
     builder = popart.Builder()
     a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
     b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
-    c = builder.aiOnnxOpset9.add([a, b])
+    _ = builder.aiOnnxOpset9.add([a, b])
 
     # Trying to override the chosen opset.
     with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
+        _ = builder.aiOnnxOpset8.add([a, b])
 
     assert e_info.value.args[0].startswith(
         "Invalid opset 'aiOnnxOpset8' selected. Opset "
@@ -1729,10 +1729,10 @@ def test_opset_version_opset_default_choice_override():
     b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
 
     # This sets the opset strictly to the default opset.
-    c = builder.aiOnnx.add([a, b])
+    _ = builder.aiOnnx.add([a, b])
 
     with pytest.raises(RuntimeError) as e_info:
-        o = builder.aiOnnxOpset8.add([a, b])
+        _ = builder.aiOnnxOpset8.add([a, b])
 
     assert e_info.value.args[0].startswith(
         "Invalid opset 'aiOnnxOpset8' selected. Opset "
@@ -1746,10 +1746,10 @@ def test_opset_version_opset_default_version_changed():
     a = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "a")
     b = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]), "b")
 
-    c = builder.aiOnnxOpset8.add([a, b])
+    _ = builder.aiOnnxOpset8.add([a, b])
 
     # Check that builder.aiOnnx is now adding ops using opset 8.
-    o = builder.aiOnnx.add([a, b])
+    _ = builder.aiOnnx.add([a, b])
 
     proto = builder.getModelProto()
     assert _get_onnx_opset_version(proto) == 8

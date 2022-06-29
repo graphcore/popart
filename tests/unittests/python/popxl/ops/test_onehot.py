@@ -15,7 +15,7 @@ class TestOneHot:
             t = popxl.variable(np.array([[1, 5]]).astype(np.int32))
             num_classes = popxl.constant(np.array(6).astype(np.int32))
             values = popxl.constant(np.array([0, 1]).astype(np.int32))
-            res = ops.onehot(t, num_classes, values, dim)
+            _ = ops.onehot(t, num_classes, values, dim)
         assert len(g.tensors) == 4
         assert len(g.variables) == 1
         assert contains_op_of_type("OneHot", _ir.op.OnehotOp, g)

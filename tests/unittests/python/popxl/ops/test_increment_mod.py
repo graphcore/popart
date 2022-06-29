@@ -13,7 +13,7 @@ class TestIncrementMod:
 
         with g:
             a = popxl.variable(1)
-            c = ops.increment_mod(a, 1, 3)
+            _ = ops.increment_mod(a, 1, 3)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("IncrementMod", _ir.op.IncrementModOp, g)
@@ -24,7 +24,7 @@ class TestIncrementMod:
 
         with g:
             a = popxl.variable(1)
-            c = ops.increment_mod_(a, 1, 3)
+            _ = ops.increment_mod_(a, 1, 3)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("IncrementModInplace",

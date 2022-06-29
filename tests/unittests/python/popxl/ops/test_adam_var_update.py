@@ -16,7 +16,7 @@ class TestAdamVarUpdate:
             b = popxl.variable(2)
             c = popxl.constant(3)
             d = popxl.constant(4)
-            e = ops.var_updates.adam_var_update(a, b, c, d, 0.5, 0.1)
+            _ = ops.var_updates.adam_var_update(a, b, c, d, 0.5, 0.1)
         assert len(g.tensors) == 5
         assert len(g.variables) == 2
         assert contains_op_of_type("AdamVarUpdate", _ir.op.AdamVarUpdateOp, g)
@@ -31,7 +31,7 @@ class TestAdamVarUpdate:
             c = popxl.constant(3)
             d = popxl.constant(4)
             lr = popxl.variable(1e-3)
-            f = ops.var_updates.adam_var_update(a, b, c, d, lr)
+            _ = ops.var_updates.adam_var_update(a, b, c, d, lr)
         assert len(g.tensors) == 6
         assert len(g.variables) == 3
         assert contains_op_of_type("AdamVarUpdate", _ir.op.AdamVarUpdateOp, g)
@@ -46,7 +46,7 @@ class TestAdamVarUpdate:
             c = popxl.constant(3)
             d = popxl.constant(4)
             mwn = popxl.variable(1e-5)
-            f = ops.var_updates.adam_var_update(a, b, c, d, None, mwn)
+            _ = ops.var_updates.adam_var_update(a, b, c, d, None, mwn)
         assert len(g.tensors) == 6
         assert len(g.variables) == 3
         assert contains_op_of_type("AdamVarUpdate", _ir.op.AdamVarUpdateOp, g)
@@ -62,7 +62,7 @@ class TestAdamVarUpdate:
             d = popxl.constant(4)
             lr = popxl.variable(1e-3)
             mwn = popxl.variable(1e-5)
-            f = ops.var_updates.adam_var_update(a, b, c, d, lr, mwn)
+            _ = ops.var_updates.adam_var_update(a, b, c, d, lr, mwn)
         assert len(g.tensors) == 7
         assert len(g.variables) == 4
         assert contains_op_of_type("AdamVarUpdate", _ir.op.AdamVarUpdateOp, g)

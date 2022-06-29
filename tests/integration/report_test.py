@@ -145,7 +145,7 @@ def test_compilation_report():
                                           userOptions=options,
                                           deviceInfo=device)
 
-        anchors = session.initAnchorArrays()
+        _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
@@ -182,7 +182,7 @@ def test_compilation_report_deprecated():
                                           userOptions=options,
                                           deviceInfo=device)
 
-        anchors = session.initAnchorArrays()
+        _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
@@ -210,7 +210,7 @@ def test_compilation_report_cbor():
                                           dataFlow=dataFlow,
                                           deviceInfo=device)
 
-        anchors = session.initAnchorArrays()
+        _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
@@ -369,7 +369,7 @@ def test_execution_report_cbor():
 
         session.run(stepio)
 
-        rep = session.getSummaryReport(True)
+        _ = session.getSummaryReport(True)
 
 
 @tu.requires_ipu_model
@@ -428,7 +428,7 @@ def test_serialized_graph_report():
                                           dataFlow=dataFlow,
                                           deviceInfo=device)
 
-        anchors = session.initAnchorArrays()
+        _ = session.initAnchorArrays()
 
         session.prepareDevice()
 

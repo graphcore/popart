@@ -104,7 +104,7 @@ def test_incomplete_grad():
         "defaultWeightDecay": (0, True)
     })
 
-    training_session = popart.TrainingSession(
+    _ = popart.TrainingSession(
         builder.getModelProto(),
         loss=l1_loss,
         deviceInfo=popart.DeviceManager().createIpuModelDevice({}),

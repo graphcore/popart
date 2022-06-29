@@ -22,13 +22,13 @@ def test_valid_recompute_options():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(
-                fnModel=builder.getModelProto(),
-                dataFlow=popart.DataFlow(1, [o]),
-                optimizer=popart.ConstSGD(0.001),
-                loss=o,
-                patterns=popart.Patterns([]).enableRuntimeAsserts(False),
-                userOptions=opts,
-                deviceInfo=device)
+            _ = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                       dataFlow=popart.DataFlow(1, [o]),
+                                       optimizer=popart.ConstSGD(0.001),
+                                       loss=o,
+                                       patterns=popart.Patterns(
+                                           []).enableRuntimeAsserts(False),
+                                       userOptions=opts,
+                                       deviceInfo=device)
         assert (e_info.value.args[0] ==
                 "A mixture of auto and manual recomputaion is not supported")

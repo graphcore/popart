@@ -129,11 +129,10 @@ def test_auto_loss_scaling_with_inference_session():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(builder.getModelProto(),
-                                              deviceInfo=device,
-                                              dataFlow=popart.DataFlow(
-                                                  1, [out]),
-                                              userOptions=opts)
+            _ = popart.InferenceSession(builder.getModelProto(),
+                                        deviceInfo=device,
+                                        dataFlow=popart.DataFlow(1, [out]),
+                                        userOptions=opts)
     assert e_info.value.args[0].endswith("Only compatible when doing training")
 
 
@@ -161,12 +160,12 @@ def test_auto_loss_scaling_with_const_loss_scale_tensor():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(1, []),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            _ = popart.TrainingSession(builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, []),
+                                       loss=loss,
+                                       optimizer=optimizer,
+                                       userOptions=opts)
     assert e_info.value.args[0].endswith(
         "The optimizer must have non-const loss scaling")
 
@@ -192,13 +191,12 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [loss]),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            _ = popart.TrainingSession(builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [loss]),
+                                       loss=loss,
+                                       optimizer=optimizer,
+                                       userOptions=opts)
     assert e_info.value.args[0].endswith(
         "No tracked gradient tensors of type fp16 were found.")
 
@@ -400,13 +398,12 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
 
     with tu.create_test_device(2) as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [loss]),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            _ = popart.TrainingSession(builder.getModelProto(),
+                                       deviceInfo=device,
+                                       dataFlow=popart.DataFlow(1, [loss]),
+                                       loss=loss,
+                                       optimizer=optimizer,
+                                       userOptions=opts)
     assert e_info.value.args[0].endswith(
         "Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'"
     )

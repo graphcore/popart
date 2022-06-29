@@ -86,7 +86,6 @@ def test_fp16transpose():
     """
 
     c0_data = np.random.randn(5, 6).astype(np.float16) * 1
-    c0_info = popart.TensorInfo(c0_data)
 
     d0_data = np.random.randn(1, 6).astype(np.float16) * 1
     d0_info = popart.TensorInfo(d0_data)

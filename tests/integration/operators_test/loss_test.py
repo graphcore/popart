@@ -78,7 +78,6 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
 
     dshape = [Batchsize, ExtraDim, Classes]
     lshape = [Batchsize, ExtraDim]
-    flat_lshape = [Batchsize * ExtraDim]
 
     ip_data = np.random.rand(*dshape).astype(np.float32)
     lb_data = np.random.randint(Classes, size=lshape)
@@ -164,7 +163,6 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     Batchsize = 2
     Classes = 8
 
-    dshape = [Batchsize, Classes]
     lshape = [Batchsize]
 
     ip_data = np.random.rand(Batchsize, Classes).astype(np.float32)
@@ -355,7 +353,6 @@ def test_nll_loss_input_with_invalid_input():
     lshape = [Batchsize, ExtraDim + 1]  # Doesn't match!
 
     ip_data = np.random.rand(*dshape).astype(np.float32)
-    lb_data = np.random.randint(Classes, size=lshape)
 
     ###
     # Popart
@@ -372,7 +369,7 @@ def test_nll_loss_input_with_invalid_input():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(
+            _ = popart.TrainingSession(
                 fnModel=builder.getModelProto(),
                 dataFlow=popart.DataFlow(1, [nll0]),
                 optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
@@ -422,7 +419,6 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
 
     dshape = [Batchsize, Classes]
     lshape = [Batchsize]
-    flat_lshape = [Batchsize]
 
     ip_data = np.random.rand(*dshape).astype(np.float32)
     lb_data = np.random.randint(Classes, size=lshape)
@@ -535,8 +531,8 @@ def test_nllloss_reduction_equiv():
             er_anchors = getAnchors(True)
 
             # check they are equivalent
-            for (id0, a0), (id1, a1) in zip(lr_anchors.items(),
-                                            er_anchors.items()):
+            for (_, a0), (_, a1) in zip(lr_anchors.items(),
+                                        er_anchors.items()):
                 checkResult(getTensorError(a0, a1), 1e-8)
 
         test(['PreUniRepl'])  # Nll, NllGrad and SoftmaxGrad Ops

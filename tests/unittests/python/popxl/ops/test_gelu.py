@@ -13,7 +13,7 @@ class TestGelu:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.gelu(a)
+            _ = ops.gelu(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("Gelu", _ir.op.GeluOp, g)
 
@@ -23,6 +23,6 @@ class TestGelu:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.gelu_(a)
+            _ = ops.gelu_(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("GeluInplace", _ir.op.GeluInplaceOp, g)

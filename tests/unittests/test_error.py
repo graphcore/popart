@@ -6,25 +6,25 @@ import popart_core
 
 
 def test_popart_error():
-    with pytest.raises(popart.popart_exception) as e_info:
+    with pytest.raises(popart.popart_exception):
         popart_core._throw_popart_error("")
 
 
 def test_popart_internal_error():
-    with pytest.raises(popart.popart_internal_exception) as e_info:
+    with pytest.raises(popart.popart_internal_exception):
         popart_core._throw_popart_internal_error("")
 
     # Can catch popart_internal_error as popart_exception
-    with pytest.raises(popart.popart_exception) as e_info:
+    with pytest.raises(popart.popart_exception):
         popart_core._throw_popart_internal_error("")
 
 
 def test_popart_runtime_error():
-    with pytest.raises(popart.popart_runtime_error) as e_info:
+    with pytest.raises(popart.popart_runtime_error):
         popart_core._throw_popart_runtime_error("")
 
     # Can catch popart_runtime_error as popart_exception
-    with pytest.raises(popart.popart_exception) as e_info:
+    with pytest.raises(popart.popart_exception):
         popart_core._throw_popart_runtime_error("")
 
 

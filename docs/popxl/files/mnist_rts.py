@@ -344,8 +344,7 @@ def build_test_ir(
         x = ops.host_load(img_stream, "x")
 
         # Build forward pass graph
-        outputs, params, linears, fwd_call_infos = create_network_fwd_graph(
-            ir, x, opts)
+        outputs, params, _, _ = create_network_fwd_graph(ir, x, opts)
 
         # Host store to get loss
         out_stream = popxl.d2h_stream(outputs[1].shape,

@@ -30,8 +30,7 @@ class TestConv:
             weight = popxl.variable(
                 np.random.rand(out_channel, int(in_channel / group), h_kernel,
                                w_kernel))
-            res = ops.conv(t, weight, strides, pads, dilations, group,
-                           pad_type)
+            _ = ops.conv(t, weight, strides, pads, dilations, group, pad_type)
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Conv", _ir.op.ConvOp, g)

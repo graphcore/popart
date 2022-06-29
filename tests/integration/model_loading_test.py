@@ -20,7 +20,7 @@ def test_bad_model_proto():
     proto = [i for i in proto]
     i = 0
     while i < len(proto):
-        x = proto[i]
+        _ = proto[i]
         proto[i] = 10
         i += 10
     proto = bytes(proto)

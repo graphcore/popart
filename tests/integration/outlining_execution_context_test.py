@@ -96,10 +96,6 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
             post_proto = onnx.load(file_path)
 
         report = session.getReport()
-        max_tile_memory = max([
-            tile.memory.total.excludingGaps
-            for tile in report.compilation.tiles
-        ])
 
         total_memory = np.sum([
             tile.memory.total.excludingGaps
@@ -108,8 +104,8 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
         return session, anchors[x], post_proto, total_memory
 
-    _, outputs_1, proto_1, total_memory_1 = run_test(False)
-    sess, outputs_2, proto_2, total_memory_2 = run_test(True)
+    _, outputs_1, proto_1, _ = run_test(False)
+    sess, outputs_2, proto_2, _ = run_test(True)
 
     ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
 

@@ -10,7 +10,7 @@ def test_prune_all_error():
     # on a 1D tensor containing 2 elements
     builder = popart.Builder()
     in0 = builder.addInputTensor("FLOAT", [2])
-    out = builder.aiOnnx.sqrt([in0])
+    _ = builder.aiOnnx.sqrt([in0])
 
     # Construct a Session that can run this model. The ingredients:
 
@@ -28,10 +28,10 @@ def test_prune_all_error():
 
     # Exception should be thrown here.
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(fnModel=model,
-                                          deviceInfo=deviceInfo,
-                                          dataFlow=popart.DataFlow(
-                                              batchesPerStep, anchors))
+        _ = popart.InferenceSession(fnModel=model,
+                                    deviceInfo=deviceInfo,
+                                    dataFlow=popart.DataFlow(
+                                        batchesPerStep, anchors))
 
     assert (e_info.value.args[0] ==
             "All operations in the main graph were pruned, nothing to compute")

@@ -50,7 +50,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     samplesPerMicroBatch = samplesPerBatch // divvyFactor
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
-    stepDataInfo = popart.TensorInfo("FLOAT", stepDataShape)
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
     #initial weight and input values

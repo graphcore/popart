@@ -11,7 +11,7 @@ def test_get_pipeline_stage():
 
     # If the scope hasn't been set, getPipelineStage will throw a runtime error
     with pytest.raises(popart.popart_exception) as e_info:
-        stage = builder.getPipelineStage()
+        _ = builder.getPipelineStage()  # stage
     assert ("Pipeline stage not set in current scope" in e_info.value.args[0])
 
     # When we enter a pipelineStage context, the builder should return that stage
@@ -44,7 +44,7 @@ def test_get_virtual_graph():
 
     # If the scope hasn't been set, getVirtualGraph will throw a runtime error
     with pytest.raises(popart.popart_exception) as e_info:
-        stage = builder.getVirtualGraph()
+        _ = builder.getVirtualGraph()  # stage
     assert ("Virtual graph not set in current scope" in e_info.value.args[0])
 
     # When we enter a VirtualGraph context, the builder should return that stage

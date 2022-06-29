@@ -11,7 +11,7 @@ from utils import create_ir, create_dummy_op
 def test_op_creation():
     """Test simple op creation.
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -71,7 +71,7 @@ def test_op_attributes(attribute: str, shorthand: str, input_id: int):
 def test_multi_graph():
     """Test adding ops to multiple graphs.
     """
-    ir, graphs = create_ir(["A", "B"])
+    _, graphs = create_ir(["A", "B"])
     g = graphs[0]
     h = graphs[1]
     settings_g = _ir.Settings(g, "settings_g")
@@ -103,7 +103,7 @@ def test_op_clone():
     """Op::Clone is pure virtual, this should throw an error. Derived classes should
     be able to call without issue.
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -111,7 +111,7 @@ def test_op_clone():
     opid = _ir.OperatorIdentifier("ai.onnx", "Identity", 1, num_inputs, 1)
     op = _ir.Op(opid, settings)
     with pytest.raises(RuntimeError) as e_info:
-        op2 = op.clone()
+        _ = op.clone()
         assert (
             e_info.value.args[0] ==
             "RuntimeError: Tried to call pure virtual function \"Op::clone\"")
@@ -120,7 +120,7 @@ def test_op_clone():
 def test_bools():
     """Test default behaviour of bool returns.
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -145,7 +145,7 @@ def test_bools():
 def test_graph_in_outs():
     """Test default behaviour for no inputs or outputs.
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -181,7 +181,7 @@ def test_shapes(shape1: List[int], shape2: List[int], expected: List[int],
         expected (List[int]): Expected shape
         dtype (Str): Popart data type to use
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -211,7 +211,7 @@ def test_string_methods(op_name: str, domain: str, op_type: str, op_num: int,
         op_num (int): Op number to test against (default 100)
         op_version (int): Op version
     """
-    ir, graphs = create_ir(["A"])
+    _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
     num_inputs = _ir.NumInputs(1, 1)
@@ -245,7 +245,9 @@ def test_default_outputs(index: int, id: str):
         index (int): Output index
         id (str): Tensor id
     """
-    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
+    # TODO: T65145 If g is changes to _ we get segfaults
+    # pylint: disable=unused-variable
+    op, _, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
 
     op.createAndConnectOutTensor(index, id)
     assert op.hasOutput(index)
@@ -262,7 +264,7 @@ def test_default_outputs(index: int, id: str):
 def test_default_properties():
     """Test default returns for various methods
     """
-    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
+    op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     assert op.getCalledGraphs() == []
     assert op.getCalledGraphIds() == []
     for m in [
@@ -287,7 +289,7 @@ def test_default_properties():
 def test_grad_methods():
     """Test errors for gradient methods (no gradient op will have been generated.)
     """
-    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
+    op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     with pytest.raises(popart.popart_exception) as e_info:
         op.gradInputInfo()
         assert e_info.value.args[0].startswith(
@@ -301,6 +303,6 @@ def test_grad_methods():
 def test_scope():
     """Test setting and getting scope on ops
     """
-    op, ir, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
+    op, _, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     op.setScope(g.getScope())
     assert op.getScope() == g.getScope()

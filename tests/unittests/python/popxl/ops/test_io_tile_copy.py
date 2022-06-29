@@ -12,7 +12,7 @@ class TestIpuCopy:
         with g:
             h2d = popxl.h2d_stream((), popxl.dtypes.float32)
             x = ops.host_load(h2d, "x")
-            x_io = ops.io_tile_copy(x)
+            _ = ops.io_tile_copy(x)
 
         g_ops = g._pb_graph.getOps()
         assert len(g_ops) == 3
@@ -27,7 +27,7 @@ class TestIpuCopy:
             with popxl.io_tiles():
                 h2d = popxl.h2d_stream((), popxl.dtypes.float32)
                 x = ops.host_load(h2d, "x")
-            x_io = ops.io_tile_copy(x)
+            _ = ops.io_tile_copy(x)
 
         g_ops = g._pb_graph.getOps()
         assert len(g_ops) == 3

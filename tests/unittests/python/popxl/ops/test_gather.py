@@ -14,7 +14,7 @@ class TestGather:
         with g:
             t = popxl.variable([[1, 2], [3, 4]])
             indices = popxl.variable([[0, 1], [1, 0]], dtype=dtypes.int32)
-            c = ops.gather(t, indices)
+            _ = ops.gather(t, indices)
 
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
@@ -27,7 +27,7 @@ class TestGather:
         with g:
             t = popxl.variable([[1, 2], [3, 4]])
             indices = popxl.variable([[0, 1], [1, 0]], dtype=dtypes.int32)
-            c = t[indices]
+            _ = t[indices]
 
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 2
@@ -42,7 +42,7 @@ class TestTiedGather:
         with g:
             t = popxl.variable([[1, 2], [3, 4]])
             indices = popxl.variable([[0, 1], [1, 0]])
-            c = ops.tied_gather(t, indices)
+            _ = ops.tied_gather(t, indices)
 
         assert len(g.tensors) == 3
         assert len(g.variables) == 2

@@ -18,7 +18,7 @@ class TestConcat:
         with g:
             a = popxl.variable((1, ))
             b = popxl.variable((2, ))
-            c = ops.concat((a, b))
+            _ = ops.concat((a, b))
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         assert contains_op_of_type("Concat", _ir.op.ConcatOp, g)
@@ -31,7 +31,7 @@ class TestConcat:
             a = popxl.variable((1, ))
             b = popxl.variable((2, ))
             c = popxl.variable((3, ))
-            d = ops.concat((a, b, c))
+            _ = ops.concat((a, b, c))
         assert len(g.tensors) == 4
         assert len(g.variables) == 3
         assert contains_op_of_type("Concat", _ir.op.ConcatOp, g)
@@ -44,4 +44,4 @@ class TestConcat:
             a = popxl.variable(np.zeros((2, 4)))
             b = popxl.variable(np.zeros((3, )))
             with pytest.raises(popart.popart_exception):
-                c = ops.concat((a, b))
+                _ = ops.concat((a, b))

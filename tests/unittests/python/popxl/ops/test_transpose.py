@@ -67,9 +67,9 @@ class TestTranspose:
             a = popxl.variable(np.ones((1, 2, 3)))
             with pytest.raises(ValueError) as excinfo:
                 if inplace:
-                    c = ops.transpose_(a, (5, 4, 3))
+                    _ = ops.transpose_(a, (5, 4, 3))
                 else:
-                    c = ops.transpose(a, (5, 4, 3))
+                    _ = ops.transpose(a, (5, 4, 3))
             message = str(excinfo.value)
             assert "Values in permutation must be less than" in message
             assert "rank 3" in message

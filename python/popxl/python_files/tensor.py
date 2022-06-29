@@ -989,6 +989,12 @@ def replica_sharded_buffer(shape: Tuple[int, ...],
         shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
         entries (int): Number of entries in the RemoteBuffer.
 
+    Raises:
+        ValueError: If replica_grouping is not None and shard_grouping.stride != the replica_grouping.stride
+        ValueError: If replica_grouping is not None and shard_grouping.group_size <!= the replica_grouping.stride
+        ValueError: If replica_grouping is None and shard_grouping.stride != 1 with the default replica_grouping
+        ValueError: If replica_grouping is None and shard_grouping.group_size <!= the replication_factor
+
     Returns:
         RemoteBuffer
     """

@@ -109,8 +109,8 @@ def test_lstm_outlining(op_tester):
         i2 = builder.addInitializedInputTensor(d2)
         i3 = builder.addInitializedInputTensor(d3)
         x = i1
-        for i in range(4):
-            Y, Y_h, Y_c = builder.aiOnnx.lstm([x, i2, i3], 3, clip=None)
+        for _ in range(4):
+            Y, _, _ = builder.aiOnnx.lstm([x, i2, i3], 3, clip=None)
             x = builder.aiOnnx.squeeze([Y])
         Y = builder.aiOnnx.identity([Y])
         builder.addOutputTensor(Y)
@@ -237,7 +237,7 @@ def test_lstm_onnx_vs_popart_2():
     def run_onnx_lstm(inputs):
         def init_builder(builder):
             input_ids = [builder.addInputTensor(i) for i in inputs]
-            Y, Y_h, Y_c = builder.aiOnnx.lstm(input_ids, 3, clip=None)
+            Y, _, _ = builder.aiOnnx.lstm(input_ids, 3, clip=None)
             return [Y]
 
         session = PopartTestSession()
@@ -296,19 +296,6 @@ def test_lstm_onnx_vs_popart_2():
         anchors = [v for v in anchors.values()]
         return anchors[0]
 
-    def reshape_weight_for_popart(onnx_weights):
-        hidden_size = onnx_weights.shape[1] // 4
-
-        def transform_chunk(idx):
-            x = onnx_weights[0, idx * hidden_size:(idx + 1) * hidden_size, :]
-            x = x.transpose()
-            x = np.expand_dims(x, 0)
-            return x
-
-        chunks = [transform_chunk(i) for i in range(4)]
-        out = np.concatenate((chunks[2], chunks[0], chunks[3], chunks[1]))
-        return np.ascontiguousarray(out)
-
     num_directions = 1
     seq_length = 2
     batch_size = 5
@@ -364,7 +351,7 @@ def test_lstm_training_onnx_vs_popart():
             tSeqLens = builder.addInputTensor(seq_lens, seq_lens_id)
             tInitH = builder.addInputTensor(initial_h, init_h_id)
             tInitC = builder.addInputTensor(initial_c, init_c_id)
-            Y, Y_h, Y_c = builder.aiOnnx.lstm(
+            Y, _, _ = builder.aiOnnx.lstm(
                 [tData, tIW, tOW, tBiases, tSeqLens, tInitH, tInitC],
                 3,
                 clip=None)

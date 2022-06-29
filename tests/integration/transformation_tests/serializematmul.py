@@ -67,8 +67,6 @@ def test_matmul_serialization_invalid_mode():
     else:
         lhs_shape = [2, 2]
         rhs_shape = [2, 4]
-        lhs_data = np.random.rand(*lhs_shape).astype(np.float32)
-        rhs_data = np.random.rand(*rhs_shape).astype(np.float32)
 
         builder = popart.Builder()
 
@@ -97,8 +95,6 @@ def test_matmul_serialization_invalid_mode():
 def test_matmul_serialization_invalid_factor():
     lhs_shape = [2, 2]
     rhs_shape = [2, 4]
-    lhs_data = np.random.rand(*lhs_shape).astype(np.float32)
-    rhs_data = np.random.rand(*rhs_shape).astype(np.float32)
 
     builder = popart.Builder()
 
@@ -121,11 +117,11 @@ def test_matmul_serialization_invalid_factor():
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=opts,
-                                              patterns=pat,
-                                              deviceInfo=device)
+            _ = popart.InferenceSession(fnModel=proto,
+                                        dataFlow=dataFlow,
+                                        userOptions=opts,
+                                        patterns=pat,
+                                        deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "Invalid serialisation factor 3 for output channels dim 4. output_channels dim should be a multple of the serialisation factor"

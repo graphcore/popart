@@ -48,7 +48,7 @@ class TestReshape:
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
             with pytest.raises(ValueError) as excinfo:
-                c = a.reshape(shape)
+                _ = a.reshape(shape)
             message = str(excinfo.value)
             assert "Invalid shape value in reshape" in message
             assert str(shape) in message
@@ -60,7 +60,7 @@ class TestReshape:
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
             with pytest.raises(ValueError) as excinfo:
-                c = a.reshape((-1, -1, 1))
+                _ = a.reshape((-1, -1, 1))
             message = str(excinfo.value)
             assert "Reshape shape can contain at most one '-1' value" in message
             assert "(-1, -1, 1)" in message

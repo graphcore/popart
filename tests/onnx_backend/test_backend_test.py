@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 
 import popart
 
-import itertools
 import unittest
 import onnx.backend.base
 import onnx.backend.test
@@ -77,22 +76,6 @@ class IpuBackend(onnx.backend.base.Backend):
 
         # test shape inference
         model = onnx.shape_inference.infer_shapes(model)
-        value_infos = {
-            vi.name: vi
-            for vi in itertools.chain(model.graph.value_info,
-                                      model.graph.output)
-        }
-
-        # if do_enforce_test_coverage_whitelist(model):
-        #     for node in model.graph.node:
-        #         for i, output in enumerate(node.output):
-        #             if node.op_type == 'Dropout' and i != 0:
-        #                 continue
-        #             assert output in value_infos
-        #             tt = value_infos[output].type.tensor_type
-        #             assert tt.elem_type != TensorProto.UNDEFINED
-        #             for dim in tt.shape.dim:
-        #                 assert dim.WhichOneof('value') == 'dim_value'
 
         popart.getLogger().setLevel("DEBUG")
 

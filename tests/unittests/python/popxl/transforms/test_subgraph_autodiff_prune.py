@@ -22,9 +22,9 @@ def test_autodiff_prune():
             fwd_graph, grads_required=fwd_graph.inputs[:1])
 
         fwd_info = ops.call_with_info(fwd_graph, x, gamma, beta)
-        dx = ops.call(grad_info.graph,
-                      popxl.constant(np.ones((4, 16)), popxl.float32),
-                      inputs_dict=grad_info.inputs_dict(fwd_info))
+        _ = ops.call(grad_info.graph,
+                     popxl.constant(np.ones((4, 16)), popxl.float32),
+                     inputs_dict=grad_info.inputs_dict(fwd_info))
 
     grad_ops = grad_info.graph._pb_graph.getOps()
     group_norm_grad = None

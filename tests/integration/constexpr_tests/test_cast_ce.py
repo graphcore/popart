@@ -37,12 +37,8 @@ def test_various_casts():
             out_id = t3
             cast_id = t2
 
-            loss = builder.setLoss(t3)
+            _ = builder.setLoss(t3)
             return [t3, t2]
-
-        def ref():
-            x = const_data.astype(input_data.dtype)
-            return input_data * x
 
         session = PopartTestSession()
 

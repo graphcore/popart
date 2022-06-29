@@ -25,9 +25,9 @@ def test_binaryop_error():
     proto = builder.getModelProto()
 
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(fnModel=proto,
-                                          deviceInfo=device,
-                                          dataFlow=data_flow)
+        _ = popart.InferenceSession(fnModel=proto,
+                                    deviceInfo=device,
+                                    dataFlow=data_flow)
     assert ("np broadcasting failed on 'Op" in e_info.value.args[0])
     assert ("ai.onnx.Add" in e_info.value.args[0])
     assert (

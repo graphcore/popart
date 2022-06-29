@@ -98,7 +98,7 @@ class TestTensorLocation():
             ops.host_store(y_d2h, y)
 
             probs = ops.softmax(y, 0)
-            loss, dx = ops.nll_loss_with_softmax_grad(probs, l0, loss_grad=1)
+            _, dx = ops.nll_loss_with_softmax_grad(probs, l0, loss_grad=1)
 
         ### Backward pass ###
         bwd_info = popxl.transforms.autodiff(fwd_graph)
@@ -110,7 +110,6 @@ class TestTensorLocation():
                 bwd_graph, dx, inputs_dict=tensors_required_for_bwd)
 
         expected_outputs = bwd_info.expected_outputs
-        d0_grad: Tensor = None
         w0_grad: Tensor = None
 
         sg_d0 = fwd_call_info.parent_to_graph(d0)
@@ -134,7 +133,7 @@ class TestTensorLocation():
             sg_fwd_tensor = ec.fwd_tensor
 
             if sg_fwd_tensor == sg_d0:
-                d0_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
+                _ = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
                     ec)
             elif sg_fwd_tensor == sg_w0:
                 w0_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(

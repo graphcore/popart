@@ -64,4 +64,4 @@ def test_dropout_outlinable():
             assert (len(dropouts) <= 2)
             return anchors[x]
 
-    outputs_run1 = run_test()
+    _ = run_test()

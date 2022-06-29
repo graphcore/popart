@@ -13,7 +13,7 @@ class TestInit:
         g = ir.main_graph
 
         with g:
-            x = ops.init((), popxl.dtypes.float32)
+            _ = ops.init((), popxl.dtypes.float32)
 
         assert len(g.tensors) == 1
         assert len(g.variables) == 0

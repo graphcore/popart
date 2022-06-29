@@ -7,10 +7,10 @@ def test_context_manager():
     ir = popxl.Ir()
     main = ir.main_graph
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(RuntimeError):
         popxl.gcg()
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(RuntimeError):
         popxl.gmg()
 
     with main:
@@ -22,10 +22,10 @@ def test_context_manager():
             assert popxl.gmg() == main
             assert sg.main_graph == main
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(RuntimeError):
         popxl.gcg()
 
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.raises(RuntimeError):
         popxl.gmg()
 
 

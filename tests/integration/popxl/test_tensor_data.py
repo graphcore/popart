@@ -36,7 +36,7 @@ class TestData:
             arr = get_np_array(shape, np_dtype)
             t = popxl.constant(arr)
             t2 = popxl.variable(arr)
-            a = ops.add(t, t2)
+            _ = ops.add(t, t2)
 
         ir.num_host_transfers = 1
         session = popxl.Session(ir, device_desc="ipu_model")
@@ -57,7 +57,7 @@ class TestData:
         ir.num_host_transfers = 1
         session = popxl.Session(ir, device_desc="ipu_model")
         with pytest.raises(TypeError) as e_info:
-            retrieved_array = session.get_tensor_data(b)
+            _ = session.get_tensor_data(b)
         assert "is not of type Constant or Variable" in e_info.value.args[0]
 
     def test_write_data_constant(self, shape, np_dtype):
@@ -69,11 +69,11 @@ class TestData:
             a = popxl.constant(arr)
             # Add a variable or the graph gets optimized to nothing.
             b = popxl.variable(arr)
-            c = ops.add(a, b)
+            _ = ops.add(a, b)
         ir.num_host_transfers = 1
         session = popxl.Session(ir, device_desc="ipu_model")
         # This should be OK
-        retrieved_array = session.get_tensor_data(a)
+        _ = session.get_tensor_data(a)
 
         arr2 = get_np_array(shape, np_dtype)
         # This should throw:
@@ -85,7 +85,6 @@ class TestData:
 
     def test_update_weights(self, shape, np_dtype):
         ir = popxl.Ir()
-        ir_ = ir._pb_ir  # Internal ir
 
         g = ir.main_graph
         w_np_data = get_np_array(shape, np_dtype)
@@ -98,7 +97,7 @@ class TestData:
                                      name="x_stream")
             x_tensor = ops.host_load(x_d2h, "x")
             w_tensor = popxl.variable(w_np_data, name="weight_data")
-            updated_w = ops.var_updates.accumulate_(w_tensor, x_tensor)
+            _ = ops.var_updates.accumulate_(w_tensor, x_tensor)
 
         ir.num_host_transfers = 1
         session = popxl.Session(ir, device_desc="ipu_model")

@@ -62,7 +62,7 @@ def _append_definition(args: list, definition: str):
         value = shlex.quote(value.strip()) if value else '1'
 
         args.append(f"-D{macro}={value}")
-    except ValueError as exc:
+    except ValueError:
         # most likely means there was no '=' given
         # check if argument is valid identifier
         if re.search(r'^[A-Za-z_][A-Za-z0-9_]*', definition):

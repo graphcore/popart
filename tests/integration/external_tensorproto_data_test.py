@@ -28,7 +28,7 @@ def test_save_tensors_externally():
     builder = popart.Builder()
     i1 = builder.addInitializedInputTensor(d1)
     i2 = builder.addInitializedInputTensor(d2)
-    o = builder.aiOnnx.add([i1, i2])
+    _ = builder.aiOnnx.add([i1, i2])
     with TemporaryDirectory() as tmpdir:
 
         def checkFile(file):
@@ -153,7 +153,6 @@ def test_save_back_externally_saved_tensors():
             assert (np.array_equal(initWeights[layer].flatten(),
                                    saved_weights))
 
-        opts = popart.SessionOptions()
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, anchorsDef),
@@ -333,7 +332,7 @@ def test_external_location_relative_path():
     # to the cwd
     builder = popart.Builder()
     i1 = builder.addInitializedInputTensor(np.array([7, 4]).astype(np.float16))
-    o = builder.aiOnnx.add([i1, i1])
+    _ = builder.aiOnnx.add([i1, i1])
 
     with TemporaryDirectory() as tmpdir:
         tensor_data_file = "model_tensors.onnx"
@@ -345,14 +344,14 @@ def test_external_location_relative_path():
             builder.saveModelProto("model.onnx")
 
             # Can load tensor data from cwd, because it relative path exists
-            new_builder = popart.Builder("model.onnx")
+            _ = popart.Builder("model.onnx")
 
             # Fail to load tensor data, because relative path does not exist in this
             # case
             os.mkdir("dummy_dir")
             with change_directory("dummy_dir"):
                 with pytest.raises(RuntimeError) as e_info:
-                    new_new_builder = popart.Builder("../model.onnx")
+                    _ = popart.Builder("../model.onnx")
                 assert "model_tensors.onnx, but it doesn't exist or is not accessible" in e_info.value.args[
                     0]
 
@@ -363,7 +362,7 @@ def test_external_location_path_does_not_exist():
     builder = popart.Builder()
     i1 = builder.addInitializedInputTensor(
         np.array([-1, 6]).astype(np.float32))
-    o = builder.aiOnnx.add([i1, i1])
+    _ = builder.aiOnnx.add([i1, i1])
 
     with TemporaryDirectory() as tmpdir:
         tmpfile = os.path.join(tmpdir, "dummy/tensors.onnx")

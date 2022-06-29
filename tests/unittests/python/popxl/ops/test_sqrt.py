@@ -13,6 +13,6 @@ class TestSqrt:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.sqrt(a)
+            _ = ops.sqrt(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("Sqrt", _ir.op.SqrtOp, g)

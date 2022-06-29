@@ -192,4 +192,4 @@ def test_lint():
         with open(file_to_lint, 'w'):
             pass
 
-        output = lint(file_to_lint, config_file)
+        _ = lint(file_to_lint, config_file)

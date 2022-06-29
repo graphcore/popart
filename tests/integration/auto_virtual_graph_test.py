@@ -196,7 +196,7 @@ def test_auto_virtual_graph_inf_2():
     input = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     x = input
-    for i in range(ipus):
+    for _ in range(ipus):
         w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16))
         x = builder.aiOnnx.matmul([x, w])
     output = x
@@ -229,7 +229,7 @@ def test_auto_virtual_graph_inf_many():
     input = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     x = input
-    for i in range(16):
+    for _ in range(16):
         w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16))
         x = builder.aiOnnx.matmul([x, w])
     output = x
@@ -262,7 +262,7 @@ def test_auto_virtual_graph_train():
     input = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     x = input
-    for i in range(ipus):
+    for _ in range(ipus):
         w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16))
         x = builder.aiOnnx.matmul([x, w])
     output = x
@@ -300,7 +300,7 @@ def test_auto_virtual_graph_not_enough_splits():
     input = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     x = input
-    for i in range(2):
+    for _ in range(2):
         w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16))
         x = builder.aiOnnx.matmul([x, w])
     output = x

@@ -279,9 +279,7 @@ def test_detach_error():
     lshape = [Batchsize]
     wshape = [2, 2, 3, 3]
 
-    ip_data = np.random.rand(*dshape).astype(np.float32)
     w1_data = np.random.rand(*wshape).astype(np.float32)
-    lb_data = np.random.randint(Classes, size=lshape)
 
     builder = popart.Builder()
 
@@ -307,7 +305,7 @@ def test_detach_error():
         1, [o, loss, popart.reservedGradientPrefix() + input_])
     opts = popart.SessionOptions()
     with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.TrainingSession(
+        _ = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
             loss=loss,

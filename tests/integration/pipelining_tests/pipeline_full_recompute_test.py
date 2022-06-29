@@ -456,10 +456,6 @@ def test_implicit_pipelining_custom_fwd_only_no_copy():
     data = np.random.normal(0, 0.02,
                             [hidden_size * hidden_size]).astype(np.float32)
 
-    input_data = np.random.normal(
-        0, 0.02, [batches_per_step, accumulation_factor] + input_shape).astype(
-            np.float32)
-
     builder = popart.Builder(opsets={
         "ai.onnx": 9,
         "ai.onnx.ml": 1,
@@ -489,17 +485,17 @@ def test_implicit_pipelining_custom_fwd_only_no_copy():
         l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
-    onnxproto = onnx.load_model_from_string(proto)
+    _ = onnx.load_model_from_string(proto)
 
     dataFlow = popart.DataFlow(batches_per_step, {
         o: popart.AnchorReturnType("All"),
         l1: popart.AnchorReturnType("All")
     })
 
-    infDataFlow = popart.DataFlow(batches_per_step * accumulation_factor, {
+    _ = popart.DataFlow(batches_per_step * accumulation_factor, {
         o: popart.AnchorReturnType("All"),
         l1: popart.AnchorReturnType("All")
-    })
+    })  # infDataFlow
 
     opts = popart.SessionOptions()
     # Disable outlining to make debugging easier

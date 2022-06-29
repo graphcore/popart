@@ -15,7 +15,7 @@ class TestSplitRandomSeed:
 
         with g:
             seed = popxl.variable((1, 2), popxl.uint32)
-            new_seed, other_seed = ops.split_random_seed(seed)
+            _, _ = ops.split_random_seed(seed)
 
         assert len(g.tensors) == 5
         assert len(g.variables) == 1

@@ -1174,7 +1174,7 @@ def test_where_inplace(op_tester, side):
     patterns = ["InPlace"]
     op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
 
-    session = op_tester.run(init_builder, reference, 'infer')
+    _ = op_tester.run(init_builder, reference, 'infer')
 
 
 def test_round(op_tester):

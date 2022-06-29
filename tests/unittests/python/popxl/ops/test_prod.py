@@ -13,6 +13,6 @@ class TestProd:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.prod(a, axis=[0, -1])
+            _ = ops.prod(a, axis=[0, -1])
         assert len(g.tensors) == 2
         assert contains_op_of_type("ReduceProd", _ir.op.ReduceProdOp, g)

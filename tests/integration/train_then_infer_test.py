@@ -14,7 +14,6 @@ def test_train_then_infer_via_file():
     builder = popart.Builder()
 
     input_shape = popart.TensorInfo("FLOAT", [1, 2, 4, 4])
-    weight_shape = popart.TensorInfo("FLOAT", [3, 2, 3, 3])
 
     weight_data = np.ones([3, 2, 3, 3], np.float32)
     input = builder.addInputTensor(input_shape)
@@ -94,7 +93,7 @@ def test_train_then_infer_via_file():
         training_anchors = training_session.initAnchorArrays()
         training_inputs = {input: input_data}
 
-        for i in range(4):
+        for _ in range(4):
             training_session.run(
                 popart.PyStepIO(training_inputs, training_anchors))
 
@@ -145,13 +144,6 @@ def test_cannot_call_resethostweights_with_constant_weights():
     # Create the device
     with tu.create_test_device(1, opts={"compileIPUCode": True}) as device:
         device.attach()
-
-        # ----------------------------------------------
-
-        # Prepare the input data
-        input_data = np.ones(input_shape.shape(), dtype=np.float32)
-
-        # ----------------------------------------------
 
         # Prepare the Inference session
         inference_dataFlow = popart.DataFlow(
@@ -229,7 +221,7 @@ def test_modelToHost_calls_resetHostWeights():
 
         outputs = []
 
-        for i in range(2):
+        for _ in range(2):
             session.run(popart.PyStepIO(inputs, anchors))
             outputs.append(np.copy(anchors[o]))
 

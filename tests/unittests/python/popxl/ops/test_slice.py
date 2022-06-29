@@ -64,9 +64,9 @@ class TestSlice:
         with g:
             t = popxl.variable(data)
             if inplace:
-                y = ops.slice_(t, start=1, stop=3, step=1, axis=0)
+                _ = ops.slice_(t, start=1, stop=3, step=1, axis=0)
             else:
-                y = ops.slice(t, start=1, stop=3, step=1, axis=0)
+                _ = ops.slice(t, start=1, stop=3, step=1, axis=0)
 
         if not inplace:
             assert contains_op_of_type("Slice", _ir.op.SliceOp, g)
@@ -153,9 +153,9 @@ class TestSlice:
         with ir.main_graph:
             t = popxl.variable(data)
             if inplace:
-                y = ops.slice_(t, axis=0)  # `axis=0` is redundant
+                _ = ops.slice_(t, axis=0)  # `axis=0` is redundant
             else:
-                y = ops.slice(t, axis=0)  # `axis=0` is redundant
+                _ = ops.slice(t, axis=0)  # `axis=0` is redundant
 
         assert len(ir.main_graph.tensors) == 1
         assert len(ir.main_graph.variables) == 1
@@ -236,9 +236,9 @@ class TestSlice:
             t = popxl.variable(data)
             with pytest.raises(ValueError):
                 if inplace:
-                    y = ops.slice_(t, start=[2], stop=[3, 4], axis=[2, 1])
+                    _ = ops.slice_(t, start=[2], stop=[3, 4], axis=[2, 1])
                 else:
-                    y = ops.slice(t, start=[2], stop=[3, 4], axis=[2, 1])
+                    _ = ops.slice(t, start=[2], stop=[3, 4], axis=[2, 1])
 
     def test_dunder_scalar(self):
         ir = popxl.Ir()

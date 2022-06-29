@@ -130,7 +130,6 @@ def test_global_partials():
     data_size = 32
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
-    partials_type = ['', '']
 
     def init_builder(builder):
         t1 = builder.addInputTensor(data1, 'data_in_1')

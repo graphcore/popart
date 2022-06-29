@@ -30,10 +30,7 @@ class TestIOSizes():
         """
         BPS = 10
         NUM_LOCAL_REPLICAS = 1
-        REMOTE_BUFFER_ID = 1
         DATA_SHAPE = 4
-        REMOTE_BUFFER_IDX = 0
-        BATCH_SIZE = NUM_LOCAL_REPLICAS
 
         input_data = []
 
@@ -104,7 +101,6 @@ class TestIOSizes():
 
             for i in range(BPS):
                 print("Batch:", i)
-                j = (2 * i)
                 d0_data = data[d0_h2d][i, ...]
                 # e0 data advances 2 batches per iteration
                 e0_data = data[e0_h2d][2 * i, ...]

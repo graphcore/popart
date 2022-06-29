@@ -176,7 +176,6 @@ def test_reshape_neg_graphcore(op_tester):
 def test_reshape_zero_graphcore(op_tester):
     d1 = np.random.rand(2, 4, 3).astype(np.float32)
     d2a = [-1, 0]
-    d2 = np.array(d2a).astype(np.int64)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)

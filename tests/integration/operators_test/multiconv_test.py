@@ -287,26 +287,25 @@ def test_multiconv_bad_options():
     f0 = builder.addInputTensor("FLOAT", [10, 2, 3, 3])
 
     with pytest.raises(popart.popart_exception) as e_info:
-        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d0, f0]],
-                                                 dilations=[[1, 1], [2, 2, 2]])
+        _ = builder.aiGraphcore.multiconv([[d0, f0], [d0, f0]],
+                                          dilations=[[1, 1], [2, 2, 2]])
     assert (e_info.value.args[0] ==
             "Length of dilations vector 3 != number of spatial dimensions 2")
 
     with pytest.raises(popart.popart_exception) as e_info:
-        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0], [d0, f0]],
-                                                 dilations=[[1, 1], [2, 2],
-                                                            [3, 3]])
+        _ = builder.aiGraphcore.multiconv([[d0, f0], [d0, f0]],
+                                          dilations=[[1, 1], [2, 2], [3, 3]])
     assert (e_info.value.args[0].endswith(
         "number of dilations parameter sets (3) does not match the number of input sets (2)"
     ))
 
     with pytest.raises(popart.popart_exception) as e_info:
-        [c0, c1] = builder.aiGraphcore.multiconv([[d0], [d0, f0]])
+        _ = builder.aiGraphcore.multiconv([[d0], [d0, f0]])
     assert (e_info.value.args[0].endswith(
         "must have at least two inputs - data and weights"))
 
     with pytest.raises(popart.popart_exception) as e_info:
-        [c0, c1] = builder.aiGraphcore.multiconv([[d0, f0, d0, f0], [d0, f0]])
+        _ = builder.aiGraphcore.multiconv([[d0, f0, d0, f0], [d0, f0]])
     assert (e_info.value.args[0].endswith(
         "can have at most three inputs - data, weights, and bias"))
 

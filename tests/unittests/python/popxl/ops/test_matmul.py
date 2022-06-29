@@ -18,7 +18,7 @@ class TestMatMul:
         with ir.main_graph:
             a = popxl.variable(np.random.rand(4, 4))
             b = popxl.variable(np.random.rand(4, 4))
-            c = ops.matmul(a, b, available_memory_proportion, output_type,
+            _ = ops.matmul(a, b, available_memory_proportion, output_type,
                            partials_type)
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 2
@@ -29,7 +29,7 @@ class TestMatMul:
         with ir.main_graph:
             a = popxl.variable(np.random.rand(4, 4))
             b = popxl.variable(np.random.rand(4, 4))
-            c = a @ b
+            _ = a @ b
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 2
         assert contains_op_of_type("MatMul", _ir.op.MatMulOp, ir.main_graph)
@@ -39,7 +39,7 @@ class TestMatMul:
         with ir.main_graph:
             a = popxl.variable(np.random.rand(4, 4))
             b = np.random.rand(4, 4)
-            c = a @ b
+            _ = a @ b
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 1
         assert len(ir.main_graph.constants) == 1
@@ -50,7 +50,7 @@ class TestMatMul:
         with ir.main_graph:
             a = np.random.rand(4, 4)
             b = popxl.variable(np.random.rand(4, 4))
-            c = a @ b
+            _ = a @ b
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 1
         assert len(ir.main_graph.constants) == 1
@@ -64,7 +64,7 @@ class TestMatMul:
         with ir.main_graph:
             a = popxl.variable(np.random.rand(4, 4))
             b = popxl.variable(np.random.rand(4, 4))
-            c = ops.matmul(a, b)
+            _ = ops.matmul(a, b)
         assert len(ir.main_graph.tensors) == 3
         assert len(ir.main_graph.variables) == 2
         op = ir.main_graph._pb_graph.getOps()[0]
@@ -80,4 +80,4 @@ class TestMatMul:
             a = popxl.variable(np.random.rand(4, 4))
             b = popxl.variable(np.random.rand(4, 4))
             with pytest.raises(ValueError):
-                c = ops.matmul(a, b)
+                _ = ops.matmul(a, b)

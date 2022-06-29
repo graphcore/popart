@@ -129,7 +129,7 @@ class TestRepeat:
             a = popxl.variable(1)
 
             id_graph = ir.create_graph(id_fn, a)
-            b, = ops.repeat(id_graph, repeat_count, a)
+            _ = ops.repeat(id_graph, repeat_count, a)
 
         # 2 tensors
         assert len(g.tensors) == 2
@@ -338,13 +338,13 @@ class TestRepeat:
             linear = LinearHostLoad()
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
-            y, = ops.repeat(linear_graph,
-                            repeat_count,
-                            x,
-                            inputs_dict={
-                                linear.W: W,
-                                linear.b: b
-                            })
+            _ = ops.repeat(linear_graph,
+                           repeat_count,
+                           x,
+                           inputs_dict={
+                               linear.W: W,
+                               linear.b: b
+                           })
 
         data = np.random.random((repeat_count, 16, 16)).astype(np.float32)
         r_y = run_ir(ir,
@@ -378,13 +378,13 @@ class TestRepeat:
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
             with pytest.raises(ValueError) as e_info:
-                y, = ops.repeat(linear_graph,
-                                repeat_count,
-                                x,
-                                inputs_dict={
-                                    linear.W: W,
-                                    linear.b: b
-                                })
+                _ = ops.repeat(linear_graph,
+                               repeat_count,
+                               x,
+                               inputs_dict={
+                                   linear.W: W,
+                                   linear.b: b
+                               })
             assert e_info.value.args[0].startswith("Repeat count must be >= 0")
 
     def test_repeat_io_error(self):
@@ -448,7 +448,6 @@ class TestRepeat:
         with main:
             x = popxl.variable(1)
             y = popxl.variable(1)
-            z = popxl.variable(1)
 
             def fn(x, y):
                 return x + 1, y + 2
@@ -467,7 +466,6 @@ class TestRepeat:
         with main:
             x = popxl.variable(1)
             y = popxl.variable(1)
-            z = popxl.variable(1)
 
             def fn(x, y):
                 return x + 1, y + 2

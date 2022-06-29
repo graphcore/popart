@@ -89,7 +89,6 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     nIPUs = replicationFactor * nVirtualGraphs
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
-    stepDataInfo = popart.TensorInfo("FLOAT", stepDataShape)
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
     #initial weight and input values
@@ -115,7 +114,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     mm0 = builder.aiOnnx.mul([input0, w0])
     mm1 = builder.aiOnnx.add([mm0, w1])
     l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
-    art = popart.AnchorReturnType("All")
+    _ = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(batchesPerStep, {})
     with tu.create_test_device(numIpus=nIPUs, opts={"compileIPUCode":
                                                     False}) as device:
@@ -253,39 +252,35 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
         if step is 0:
             for group in optimizer.param_groups:
                 for p in group['params']:
-                    param_state = optimizer.state[p][
-                        'momentum_buffer'] = p.data * 0
-                    param_state = optimizer.state[p]['exp_avg'] = p.data * 0
-                    param_state = optimizer.state[p]['exp_avg_sq'] = p.data * 0
-                    param_state = optimizer.state[p]['exp_inf'] = p.data * 0
-                    param_state = optimizer.state[p]['square_avg'] = p.data * 0
-                    param_state = optimizer.state[p]['grad_avg'] = p.data * 0
-                    param_state = optimizer.state[p]['acc_delta'] = p.data * 0
-                    param_state = optimizer.state[p]['sum'] = p.data * 0
-                    param_state = optimizer.state[p]['step'] = 0
+                    optimizer.state[p]['momentum_buffer'] = p.data * 0
+                    optimizer.state[p]['exp_avg'] = p.data * 0
+                    optimizer.state[p]['exp_avg_sq'] = p.data * 0
+                    optimizer.state[p]['exp_inf'] = p.data * 0
+                    optimizer.state[p]['square_avg'] = p.data * 0
+                    optimizer.state[p]['grad_avg'] = p.data * 0
+                    optimizer.state[p]['acc_delta'] = p.data * 0
+                    optimizer.state[p]['sum'] = p.data * 0
+                    optimizer.state[p]['step'] = 0
         else:
             for group, oldGroup in zip(optimizer.param_groups,
                                        oldOptimizer.param_groups):
-                for p, oldp in zip(group['params'], oldGroup['params']):
-                    param_state = optimizer.state[p][
-                        'momentum_buffer'] = oldOptimizer.state[p][
-                            'momentum_buffer']
-                    param_state = optimizer.state[p][
-                        'exp_avg'] = oldOptimizer.state[p]['exp_avg']
-                    param_state = optimizer.state[p][
-                        'exp_avg_sq'] = oldOptimizer.state[p]['exp_avg_sq']
-                    param_state = optimizer.state[p][
-                        'exp_inf'] = oldOptimizer.state[p]['exp_inf']
-                    param_state = optimizer.state[p][
-                        'square_avg'] = oldOptimizer.state[p]['square_avg']
-                    param_state = optimizer.state[p][
-                        'grad_avg'] = oldOptimizer.state[p]['grad_avg']
-                    param_state = optimizer.state[p][
-                        'acc_delta'] = oldOptimizer.state[p]['acc_delta']
-                    param_state = optimizer.state[p][
-                        'sum'] = oldOptimizer.state[p]['sum']
-                    param_state = optimizer.state[p][
-                        'step'] = oldOptimizer.state[p]['step']
+                for p, _ in zip(group['params'], oldGroup['params']):
+                    optimizer.state[p]['momentum_buffer'] = oldOptimizer.state[
+                        p]['momentum_buffer']
+                    optimizer.state[p]['exp_avg'] = oldOptimizer.state[p][
+                        'exp_avg']
+                    optimizer.state[p]['exp_avg_sq'] = oldOptimizer.state[p][
+                        'exp_avg_sq']
+                    optimizer.state[p]['exp_inf'] = oldOptimizer.state[p][
+                        'exp_inf']
+                    optimizer.state[p]['square_avg'] = oldOptimizer.state[p][
+                        'square_avg']
+                    optimizer.state[p]['grad_avg'] = oldOptimizer.state[p][
+                        'grad_avg']
+                    optimizer.state[p]['acc_delta'] = oldOptimizer.state[p][
+                        'acc_delta']
+                    optimizer.state[p]['sum'] = oldOptimizer.state[p]['sum']
+                    optimizer.state[p]['step'] = oldOptimizer.state[p]['step']
 
         for i in range(batchesPerStep):
             out = net(torch.from_numpy(inputVals[step][i]), i)

@@ -140,14 +140,14 @@ def test_2_restores_for_1_stash_not_supported_with_recomp():
 
     with tu.create_test_device(numIpus=2) as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.TrainingSession(
-                deviceInfo=device,
-                dataFlow=popart.DataFlow(bps, [loss, w0],
-                                         popart.AnchorReturnType("Final")),
-                fnModel=builder.getModelProto(),
-                loss=loss,
-                optimizer=popart.ConstSGD(0.1),
-                userOptions=opts)
+            _ = popart.TrainingSession(deviceInfo=device,
+                                       dataFlow=popart.DataFlow(
+                                           bps, [loss, w0],
+                                           popart.AnchorReturnType("Final")),
+                                       fnModel=builder.getModelProto(),
+                                       loss=loss,
+                                       optimizer=popart.ConstSGD(0.1),
+                                       userOptions=opts)
         assert e_info.value.args[0].find(
             "To-stash Tensor '" + in0 +
             "' must be restored for recomputation of a descendent that is not a direct consumer on more than 1 PipelineStage, but this is currently not supported"

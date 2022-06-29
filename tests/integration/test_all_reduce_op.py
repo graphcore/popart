@@ -91,7 +91,7 @@ def test_all_reduce_op():
     # Outputs should be sum of inputs
     target = inputs.sum(axis=0)
     assert len(y_host) == n_ipus
-    for i, y_host_i in enumerate(y_host):
+    for y_host_i in y_host:
         np.testing.assert_equal(target, y_host_i)
 
 
@@ -147,7 +147,7 @@ def test_all_reduce_op_backwards():
     # Outputs should be sum of inputs
     target = inputs.sum(axis=0)
     assert len(y_host) == n_ipus
-    for i, y_host_i in enumerate(y_host):
+    for y_host_i in y_host:
         np.testing.assert_equal(target, y_host_i)
 
 
@@ -247,7 +247,7 @@ def test_all_reduce_identical_inputs_op_backwards():
     # Outputs should be sum of inputs
     target = inputs.sum(axis=0)
     assert len(y_host) == n_ipus
-    for i, y_host_i in enumerate(y_host):
+    for y_host_i in y_host:
         np.testing.assert_equal(target, y_host_i)
 
 
@@ -291,7 +291,7 @@ def test_all_reduce_identical_grad_inputs_op():
     # Outputs should be sum of inputs
     target = inputs.sum(axis=0)
     assert len(y_host) == n_ipus
-    for i, y_host_i in enumerate(y_host):
+    for y_host_i in y_host:
         np.testing.assert_equal(target, y_host_i)
 
 

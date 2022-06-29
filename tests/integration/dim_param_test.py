@@ -63,7 +63,7 @@ def test_model_with_unspecified_dim_params(tmpdir):
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(
+            _ = popart.InferenceSession(
                 fnModel=proto,
                 dataFlow=popart.DataFlow(
                     1, {outId: popart.AnchorReturnType("All")}),
@@ -79,7 +79,7 @@ def test_model_with_negative_dim_values(tmpdir):
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            session = popart.InferenceSession(
+            _ = popart.InferenceSession(
                 fnModel=proto,
                 dataFlow=popart.DataFlow(
                     1, {outId: popart.AnchorReturnType("All")}),
@@ -97,7 +97,7 @@ def test_model_with_specified_dim_params(tmpdir):
     inputShapeInfo.add("input_0", popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(
+        _ = popart.InferenceSession(
             fnModel=proto,
             dataFlow=popart.DataFlow(1,
                                      {outId: popart.AnchorReturnType("All")}),

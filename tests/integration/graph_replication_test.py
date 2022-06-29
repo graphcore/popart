@@ -228,8 +228,6 @@ def test_replication_infer(op_tester):
         module.eval()
 
         a = torch.tensor(A)
-        b = torch.tensor(B)
-        c = torch.tensor(C)
 
         # forward
         # Run the pytorch module multiple times to simulate the same

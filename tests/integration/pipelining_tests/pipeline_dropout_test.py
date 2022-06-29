@@ -29,7 +29,6 @@ def test_pipelined_dropout():
         dropouts = []
         dropoutGrads = []
         dropoutInputs = []
-        dropoutOutputs = []
 
         builder = popart.Builder()
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_shape))
@@ -135,6 +134,8 @@ def test_pipelined_dropout():
 
             return anchors
 
+    test(True, True)
+
 
 @tu.requires_ipu
 def test_pipelined_recomputed_dropout():
@@ -151,7 +152,6 @@ def test_pipelined_recomputed_dropout():
     dropouts = []
     dropoutGrads = []
     dropoutInputs = []
-    dropoutOutputs = []
 
     builder = popart.Builder()
     ip = builder.addInputTensor(popart.TensorInfo("FLOAT", ip_shape))

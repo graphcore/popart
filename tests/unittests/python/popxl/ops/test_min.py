@@ -13,6 +13,6 @@ class TestMin:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.min(a, axis=[0, -1])
+            _ = ops.min(a, axis=[0, -1])
         assert len(g.tensors) == 2
         assert contains_op_of_type("ReduceMin", _ir.op.ReduceMinOp, g)

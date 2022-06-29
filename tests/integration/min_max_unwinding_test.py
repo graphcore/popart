@@ -27,5 +27,5 @@ def test_min_max_unwinding():
     with tu.create_test_device() as device:
         sess = popart.InferenceSession(builder.getModelProto(), dataFlow,
                                        device)
-        anchors = sess.initAnchorArrays()
+        _ = sess.initAnchorArrays()
         sess.prepareDevice()

@@ -13,7 +13,7 @@ class TestRelu:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.relu(a)
+            _ = ops.relu(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("Relu", _ir.op.ReluOp, g)
 
@@ -23,6 +23,6 @@ class TestRelu:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.relu_(a)
+            _ = ops.relu_(a)
         assert len(g.tensors) == 2
         assert contains_op_of_type("ReluInplace", _ir.op.ReluInplaceOp, g)

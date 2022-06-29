@@ -51,7 +51,7 @@ def test_stochastic_rounding():
     iB = builder.addInitializedInputTensor(b)
     iMean = builder.addInitializedInputTensor(mean)
     iVar = builder.addInitializedInputTensor(var)
-    [o_y, o_mean, o_var, o_smean, o_svar] = builder.aiOnnx.batchnormalization(
+    [o_y, _, _, _, _] = builder.aiOnnx.batchnormalization(
         [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
     loss = builder.aiGraphcore.identityloss([o_y])
     builder.addOutputTensor(o_y)
@@ -71,7 +71,7 @@ def test_stochastic_rounding():
                                       deviceInfo=device,
                                       userOptions=options)
 
-        anchors = sess.initAnchorArrays()
+        _ = sess.initAnchorArrays()
         sess.prepareDevice()
 
         # Confirm that you are able to set the random seed when

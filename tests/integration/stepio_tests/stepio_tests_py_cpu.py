@@ -174,7 +174,7 @@ def test_steio_correct_inputs():
     s.prepareDevice()
     anchors = s.initAnchorArrays()
 
-    stepio0 = popart.PyStepIO({in0: data0, "foo": np.zeros(4)}, anchors)
+    _ = popart.PyStepIO({in0: data0, "foo": np.zeros(4)}, anchors)
     stepio1 = popart.PyStepIO({in0: data0, sqrt: np.zeros(4)}, anchors)
     # s.run(stepio0)  # fails, as expected
     with pytest.raises(popart.popart_exception) as e_info:

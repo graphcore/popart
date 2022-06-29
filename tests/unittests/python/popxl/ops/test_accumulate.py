@@ -15,11 +15,11 @@ class TestAccumulate:
         with g:
             a = popxl.variable(1)
             b = popxl.constant(2)
-            c = ops.var_updates.accumulate_(a, b)
+            _ = ops.var_updates.accumulate_(a, b)
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
-        op = g._pb_graph.getOps()[0]
+        _ = g._pb_graph.getOps()[0]
 
     def test_dampened_add_float(self):
         ir = popxl.Ir()
@@ -28,11 +28,11 @@ class TestAccumulate:
         with g:
             a = popxl.variable(1)
             b = popxl.constant(2)
-            c = ops.var_updates.accumulate_(a, b, 0.9)
+            _ = ops.var_updates.accumulate_(a, b, 0.9)
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
-        op = g._pb_graph.getOps()[0]
+        _ = g._pb_graph.getOps()[0]
 
     def test_dampened_add_tensor(self):
         ir = popxl.Ir()
@@ -42,9 +42,9 @@ class TestAccumulate:
             a = popxl.variable(1)
             b = popxl.constant(2)
             factor = popxl.variable(0.9)
-            c = ops.var_updates.accumulate_(a, b, factor)
+            _ = ops.var_updates.accumulate_(a, b, factor)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
-        op = g._pb_graph.getOps()[0]
+        _ = g._pb_graph.getOps()[0]
 
     def test_dampened_add_square(self):
         ir = popxl.Ir()
@@ -53,9 +53,9 @@ class TestAccumulate:
         with g:
             a = popxl.variable(1)
             b = popxl.constant(2)
-            c = ops.var_updates.accumulate_square_(a, b, 0.999)
+            _ = ops.var_updates.accumulate_square_(a, b, 0.999)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
-        op = g._pb_graph.getOps()[0]
+        _ = g._pb_graph.getOps()[0]
 
     def test_mean(self):
         ir = popxl.Ir()
@@ -65,9 +65,9 @@ class TestAccumulate:
             a = popxl.variable(1)
             b = popxl.constant(2)
             step = popxl.variable(0)
-            c = ops.var_updates.accumulate_mean_(a, b, step)
+            _ = ops.var_updates.accumulate_mean_(a, b, step)
         assert contains_op_of_type("Accumulate", _ir.op.AccumulateOp, g)
-        op = g._pb_graph.getOps()[0]
+        _ = g._pb_graph.getOps()[0]
 
     @pytest.mark.parametrize("constant_", [True, False])
     def test_scale(self, constant_):
@@ -79,7 +79,7 @@ class TestAccumulate:
             a = popxl.variable(1)
             if not constant_:
                 f = popxl.variable(f)
-            c = ops.var_updates.accumulator_scale_(a, f)
+            _ = ops.var_updates.accumulator_scale_(a, f)
         assert contains_op_of_type("AccumulatorScale",
                                    _ir.op.AccumulatorScaleOp, g)
         op = g._pb_graph.getOps()[0]
@@ -91,7 +91,7 @@ class TestAccumulate:
 
         with g:
             a = popxl.variable(1)
-            c = ops.var_updates.accumulator_zero_(a)
+            _ = ops.var_updates.accumulator_zero_(a)
         assert contains_op_of_type("AccumulatorScale",
                                    _ir.op.AccumulatorScaleOp, g)
 
@@ -104,7 +104,7 @@ class TestAccumulate:
             b = popxl.variable([2, 2])
             c = popxl.constant([2])
             axis = 1
-            d = ops.var_updates.sparse_accumulate_(a, b, c, axis)
+            _ = ops.var_updates.sparse_accumulate_(a, b, c, axis)
         assert contains_op_of_type("PopartSparseAccumulate",
                                    _ir.op.SparseAccumulateOp, g)
         op = g._pb_graph.getOps()[0]
@@ -124,7 +124,7 @@ class TestAccumulate:
             if not constant_:
                 f = popxl.variable(f)
             axis = 1
-            d = ops.var_updates.sparse_accumulate_(a, b, c, axis, f, W)
+            _ = ops.var_updates.sparse_accumulate_(a, b, c, axis, f, W)
 
         assert contains_op_of_type("PopartSparseAccumulate",
                                    _ir.op.SparseAccumulateOp, g)

@@ -212,7 +212,7 @@ def _run_torch_test_model(data,
         def __init__(self):
             super(Net, self).__init__()
             self.convs = []
-            for i, w in enumerate(weights):
+            for i in range(len(weights)):
                 name = f'conv{i}'
                 conv = nn.Conv2d(1, 1, 2, padding=1)
                 # Setting convs as a parameter so

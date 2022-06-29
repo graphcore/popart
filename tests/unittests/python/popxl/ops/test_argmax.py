@@ -14,7 +14,7 @@ class TestArgMax:
         g = ir.main_graph
         with ir.main_graph:
             t = popxl.variable(np.random.rand(5, 10, 20))
-            res = ops.argmax(t, dim, keepdim)
+            _ = ops.argmax(t, dim, keepdim)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("ArgMax", _ir.op.ArgMaxOp, g)

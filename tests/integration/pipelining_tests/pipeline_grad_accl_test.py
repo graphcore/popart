@@ -334,7 +334,7 @@ def get_model_anchors_model2(doSharding,
 
         session.weightsFromHost()
 
-        for i in range(6):
+        for _ in range(6):
             session.run(stepio)
 
         if returnRawInput is True:

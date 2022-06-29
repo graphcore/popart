@@ -160,7 +160,6 @@ disable=abstract-method,
         unnecessary-comprehension,
         unspecified-encoding,
         unsubscriptable-object,
-        unused-variable,
         use-a-generator,
         use-dict-literal,
         use-implicit-booleaness-not-comparison,
@@ -524,7 +523,8 @@ signature-mutators=
 additional-builtins=
 
 # Tells whether unused global variables should be treated as a violation.
-allow-global-unused-variables=no
+# NOTE: If this is set to no, one will get errors stating that classes and functions in tests are unused
+allow-global-unused-variables=yes
 
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=

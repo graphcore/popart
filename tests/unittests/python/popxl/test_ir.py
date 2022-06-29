@@ -67,7 +67,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(foo, v1, v2, 5)
 
-            z, = ops.call(g, v1, v2)
+            _, = ops.call(g, v1, v2)
 
         assert len(g._by_ref_inputs) == 1
         x = g.inputs[0]
@@ -93,7 +93,7 @@ class TestCreateGraph:
             bar = Bar()
             g = ir.create_graph(bar, a, b)
 
-            y1, = ops.call(g, a, b, inputs_dict={bar.y: y})
+            _, = ops.call(g, a, b, inputs_dict={bar.y: y})
 
         assert len(g.inputs) == 3
         assert len(g.outputs) == 1
@@ -111,11 +111,11 @@ class TestCreateGraph:
 
             # Missing arguments
             with pytest.raises(ValueError):
-                g = ir.create_graph(foo, v1, 5)
+                _ = ir.create_graph(foo, v1, 5)
 
             # Too many arguments
             with pytest.raises(ValueError):
-                g = ir.create_graph(foo, v1, v2, v3, 5)
+                _ = ir.create_graph(foo, v1, v2, v3, 5)
 
     def test_bad_mixed_arguments(self):
         ir = popxl.Ir()
@@ -128,11 +128,11 @@ class TestCreateGraph:
 
             # Mixed args: Tensor + non-Tensor
             with pytest.raises(TypeError):
-                g = ir.create_graph(foo, [v1, 5])
+                _ = ir.create_graph(foo, [v1, 5])
 
             # Mixed args: non-Tensor + Tensor
             with pytest.raises(TypeError):
-                g = ir.create_graph(foo, [5, v1])
+                _ = ir.create_graph(foo, [5, v1])
 
     def test_bad_mixed_var_arguments(self):
         ir = popxl.Ir()
@@ -145,11 +145,11 @@ class TestCreateGraph:
 
             # Mixed args: Tensor + non-Tensor
             with pytest.raises(TypeError):
-                g = ir.create_graph(foo, v1, 5)
+                _ = ir.create_graph(foo, v1, 5)
 
             # Mixed args: non-Tensor + Tensor
             with pytest.raises(TypeError):
-                g = ir.create_graph(foo, 5, v1)
+                _ = ir.create_graph(foo, 5, v1)
 
     def test_default_args(self):
         ir = popxl.Ir()
@@ -162,7 +162,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(sum_xab, x)
 
-            y, = ops.call(g, x)
+            _, = ops.call(g, x)
 
         assert len(g.inputs) == 1
         assert len(g.outputs) == 1
@@ -187,7 +187,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(cumulative_sum, x1, x2)
 
-            y1, y2 = ops.call(g, x1, x2)
+            _, _ = ops.call(g, x1, x2)
 
         assert len(g.inputs) == 2
         assert len(g.outputs) == 2
@@ -213,7 +213,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(cumulative_sum, [x1, x2])
 
-            y1, y2 = ops.call(g, [x1, x2])
+            _, _ = ops.call(g, [x1, x2])
 
         assert len(g.inputs) == 2
         assert len(g.outputs) == 2
@@ -240,7 +240,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(cumulative_sum, x1=x1, x2=x2)
 
-            y1, y2 = ops.call(g, x1, x2)
+            _, _ = ops.call(g, x1, x2)
 
         assert len(g.inputs) == 2
         assert len(g.outputs) == 2
@@ -275,7 +275,7 @@ class TestCreateGraph:
                                 x=x[6],
                                 z=x[7])
 
-            y, = ops.call(g, *x)
+            _, = ops.call(g, *x)
 
         assert len(g.inputs) == len(x)
         assert len(g.outputs) == 1
@@ -289,7 +289,7 @@ class TestCreateGraph:
 
         with ir.main_graph:
             with pytest.raises(ValueError):
-                g = ir.create_graph(fun)
+                _ = ir.create_graph(fun)
 
     def test_bad_list_output(self):
         ir = popxl.Ir()
@@ -299,7 +299,7 @@ class TestCreateGraph:
 
         with ir.main_graph:
             with pytest.raises(ValueError):
-                g = ir.create_graph(fun)
+                _ = ir.create_graph(fun)
 
     def test_create_graph_tensor_spec(self):
         ir = popxl.Ir()

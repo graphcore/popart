@@ -54,7 +54,7 @@ def test_simple_for_loop(op_tester):
                 super(LoopModule, self).__init__()
 
             def forward(self, a, b, m: int):
-                for i in range(m):
+                for _ in range(m):
                     a = a + b
                 return a
 
@@ -109,7 +109,7 @@ def test_loop_matmul(op_tester):
         b = i2
 
         x = a
-        for i in range(trip_count):
+        for _ in range(trip_count):
             x = np.matmul(np.matmul(x, b), b)
 
         return [x]
@@ -136,7 +136,7 @@ def test_loop_stop(op_tester):
         loop_builder.setGraphName("body")
         # Inputs: [iteration_number, condition_in, a_in]
         loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
-        cond_in = loop_builder.addUntypedInputTensor(cond)
+        _ = loop_builder.addUntypedInputTensor(cond)
         a_in = loop_builder.addUntypedInputTensor(a)
         a_out = loop_builder.aiOnnx.mul([a_in, b])
         max = loop_builder.aiOnnx.constant(
@@ -156,7 +156,7 @@ def test_loop_stop(op_tester):
         b = i2
 
         x = a
-        for i in range(trip_count):
+        for _ in range(trip_count):
             x = x * b
             if x >= 128:
                 break
@@ -214,7 +214,7 @@ def test_loop_scanout(op_tester):
         x = a
         scanx = []
         scany = []
-        for i in range(trip_count):
+        for _ in range(trip_count):
             x = np.matmul(x, b)
             y = np.add(x, c)
             scanx.append(x)

@@ -28,10 +28,10 @@ def test_basic(monkeypatch):
             opts.logDir = tmpdir
 
             with tu.create_test_device() as device:
-                session = popart.InferenceSession(fnModel=proto,
-                                                  dataFlow=dataFlow,
-                                                  userOptions=opts,
-                                                  deviceInfo=device)
+                _ = popart.InferenceSession(fnModel=proto,
+                                            dataFlow=dataFlow,
+                                            userOptions=opts,
+                                            deviceInfo=device)
 
                 dotFiles = list(Path(tmpdir).glob('*.dot'))
                 assert len(dotFiles) == expected_dot_file_count

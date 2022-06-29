@@ -444,8 +444,8 @@ def test_rnn_outlining(op_tester):
         i2 = builder.addInitializedInputTensor(d2)
         i3 = builder.addInitializedInputTensor(d3)
         x = i1
-        for i in range(4):
-            Y, Y_h = builder.aiOnnx.rnn([x, i2, i3], 2)
+        for _ in range(4):
+            Y, _ = builder.aiOnnx.rnn([x, i2, i3], 2)
             x = builder.aiOnnx.squeeze([Y], axes=[1])
         Y = builder.aiOnnx.identity([Y])
         builder.addOutputTensor(Y)

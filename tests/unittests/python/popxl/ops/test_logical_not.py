@@ -12,7 +12,7 @@ class TestNot:
 
         with g:
             a = popxl.variable(True, popxl.bool)
-            c = ops.logical_not(a)
+            _ = ops.logical_not(a)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Not", _ir.op.NotOp, g)
@@ -23,7 +23,7 @@ class TestNot:
 
         with g:
             a = popxl.variable(1, popxl.int32)
-            c = ops.logical_not(a)
+            _ = ops.logical_not(a)
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("Not", _ir.op.NotOp, g)
@@ -34,7 +34,7 @@ class TestNot:
 
         with g:
             a = popxl.variable(True, popxl.bool)
-            c = ~a
+            _ = ~a
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Not", _ir.op.NotOp, g)

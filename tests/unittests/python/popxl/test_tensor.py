@@ -158,7 +158,7 @@ class TestTensor:
             subgraph = ir.create_empty_graph()
             with subgraph:
                 with pytest.raises(ValueError):
-                    x = popxl.variable(1)
+                    _ = popxl.variable(1)
 
     def test_repr(self):
         def subgraph1(a: popxl.Tensor):
@@ -282,7 +282,7 @@ class TestTensorGetItem:
         with popxl.Ir().main_graph:
             x = popxl.variable(np.arange(2))
             with pytest.raises(TypeError):
-                y = x[key]
+                _ = x[key]
 
 
 class TestTensorSpec:

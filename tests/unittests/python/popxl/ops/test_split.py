@@ -15,7 +15,7 @@ class TestSplit:
         with g:
             t = popxl.variable([[1, 2], [3, 4], [5, 6], [7, 8]])
             splits = 2
-            c = ops.split(t, splits)
+            _ = ops.split(t, splits)
 
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
@@ -28,7 +28,7 @@ class TestSplit:
         with g:
             t = popxl.variable([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
             splits = [1, 3, 1]
-            c = ops.split(t, splits)
+            _ = ops.split(t, splits)
 
         assert len(g.tensors) == 4
         assert len(g.variables) == 1
@@ -41,8 +41,8 @@ class TestSplit:
         with g:
             t = popxl.variable([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
             splits = 2
-            with pytest.raises(ValueError) as excinfo:
-                c = ops.split(t, splits)
+            with pytest.raises(ValueError):
+                _ = ops.split(t, splits)
 
     def test_invalid_list(self):
         ir = popxl.Ir()
@@ -51,5 +51,5 @@ class TestSplit:
         with g:
             t = popxl.variable([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
             splits = [1, 2]
-            with pytest.raises(popart_exception) as excinfo:
-                c = ops.split(t, splits)
+            with pytest.raises(popart_exception):
+                _ = ops.split(t, splits)

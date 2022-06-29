@@ -29,8 +29,6 @@ def trainSession(anchors, optimizer, stepSize):
 
     proto = builder.getModelProto()
 
-    opts = popart.SessionOptions()
-
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.TrainingSession(fnModel=proto,
                                          dataFlow=popart.DataFlow(
@@ -188,7 +186,7 @@ def test_sgd_with_float16_model():
     builder = popart.Builder()
     inid1 = builder.addInputTensor(popart.TensorInfo(input1))
     inid2 = builder.addInitializedInputTensor(input2)
-    inid3 = builder.addInitializedInputTensor(input2)
+    inid3 = builder.addInitializedInputTensor(input3)
 
     c1 = builder.aiOnnx.conv([inid1, inid2],
                              dilations=[1, 1],
@@ -214,8 +212,6 @@ def test_sgd_with_float16_model():
         popart.reservedGradientPrefix() + inid1:
         popart.AnchorReturnType("All"),
     }
-
-    opts = popart.SessionOptions()
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
         session = popart.TrainingSession(fnModel=proto,

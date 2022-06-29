@@ -110,7 +110,6 @@ class PytorchNetWriter(NetWriter):
         for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepParameterMap = {}
-            substepOutMap = {}
             substepInMap = {}
             for inId in inMap.keys():
                 substepInMap[inId] = inMap[inId][substepi][0:]

@@ -148,7 +148,7 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
     num_inputs = 4
     num_matmuls = 2 if pipelining else 1
 
-    proto, inputs, weights, labels, dataFlow, loss, sum = get_model(
+    proto, inputs, weights, labels, dataFlow, loss, _ = get_model(
         size, batches_per_step, num_inputs, num_matmuls, tile_set,
         exchange_strategy, pipelining)
 
@@ -218,7 +218,7 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
         warmup_iterations = 1
         calc_iterations = 1
 
-        for i in range(warmup_iterations + calc_iterations):
+        for _ in range(warmup_iterations + calc_iterations):
             datainputs = {
                 input: (np.random.normal(
                     0, 0.05, (replicas * batches_per_step * accum_factor, 1,

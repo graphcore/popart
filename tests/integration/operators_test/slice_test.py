@@ -161,7 +161,6 @@ def test_slice_grad(op_tester, graphcore):
 
 def test_slice_error_start_input(op_tester):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
-    axesV = np.array([0, 1]).astype(np.int32)
     startsV = np.array([1, 0]).astype(np.int32)
     endsV = np.array([2, 3]).astype(np.int32)
 

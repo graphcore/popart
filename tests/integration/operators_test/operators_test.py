@@ -191,7 +191,7 @@ def test_loop(op_tester):
         b = i2
 
         x = a
-        for i in range(trip_count):
+        for _ in range(trip_count):
             x = np.matmul(x, b)
 
         return [x]
@@ -1017,7 +1017,7 @@ def test_reverse_grad(op_tester):
         ]
 
     def reference(ref_data):
-        a = torch.tensor(d1, requires_grad=True)
+        _ = torch.tensor(d1, requires_grad=True)
         b = torch.flip(torch.tensor(d1), reverse_dims)
         d__o = ref_data.getOutputTensorGrad(0)
         return [b, torch.flip(torch.tensor(d__o), reverse_dims), None]
@@ -1269,7 +1269,7 @@ def test_topk_2d_sorted():
         bld = popart.Builder(opsets={"ai.onnx": 11, "ai.graphcore": 1})
         i0 = bld.addInputTensor(popart.TensorInfo("FLOAT", [7, 8]))
         k_t = bld.aiOnnx.constant(np.array([k]).astype(np.int64))
-        [vals, inds] = bld.aiOnnx.topk([i0, k_t], axis=0, sorted=sort_topk)
+        [vals, _] = bld.aiOnnx.topk([i0, k_t], axis=0, sorted=sort_topk)
 
         bld.addOutputTensor(vals)
 

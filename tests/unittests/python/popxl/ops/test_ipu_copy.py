@@ -17,7 +17,7 @@ class TestIpuCopy:
             with popxl.ipu(0):
                 a_0 = a + 1
                 ir._pb_ir.logIr()
-            a_1 = ops.ipu_copy(a_0, 1)
+            _ = ops.ipu_copy(a_0, 1)
         assert len(g.variables) == 1
         assert len(g.tensors) == 4
         assert contains_op_of_type("IpuCopy", _ir.op.IpuCopyOp, g)
@@ -33,7 +33,7 @@ class TestIpuCopy:
             with popxl.ipu(None):
                 a_0 = a + 1
             with pytest.raises(ValueError) as excinfo:
-                a_1 = ops.ipu_copy(a_0, 1)
+                _ = ops.ipu_copy(a_0, 1)
             msg = str(excinfo.value)
             assert "Could not infer the ipu" in msg
 
@@ -43,7 +43,7 @@ class TestIpuCopy:
 
         with g:
             a = popxl.variable(1)
-            a_1 = ops.ipu_copy(a, 1, 0)
+            _ = ops.ipu_copy(a, 1, 0)
         assert len(g.variables) == 1
         assert len(g.tensors) == 2
         assert contains_op_of_type("IpuCopy", _ir.op.IpuCopyOp, g)
@@ -55,7 +55,7 @@ class TestIpuCopy:
         with g:
             a = popxl.variable(1)
             with pytest.raises(ValueError) as excinfo:
-                a_1 = ops.ipu_copy(a, 1)
+                _ = ops.ipu_copy(a, 1)
             msg = str(excinfo.value)
             assert "Could not infer the ipu" in msg
             assert "Please specify `source`" in msg
@@ -67,8 +67,8 @@ class TestIpuCopy:
         with g:
             a = popxl.variable(1)
             a_1 = a.copy_to_ipu(1, 0)
-            a_0 = a_1.copy_to_ipu(0)
+            _ = a_1.copy_to_ipu(0)
 
             c = popxl.constant(2)
             c_1 = c.copy_to_ipu(1, 0)
-            c_0 = c_1.copy_to_ipu(0)
+            _ = c_1.copy_to_ipu(0)

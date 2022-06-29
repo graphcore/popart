@@ -21,7 +21,7 @@ def test_graph_construction():
     """ Test that we can construct a popart._internal.ir.Graph object. """
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
-    g1 = _ir.Graph(ir, g1Id)
+    _ = _ir.Graph(ir, g1Id)
 
 
 def test_graph_graph_inputs():
@@ -53,7 +53,7 @@ def test_graph_graph_inputs():
     assert g1.getInputIndex("inputA") == 0
     assert g1.getInputIndex("input2") == 1
     assert g1.getInputIndex("inputB") == 2
-    with pytest.raises(popart.popart_exception) as excinfo:
+    with pytest.raises(popart.popart_exception):
         g1.getInputIndex("nonExistingTensor")
 
     # Check hasInputId.
@@ -95,7 +95,7 @@ def test_graph_graph_outputs():
     # Check getOutputIndex
     assert g1.getOutputIndex("t2") == 0
     assert g1.getOutputIndex("t0") == 1
-    with pytest.raises(popart.popart_exception) as excinfo:
+    with pytest.raises(popart.popart_exception):
         g1.getOutputIndex("nonExistingTensor")
 
     # Check hasOutputId.
@@ -124,7 +124,7 @@ def test_graph_scope_functions():
     assert _ir.removeScope(g1, "g1/tensor1") == "tensor1"
     assert _ir.removeScope(g1, "g1/foobar") == "foobar"
 
-    with pytest.raises(popart.popart_exception) as excinfo:
+    with pytest.raises(popart.popart_exception):
         _ir.removeScope(g1, "h1/tensor1")
 
     # Test getScope

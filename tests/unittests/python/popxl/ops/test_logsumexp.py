@@ -13,7 +13,7 @@ class TestLogSumExp:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            c = ops.logsumexp(a, axis=[0, -1])
+            _ = ops.logsumexp(a, axis=[0, -1])
         assert len(g.tensors) == 2
         assert contains_op_of_type("ReduceLogSumExp", _ir.op.ReduceLogSumExpOp,
                                    g)

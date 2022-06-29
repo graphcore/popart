@@ -45,9 +45,6 @@ def test_grad_tensor_consumed_by_multiple_pipeline_stages_recompute():
     in1_data = np.random.randint(5, size=[5, 4])
     w0_data = np.random.rand(*dshape).astype(np.float32)
 
-    pipeline = True
-    recompute = True
-
     def runModel(pipeline, recompute):
         builder = popart.Builder()
         in0 = builder.addInputTensor("FLOAT", dshape)

@@ -26,7 +26,7 @@ class TestScatter:
                 [1.0, 2.0, 3.0],
                 [4.0, 5.0, 6.0],
             ])
-            c = ops.scatter(t, indices, values)
+            _ = ops.scatter(t, indices, values)
 
         assert len(g.tensors) == 4
         assert len(g.variables) == 3

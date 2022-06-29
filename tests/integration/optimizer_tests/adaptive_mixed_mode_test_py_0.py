@@ -34,7 +34,6 @@ def run_adaptive_mixed_mode(steps,
         ip = builder.addInputTensor(
             popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
                               [dsize, dsize]))
-        d__ip = popart.reservedGradientPrefix() + ip
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(

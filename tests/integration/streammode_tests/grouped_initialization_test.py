@@ -108,7 +108,6 @@ def get_group_idxs(config, var_set, returned):
 
 def get_weights_array(shape: List[int], groups=[], seed=10111) -> np.array:
     np.random.seed(seed)
-    reshape = []
     if len(groups) > 1:
         shape = [len(groups)] + shape
 
@@ -566,18 +565,17 @@ def test_onnx_checkpointing(config):
         opts, deviceContext = user_options(config, location)
         check_device(deviceContext, config)
         with deviceContext as device:
-            session, tensors, arrays, input_shape, label_shape = get_model(
-                config,
-                builder,
-                groups,
-                var_set,
-                location,
-                "training",
-                initialize=True,
-                device=device,
-                opts=opts)
+            session, tensors, arrays, _, _ = get_model(config,
+                                                       builder,
+                                                       groups,
+                                                       var_set,
+                                                       location,
+                                                       "training",
+                                                       initialize=True,
+                                                       device=device,
+                                                       opts=opts)
 
-            ip, lb, w1, w2 = tensors
+            _, _, w1, w2 = tensors
             array_one, array_two = arrays
 
             session.weightsFromHost()
@@ -613,16 +611,15 @@ def test_onnx_checkpointing(config):
         opts, deviceContext = user_options(config, location)
         check_device(deviceContext, config)
         with deviceContext as device:
-            session, tensors, array, input_shape, label_shape = get_model(
-                config,
-                builder,
-                groups,
-                var_set,
-                location,
-                "training",
-                initialize=True,
-                device=device,
-                opts=opts)
+            session, tensors, _, _, _ = get_model(config,
+                                                  builder,
+                                                  groups,
+                                                  var_set,
+                                                  location,
+                                                  "training",
+                                                  initialize=True,
+                                                  device=device,
+                                                  opts=opts)
 
             _, _, w1, w2 = tensors
             session.resetHostWeights(tmpfile, True)
@@ -716,7 +713,7 @@ def instance(repl: int,
             prefix_shape = [BATCHES_PER_STEP] + prefix_shape
 
         # run
-        for step in range(length):
+        for _ in range(length):
             input = np.random.random_sample(prefix_shape + shape).astype(
                 np.float32)
             label = np.random.randint(low=0, high=20,size=prefix_shape + label_shape).astype(\

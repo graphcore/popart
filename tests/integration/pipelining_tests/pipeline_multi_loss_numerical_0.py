@@ -52,7 +52,6 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     nIPUs = replicationFactor * nVirtualGraphs
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
-    stepDataInfo = popart.TensorInfo("FLOAT", stepDataShape)
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
     #initial weight and input values

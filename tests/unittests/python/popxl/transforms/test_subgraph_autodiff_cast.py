@@ -22,4 +22,4 @@ class TestAutoDiffCast:
             x = popxl.variable(np.arange(10).astype('float32'), name='x')
 
             fwd_graph = ir.create_graph(layer, x.spec)
-            grad_info = popxl.transforms.autodiff(fwd_graph)
+            _ = popxl.transforms.autodiff(fwd_graph)  # grad_info
