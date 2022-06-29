@@ -8,7 +8,7 @@ import numpy as np
 import onnx
 
 input_ = torch.FloatTensor(torch.randn(4, 3, 224, 224))
-model = torchvision.models.alexnet(pretrained=True)
+model = torchvision.models.alexnet(pretrained=False)
 
 output_name = "output"
 
