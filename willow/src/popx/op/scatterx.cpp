@@ -43,8 +43,12 @@ snap::Tensor scatter(const popart::popx::PopOpx &opx,
                      const popops::SlicePlan &plan,
                      int64_t axis) {
   auto uaxis = static_cast<unsigned>(axis);
-  auto out   = popart::popx::createDataTensor(
-      graph, dataInfo, plan, uaxis, opx.getDebugNameAndId(""));
+  auto out   = popart::popx::createDataTensor(graph,
+                                            dataInfo,
+                                            plan,
+                                            uaxis,
+                                            /* broadcasted= */ true,
+                                            opx.getDebugNameAndId(""));
 
   prog.add(
       snap::program::Copy(data, out, false, opx.debugContext("copyToScatter")));
@@ -133,11 +137,16 @@ ScatterOpx::createInputTensor(InIndex index,
   auto uaxis       = static_cast<unsigned>(axis);
 
   if (index == ScatterOp::indicesInIndex()) {
-    return createIndicesTensor(graph(), indicesInfo, plan, uaxis, dnai);
+    return createIndicesTensor(graph(), indicesInfo, plan, uaxis, true, dnai);
   }
 
-  auto dataInfo = inInfo(ScatterOp::dataInIndex());
-  return createUpdateTensor(graph(), dataInfo, indicesInfo, plan, uaxis, dnai);
+  return createUpdateTensor(graph(),
+                            inInfo(ScatterOp::dataInIndex()),
+                            indicesInfo,
+                            plan,
+                            uaxis,
+                            /*broadcasted=*/true,
+                            dnai);
 }
 
 InputCreatorType ScatterOpx::getInputCreatorType(InIndex index) const {
@@ -177,6 +186,7 @@ void ScatterDataGradOpx::grow(snap::program::Sequence &prog) const {
                                         indicesInfo,
                                         plan,
                                         uaxis,
+                                        /*broadcasted=*/true,
                                         getDebugNameAndId("zerosUpdate"));
   popops::fill(graph().getPoplarGraph(),
                zerosUpdate.getPoplarTensor(),
@@ -205,7 +215,7 @@ snap::Tensor ScatterDataGradOpx::createInputTensor(
   }
 
   auto indicesInfo = inInfo(ScatterDataGradOp::indicesInIndex());
-  return createIndicesTensor(graph(), indicesInfo, plan, axis, dnai);
+  return createIndicesTensor(graph(), indicesInfo, plan, axis, true, dnai);
 }
 
 InputCreatorType ScatterDataGradOpx::getInputCreatorType(InIndex index) const {
@@ -259,11 +269,12 @@ snap::Tensor ScatterUpdateGradOpx::createInputTensor(
 
   if (index == ScatterUpdateGradOp::gradInIndex()) {
     auto gradInfo = inInfo(ScatterUpdateGradOp::gradInIndex());
-    return createDataTensor(graph(), gradInfo, plan, axis, dnai);
+    return createDataTensor(
+        graph(), gradInfo, plan, axis, /*broadcasted=*/true, dnai);
   }
 
   auto indicesInfo = inInfo(ScatterUpdateGradOp::indicesInIndex());
-  return createIndicesTensor(graph(), indicesInfo, plan, axis, dnai);
+  return createIndicesTensor(graph(), indicesInfo, plan, axis, true, dnai);
 }
 
 InputCreatorType

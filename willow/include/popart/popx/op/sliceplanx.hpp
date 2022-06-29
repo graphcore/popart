@@ -19,7 +19,7 @@ class TensorInfo;
 
 namespace popx {
 
-enum class SlicePlanUsedFor { Slice, Update, UpdateAdd };
+enum class SlicePlanUsedFor { Slice, Update, UpdateAdd, UpdateMax };
 
 poplar::OptionFlags
 createSlicePlanOptions(SlicePlanUsedFor usedFor,
@@ -35,12 +35,7 @@ snap::Tensor createDataTensor(snap::Graph &graph,
                               const popart::TensorInfo &dataInfo,
                               const popops::SlicePlan &plan,
                               unsigned int axis,
-                              const poplar::DebugNameAndId &dnai);
-
-// Create the data tensor for cases where indices are not broadcasted.
-snap::Tensor createDataTensor(snap::Graph &graph,
-                              const popart::TensorInfo &dataInfo,
-                              const popops::SlicePlan &plan,
+                              bool broadcasted,
                               const poplar::DebugNameAndId &dnai);
 
 snap::Tensor createUpdateTensor(snap::Graph &graph,
@@ -48,24 +43,14 @@ snap::Tensor createUpdateTensor(snap::Graph &graph,
                                 const popart::TensorInfo &indicesInfo,
                                 const popops::SlicePlan &plan,
                                 unsigned int axis,
-                                const poplar::DebugNameAndId &dnai);
-
-// Create the update tensor for cases where indices are not broadcasted.
-snap::Tensor createUpdateTensor(snap::Graph &graph,
-                                const popart::TensorInfo &dataInfo,
-                                const popops::SlicePlan &plan,
+                                bool broadcasted,
                                 const poplar::DebugNameAndId &dnai);
 
 snap::Tensor createIndicesTensor(snap::Graph &graph,
                                  const popart::TensorInfo &indicesInfo,
                                  const popops::SlicePlan &plan,
                                  unsigned int axis,
-                                 const poplar::DebugNameAndId &dnai);
-
-// Create the indices tensor for cases where indices are not broadcasted.
-snap::Tensor createIndicesTensor(snap::Graph &graph,
-                                 const popart::TensorInfo &indicesInfo,
-                                 const popops::SlicePlan &plan,
+                                 bool broadcasted,
                                  const poplar::DebugNameAndId &dnai);
 
 // Align input to have same axes alignment and shape as popart IR.

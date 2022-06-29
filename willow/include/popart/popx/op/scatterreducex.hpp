@@ -21,6 +21,7 @@ class Op;
 
 namespace popx {
 class Devicex;
+class ReductionStrategy;
 
 class ScatterReduceOpx : public PopOpx {
 public:
@@ -35,6 +36,7 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
+  std::unique_ptr<ReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
 };
@@ -53,6 +55,7 @@ public:
   std::set<TensorId> mustExistBeforeCreate(InIndex) const final { return {}; }
 
 private:
+  std::unique_ptr<ReductionStrategy> strategy;
   popops::SlicePlan plan;
   size_t axis;
 };

@@ -26,7 +26,6 @@ namespace popx {
 poplar::OptionFlags
 createSlicePlanOptions(SlicePlanUsedFor usedFor,
                        nonstd::optional<float> availableMemoryProportion) {
-  // TODO(T40999): this can be removed once "cycles" is made the default
   poplar::OptionFlags opts{};
 
   if (availableMemoryProportion.has_value()) {
@@ -50,6 +49,12 @@ createSlicePlanOptions(SlicePlanUsedFor usedFor,
     opts.set("usedForSlice", "false");
     opts.set("usedForUpdate", "true");
     opts.set("operationForUpdate", "add");
+    break;
+
+  case SlicePlanUsedFor::UpdateMax:
+    opts.set("usedForSlice", "false");
+    opts.set("usedForUpdate", "true");
+    opts.set("operationForUpdate", "max");
     break;
 
   default:
@@ -89,11 +94,19 @@ snap::Tensor createDataTensor(snap::Graph &graph,
                               const popart::TensorInfo &dataInfo,
                               const popops::SlicePlan &plan,
                               unsigned int axis,
+                              bool broadcasted,
                               const poplar::DebugNameAndId &dnai) {
-  auto numEntries = static_cast<size_t>(dataInfo.nelms());
-  auto out        = popops::createSliceableTensor(graph.getPoplarGraph(),
+  auto numSlices  = static_cast<size_t>(dataInfo.nelms());
+  auto outputSize = 1UL;
+
+  if (!broadcasted) {
+    numSlices  = dataInfo.shape_szt().at(axis);
+    outputSize = dataInfo.nelms() / numSlices;
+  }
+
+  auto out = popops::createSliceableTensor(graph.getPoplarGraph(),
                                            popType(dataInfo),
-                                           {numEntries, 1},
+                                           {numSlices, outputSize},
                                            {0},
                                            {1},
                                            plan,
@@ -103,65 +116,45 @@ snap::Tensor createDataTensor(snap::Graph &graph,
   return alignToAxis(snap::Tensor{out, graph}, dataInfo.shape(), axis);
 }
 
-snap::Tensor createDataTensor(snap::Graph &graph,
-                              const popart::TensorInfo &dataInfo,
-                              const popops::SlicePlan &plan,
-                              const poplar::DebugNameAndId &dnai) {
-  auto out = popops::createSliceableTensor(graph.getPoplarGraph(),
-                                           popType(dataInfo),
-                                           dataInfo.shape_szt(),
-                                           {0},
-                                           {1},
-                                           plan,
-                                           poplar::OptionFlags(),
-                                           dnai);
-  return snap::Tensor(out, graph);
-}
-
 snap::Tensor createUpdateTensor(snap::Graph &graph,
                                 const popart::TensorInfo &dataInfo,
                                 const popart::TensorInfo &indicesInfo,
                                 const popops::SlicePlan &plan,
                                 unsigned int axis,
+                                bool broadcasted,
                                 const poplar::DebugNameAndId &dnai) {
   auto numSlices  = static_cast<size_t>(dataInfo.nelms());
+  auto outputSize = 1UL;
+
+  if (!broadcasted) {
+    numSlices  = dataInfo.shape_szt().at(axis);
+    outputSize = dataInfo.nelms() / numSlices;
+  }
+
   auto numLookups = static_cast<size_t>(indicesInfo.nelms());
   auto out        = popops::createSliceTensor(graph.getPoplarGraph(),
                                        popType(dataInfo),
-                                       {numSlices, 1},
+                                       {numSlices, outputSize},
                                        {0},
                                        {1},
                                        numLookups,
                                        plan,
                                        poplar::OptionFlags(),
                                        dnai);
+  if (broadcasted) {
+    return alignToAxis(snap::Tensor{out, graph}, indicesInfo.shape(), axis);
+  }
 
-  return alignToAxis(snap::Tensor{out, graph}, indicesInfo.shape(), axis);
-}
-
-snap::Tensor createUpdateTensor(snap::Graph &graph,
-                                const popart::TensorInfo &dataInfo,
-                                const popops::SlicePlan &plan,
-                                const poplar::DebugNameAndId &dnai) {
-  const auto &shape = dataInfo.shape_szt();
-  auto out          = popops::createSliceTensor(graph.getPoplarGraph(),
-                                       popType(dataInfo),
-                                       shape,
-                                       {0},
-                                       {1},
-                                       shape.at(0),
-                                       plan,
-                                       poplar::OptionFlags(),
-                                       dnai);
-  // Match the ir shape.
-  out = out.reshape(shape);
-  return snap::Tensor(out, graph);
+  auto shape  = dataInfo.shape();
+  shape[axis] = numLookups;
+  return alignToAxis(snap::Tensor{out, graph}, shape, axis);
 }
 
 snap::Tensor createIndicesTensor(snap::Graph &graph,
                                  const popart::TensorInfo &indicesInfo,
                                  const popops::SlicePlan &plan,
                                  unsigned int axis,
+                                 bool broadcasted,
                                  const poplar::DebugNameAndId &dnai) {
   auto numLookups = static_cast<size_t>(indicesInfo.nelms());
   auto indices    = popops::createIndicesTensor(graph.getPoplarGraph(),
@@ -172,22 +165,12 @@ snap::Tensor createIndicesTensor(snap::Graph &graph,
                                              dnai);
 
   indices = indices.reinterpret(popType(indicesInfo));
-  return alignToAxis(snap::Tensor{indices, graph}, indicesInfo.shape(), axis);
-}
 
-snap::Tensor createIndicesTensor(snap::Graph &graph,
-                                 const popart::TensorInfo &indicesInfo,
-                                 const popops::SlicePlan &plan,
-                                 const poplar::DebugNameAndId &dnai) {
-  const auto &shape = indicesInfo.shape_szt();
-  auto indices      = popops::createIndicesTensor(graph.getPoplarGraph(),
-                                             {0},
-                                             shape.at(0),
-                                             plan,
-                                             poplar::OptionFlags(),
-                                             dnai);
-  // Match the ir type.
-  indices = indices.reinterpret(popType(indicesInfo));
+  if (broadcasted) {
+    return alignToAxis(snap::Tensor{indices, graph}, indicesInfo.shape(), axis);
+  }
+
+  indices = indices.reshape(indicesInfo.shape_szt());
   return snap::Tensor(indices, graph);
 }
 

@@ -16,8 +16,7 @@ namespace popart {
 class OpSerialiserBase;
 struct OperatorIdentifier;
 
-// TODO(T35695): when poplibs supports it, add Mul, Min, Max, etc
-enum class ScatterReduction { Sum = 0 };
+enum class ScatterReduction { Sum = 0, Max, Min };
 
 class ScatterReduceOp : public Op {
 public:
@@ -61,6 +60,8 @@ public:
   bool indexBroadcasted() const { return index_broadcasted; }
 
 private:
+  void checkIndexBroadcasted();
+
   Shape backward_shape;
   int64_t axis;
   int64_t axis_size;
@@ -74,7 +75,11 @@ public:
   ScatterReduceGradOp(const ScatterReduceOp &op);
 
   std::unique_ptr<Op> clone() const final;
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final {
+    return mapper;
+  }
+
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
@@ -84,6 +89,8 @@ public:
 
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
+  static InIndex dataInIndex() { return 2; }
+  static InIndex fwdOutInIndex() { return 3; }
   static OutIndex gradOutIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
@@ -97,6 +104,7 @@ public:
   bool indexBroadcasted() const { return index_broadcasted; }
 
 private:
+  std::vector<GradInOutMapper> mapper;
   Shape backward_shape;
   int64_t axis;
   ScatterReduction reduction;

@@ -1,31 +1,179 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
 import popart
+import popart_core
 import torch
 import pytest
+from itertools import product
+
+# `import test_util` requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+import test_util as tu
+
+reductions = ["sum", "max", "min"]
+dtypes = [torch.float32, torch.float16, torch.int]
+
+reduction_map = {
+    "sum": popart_core.ScatterReduction.Sum,
+    "max": popart_core.ScatterReduction.Max,
+    "min": popart_core.ScatterReduction.Min
+}
+
+################################################################################
+# Test cases copied and from the torch_scatter package:
+#
+# https://github.com/rusty1s/pytorch_scatter/blob/2.0.9/test/test_scatter.py
+#
+# Copyright (c) 2020 Matthias Fey <matthias.fey@tu-dortmund.de>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+torch_scatter_testcases = [
+    {
+        'src': [1, 3, 2, 4, 5, 6],
+        'index': [0, 1, 0, 1, 1, 3],
+        'dim': 0,
+        'sum': [3, 12, 0, 6],
+        'add': [3, 12, 0, 6],
+        'mul': [2, 60, 1, 6],
+        'mean': [1.5, 4, 0, 6],
+        'min': [1, 3, 0, 6],
+        'arg_min': [0, 1, 6, 5],
+        'max': [2, 5, 0, 6],
+        'arg_max': [2, 4, 6, 5],
+    },
+    {
+        'src': [[1, 2], [5, 6], [3, 4], [7, 8], [9, 10], [11, 12]],
+        'index': [0, 1, 0, 1, 1, 3],
+        'dim': 0,
+        'sum': [[4, 6], [21, 24], [0, 0], [11, 12]],
+        'add': [[4, 6], [21, 24], [0, 0], [11, 12]],
+        'mul': [[1 * 3, 2 * 4], [5 * 7 * 9, 6 * 8 * 10], [1, 1], [11, 12]],
+        'mean': [[2, 3], [7, 8], [0, 0], [11, 12]],
+        'min': [[1, 2], [5, 6], [0, 0], [11, 12]],
+        'arg_min': [[0, 0], [1, 1], [6, 6], [5, 5]],
+        'max': [[3, 4], [9, 10], [0, 0], [11, 12]],
+        'arg_max': [[2, 2], [4, 4], [6, 6], [5, 5]],
+    },
+    {
+        'src': [[1, 5, 3, 7, 9, 11], [2, 4, 8, 6, 10, 12]],
+        'index': [[0, 1, 0, 1, 1, 3], [0, 0, 1, 0, 1, 2]],
+        'dim': 1,
+        'sum': [[4, 21, 0, 11], [12, 18, 12, 0]],
+        'add': [[4, 21, 0, 11], [12, 18, 12, 0]],
+        'mul': [[1 * 3, 5 * 7 * 9, 1, 11], [2 * 4 * 6, 8 * 10, 12, 1]],
+        'mean': [[2, 7, 0, 11], [4, 9, 12, 0]],
+        'min': [[1, 5, 0, 11], [2, 8, 12, 0]],
+        'arg_min': [[0, 1, 6, 5], [0, 2, 5, 6]],
+        'max': [[3, 9, 0, 11], [6, 10, 12, 0]],
+        'arg_max': [[2, 4, 6, 5], [3, 4, 5, 6]],
+    },
+    {
+        'src': [[[1, 2], [5, 6], [3, 4]], [[10, 11], [7, 9], [12, 13]]],
+        'index': [[0, 1, 0], [2, 0, 2]],
+        'dim': 1,
+        'sum': [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
+        'add': [[[4, 6], [5, 6], [0, 0]], [[7, 9], [0, 0], [22, 24]]],
+        'mul': [[[3, 8], [5, 6], [1, 1]], [[7, 9], [1, 1], [120, 11 * 13]]],
+        'mean': [[[2, 3], [5, 6], [0, 0]], [[7, 9], [0, 0], [11, 12]]],
+        'min': [[[1, 2], [5, 6], [0, 0]], [[7, 9], [0, 0], [10, 11]]],
+        'arg_min': [[[0, 0], [1, 1], [3, 3]], [[1, 1], [3, 3], [0, 0]]],
+        'max': [[[3, 4], [5, 6], [0, 0]], [[7, 9], [0, 0], [12, 13]]],
+        'arg_max': [[[2, 2], [1, 1], [3, 3]], [[1, 1], [3, 3], [2, 2]]],
+    },
+    {
+        'src': [[1, 3], [2, 4]],
+        'index': [[0, 0], [0, 0]],
+        'dim': 1,
+        'sum': [[4], [6]],
+        'add': [[4], [6]],
+        'mul': [[3], [8]],
+        'mean': [[2], [3]],
+        'min': [[1], [2]],
+        'arg_min': [[0], [0]],
+        'max': [[3], [4]],
+        'arg_max': [[1], [1]],
+    },
+    {
+        'src': [[[1, 1], [3, 3]], [[2, 2], [4, 4]]],
+        'index': [[0, 0], [0, 0]],
+        'dim': 1,
+        'sum': [[[4, 4]], [[6, 6]]],
+        'add': [[[4, 4]], [[6, 6]]],
+        'mul': [[[3, 3]], [[8, 8]]],
+        'mean': [[[2, 2]], [[3, 3]]],
+        'min': [[[1, 1]], [[2, 2]]],
+        'arg_min': [[[0, 0]], [[0, 0]]],
+        'max': [[[3, 3]], [[4, 4]]],
+        'arg_max': [[[1, 1]], [[1, 1]]],
+    },
+]
+# End copied test cases from torch-scatter
+################################################################################
 
 
-def test_scatterreduce_basic(op_tester):
-    src = torch.tensor([5, 1, 7, 2, 3, 2, 1, 3]).float()
-    index = torch.tensor([0, 0, 1, 0, 2, 2, 3, 3]).long()
+def idfn(val):
+    if isinstance(val, torch.dtype):
+        return f"{val}".split(".")[-1]
+
+    return val
+
+
+@tu.requires_ipu_model
+@pytest.mark.parametrize('test,reduction,dtype',
+                         product(torch_scatter_testcases, reductions, dtypes),
+                         ids=idfn)
+def test_scatterreduce_basic(op_tester, test, reduction, dtype):
+    src = torch.tensor(test['src'], dtype=dtype)
+    index = torch.tensor(test['index']).long()
+    axis = test['dim']
     axsz = torch.max(index).item() + 1
+
+    if reduction == 'min' and dtype == torch.float16:
+        pytest.skip("TODO (T65173): wrong answers with min & half")
+
+    if index.dim() > 1:
+        for _ in range(index.dim(), src.dim()):
+            index = index.unsqueeze(-1)
+
+        index = index.expand_as(src)
 
     def init_builder(builder):
         D = builder.addInputTensor(src.numpy())
         I = builder.addInputTensor(index.numpy().astype(np.uint32))
-        out = builder.aiGraphcore.scatterreduce([D, I], axis_size=axsz)
+        out = builder.aiGraphcore.scatterreduce(
+            [D, I],
+            axis=axis,
+            axis_size=axsz,
+            reduction=reduction_map[reduction])
         builder.addOutputTensor(out)
         return [out]
 
     def reference(_):  # ref_data is an unused argument
-        ref = torch.zeros(axsz)
-        ref.scatter_add_(dim=0, index=index, src=src)
-        return [ref]
+        expected = torch.tensor(test[reduction], dtype=dtype)
+        return [expected]
 
     op_tester.run(init_builder, reference)
 
 
-def test_scatterreduce_full_indices(op_tester):
+def test_scatterreduce_index_broadcasted(op_tester):
     src = torch.tensor([[2, 4, 9], [5, 3, 1], [1, 8, 6], [0, 2, 7]]).float()
     index = torch.tensor([[2, 1, 0], [1, 0, 1], [0, 2, 1], [1, 2, 2]]).long()
     axsz = torch.max(index).item() + 1
@@ -45,15 +193,54 @@ def test_scatterreduce_full_indices(op_tester):
     op_tester.run(init_builder, reference)
 
 
-def test_scatterreduce_training(op_tester):
-    src = torch.tensor([5, 1, 7, 2, 3, 2, 1, 3]).float()
-    index = torch.tensor([0, 0, 1, 0, 2, 2, 3, 3]).long()
+@pytest.mark.skip("TODO (T65173): wrong answer on the forward pass")
+@pytest.mark.parametrize("reduction", ["max", "min"])
+def test_scatterreduce_repro(op_tester, reduction):
+    src = torch.linspace(-1, 1, 16).view(-1, 2).T.contiguous()
+    print(src)
+    index = torch.zeros_like(src).long()
     axsz = torch.max(index).item() + 1
 
     def init_builder(builder):
         D = builder.addInputTensor(src.numpy())
         I = builder.addInputTensor(index.numpy().astype(np.uint32))
-        out = builder.aiGraphcore.scatterreduce([D, I], axis_size=axsz)
+        out = builder.aiGraphcore.scatterreduce(
+            [D, I], axis_size=axsz, axis=0, reduction=reduction_map[reduction])
+        builder.addOutputTensor(out)
+        return [out]
+
+    def reference(_):  # ref_data is an unused argument
+        reducer = torch.amin if reduction == 'min' else torch.amax
+        ref = reducer(src, dim=0, keepdim=True)
+        return [ref]
+
+    op_tester.run(init_builder, reference)
+
+
+@pytest.mark.parametrize("reduction", reductions)
+def test_scatterreduce_training(op_tester, reduction):
+    src = torch.tensor([5, 1, 7, 2, 3, 2, 1, 3]).float()
+    index = torch.tensor([0, 0, 1, 0, 2, 2, 3, 3]).long()
+    axsz = torch.max(index).item() + 1
+
+    def torch_scatter_reduce(src, index, out, reduction):
+        # Note this can be removed once we can move to torch 1.13 or later.
+        # As of June 22 2022 the pytorch scatter_reduce method is in beta.
+        if reduction == 'sum':
+            return out.scatter_add(dim=0, index=index, src=src)
+
+        reducer = torch.amin if reduction == 'min' else torch.amax
+
+        for idx in index.unique():
+            out[idx] = reducer(src[index == idx])
+
+        return out
+
+    def init_builder(builder):
+        D = builder.addInputTensor(src.numpy())
+        I = builder.addInputTensor(index.numpy().astype(np.uint32))
+        out = builder.aiGraphcore.scatterreduce(
+            [D, I], axis_size=axsz, reduction=reduction_map[reduction])
         builder.addOutputTensor(out)
         return [
             out,
@@ -64,7 +251,7 @@ def test_scatterreduce_training(op_tester):
     def reference(ref_data):
         src.requires_grad_()
         ref = torch.zeros(axsz)
-        ref = ref.scatter_add(dim=0, index=index, src=src)
+        ref = torch_scatter_reduce(src, index, ref, reduction)
         d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
         ref.backward(d__o)
         return [ref, src.grad, d__o]
@@ -72,24 +259,52 @@ def test_scatterreduce_training(op_tester):
     op_tester.run(init_builder, reference, "train")
 
 
-@pytest.mark.parametrize("axis", range(-3, 3))
-def test_scatterreduce_axis(op_tester, axis):
+@pytest.mark.parametrize("axis,broadcast,reduction",
+                         product(range(-3, 3), [True, False], reductions))
+def test_scatterreduce_axis(op_tester, axis, broadcast, reduction):
+    if broadcast and reduction == 'min':
+        pytest.skip(
+            "TODO (T65173): figure out wrong answers with broadcast & min")
+
     torch.manual_seed(0)
-    src = torch.randn(6, 10, 64)
+    src = torch.rand(6, 10, 64)
     src.transpose_(0, axis)
     src = src.contiguous()
     index = torch.tensor([0, 1, 0, 1, 2, 1]).long()
+    index_vec = index
     axsz = torch.max(index).item() + 1
-    sz = 3 * [1]
-    sz[axis] = -1
-    index = index.view(sz).expand_as(src).contiguous()
+
+    if broadcast:
+        sz = 3 * [1]
+        sz[axis] = -1
+        index = index.view(sz).expand_as(src).contiguous()
+
+    def torch_reference(src, out):
+        # Note this can be removed once we can move to torch 1.13 or later.
+        # As of June 22 2022 the pytorch scatter_reduce method is in beta.
+        index = index_vec
+        if reduction == 'sum':
+            return out.index_add(dim=axis, index=index, source=src)
+
+        aminmax = torch.amin if reduction == 'min' else torch.amax
+        reducer = lambda x: aminmax(x, dim=0, keepdim=True)
+
+        src = torch.transpose(src, 0, axis)
+        out = torch.transpose(out, 0, axis)
+
+        for idx in index.unique():
+            out[idx, :, :] = reducer(src[index == idx, :, :])
+
+        return torch.transpose(out, axis, 0)
 
     def init_builder(builder):
         D = builder.addInputTensor(src.numpy())
         I = builder.addInputTensor(index.numpy().astype(np.uint32))
-        out = builder.aiGraphcore.scatterreduce([D, I],
-                                                axis=axis,
-                                                axis_size=axsz)
+        out = builder.aiGraphcore.scatterreduce(
+            [D, I],
+            axis=axis,
+            axis_size=axsz,
+            reduction=reduction_map[reduction])
         builder.addOutputTensor(out)
         return [
             out,
@@ -101,7 +316,7 @@ def test_scatterreduce_axis(op_tester, axis):
         src.requires_grad_()
         ref = torch.zeros(axsz, 10, 64)
         ref.transpose_(0, axis)
-        ref = ref.scatter_add(dim=axis, index=index, src=src)
+        ref = torch_reference(src, ref)
         d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
         ref.backward(d__o)
         return [ref, src.grad, d__o]
@@ -189,5 +404,36 @@ def test_scatterreduce_indices_data_different_bad_shape(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(bad_shape, None)
 
-    assert ("'src' shape needs to be [N, M], 'index' shape needs to be [N, 1] "
-            "and axis needs to be 0") in e_info.value.args[0]
+    assert "Failed to expand 'indices' shape " in e_info.value.args[0]
+
+
+def test_scatterreduce_invalid_indices_rank(op_tester):
+    def invalid_rank(builder):
+        src = builder.addInputTensor(np.ones([3, 4], dtype=np.float32))
+        index = builder.addInputTensor(np.zeros([3, 4, 1], dtype=np.uint32))
+        t = builder.aiGraphcore.scatterreduce([src, index],
+                                              axis=0,
+                                              axis_size=5)
+        return [t]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(invalid_rank, None)
+
+    msg = "Invalid rank for indices input."
+    assert msg in e_info.value.args[0]
+
+
+def test_scatterreduce_partial_broadcasting(op_tester):
+    def partial_broadcast(builder):
+        src = builder.addInputTensor(np.ones([6, 3, 5], dtype=np.float32))
+        index = builder.addInputTensor(np.zeros([1, 3, 5], dtype=np.uint32))
+        t = builder.aiGraphcore.scatterreduce([src, index],
+                                              axis=0,
+                                              axis_size=5)
+        return [t]
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        op_tester.run(partial_broadcast, None)
+
+    msg = "Partial broadcasting of indices is not currently supported"
+    assert msg in e_info.value.args[0]

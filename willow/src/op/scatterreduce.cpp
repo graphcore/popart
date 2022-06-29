@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <poprithms/ndarray/shape.hpp>
 #include <popart/op/scatterreduce.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -27,6 +28,12 @@ std::string ScatterReduceOp::reductionToString(ScatterReduction reduction) {
   if (reduction == ScatterReduction::Sum) {
     return "sum";
   }
+  if (reduction == ScatterReduction::Max) {
+    return "max";
+  }
+  if (reduction == ScatterReduction::Min) {
+    return "min";
+  }
 
   throw internal_error("Unknown ScatterReduction");
 }
@@ -36,6 +43,12 @@ ScatterReduceOp::reductionFromString(const std::string &reduction) {
   auto lower_arg = boost::algorithm::to_lower_copy(reduction);
   if (lower_arg == "sum") {
     return ScatterReduction::Sum;
+  }
+  if (lower_arg == "max") {
+    return ScatterReduction::Max;
+  }
+  if (lower_arg == "min") {
+    return ScatterReduction::Min;
   }
 
   throw internal_error("Unknown ScatterReduction");
@@ -64,24 +77,8 @@ std::vector<std::unique_ptr<Op>> ScatterReduceOp::getGradOps() {
 }
 
 void ScatterReduceOp::setup() {
-  auto dataShape    = inShape(dataInIndex());
-  int64_t dataRank  = static_cast<int64_t>(dataShape.size());
-  auto indicesShape = inShape(indicesInIndex());
-
-  if (indicesShape != dataShape) {
-    // We allow shape mismatches when data is of shape [N, M], index is of shape
-    // [N, 1] and reduction axis is 0. The result in such cases is the same
-    // as if the index tensor was broadcasted to [N, M].
-    if (dataRank != 2 || indicesShape.size() != 2 ||
-        dataShape.at(0) != indicesShape.at(0) || indicesShape.at(1) != 1 ||
-        axis != 0) {
-      throw error(
-          "ScatterReduceOp::setup when 'src' and 'index' shapes are different, "
-          "'src' shape needs to be [N, M], 'index' shape needs to be [N, "
-          "1] and axis needs to be 0");
-    }
-    index_broadcasted = false;
-  }
+  auto dataInfo    = inInfo(dataInIndex());
+  int64_t dataRank = static_cast<int64_t>(dataInfo.shape().size());
 
   if (-dataRank > axis || axis > dataRank - 1) {
     throw error("ScatterReduceOp::setup axis = {} is outside the acceptable "
@@ -96,9 +93,10 @@ void ScatterReduceOp::setup() {
     axis += dataRank;
   }
 
+  checkIndexBroadcasted();
+
   // Output has the same data type as the input and has the same size as the
   // input, except in the axis where the scatter reduction is applied.
-  auto dataInfo     = inInfo(dataInIndex());
   auto outputInfo   = dataInfo;
   auto outputShape  = outputInfo.shape();
   outputShape[axis] = axis_size;
@@ -117,23 +115,97 @@ void ScatterReduceOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("index_broadcasted", index_broadcasted);
 }
 
+void ScatterReduceOp::checkIndexBroadcasted() {
+  // Checks if the index is broadcasted.
+  // By default we assume that the index input has already been broadcasted to
+  // match the shape of the data input.  This can be inefficient when lowering
+  // to poplar so this operator also supports a vectorised implementation where
+  // the index is provided as a vector. Further complicating matters is the
+  // possibility of partial broadcasting which is not currently supported.
+  namespace nd           = poprithms::ndarray;
+  nd::Shape dataShape    = inShape(dataInIndex());
+  nd::Shape indicesShape = inShape(indicesInIndex());
+
+  if (dataShape == indicesShape) {
+    // Default constructed with index_broadcasted = true
+    return;
+  }
+
+  auto indicesRank = indicesShape.rank_u64();
+  auto dataRank    = dataShape.rank_u64();
+
+  if (indicesRank > dataRank) {
+    throw error("Invalid rank for indices input. "
+                "Indices rank {} must be <= data input rank {}.",
+                indicesRank,
+                dataRank);
+  }
+
+  // Allow shape mismatches when the index can be expanded to match the data
+  nd::Shape expandedShape(indicesShape);
+
+  if (indicesRank == 1) {
+    // Insert leading singleton dimensions ahead of the reduction axis
+    for (size_t i = 0; i < axis; i++) {
+      expandedShape = expandedShape.unsqueeze(0);
+    }
+  }
+
+  // Insert trailing singleton dimensions following reduction axis
+  for (size_t i = expandedShape.rank_u64(); i < dataRank; i++) {
+    expandedShape = expandedShape.unsqueeze(expandedShape.rank_u64());
+  }
+
+  // Check that the dimensions of the input data and the expanded indices either
+  // match or are singleton.
+  for (size_t i = 0; i < dataRank; i++) {
+    if (!(expandedShape.dim(i) == dataShape.dim(i) ||
+          expandedShape.dim(i) == 1)) {
+      throw error("Failed to expand 'indices' shape {} to match 'src' shape {} "
+                  "using reduction axis = {}.",
+                  indicesShape,
+                  dataShape,
+                  axis);
+    }
+  }
+
+  // We can use a vectorised implementation in the case when the indices are a
+  // vector +/- singleton dimensions.
+  auto nonSingletonDims = expandedShape.nonSingletonDimensions();
+  if (nonSingletonDims.size() == 1 && nonSingletonDims[0] == axis) {
+    index_broadcasted = false;
+  } else {
+    // This can likely be supported through a pattern that inserts the
+    // appropriate expand operator but throw an error for now.
+    throw error("Partial broadcasting of indices is not currently supported.");
+  }
+}
+
 ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
     : Op(Onnx::CustomGradOperators::ScatterReduceGradOp, op.getSettings()),
-      backward_shape(op.getBackwardShape()), axis(op.getAxis()),
+      mapper(), backward_shape(op.getBackwardShape()), axis(op.getAxis()),
       reduction(op.getReduction()),
       available_memory_proportion(op.getAvailableMemoryProportion()),
-      index_broadcasted(op.indexBroadcasted()) {}
+      index_broadcasted(op.indexBroadcasted()) {
+
+  // The GradInOutMapper depends on the reduction used.
+  mapper.emplace_back(
+      gradInIndex(), ScatterReduceOp::outIndex(), GradOpInType::GradOut);
+  mapper.emplace_back(
+      indicesInIndex(), ScatterReduceOp::indicesInIndex(), GradOpInType::In);
+
+  // min/max reduction needs to know the data source for masking the gradient
+  if (reduction == ScatterReduction::Max ||
+      reduction == ScatterReduction::Min) {
+    mapper.emplace_back(
+        dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
+    mapper.emplace_back(
+        fwdOutInIndex(), ScatterReduceOp::outIndex(), GradOpInType::Out);
+  }
+}
 
 std::unique_ptr<Op> ScatterReduceGradOp::clone() const {
   return std::make_unique<ScatterReduceGradOp>(*this);
-}
-
-const std::vector<GradInOutMapper> &ScatterReduceGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = {
-      {gradInIndex(), ScatterReduceOp::outIndex(), GradOpInType::GradOut},
-      {indicesInIndex(), ScatterReduceOp::indicesInIndex(), GradOpInType::In}};
-
-  return inInfo;
 }
 
 const std::map<int, int> &ScatterReduceGradOp::gradOutToNonGradIn() const {

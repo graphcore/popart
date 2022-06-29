@@ -782,6 +782,8 @@ PYBIND11_MODULE(popart_core, m) {
   {
     py::enum_<ScatterReduction> en(m, "ScatterReduction");
     en.value("Sum", ScatterReduction::Sum);
+    en.value("Max", ScatterReduction::Max);
+    en.value("Min", ScatterReduction::Min);
   }
   {
     m.attr("OptimizerValue") = popart_internal_ir.attr("OptimizerValue");

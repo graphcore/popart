@@ -1012,18 +1012,19 @@ public:
   /**
    * Add a scatterreduce operation to the model.
    *
-   * Reduces all the values from the source tensor` `src`` at the indices
-   * specified along the given axis by `index`. Generally, the `src` and `index`
-   * tensors are required to have the same shape. However, for two-dimensional
-   * inputs they can be different if the following requirements are met: `src`
-   * is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0.
-   * The result in such cases is the same as if the index tensor was broadcasted
-   * to [N, M].
+   * Reduces all the values from the source tensor `src` at the indices
+   * specified along the given axis by `index`. In some frameworks this is also
+   * known as a split-apply-combine operation as well as a reduce or aggregate
+   * by key.  In this analogy the `src` input is the data we are splitting and
+   * the `indices` define the groups for the reduction operation.
    *
+   * In pseudocode the operator can be expressed as:
    * ```
    *  for i in range(axis_size):
    *      output[i] = reduce(src[index == i])
    * ```
+   * where the looping over output indices is implicitly handled by poplar.
+   *
    * \param args A vector of tensor ids as [`src`, `index`].
    * \param axis_size The size of the reduced axis.
    * \param axis The axis to reduce along. Default = -1.
