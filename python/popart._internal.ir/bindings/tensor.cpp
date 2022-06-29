@@ -149,6 +149,7 @@ void bindTensor(py::module &m) {
              self.setTensorData(info, data.request().ptr);
            })
       .def("associatedOps", &Tensor::associatedOps)
+      .def("returnedShape", &Tensor::returnedShape)
       .def("getGraph",
            py::overload_cast<>(&Tensor::getGraph),
            py::return_value_policy::reference)
@@ -235,8 +236,13 @@ void bindTensor(py::module &m) {
                   "significant impact on performance and hence is not allowed)",
                   self.id);
             }
-            self.tensorData()->resetData(
-                self.info, static_cast<void *>(npArray.request().ptr));
+            self.tensorData()->resetDataWithReplicaGrouping(
+                self.info,
+                static_cast<void *>(npArray.request().ptr),
+                self.getVariableSettings().groupCount(
+                    ses.getIr()
+                        .getSessionOptions()
+                        .getGlobalReplicationFactor()));
             self.tensorData()->resetDataInExecutablex(
                 self, ses, static_cast<void *>(npArray.request().ptr));
           })

@@ -52,10 +52,29 @@ void TensorData::resetData(const ONNX_NAMESPACE::TensorProto &tp) {
 
 void TensorData::resetData(const TensorInfo &info, const void *from) {
   if (data_.size() != info.nbytes()) {
-    throw error("cannot reset tensor data with data of non-matching size");
+    throw error(
+        "cannot reset tensor data with data of non-matching size {} vs {}",
+        data_.size(),
+        info.nbytes());
   }
   data_.resize(info.nbytes());
   std::memcpy(data_.data(), from, info.nbytes());
+}
+
+void TensorData::resetDataWithReplicaGrouping(const TensorInfo &info,
+                                              const void *from,
+                                              int numGroups) {
+  auto deviceSize = (info.nbytes() * numGroups);
+  if (data_.size() != deviceSize) {
+    throw error("cannot reset tensor data with data of non-matching size {} vs "
+                "{} nbytes: {} number of groups: {}",
+                data_.size(),
+                deviceSize,
+                info.nbytes(),
+                numGroups);
+  }
+  data_.resize(deviceSize);
+  std::memcpy(data_.data(), from, deviceSize);
 }
 
 void TensorData::resetDataInExecutablex(Tensor &tensorIr,
@@ -80,7 +99,11 @@ void TensorData::resetDataInExecutablex(Tensor &tensorIr,
                     tensorIrId);
       }
 
-      tensorExe->tensorData()->resetData(tensorExe->info, from);
+      auto numGroups = tensorIr.getVariableSettings().groupCount(
+          ses.getIr().getSessionOptions().getGlobalReplicationFactor());
+
+      tensorExe->tensorData()->resetDataWithReplicaGrouping(
+          tensorExe->info, from, numGroups);
     }
   }
 }

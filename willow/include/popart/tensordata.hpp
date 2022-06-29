@@ -45,6 +45,15 @@ public:
   // Input data must be the same size as the existing data_
   void resetData(const TensorInfo &, const void *src);
 
+  // Reset the data in the TensorData by copying from src.
+  // Input data must be the same size as the existing data_
+  // This function is used when the tensor is sharded across replicas, and the
+  // tensor size is that of the full un-sharded tensor, but the data is for each
+  // group's replica.
+  void resetDataWithReplicaGrouping(const TensorInfo &,
+                                    const void *src,
+                                    int numGroups);
+
   // Reset the data for executablex by copying from src.
   void resetDataInExecutablex(Tensor &, Session &, const void *src);
 

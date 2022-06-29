@@ -1,10 +1,13 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+from typing import Any, Dict, List
+
 import numpy as np
 import pytest
 
 import popxl
 import popxl.ops as ops
 from popxl import dtypes
+from popxl.replica_grouping import ReplicaGrouping
 
 
 @pytest.mark.parametrize("shape", [[2, 4, 1, 3], []])
@@ -148,3 +151,136 @@ class TestWriteTensorData:
 
 def get_np_array(shape, np_dtype):
     return np.array((10 * np.random.random(shape))).astype(np_dtype)
+
+
+# Some examples of variable settings.
+# Adapted from tests/unittests/python/popxl/test_replica_grouping.py
+stride_and_size_examples = [
+    # ---------------------
+    {
+        "replicas": 2,
+        "stride": 1,
+        "group_size": 2,
+    },
+    # ---------------------
+    {
+        "replicas": 4,
+        "stride": 2,
+        "group_size": 2,
+    },
+    # ----------------------
+    {
+        "replicas": 4,
+        "stride": 1,
+        "group_size": 2,
+    },
+    # ----------------------
+    {
+        "replicas": 16,
+        "stride": 2,
+        "group_size": 8,
+    },
+    # ---------------------- Note: VariableSettings for TMP_4 on a pod256
+    {
+        "replicas": 256,
+        "stride": 64,
+        "group_size": 4,
+    }
+]
+
+CHANNELS = 3
+DATA_LEN = 7
+O_DIM = 5
+
+input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
+
+
+@pytest.mark.parametrize("settings", stride_and_size_examples)
+@pytest.mark.parametrize("retrieval_mode", ["one_per_group", "all_replicas"])
+class TestReplicaGroupedVariables:
+    def _get_weights_array(self, shape: List[int],
+                           replica_grouping: ReplicaGrouping) -> np.ndarray:
+        """Get a correctly shaped numpy array given the provided arguments.
+
+        Args:
+            shape (List[int]): The tensor shape on device.
+            replica_grouping (ReplicaGrouping) The replica grouping used to create
+                the variable. Optional.
+
+        Returns:
+            np.array: An np.array of the correct size for use in this case.
+        """
+        reshape = []
+        if replica_grouping.num_groups > 1:
+            reshape = [replica_grouping.num_groups]
+        reshape.extend(shape)
+
+        array = np.random.random_sample(reshape).astype(np.float32)
+        return array
+
+    def test_get_and_set_replica_grouped_variables(
+            self, settings: Dict[str, Any], retrieval_mode: str) -> None:
+        """Test the getting and setting of variables works with replica grouping.
+
+        Args:
+            settings (Dict[str, Any]): A samples of replica grouping settings to use.
+        """
+        repeat = lambda x, n: np.repeat(x[None, ...], n, axis=0)
+
+        ir = popxl.Ir()
+        ir.replication_factor = settings["replicas"]
+        main = ir.main_graph
+
+        with main:
+            replica_grouping = ir.replica_grouping(settings["stride"],
+                                                   settings["group_size"])
+            data = self._get_weights_array(input_shape, replica_grouping)
+
+            # Get this data reversed to write and check it has updated.
+            data_reversed = np.ascontiguousarray(np.flip(data))
+
+            v1 = popxl.variable(data,
+                                name="v1",
+                                replica_grouping=replica_grouping,
+                                retrieval_mode=retrieval_mode)
+
+            d2h_stream = popxl.d2h_stream(v1.shape, v1.dtype, 'v1_stream')
+            ops.host_store(d2h_stream, v1)
+
+        session = popxl.Session(ir, device_desc='ipu_model')
+        assignment = np.array(replica_grouping.assignment)
+
+        with session:
+            if retrieval_mode == 'one_per_group':
+                session.write_variable_data(v1, data_reversed)
+            else:
+                with pytest.raises(NotImplementedError):
+                    session.write_variable_data(v1, data_reversed)
+                return
+
+            v1_retrieved = session.get_tensor_data(v1)
+
+            if retrieval_mode == 'one_per_group':
+                np.testing.assert_allclose(v1_retrieved, data_reversed)
+            else:
+                if replica_grouping.num_groups == 1:
+                    data2 = repeat(data_reversed, settings["replicas"])
+                    np.testing.assert_allclose(v1_retrieved, data2)
+                else:
+                    data2 = np.take(data_reversed, assignment, axis=0)
+                    np.testing.assert_allclose(v1_retrieved, data2)
+
+            output = session.run()
+            t = output[d2h_stream]
+
+            assert len(t) == settings["replicas"]
+
+            if replica_grouping.num_groups == 1:
+                np.testing.assert_allclose(
+                    t, repeat(data_reversed, settings["replicas"]))
+            else:
+                for group in range(0, replica_grouping.num_groups):
+                    group_mask = assignment == group
+                    np.testing.assert_allclose(
+                        t[group_mask],
+                        repeat(data_reversed[group], settings["group_size"]))

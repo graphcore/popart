@@ -703,14 +703,15 @@ class Variable(Tensor, tensor_type="Variable"):
 
     @property
     def shape_on_replica(self):
-        """Return the reduced shape on an individial replica.
+        """Return the reduced shape on an individual replica.
 
         The full shape on host may have an outer group_num dimension on the host, depending on the
         replica_grouping argument. This function takes the full shape and removes the outer
         dimension safely (ie. checks if the outer dimension matches an expected
         outer dimension).
         """
-        return self.shape
+        return tuple(self._pb_tensor.getVariableSettings().shapeOnReplica(
+            self.shape_on_host, self.ir.replication_factor, self.name))
 
     @property
     def shape_on_host(self):

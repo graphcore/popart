@@ -357,6 +357,9 @@ class Session:
             ValueError: If the input array shape does not match that of the associated
                 tensor.
 
+            NotImplementedError: If the retreval mode of the variable is "all_replicas.
+                This is currently not supported.
+
         Args:
             tensors Dict[(Variable, np.ndarray]): A dictionary of tensors and
             the corresponding array to call 'write_variable_data` with.
@@ -375,10 +378,16 @@ class Session:
                 raise TypeError(
                     f"The dtype of the input array {data.dtype} must match the equivalent "
                     f"type of the tensor {tensor.id} : {tensor.dtype}")
-            elif data.shape != tensor.shape:
+            elif data.shape != tensor.shape_on_host:
                 raise ValueError(
                     f"The shape of the input array {data.shape} must match the "
                     f"shape of the tensor {tensor.id} : {tensor.shape}")
+            elif isinstance(tensor, Variable) and (
+                    tensor.retrieval_mode == "all_replicas") and (
+                        tensor.replica_grouping.group_size > 1):
+                raise NotImplementedError(
+                    f"Copying to tensor {tensor.id} with \"all_replicas\" "
+                    "retreval mode is not yet supported.")
 
             tensor._pb_tensor.writeTensorData(data, self._pb_session)
 
