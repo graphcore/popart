@@ -41,21 +41,21 @@ cd <build folder>
 ```
 The logic of adding tests for a device type as in `ctest` is replicated; in the `CMakeLists.txt` in the parent folder, add 
 ```
-add_popart_py_unit_test(<test_name> <file_name> MATCHEXPR <expr> VARIANTS <variant1>;<variant2>;<variant3>)
+add_popart_py_unit_test(<file_name> MATCHEXPR <expr> VARIANTS <variant1>;<variant2>;<variant3>)
 ```
 > Note: tests will not be added automatically any more, you must specify them in `CMakeLists.txt`. e.g.:
-> * `add_popart_py_unit_test(train_then_infer_test train_then_infer_test.py VARIANTS IpuModel)` Model only
-> * `add_popart_py_unit_test(variable_inference_test variable_inference_test.py VARIANTS Cpu;IpuModel;Hw)` All targets
-> * `add_popart_py_unit_test(variable_inference_test variable_inference_test.py)` default - CPU only.
+> * `add_popart_py_unit_test(train_then_infer_test VARIANTS IpuModel)` Model only
+> * `add_popart_py_unit_test(variable_inference_test VARIANTS Cpu;IpuModel;Hw)` All targets
+> * `add_popart_py_unit_test(variable_inference_test)` default - CPU only.
 
 Note that the MATCHEXPR is optional for python tests and directly passes whatever arguments it is given
 to `pytest`'s `-k` argument. This means that you pass in a python-like boolean expression where variables
 represent substrings that match test names. This feature is useful for splitting files with computationally
 heavy tests into multiple ctests or for excluding specific tests from a ctest. Examples are:
 
-> * `add_popart_py_unit_test(variable_inference_test variable_inference_test.py MATCHEXPR add_variable_fp16)` -- only run test_add_variable_fp16.
-> * `add_popart_py_unit_test(variable_inference_test variable_inference_test.py MATCHEXPR not add_variable_fp16 VARIANTS Hw)` -- run all tests except test_add_variable_fp16 (with Hw target only).
-> * `add_popart_py_unit_test(variable_inference_test variable_inference_test.py MATCHEXPR add_variable_fp16 or add_variable_fp32)` -- run tests add_variable_fp16 and add_variable_fp32.
+> * `add_popart_py_unit_test(variable_inference_test MATCHEXPR add_variable_fp16)` -- only run test_add_variable_fp16.
+> * `add_popart_py_unit_test(variable_inference_test MATCHEXPR not add_variable_fp16 VARIANTS Hw)` -- run all tests except test_add_variable_fp16 (with Hw target only).
+> * `add_popart_py_unit_test(variable_inference_test MATCHEXPR add_variable_fp16 or add_variable_fp32)` -- run tests add_variable_fp16 and add_variable_fp32.
 
 To enforce the running with a specific device in `pytest` you need to:
 1) `import test_util as tu` - This give you access to various testing functions. The folder's `__init__.py` should have added the directory to enable you to import this.

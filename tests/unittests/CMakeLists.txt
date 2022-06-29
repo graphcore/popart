@@ -37,12 +37,12 @@
 #   name of 'unittest_willow_somedir1_somedir2_file'.
 # * Please put the python unittests for a file
 #   'python/somedir1/somedir2/file.py' in a file called
-#   'tests/unittests/python/somedir1/somedir2/test_file.py' and give it a ctest
-#   name of 'unittest_python_somedir1_somedir2_file'.
+#   'tests/unittests/python/somedir1/somedir2/test_file.py' and use
+#    `add_popart_py_unit_test(test_file)` to create a ctest instance.
 #
 # By doing this consistently it will be easy to match up tests with source
 # code and it becomes easy for developers to run all unittests by running, e.g.,
-# `./test.sh popart -R unittest_`.
+# `./test.sh popart -R unittest`.
 
 # C++ unittests for main codebase:
 add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
@@ -110,7 +110,7 @@ add_popart_cpp_unit_test(unittest_ensurefp32lossscale transforms/unittest_ensure
 
 add_popart_cpp_unit_test(unittest_opattributehelper unittest_opattributehelper.cpp)
 
-add_popart_py_unit_test(test_error test_error.py)
+add_popart_py_unit_test(test_error)
 
 add_popart_cpp_unit_test(unittest_reduceprodce ces/reduceprodce.cpp)
 

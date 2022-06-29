@@ -33,15 +33,15 @@ add_popart_cpp_unit_test(merge_duplicate_ops_test
 add_popart_cpp_unit_test(direct_view_change_test
                           direct_view_change_test.cpp)
 
-add_popart_py_unit_test(test_excludes test_excludes.py)
+add_popart_py_unit_test(test_excludes)
 
-add_popart_py_unit_test(test_enable_patterns test_enable_patterns.py)
+add_popart_py_unit_test(test_enable_patterns)
 
-add_popart_py_unit_test(test_expandcast test_expandcast.py VARIANTS IpuModel)
+add_popart_py_unit_test(test_expandcast VARIANTS IpuModel)
 
-add_popart_py_unit_test(test_view_simplify_pattern test_view_simplify_pattern.py VARIANTS IpuModel)
+add_popart_py_unit_test(test_view_simplify_pattern VARIANTS IpuModel)
 
-add_popart_py_unit_test(test_foldmatmulpattern test_foldmatmulpattern.py)
+add_popart_py_unit_test(test_foldmatmulpattern)
 
 # TODO(T36508): Re-enable.
-# add_popart_py_unit_test(test_transpose_to_identity_or_reshape test_transpose_to_identity_or_reshape.py VARIANTS IpuModel)
+# add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel)

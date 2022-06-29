@@ -49,9 +49,10 @@ def check_for_test_entry(lint_path, cmakelists_path):
             # and have a task to fix attached.
             pattern = r'(#\s*)?'
             # Match instances of 'add_popart_py_unit_test(some_test_name '
-            pattern += r'add_popart_py_unit_test\(\S+ '
+            pattern += r'add_popart_py_unit_test\('
             # Match only entries with the same lint_path
-            pattern += f'{lint_path.name}'
+            pattern += Path(lint_path).stem
+            pattern += r'[\s,\)]'
             if re.match(pattern, line):
                 return 0
 

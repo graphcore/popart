@@ -23,11 +23,11 @@ add_popart_cpp_unit_test(automatic_loss_scaling automatic_loss_scaling_test.cpp)
 
 add_subdirectory(mergevarupdates)
 
-add_popart_py_unit_test(serializematmul serializematmul.py)
-add_popart_py_unit_test(explicitrecomputation explicitrecomputation.py VARIANTS "IpuModel")
-add_popart_py_unit_test(batchserialize batchserialize.py)
-add_popart_py_unit_test(batchserialize_dropout_test batchserialize_dropout_test.py VARIANTS Hw)
+add_popart_py_unit_test(serializematmul)
+add_popart_py_unit_test(explicitrecomputation VARIANTS "IpuModel")
+add_popart_py_unit_test(batchserialize)
+add_popart_py_unit_test(batchserialize_dropout_test VARIANTS Hw)
 
 # We run this test on the POD builder only to load balance across builders, as
 # it is a long test.
-add_popart_py_unit_test(overlapio overlapio.py VARIANTS Hw LABELS multicard)
+add_popart_py_unit_test(overlapio VARIANTS Hw LABELS multicard)

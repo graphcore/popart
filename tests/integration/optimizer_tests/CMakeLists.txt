@@ -13,12 +13,12 @@ add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_1 sgd_mixed_mode_test_cpp_1_1
 add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1_0 sgd_mixed_mode_test_cpp_1_0.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_compatibility_test_0.cpp)
 
-add_popart_py_unit_test(adam_mixed_mode_test_py_0 adam_mixed_mode_test_py_0.py)
-add_popart_py_unit_test(adaptive_mixed_mode_test_py_0 adaptive_mixed_mode_test_py_0.py)
-add_popart_py_unit_test(pytorch_comparisons pytorch_comparisons.py VARIANTS IpuModel)
-add_popart_py_unit_test(rmsprop_tf_mode_test rmsprop_tf_mode_test.py NUM_WORKERS auto)
-add_popart_py_unit_test(sgd_mixed_mode_test_py_0 sgd_mixed_mode_test_py_0.py)
-add_popart_py_unit_test(sgd1_accumulator_test sgd1_accumulator_test.py)
+add_popart_py_unit_test(adam_mixed_mode_test_py_0)
+add_popart_py_unit_test(adaptive_mixed_mode_test_py_0)
+add_popart_py_unit_test(pytorch_comparisons VARIANTS IpuModel)
+add_popart_py_unit_test(rmsprop_tf_mode_test NUM_WORKERS auto)
+add_popart_py_unit_test(sgd_mixed_mode_test_py_0)
+add_popart_py_unit_test(sgd1_accumulator_test)
 
 # sgd_mixed_mode_test_py_1 starts here
 set(accl_types "accl1Type0" "accl1Type1")
@@ -28,11 +28,11 @@ foreach(accl1Type ${accl_types})
   foreach(accumType ${accum_types})
     foreach(sgdAccMm ${sgdAccMm_types})
 # linter complains if this is indented
-add_popart_py_unit_test(sgd_mixed_mode_test_py_1_mode_0 sgd_mixed_mode_test_py_1.py MATCHEXPR "[${accl1Type}-${accumType}-${sgdAccMm}]")
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1 MATCHEXPR "[${accl1Type}-${accumType}-${sgdAccMm}]")
     endforeach()
   endforeach()
 endforeach()
-add_popart_py_unit_test(sgd_mixed_mode_test_py_1_mode_1 sgd_mixed_mode_test_py_1.py MATCHEXPR "test_sgd_mixed_mode_1")
+add_popart_py_unit_test(sgd_mixed_mode_test_py_1 MATCHEXPR "test_sgd_mixed_mode_1")
 # sgd_mixed_mode_test_py_1 ends here
 
 # global_batch_size_test starts here
@@ -46,7 +46,7 @@ foreach(optimizer ${optimizers})
     foreach(batchserial ${batchserial_options})
       foreach(explicit_loops ${explicit_loops_options})
 # linter complains if this is indented
-add_popart_py_unit_test(global_batch_size_test global_batch_size_test.py VARIANTS Hw MATCHEXPR "[${optimizer}-${reduction_type}-${batchserial}-${explicit_loops}]")
+add_popart_py_unit_test(global_batch_size_test VARIANTS Hw MATCHEXPR "[${optimizer}-${reduction_type}-${batchserial}-${explicit_loops}]")
       endforeach()
     endforeach()
   endforeach()

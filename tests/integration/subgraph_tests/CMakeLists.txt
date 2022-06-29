@@ -48,6 +48,6 @@ add_popart_cpp_unit_test(slice_outlining_0_numerical_test
 add_popart_cpp_unit_test(prune_matches_0_subgraph_test
 	prune_matches_0_subgraph_test.cpp)
 
-add_popart_py_unit_test(verify_subgraphs_test verify_subgraphs_test.py)
+add_popart_py_unit_test(verify_subgraphs_test)
 
-add_popart_py_unit_test(subgraph_regression_test subgraph_regression_test.py)
+add_popart_py_unit_test(subgraph_regression_test)

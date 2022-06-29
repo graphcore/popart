@@ -222,7 +222,8 @@ function(add_popart_cpp_unit_test name)
   endforeach()
 endfunction()
 
-# Python unit test function
+# Python unit test function. The first parameter is the Python test file name
+# (without the `.py` extension).
 # Uses VARIANTS and LABELS as above for add_popart_cpp_unit_test
 # Takes optional MATCHEXPR parameter, which is a string that will be passed
 #   verbatim to pytest as a selector when running the test `-k <matchexpr_value>`.
@@ -233,7 +234,12 @@ endfunction()
 #   launching too many threads at once tests that use the NUM_WORKERS option are run
 #   sequentially after any other tests have run (so the pytest subtests run in parallel,
 #   but the individual ctest tests run sequentially)
-function(add_popart_py_unit_test name filename)
+function(add_popart_py_unit_test name)
+  set(filename "${CMAKE_CURRENT_SOURCE_DIR}/${name}.py")
+  get_filename_component(dir ${filename} DIRECTORY)
+  get_filename_component(name ${filename} NAME_WE)
+  file(RELATIVE_PATH dir "${PROJECT_SOURCE_DIR}/tests" ${dir})
+
   set(options "")
   set(oneValueArgs MATCHEXPR NUM_WORKERS)
   set(multiValueArgs LABELS VARIANTS)
@@ -246,15 +252,15 @@ function(add_popart_py_unit_test name filename)
     extract_target(VARIANT TEST_TARGET)
     extract_runconfig(VARIANT TEST_CONFIG)
 
-    set(pytest_arguments -s ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+    set(pytest_arguments -s "${filename}")
 
     if (NOT DEFINED test_args_MATCHEXPR)
-      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}")
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${dir}/${name}")
     else()
       # Note, solid brackets and dash can form part of parameterised pytest names.
       string(REGEX REPLACE " " "_" MATCHEXPR_NAME "${test_args_MATCHEXPR}")
       set(MATCHEXPR_VALUE "${test_args_MATCHEXPR}")
-      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${name}-${MATCHEXPR_NAME}")
+      set(test_name "${TEST_TARGET}_${TEST_CONFIG}_${dir}/${name}-${MATCHEXPR_NAME}")
       list(APPEND pytest_arguments -k "${MATCHEXPR_VALUE}")
     endif()
 
@@ -262,7 +268,8 @@ function(add_popart_py_unit_test name filename)
     # parallel, pytest removes the directories of running tests.
     # This is because by default, pytest removes entries in basetemp older
     # than the newest 3 entries.
-    list(APPEND pytest_arguments --basetemp=${PYTEST_BASETEMP}/${test_name})
+    file(MAKE_DIRECTORY "${PYTEST_BASETEMP}/${test_name}")
+    list(APPEND pytest_arguments "--basetemp=${PYTEST_BASETEMP}/${test_name}")
 
     if (DEFINED test_args_NUM_WORKERS)
       # Set number of threads to run test with

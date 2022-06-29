@@ -1,5 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-add_popart_py_unit_test(implicit_recompute_regression_test implicit_recompute_regression_test.py)
+add_popart_py_unit_test(implicit_recompute_regression_test)
 
 #test(s) of Ir annotation (no device tests)
 add_popart_cpp_unit_test(recompute_test_ir_none_annotation0
