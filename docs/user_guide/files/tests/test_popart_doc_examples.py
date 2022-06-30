@@ -53,14 +53,6 @@ class TestPythonDocExamples(ExamplesTester):
                         file_dir=working_dir,
                         working_dir=working_dir)
 
-    def test_documentation_custom_op(self):
-        """Test the weights example"""
-        filename = "run_leaky_relu.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir,
-                        input_data=0.1)
-
     def test_documentation_replication(self):
         """Test replication"""
         filename = "replication_popart.py"
