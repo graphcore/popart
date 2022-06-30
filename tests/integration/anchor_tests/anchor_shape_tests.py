@@ -48,7 +48,7 @@ def return_options(anchorDict):
         opts.accumulationFactor = anchorDict["AccumulationFactor"]
 
     ipus = 1
-    if anchorDict["Pipelining"] == False:
+    if anchorDict["Pipelining"] is False:
         ipus = 1 * anchorDict["ReplicationFactor"]
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Auto
@@ -186,18 +186,18 @@ def test_all_anchor_returns():
         # Add in BPS if all batches are requested. (AnchorReturnType("All"))
         # Add in a replication dimension if needed.
         if d["ReplicationFactor"] > 1:
-            for k in expected_shapes:
+            for k in expected_shapes.keys():
                 expected_shapes[k] = [d["ReplicationFactor"]
                                       ] + expected_shapes[k]
 
         if d["AccumulationFactor"] > 1 and d["ReturnType"] is not "FINAL":
-            for k in expected_shapes:  #[WEIGHTS, ACTIVATION, GRADIENT]:
+            for k in expected_shapes.keys():  #[WEIGHTS, ACTIVATION, GRADIENT]:
                 expected_shapes[k] = [d["AccumulationFactor"]
                                       ] + expected_shapes[k]
 
         if d["ReturnType"] == "ALL":
             # Then add BPS
-            for k in expected_shapes:
+            for k in expected_shapes.keys():
                 expected_shapes[k] = [BATCHES_PER_STEP] + expected_shapes[k]
 
         if dicts is not None:

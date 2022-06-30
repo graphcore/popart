@@ -492,7 +492,7 @@ def test_nllloss_reduction_equiv():
                 lb = builder.addInputTensor("INT32", lshape)
 
                 sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-                if extraReduction == True:
+                if extraReduction:
                     nll = builder.aiGraphcore.nllloss(
                         [sm, lb], reduction=popart.ReductionType.NoReduction)
                     loss = builder.aiOnnx.reducesum([nll])

@@ -61,14 +61,14 @@ def test_grad_tensor_consumed_by_multiple_pipeline_stages_recompute():
         opts = popart.SessionOptions()
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = pipeline
-        if pipeline == True:
+        if pipeline:
             opts.enableGradientAccumulation = True
             opts.accumulationFactor = bps
             test_bps = 1
         else:
             test_bps = bps
 
-        if recompute == True:
+        if recompute:
             opts.autoRecomputation = popart.RecomputationType.Pipeline
 
         session = popart.TrainingSession(

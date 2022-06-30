@@ -87,7 +87,7 @@ def test_verify_synthetic_inputs(capfd, inputType):
     _, err1 = capfd.readouterr()
     rnData = numpy_array_from_printtensor_string(err1)
 
-    assert np.all(rnData == 0) == False
+    assert not np.all(rnData == 0)
     assert np.isclose(np.mean(rnData), 0, atol=0.02)
     assert np.isclose(np.std(rnData), 1, atol=0.1)
 

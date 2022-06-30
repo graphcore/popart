@@ -94,7 +94,7 @@ def _error_message_if_linter_invalid(linter, config) -> str:
             linter.name,
             f"Version requirement not satisfied for linter {linter.name}. "
             f"Version required: {config.version}. "
-            f"You have: {('.'.join(str(i) for i in linter.get_version())) if linter.get_version() != None else None}"
+            f"You have: {('.'.join(str(i) for i in linter.get_version())) if linter.get_version() is not None else None}"
         )
 
     return error_msg
@@ -132,7 +132,7 @@ def import_from_string(module_path: str):
 
 
 def run_linters(file_to_lint, linters) -> LinterOutput:
-    with open(file_to_lint, 'r') as fp:
+    with open(file_to_lint, 'r', encoding='utf-8') as fp:
         original = fp.read()
 
     linter_messages = []

@@ -105,11 +105,11 @@ def test_tensor_has_tensor_data():
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
-    assert t.hasTensorData() == False
+    assert not t.hasTensorData()
     buffer = np.random.rand(2, 3, 4)
     tInfo = _ir.TensorInfo(_ir.DataType.FLOAT, buffer.shape)
     t.setTensorData(tInfo, buffer)
-    assert t.hasTensorData() == True
+    assert t.hasTensorData()
 
 
 def test_tensor_tensor_data():

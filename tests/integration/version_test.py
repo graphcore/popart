@@ -20,7 +20,7 @@ def test_version_number():
     ver_path = os.path.abspath(
         os.path.join(__file__, '..', '..', '..', 'version.json'))
 
-    with open(ver_path, 'r') as f:
+    with open(ver_path, 'r', encoding="utf-8") as f:
         version_obj = json.load(f)
 
     assert int(version_obj['major']) == ver[0]

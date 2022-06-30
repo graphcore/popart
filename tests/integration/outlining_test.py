@@ -240,7 +240,7 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
 
     popart.closePoplarDebugInfo()
     num_outlined_calls = 0
-    with open(debug_filename) as json_file:
+    with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
             if context['layer'] == "popart" and \

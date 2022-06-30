@@ -53,7 +53,7 @@ def test_2_restores_for_1_stash(explicit):
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = bps
         opts.enableExplicitIR(explicit)
-        if recompute == True:
+        if recompute:
             opts.autoRecomputation = popart.RecomputationType.Pipeline
 
         with tu.create_test_device(numIpus=2) as device:

@@ -52,7 +52,7 @@ class Context:
                     isInitializer = True
                     break
 
-            if isInitializer == False:
+            if isInitializer is False:
                 inputmap[str(inp.name)] = inputs[i]
                 i = i + 1
 

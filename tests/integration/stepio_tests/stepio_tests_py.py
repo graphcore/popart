@@ -92,7 +92,7 @@ def test_stepio_callbackinput_ipu():
         def input_callback(id, prefetch):
             nonlocal i1_c, i2_c
 
-            if (prefetch == True):
+            if prefetch:
                 return None
 
             time.sleep(1)

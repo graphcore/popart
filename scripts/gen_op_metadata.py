@@ -435,7 +435,7 @@ def main(filenames: List[Path], out: Path, include_directories: Any):
         'ops': o
     } for f, n, o in zip(filenames, namespaces, opss)]
 
-    with open(out, 'w') as f:
+    with open(out, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=2)
 
 

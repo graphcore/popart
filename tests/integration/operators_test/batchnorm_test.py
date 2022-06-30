@@ -1,4 +1,8 @@
 # Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+
+# False positive of torch.nn.BatchNorm2d.state_dict() is unsubscriptable
+# pylint: disable=unsubscriptable-object
+
 import numpy as np
 import pytest
 import popart
@@ -1101,7 +1105,7 @@ def test_batchnorm_repeated():
             stepio = popart.PyStepIO(inputs, anchors)
             session.run(stepio)
 
-            assert np.allclose(first_result, np.copy(anchors[o_y])) == True
+            assert np.allclose(first_result, np.copy(anchors[o_y]))
 
 
 def test_batchnorm_train_half_fp32var():

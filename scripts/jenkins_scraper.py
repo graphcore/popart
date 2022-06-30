@@ -37,7 +37,7 @@ def get_cookies():
         )
         sys.exit(-1)
 
-    with open(cookie_file) as f:
+    with open(cookie_file, encoding="utf-8") as f:
         cookies_str = "".join(f.readlines())
 
         def get_key(cookie_str):

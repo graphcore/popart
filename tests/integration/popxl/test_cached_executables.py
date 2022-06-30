@@ -26,7 +26,7 @@ def create_ir_with_copy_var_update(
     Args:
         input_val (float): Value to set in the input tensor
         add_val (int): Value to add to the input tensor
-        init_val (float) Value to set copied_output tensor
+        init_val (float): Value to set copied_output tensor
 
     Returns:
         Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]: Tuple containing:

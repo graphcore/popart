@@ -118,7 +118,7 @@ def test_l1_reduction_equiv():
             builder = popart.Builder()
             ip = builder.addInitializedInputTensor(ip_data)
 
-            if extraReduction == True:
+            if extraReduction:
                 l1 = builder.aiGraphcore.l1loss(
                     [ip], 0.1, reduction=popart.ReductionType.NoReduction)
                 loss = builder.aiOnnx.reducesum([l1])

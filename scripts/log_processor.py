@@ -136,8 +136,8 @@ def main():
     )
     args = parser.parse_args()
 
-    with open(args.input_file, 'r') as input_file:
-        with open(args.output_file, 'w') as output_file:
+    with open(args.input_file, 'r', encoding="utf-8") as input_file:
+        with open(args.output_file, 'w', encoding="utf-8") as output_file:
             if args.rebase_timestamps:
                 rebase_timestamps(input_file, output_file)
             elif args.strip_timestamps:

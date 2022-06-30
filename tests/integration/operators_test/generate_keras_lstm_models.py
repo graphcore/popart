@@ -137,7 +137,7 @@ def _run_comparison_test(data, result, proto, expected_activations, lstm_op_patt
 
     here = Path(__file__).parent
     out_path = here / 'keras_lstm_tests.py'
-    out_path.write_text(out)
+    out_path.write_text(out, encoding="utf-8")
 
 
 if __name__ == '__main__':

@@ -194,7 +194,7 @@ class Tensor:
         Returns:
             List[int]: The strides of the tensor.
         """
-        if shape == None:
+        if shape is None:
             shape = self.shape
         return tuple(self._pb_tensor.info.strides(shape))
 

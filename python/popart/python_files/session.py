@@ -155,7 +155,7 @@ class InferenceSession(_InferenceSessionCore):
                     "inference".
         """
 
-        if patterns == None:
+        if patterns is None:
             patterns = popart.Patterns()
 
         super(InferenceSession,

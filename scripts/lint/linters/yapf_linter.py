@@ -34,5 +34,5 @@ class YapfLinter(ILinter):
                                                style_config=self.config_file)
         return linted_code
 
-    def install_instructions(self, required_version) -> str:
+    def install_instructions(self, required_version='') -> str:
         return "pip install yapf==" + required_version

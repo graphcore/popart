@@ -34,7 +34,7 @@ def get_docstring_summary(obj):
         return summary
 
 
-with open(sys.argv[1], "w") as f:
+with open(sys.argv[1], "w", encoding="utf-8") as f:
 
     for package_name in [
             'popxl.ops', 'popxl.ops.collectives', 'popxl.ops.var_updates'

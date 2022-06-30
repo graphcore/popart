@@ -223,7 +223,7 @@ def load_from_string(x):
 
 
 def load_from_file(x):
-    with open(x, 'r') as f:
+    with open(x, 'r', encoding='utf-8') as f:
         y = f.read()
         ir = load_from_string(y)
     return ir

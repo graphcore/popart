@@ -142,7 +142,7 @@ def test_sgd_mixed_mode(tmpdir):
     popart.closePoplarDebugInfo()
     num_sgds = 0
     parents = set()
-    with open(debug_filename) as json_file:
+    with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
             if context['layer'] == "popart" and \

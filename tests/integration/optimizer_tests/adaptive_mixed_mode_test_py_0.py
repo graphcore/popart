@@ -308,7 +308,7 @@ def test_adaptive_mixed_mode_1(tmpdir):
     popart.closePoplarDebugInfo()
     num_adaptives = 0
     parents = set()
-    with open(debug_filename) as json_file:
+    with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
             if context['layer'] == "popart" and \

@@ -21,7 +21,7 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
 
-        if (alpha == None):
+        if alpha is None:
             o = builder.aiOnnx.leakyrelu([i1])
         else:
             o = builder.aiOnnx.leakyrelu([i1], alpha=alpha)
@@ -29,7 +29,7 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
         builder.addOutputTensor(o)
         return [o]
 
-    if (alpha == None):
+    if alpha is None:
         alpha = default_alpha
 
     def reference(_):  # ref_data is an unused argument
@@ -55,7 +55,7 @@ def test_lrelu_train(op_tester, alpha, inplace):
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
 
-        if (alpha == None):
+        if alpha is None:
             o = builder.aiOnnx.leakyrelu([i1])
         else:
             o = builder.aiOnnx.leakyrelu([i1], alpha=alpha)
@@ -67,7 +67,7 @@ def test_lrelu_train(op_tester, alpha, inplace):
             popart.reservedGradientPrefix() + o
         ]
 
-    if (alpha == None):
+    if alpha is None:
         alpha = default_alpha
 
     def reference(ref_data):
@@ -93,7 +93,7 @@ def test_lrelu_train16(op_tester, alpha, inplace):
     def init_builder(builder):
         i1 = builder.addInputTensor(input_data)
 
-        if (alpha == None):
+        if alpha is None:
             o = builder.aiOnnx.leakyrelu([i1])
         else:
             o = builder.aiOnnx.leakyrelu([i1], alpha=alpha)
@@ -105,7 +105,7 @@ def test_lrelu_train16(op_tester, alpha, inplace):
             popart.reservedGradientPrefix() + o
         ]
 
-    if (alpha == None):
+    if alpha is None:
         alpha = default_alpha
 
     def reference(ref_data):

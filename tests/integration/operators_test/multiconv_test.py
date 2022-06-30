@@ -333,7 +333,7 @@ def test_multiconv_shape_inference():
 
 def _torch_convolution(numDims, shapes, dilation, padding, stride):
     if numDims == 1:
-        if dilation == None and padding == None and stride == None:
+        if dilation is None and padding is None and stride is None:
             conv = torch.nn.Conv1d(*shapes)
         else:
             conv = torch.nn.Conv1d(*shapes,
@@ -341,7 +341,7 @@ def _torch_convolution(numDims, shapes, dilation, padding, stride):
                                    padding=padding * numDims,
                                    stride=stride * numDims)
     elif numDims == 2:
-        if dilation == None and padding == None and stride == None:
+        if dilation is None and padding is None and stride is None:
             conv = torch.nn.Conv2d(*shapes)
         else:
             conv = torch.nn.Conv2d(*shapes,
@@ -349,7 +349,7 @@ def _torch_convolution(numDims, shapes, dilation, padding, stride):
                                    padding=padding * numDims,
                                    stride=stride * numDims)
     elif numDims == 3:
-        if dilation == None and padding == None and stride == None:
+        if dilation is None and padding is None and stride is None:
             conv = torch.nn.Conv3d(*shapes)
         else:
             conv = torch.nn.Conv3d(*shapes,

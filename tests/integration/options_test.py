@@ -28,10 +28,10 @@ def test_set_dotchecks():
 def test_set_enabledOutlining_flag():
 
     opts = popart.SessionOptions()
-    assert (opts.enableOutlining == True)
+    assert opts.enableOutlining is True
 
     opts.enableOutlining = False
-    assert (opts.enableOutlining == False)
+    assert opts.enableOutlining is False
 
 
 def test_set_engineOptions():

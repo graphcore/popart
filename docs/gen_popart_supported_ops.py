@@ -15,7 +15,7 @@ for op in supported_ops:
     ops[op.domain].append({"type": op.type, "version": op.version})
 
 print("Writing supported ops to " + sys.argv[1])
-with open(sys.argv[1], "w") as f:
+with open(sys.argv[1], "w", encoding="utf-8") as f:
     for domain in ops:
         print("Domain: " + domain, file=f)
         print('-' * (8 + len(domain)), file=f)

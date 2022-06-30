@@ -60,14 +60,14 @@ class CopyrightLinter:
               else it will rewrite the file and return 1
         """
         path = Path(file_path)
-        file_contents = Path(file_path).read_text()
+        file_contents = Path(file_path).read_text(encoding="utf-8")
         new_contents = self._determine_linter_message(file_path, file_contents)
 
-        if self._linter_message == None:
+        if self._linter_message is None:
             return 0
         else:
             print(f"Fixing ERROR in {file_path}: {self._linter_message}")
-            path.write_text(new_contents)
+            path.write_text(new_contents, encoding="utf-8")
             return 1
 
     def set_linter_message(self, message: str) -> None:

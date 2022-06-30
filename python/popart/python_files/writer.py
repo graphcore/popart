@@ -36,7 +36,7 @@ class NetWriter():
         self.optimizer = optimizer
         self.dataFlow = dataFlow
         self.inputShapeInfo = inputShapeInfo
-        self.trainMode = optimizer != None
+        self.trainMode = optimizer is not None
 
         print(self.dataFlow.nAnchors())
 

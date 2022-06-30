@@ -100,7 +100,7 @@ def test_create_linters():
 def test_create_configs():
     def write_config(tmpdir, config_str):
         filename = os.path.join(tmpdir, 'linter_config.json')
-        with open(filename, 'w') as fp:
+        with open(filename, 'w', encoding='utf-8') as fp:
             fp.write(config_str)
         return filename
 
@@ -148,7 +148,7 @@ def test_run_linters():
     noop_linters = [DoNothingLinter()]
     with TemporaryDirectory() as tmpdir:
         filename = os.path.join(tmpdir, 'test_file')
-        with open(filename, 'w'):
+        with open(filename, 'w', encoding='utf-8'):
             pass  # This makes sure the file is created
         output = run_linters(filename, linters)
         noop_output = run_linters(filename, noop_linters)
@@ -187,9 +187,9 @@ def test_lint():
     with TemporaryDirectory() as tmpdir:
         config_file = os.path.join(tmpdir, 'linter_config.json')
         file_to_lint = os.path.join(tmpdir, 'file_to_lint')
-        with open(config_file, 'w') as fp:
+        with open(config_file, 'w', encoding='utf-8') as fp:
             fp.write(json.dumps(linter_config))
-        with open(file_to_lint, 'w'):
+        with open(file_to_lint, 'w', encoding='utf-8'):
             pass
 
         _ = lint(file_to_lint, config_file)

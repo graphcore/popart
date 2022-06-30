@@ -44,7 +44,7 @@ def test_decompose_gradient_sum():
             opts.decomposeGradSum = decomposeGradSum
 
             loss = builder.aiGraphcore.identityloss([actIn])
-            if doSharding == True:
+            if doSharding:
                 builder.virtualGraph(loss, numLayers - 1)
                 opts.virtualGraphMode = popart.VirtualGraphMode.Manual
                 numIpus = numLayers
@@ -75,7 +75,7 @@ def test_decompose_gradient_sum():
         w1_nodecomp = getUpdatedWeights(decomposeGradSum=False)
 
         # Sanity check that the weights have been updated
-        assert np.allclose(w0_init, w1_decomp) == False
+        assert not np.allclose(w0_init, w1_decomp)
 
         # Check that the option does not affect the weight update
         assert np.allclose(w1_nodecomp, w1_decomp)

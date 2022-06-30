@@ -39,7 +39,7 @@ def test_basic(tmpdir):
 
     popart.closePoplarDebugInfo()
 
-    with open(filename) as json_file:
+    with open(filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         print(data)
 

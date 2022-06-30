@@ -49,8 +49,8 @@ class Testdtype:
             torch_dtype = eval(f'torch.{popxl_dtype.name[1:]}')
             assert torch_dtype.is_complex == popxl_dtype.is_complex
             assert torch_dtype.is_floating_point == popxl_dtype.is_floating_point
-            assert torch_dtype.is_signed == True
-            assert popxl_dtype.is_int == True
+            assert torch_dtype.is_signed is True
+            assert popxl_dtype.is_int is True
 
     def test_aliases(self):
         assert popxl.half == popxl.float16

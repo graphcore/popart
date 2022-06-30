@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    with open(args.cookie_file) as fp:
+    with open(args.cookie_file, encoding="utf-8") as fp:
         cookie = fp.read().strip()
 
     # Provided this script stays where it is, this is a safe bet

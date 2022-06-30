@@ -44,7 +44,7 @@ public:
 
 
 def create_cpp_file(string, filename):
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write(string)
 
 

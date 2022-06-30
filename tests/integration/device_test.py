@@ -80,9 +80,9 @@ def test_aquire_device_by_id_3():
     deviceManager = popart.DeviceManager()
     deviceId = 0
     device0 = deviceManager.acquireDeviceById(deviceId)
-    assert device0 != None
+    assert device0 is not None
     device1 = deviceManager.tryAcquireDeviceById(deviceId)
-    assert device1 == None
+    assert device1 is None
 
 
 @tu.requires_ipu

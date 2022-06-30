@@ -127,19 +127,19 @@ def test_bools():
 
     opid = _ir.OperatorIdentifier("ai.onnx", "Identity", 1, num_inputs, 1)
     op = _ir.Op(opid, settings)
-    assert op.isInplaceViewChange() == False
-    assert op.isOutplaceViewChange() == False
-    assert op.isLossOp() == False
-    assert op.isIpuCopyOp() == False
-    assert op.isOptimizerOp() == False
-    assert op.requiresRandomSeed() == False
+    assert op.isInplaceViewChange() is False
+    assert op.isOutplaceViewChange() is False
+    assert op.isLossOp() is False
+    assert op.isIpuCopyOp() is False
+    assert op.isOptimizerOp() is False
+    assert op.requiresRandomSeed() is False
     assert op.isOutlineable()
-    assert op.hasSideEffect() == False
-    assert op.isNorm() == False
-    assert op.canBeReplacedByIdentity() == False
-    assert op.copiesOptimizerTensors() == False
-    assert op.inputsUnmodifiable() == False
-    assert op.isElementWiseUnary() == False
+    assert op.hasSideEffect() is False
+    assert op.isNorm() is False
+    assert op.canBeReplacedByIdentity() is False
+    assert op.copiesOptimizerTensors() is False
+    assert op.inputsUnmodifiable() is False
+    assert op.isElementWiseUnary() is False
 
 
 def test_graph_in_outs():
@@ -152,8 +152,8 @@ def test_graph_in_outs():
 
     opid = _ir.OperatorIdentifier("ai.onnx", "Identity", 1, num_inputs, 1)
     op = _ir.Op(opid, settings)
-    assert op.hasInput(0) == False
-    assert op.hasOutput(0) == False
+    assert op.hasInput(0) is False
+    assert op.hasOutput(0) is False
     assert op.optionalInputs() == set()
     assert op.getInBatchAxis(0) == 0
     assert op.getOutBatchAxis(0) == 0

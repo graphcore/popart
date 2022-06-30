@@ -28,7 +28,7 @@ def return_options(anchorDict):
         opts.accumulationFactor = anchorDict["AccumulationFactor"]
 
     ipus = 1
-    if anchorDict["Pipelining"] == False:
+    if anchorDict["Pipelining"] is False:
         ipus = 1 * anchorDict["ReplicationFactor"]
     else:
         opts.virtualGraphMode = popart.VirtualGraphMode.Auto

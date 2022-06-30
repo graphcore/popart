@@ -10,12 +10,12 @@ def test_patterns_default():
     import popart
 
     patterns = popart.Patterns()
-    assert (patterns.PreUniRepl == True)
-    assert (patterns.PostNRepl == True)
-    assert (patterns.SoftMaxGradDirect == True)
-    assert (patterns.OpToIdentity == True)
-    assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace == True)
+    assert patterns.PreUniRepl is True
+    assert patterns.PostNRepl is True
+    assert patterns.SoftMaxGradDirect is True
+    assert patterns.OpToIdentity is True
+    assert patterns.SubtractArg1GradOp is True
+    assert patterns.InPlace is True
 
     print(str(patterns))
 
@@ -24,12 +24,12 @@ def test_patterns_none():
     import popart
 
     patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
-    assert (patterns.PreUniRepl == False)
-    assert (patterns.PostNRepl == False)
-    assert (patterns.SoftMaxGradDirect == False)
-    assert (patterns.OpToIdentity == False)
-    assert (patterns.SubtractArg1GradOp == False)
-    assert (patterns.InPlace == False)
+    assert patterns.PreUniRepl is False
+    assert patterns.PostNRepl is False
+    assert patterns.SoftMaxGradDirect is False
+    assert patterns.OpToIdentity is False
+    assert patterns.SubtractArg1GradOp is False
+    assert patterns.InPlace is False
 
     print(str(patterns))
 
@@ -38,12 +38,12 @@ def test_patterns_all():
     import popart
 
     patterns = popart.Patterns(popart.PatternsLevel.All)
-    assert (patterns.PreUniRepl == True)
-    assert (patterns.PostNRepl == True)
-    assert (patterns.SoftMaxGradDirect == True)
-    assert (patterns.OpToIdentity == True)
-    assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace == True)
+    assert patterns.PreUniRepl is True
+    assert patterns.PostNRepl is True
+    assert patterns.SoftMaxGradDirect is True
+    assert patterns.OpToIdentity is True
+    assert patterns.SubtractArg1GradOp is True
+    assert patterns.InPlace is True
 
     print(str(patterns))
 
@@ -54,12 +54,12 @@ def test_patterns_modify():
     patterns = popart.Patterns()
     patterns.PreUniRepl = False
 
-    assert (patterns.PreUniRepl == False)
-    assert (patterns.PostNRepl == True)
-    assert (patterns.SoftMaxGradDirect == True)
-    assert (patterns.OpToIdentity == True)
-    assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace == True)
+    assert patterns.PreUniRepl is False
+    assert patterns.PostNRepl is True
+    assert patterns.SoftMaxGradDirect is True
+    assert patterns.OpToIdentity is True
+    assert patterns.SubtractArg1GradOp is True
+    assert patterns.InPlace is True
 
     print(str(patterns))
 
@@ -68,9 +68,9 @@ def test_patterns_str():
     import popart
 
     patterns = popart.Patterns(["PostNRepl", "InPlace"])
-    assert (patterns.PostNRepl == True)
-    assert (patterns.InPlace == True)
-    assert (patterns.SoftMaxGradDirect == False)
+    assert patterns.PostNRepl is True
+    assert patterns.InPlace is True
+    assert patterns.SoftMaxGradDirect is False
 
 
 def test_loss_inputs_untouched():

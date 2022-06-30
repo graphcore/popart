@@ -1584,7 +1584,7 @@ def test_save_model_to_file():
         builder.saveModelProto(tmpfile)
 
         # Check file has saved
-        assert os.path.exists(tmpfile) == True
+        assert os.path.exists(tmpfile) is True
 
         # Check that, when re-loaded, its contents are the same as when saved
         new_builder = popart.Builder(tmpfile)
@@ -1605,8 +1605,8 @@ def test_is_initializer():
     builder = popart.Builder()
     i0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [10, 9, 8, 7]))
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    assert builder.isInitializer(i0) == False
-    assert builder.isInitializer(i1) == True
+    assert builder.isInitializer(i0) is False
+    assert builder.isInitializer(i1) is True
 
 
 def test_conv_kernel_shape_mismatch():

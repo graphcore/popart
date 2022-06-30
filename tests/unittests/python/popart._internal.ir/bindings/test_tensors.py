@@ -41,7 +41,7 @@ def test_contains_with_scope():
 
     assert ts.contains('foo', scope)
     assert ts.contains('bar', scope)
-    assert ts.contains('fizz', scope) == False
+    assert not ts.contains('fizz', scope)
 
 
 def test_find():

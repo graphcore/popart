@@ -42,7 +42,7 @@ def render_template(template_path: Path, **kwargs) -> Text:
         Text: The rendered template.
     """
 
-    template = jinja2.Template(open(template_path).read())
+    template = jinja2.Template(open(template_path, encoding="utf-8").read())
     return template.render(**kwargs)
 
 
@@ -79,14 +79,14 @@ def create_rendered_files(metadata: Dict, template_path: Path,
     filepath = filedir / op_header.split('/')[-1].replace('.hpp', '.gen.cpp')
     Path(filedir).mkdir(parents=True, exist_ok=True)
 
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
     out = render_template(Path(str(template_path).replace('.cpp', '.hpp')),
                           namespaces=namespaces,
                           fun_name=fun_name)
     filepath = Path(str(filepath).replace('.cpp', '.hpp'))
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
 
@@ -128,7 +128,7 @@ def create__all_file(metadatas: tuple, template_path: Path,
     out = render_template(template_path,
                           includes=includes,
                           fun_names=fun_names)
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
 
@@ -145,7 +145,7 @@ def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
     Path(filedir).mkdir(parents=True, exist_ok=True)
 
     out = render_template(template_path, metadatas=metadatas)
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
 
@@ -161,7 +161,7 @@ def main(json_path: Path, out: Path, jobs: int) -> None:
     template_path = (proj_root /
                      'python/popart._internal.ir/templates/op/_op.cpp.j2')
 
-    with open(json_path, 'r') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         metadatas = json.load(f)
 
     with Pool(jobs) as p:

@@ -57,7 +57,7 @@ def is_gcd_size(size):
         return False
     gcd0_config_file = os.path.join(os.getenv('HOME'), '.ipuof.conf.d',
                                     PARTITION_NAME + '_gcd0_ipuof.conf')
-    with open(gcd0_config_file, 'r') as fid:
+    with open(gcd0_config_file, 'r', encoding="utf-8") as fid:
         gcd0_config = fid.read()
     j = json.loads(gcd0_config)
 

@@ -143,7 +143,7 @@ def main():
     parser.add_argument("input_file", help="Input log file")
     args = parser.parse_args()
 
-    with open(args.input_file, 'r') as input_file:
+    with open(args.input_file, 'r', encoding="utf-8") as input_file:
         return validate_events(input_file)
 
 

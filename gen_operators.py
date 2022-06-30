@@ -435,7 +435,7 @@ def parseDefinitions():
 
         op = Operation(s.name, s.since_version, s.support_level, s)
 
-        for i in s.inputs:
+        for _ in s.inputs:
             op.inputs = op.inputs + 1
 
         op.min_input = s.min_input
@@ -503,7 +503,7 @@ def addHeader(f: io.TextIOWrapper, opset_version: int) -> None:
 
 
 def genBuilderHpp(filename: str, schema: Schema) -> None:
-    with io.open(filename, 'w') as f:
+    with io.open(filename, 'w', encoding='utf-8') as f:
 
         addHeader(f, None)
         f.write("""
@@ -674,7 +674,7 @@ class ConstVoidData;
 
 
 def genBuilderCpp(filename: str, schema: Schema):
-    with io.open(filename, 'w') as f:
+    with io.open(filename, 'w', encoding='utf-8') as f:
 
         addHeader(f, None)
 
@@ -915,7 +915,7 @@ def genPythonBuilderBinds(schema: Schema) -> None:
             os.makedirs(opset_dir, exist_ok=True)
             filename = os.path.join(opset_dir,
                                     f"popart_opset{opset_version}.gen.cpp")
-            with io.open(filename, 'w') as f:
+            with io.open(filename, 'w', encoding='utf-8') as f:
                 addHeader(f, opset_version)
                 # Add the include file.
                 f.write(f"""#include <cstdint>
@@ -1094,7 +1094,7 @@ def genPythonDocs(schema: Schema) -> None:
         for opset_version, opset in sorted(v.opsets.items(),
                                            key=lambda x: int(x[0])):
             filename = f"willow/include/popart/docs/opset{opset_version}_docs.hpp"
-            with io.open(filename, 'w') as f:
+            with io.open(filename, 'w', encoding="utf-8") as f:
                 write_docs_header(f, opset_version)
 
                 # Add all ops in the this op set
@@ -1155,7 +1155,7 @@ def write_docs_header(f: io.TextIOWrapper, opset_version: int) -> None:
 
 
 def genOpIdentifiersHpp(filename: str, schema: Schema) -> None:
-    with io.open(filename, 'w') as f:
+    with io.open(filename, 'w', encoding="utf-8") as f:
         addHeader(f, None)
         f.write("""
 #include "popart/operatoridentifier.hpp"
@@ -1209,8 +1209,8 @@ namespace Operators {
             if k != 'ai.onnx':
                 continue
 
-            for opset_version, opset in sorted(v.opsets.items(),
-                                               key=lambda x: int(x[0])):
+            for opset_version, _ in sorted(v.opsets.items(),
+                                           key=lambda x: int(x[0])):
 
                 f.write("namespace OpSet{} {{\n".format(str(opset_version)))
                 # Add all ops in the this op set
@@ -1262,7 +1262,7 @@ def getOpsInOpset(domain: Domain, opsetVersion: int) -> list:
 
 
 def genOpsetsHpp(filename: str, schema: Schema) -> None:
-    with open(filename, 'w') as f:
+    with open(filename, 'w', encoding="utf-8") as f:
         addHeader(f, None)
 
         f.write("""
@@ -1295,9 +1295,9 @@ OpsetMap getOpsets() {
 
             domain_name = domain_name.replace('.', '_')
 
-            for opset_version, opset in sorted(domain.opsets.items(),
-                                               key=lambda x: int(x[0]),
-                                               reverse=True):
+            for opset_version, _ in sorted(domain.opsets.items(),
+                                           key=lambda x: int(x[0]),
+                                           reverse=True):
                 ops = getOpsInOpset(domain, int(opset_version))
 
                 f.write(
@@ -1306,7 +1306,6 @@ OpsetMap getOpsets() {
 
                 def format_entry(x):
                     name = x[0]
-                    version = x[1]
                     return f'{{"{name}", Onnx::AiOnnx::OpSet{opset_version}::{name}}}'
 
                 entries = [format_entry(x) for x in ops]

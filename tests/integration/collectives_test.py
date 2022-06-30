@@ -56,7 +56,7 @@ def test_replicated_reducescatter(commGroupAndVarSettings):
     replicas_per_group = replicatedGraphCount
     num_groups = 1
     num_shards = replicatedGraphCount
-    if commGroup != None:
+    if commGroup is not None:
         num_shards = replicatedGraphCount // commGroup.replicaGroupSize
         if useVarSettings:
             num_groups = commGroup.replicaGroupSize

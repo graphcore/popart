@@ -595,7 +595,7 @@ def write_header(comments, out_file=sys.stdout):
 
 
 def mkdoc(args, width, output=None):
-    if width != None:
+    if width is not None:
         global docstring_width
         docstring_width = int(width)
     comments = extract_all(args)
@@ -606,7 +606,7 @@ def mkdoc(args, width, output=None):
         try:
             os.makedirs(os.path.dirname(os.path.abspath(output)),
                         exist_ok=True)
-            with open(output, 'w') as out_file:
+            with open(output, 'w', encoding="utf-8") as out_file:
                 write_header(comments, out_file)
         except:
             # In the event of an error, don't leave a partially-written
