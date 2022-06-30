@@ -168,10 +168,11 @@ std::shared_ptr<DeviceInfo> DeviceManager::createOfflineIPUDevice(
 
 std::shared_ptr<DeviceInfo>
 DeviceManager::createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) {
-  for (auto p : providers) {
-    return p->createOfflineIpuFromDeviceInfo(deviceInfo);
+  if (providers.empty()) {
+    throw internal_error("Could not find a provider to construct offline IPU.");
   }
-  throw internal_error("Could not find a provider to construct offline IPU.");
+  // Pick the first provider and create the device
+  return providers.at(0)->createOfflineIpuFromDeviceInfo(deviceInfo);
 }
 
 std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
