@@ -30,10 +30,11 @@ DARK_YELLOW = 21
 
 class CMakeScript:
     def __init__(self) -> None:
-        """Reads the settings file, loads options and prepares curses
+        """
+        Read the settings file, load options and prepare curses.
 
         Raises:
-            IOError: The settings JSON file exists but wasn't JSON.
+            OSError: The settings JSON file exists but wasn't JSON.
             RuntimeError: The terminal is not supported.
         """
         self.options = {}
@@ -42,13 +43,14 @@ class CMakeScript:
         self.state = self.get_default_state()
 
         if os.path.exists(last_settings_file):
-            with open(last_settings_file, "r") as f:
+            with open(last_settings_file, "r", encoding="utf-8") as f:
                 try:
                     loaded_state = json.load(f)
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as exception:
                     raise IOError(
                         f"{last_settings_file} could not be read. either "
-                        "check for mistakes or delete the file.")
+                        "check for mistakes or delete the file."
+                    ) from exception
                 for k, v in loaded_state.items():
                     for k_, v_ in v.items():
                         if k in self.state:
@@ -111,7 +113,7 @@ class CMakeScript:
 
     # Start of options declarations
     def create_options_dict(self) -> None:
-        """Populates self.options with the options listed"""
+        """Populate self.options with the options listed."""
         # To add an option call add_cmake_arg, add_string_arg or add_file_arg
         self.add_cmake_arg("DO_PACKAGING", "", ["OFF", "ON"], 1,
                            "Poplar_packaging", False)
@@ -141,7 +143,7 @@ class CMakeScript:
             ["OFF", "ON"], 0, "PopART")
         self.add_cmake_arg("BUILD_DOCS", "Build the PopART documentation",
                            ["OFF", "ON"], 0, "PopART")
-        self.add_cmake_arg(f"ENABLED_TEST_VARIANTS", f"Which tests to build", [
+        self.add_cmake_arg("ENABLED_TEST_VARIANTS", "Which tests to build", [
             "Cpu$<SEMICOLON>IpuModel$<SEMICOLON>Hw", "Cpu$<SEMICOLON>IpuModel",
             "Cpu$<SEMICOLON>Hw", "IpuModel$<SEMICOLON>Hw", "Cpu", "Hw",
             "IpuModel", ""
@@ -170,7 +172,7 @@ class CMakeScript:
             self.options[i] = dict(sorted(self.options[i].items()))
 
     def get_default_state(self) -> dict:
-        """Returns a state dictionary reset to the default
+        """Return a state dictionary reset to the default.
 
         Returns:
             dict: The default state
@@ -188,8 +190,7 @@ class CMakeScript:
                       default: int,
                       location: str = "root",
                       omit_if_default: bool = True) -> None:
-        """A function that registers cmake arguments and adds them to
-        the class's options dictionary
+        """Register cmake arguments and add them to the class's options dictionary.
 
         Args:
             name (str): The name of the option
@@ -219,7 +220,10 @@ class CMakeScript:
                        default: str,
                        location: str = "root",
                        omit_if_default: bool = True) -> None:
-        """Registers a cmake argument and adds it to the class' options dictionary. The user can type any string into it.
+        """
+        Register a cmake argument and adds it to the class' options dictionary.
+
+        The user can type any string into it.
 
         Args:
             name (str): The name of the option
@@ -247,7 +251,10 @@ class CMakeScript:
                      allow_file: bool = True,
                      allow_folder: bool = False,
                      omit_if_default: bool = True) -> None:
-        """Registers a cmake argument and adds it to the class' options dictionary. The user select any file.
+        """
+        Register a cmake argument and adds it to the class' options dictionary.
+
+        The user select any file.
 
         Args:
             name (str): The name of the option
@@ -272,7 +279,7 @@ class CMakeScript:
         }
 
     def get_chosen_value(self, name: str, location: str = "root") -> str:
-        """Gets the value the user has chosen for a given option
+        """Get the value the user has chosen for a given option.
 
         Args:
             name (str): The name of the option to get
@@ -288,7 +295,7 @@ class CMakeScript:
 
     def draw_chosen_value(self, name: str, states: dict, height: int, i: int,
                           cols: int) -> None:
-        """Draws the chosen value at column 50
+        """Draw the chosen value at column 50.
 
         Args:
             name (str): The name of the optino
@@ -366,7 +373,7 @@ class CMakeScript:
                                curses.color_pair(curses.COLOR_WHITE))
 
     def draw_suboptions(self, rows: int, cols: int) -> int:
-        """Draws the suboptions to the screen
+        """Draw the sub-options to the screen.
 
         Args:
             rows (int): The number of rows in the terminal
@@ -409,7 +416,7 @@ class CMakeScript:
         return offset
 
     def render(self) -> None:
-        """The function that renders to the terminal"""
+        """Render to the terminal."""
         rows, cols = self.stdscr.getmaxyx()
         self.stdscr.erase()  # Clear screen
         offset = self.draw_suboptions(rows, cols)
@@ -425,18 +432,18 @@ class CMakeScript:
 
         if self.loc() == "root":
             self.stdscr.addstr(
-                rows - 1, 10, f"[p]rint command [r]un cmake [q]uit [d]default",
+                rows - 1, 10, "[p]rint command [r]un cmake [q]uit [d]default",
                 curses.color_pair(curses.COLOR_WHITE) + curses.A_BOLD)
         else:
             self.stdscr.addstr(
                 rows - 1, 0,
-                f"[esc]back [p]rint command [r]un cmake [q]uit [d]default",
+                "[esc]back [p]rint command [r]un cmake [q]uit [d]default",
                 curses.color_pair(curses.COLOR_WHITE) + curses.A_BOLD)
 
         # prints the bottom row
 
     def handle_scroll(self, rows: int) -> None:
-        """A function to handle the scrolling and the cursor
+        """Handle the scrolling and the cursor.
 
         Args:
             rows (int): The number of rows in the terminal
@@ -449,7 +456,7 @@ class CMakeScript:
         self.scroll = max(0, min(self.scroll, max_scroll))
 
     def loc(self) -> str:
-        """A small utility function to return the location.
+        """Return the location.
 
         Returns:
             str: The location that the user is.
@@ -460,7 +467,7 @@ class CMakeScript:
         return loc
 
     def handle_keypress(self, key: int, rows: int) -> Union[str, None]:
-        """The function that handles keypress logic.
+        """Handle keypress logic.
 
         Args:
             key (int): The key that was pressed (as a number)
@@ -477,8 +484,7 @@ class CMakeScript:
 
         if key == curses.KEY_UP:
             self.cursor -= 1
-            if self.cursor < 0:
-                self.cursor = 0
+            self.cursor = max(self.cursor, 0)
             if self.cursor - self.scroll < 1:
                 # scrolls the screen, keeping the cursor one from the bottom
                 self.scroll = max(self.cursor - 1, 0)
@@ -552,15 +558,15 @@ class CMakeScript:
             return chr(key)  # if p, r or q pressed return p, r or q
 
     def main_loop(self) -> str:
-        """The main loop of the program. It calls the class's other
-        functions in order as well as some curses functions
+        """Loop through the program.
+
+        It calls the class's other functions in order as well as some curses functions.
+
+        Raises:
+            OSError: The terminal is too short. This is caught and displayed to the user
 
         Returns:
             str: The key that caused the function to return
-
-        Raises:
-            IOError: The terminal is too short. this is caught and displayed
-            to the user
         """
 
         while True:
@@ -579,7 +585,7 @@ class CMakeScript:
                 return result
 
     def generate_command(self) -> str:
-        """Generates the cmake commmand
+        """Generate the cmake command.
 
         Returns:
             str: The cmake command
@@ -616,7 +622,7 @@ class CMakeScript:
 
 class FileSelectMenu:
     def __init__(self, stdscr, allow_file=True, allow_folder=False):
-        """Initializes the File select menu
+        """Initialize the file select menu.
 
         Args:
             stdscr (_type_): The screen handle
@@ -631,7 +637,7 @@ class FileSelectMenu:
         self.allow_folder = allow_folder
 
     def render(self, rows: int, cols: int):
-        """The function that renders the file select menu
+        """Render the file select menu.
 
         Args:
             rows (int): The number of rows in the terminal
@@ -655,7 +661,7 @@ class FileSelectMenu:
                            curses.COLOR_WHITE + curses.A_BOLD)
 
     def handle_keypress(self, key: int, rows: int) -> Union[str, int, None]:
-        """The function that handles the keypress logic
+        """Handle the keypress logic.
 
         Args:
             key (int): The key that was pressed as an integer
@@ -666,8 +672,7 @@ class FileSelectMenu:
         """
         if key == curses.KEY_UP:
             self.cursor -= 1
-            if self.cursor < 0:
-                self.cursor = 0
+            self.cursor = max(self.cursor, 0)
             if self.cursor - self.scroll < 1:
                 # scrolls the screen, keeping the cursor one from the bottom
                 self.scroll = max(self.cursor - 1, 0)
@@ -704,7 +709,7 @@ class FileSelectMenu:
             return 0
 
     def handle_scroll(self, rows: int):
-        """The function that bounds the scroll and cursor so they don't do anything wierd
+        """Bound the scroll and cursor so they don't do anything weird.
 
         Args:
             rows (int): The number of rows in the terminal
@@ -717,7 +722,7 @@ class FileSelectMenu:
         self.scroll = max(0, min(self.scroll, max_scroll))
 
     def main_loop(self) -> Union[str, int]:
-        """The loop that handles file selection
+        """Handle the file selection.
 
         Returns:
             Union[str, int]: Returns a path as str or 0 to cancel
@@ -767,8 +772,11 @@ class FileSelectMenu:
      'cmake -DGRAPHCORE_TARGET_ACCESS_CMAKE_ARGS="-DINTERNAL_RELEASE=ON" -DPOPART_CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug" -DPOPLAR_PACKAGING_CMAKE_ARGS="-DDO_PACKAGING=ON" -GNinja .'
      ),
 ])
-def test_generatecommand(statechanges: dict, result: str):
-    """A function that throws an error if the command generated from a state
+def test_generate_command(statechanges: dict, result: str):
+    """
+    Test the generate command.
+
+    This function throws an error if the command generated from a state
     is not as expected
 
     Args:
@@ -810,5 +818,5 @@ if __name__ == "__main__":
         print("<" + "=" * 55 + ">")  # shows user minimum space needed
     except IOError:
         print("Terminal too short. At least 6 rows are required")
-    with open(last_settings_file, "w+") as f:
+    with open(last_settings_file, "w+", encoding="utf-8") as f:
         json.dump(main_script.state, f)

@@ -1,6 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 '''
-Demonstration nested code loading
+Demonstrate nested code loading.
 '''
 
 import popxl

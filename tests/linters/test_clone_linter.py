@@ -1,5 +1,6 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-from lint.linters.clone_linter import get_op_definition_start, get_closing_bracket, is_clone_signature_present, check_if_clone_is_defined
+
+from scripts.lint.linters.clone_linter import get_op_definition_start, get_closing_bracket, is_clone_signature_present, check_if_clone_is_defined
 from pathlib import Path
 
 

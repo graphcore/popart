@@ -9,9 +9,6 @@ from typing import Optional
 from typing import Sequence
 from pathlib import Path
 
-from scripts.lint.config import LinterConfig
-from scripts.lint.linters.base_linter import ILinter
-
 __all__ = ["CopyrightLinter"]
 
 GC_COPYRIGHT_NOTICE_PATTERN = r"[\/*# ]+Copyright (\xa9|\(c\)) (?P<year>\d{4}) Graphcore Ltd\. All rights reserved\."
@@ -198,33 +195,6 @@ class CopyrightLinter:
             if s.ratio() > 0.6:
                 return i
         return -1
-
-
-class ArclintCopyrightLinter(ILinter, CopyrightLinter):
-    """"The CopyrightLinter made to work with arc lint."""
-
-    def __init__(self, config: LinterConfig):
-        super().__init__(config)
-
-    def apply_lint_function(self, file_path: str, file_contents: str):
-        """Lint function to be called by arc lint.
-
-        Returns the modified content of the linter.
-        """
-        assert file_path is not None, "Copyright linter requires the path to the file."
-
-        return self._determine_linter_message(file_path, file_contents)
-
-    def get_version(self):
-        # This linter doesn't really have a version.
-        # Increment below if your heart so desires.
-        return (0, 0, 0)
-
-    def is_available(self):
-        return True
-
-    def install_instructions(self) -> str:
-        return "No install required."
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

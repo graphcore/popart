@@ -489,9 +489,10 @@ class Session:
 
     @contextmanager
     def _cleanup_on_error(self):
-        """This context manager will call `Session.__exit__` if an exception in
-        `Session.__enter__` is raised. Function calls which can raise unhandled
-        exceptions in `Session.__enter__` should use this context manager.
+        """Call `Session.__exit__` if an exception in `Session.__enter__` is raised.
+
+        Function calls which can raise unhandled exceptions in `Session.__enter__`
+        should use this context manager.
 
         This function was inspired by the recipes in:
         https://docs.python.org/3/library/contextlib.html#cleaning-up-in-an-enter-implementation

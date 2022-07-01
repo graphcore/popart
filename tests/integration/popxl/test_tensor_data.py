@@ -1,6 +1,8 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 from typing import Any, Dict, List
 
+from typing_extensions import Literal
+
 import numpy as np
 import pytest
 
@@ -219,11 +221,17 @@ class TestReplicaGroupedVariables:
         return array
 
     def test_get_and_set_replica_grouped_variables(
-            self, settings: Dict[str, Any], retrieval_mode: str) -> None:
+            self, settings: Dict[str, Any],
+            retrieval_mode: Literal["one_per_group", "all_replicas"]) -> None:
         """Test the getting and setting of variables works with replica grouping.
 
         Args:
             settings (Dict[str, Any]): A samples of replica grouping settings to use.
+            retrieval_mode (str): A samples of replica grouping settings to use.
+        retrieval_mode (Literal["one_per_group", "all_replicas"]):
+            One of:
+            - "one_per_group": Return only the first replica's variable per group.
+            - "all_replicas": Return all replica's variables in every group.
         """
         repeat = lambda x, n: np.repeat(x[None, ...], n, axis=0)
 

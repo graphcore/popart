@@ -3,17 +3,14 @@ from datetime import datetime
 
 import pytest
 
-from lint.config import LinterConfig
-from lint.linters import CopyrightLinter
+from scripts.lint.linters.copyright_linter import CopyrightLinter
 
 expected_copyright_notice = f"Copyright (c) {datetime.now().year} Graphcore Ltd. All rights reserved.\n"
 
 
 @pytest.fixture
 def linter():
-    dummy_config = LinterConfig(name="TestLinter",
-                                class_="lint.linters.CopyrightLinter")
-    linter = CopyrightLinter(dummy_config)
+    linter = CopyrightLinter()
     yield linter
 
 

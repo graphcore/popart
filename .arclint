@@ -1,35 +1,7 @@
 {
     "linters": { 
-        "text-rst": {
-            "type": "text",
-            "include": "(\\.(rst)$)",
-            "severity": {
-                "1": "autofix",
-                "2": "warning",
-                "3": "disabled",
-                "4": "autofix",
-                "5": "disabled",
-                "6": "warning",
-                "7": "warning",
-                "8": "autofix"
-            }
-        },
-        "popart-test-linter": {
-            "type": "popart-test-linter",
-            "include": "(\\.py$)",
-            "exclude": [
-                "(docs/user_guide/files/tests/test_popart_doc_examples_custom_op.py)",
-                "(docs/user_guide/files/tests/test_popart_doc_examples.py)",
-                "(docs/popxl/files/tests/test_popxl_doc_examples_custom_op.py)",
-                "(docs/popxl/files/tests/test_popxl_doc_examples.py)",
-                "(docs/popxl/files/mnist.py)",
-                "(docs/popxl/files/mnist_rts.py)",
-                "(tests/linters/.*)"
-            ]
-        },
-        "autopatch": {
-            "type": "autopatch",
-            "exclude": ["(scripts/pybind11_mkdoc)", "(tests/integration/operators_test/rnn_helper.py)"]
+        "pre-commit":{
+            "type": "pre-commit"
         }
     }
 }
