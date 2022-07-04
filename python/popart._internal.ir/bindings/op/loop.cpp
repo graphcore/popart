@@ -51,7 +51,9 @@ void bindRepeat(py::module &m) {
       .def("removeLoopOutput", &LoopOp::removeLoopOutput)
       .def("getTripCountValue", &LoopOp::getTripCountValue)
       .def("setTripCountValue", &LoopOp::setTripCountValue)
-      .def("getCalledGraph", &LoopOp::getCalledGraph)
+      .def("getCalledGraph",
+           &LoopOp::getCalledGraph,
+           py::return_value_policy::reference)
       .def("opInToSubgraphInIndex",
            py::overload_cast<OutIndex>(&LoopOp::opInToSubgraphInIndex,
                                        py::const_))

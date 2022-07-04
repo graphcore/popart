@@ -99,6 +99,8 @@ def basic_subgraph(
         remote_code_load=remote_code_load)
 
     ir.num_host_transfers = 1
+    ir._pb_ir.getSessionOptions(
+    ).engineOptions["debug.retainDebugInformation"] = "true"
 
     # Create data for input x
     x_data = np.ones(_INPUT_SHAPE, dtype=np.float32)

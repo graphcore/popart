@@ -648,7 +648,7 @@ class Session:
 
         for s in set_streams:
             stream_type_str = "input" if isinstance(
-                s, DeviceToHostStream) else "output"
+                s, HostToDeviceStream) else "output"
             break
 
         if set_streams != set_expected_streams:
@@ -677,7 +677,7 @@ class Session:
             ValueError: If the remaining dimensions are not equal to the stream shape.
         """
         stream_type_str = "input" if isinstance(
-            s, DeviceToHostStream) else "output"
+            s, HostToDeviceStream) else "output"
         full_shape = self._full_input_shape(s.shape)
         # Data is always split for num_host_transfers at index 0 (if enabled).
         # Index at which the data is split for replication.

@@ -1963,16 +1963,17 @@ IrLowering::opTasks(Op *op, double priority, TaskId prevOpTaskId) {
   if (RemoteCodeLoadOp *codeCopy = dynamic_cast<RemoteCodeLoadOp *>(op)) {
     auto &graph =
         ir().getGraph(*codeCopy->getExchangeDescriptor(0).getGraphToLoadId());
-    const auto schedule = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
+    const auto &graphOps = graph.getOps();
 
     logging::devicex::debug("Add Graph Ops to op {}'s dependencies, for {} Ops",
                             op->debugName(),
-                            schedule.size());
+                            graphOps.size());
 
-    for (auto graphOp : schedule) {
+    for (auto &graphOp : graphOps) {
       // Add a Subgraph dependency as above, we do not need to worry about
       // Tensor dependencies.
-      PriTaskDependency taskId = {opTaskId(graphOp), DependencyType::SubGraph};
+      PriTaskDependency taskId = {opTaskId(graphOp.second.get()),
+                                  DependencyType::SubGraph};
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
       }
