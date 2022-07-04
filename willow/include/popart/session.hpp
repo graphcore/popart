@@ -391,7 +391,14 @@ public:
   bool hasInfo(TensorId) const;
 
   /**
-   * Retrieve the summary report from the \c poplar::Engine.
+   * Returns the ids of all tensors in the model.
+   *
+   * \pre prepareDevice() must have been called.
+   */
+  std::set<TensorId> getAllTensorIds() const;
+
+  /**
+   * Retrieve the summary from from the \c poplar::Engine.
    *
    * The options which were passed to the Session constructor will influence
    * the information in the report.

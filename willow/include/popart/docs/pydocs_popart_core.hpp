@@ -14451,6 +14451,14 @@ device.)doc";
 static const char *__singlelinedoc_popart_Session_executable =
     R"doc(The final executable which contains all the data, metadata and configuration parameters necessary to start running the program on the device.)doc";
 
+static const char *__doc_popart_Session_getAllTensorIds =
+    R"doc(Returns the ids of all tensors in the model.
+
+\pre prepareDevice() must have been called.)doc";
+
+static const char *__singlelinedoc_popart_Session_getAllTensorIds =
+    R"doc(Returns the ids of all tensors in the model. \pre prepareDevice() must have been called.)doc";
+
 static const char *__doc_popart_Session_getCycleCount =
     R"doc(Copy the cycle count tensor from the device to the host.
 

@@ -430,6 +430,7 @@ public:
   void setSessionName(const std::string name) { sessionName = name; }
   const std::string getSessionName() const { return sessionName; }
 
+  std::set<TensorId> getAllTensorIds() const;
   std::vector<TensorId> getTensorIds(TensorType) const;
   Tensor *getTensor(const TensorId &) const;
   bool containsTensor(const TensorId &) const;
@@ -623,9 +624,6 @@ private:
 
   // Get all tensors in all graphs
   std::map<TensorId, Tensor *> getAllTensors() const;
-
-  // Get all tensorIds in all graphs
-  std::set<TensorId> getAllTensorIds() const;
 
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradient tensors,

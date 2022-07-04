@@ -2016,6 +2016,9 @@ PYBIND11_MODULE(popart_core, m) {
             DOC(popart, Session, updateExternallySavedTensorLocations));
     cls.def(
         "getInfo", &InferenceSession::getInfo, DOC(popart, Session, getInfo));
+    cls.def("getAllTensorIds",
+            &InferenceSession::getAllTensorIds,
+            DOC(popart, Session, getAllTensorIds));
     cls.def("getSummaryReport",
             &InferenceSession::getSummaryReport,
             py::arg("resetProfile") = true,
@@ -2211,6 +2214,9 @@ PYBIND11_MODULE(popart_core, m) {
             DOC(popart, Session, updateExternallySavedTensorLocations));
     cls.def(
         "getInfo", &TrainingSession::getInfo, DOC(popart, Session, getInfo));
+    cls.def("getTensorIds",
+            &TrainingSession::getAllTensorIds,
+            DOC(popart, Session, getAllTensorIds));
     cls.def("getSummaryReport",
             &TrainingSession::getSummaryReport,
             py::arg("resetProfile") = true,

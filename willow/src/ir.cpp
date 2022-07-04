@@ -3832,6 +3832,18 @@ Op &Ir::getSubgraphAnchorPlaceholder() {
   return *subgraphAnchorPlaceholder.get();
 }
 
+std::set<TensorId> Ir::getAllTensorIds() const {
+  std::set<TensorId> result;
+
+  for (const auto &id_graph : graphs) {
+    const Graph *graph              = id_graph.second.get();
+    const std::vector<TensorId> ids = graph->getTensors().getAllTensorIds();
+    result.insert(ids.begin(), ids.end());
+  }
+
+  return result;
+}
+
 std::vector<TensorId> Ir::getTensorIds(TensorType tensor_type) const {
   std::vector<TensorId> result;
 
@@ -3907,17 +3919,6 @@ std::map<TensorId, Tensor *> Ir::getAllTensors() const {
     }
   }
   return allTensors;
-}
-
-std::set<TensorId> Ir::getAllTensorIds() const {
-  std::set<TensorId> allTensorIds;
-  for (const Graph *graph : getAllGraphs()) {
-    auto ids = graph->getTensors().getAllTensorIds();
-    for (auto id : ids) {
-      allTensorIds.insert(id);
-    }
-  }
-  return allTensorIds;
 }
 
 const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }

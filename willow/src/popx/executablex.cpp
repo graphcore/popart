@@ -185,10 +185,26 @@ const Tensor *Executablex::getTensor(const TensorId &id) const {
   return found_iter->second.get();
 }
 
+std::set<TensorId> Executablex::getAllTensorIds() {
+  if (!deserialized) {
+    return ir().getAllTensorIds();
+  }
+
+  const auto &tensors_ = tensors.value();
+
+  std::set<TensorId> ids;
+  for (auto &tensor : tensors_) {
+    ids.insert(tensor.first);
+  }
+
+  return ids;
+}
+
 std::vector<TensorId> Executablex::getTensorIds(TensorType type) {
-  if (!tensors) {
+  if (!deserialized) {
     return ir().getTensorIds(type);
   }
+
   const auto &tensors_ = tensors.value();
 
   std::vector<TensorId> ids;

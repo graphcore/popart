@@ -342,6 +342,12 @@ bool Session::hasInfo(TensorId id) const {
   return info.isSet();
 }
 
+std::set<TensorId> Session::getAllTensorIds() const {
+  assertExecutableLoaded();
+
+  return executable_->getAllTensorIds();
+}
+
 Session::~Session() = default;
 
 void Session::compileAndExport(std::ostream &out) {

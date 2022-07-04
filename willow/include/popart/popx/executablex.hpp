@@ -47,8 +47,6 @@ private:
   std::vector<Tensor *> dataStreamTensors;
   Tensor *seedTensor = nullptr;
 
-  std::vector<TensorId> getTensorIds(TensorType);
-
   // We only populate these structures during deserialization to
   // avoid unneccessary copies
   nonstd::optional<std::unordered_map<TensorId, std::unique_ptr<Tensor>>>
@@ -88,6 +86,8 @@ public:
   bool containsTensor(const TensorId &id) const;
   Tensor *getTensor(const TensorId &);
   const Tensor *getTensor(const TensorId &) const;
+  std::set<TensorId> getAllTensorIds();
+  std::vector<TensorId> getTensorIds(TensorType);
 
   void setRandomSeedValue(uint64_t value);
   void resetWeights(
