@@ -1,7 +1,0 @@
-{
-    "linters": { 
-        "pre-commit":{
-            "type": "pre-commit"
-        }
-    }
-}
