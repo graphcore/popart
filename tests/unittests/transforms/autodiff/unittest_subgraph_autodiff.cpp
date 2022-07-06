@@ -1506,9 +1506,9 @@ void test() {
 
   // Generic lambda that binds tw_bg->ops().hasOp<UnaryOp> to variadic
   // parameters.
-  auto hasUnaryOpFn = [&tw_bg](auto &&args...) {
+  auto hasUnaryOpFn = [&tw_bg](auto &&... args) {
     return tw_bg->ops().template hasOp<UnaryOp>(
-        std::forward<decltype(args)>(args));
+        std::forward<decltype(args)>(args)...);
   };
 
   // Apply tw_bg->ops().hasOp<UnaryOp> to the parameters required for this
