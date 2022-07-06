@@ -1,4 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+from .abs import abs
 from .add import add, add_
 from .pool import average_pool, max_pool
 from .call import call, call_with_info, CallSiteInfo
@@ -6,6 +7,7 @@ from .cast import cast
 from .concat import concat, concat_
 from .conv import conv, PadType
 from .code_copy import remote_code_load
+from .cos import cos
 from .roialign import roi_align
 from .argminmax import argmin, argmax
 from .interpolate import interpolate
@@ -57,6 +59,7 @@ from .remote_load import remote_load, remote_load_
 from .remote_store import remote_store
 from .scaled_add import scaled_add, scaled_add_
 from .scatter import scatter
+from .sin import sin
 from .slice import slice, slice_
 from .softmax import softmax
 from .split import split
@@ -73,6 +76,8 @@ from . import collectives
 from . import var_updates
 
 __all__ = [
+    # abs.py
+    "abs",
     # add.py
     "add",
     "add_",
@@ -94,6 +99,8 @@ __all__ = [
     # conv.py
     "conv",
     "PadType",
+    # cos.py
+    "cos",
     # roialign.py
     "roi_align",
     # interpolate.py,
@@ -209,6 +216,8 @@ __all__ = [
     "scaled_add_",
     # scatter.py
     "scatter",
+    # sin.py
+    "sin",
     # slice.py
     "slice",
     "slice_",

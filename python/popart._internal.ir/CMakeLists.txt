@@ -18,6 +18,7 @@ set(gen_op_bindings_path ${PROJECT_SOURCE_DIR}/scripts/gen_op_bindings.py)
 list(
   APPEND
   op_headers
+  ${popart_op_headers_dir}/abs.hpp
   # ${popart_op_headers_dir}/accumulate.hpp # Manually bound
   ${popart_op_headers_dir}/add.hpp
   ${popart_op_headers_dir}/scaledadd.hpp
@@ -93,6 +94,8 @@ list(
   ${popart_op_headers_dir}/max.hpp
   ${popart_op_headers_dir}/sqrt.hpp
   ${popart_op_headers_dir}/histogram.hpp
+  ${popart_op_headers_dir}/cos.hpp
+  ${popart_op_headers_dir}/sin.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
