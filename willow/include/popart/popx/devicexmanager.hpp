@@ -47,6 +47,10 @@ public:
   virtual std::shared_ptr<DeviceInfo>
   createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) override;
 
+  virtual std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromSystemString(const std::string &system,
+                                   uint32_t numIpus) override;
+
 private:
 };
 

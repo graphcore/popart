@@ -175,6 +175,16 @@ DeviceManager::createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) {
   return providers.at(0)->createOfflineIpuFromDeviceInfo(deviceInfo);
 }
 
+std::shared_ptr<DeviceInfo>
+DeviceManager::createOfflineIpuFromSystemString(const std::string &system,
+                                                uint32_t numIpus) {
+  if (providers.empty()) {
+    throw internal_error("Could not find a provider to construct offline IPU.");
+  }
+  // Pick the first provider and create the device
+  return providers.at(0)->createOfflineIpuFromSystemString(system, numIpus);
+}
+
 std::shared_ptr<DeviceInfo> DeviceManager::tryAcquireAvailableDevice(
     int numIpus,
     int tilesPerIPU,

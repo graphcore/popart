@@ -334,6 +334,10 @@ public:
 
   virtual std::shared_ptr<DeviceInfo>
   createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo) = 0;
+
+  virtual std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromSystemString(const std::string &system,
+                                   uint32_t numIpus) = 0;
 };
 
 /// A class to manage devices.
@@ -566,6 +570,16 @@ public:
    */
   std::shared_ptr<DeviceInfo>
   createOfflineIpuFromDeviceInfo(const DeviceInfo &deviceInfo);
+
+  /**
+   * Create a simulated `OfflineIpu` device from the name of a system.
+   *
+   * \param system The device to create a `OfflineIpu` version of.
+   * \param numIpus The number of IPUs. Providing 0 corresponds to all IPUs in
+   * system \return An `OfflineIpu` device.
+   */
+  std::shared_ptr<DeviceInfo>
+  createOfflineIpuFromSystemString(const std::string &system, uint32_t numIpus);
 
   /** If unable to attach to a device on first try, the attach timeout
    * set here is the length of time (in seconds) that the DeviceManager

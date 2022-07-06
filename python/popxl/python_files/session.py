@@ -1,4 +1,5 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+import os
 import math
 from contextlib import ExitStack, contextmanager
 from typing import Dict, Iterable, List, Mapping, Optional, Tuple, Union
@@ -11,7 +12,7 @@ from popxl.streams import DeviceToHostStream, HostToDeviceStream
 from popxl.tensor import Constant, HostScalarTensor, Variable
 from typing_extensions import Literal
 
-from popxl.utils import _acquire_hw_device_with_timeout, _to_device_info, _popxl_to_numpy, to_numpy
+from popxl.utils import _acquire_hw_device_with_timeout, _to_device_info, _offline_device_from_str, _popxl_to_numpy, to_numpy
 from popxl.tensor import Tensor
 
 d2hStreamBufferMaps = Mapping[DeviceToHostStream, np.ndarray]
@@ -86,6 +87,10 @@ class Session:
 
         if isinstance(device_desc, popart.DeviceInfo):
             self._device = device_desc
+        elif "POPXL_OFFLINE_DEVICE" in os.environ:
+            self._device = _offline_device_from_str(
+                device_type=os.environ["POPXL_OFFLINE_DEVICE"],
+                num_ipus=self._get_ipu_count())
         else:
             self._device = _to_device_info(device_type=device_desc,
                                            num_ipus=self._get_ipu_count(),

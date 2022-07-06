@@ -121,6 +121,22 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
         )
 
 
+def _offline_device_from_str(
+        device_type: str, num_ipus: Optional[int] = None) -> popart.DeviceInfo:
+    """Return a PopART `DeviceInfo` object matching the name of a system.
+        See poplar::Target::createIPUTarget for more details.
+
+    Args:
+        device_type (str): Name of an IPU system.
+        num_ipus (int, optional): Total IPUs to use. Defaults to all IPUs in the named system.
+
+    Returns:
+        popart.DeviceInfo: The device info for the given options
+    """
+    return popart.DeviceManager().createOfflineIpuFromSystemString(
+        device_type, num_ipus if num_ipus else 0)
+
+
 def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
                     num_ipus: int = 1,
                     use_popdist: bool = False) -> popart.DeviceInfo:
@@ -163,6 +179,11 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
                 "check device availability with the `gc-monitor` command-line utility."
             )
         return dm.createOfflineIpuFromDeviceInfo(devices[0])
+    try:
+        # Allow passing system string for testing purposes.
+        return _offline_device_from_str(device_type, num_ipus)
+    except popart.exception:
+        pass
     raise ValueError(f"Incorrect device type provided: {device_type}, must be "
                      "one of: `ipu_hw`, `ipu_model`, `cpu`")
 
