@@ -422,6 +422,8 @@ Op definition for PopART IR
 .. doxygenclass:: popart::GradInOutMapper
    :members:
 
+.. doxygenenum:: popart::ReductionType
+
 .. code-block:: cpp
 
   #include <popart/operatoridentifier.hpp>
