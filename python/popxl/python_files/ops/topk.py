@@ -15,21 +15,19 @@ def topk(t: Tensor, k: int, axis: int, largest: bool,
     See also `PyTorch torch.topk <https://pytorch.org/docs/stable/generated/torch.topk.html?highlight=topk#torch.topk>`__, `ONNX TopK <https://github.com/onnx/onnx/blob/main/docs/Operators.md#TopK>`__.
 
     Args:
-        t: Tensor
+        t:
             Input tensor.
-        k: int
+        k:
             The number of top elements to retrieve
-        axis: int
+        axis:
             Dimension on which to do the sort.
-        largest: bool
+        largest:
             Whether to return the top-K largest or smallest elements.
-        sorted: bool
+        sorted:
             Whether to return the elements in sorted order.
     Returns:
-        out1: Tensor
-            Output value tensor.
-        out2: Tensor
-            Output indices tensor.
+        Tuple[Tensor, Tensor]:
+            A tuple of output values and indices.
     """
     ctx = get_current_context()
     g = ctx.graph

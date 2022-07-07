@@ -282,32 +282,34 @@ def ipu(ipu: int):
 def in_sequence(mode: Union[bool, Literal['pass']] = True):
     """Force ops created in this context to execute in the order that they are created.
 
-    This is achieved by adding topological constraints (topocons) to the scheduling graph.
+    This is achieved by adding topological constraints to the scheduling graph.
 
     Args:
         mode (Union[bool, Literal['pass']]):
             - ``True``: Ensure each op within the context is executed in a linear schedule
-                in the same order as created.
+              in the same order as created.
             - ``False``: Do not apply linear schedule constraint. If nested within an outer
-                ``in_sequence(True)`` context, the inner context as a whole will be scheduled
-                linearly with respect to ops in the outer context. For example:
+              ``in_sequence(True)`` context, the inner context as a whole will be scheduled
+              linearly with respect to ops in the outer context. For example:
 
-            .. code-block:: python
+              .. code-block:: python
 
-                with in_sequence(True):
-                    OpA()
-                    with in_sequence(False)
-                        OpB()
-                        OpC()
-                    OpD()
+                  with in_sequence(True):
+                      OpA()
+                      with in_sequence(False)
+                          OpB()
+                          OpC()
+                      OpD()
 
-            OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
+              `OpA` will be executed before `OpB` and `OpC`.
+
+              `OpD` will be executed after `OpB` and `OpC`.
 
             - ``'pass'``: Do nothing when an op is created. Useful for transforms that want to
-                delay adding topocons to the graph
+              delay adding topological constraints to the graph.
 
     Raises:
-        TypeError: If None is passed to ``mode``
+        TypeError: If None is passed to ``mode``.
     """
 
     # We use `None` to specify an empty scope. It must not be passed here:

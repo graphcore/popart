@@ -11,10 +11,10 @@ def lamb_square(t: Tensor) -> Tensor:
     Used in the LAMB optimizer: https://arxiv.org/abs/1904.00962
 
     Args:
-        t: Tensor
+        t:
             The input tensor.
     Returns:
-        Tensor
+        Tensor:
             A new tensor containing the squared values of the input tensor.
     """
     ctx = get_current_context()

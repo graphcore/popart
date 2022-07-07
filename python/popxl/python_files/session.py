@@ -228,7 +228,7 @@ class Session:
     def expected_inputs(self) -> List[HostToDeviceStream]:
         """Return the list of expected inputs for this session.
 
-        Data will need to be provided for each of these when doing `:func:`~popxl.Session.run``.
+        Data will need to be provided for each of these when doing :func:`~popxl.Session.run`.
 
         Returns:
             List[HostToDeviceStream]: A list of all the host to device streams
@@ -411,15 +411,20 @@ class Session:
         constructed for.
 
         For stream s, the shape of the np.ndarray it maps to is:
+
           `(d, r) + s.shape`
-        where
+
+        Where:
+
           * `d` = `ir.num_host_transfers`
           * `r` = `ir.instance_replication_factor`
-        and all dimensions not >1 in `(d, r)` will be removed.
+
+        And all dimensions not >1 in `(d, r)` will be removed.
 
         Examples:
 
         If:
+
         .. code-block:: python
 
           ir.num_host_transfers = 4
@@ -429,6 +434,7 @@ class Session:
         Then the shape will be `(4, 16, 2, 4)`
 
         If:
+
         .. code-block:: python
 
           ir.num_host_transfers = 1
@@ -438,6 +444,7 @@ class Session:
         Then the shape will be `(16, 2, 4)`
 
         If:
+
         .. code-block:: python
 
           ir.num_host_transfers = 4
@@ -447,6 +454,7 @@ class Session:
         Then the shape will be `(4, 2, 4)`
 
         If:
+
         .. code-block:: python
 
           ir.num_host_transfers = 1
@@ -455,8 +463,8 @@ class Session:
 
         Then the shape will be `(2, 4)`
 
-        NOTE: Batch serialisation is not yet supported, so there is no dimension
-        for this yet.
+        NOTE: Batch serialisation is not supported, so there is no dimension
+        for this.
         """
 
         outputs = {}
@@ -514,8 +522,8 @@ class Session:
         If not already attached to a device, this will attach to an available device and perform a
         ``weights_from_host``.
 
-        See the PopXL User Guide entry on ``Session`` for a more comprehensive
-        guide to ``Session``s and the context manager.
+        See :numref:`sec_session` for a more comprehensive
+        guide to sessions and the context manager.
         """
         # Only weights_from_host if going from detached->attached.
         should_setup = not self.is_attached
@@ -553,8 +561,8 @@ class Session:
         If you were not attached when entering this context, this will perform a
         ``weights_to_host`` then detach.
 
-        See the PopXL User Guide entry on ``Session`` for a more comprehensive
-        guide to ``Session``s and the context manager.
+        See :numref:`sec_session` for a more comprehensive
+        guide to sessions and the context manager.
         """
 
         # Teardown context only if we were not attached when entering it. Thus

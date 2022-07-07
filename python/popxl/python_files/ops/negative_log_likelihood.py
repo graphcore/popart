@@ -52,7 +52,8 @@ def nll_loss(
         log_prob (bool): If true input probabilities are logged
 
     Returns:
-        Tensor: loss
+        Tensor:
+            The calculated negative log likelihood loss.
     """
     ctx = get_current_context()
     g = ctx.graph

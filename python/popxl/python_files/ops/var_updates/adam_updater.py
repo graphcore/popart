@@ -190,7 +190,7 @@ def lamb_updater(acc_first_order: Tensor,
               (no bias correction can take place).
 
     Returns:
-        updater (Tensor):
+        Tensor:
             An updater to update weight.
     """
     ins = {1: acc_first_order.id, 2: acc_second_order.id}

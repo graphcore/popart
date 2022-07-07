@@ -17,8 +17,8 @@ def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     See also `PyTorch Tensor.logical_and <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_and.html>`__, `NumPy logical_and <https://numpy.org/doc/stable/reference/generated/numpy.logical_and.html>`__.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be combined.
+        lhs, rhs:
+            Tensor to be combined.
     Returns:
         Tensor:
             A new tensor with the result of elementwise `lhs and rhs`.

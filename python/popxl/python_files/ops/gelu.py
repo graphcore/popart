@@ -37,7 +37,7 @@ def gelu(t: Tensor) -> Tensor:
 @op_debug_context
 def gelu_(t: Tensor) -> Tensor:
     """
-    Compute the Gelu activation on a Tensor (in-place).
+    Compute the GELU activation on a tensor (in-place).
 
     For more details, refer to the paper :arxiv:`Gaussian Error Linear Units <1606.08415>`
 

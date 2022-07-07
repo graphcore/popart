@@ -16,9 +16,9 @@ def softmax(t: Tensor, axis: int) -> Tensor:
     See also `ONNX Softmax <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Softmax>`__.
 
     Args:
-        t: Tensor
+        t:
             Tensor to be normalized.
-        axis: int
+        axis:
             The axis along which the normalization will be computed.
     Returns:
         Tensor:

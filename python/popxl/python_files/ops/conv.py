@@ -99,14 +99,14 @@ def conv(t: Tensor,
         groups (int(default is 1)):
             number of groups input channels and output channels are divided into.
         pad_type (PadType(default is not_set)):
-            pad_type must be either not_set, same_upper, same_lower or valid.
-            Where default value is not_set, which means explicit padding is used.
-            same_upper or same_lower mean pad the input so that
+            pad_type must be either "not_set", "same_upper", "same_lower" or "valid".
+            The default value is "not_set", which means explicit padding is used.
+            "same_upper" or "same_lower" mean pad the input so that
             `output_shape[i] = ceil(input_shape[i] / strides[i])` for each axis `i`.
             The padding is split between the two sides equally or almost equally
             (depending on whether it is even or odd).
-            In the case the padding is an odd number, the extra padding is added at the end for
-            same_upper and at the beginning for same_lower.
+            In the case that the padding is an odd number, the extra padding is added at the end for
+            "same_upper" and at the beginning for "same_lower".
         available_memory_proportions (List[float]):
             The available memory proportions per conv, each [0, 1).
         partials_types (List[str]):
@@ -116,8 +116,8 @@ def conv(t: Tensor,
             If true, then convolutions with different parameters will be laid out from different tiles
             in an effort to improve tile balance in models.
     Returns:
-        out (Tensor):
-            Output data tensor that contains the result of the convolution. The output dimensions are functions of the kernel size,
+        Tensor:
+            A tensor that contains the result of the convolution. The output dimensions are functions of the kernel size,
             stride size, and pad lengths.
     """
     ctx = get_current_context()

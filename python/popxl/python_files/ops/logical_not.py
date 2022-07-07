@@ -16,7 +16,7 @@ def logical_not(t: Tensor) -> Tensor:
     See also `PyTorch Tensor.logical_not <https://pytorch.org/docs/stable/generated/torch.Tensor.logical_not.html>`__, `NumPy logical_not <https://numpy.org/doc/stable/reference/generated/numpy.logical_not.html>`__.
 
     Args:
-        t: Tensor
+        t:
             The input tensor.
     Returns:
         Tensor: A new tensor with the elementwise logical `not` of the input.

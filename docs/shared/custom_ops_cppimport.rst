@@ -1,4 +1,4 @@
-.. _sec_custom_op_cppimport
+.. _sec_custom_op_cppimport:
 
 Auto-compiling custom operations with cppimport
 -----------------------------------------------

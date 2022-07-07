@@ -14,7 +14,7 @@ def l1(t: Tensor,
     Compute the sum of the magnitudes of the elements in a tensor (L1 norm) along specified axes.
 
     Args:
-        t: Tensor
+        t:
             Tensor to compute the L1 norm of.
         axis (int or list):
             Axis or axes to compute L1 norm along. If none is specified then all elements

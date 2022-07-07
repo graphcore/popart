@@ -14,20 +14,19 @@ def histogram(t: Tensor, levels: List[float],
     r"""
     Compute the histogram of the input tensor.
 
-    Similar to :py:func:`numpy.histogram`
-    See also 'PyTorch torch.histc <https://pytorch.org/docs/stable/generated/torch.histc.html>'__.
+    See also `PyTorch torch.histc <https://pytorch.org/docs/stable/generated/torch.histc.html>`__, :py:func:`NumPy histogram <numpy.histogram>`.
 
     Args:
-        t: Tensor
+        t:
             Input tensor.
-        levels: List[float]
+        levels:
             A monotonically increasing list of bin edges
-        absolute_of_input: bool
+        absolute_of_input:
             Absolute the inputs tensor before gathers the histogram representing
             If True, the absolute value of each input is calculated before comparison to the `levels` data.
 
     Returns:
-        out: Tensor
+        Tensor:
             Output counts.
     """
     ctx = get_current_context()

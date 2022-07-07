@@ -15,7 +15,7 @@ def add(lhs: Tensor, rhs: Tensor) -> Tensor:
     See also `PyTorch Tensor.add <https://pytorch.org/docs/stable/generated/torch.Tensor.add.html>`__, `NumPy add <https://numpy.org/doc/stable/reference/generated/numpy.add.html>`__, `ONNX Add <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Add>`__.
 
     Args:
-        lhs, rhs (Tensor): Tensors to be added.
+        lhs, rhs (Tensor): Tensor to be added.
     Returns:
         Tensor: The sum of the input tensors.
     """

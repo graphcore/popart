@@ -25,9 +25,9 @@ def scaled_add(X: Tensor,
     `a` and `b` must be scalars.
 
     Args:
-        X, Y (Tensor): The tensors to be added.
+        X, Y (Tensor): The tensor to be added.
         a, b (Union[float, Tensor]):
-            Scalars that will be multiplied by `X` and `Y` before performing the addition.
+            Scalar that will be multiplied by `X` and `Y` before performing the addition.
     Returns:
         Tensor: A tensor containing `aX + bY`.
     """
@@ -79,9 +79,9 @@ def scaled_add_(X: Tensor,
     `X` and `Y` must be the same shape, but can be different types.
 
     Args:
-        X, Y: Tensor
-        a, b: Union[float, Tensor]
-            Scalars to be applied to `X` and `Y` before addition.
+        X, Y: The tensor to be added.
+        a, b:
+            Scalar that will be multiplied by `X` and `Y` before performing the addition.
     Returns:
         Tensor:
             The `X` tensor containing `aX + bY`.

@@ -13,10 +13,10 @@ def sqrt(t: Tensor) -> Tensor:
     If `t` is negative, then this will return NaN.
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor.
     Returns:
-        out: Tensor
+        Tensor:
             Output tensor containing the elementwise square roots of the input tensor.
     """
     ctx = get_current_context()

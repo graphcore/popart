@@ -188,8 +188,7 @@ class Tensor:
         """Get the strides of the tensor.
 
         The strides of the tensor is the number of bytes to step in each
-        dimension when traversing an array in memory. See
-        https://numpy.org/doc/stable/reference/generated/numpy.ndarray.strides.html
+        dimension when traversing an array in memory. See :py:attr:`numpy.ndarray.strides`.
 
         Returns:
             List[int]: The strides of the tensor.
@@ -265,7 +264,8 @@ class Tensor:
             permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
              rank of the tensor. If not provided, the axes will be reversed.
         Returns:
-            out (Tensor): The transposed tensor.
+            Tensor:
+                The transposed tensor.
         """
         import popxl.ops as ops
         return ops.transpose(self, permutation)
@@ -287,7 +287,7 @@ class Tensor:
                 Tuple containing the a permutation of [0, N-1] where N is the
                 rank of input `t`. If not provided, the axes will be reversed.
         Returns:
-            out (Tensor):
+            Tensor:
                 The transposed tensor.
         """
         import popxl.ops as ops
@@ -680,6 +680,7 @@ class Variable(Tensor, tensor_type="Variable"):
         """Return the string representation of the retrieval mode.
 
         One of:
+
             - "one_per_group": Return only the first replica's variable per group.
             - "all_replicas": Return all replica's variables in every group.
 
@@ -785,8 +786,10 @@ def variable(data: HostScalarTensor,
             replicas are in one group.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
+
             - "one_per_group": Return only the first replica's variable per group.
             - "all_replicas": Return all replica's variables in every group.
+
             Defaults to None.
 
     Raises:
@@ -859,9 +862,11 @@ def remote_variable(
             replicas are in one group.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
+
             - "one_per_group": Return only the first replica's variable per group, this is the
-                default behaviour.
+              default behaviour.
             - "all_replicas": Return all replica's variables in every group.
+
             Defaults to "one_per_group".
 
     Raises:
@@ -894,10 +899,10 @@ def remote_replica_sharded_variable(
             Literal["one_per_group", "all_replicas"]] = "one_per_group"
 ) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
-        The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
-        data parallelism) of the same model/graph. Eliminates redundant data storage when the full
-        (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote
-        memory (usually DDR memory).
+       The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
+       data parallelism) of the same model/graph. Eliminates redundant data storage when the full
+       (un-sharded) tensor does not need to be present on each IPU. Stores the full tensor in remote
+       memory (usually DDR memory).
 
        Replicated tensors for which each replica needs a full copy, need to be recombined with a
        replicated AllGather operation.
@@ -928,9 +933,11 @@ def remote_replica_sharded_variable(
             replicas are in one group.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
+
             - "one_per_group": Return only the first replica's variable per group, this is the
-                default behaviour.
+              default behaviour.
             - "all_replicas": Return all replica's variables in every group.
+
             Defaults to "one_per_group".
 
     Raises:
@@ -1083,14 +1090,17 @@ def replica_sharded_variable(
         shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
+
             - "one_per_group": Return only the first replica's variable per group, this is the
-                default behaviour.
+              default behaviour.
             - "all_replicas": Return all replica's variables in every group.
+
             Defaults to "one_per_group".
 
     Returns:
         Tuple[Variable, Tensor]:
             A tuple of tensors:
+
             1. The full variable. This should NOT be used directly. It can be used to interact with Session's get/set data methods
             2. The sharded variable.
     """
@@ -1262,7 +1272,7 @@ def graph_output(t: Tensor) -> None:
         t (Tensor):
             The graph tensor to mark as an output in the current graph.
 
-    Throws:
+    Raises:
         ValueError: If the tensor is not in the current graph.
     """
     g = gcg()

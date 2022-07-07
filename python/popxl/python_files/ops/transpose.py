@@ -19,7 +19,7 @@ def transpose(t: Tensor,
     Args:
         t (Tensor): Tensor to be transposed.
         permutation (Optional[Iterable[int]]): Iterable containing the permutation of [0, N-1] where N is the
-        rank of input `t`. If not specified, the axes will be reversed.
+            rank of input `t`. If not specified, the axes will be reversed.
     Returns:
         Tensor: The transposed tensor.
     """
@@ -61,7 +61,7 @@ def transpose_(t: Tensor,
     Args:
         t (Tensor): Tensor to be transposed.
         permutation (Optional[Tuple[int, ...]]):
-            Tuple containing the a permutation of [0, N-1] where N is the
+            Tuple containing the permutation of [0, N-1] where N is the
             rank of input `t`. If not provided, the axes will be reversed.
     Returns:
         Tensor:

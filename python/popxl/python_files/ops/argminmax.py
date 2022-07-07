@@ -29,7 +29,7 @@ def argmax(t: Tensor, dim: Optional[int] = 0,
         keepdim (bool):
             Keep the reduced dimension or not, True means keep reduced dimension.
     Returns:
-        out (Tensor):
+        Tensor:
             The indices of the maximum values of a tensor across a dimension.
     """
     ctx = get_current_context()
@@ -74,7 +74,7 @@ def argmin(t: Tensor, dim: Optional[int] = 0,
         keepdim (bool):
             Keep the reduced dimension or not, True means keep reduced dimension.
     Returns:
-        out (Tensor):
+        Tensor:
             The indices of the minimum values of a tensor across a dimension.
     """
     ctx = get_current_context()

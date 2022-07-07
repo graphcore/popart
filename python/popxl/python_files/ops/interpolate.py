@@ -129,31 +129,34 @@ def interpolate(
             This attribute describes how to transform the coordinate in the interpolated tensor to the coordinate in the original tensor.
             The coordinate of each dimension is transformed individually. Let's describe a case using axis x as an example.
 
-            Some variables are defined as follows.
-            x_interpolated: the coordinate of axis x in the interpolated tensor.
-            x_original: the coordinate of axis x in the original tensor.
-            length_original: the length of the original tensor in axis x.
-            length_interpolated: the length of the interpolated tensor in axis x.
-            roi_x: roi_x = (start_x, end_x) of the axis x in input "roi".
-            scale: scale = length_interpolated / length_original.
+            Some variables are defined as follows:
 
-            if coordinate_transformation_mode is "half_pixel",
-            x_original = (x_interpolated + 0.5) / scale - 0.5,
+            - x_interpolated: the coordinate of axis x in the interpolated tensor.
+            - x_original: the coordinate of axis x in the original tensor.
+            - length_original: the length of the original tensor in axis x.
+            - length_interpolated: the length of the interpolated tensor in axis x.
+            - roi_x: roi_x = (start_x, end_x) of the axis x in input "roi".
+            - scale: scale = length_interpolated / length_original.
 
-            if coordinate_transformation_mode is "pytorch_half_pixel",
-            x_original = length_interpolated > 1 ? (x_interpolated + 0.5) / scale - 0.5 : 0,
+            Then:
 
-            if coordinate_transformation_mode is "align_corners",
-            x_original = x_interpolated * (length_original - 1) / (length_interpolated - 1),
+            - if coordinate_transformation_mode is "half_pixel",
+              x_original = (x_interpolated + 0.5) / scale - 0.5,
 
-            if coordinate_transformation_mode is "asymmetric",
-            x_original = x_interpolated / scale,
+            - if coordinate_transformation_mode is "pytorch_half_pixel",
+              x_original = length_interpolated > 1 ? (x_interpolated + 0.5) / scale - 0.5 : 0,
 
-            if coordinate_transformation_mode is "tf_crop_and_resize",
-            x_original = length_interpolated > 1 ? start_x * (length_original - 1) + x_interpolated * (end_x - start_x) * (length_original - 1) / (length_interpolated - 1) :
-                                                   0.5 * (start_x + end_x) * (length_original - 1).
+            - if coordinate_transformation_mode is "align_corners",
+              x_original = x_interpolated * (length_original - 1) / (length_interpolated - 1),
+
+            - if coordinate_transformation_mode is "asymmetric",
+              x_original = x_interpolated / scale,
+
+            - if coordinate_transformation_mode is "tf_crop_and_resize",
+              x_original = length_interpolated > 1 ? start_x * (length_original - 1) + x_interpolated * (end_x - start_x) * (length_original - 1) / (length_interpolated - 1) :
+              0.5 * (start_x + end_x) * (length_original - 1).
     Returns:
-        out (Tensor):
+        Tensor:
             Output data tensor after interpolate.
     """
     ctx = get_current_context()

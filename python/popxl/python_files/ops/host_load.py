@@ -23,7 +23,7 @@ def host_load(h2d_stream: HostToDeviceStream,
     `session.run()`.
 
     Args:
-        h2d_stream: (HostToDeviceStream) Stream to load from.
+        h2d_stream (HostToDeviceStream): Stream to load from.
         name (str): Name to use for the returned tensor.
 
     Returns:

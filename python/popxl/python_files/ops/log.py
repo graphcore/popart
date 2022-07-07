@@ -13,10 +13,10 @@ def log(t: Tensor) -> Tensor:
     See also `PyTorch torch.log <https://pytorch.org/docs/stable/generated/torch.log.html#torch.log>`__, `NumPy log <https://numpy.org/doc/stable/reference/generated/numpy.log.html>`__, `ONNX Log <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Log>`__.
 
     Args:
-        t: Tensor
+        t (Tensor):
             Input tensor.
     Returns:
-        out: Tensor
+        Tensor:
             Output tensor.
     """
     ctx = get_current_context()

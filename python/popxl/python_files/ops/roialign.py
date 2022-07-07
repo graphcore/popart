@@ -14,9 +14,9 @@ def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
     """
     Apply pooling across each region of interest (RoIs).
 
-    roi_align consumes an input tensor `t` and region of interests to apply pooling across each
+    This consumes an input tensor `t` and regions of interest to apply pooling across each
     RoI.
-    Currently only supports average pooling, max pooling is not supported yet.
+    Only supports average pooling. Max pooling is not supported.
 
     Args:
         t (Tensor):
@@ -24,7 +24,7 @@ def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
             4-D feature map of shape (N, C, H, W), where N is the batch size, C is the number of
             channels, and H and W are the height and the width of the data.
         rois (Tensor):
-            RoIs (Regions of Interest) to pool over;
+            Regions of interest (RoIs) to pool over.
             rois is 2-D input of shape (num_rois, 4) given as [[x1, y1, x2, y2], ...].
             The RoIs' coordinates are in the coordinate system of the input image.
             Each coordinate set has a 1:1 correspondence with 'batch_index' input.
@@ -35,17 +35,17 @@ def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
             Pooled output height and width.
         spatial_scale (float):
             Multiplicative spatial scale factor to translate ROI coordinates from their input
-            spatial scale to the scale used when pooling, i.e., spatial scale of the input feature
+            spatial scale to the scale used when pooling; that is, the spatial scale of the input feature
             map `t` relative to the input image.
         sampling_ratio (int):
             Number of sampling points in the interpolation grid used to compute the output value of
             each pooled output bin.
     Returns:
-        out (Tensor):
-            RoI pooled output Y, 4-D tensor of shape
+        Tensor:
+            RoI pooled output Y, a 4-D tensor of shape
             (numRois, channels, aligned_height_, aligned_width_).
-            The r-th batch element Y[r-1] is a pooled feature map corresponding to the r-th RoI
-            t[r-1].
+            The r-th batch element `Y[r-1]` is a pooled feature map corresponding to the `r`-th RoI
+            `t[r-1]`.
     """
     ctx = get_current_context()
     g = ctx.graph

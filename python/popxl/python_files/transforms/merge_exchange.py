@@ -50,19 +50,19 @@ def io_tile_exchange(verify_overlap: bool = True):
 @contextmanager
 def merge_exchange():
     """Combine RemoteLoad/RemoteStore/HostLoad/HostStore operations into a single MergeExchange operation.
-        This guarentees that any external synchronisation for these operations are merged allowing for the operations
-        to execute in parallel.
+       This guarantees that any external synchronisation for these operations are merged allowing for the operations
+       to execute in parallel.
 
-        Only applies to operations the current graph. Used as a contextmanager:
+       Only applies to operations on the current graph. Used as a contextmanager:
 
-        .. code-block:: python
+       .. code-block:: python
 
-            with popxl.merge_exchange():
-                ops.host_load(..)
-                ops.host_store(..)
+           with popxl.merge_exchange():
+               ops.host_load(..)
+               ops.host_store(..)
 
-        Note: Operations must be able to be scheduled in any order to be merged. For this reason it is recommended to combine with
-            `with popxl.in_sequence(False)` to avoid topological constraints that would prevent merging. Related py:meth:`io_tile_exchange`.
+       Note: Operations must be able to be scheduled in any order to be merged. For this reason it is recommended to combine with
+       `with popxl.in_sequence(False)` to avoid topological constraints that would prevent merging. Related: :py:meth:`io_tile_exchange`.
     """
     ctx = get_current_context()
     graph = ctx.graph

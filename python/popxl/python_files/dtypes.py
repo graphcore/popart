@@ -31,6 +31,7 @@ class dtype:
         A class to represent the type of elements in a tensor.
 
         Available data types are:
+
             - `bool`
             - `int8`
             - `int16`
@@ -47,6 +48,7 @@ class dtype:
             - `complex128`
 
         Some data types have aliases:
+
             - `half` aliases `float16`
             - `float` aliases `float32`
             - `double` aliases `float64`

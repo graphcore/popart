@@ -21,9 +21,9 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     A slice along an axis can be defined by the tuple
     (`start`, `stop`, `step`) where:
 
-    - start is the index for the respective axis
-    - stop is `index` + `size` for the respective axis
-    - step equals 1
+    - `start` is the index for the respective axis
+    - `stop` is `index` + `size` for the respective axis
+    - `step` equals 1
 
     Limitations:
 

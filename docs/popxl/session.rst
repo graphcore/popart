@@ -131,7 +131,7 @@ If attached to device, :py:func:`popxl.Session.write_variable_data` will update
 both the host and device weights. If not attached, only the host weights will be
 updated. The device weights will be updated on the next ``weights_from_host``.
 This will happen on the next :py:class:`popxl.Session` context enter, or
-when you call py:func:`popxl.Session.weights_from_host` manually.
+when you call :py:func:`popxl.Session.weights_from_host` manually.
 
 Similarly, :py:func:`popxl.Session.get_tensor_data` will only ensure the most
 up-to-date weights from device are returned if attached to device. If not

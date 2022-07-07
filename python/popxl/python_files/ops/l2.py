@@ -14,7 +14,7 @@ def l2(t: Tensor,
     Compute the square root of the sum of the squares of the elements in a tensor (L2 norm) along specified axes.
 
     Args:
-        t: Tensor
+        t:
             Tensor to compute the L2 norm of.
         axis (int or list):
             Axis or axes to compute L2 norm along. If none is provided all elements

@@ -14,12 +14,12 @@ def sub(lhs: Tensor, rhs: Tensor) -> Tensor:
 
     See also `PyTorch Tensor.sub <https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html>`__, `ONNX Sub <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Sub>`__.
 
-        Args:
-            lhs, rhs (Tensor):
-                Tensors to be subtracted.
-        Returns:
-            Tensor:
-                A tensor containing (lhs - rhs).
+    Args:
+        lhs, rhs (Tensor):
+            Tensors to be subtracted.
+    Returns:
+        Tensor:
+            A tensor containing (lhs - rhs).
     """
     ctx = get_current_context()
     g = ctx.graph

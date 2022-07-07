@@ -83,10 +83,10 @@ class GradGraphInfo:
     """
     Create the result of the ``autodiff`` transform.
 
-   * ``fwd_graph`` is the forward graph.
-   * ``expected_inputs`` are tensors from the forward graph that are required as
+    * ``fwd_graph`` is the forward graph.
+    * ``expected_inputs`` are tensors from the forward graph that are required as
       inputs to the gradient graph.
-   * ``expected_outputs`` are tensors from the forward graph that have gradients
+    * ``expected_outputs`` are tensors from the forward graph that have gradients
       as outputs of the gradient graph.
 
     This class should not be constructed directly and it raises a ``TypeError``
@@ -391,8 +391,7 @@ def autodiff(graph: Graph,
         grads_provided (Optional[Iterable[popxl.Tensor]], optional):
             The list of inputs of the forward graph for which gradients are
             provided. Defaults to all inputs of the graph.
-        called_graphs_grad_info (Optional[Mapping[Graph,GradGraphInfo]],
-            optional):
+        called_graphs_grad_info (Optional[Mapping[Graph,GradGraphInfo]], optional):
             The gradient graph information for the subgraphs that the
             ``autodiff`` transform has been recursively applied to. Defaults to
             None.
@@ -403,7 +402,7 @@ def autodiff(graph: Graph,
             information for ``graph`` (``False``). Defaults to ``False``.
 
     Returns:
-        grad_info (:py:class:`popxl.GradGraphInfo`):
+        :py:class:`popxl.GradGraphInfo`:
             Information about the gradient graph.
     """
     grads_provided = graph.outputs if grads_provided is None else grads_provided

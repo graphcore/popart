@@ -143,11 +143,11 @@ class Ir:
                 The Python function that defines the graph. The signature of
                 `fn` with its arguments is used to determine the
                 inputs of the graph.
-            *args (Any):
+            args (Any):
                 Arguments passed to the Python function that defines the graph
                 that can be a mixture of tensors and other types. Tensors are
                 used to determine the tensor info of the inputs.
-            **kwargs (Any):
+            kwargs (Any):
                 Keyword arguments passed to the Python function that defines the
                 graph that can be a mixture of tensors and other types. Tensors
                 are used to determine the tensor info of the inputs.
@@ -473,24 +473,28 @@ class Ir:
         Group with ``stride`` 1 and ``group_size`` 2 for 8 replicas):
 
         .. code-block:: python
+
             ir.replica_grouping(1, 2).assignment
             [0,0,1,1,2,2,3,3]
 
         Group with ``stride`` 1 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
+
             ir.replica_grouping(1, 4).assignment
             [0,0,0,0,1,1,1,1]
 
         Group with ``stride`` 2 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
+
             ir.replica_grouping(2, 4).assignment
             [0,1,0,1,0,1,0,1]
 
         Group with ``stride`` 4 and ``group_size`` 2 for 8 replicas:
 
         .. code-block:: python
+
             ir.replica_grouping(4, 2).assignment
             [0,1,2,3,0,1,2,3]
 

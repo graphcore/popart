@@ -67,10 +67,10 @@ def maximum(*ts: Tensor) -> Tensor:
     Follows NumPy broadcasting rules. Arguments must have the same dtype.
 
     Args:
-        *ts: Tensor
+        ts (Tensor):
             Tensors to compute the elementwise maximum of.
     Returns:
-        max: Tensor
+        Tensor:
             A tensor with the maximum elements from the input tensors.
     """
     ctx = get_current_context()

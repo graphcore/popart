@@ -63,14 +63,14 @@ def repeat(graph: Graph,
     Args:
         graph (Graph): User defined graph to repeat `repeat_count` times.
         repeat_count (int): Number of times to repeat calling the graph.
-        *inputs (Tensor, List[Tensor], int, float):
+        inputs (Tensor, List[Tensor], int, float):
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, Tensor]]):
             Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.
         check_inputs (bool = True):
             If true, then check when called that all inputs have been provided.
 
-    Throws:
+    Raises:
         ValueError: If repeat_count < 0.
         ValueError: If the number of subgraph inputs < subgraph outputs.
 
@@ -170,7 +170,7 @@ def repeat_with_info(graph: Graph,
     Args:
         graph (Graph): User defined graph to repeat `repeat_count` times.
         repeat_count (int): Number of times to repeat calling the graph.
-        *inputs (Tensor, List[Tensor], int, float):
+        inputs (Tensor, List[Tensor], int, float):
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, Tensor]]):
             Provide inputs via a tensor map. Mapping of `graph tensor -> parent tensor`.

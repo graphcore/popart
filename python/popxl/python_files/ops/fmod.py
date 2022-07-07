@@ -15,8 +15,8 @@ def fmod(lhs: Tensor, rhs: Tensor) -> Tensor:
     See also `PyTorch Tensor.fmod <https://pytorch.org/docs/stable/generated/torch.Tensor.fmod.html>`__, `NumPy fmod <https://numpy.org/doc/stable/reference/generated/numpy.fmod.html>`__.
 
     Args:
-        lhs, rhs: Tensor
-            Tensors to be modded.
+        lhs, rhs:
+            Tensor to be modded.
     Returns:
         Tensor:
             The fmod of lhs and rhs

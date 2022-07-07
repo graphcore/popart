@@ -14,16 +14,16 @@ def onehot(t: Tensor, num_classes: Tensor, values: Tensor,
     See also `ONNX OneHot <https://github.com/onnx/onnx/blob/main/docs/Operators.md#OneHot>`__.
 
     Args:
-        t: Tensor
+        t:
             Input tensor containing indices.
-        num_classes: Tensor
+        num_classes:
             Scalar specifying the number of classes in one-hot tensor.
-        values: Tensor
+        values:
             The value used for filling locations specified in 't' input tensor
-        axis: int
+        axis:
             Axis along which one-hot representation in added.
     Returns:
-        out: Tensor
+        Tensor:
             Output tensor.
     """
     ctx = get_current_context()

@@ -129,6 +129,7 @@ class ReplicaGrouping:
         Examples (with `ir.replication_factor = 8`):
 
         .. code-block:: python
+
             ir.replica_grouping(stride=1, group_size=8).assignment
             [0, 0, 0, 0, 0, 0, 0, 0]
 
@@ -167,21 +168,23 @@ class ReplicaGrouping:
         second element of each group is the second group etc.
 
         Examples:
+
         .. code-block:: python
+
             [0, 0, 0, 0] -> [0, 1, 2, 3]
             [0, 1, 0, 1] -> [0, 0, 1, 1]
             [0, 0, 1, 1] -> [0, 1, 0, 1]
             [0, 1, 2, 3] -> [0, 0, 0, 0]
 
         Some transposes cannot be represented with just a stride and group size and therefore
-        cannot be created. For example for `num_replicas=8`, `stride=2` and `group_size=2`. The assignments
+        cannot be created. For example for `num_replicas=8`, `stride=2` and `group_size=2`, the assignments
         are `[0, 1, 0, 1, 2, 3, 2, 3]` and the transpose is `[0, 0, 1, 1, 0, 0, 1, 1]`.
 
         Raises:
             ValueError: If the transpose cannot be represented with a replica grouping.
 
         Returns:
-            ReplicaGrouping: a "transpose" replica grouping of self
+            ReplicaGrouping: A "transpose" replica grouping of self.
         """
         if self.stride > 1 and self.stride * self.group_size != self._ir.replication_factor:
             raise ValueError(
@@ -231,7 +234,7 @@ class ReplicaGrouping:
             ValueError: If an invalid retrieval_mode is provided.
 
         Returns:
-            VariableSettings: The popart equivalent of ReplicaGroupings.
+            VariableSettings: The PopART equivalent of ReplicaGroupings.
         """
         comm_group = self._to_comm_group()
         if retrieval_mode is None or retrieval_mode == "one_per_group":

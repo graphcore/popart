@@ -170,7 +170,7 @@ def call(
 
     Args:
         graph (Graph): The graph to call.
-        *inputs (Union[TensorLike, Iterable[TensorLike]]):
+        inputs (Union[TensorLike, Iterable[TensorLike]]):
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, TensorLike]]):
             Provide inputs via graph tensor. Mapping of `graph tensor -> parent tensor`.
@@ -206,7 +206,7 @@ def call_with_info(
 
     Args:
         graph (Graph): The graph to call.
-        *inputs (Union[TensorLike, Iterable[TensorLike]]):
+        inputs (Union[TensorLike, Iterable[TensorLike]]):
             Provide inputs via position.
         inputs_dict (Optional[Mapping[Tensor, TensorLike]]):
             Provide inputs via graph tensor. Mapping of `graph tensor -> parent tensor`.
@@ -223,8 +223,8 @@ def call_with_info(
             - If a graph input cannot be coerced into a tensor
 
     Returns:
-        info: CallSiteInfo
-            Information on the created callsite.
+        CallSiteInfo:
+            Information about the call site.
     """
 
     ctx = get_current_context()

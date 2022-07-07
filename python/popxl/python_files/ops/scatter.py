@@ -46,15 +46,15 @@ def scatter(t: Tensor,
     See also `PyTorch Tensor.scatter <https://pytorch.org/docs/stable/generated/torch.Tensor.scatter.html>`__.
 
     Args:
-        t: Tensor
+        t:
             The input tensor.
-        indices: Tensor
+        indices:
             The indices of the elements to update.
-        values: Tensor
+        values:
             The values to update the tensor with.
-        axis: int
+        axis:
             Which axis to set on. Default is 0.
-        available_memory_proportion: Optional[float]
+        available_memory_proportion:
             The maximum proportion of available memory on each tile that this layer
             should consume temporarily during the course of the operation.
             Defaults to 1.0 if not set globally.
