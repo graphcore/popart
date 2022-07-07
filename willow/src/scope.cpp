@@ -90,6 +90,8 @@ Scope Scope::getCommonParent(const std::vector<Op *> &ops) {
   return new_scope;
 }
 
+const std::vector<std::string> Scope::getScopeNames() const { return names; }
+
 std::ostream &operator<<(std::ostream &ss, const Scope &scope) {
   ss << scope.str();
   return ss;

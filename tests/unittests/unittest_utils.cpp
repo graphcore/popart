@@ -27,7 +27,7 @@ template <typename T> std::string toString(const T &t) {
 } // namespace
 
 bool checkErrorMsgRemoveScopes(const popart::error &ex) {
-  const auto expectedPrefix = "Cannot remove scope from ";
+  const auto expectedPrefix = "Cannot remove scope ";
   return boost::algorithm::starts_with(ex.what(), expectedPrefix);
 }
 

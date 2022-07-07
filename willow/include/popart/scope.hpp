@@ -38,6 +38,8 @@ public:
 
   static Scope getCommonParent(const std::vector<Op *> &);
 
+  const std::vector<std::string> getScopeNames() const;
+
 private:
   std::vector<std::string> names;
 };

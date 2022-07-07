@@ -59,9 +59,9 @@ struct ParsedTensorIdFixture {
   popart::Scope scope2;
 };
 
-BOOST_FIXTURE_TEST_SUITE(ParsedTensorIdTestSuite, ParsedTensorIdFixture)
+BOOST_FIXTURE_TEST_SUITE(ParsedTensorIdBasicSuite, ParsedTensorIdFixture)
 
-BOOST_AUTO_TEST_CASE(testBasicParsedTensorId) {
+BOOST_AUTO_TEST_CASE(testBasic) {
   // Tests ParsedTensorId for the most basic cases
   std::string name     = "basic";
   popart::TensorId tId = name;
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(testBasicParsedTensorId) {
   BOOST_CHECK_EQUAL(pTId.getId(), name);
 }
 
-BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
+BOOST_AUTO_TEST_CASE(testParsing) {
   // Tests that the parser can handle parsing of scopes and prefixes
 
   // Test parsing when prefix is not added by the function
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
   name = "g1/testTIdScope";
   pTId = {name, ir};
   BOOST_CHECK_EQUAL(pTId.getId(), name);
-  BOOST_ASSERT(pTId.scopeExist(g1));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(g1));
 
   // Test parsing when the scopes starts with the same name
   // I.e. g(1/
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
   name = "g(1/1)/g(1/)/g(1/11)/testTIdScope";
   pTId = {name, ir};
   BOOST_CHECK_EQUAL(pTId.getId(), name);
-  BOOST_ASSERT(pTId.scopeExist(g1g11g111));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(g1g11g111));
 
   // Test when a scope is fully contained in another
   popart::Scope g;
@@ -111,17 +111,16 @@ BOOST_AUTO_TEST_CASE(testParsingParsedTensorId) {
   name = "g1/g/myName";
   pTId = {name, ir};
   BOOST_CHECK_EQUAL(pTId.getId(), "g1/g/myName");
-  BOOST_ASSERT(pTId.scopeExist(g1));
-  BOOST_ASSERT(pTId.scopeExist(g));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(g1));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(g));
 
-  // Test limitation: The scope is not in the start
+  // Test no operation: Without manipulation, we get the same out as we put in
   name = "foo_g1_bar";
   pTId = {name, ir};
-  // The following check shows the limitation
-  BOOST_CHECK_EQUAL(pTId.getId(), "g1/bar");
+  BOOST_CHECK_EQUAL(pTId.getId(), "foo_g1_bar");
 }
 
-BOOST_AUTO_TEST_CASE(testParsedTensorIdPrefixes) {
+BOOST_AUTO_TEST_CASE(testPrefixes) {
   // Tests adding and removing of prefixes when the TensorId is without scopes
   std::string name = "testParsedTensorIdPrefixes";
   popart::TensorId tId(name);
@@ -164,30 +163,30 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdPrefixes) {
   BOOST_ASSERT(pTId.prefixExist(p3));
 }
 
-BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
+BOOST_AUTO_TEST_CASE(testScopes) {
   // Tests adding and removing of scopes when the TensorId is without prefixes
   std::string name = "testTIdScope";
   popart::TensorId tId(name);
   popart::ParsedTensorId pTId(tId, ir);
   BOOST_CHECK_EQUAL(pTId.getId(), name);
-  BOOST_ASSERT(!pTId.scopeExist(scope1));
-  BOOST_ASSERT(!pTId.scopeExist(scope2));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope1));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope2));
 
   // Add Scope
   pTId.addScope(scope1);
   BOOST_CHECK_EQUAL(pTId.getId(), s1 + d + name);
-  BOOST_ASSERT(pTId.scopeExist(scope1));
-  BOOST_ASSERT(!pTId.scopeExist(scope2));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scope1));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope2));
 
   pTId.addScope(scope2);
   BOOST_CHECK_EQUAL(pTId.getId(), s2 + d + s3 + d + s1 + d + name);
-  BOOST_ASSERT(pTId.scopeExist(scope1));
-  BOOST_ASSERT(pTId.scopeExist(scope2));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scope1));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scope2));
 
   pTId.removeScope(scope2);
   BOOST_CHECK_EQUAL(pTId.getId(), s1 + d + name);
-  BOOST_ASSERT(pTId.scopeExist(scope1));
-  BOOST_ASSERT(!pTId.scopeExist(scope2));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scope1));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope2));
 
   BOOST_CHECK_EXCEPTION(
       pTId.removeScope(scope2), popart::error, checkErrorMsgRemoveScopes);
@@ -200,8 +199,8 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
   BOOST_CHECK_EQUAL(pTId.getId(), name);
   pTId.removeScope(emptyScope);
   BOOST_CHECK_EQUAL(pTId.getId(), name);
-  BOOST_ASSERT(!pTId.scopeExist(scope1));
-  BOOST_ASSERT(!pTId.scopeExist(scope2));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope1));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(scope2));
 
   // Test with scope not present in the IR
   std::string tIdStr = "testTIdScope";
@@ -217,10 +216,11 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdScopes) {
   BOOST_CHECK_EQUAL(pTId.getId(), name);
   BOOST_CHECK_EXCEPTION(
       pTId.removeScope(scopeNotInIr), popart::error, checkErrorMsgRemoveScopes);
-  BOOST_ASSERT(!pTId.scopeExist(scopeNotInIr));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorIdIr(scopeNotInIr));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scopeNotInIr));
 }
 
-BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {
+BOOST_AUTO_TEST_CASE(testMixedScopeAndPrefix) {
   // Tests adding and removing of scopes and prefixes without restrictions on
   // TensorId
   std::string name = "testParsedTensorIdMixedScopePrefixesAndNames";
@@ -261,7 +261,8 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {
   name         = scopeNotInIr.str() + d + "5";
   tId          = s1 + d + name;
   pTId         = {tId, ir};
-  BOOST_ASSERT(!pTId.scopeExist(scopeNotInIr));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorIdIr(scopeNotInIr));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(scopeNotInIr));
   BOOST_CHECK_EQUAL(pTId.getId(), s1 + d + name);
   pTId.addPrefix(p1);
   BOOST_CHECK_EQUAL(pTId.getId(), s1 + d + p1 + name);
@@ -275,8 +276,10 @@ BOOST_AUTO_TEST_CASE(testParsedTensorIdMixedScopePrefixesAndNames) {
   BOOST_CHECK_EQUAL(pTId.getId(), s1 + d + p2 + name);
 }
 
+// End the test suite
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_AUTO_TEST_SUITE(ParsedTensorIdAdvancedSuite)
 BOOST_AUTO_TEST_CASE(testDocumentationParsedTensorId) {
   // Test of documentation
   popart::Ir ir;
@@ -299,32 +302,6 @@ BOOST_AUTO_TEST_CASE(testDocumentationParsedTensorId) {
 
   popart::TensorId expected = "g3/g2/Step___Gradient___name";
   BOOST_CHECK_EQUAL(pTId.getId(), expected);
-}
-
-BOOST_AUTO_TEST_CASE(testPruneOverlappedMatches) {
-  // Test that the pruneOverlappedMatches function work as expected
-  // Define the expected map
-  std::map<std::size_t, std::size_t> expected;
-  expected[0]  = 2;
-  expected[3]  = 6;
-  expected[11] = 2;
-  expected[14] = 2;
-  expected[21] = 5;
-
-  // Add overlaps for strBeginAndStrLengths
-  std::map<std::size_t, std::size_t> strBeginAndStrLengths = expected;
-  strBeginAndStrLengths[4]                                 = 4;
-  strBeginAndStrLengths[5] = 1; // Nested overlap
-  // Overlap matching beginning is not possible as we are dealing with maps
-  strBeginAndStrLengths[15] = 1; // Overlap matching end
-
-  popart::pruneOverlappedMatches(strBeginAndStrLengths);
-
-  BOOST_ASSERT(expected.size() == strBeginAndStrLengths.size());
-  for (const auto valueKey : expected) {
-    BOOST_CHECK_EQUAL(expected.at(valueKey.first),
-                      strBeginAndStrLengths.at(valueKey.first));
-  }
 }
 
 BOOST_AUTO_TEST_CASE(testPrefixOverlap) {
@@ -368,3 +345,72 @@ BOOST_AUTO_TEST_CASE(testScopeOverlap) {
   pTId = {tId, ir};
   BOOST_CHECK_EQUAL(pTId.getId(), tId);
 }
+
+BOOST_AUTO_TEST_CASE(testUnfortunateTensorIds) {
+  // Test TensorIds which are not optimally constructed
+  auto scopeError = [](const popart::error &ex) -> bool {
+    const auto expectedPrefix = "Cannot remove scope ";
+    return boost::algorithm::starts_with(ex.what(), expectedPrefix);
+  };
+
+  // Test "prefixA/scope1/prefixB_prefixC/scope2"
+  std::string scope1Str = "scope1";
+  std::string scope2Str = "scope2";
+  popart::Scope scope1;
+  scope1 = scope1 / scope1Str;
+  std::string prefixA(popart::reservedInitPrefix());
+  std::string prefixB(popart::anchorSumPrefix());
+  std::string prefixC(popart::reservedDefaultAdamGradientScalingPrefix());
+  popart::TensorId tId = prefixA + "/" + scope1Str + "/" + prefixB + prefixC +
+                         "/" + scope2Str + "/crazyBananas";
+  popart::Ir ir;
+  ir.createGraph({scope1Str});
+  ir.createGraph({scope2Str});
+  popart::ParsedTensorId pTId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+  BOOST_CHECK_EXCEPTION(pTId.removeScope(scope1), popart::error, scopeError);
+  pTId.removePrefixIfExist(prefixB);
+  BOOST_CHECK_EQUAL(pTId.getId(),
+                    prefixA + "/" + scope1Str + "/" + prefixC + "/" +
+                        scope2Str + "/crazyBananas");
+  pTId.removePrefixIfExist(prefixA);
+  BOOST_CHECK_EQUAL(pTId.getId(),
+                    "/" + scope1Str + "/" + prefixC + "/" + scope2Str +
+                        "/crazyBananas");
+  pTId.removePrefixIfExist(prefixC);
+  BOOST_CHECK_EQUAL(pTId.getId(),
+                    "/" + scope1Str + "/" + "/" + scope2Str + "/crazyBananas");
+
+  // Test "Gradient___helloWorld_Gradient___"
+  prefixA = std::string(popart::reservedGradientPrefix());
+  tId     = prefixA + "/helloWorld_" + prefixA;
+  pTId    = popart::ParsedTensorId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+  pTId.removePrefixIfExist(prefixA);
+  BOOST_CHECK_EQUAL(pTId.getId(), "/helloWorld_" + prefixA);
+
+  // Test "scope1/Relu:0/3"
+  std::string phonyScopeString = "Relu:0";
+  popart::Scope phonyScope;
+  phonyScope = phonyScope / phonyScopeString;
+  tId        = scope1Str + "/" + phonyScopeString + "/3";
+  pTId       = popart::ParsedTensorId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorIdIr(phonyScope));
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorId(phonyScope));
+
+  // Test "model.fc.weight"
+  std::string graphName = "fc";
+  popart::Scope graphScope;
+  graphScope = graphScope / graphName;
+  ir.createGraph({graphName});
+  tId  = "model." + graphName + ".weight";
+  pTId = popart::ParsedTensorId(tId, ir);
+  BOOST_CHECK_EQUAL(pTId.getId(), tId);
+  BOOST_ASSERT(pTId.scopeExistInParsedTensorIdIr(graphScope));
+  BOOST_ASSERT(!pTId.scopeExistInParsedTensorId(graphScope));
+  BOOST_CHECK_EXCEPTION(
+      pTId.removeScope(graphScope), popart::error, scopeError);
+}
+
+BOOST_AUTO_TEST_SUITE_END()

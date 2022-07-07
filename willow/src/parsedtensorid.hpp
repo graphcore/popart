@@ -3,9 +3,9 @@
 #define GUARD_PARSEDTENSORID_HPP
 
 #include <cstddef>
-#include <deque>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "popart/tensordebuginfo.hpp"
@@ -18,7 +18,6 @@ class Scope;
  * Parse a TensorId into scopes prefixes and names
  *
  * Scopes and prefixes can be added and removed to the object
- * The resulting TensorId is on the format <scopes><prefixes><names>
  *
  * Example:
  *    Ir ir;
@@ -44,36 +43,35 @@ class Scope;
 class ParsedTensorId {
 public:
   /**
-   * Parse the \a TensorId into scopes, prefixes and names
+   * Parse a \a TensorId to find the location of scopes and prefixes
    * The \a scopes will be identified by the graphs in Ir
-   * The \a prefixes will be identified by the prefixes in \see
-   * reservedPrefixes() The \a name is whatever remains of the string
+   * The \a prefixes will be identified by the prefixes in
+   * \see reservedPrefixes()
    *
-   * Limitations:
-   * 1.
-   * It's assumed that the scopes are in the beginning of the \a TensorId and
-   * separated by sNameDelimiter.
-   * An ill formatted \a TensorId like ``foo_myScope_bar`` will be returned as
-   * ``myScope/foo__bar`` without throwing a warning.
+   * Any TensorId will be parsed, however, the TensorIds are expected to be
+   * on the form
    *
-   * \param tId_ The TensorId to be parsed
+   * ``(<scope>/)*(<prefix>)*\w*``
+   *
+   * Limitation (by design):
+   * - Scopes cannot be removed unless the come first in the \a TensorId
+   *
+   * \param tId The TensorId to be parsed
    * \param ir The ir to check for scopes
    */
-  ParsedTensorId(const TensorId &tId_, const Ir &ir) : inputTId(tId_) {
-    setIrScopes(ir);
-    parse();
-  }
+  ParsedTensorId(const TensorId &tId, const Ir &ir);
 
   /**
-   * Add a prefix to the back off other prefixes and regenerates \a tId
+   * Add a prefix to the back off other prefixes and regenerate \a tId_
    *
    * \param prefix The prefix to be parsed
    * \return The TensorId with the added prefix
    */
   TensorId addPrefix(const std::string &prefix);
   /**
-   * Remove a prefix if it's found in the vector of prefixes and regenerates \a
-   * tId A warning is given if none is found
+   * Remove a prefix if it's found and regenerate \a tId_
+   *
+   * A warning is given if the prefix is not found
    *
    * \param prefix The prefix to remove
    * \return The TensorId with the possibly removed prefix
@@ -81,21 +79,19 @@ public:
   TensorId removePrefixIfExist(const std::string &prefix);
 
   /**
-   * Add a \a Scope to the beginning of \a scopes and regenerates \a tId
-   *
-   * Note: This does not require that \a s is in the Ir
+   * Add a \a Scope to the beginning of \a scopes and regenerate \a tId_
    *
    * \param s The Scope to be added
    * \return The TensorId with the added scope
    */
   TensorId addScope(const Scope &s);
   /**
-   * Remove a \a Scope from the beginning of Scopes and regenerates \a tId
+   * Remove a \a Scope from the beginning of Scopes and regenerate \a tId_
    *
    * An error is thrown if the \a Scope to be removed does not match the start
-   * of Scopes
+   * of the \a tId_
    *
-   * Note: This does not require that \a s is in the Ir
+   * Note: This does not require \a s to be in the Ir
    *
    * \param s The Scope to be removed
    * \return The TensorId with the removed scope
@@ -110,7 +106,14 @@ public:
    * \param s The scope to check
    * \returns True if the scope is found
    */
-  bool scopeExist(const Scope &s);
+  bool scopeExistInParsedTensorId(const Scope &s);
+  /**
+   * Return whether or not a scope is present in the ir of ParsedTensorId
+   *
+   * \param s The scope to check
+   * \returns True if the scope is found
+   */
+  bool scopeExistInParsedTensorIdIr(const Scope &s);
   /**
    * Return whether or not a prefix is present in the ParsedTensorId
    *
@@ -124,98 +127,64 @@ public:
    *
    * \returns The TensorId
    */
-  TensorId getId() { return tId; }
+  TensorId getId();
 
 private:
+  /// Construct \a tId_ from \a tIdVec
+  void generateId();
+
   /**
-   * Get the scopes from the ir, and stores it in \a irScopes
+   * Set the scopes from the ir, and store it to \a sortedIrScopesWithDelimiter
    *
    * \param ir The Ir to search for the scopes in
    */
-  void setIrScopes(const Ir &ir);
-  /**
-   * Parse the \a TensorId into scopes, prefixes and names
-   * The \a scopes will be identified by the graphs in \a Ir
-   * The \a prefixes will be identified by the prefixes in \see
-   * reservedPrefixes() The \a name is whatever remains of the string
-   */
-  void parse();
-  //! Parse the \a scopes (identified by the graphs in the \a Ir)
-  void parseScopes();
-  //! Parse the \a prefixes (identified by \see reservedPrefixes())
-  void parsePrefixes();
-  //! Parse the \a name (what is neither scopes nor prefixes)
-  void parseName();
+  void setSortedIrScopesWithDelimiter(const Ir &ir);
 
   /**
-   * Return a vector of matches of \a potentialMatches found in \a s
+   * Extract scopes and prefixes, and populate
    *
-   * The resulting vector will be sorted after where the match is found in a
-   * string. Example: std::string s = "foo_baz:Bar"; std::vector<std::string>
-   * v{"Bar", "foo", "baz"}; auto result = findMatches(s, v);
-   *     // result now contains {"foo", "baz", "Bar"}
-   *
-   * \param s String to search for matches in
-   * \param potentialMatches Vector to match against \a inputTId
-   * \return foundMatches Vector to store the result in
+   * \param ir The Ir to search for the scopes in
+   * \returns Pair containing the character position of the extraction of
+   *  the last scope and the last prefix
    */
-  std::vector<std::string>
-  findMatches(const std::string &s,
-              const std::vector<std::string> &potentialMatches);
+  std::pair<std::size_t, std::size_t> extractElements(const Ir &ir);
 
-  //! Construct \a tId on the form <scopes><prefixes><name>
-  void generateId();
+  /**
+   * Extract elements from parsingTId matching input vector.
+   *
+   * The elements will be cut from parsingTId and stored in tIdVec.
+   *
+   * \param sortedElementsToExtract A vector sorted from the longest to the
+   *  shortest which will be used to matches in parsingTId
+   * \returns The last position of the original tIdVec where an element has
+   *  been extracted
+   */
+  std::size_t extractElementsFromVector(
+      const std::vector<std::string> &sortedElementsToExtract);
 
-  //! The scopes of the \a TensorId
-  std::deque<std::string> scopes;
-  //! The scopes found in the ir
-  std::vector<std::string> irScopes;
-  //! The prefixes of the \a TensorId
-  std::vector<std::string> prefixes;
-  //! The name of the \a TensorId
-  std::string name;
-  //! The original input \a TensorId
-  TensorId inputTId;
-  //! The \a TensorId after parsing and possible manipulations
-  TensorId tId;
+  /**
+   * Map between character position of parsingTId and tId_
+   *
+   * This is needed as we "eat" the characters of parsingTId, and we need
+   * to keep track of character position of tId_
+   */
+  std::map<std::size_t, std::size_t> positionMap;
+  /// The input \a TensorId
+  TensorId parsingTId;
+  /// The current \a TensorId
+  TensorId tId_;
+
+  /// Vector representation of tIdVec
+  std::vector<std::string> tIdVec;
+  /// Used to sort the tIdVec
+  std::vector<std::size_t> positionVec;
+
+  /// The position of the last prefix in tIdVec
+  std::size_t nextPrefixIndex;
+
+  /// Scopes present in the IR
+  std::vector<std::string> sortedIrScopesWithDelimiter;
 };
-
-/**
- * Prune the input for overlaps between a begin element and another
- * begin+length element.
- *
- * The algorithm assumes that the map is sorted in ascending order and that
- * there is only one match per position.
- * ParsedTensorId::findMatches takes care of the last assumption.
- *
- * Example:
- * Assume that we have the following columns
- * The first column represents the element in strBeginAndStrLengths, whereas the
- * second column is for illustration purpose only
- *
- * {Begin, Length}    {Begin, End}
- * { 0, 2}            { 0,  2}
- * { 3, 6}            { 3,  9}
- * { 4, 4}            { 4,  8} <- overlaps with {3, 9}
- * { 5, 1}            { 5,  6} <- overlaps with {3, 9} and {4, 8}
- * {11, 2}            {11, 13}
- * {14, 2}            {14, 16}
- * {15, 1}            {15, 16} <- overlaps with {14, 16}
- * {21, 5}            {21, 26}
- *
- * Calling pruneOverlappedMatches on the above will result in
- *
- * {Begin, Length}    {Begin, End}
- * { 0, 2}            { 0,  2}
- * { 3, 6}            { 3,  9}
- * {11, 2}            {11, 13}
- * {14, 2}            {14, 16}
- * {21, 5}            {21, 26}
- *
- * \param strBeginAndStrLengths Map containing begin and lengths of matches
- */
-void pruneOverlappedMatches(
-    std::map<std::size_t, std::size_t> &strBeginAndStrLengths);
 
 } // namespace popart
 
