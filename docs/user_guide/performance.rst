@@ -18,7 +18,7 @@ A simple `example of pipelining in PopART <https://github.com/graphcore/tutorial
 is available in the Graphcore tutorials repository.
 
 You can split a model into pipeline stages by annotating operations in the
-ONNX model using the ``Builder`` class (:py:class:`Python <popart.Builder>`,
+ONNX model using the ``Builder`` class (:py:class:`Python <popart.builder.Builder>`,
 :cpp:class:`C++ <popart::Builder>`).
 
 You can place a specific operation on a specific pipeline
@@ -43,8 +43,7 @@ the ``Session`` constructor (:py:class:`Python <popart.TrainingSession>`,
 the model to choose a partitioning with the optimal utilization.
 
 You can enable pipelined execution by setting the session option
-``enablePipelining`` to ``True`` (:py:attr:`Python <popart.SessionOptions.enablePipelining>`,
-   :cpp:var:`C++ <popart::SessionOptions::enablePipelining>`).
+``enablePipelining`` to ``True`` (:py:attr:`Python <popart.SessionOptions.enablePipelining>`, :cpp:var:`C++ <popart::SessionOptions::enablePipelining>`).
 
 Note that, by default, pipelining a training model with variable tensors stored
 over different pipeline stages results in 'stale weights' (see :arxiv:`Zhang et
@@ -63,15 +62,15 @@ replication is a means of parallelising your inference or training workloads.
 When training, weight updates are coordinated between replicas to ensure
 replicas benefit from each other's weight updates. A reduction is
 applied on the weight updates across replicas according to the
-``ReductionType`` (:py:enum:`Python <popart.ReductionType>`,
-   :cpp:class:`C++ <popart::ReductionType>`) specified by the ``accumulationAndReplicationReductionType``
+``ReductionType`` (:py:class:`Python <popart.ReductionType>`,
+:cpp:class:`C++ <popart::ReductionType>`) specified by the ``accumulationAndReplicationReductionType``
 session option (:py:attr:`Python <popart.SessionOptions.accumulationAndReplicationReductionType>`,
-   :cpp:var:`C++ <popart::SessionOptions::accumulationAndReplicationReductionType>`). The reductions involve some communication between replicas. This
+:cpp:var:`C++ <popart::SessionOptions::accumulationAndReplicationReductionType>`). The reductions involve some communication between replicas. This
 communication is managed by PopART.
 
 When you use replication, PopART also manages the splitting and distribution of
 input data, making sure the data specified in the ``StepIO`` instance (:py:class:`Python <popart.PyStepIO>`,
-   :cpp:class:`C++ <popart::StepIO>`) is split evenly
+:cpp:class:`C++ <popart::IStepIO>`) is split evenly
 between replicas. This does mean you need to provide enough input data to
 satisfy all (local) replicas.
 
@@ -92,8 +91,8 @@ process. This means local replication is limited to those IPUs that are
 accessible to the host machine that PopART is running on. To enable local
 replication, set the session option
 ``enableReplicatedGraphs`` to ``True`` (:py:attr:`Python <popart.SessionOptions.enableReplicatedGraphs>`,
-   :cpp:var:`C++ <popart::SessionOptions::enableReplicatedGraphs>`) and set ``replicatedGraphCount`` (:py:attr:`Python <popart.SessionOptions.replicatedGraphCount>`,
-   :cpp:var:`C++ <popart::SessionOptions::replicatedGraphCount>`) to the
+:cpp:var:`C++ <popart::SessionOptions::enableReplicatedGraphs>`) and set ``replicatedGraphCount`` (:py:attr:`Python <popart.SessionOptions.replicatedGraphCount>`,
+:cpp:var:`C++ <popart::SessionOptions::replicatedGraphCount>`) to the
 number of times you want to replicate your model. For example, to replicate
 a model twice, pass the following session options to your session:
 
@@ -124,15 +123,13 @@ only the IPUs that are available to a single host. It is also possible to
 combine local and global replication.
 
 To enable global replication, set ``enableDistributedReplicatedGraphs`` (:py:attr:`Python <popart.SessionOptions.enableDistributedReplicatedGraphs>`,
-   :cpp:var:`C++ <popart::SessionOptions::enableDistributedReplicatedGraphs>`)  to
-``True`` and set ``globalReplicationFactor`` (:py:attr:`Python <popart.SessionOptions.globalReplicationFactor>`,
-   :cpp:var:`C++ <popart::SessionOptions::globalReplicationFactor>`) to the desired total number of
+:cpp:var:`C++ <popart::SessionOptions::enableDistributedReplicatedGraphs>`)  to
+``True`` and set ``globalReplicationFactor`` (:py:attr:`Python <popart.SessionOptions.globalReplicationFactor>`, :cpp:var:`C++ <popart::SessionOptions::globalReplicationFactor>`) to the desired total number of
 replications (*including* any local replications). Finally, set
 ``globalReplicaOffset`` (:py:attr:`Python <popart.SessionOptions.globalReplicaOffset>`,
-   :cpp:var:`C++ <popart::SessionOptions::globalReplicaOffset>`) to a different offset for each PopART
+:cpp:var:`C++ <popart::SessionOptions::globalReplicaOffset>`) to a different offset for each PopART
 process involved, using offsets starting from 0 and incremented by the local
 replication factor for each process.
-
 For example, if the local replication factor is 2 and we want to replicate this
 over four PopART processes then we need to configure a global replication
 factor of 8. We then expect the ``globalReplicaOffset`` in the PopART
@@ -174,10 +171,10 @@ Sync groups can be used to to allow subsets of IPUs to overlap their
 operations. For example, one sync group can be transferring data to or
 from the host, while another sync group can be processing a batch of data that was transferred previously.
 
-You can configure the sync groups using the PopART ``syncPatterns`` option (:py:enum:`Python <popart.SyncPattern>`,
-   :cpp:class:`C++ <popart::SyncPattern>`)
+You can configure the sync groups using the PopART ``syncPatterns`` option (:py:class:`Python <popart.SyncPattern>`,
+:cpp:enum:`C++ <popart::SyncPattern>`)
 when creating a device with ``DeviceManager`` (:py:class:`Python <popart.DeviceManager>`,
-   :cpp:class:`C++ <popart::DeviceManager>`). The types of sync patterns available are described in detail in :numref:`sec_sync_patterns`.
+:cpp:class:`C++ <popart::DeviceManager>`). The types of sync patterns available are described in detail in :numref:`sec_sync_patterns`.
 
 For example, the following code shows how to set the sync configuration to
 ``SyncPattern.ReplicaAndLadder`` which allows for alternating between host I/O and processing.
