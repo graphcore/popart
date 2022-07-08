@@ -55,7 +55,7 @@ void OptimizerDecompose::addStateTensor(Graph &graph,
     // adjust number of elements w.r.t. initialization count
     auto nelms_base = info.nelms();
     auto nelms_repl =
-        varset.groupCount(ir.getSessionOptions().replicatedGraphCount);
+        varset.getGroupCount(ir.getSessionOptions().replicatedGraphCount);
 
     std::vector<T> d(nelms_base * nelms_repl, static_cast<T>(initValue));
     graph.getTensors().addVarInit(tensorId, info, d.data(), varset);

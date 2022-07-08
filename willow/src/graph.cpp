@@ -183,7 +183,7 @@ void Graph::addVarInit(const TensorId &name,
                        const DebugContext &debugContext) {
   auto replicationFactor =
       this->getIr().getSessionOptions().globalReplicationFactor;
-  auto num_groups = vs.groupCount(replicationFactor);
+  auto num_groups = vs.getGroupCount(replicationFactor);
   if (num_groups > 1) {
     if (info.shape().at(0) != num_groups) {
       throw popart::error(

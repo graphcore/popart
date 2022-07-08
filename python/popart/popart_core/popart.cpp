@@ -3208,7 +3208,7 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("retrievalMode_"));
     cls.def("numReplicasReturningVariable",
             &VariableSettings::numReplicasReturningVariable);
-    cls.def("groupCount", &VariableSettings::groupCount);
+    cls.def("getGroupCount", &VariableSettings::getGroupCount);
     cls.def("getRealGroupSize", &VariableSettings::getRealGroupSize);
     cls.def("getGroupRepresentative",
             &VariableSettings::getGroupRepresentative,

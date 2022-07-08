@@ -98,7 +98,7 @@ stride_and_size_examples = [
     {
         "replicas": 16,
         "commType": popart.CommGroupType.Orthogonal,
-        "commSize": 2,
+        "commSize": 8,
         # ->
         "inputs": {
             "stride": 2,
@@ -109,7 +109,7 @@ stride_and_size_examples = [
     {
         "replicas": 256,
         "commType": popart.CommGroupType.Orthogonal,
-        "commSize": 64,
+        "commSize": 4,
         # ->
         "inputs": {
             "stride": 64,

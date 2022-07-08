@@ -99,7 +99,7 @@ void TensorData::resetDataInExecutablex(Tensor &tensorIr,
                     tensorIrId);
       }
 
-      auto numGroups = tensorIr.getVariableSettings().groupCount(
+      auto numGroups = tensorIr.getVariableSettings().getGroupCount(
           ses.getIr().getSessionOptions().getGlobalReplicationFactor());
 
       tensorExe->tensorData()->resetDataWithReplicaGrouping(

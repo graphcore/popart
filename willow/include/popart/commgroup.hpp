@@ -53,7 +53,7 @@ enum class CommGroupType {
  * - Using GW-links only:
  *
  *   .. code-block:: python
- *     type == Orthogonal && replicaGroupSize == 64/replica-size
+ *     type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains
  *
  */
 class CommGroup {

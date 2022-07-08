@@ -110,7 +110,13 @@ public:
    * \return             The number of groups given the replicaFactor and the
    *                     VariableSettings.
    */
-  unsigned groupCount(unsigned replicaCount) const;
+  unsigned getGroupCount(unsigned replicaCount) const;
+
+  /**
+   * \param replicaCount The replicationFactor of the graph.
+   * \return             The stride between each member of a group.
+   */
+  unsigned getStride(unsigned replicaCount) const;
 
   /**
    * Because CommGroup's don't have a defined group-size if

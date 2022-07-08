@@ -239,7 +239,7 @@ void Executablex::resetWeights(
     }
     auto tensor = getTensor(tenId);
     auto groupCount =
-        tensor->getVariableSettings().groupCount(replicationFactor);
+        tensor->getVariableSettings().getGroupCount(replicationFactor);
 
     if (replicationFactor > 0 && groupCount != 1) {
       auto info           = TensorInfo(initializer);

@@ -3983,7 +3983,7 @@ IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
     // replicas more dynamically, and broadcast will not work for the
     // necessary transfers.
     auto replicas   = ir().getSessionOptions().replicatedGraphCount;
-    auto groupCount = tensor->getVariableSettings().groupCount(replicas);
+    auto groupCount = tensor->getVariableSettings().getGroupCount(replicas);
 
     mode = groupCount != 1 ? poplar::ReplicatedStreamMode::REPLICATE
                            : poplar::ReplicatedStreamMode::BROADCAST;

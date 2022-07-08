@@ -239,7 +239,7 @@ void bindTensor(py::module &m) {
             self.tensorData()->resetDataWithReplicaGrouping(
                 self.info,
                 static_cast<void *>(npArray.request().ptr),
-                self.getVariableSettings().groupCount(
+                self.getVariableSettings().getGroupCount(
                     ses.getIr()
                         .getSessionOptions()
                         .getGlobalReplicationFactor()));

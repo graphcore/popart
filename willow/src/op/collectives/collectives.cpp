@@ -80,10 +80,9 @@ int64_t CollectivesBaseOp::getCommSize() const {
   auto replicationFactor =
       getIr().getSessionOptions().getGlobalReplicationFactor();
   if (shardingDomain.replicaGroupSize > 0) {
-    if (shardingDomain.type == CommGroupType::Consecutive) {
+    if (shardingDomain.type == CommGroupType::Consecutive ||
+        shardingDomain.type == CommGroupType::Orthogonal) {
       return shardingDomain.replicaGroupSize;
-    } else if (shardingDomain.type == CommGroupType::Orthogonal) {
-      return replicationFactor / shardingDomain.replicaGroupSize;
     }
   }
   if (shardingDomain.type == CommGroupType::None) {

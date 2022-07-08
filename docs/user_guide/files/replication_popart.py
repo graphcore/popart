@@ -29,7 +29,7 @@ settings_individual = VariableSettings(
 )
 
 # get init buffer:
-num_groups = settings_grouped.groupCount(repl_factor)
+num_groups = settings_grouped.getGroupCount(repl_factor)
 shape = [int(repl_factor / num_groups)] + base_shape
 initializer = numpy.zeros(shape).astype(numpy.float32)  # example
 

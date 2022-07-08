@@ -84,9 +84,7 @@ class ReplicaGrouping:
             )
         elif comm_group.type == _ir.CommGroupType.Orthogonal:
             self = ReplicaGrouping._from_params(
-                ir,
-                group_size=replicas // comm_group.replicaGroupSize,
-                stride=comm_group.replicaGroupSize,
+                ir, stride=replicas // comm_group.replicaGroupSize
             )
         else:
             raise ValueError(
@@ -282,7 +280,7 @@ class ReplicaGrouping:
             replicas // self.group_size
         ):
             return _ir.CommGroup(
-                type=_ir.CommGroupType.Orthogonal, replicaGroupSize=self.stride
+                type=_ir.CommGroupType.Orthogonal, replicaGroupSize=self.group_size
             )
         raise ValueError(
             f"Replica grouping with num_replicas={replicas}, "
