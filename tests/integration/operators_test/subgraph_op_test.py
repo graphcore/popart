@@ -34,8 +34,7 @@ def test_nested_simple(op_tester):
         b = builder.addInitializedInputTensor(i2)
         c = builder.addInitializedInputTensor(i3)
 
-        m = builder.aiOnnx.constant(
-            np.array(trip_count).astype(np.int64), "m0")
+        m = builder.aiOnnx.constant(np.array(trip_count).astype(np.int64), "m0")
         cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond0")
 
         call_builder = builder.createSubgraphBuilder()
@@ -90,7 +89,7 @@ def test_nested_simple(op_tester):
         x = x * 2
         return [x]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_nested_complex(op_tester):
@@ -134,18 +133,13 @@ def test_nested_complex(op_tester):
         d = builder.addInitializedInputTensor(i4)
         f = builder.addInputTensor(i6)
 
-        m0 = builder.aiOnnx.constant(
-            np.array(trip_count_0).astype(np.int64), "m0")
-        cond0 = builder.aiOnnx.constant(
-            np.array(True).astype(np.bool), "cond0")
+        m0 = builder.aiOnnx.constant(np.array(trip_count_0).astype(np.int64), "m0")
+        cond0 = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond0")
 
-        m1 = builder.aiOnnx.constant(
-            np.array(trip_count_1).astype(np.int64), "m1")
-        cond1 = builder.aiOnnx.constant(
-            np.array(True).astype(np.bool), "cond1")
+        m1 = builder.aiOnnx.constant(np.array(trip_count_1).astype(np.int64), "m1")
+        cond1 = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond1")
 
-        m2 = builder.aiOnnx.constant(
-            np.array(if_else_count).astype(np.int64), "m2")
+        m2 = builder.aiOnnx.constant(np.array(if_else_count).astype(np.int64), "m2")
 
         loop_builder0 = builder.createSubgraphBuilder()
         loop_builder0.setGraphName("l0")
@@ -189,17 +183,16 @@ def test_nested_complex(op_tester):
 
         # Call 0
         e = call_builder0.aiOnnx.constant(i5, "e")
-        call0_loop1 = call_builder0.aiOnnx.loop([m1, cond1, a, e], 2,
-                                                loop_builder1)[0]
+        call0_loop1 = call_builder0.aiOnnx.loop([m1, cond1, a, e], 2, loop_builder1)[0]
         call_builder0.addOutputTensor(call0_loop1)
 
         # Loop 0
-        _ = loop_builder0.addInputTensor(popart.TensorInfo("INT64",
-                                                           []))  #iter0
+        _ = loop_builder0.addInputTensor(popart.TensorInfo("INT64", []))  # iter0
         cond_in0 = loop_builder0.addUntypedInputTensor(cond0)
         a_in0 = loop_builder0.addUntypedInputTensor(a)
-        loop0_loop1 = loop_builder0.aiOnnx.loop([m1, cond1, a_in0, d], 2,
-                                                loop_builder1)[0]
+        loop0_loop1 = loop_builder0.aiOnnx.loop(
+            [m1, cond1, a_in0, d], 2, loop_builder1
+        )[0]
         loop_builder0.addOutputTensor(cond_in0)
         loop_builder0.addOutputTensor(loop0_loop1)
 
@@ -236,4 +229,4 @@ def test_nested_complex(op_tester):
         x += fun(a, e)
         return [x]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")

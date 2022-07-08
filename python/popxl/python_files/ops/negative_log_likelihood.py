@@ -11,12 +11,12 @@ from popxl.dtypes import float32
 from .utils import check_in_graph, convert_optional_int, check_tensor_ipu_and_tile_set
 
 REDUCTION_MAP = {
-    'mean': popart.ReductionType.Mean,
-    'sum': popart.ReductionType.Sum,
-    'none': popart.ReductionType.NoReduction,
+    "mean": popart.ReductionType.Mean,
+    "sum": popart.ReductionType.Sum,
+    "none": popart.ReductionType.NoReduction,
 }
 
-REDUCTION_TYPE = Literal['mean', 'sum', 'none']
+REDUCTION_TYPE = Literal["mean", "sum", "none"]
 
 
 def _to_reduction_enum(reduction: REDUCTION_TYPE) -> popart.ReductionType:
@@ -25,16 +25,17 @@ def _to_reduction_enum(reduction: REDUCTION_TYPE) -> popart.ReductionType:
     except KeyError:
         raise ValueError(
             f"Not a valid reduction: {reduction}. "
-            f"Must choose from: {', '.join(REDUCTION_MAP.keys())}") from None
+            f"Must choose from: {', '.join(REDUCTION_MAP.keys())}"
+        ) from None
 
 
 @op_debug_context
 def nll_loss(
-        probs: Tensor,
-        labels: Tensor,
-        ignore_index: Optional[int] = None,
-        reduction: REDUCTION_TYPE = 'mean',
-        log_prob: bool = False,
+    probs: Tensor,
+    labels: Tensor,
+    ignore_index: Optional[int] = None,
+    reduction: REDUCTION_TYPE = "mean",
+    log_prob: bool = False,
 ) -> Tensor:
     """Compute the negative log likelihood loss.
 
@@ -64,9 +65,8 @@ def nll_loss(
 
     reduction = _to_reduction_enum(reduction)
 
-    settings = ctx._get_op_settings('nll')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Nll", 1, _ir.NumInputs(
-        2, 2), 1)
+    settings = ctx._get_op_settings("nll")
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Nll", 1, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_NllOp(
         {
             0: probs.id,
@@ -87,11 +87,12 @@ def nll_loss(
 
 @op_debug_context
 def nll_loss_with_softmax_grad(
-        probs: Tensor,
-        labels: Tensor,
-        loss_grad: Union[float, Tensor] = 1,
-        ignore_index: Optional[int] = None,
-        reduction: REDUCTION_TYPE = 'mean') -> Tuple[Tensor, Tensor]:
+    probs: Tensor,
+    labels: Tensor,
+    loss_grad: Union[float, Tensor] = 1,
+    ignore_index: Optional[int] = None,
+    reduction: REDUCTION_TYPE = "mean",
+) -> Tuple[Tensor, Tensor]:
     """Compute the negative log likelihood loss.
 
     Compute the negative log likelihood loss `l` and returns the gradient `dE/dx` where `probs = softmax(x)`.
@@ -116,19 +117,13 @@ def nll_loss_with_softmax_grad(
         loss_grad = constant(loss_grad, float32)
 
     check_in_graph(g, probs=probs, labels=labels, loss_grad=loss_grad)
-    check_tensor_ipu_and_tile_set(probs=probs,
-                                  labels=labels,
-                                  loss_grad=loss_grad)
+    check_tensor_ipu_and_tile_set(probs=probs, labels=labels, loss_grad=loss_grad)
 
     reduction = _to_reduction_enum(reduction)
 
-    settings = ctx._get_op_settings('nll_loss_with_softmax_grad')
+    settings = ctx._get_op_settings("nll_loss_with_softmax_grad")
     op = pb_g.createConnectedOp_NlllWithSoftmaxGradDirectOp(
-        {
-            0: probs.id,
-            1: labels.id,
-            2: loss_grad.id
-        },
+        {0: probs.id, 1: labels.id, 2: loss_grad.id},
         {
             0: g._create_tensor_id("loss"),
             1: g._create_tensor_id("dx"),
@@ -139,4 +134,5 @@ def nll_loss_with_softmax_grad(
     )
 
     return Tensor._from_pb_tensor(op.outTensor(0)), Tensor._from_pb_tensor(
-        op.outTensor(1))
+        op.outTensor(1)
+    )

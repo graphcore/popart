@@ -33,13 +33,14 @@ class Graph:
         self._pb_graph: _ir.Graph
         self._by_ref_inputs: Set[Tensor]
         # Back reference to Ir is required to avoid garbage collection of Ir.
-        self._ir: 'Ir'
+        self._ir: "Ir"
 
-        raise TypeError(f"Cannot create {self.__module__}.Graph instances "
-                        "using the constructor.")
+        raise TypeError(
+            f"Cannot create {self.__module__}.Graph instances " "using the constructor."
+        )
 
     @classmethod
-    def _create_from_pb(cls, pb_graph: '_ir.Graph') -> 'Graph':
+    def _create_from_pb(cls, pb_graph: "_ir.Graph") -> "Graph":
         """
         Construct `Graph` instances.
 
@@ -57,8 +58,9 @@ class Graph:
             Graph
         """
         from popxl.ir import Ir
+
         ir = Ir._from_pb(pb_graph.getIr())
-        self: 'Graph' = super().__new__(cls)
+        self: "Graph" = super().__new__(cls)
         self._pb_graph = pb_graph
         self._by_ref_inputs = set()
         self._ir = ir
@@ -68,9 +70,9 @@ class Graph:
 
     @classmethod
     def _from_pb(
-            cls,
-            pb_graph: '_ir.Graph',
-    ) -> 'Graph':
+        cls,
+        pb_graph: "_ir.Graph",
+    ) -> "Graph":
         """Get or construct `Graph` instances.
 
         Args:
@@ -81,6 +83,7 @@ class Graph:
             Graph
         """
         from popxl.ir import Ir
+
         ir = Ir._from_pb(pb_graph.getIr())
         _id = pb_graph.id.str()
         if _id in ir._graph_cache:
@@ -97,11 +100,11 @@ class Graph:
         return str(self._pb_graph.id.str())
 
     @property
-    def ir(self) -> 'Ir':
+    def ir(self) -> "Ir":
         return self._ir
 
     @property
-    def main_graph(self) -> 'Graph':
+    def main_graph(self) -> "Graph":
         return self.ir.main_graph
 
     @property
@@ -114,8 +117,8 @@ class Graph:
         """
         _pb_ins = self._pb_graph.getInputIds()
         return tuple(
-            Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
-            for o in _pb_ins)
+            Tensor._from_pb_tensor(self._pb_graph.getTensor(o)) for o in _pb_ins
+        )
 
     @property
     def inputs_by_name(self) -> Dict[str, Tensor]:
@@ -137,8 +140,8 @@ class Graph:
         """
         _pb_outs = self._pb_graph.getOutputIds()
         return tuple(
-            Tensor._from_pb_tensor(self._pb_graph.getTensor(o))
-            for o in _pb_outs)
+            Tensor._from_pb_tensor(self._pb_graph.getTensor(o)) for o in _pb_outs
+        )
 
     def _create_tensor_id(self, name: Optional[str] = None) -> str:
         """Generate a unique tensor ID.
@@ -156,7 +159,7 @@ class Graph:
             str:
                 The unique id of the tensor.
         """
-        name = name if name else 't'
+        name = name if name else "t"
         name = "/".join((*get_current_context().name_scopes, name))
         _id = _ir.addScope(self._pb_graph, name)
         if _id in self._pb_graph:
@@ -170,7 +173,7 @@ class Graph:
             )
         return value.id in self._pb_graph
 
-    def __eq__(self, value: 'Graph') -> bool:
+    def __eq__(self, value: "Graph") -> bool:
         """Graph equality, based on graph and Ir `id`."""
         if not isinstance(value, Graph):
             raise TypeError(
@@ -192,22 +195,23 @@ class Graph:
     @property
     def tensors(self) -> Tuple[Tensor, ...]:
         """Return all tensors in the graph."""
-        return tuple(
-            Tensor._from_pb_tensor(t) for t in self._pb_graph.getTensors())
+        return tuple(Tensor._from_pb_tensor(t) for t in self._pb_graph.getTensors())
 
     @property
     def variables(self) -> Tuple[Variable, ...]:
         """Return all variable tensors in the graph."""
         return tuple(
             Variable._from_pb_tensor(t)
-            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Variable))
+            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Variable)
+        )
 
     @property
     def constants(self) -> Tuple[Constant, ...]:
         """Return all constant tensors in the graph."""
         return tuple(
             Constant._from_pb_tensor(t)
-            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const))
+            for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const)
+        )
 
     def __enter__(self):
         get_current_context().push_graph(self)

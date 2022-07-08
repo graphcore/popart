@@ -7,6 +7,7 @@ import pprint
 # importing test_session requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
 import test_util as tu
@@ -22,7 +23,7 @@ def test_basic_squeeze():
 
     def init_builder(builder):
         nonlocal squeeze_id
-        d0 = builder.addInputTensor(input_data, 'data0')
+        d0 = builder.addInputTensor(input_data, "data0")
         c0 = builder.aiOnnx.constant(const_data)
 
         x = builder.aiOnnx.squeeze([c0], axes=[0, 2, 4])
@@ -53,12 +54,11 @@ def test_basic_squeeze():
         anchors = session.run()
 
     # Check the squeeze op was removed
-    ir = json.loads(
-        session._session._serializeIr(popart.IrSerializationFormat.JSON))
+    ir = json.loads(session._session._serializeIr(popart.IrSerializationFormat.JSON))
     pprint.pprint(ir)
-    ops = ir['maingraph']
+    ops = ir["maingraph"]
     # There should only be 2 ops and none of them should be squeeze
     assert len(ops) == 2
-    assert 'Squeeze' not in [i['type'] for i in ops]
+    assert "Squeeze" not in [i["type"] for i in ops]
 
     assert np.array_equal(anchors[squeeze_id], ref())

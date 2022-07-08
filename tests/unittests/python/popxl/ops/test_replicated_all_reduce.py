@@ -18,8 +18,9 @@ class TestReplicatedAllReduce:
 
         assert c.shape == t.shape
         assert len(g.tensors) == 2
-        assert contains_op_of_type("ReplicatedAllReduce",
-                                   _ir.op.collectives.ReplicatedAllReduceOp, g)
+        assert contains_op_of_type(
+            "ReplicatedAllReduce", _ir.op.collectives.ReplicatedAllReduceOp, g
+        )
 
     def test_fn_inplace(self):
         ir = popxl.Ir()
@@ -33,4 +34,6 @@ class TestReplicatedAllReduce:
         assert len(g.tensors) == 2
         assert contains_op_of_type(
             "ReplicatedAllReduceInplace",
-            _ir.op.collectives.ReplicatedAllReduceInplaceOp, g)
+            _ir.op.collectives.ReplicatedAllReduceInplaceOp,
+            g,
+        )

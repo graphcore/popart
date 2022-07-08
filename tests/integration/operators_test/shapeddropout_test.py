@@ -6,19 +6,22 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
 class ShapedDropoutHarness:
-    def __init__(self,
-                 input_data,
-                 seed=8,
-                 drop_ratio=0.5,
-                 drop_shape=None,
-                 batches_per_step=1,
-                 replication_factor=1,
-                 device=None):
+    def __init__(
+        self,
+        input_data,
+        seed=8,
+        drop_ratio=0.5,
+        drop_shape=None,
+        batches_per_step=1,
+        replication_factor=1,
+        device=None,
+    ):
         self.input_data = input_data
         self.seed = seed
         self.drop_ratio = drop_ratio
@@ -42,9 +45,9 @@ class ShapedDropoutHarness:
         self.input = builder.addInputTensor(ti)
         self.input_grad = popart.reservedGradientPrefix() + self.input
 
-        self.output = builder.aiGraphcore.shapeddropout([self.input],
-                                                        shape=self.drop_shape,
-                                                        ratio=self.drop_ratio)
+        self.output = builder.aiGraphcore.shapeddropout(
+            [self.input], shape=self.drop_shape, ratio=self.drop_ratio
+        )
 
         self.loss = builder.aiGraphcore.identityloss([self.output])
         builder.addOutputTensor(self.loss)
@@ -63,20 +66,22 @@ class ShapedDropoutHarness:
             session_opts.enableReplicatedGraphs = True
             session_opts.replicatedGraphCount = self.replication_factor
 
-        self.session = popart.TrainingSession(fnModel=model_proto,
-                                              dataFlow=df,
-                                              patterns=all_patterns,
-                                              optimizer=popart.ConstSGD(0.1),
-                                              loss=self.loss,
-                                              userOptions=session_opts,
-                                              deviceInfo=self.device)
+        self.session = popart.TrainingSession(
+            fnModel=model_proto,
+            dataFlow=df,
+            patterns=all_patterns,
+            optimizer=popart.ConstSGD(0.1),
+            loss=self.loss,
+            userOptions=session_opts,
+            deviceInfo=self.device,
+        )
 
         self.session.prepareDevice()
         self.session.setRandomSeed(self.seed)
         self.anchors = self.session.initAnchorArrays()
         batched_data = np.tile(
-            self.input_data,
-            [self.batches_per_step * self.replication_factor, 1, 1])
+            self.input_data, [self.batches_per_step * self.replication_factor, 1, 1]
+        )
         self.stepio = popart.PyStepIO({self.input: batched_data}, self.anchors)
 
     def run(self):
@@ -86,8 +91,9 @@ class ShapedDropoutHarness:
 
 def assert_not_equal(A, B):
     if np.array_equal(A, B):
-        pytest.fail(("Arrays compare equal when expected not to:\n"
-                     f"A = \n{A}\n\nB = \n{B}"))
+        pytest.fail(
+            ("Arrays compare equal when expected not to:\n" f"A = \n{A}\n\nB = \n{B}")
+        )
 
 
 # Check that shapeddropout is equal to an identity function in inference
@@ -106,11 +112,11 @@ def test_shapeddropout_inference(op_tester):
         return [d]
 
     # Without identity pattern...
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
     # ... and with identity pattern
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 # Check that non-masked elements are scaled by 1/(1-ratio) just like in pytorch
@@ -129,11 +135,11 @@ def test_shapeddropout_scaling(op_tester):
 
     def reference(ref_data):
         # Use the IPU output to dropout the same elements on the original data
-        r = d / (1. - prob)
+        r = d / (1.0 - prob)
         r[ref_data.getOutputTensor(0) == 0] = 0
         return [r]
 
-    op_tester.run(init_builder, reference, seed=8, step_type='train')
+    op_tester.run(init_builder, reference, seed=8, step_type="train")
 
 
 # Check that entire rows are dropped in NxM matrix when the dropout shape is Nx1
@@ -143,10 +149,9 @@ def test_shapeddropout_droprows():
     nrows = 1000
     data = np.ones([nrows, 3], dtype=np.float32)
     with tu.create_test_device() as device:
-        harness = ShapedDropoutHarness(data,
-                                       seed=11583,
-                                       drop_shape=[nrows, 1],
-                                       device=device)
+        harness = ShapedDropoutHarness(
+            data, seed=11583, drop_shape=[nrows, 1], device=device
+        )
         anchors = harness.run()
         output = anchors[harness.output]
 
@@ -175,9 +180,9 @@ def test_shapeddropout_independent_rng_runs():
     np.random.seed(0)
     data = np.random.uniform(low=1.0, high=2.0, size=[100, 8])
     with tu.create_test_device() as device:
-        harness = ShapedDropoutHarness(data.astype(np.float32),
-                                       drop_shape=[100, 1],
-                                       device=device)
+        harness = ShapedDropoutHarness(
+            data.astype(np.float32), drop_shape=[100, 1], device=device
+        )
         anchors = harness.run()
         first_run = np.copy(anchors[harness.output])
         anchors = harness.run()
@@ -191,10 +196,9 @@ def test_shapeddropout_set_seed():
     seed = 10
     data = np.ones([8, 10], dtype=np.float32)
     with tu.create_test_device() as device:
-        harness = ShapedDropoutHarness(data,
-                                       drop_shape=[1, 10],
-                                       seed=seed,
-                                       device=device)
+        harness = ShapedDropoutHarness(
+            data, drop_shape=[1, 10], seed=seed, device=device
+        )
         anchors = harness.run()
         first_run = np.copy(anchors[harness.output])
 
@@ -212,10 +216,12 @@ def test_shapeddropout_independent_batches():
     data = np.random.uniform(low=1.0, high=2.0, size=[1, 10, 2])
     bps = 2
     with tu.create_test_device() as device:
-        harness = ShapedDropoutHarness(data.astype(np.float32),
-                                       batches_per_step=bps,
-                                       drop_shape=data.shape,
-                                       device=device)
+        harness = ShapedDropoutHarness(
+            data.astype(np.float32),
+            batches_per_step=bps,
+            drop_shape=data.shape,
+            device=device,
+        )
 
         anchors = harness.run()
         out = anchors[harness.output]
@@ -246,7 +252,7 @@ def test_shapeddropout_multiple(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [None, np.array(True)]
 
-    op_tester.run(init_builder, reference, step_type='train', seed=10)
+    op_tester.run(init_builder, reference, step_type="train", seed=10)
 
 
 # Check shapeddropout with replicated graphs:
@@ -258,11 +264,13 @@ def test_shapeddropout_replicated():
     session_seed = 8
     data = np.ones([4, 10], dtype=np.float32)
     with tu.create_test_device(numIpus=2) as device:
-        harness = ShapedDropoutHarness(data,
-                                       drop_shape=[1, 10],
-                                       replication_factor=2,
-                                       seed=session_seed,
-                                       device=device)
+        harness = ShapedDropoutHarness(
+            data,
+            drop_shape=[1, 10],
+            replication_factor=2,
+            seed=session_seed,
+            device=device,
+        )
         anchors = harness.run()
         output = np.copy(anchors[harness.output])
         assert_not_equal(output[0], output[1])
@@ -284,12 +292,11 @@ def test_shapeddropout_invalid_ratio():
     bad_ratio = 1.5
     with pytest.raises(popart.popart_exception) as e_info:
         with tu.create_test_device() as device:
-            ShapedDropoutHarness(np.zeros([2, 2]),
-                                 drop_ratio=bad_ratio,
-                                 device=device)
+            ShapedDropoutHarness(np.zeros([2, 2]), drop_ratio=bad_ratio, device=device)
 
-    exmsg = ("ratio value {} is not valid. "
-             "Please use a value in the interval [0,1)").format(bad_ratio)
+    exmsg = (
+        "ratio value {} is not valid. " "Please use a value in the interval [0,1)"
+    ).format(bad_ratio)
     assert e_info.value.args[0].endswith(exmsg)
 
 
@@ -298,9 +305,7 @@ def test_shapeddropout_invalid_shape():
     bad_shape = [4, 4]
     with pytest.raises(popart.popart_exception) as e_info:
         with tu.create_test_device() as device:
-            ShapedDropoutHarness(np.zeros([2, 2]),
-                                 drop_shape=bad_shape,
-                                 device=device)
+            ShapedDropoutHarness(np.zeros([2, 2]), drop_shape=bad_shape, device=device)
 
     exmsg = "ShapedDropout: incompatible input tensor and dropout shape."
     assert e_info.value.args[0].startswith(exmsg)

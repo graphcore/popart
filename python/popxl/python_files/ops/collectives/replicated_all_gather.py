@@ -8,8 +8,7 @@ from .collectives import CommGroup
 from popxl.ops.utils import check_in_graph
 
 
-def replicated_all_gather(t: Tensor,
-                          group: Optional[ReplicaGrouping] = None) -> Tensor:
+def replicated_all_gather(t: Tensor, group: Optional[ReplicaGrouping] = None) -> Tensor:
     """Gather a tensor across replicas such that the output tensor contains the values of the tensor from each replica.
 
     Args:
@@ -29,13 +28,18 @@ def replicated_all_gather(t: Tensor,
     else:
         comm_group = group._to_comm_group()
 
-    settings = ctx._get_op_settings('replicated_all_gathered')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedAllGather", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("replicated_all_gathered")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReplicatedAllGather", 1, _ir.NumInputs(1, 2), 1
+    )
 
     _op = pb_g.createConnectedOp_ReplicatedAllGatherOp(
-        {0: t.id}, {0: g._create_tensor_id(t.name + "_all_gathered")}, opid,
-        comm_group, settings)
+        {0: t.id},
+        {0: g._create_tensor_id(t.name + "_all_gathered")},
+        opid,
+        comm_group,
+        settings,
+    )
 
     out = Tensor._from_pb_tensor(_op.outTensor(0))
 

@@ -25,8 +25,7 @@ def test_implicit_recompute_op_scheduled_pre_loss_no():
     """
     builder = popart.Builder()
     t0 = builder.addInputTensor("FLOAT", [2, 2])
-    t1 = builder.addInitializedInputTensor(
-        np.random.rand(2, 2).astype(np.float32))
+    t1 = builder.addInitializedInputTensor(np.random.rand(2, 2).astype(np.float32))
     t2 = builder.aiOnnx.matmul([t0, t1])
     t3 = builder.aiGraphcore.l1loss([t2], 0.1)
 
@@ -37,11 +36,12 @@ def test_implicit_recompute_op_scheduled_pre_loss_no():
     builder.recomputeOutputInBackwardPass(t2)
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(deviceInfo=device,
-                                         fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(1, []),
-                                         loss=t6,
-                                         optimizer=popart.SGD(
-                                             {"lossScaling": (2.0, False)}))
+        session = popart.TrainingSession(
+            deviceInfo=device,
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, []),
+            loss=t6,
+            optimizer=popart.SGD({"lossScaling": (2.0, False)}),
+        )
 
         session.prepareDevice()

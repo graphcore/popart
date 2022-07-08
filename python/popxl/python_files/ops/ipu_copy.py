@@ -7,8 +7,7 @@ from .utils import check_in_graph
 
 
 @op_debug_context
-def ipu_copy(t: Tensor, destination: int,
-             source: Optional[int] = None) -> Tensor:
+def ipu_copy(t: Tensor, destination: int, source: Optional[int] = None) -> Tensor:
     """
     Copy a tensor to an IPU.
 
@@ -36,12 +35,12 @@ def ipu_copy(t: Tensor, destination: int,
         source = t._pb_tensor.getVirtualGraphIdUnsafe()
         if source == -1:
             raise ValueError(
-                f"Could not infer the ipu for Tensor to be copied \"{t}\" . "
-                "Please specify `source` when copying for this tensor.")
+                f'Could not infer the ipu for Tensor to be copied "{t}" . '
+                "Please specify `source` when copying for this tensor."
+            )
 
-    settings = ctx._get_op_settings('ipucopy')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ipucopy")
+    opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_IpuCopyOp(
         {
             0: t.id,

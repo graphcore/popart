@@ -25,7 +25,7 @@ def test_pow(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_pow(op_tester):
@@ -48,7 +48,7 @@ def test_broadcast_pow(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 @pytest.mark.parametrize("precision", [np.float32, np.float16])
@@ -66,7 +66,7 @@ def test_pow_grad(op_tester, precision):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -81,13 +81,15 @@ def test_pow_grad(op_tester, precision):
         return [
             out.to(return_type),
             a.grad.to(return_type),
-            b.grad.to(return_type), None
+            b.grad.to(return_type),
+            None,
         ]
 
     # Need to have NaN == NaN to mirror numpy's functionality
     if precision == np.float16:
         op_tester.atol = 2e-03
     op_tester.equal_nan = True
-    op_tester.setPatterns(["PreUniRepl", "PowArg0GradOp", "PowArg1GradOp"],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "PowArg0GradOp", "PowArg1GradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")

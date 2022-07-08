@@ -12,18 +12,20 @@ from pathlib import Path
 __all__ = ["CopyrightLinter"]
 
 GC_COPYRIGHT_NOTICE_PATTERN = r"[\/*# ]+Copyright (\xa9|\(c\)) (?P<year>\d{4}) Graphcore Ltd\. All rights reserved\."
-GC_COPYRIGHT_NOTICE = f"Copyright (c) {datetime.now().year} Graphcore Ltd. All rights reserved.\n"
+GC_COPYRIGHT_NOTICE = (
+    f"Copyright (c) {datetime.now().year} Graphcore Ltd. All rights reserved.\n"
+)
 
 LINES_CHECKED = 5
 
 COMMENT_DELIMITERS = {
     r"\.(capnp|cmake|py|sh|txt|yaml|yml)$": "#",
-    r"\.(c|C|cc|cpp|cxx|c\+\+|h|hpp|php)$": "//"
+    r"\.(c|C|cc|cpp|cxx|c\+\+|h|hpp|php)$": "//",
 }
 
 
 class CopyrightLinter:
-    """"Linter which inserts a Graphcore copyright if non-existent.
+    """ "Linter which inserts a Graphcore copyright if non-existent.
 
     The format of the notice is determined from the source file extension.
 
@@ -68,11 +70,10 @@ class CopyrightLinter:
             return 1
 
     def set_linter_message(self, message: str) -> None:
-        """"Set the message describing and/or explaining the changes applied by this linter."""
+        """ "Set the message describing and/or explaining the changes applied by this linter."""
         self._linter_message = message
 
-    def _determine_linter_message(self, file_path: str,
-                                  file_contents: str) -> str:
+    def _determine_linter_message(self, file_path: str, file_contents: str) -> str:
         """Determine the linter message (if any) and return the (possibly modified) file content.
 
         Args:
@@ -90,7 +91,7 @@ class CopyrightLinter:
         match, index = self._match_copyright(target_lines)
         partial_index = self._partial_match(target_lines)
         if match:
-            year = int(match.group('year'))
+            year = int(match.group("year"))
             # The copyright notice must be after graphcore
             # was founded and can't be in the future
             current_year = datetime.now().year
@@ -99,14 +100,15 @@ class CopyrightLinter:
                     f"Invalid year in copyright notice. Should be <={current_year} and >=2016."
                 )
                 new_contents = self._insert_copyright_notice(
-                    file_path, lines, index=index, replace_notice=True)
+                    file_path, lines, index=index, replace_notice=True
+                )
         elif partial_index != -1:
             self.set_linter_message(
-                f"Copyright notice should be: '{GC_COPYRIGHT_NOTICE.strip()}'")
-            new_contents = self._insert_copyright_notice(file_path,
-                                                         lines,
-                                                         index=partial_index,
-                                                         replace_notice=True)
+                f"Copyright notice should be: '{GC_COPYRIGHT_NOTICE.strip()}'"
+            )
+            new_contents = self._insert_copyright_notice(
+                file_path, lines, index=partial_index, replace_notice=True
+            )
 
         elif lines:
             self.set_linter_message("No copyright notice in file.")
@@ -127,11 +129,9 @@ class CopyrightLinter:
                 return m, i
         return False, -1
 
-    def _insert_copyright_notice(self,
-                                 file_path: str,
-                                 lines: List[str],
-                                 index: int = 0,
-                                 replace_notice=False):
+    def _insert_copyright_notice(
+        self, file_path: str, lines: List[str], index: int = 0, replace_notice=False
+    ):
         notice = self._determine_notice_from_name(file_path)
         if replace_notice:
             lines[index] = notice
@@ -170,7 +170,8 @@ class CopyrightLinter:
             raise RuntimeError(
                 f"Could not find comment delimiter for {full_path}.\n"
                 "Possible solution: Add the file type delimiter to the "
-                "'COMMENT_DELIMITERS' variable.\n")
+                "'COMMENT_DELIMITERS' variable.\n"
+            )
 
         return delim + " " + GC_COPYRIGHT_NOTICE
 
@@ -186,9 +187,9 @@ class CopyrightLinter:
         copyright notice to the eye, avoiding writing two notices.
         """
         for i, line in enumerate(lines):
-            s = SequenceMatcher(None,
-                                GC_COPYRIGHT_NOTICE.upper().strip(),
-                                line.upper().strip())
+            s = SequenceMatcher(
+                None, GC_COPYRIGHT_NOTICE.upper().strip(), line.upper().strip()
+            )
             # Accroding to the python documentation, a ratio() value
             # over 0.6 means the sequences are close matches.
             # https://docs.python.org/3/library/difflib.html#sequencematcher-examples
@@ -199,7 +200,7 @@ class CopyrightLinter:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs='*')
+    parser.add_argument("filenames", nargs="*")
     args = parser.parse_args(argv)
 
     ret_val = 0
@@ -211,5 +212,5 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return ret_val
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

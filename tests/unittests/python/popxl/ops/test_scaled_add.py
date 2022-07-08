@@ -24,8 +24,9 @@ class TestScaledAdd:
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
         if inplace:
-            assert contains_op_of_type("ScaledAddLhsInplace",
-                                       _ir.op.ScaledAddLhsInplaceOp, g)
+            assert contains_op_of_type(
+                "ScaledAddLhsInplace", _ir.op.ScaledAddLhsInplaceOp, g
+            )
         else:
             assert contains_op_of_type("ScaledAdd", _ir.op.ScaledAddOp, g)
 
@@ -37,20 +38,15 @@ class TestScaledAdd:
             X = popxl.variable(np.ones((2, 2)), dtype=popxl.float32)
             Y = popxl.variable(np.ones((2, 2)), dtype=popxl.float32)
             if inplace:
-                ops.scaled_add_(X,
-                                Y,
-                                a=popxl.constant(0.9),
-                                b=popxl.variable(0.1))
+                ops.scaled_add_(X, Y, a=popxl.constant(0.9), b=popxl.variable(0.1))
             else:
-                ops.scaled_add(X,
-                               Y,
-                               a=popxl.constant(0.9),
-                               b=popxl.variable(0.1))
+                ops.scaled_add(X, Y, a=popxl.constant(0.9), b=popxl.variable(0.1))
         assert len(g.tensors) == 5
         assert len(g.variables) == 3
         if inplace:
-            assert contains_op_of_type("ScaledAddLhsInplace",
-                                       _ir.op.ScaledAddLhsInplaceOp, g)
+            assert contains_op_of_type(
+                "ScaledAddLhsInplace", _ir.op.ScaledAddLhsInplaceOp, g
+            )
         else:
             assert contains_op_of_type("ScaledAdd", _ir.op.ScaledAddOp, g)
 
@@ -68,7 +64,8 @@ class TestScaledAdd:
         assert len(g.tensors) == 4
         assert len(g.variables) == 3
         if inplace:
-            assert contains_op_of_type("ScaledAddLhsInplace",
-                                       _ir.op.ScaledAddLhsInplaceOp, g)
+            assert contains_op_of_type(
+                "ScaledAddLhsInplace", _ir.op.ScaledAddLhsInplaceOp, g
+            )
         else:
             assert contains_op_of_type("ScaledAdd", _ir.op.ScaledAddOp, g)

@@ -13,12 +13,17 @@ from pathlib import Path
 _TENSOR_SHAPE = (3, 11, 5)
 
 
-@pytest.mark.parametrize("check_name, expected_dot_file_count",
-                         (("", 0), ("FINAL", 1), ("FOO:BAR", 2), ("ALL", 3)))
+@pytest.mark.parametrize(
+    "check_name, expected_dot_file_count",
+    (("", 0), ("FINAL", 1), ("FOO:BAR", 2), ("ALL", 3)),
+)
 @pytest.mark.parametrize("use_environ", (True, False))
 def test_dot_check_with_environ_and_opts(
-        monkeypatch: MonkeyPatch, check_name: str,
-        expected_dot_file_count: int, use_environ: bool) -> None:
+    monkeypatch: MonkeyPatch,
+    check_name: str,
+    expected_dot_file_count: int,
+    use_environ: bool,
+) -> None:
     """Test that the popxl DotVisualizer works with both POPART_DOT_CHECKS and dotChecks.
 
     Args:
@@ -39,11 +44,9 @@ def test_dot_check_with_environ_and_opts(
 
     opts = ir_pb.getSessionOptions()
     if not use_environ:
-        opts.dotChecks = {*check_name.split(':')}
+        opts.dotChecks = {*check_name.split(":")}
 
-    run_test(ir=ir,
-             save_dir=None,
-             expected_dot_file_count=expected_dot_file_count)
+    run_test(ir=ir, save_dir=None, expected_dot_file_count=expected_dot_file_count)
 
 
 def test_automatic_dot_check() -> None:
@@ -69,8 +72,9 @@ def test_automatic_dot_check() -> None:
     run_test(ir, save_dir="FooBar", expected_dot_file_count=3)
 
 
-def run_test(ir: popxl.Ir, save_dir: Optional[str],
-             expected_dot_file_count: int) -> None:
+def run_test(
+    ir: popxl.Ir, save_dir: Optional[str], expected_dot_file_count: int
+) -> None:
     """Run inference and check expected dot file count.
 
     Args:
@@ -96,12 +100,13 @@ def run_test(ir: popxl.Ir, save_dir: Optional[str],
 
         _ = popxl.Session(ir, "ipu_model")
 
-        dot_files = list(check_dir.glob('*.dot'))
+        dot_files = list(check_dir.glob("*.dot"))
         assert len(dot_files) == expected_dot_file_count
 
 
-def build_model_with_dot_checkpoints(ir: popxl.Ir,
-                                     save_dir: Optional[str] = None) -> None:
+def build_model_with_dot_checkpoints(
+    ir: popxl.Ir, save_dir: Optional[str] = None
+) -> None:
     """Make a model with 2 dot_checkpoints.
 
     Args:
@@ -122,13 +127,11 @@ def build_model_with_dot_checkpoints(ir: popxl.Ir,
         a_h2d = popxl.h2d_stream(_TENSOR_SHAPE, popxl.float32, name="a_stream")
         a = ops.host_load(a_h2d, "a")
 
-        b = popxl.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32),
-                           name="b")
+        b = popxl.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32), name="b")
         c = ops.add(a, b)
         ir.dot_checkpoint("Foo", save_dir)
 
-        d = popxl.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32),
-                           name="d")
+        d = popxl.variable(np.random.rand(*_TENSOR_SHAPE).astype(np.float32), name="d")
         e = ops.mul(c, d)
         ir.dot_checkpoint("Bar", save_dir)
 

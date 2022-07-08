@@ -9,8 +9,7 @@ from utils import create_ir, create_dummy_op
 
 
 def test_op_creation():
-    """Test simple op creation.
-    """
+    """Test simple op creation."""
     _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
@@ -26,11 +25,15 @@ def test_op_creation():
     assert op.opid.numOutputs == 1
 
 
-@pytest.mark.parametrize("attribute,shorthand",
-                         [("ExecutionPhase", "ExecutionPhase"),
-                          ("BatchSerializedPhase", "BatchSerializedPhase"),
-                          ("PipelineStage", "PipelineStage"),
-                          ("VirtualGraphId", "VGraphId")])
+@pytest.mark.parametrize(
+    "attribute,shorthand",
+    [
+        ("ExecutionPhase", "ExecutionPhase"),
+        ("BatchSerializedPhase", "BatchSerializedPhase"),
+        ("PipelineStage", "PipelineStage"),
+        ("VirtualGraphId", "VGraphId"),
+    ],
+)
 @pytest.mark.parametrize("input_id", [0, 123, 537896234])
 def test_op_attributes(attribute: str, shorthand: str, input_id: int):
     """Test the various attributes that can be applied to ops.
@@ -58,7 +61,7 @@ def test_op_attributes(attribute: str, shorthand: str, input_id: int):
     assert get_optional() == id_()
     with pytest.raises(popart.popart_exception) as e_info:
         getter()
-        assert (e_info.value.args[0] == f"Cannot return {attribute} for Op")
+        assert e_info.value.args[0] == f"Cannot return {attribute} for Op"
 
     assert not hasser()
     # Set optional == 0
@@ -69,8 +72,7 @@ def test_op_attributes(attribute: str, shorthand: str, input_id: int):
 
 
 def test_multi_graph():
-    """Test adding ops to multiple graphs.
-    """
+    """Test adding ops to multiple graphs."""
     _, graphs = create_ir(["A", "B"])
     g = graphs[0]
     h = graphs[1]
@@ -89,8 +91,7 @@ def test_multi_graph():
 
 
 def test_settings():
-    """Test creating settings
-    """
+    """Test creating settings"""
     ir, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
@@ -113,13 +114,13 @@ def test_op_clone():
     with pytest.raises(RuntimeError) as e_info:
         _ = op.clone()
         assert (
-            e_info.value.args[0] ==
-            "RuntimeError: Tried to call pure virtual function \"Op::clone\"")
+            e_info.value.args[0]
+            == 'RuntimeError: Tried to call pure virtual function "Op::clone"'
+        )
 
 
 def test_bools():
-    """Test default behaviour of bool returns.
-    """
+    """Test default behaviour of bool returns."""
     _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
@@ -143,8 +144,7 @@ def test_bools():
 
 
 def test_graph_in_outs():
-    """Test default behaviour for no inputs or outputs.
-    """
+    """Test default behaviour for no inputs or outputs."""
     _, graphs = create_ir(["A"])
     g = graphs[0]
     settings = _ir.Settings(g, "new_settings")
@@ -159,18 +159,20 @@ def test_graph_in_outs():
     assert op.getOutBatchAxis(0) == 0
 
 
-@pytest.mark.parametrize("shape1,shape2,expected", [
-    [[256, 256, 3], [3], [256, 256, 3]],
-    [[8, 1, 6, 1], [7, 1, 5], [8, 7, 6, 5]],
-    [[5, 4], [1], [5, 4]],
-    [[5, 4], [4], [5, 4]],
-    [[15, 3, 5], [15, 1, 5], [15, 3, 5]],
-    [[15, 3, 5], [3, 5], [15, 3, 5]],
-    [[15, 3, 5], [3, 1], [15, 3, 5]],
-])
+@pytest.mark.parametrize(
+    "shape1,shape2,expected",
+    [
+        [[256, 256, 3], [3], [256, 256, 3]],
+        [[8, 1, 6, 1], [7, 1, 5], [8, 7, 6, 5]],
+        [[5, 4], [1], [5, 4]],
+        [[5, 4], [4], [5, 4]],
+        [[15, 3, 5], [15, 1, 5], [15, 3, 5]],
+        [[15, 3, 5], [3, 5], [15, 3, 5]],
+        [[15, 3, 5], [3, 1], [15, 3, 5]],
+    ],
+)
 @pytest.mark.parametrize("dtype", ["FLOAT", "FLOAT16", "BOOL"])
-def test_shapes(shape1: List[int], shape2: List[int], expected: List[int],
-                dtype: str):
+def test_shapes(shape1: List[int], shape2: List[int], expected: List[int], dtype: str):
     """Test the shapes and np broadcasting. Don't really need to test the
     broadcasting as that is tested at C++ level. But try a few cases to be sure
     binding works correctly.
@@ -198,10 +200,14 @@ def test_shapes(shape1: List[int], shape2: List[int], expected: List[int],
 
 @pytest.mark.parametrize(
     "op_name,domain,op_type,op_num,op_version",
-    [("OpName123", "ai.onnx", "Identity", 100, 1),
-     ("OpName456", "ai.graphcore", "DynamicSlice", 100, 1)])
-def test_string_methods(op_name: str, domain: str, op_type: str, op_num: int,
-                        op_version: int):
+    [
+        ("OpName123", "ai.onnx", "Identity", 100, 1),
+        ("OpName456", "ai.graphcore", "DynamicSlice", 100, 1),
+    ],
+)
+def test_string_methods(
+    op_name: str, domain: str, op_type: str, op_num: int, op_version: int
+):
     """Test various string methods (name, id etc)
 
     Args:
@@ -222,15 +228,16 @@ def test_string_methods(op_name: str, domain: str, op_type: str, op_num: int,
     assert op.getName() == op_name
     assert op.name() == op_name
     assert op.str() == f"{op_num} ({domain}.{op_type}:{op_version})"
-    assert op.debugName(
-    ) == f"Op({op_name} ({domain}.{op_type}:{op_version}), inputs=[], outputs=[])"
+    assert (
+        op.debugName()
+        == f"Op({op_name} ({domain}.{op_type}:{op_version}), inputs=[], outputs=[])"
+    )
 
 
 # TODO: T45197 investigate this
 @pytest.mark.skip("Currently failing on CentOS.")
 def test_debug_methods():
-    """Test the debug info methods work.
-    """
+    """Test the debug info methods work."""
     op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
 
     op.finalizeDebugInfo()
@@ -262,20 +269,22 @@ def test_default_outputs(index: int, id: str):
 
 
 def test_default_properties():
-    """Test default returns for various methods
-    """
+    """Test default returns for various methods"""
     op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     assert op.getCalledGraphs() == []
     assert op.getCalledGraphIds() == []
     for m in [
-            "opInToSubgraphInIndex", "subgraphInToOpInIndex",
-            "opOutToSubgraphOutIndex", "subgraphOutToOpOutIndex"
+        "opInToSubgraphInIndex",
+        "subgraphInToOpInIndex",
+        "opOutToSubgraphOutIndex",
+        "subgraphOutToOpOutIndex",
     ]:
         with pytest.raises(popart.popart_exception) as e_info:
             method = getattr(op, m)
             method(0, 0)
             assert e_info.value.args[0].startswith(
-                "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])")
+                "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])"
+            )
     assert op.getSubgraphEquivId({}) == "ai.onnx::dummy::1___NO_none_0_"
     assert op.getSubgraphInputs() == {}
     assert op.getSubgraphOutputs() == {}
@@ -287,22 +296,22 @@ def test_default_properties():
 
 
 def test_grad_methods():
-    """Test errors for gradient methods (no gradient op will have been generated.)
-    """
+    """Test errors for gradient methods (no gradient op will have been generated.)"""
     op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     with pytest.raises(popart.popart_exception) as e_info:
         op.gradInputInfo()
         assert e_info.value.args[0].startswith(
-            "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])")
+            "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])"
+        )
     with pytest.raises(popart.popart_exception) as e_info:
         op.gradOutToNonGradIn()
         assert e_info.value.args[0].startswith(
-            "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])")
+            "Op Op(new_settings (ai.onnx.dummy:1), inputs=[], outputs=[])"
+        )
 
 
 def test_scope():
-    """Test setting and getting scope on ops
-    """
+    """Test setting and getting scope on ops"""
     op, _, g = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
     op.setScope(g.getScope())
     assert op.getScope() == g.getScope()

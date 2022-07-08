@@ -36,7 +36,7 @@ def test_manual_serialization():
     # reapeated and accumulated f times, where f is
 
     f = 4
-    assert (C0 % f == 0)
+    assert C0 % f == 0
 
     # Constructing the model
 
@@ -58,17 +58,13 @@ def test_manual_serialization():
         upp = int((i + 1) * C0 / f)
 
         # Take a slice of size (N,C0/f) out of X
-        s0 = builder.addInitializedInputTensor(
-            np.array([0, lwr]).astype(np.int32))
-        e0 = builder.addInitializedInputTensor(
-            np.array([N, upp]).astype(np.int32))
+        s0 = builder.addInitializedInputTensor(np.array([0, lwr]).astype(np.int32))
+        e0 = builder.addInitializedInputTensor(np.array([N, upp]).astype(np.int32))
         X_slice = builder.aiOnnx.slice([X, s0, e0, axes])
 
         # Take a slice of size (C0/f,C1) out of W
-        s1 = builder.addInitializedInputTensor(
-            np.array([lwr, 0]).astype(np.int32))
-        e1 = builder.addInitializedInputTensor(
-            np.array([upp, C1]).astype(np.int32))
+        s1 = builder.addInitializedInputTensor(np.array([lwr, 0]).astype(np.int32))
+        e1 = builder.addInitializedInputTensor(np.array([upp, C1]).astype(np.int32))
         W_slice = builder.aiOnnx.slice([W, s1, e1, axes])
 
         # Multiply the slices together, and accumulate as necessary
@@ -104,7 +100,8 @@ def test_manual_serialization():
             loss=l1,
             patterns=patterns,
             userOptions=userOptions,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
         session.prepareDevice()
         session.weightsFromHost()
 
@@ -134,8 +131,7 @@ def test_manual_serialization():
     loss.backward()
     optimizer.step()
 
-    baseline0 = np.sum(
-        np.abs(net.w0.detach().numpy().flatten() - wVals.flatten()))
+    baseline0 = np.sum(np.abs(net.w0.detach().numpy().flatten() - wVals.flatten()))
     baseline1 = np.sum(np.abs(w0R - wVals.flatten()))
     error = np.sum(np.abs(np.abs(net.w0.detach().numpy().flatten() - w0R)))
-    assert (error / (baseline0 + baseline1) < 1e-6)
+    assert error / (baseline0 + baseline1) < 1e-6

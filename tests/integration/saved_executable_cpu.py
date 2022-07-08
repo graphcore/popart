@@ -5,6 +5,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -31,14 +32,13 @@ def test_cpu_device(tmp_path):
 
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
-    opts.cachePath = str(tmp_path / 'saved_graph')
+    opts.cachePath = str(tmp_path / "saved_graph")
 
     # Create a session to compile and execute the graph
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         # Compile graph
         session.prepareDevice()

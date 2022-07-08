@@ -19,9 +19,7 @@ def test_net_from_string():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                deviceInfo=device)
+        popart.InferenceSession(fnModel=proto, dataFlow=dataFlow, deviceInfo=device)
 
 
 def test_net_from_file():
@@ -41,9 +39,9 @@ def test_net_from_file():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        popart.InferenceSession(fnModel="test.onnx",
-                                dataFlow=dataFlow,
-                                deviceInfo=device)
+        popart.InferenceSession(
+            fnModel="test.onnx", dataFlow=dataFlow, deviceInfo=device
+        )
 
 
 def test_net_failure1():
@@ -62,13 +60,13 @@ def test_net_failure1():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    deviceInfo=device)
+            popart.InferenceSession(fnModel=proto, dataFlow=dataFlow, deviceInfo=device)
 
-    assert (e_info.type == popart.popart_exception)
-    assert (e_info.value.args[0] ==
-            "User must specify an anchor tensor when doing inference.")
+    assert e_info.type == popart.popart_exception
+    assert (
+        e_info.value.args[0]
+        == "User must specify an anchor tensor when doing inference."
+    )
 
 
 def test_net_failure2():
@@ -77,10 +75,11 @@ def test_net_failure2():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            popart.InferenceSession(fnModel="nothing",
-                                    dataFlow=dataFlow,
-                                    deviceInfo=device)
+            popart.InferenceSession(
+                fnModel="nothing", dataFlow=dataFlow, deviceInfo=device
+            )
 
-    assert (e_info.type == popart.popart_exception)
-    assert (e_info.value.args[0].startswith(
-        "Failed to load a ModelProto from the string"))
+    assert e_info.type == popart.popart_exception
+    assert e_info.value.args[0].startswith(
+        "Failed to load a ModelProto from the string"
+    )

@@ -8,21 +8,17 @@ import pytest
 # Slice1 used by opsets < 10 and aiGraphcore
 @pytest.mark.parametrize("graphcore", (True, False))
 def test_slice_opset1(op_tester, graphcore):
-    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
 
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          axes=[0, 1],
-                                          starts=[1, 0],
-                                          ends=[2, 3])
+            o = builder.aiGraphcore.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
         else:
-            o = builder.aiOnnxOpset9.slice([i1],
-                                           axes=[0, 1],
-                                           starts=[1, 0],
-                                           ends=[2, 3])
+            o = builder.aiOnnxOpset9.slice(
+                [i1], axes=[0, 1], starts=[1, 0], ends=[2, 3]
+            )
 
         assert builder.getTensorShape(o) == [1, 3]
         builder.addOutputTensor(o)
@@ -33,11 +29,11 @@ def test_slice_opset1(op_tester, graphcore):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_slice_opset10(op_tester):
-    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
     axesV = np.array([0, 1]).astype(np.int32)
     startsV = np.array([1, 0]).astype(np.int32)
     endsV = np.array([2, 3]).astype(np.int32)
@@ -57,11 +53,11 @@ def test_slice_opset10(op_tester):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_slice_default_axes(op_tester):
-    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
     startsV = np.array([1, 0]).astype(np.int32)
     endsV = np.array([2, 3]).astype(np.int32)
 
@@ -80,12 +76,12 @@ def test_slice_default_axes(op_tester):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("graphcore", (True, False))
 def test_slice_neg(op_tester, graphcore):
-    d1 = np.array([1., 2., 3., 4., 5., 6., 7., 8.]).astype(np.float32)
+    d1 = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).astype(np.float32)
     axesV = np.array([0]).astype(np.int32)
     startsV = np.array([-5]).astype(np.int32)
     endsV = np.array([-3]).astype(np.int32)
@@ -97,10 +93,9 @@ def test_slice_neg(op_tester, graphcore):
         ends = builder.addInitializedInputTensor(endsV)
 
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          starts=[startsV[0]],
-                                          ends=[endsV[0]],
-                                          axes=[axesV[0]])
+            o = builder.aiGraphcore.slice(
+                [i1], starts=[startsV[0]], ends=[endsV[0]], axes=[axesV[0]]
+            )
         else:
             o = builder.aiOnnx.slice([i1, starts, ends, axes])
 
@@ -114,12 +109,12 @@ def test_slice_neg(op_tester, graphcore):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("graphcore", (True, False))
 def test_slice_grad(op_tester, graphcore):
-    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
     axesV = np.array([0, 1]).astype(np.int32)
     startsV = np.array([1, 0]).astype(np.int32)
     endsV = np.array([2, 3]).astype(np.int32)
@@ -131,10 +126,12 @@ def test_slice_grad(op_tester, graphcore):
         ends = builder.aiOnnx.constant(endsV)
 
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          starts=[startsV[0], startsV[1]],
-                                          ends=[endsV[0], endsV[1]],
-                                          axes=[axesV[0], axesV[1]])
+            o = builder.aiGraphcore.slice(
+                [i1],
+                starts=[startsV[0], startsV[1]],
+                ends=[endsV[0], endsV[1]],
+                axes=[axesV[0], axesV[1]],
+            )
         else:
             o = builder.aiOnnx.slice([i1, starts, ends, axes])
 
@@ -142,7 +139,7 @@ def test_slice_grad(op_tester, graphcore):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -155,12 +152,12 @@ def test_slice_grad(op_tester, graphcore):
 
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_slice_error_start_input(op_tester):
-    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    d1 = np.array([[1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0]]).astype(np.float32)
     startsV = np.array([1, 0]).astype(np.int32)
     endsV = np.array([2, 3]).astype(np.int32)
 
@@ -176,16 +173,17 @@ def test_slice_error_start_input(op_tester):
     def reference(_):  # ref_data is an unused argument
         return []
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
     assert (
-        e_info.value.args[0] ==
-        "Need the value of the ai.onnx.Slice:10 input 'starts' to determine the "
+        e_info.value.args[0]
+        == "Need the value of the ai.onnx.Slice:10 input 'starts' to determine the "
         "output shape, but was unable because "
         "[Tensor::getDataViaGraphTraversal] Could not work out tensor data for "
-        "input/1.")
+        "input/1."
+    )
 
 
 @pytest.mark.parametrize("graphcore", (True, False))
@@ -220,10 +218,9 @@ def test_slice_start_out_of_bounds(op_tester, graphcore):
         ends = builder.aiOnnx.constant(endsV)
 
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          starts=[startsV[0]],
-                                          ends=[endsV[0]],
-                                          axes=[axesV[0]])
+            o = builder.aiGraphcore.slice(
+                [i1], starts=[startsV[0]], ends=[endsV[0]], axes=[axesV[0]]
+            )
         else:
             o = builder.aiOnnx.slice([i1, starts, ends, axes])
         assert builder.getTensorShape(o) == [20, 0, 5]
@@ -238,7 +235,7 @@ def test_slice_start_out_of_bounds(op_tester, graphcore):
 
         return [o, i1_grad]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("graphcore", (True, False))
@@ -273,10 +270,9 @@ def test_slice_end_out_of_bounds(op_tester, graphcore):
         ends = builder.aiOnnx.constant(endsV)
 
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          starts=[startsV[0]],
-                                          ends=[endsV[0]],
-                                          axes=[axesV[0]])
+            o = builder.aiGraphcore.slice(
+                [i1], starts=[startsV[0]], ends=[endsV[0]], axes=[axesV[0]]
+            )
         else:
             o = builder.aiOnnx.slice([i1, starts, ends, axes])
 
@@ -286,38 +282,31 @@ def test_slice_end_out_of_bounds(op_tester, graphcore):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
         o = d1[:, 1:1000]
 
-        o_grad = np.ones(o.shape,
-                         dtype=np.float32) * ref_data.getOutputTensorGrad(0)
-        i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.)
+        o_grad = np.ones(o.shape, dtype=np.float32) * ref_data.getOutputTensorGrad(0)
+        i1_grad = np.pad(o_grad, [(0, 0), (1, 0), (0, 0)], constant_values=0.0)
 
         return [o, i1_grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("graphcore", (True, False))
 def test_slice_neg_starts_and_ends(op_tester, graphcore):
-    d1 = np.array([1., 2., 3., 4.]).astype(np.float32)
+    d1 = np.array([1.0, 2.0, 3.0, 4.0]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         if graphcore:
-            o = builder.aiGraphcore.slice([i1],
-                                          axes=[0],
-                                          starts=[-5],
-                                          ends=[-1])
+            o = builder.aiGraphcore.slice([i1], axes=[0], starts=[-5], ends=[-1])
             assert builder.getTensorShape(o) == [3]
         else:
-            o = builder.aiOnnxOpset9.slice([i1],
-                                           axes=[0],
-                                           starts=[-5],
-                                           ends=[-1])
+            o = builder.aiOnnxOpset9.slice([i1], axes=[0], starts=[-5], ends=[-1])
         builder.addOutputTensor(o)
 
         return [o]
@@ -327,11 +316,11 @@ def test_slice_neg_starts_and_ends(op_tester, graphcore):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_slice_flip_1(op_tester):
-    d1 = np.array([1., 2., 3., 4.]).astype(np.float32)
+    d1 = np.array([1.0, 2.0, 3.0, 4.0]).astype(np.float32)
     axesV = np.array([0], dtype=np.int64)
     startsV = np.array([3], dtype=np.int64)
     endsV = np.array([1], dtype=np.int64)
@@ -354,11 +343,11 @@ def test_slice_flip_1(op_tester):
 
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_slice_flip_2(op_tester):
-    d1 = np.array([1., 2., 3., 4.]).astype(np.float32)
+    d1 = np.array([1.0, 2.0, 3.0, 4.0]).astype(np.float32)
     axesV = np.array([0], dtype=np.int64)
     startsV = np.array([-1], dtype=np.int64)
     endsV = np.array([-1000], dtype=np.int64)
@@ -379,11 +368,11 @@ def test_slice_flip_2(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [np.flip(d1)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_slice_flip_grad_1(op_tester):
-    d1 = np.array([1., 2., 3., 4., 5.]).astype(np.float32)
+    d1 = np.array([1.0, 2.0, 3.0, 4.0, 5.0]).astype(np.float32)
     axesV = np.array([0], dtype=np.int64)
 
     starts0V = np.array([4], dtype=np.int64)
@@ -411,7 +400,7 @@ def test_slice_flip_grad_1(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -426,5 +415,5 @@ def test_slice_flip_grad_1(op_tester):
         print(a.grad)
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

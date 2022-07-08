@@ -24,7 +24,7 @@ def sin(t: Tensor) -> Tensor:
     check_in_graph(g, input=t)
     check_tensor_ipu_and_tile_set(input=t)
 
-    settings = ctx._get_op_settings('sin')
+    settings = ctx._get_op_settings("sin")
     opid = _ir.OperatorIdentifier("ai.onnx", "Sin", 7, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_SinOp(
         {

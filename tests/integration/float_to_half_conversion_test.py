@@ -94,12 +94,11 @@ def _check_anchors(float_anchors, half_anchors):
 
 
 def _run_model(model, inputs, output, batchesPerStep=1):
-    dataFlow = popart.DataFlow(batchesPerStep,
-                               {output: popart.AnchorReturnType("All")})
+    dataFlow = popart.DataFlow(batchesPerStep, {output: popart.AnchorReturnType("All")})
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=model,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=model, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.prepareDevice()
 

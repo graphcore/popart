@@ -13,8 +13,8 @@ def test_in_sequence_with():
     g = ir.main_graph
 
     with g:
-        small = popxl.variable(1, name='small')
-        big = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        small = popxl.variable(1, name="small")
+        big = popxl.variable(np.ones((2, 2), np.float32), name="big")
 
         # From a liveness perspective,
         #   these two Ops are in the wrong order.
@@ -38,8 +38,8 @@ def test_in_sequence_fn():
         return a, b
 
     with g:
-        small = popxl.variable(1, name='small')
-        big = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        small = popxl.variable(1, name="small")
+        big = popxl.variable(np.ones((2, 2), np.float32), name="big")
         fn(small, big)
 
     ops = g._pb_graph.getOpSchedule()
@@ -70,8 +70,8 @@ def test_nested_in_sequence():
         return a, b
 
     with g:
-        small = popxl.variable(1, name='small')
-        big = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        small = popxl.variable(1, name="small")
+        big = popxl.variable(np.ones((2, 2), np.float32), name="big")
         with popxl.in_sequence(True):
             _ = big - 1
             badly_written_layer(small, big)
@@ -79,7 +79,8 @@ def test_nested_in_sequence():
 
     ops = g._pb_graph.getOpSchedule()
     assert is_sequence_of_ops(
-        ops, [_ir.op.SubtractOp, _ir.op.MulOp, _ir.op.AddOp, _ir.op.DivOp])
+        ops, [_ir.op.SubtractOp, _ir.op.MulOp, _ir.op.AddOp, _ir.op.DivOp]
+    )
 
 
 def test_none_not_allowed():
@@ -94,8 +95,8 @@ def test_in_sequence_false_first():
     g = ir.main_graph
 
     with g:
-        small = popxl.variable(1, name='small')
-        big = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        small = popxl.variable(1, name="small")
+        big = popxl.variable(np.ones((2, 2), np.float32), name="big")
 
         # From a liveness perspective,
         #   these two Ops are in the wrong order.
@@ -113,12 +114,11 @@ def test_in_sequence_execution_context():
     g = ir.main_graph
 
     with g:
-        x = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        x = popxl.variable(np.ones((2, 2), np.float32), name="big")
 
         with popxl.in_sequence(True):
             _ = x + 1
-            with _execution_context(
-                    _ir.ExecutionContext.WeightsFromHostFragment):
+            with _execution_context(_ir.ExecutionContext.WeightsFromHostFragment):
                 _ = x - 1
 
     # If a topocon is created between (x+1) and (x-1) then a scheduling error will occur
@@ -132,20 +132,20 @@ def test_in_sequence_pass():
     g = ir.main_graph
 
     with g:
-        x = popxl.variable(np.ones((2, 2), np.float32), name='big')
+        x = popxl.variable(np.ones((2, 2), np.float32), name="big")
 
         with popxl.in_sequence(True):
             x = x - 1
 
-            with popxl.in_sequence('pass'):
+            with popxl.in_sequence("pass"):
                 x = x * 1
 
             x = x + 1
             x = x / 1
 
     ops = g._pb_graph.getOpSchedule()
-    assert (is_sequence_of_ops(
-        ops, [_ir.op.SubtractOp, _ir.op.MulOp, _ir.op.AddOp, _ir.op.DivOp])
-            or is_sequence_of_ops(
-                ops,
-                [_ir.op.SubtractOp, _ir.op.AddOp, _ir.op.DivOp, _ir.op.MulOp]))
+    assert is_sequence_of_ops(
+        ops, [_ir.op.SubtractOp, _ir.op.MulOp, _ir.op.AddOp, _ir.op.DivOp]
+    ) or is_sequence_of_ops(
+        ops, [_ir.op.SubtractOp, _ir.op.AddOp, _ir.op.DivOp, _ir.op.MulOp]
+    )

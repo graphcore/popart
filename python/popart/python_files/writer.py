@@ -4,7 +4,7 @@ Framework independent functionality for driving PopART.
 """
 
 
-class NetWriter():
+class NetWriter:
     """
     Base class, to be inherited once per framework.
 

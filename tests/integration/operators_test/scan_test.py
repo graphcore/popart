@@ -30,7 +30,7 @@ def test_scan_zip(op_tester, rev_d0, rev_d1, rev_out, op):
         elif op == "mul":
             out = scan_builder.aiOnnx.mul([td0_in, td1_in])
         else:
-            raise Exception(f'Unknown operation {op}')
+            raise Exception(f"Unknown operation {op}")
 
         scan_builder.addOutputTensor(out)
 
@@ -40,14 +40,15 @@ def test_scan_zip(op_tester, rev_d0, rev_d1, rev_out, op):
             body=scan_builder,
             scan_input_directions=[1 if rev_d0 else 0, 1 if rev_d1 else 0],
             scan_output_directions=[1 if rev_out else 0],
-            num_outputs=1)[0]
+            num_outputs=1,
+        )[0]
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
 
-        d0r = d0[::(-1 if rev_d0 else 1)]
-        d1r = d1[::(-1 if rev_d1 else 1)]
+        d0r = d0[:: (-1 if rev_d0 else 1)]
+        d1r = d1[:: (-1 if rev_d1 else 1)]
 
         if op == "zip":
             out = list(zip(d0r, d1r))
@@ -56,12 +57,12 @@ def test_scan_zip(op_tester, rev_d0, rev_d1, rev_out, op):
         elif op == "mul":
             out = d0r * d1r
         else:
-            raise Exception(f'Unknown operation {op}')
+            raise Exception(f"Unknown operation {op}")
 
-        ref = (np.asarray(out)[::(-1 if rev_out else 1)]).flatten()
+        ref = (np.asarray(out)[:: (-1 if rev_out else 1)]).flatten()
         return [ref]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 @pytest.mark.parametrize("rev_d", [False, True])
@@ -88,8 +89,7 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
         ts_in = scan_builder.addUntypedInputTensor(ts)
         td_in = scan_builder.addUntypedInputTensor(td)
 
-        td_in = scan_builder.reshape_const(scan_builder.aiOnnx, [td_in],
-                                           [8, 32, 1])
+        td_in = scan_builder.reshape_const(scan_builder.aiOnnx, [td_in], [8, 32, 1])
 
         tuh = scan_builder.aiOnnx.matmul([tu, ts_in])
         twx = scan_builder.aiOnnx.matmul([tw, td_in])
@@ -109,7 +109,8 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
             scan_input_directions=[1 if rev_d else 0],
             scan_output_axes=[1],
             scan_output_directions=[1 if rev_out else 0],
-            num_outputs=2)
+            num_outputs=2,
+        )
         builder.addOutputTensor(ots)
         builder.addOutputTensor(otd)
         return [ots, otd]
@@ -121,14 +122,25 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
 
             # Torch requires 10 arguments for this function, although not all is used
             # pylint: disable=unused-argument
-            def forward(self, ts_in, td_in, tw_in, tu_in, tv_in, axis_in,
-                        axis_out, rev_in, rev_out):
+            def forward(
+                self,
+                ts_in,
+                td_in,
+                tw_in,
+                tu_in,
+                tv_in,
+                axis_in,
+                axis_out,
+                rev_in,
+                rev_out,
+            ):
                 ts_out = ts_in
                 td_out = []
                 for i in range(td_in.shape[axis_in]):
                     tuh = torch.matmul(tu, ts_in)
-                    td_in_s = torch.split(
-                        td_in, 1, dim=axis_in)[::(-1 if rev_in else 1)][i]
+                    td_in_s = torch.split(td_in, 1, dim=axis_in)[
+                        :: (-1 if rev_in else 1)
+                    ][i]
                     td_in_s = torch.reshape(td_in_s, [8, 32, 1])
                     twx = torch.matmul(tw, td_in_s)
                     th = tuh + twx
@@ -136,8 +148,9 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
                     ts_out = th
                     td_out += [torch.matmul(tv, th)]
                     ts_in = ts_out
-                return ts_out, torch.cat(td_out[::(-1 if rev_out else 1)],
-                                         dim=axis_out)
+                return ts_out, torch.cat(
+                    td_out[:: (-1 if rev_out else 1)], dim=axis_out
+                )
 
         td = torch.tensor(data, dtype=torch.float32, requires_grad=True)
         ts = torch.tensor(state, dtype=torch.float32, requires_grad=True)
@@ -150,4 +163,4 @@ def test_scan_basic_rnn(op_tester, rev_d, rev_out):
 
     op_tester.rtol = 1e-03
     op_tester.atol = 1e-04
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")

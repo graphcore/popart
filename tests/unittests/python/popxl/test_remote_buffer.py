@@ -16,7 +16,7 @@ def input() -> Iterator[Tuple[Tuple[int, ...], dtype, int]]:
     Yields:
         Iterator[Tuple[Tuple[int, ...], dtype, int]]: The standard buffer handle input
     """
-    t_shape = (0, )
+    t_shape = (0,)
     t_dtype = int8
     entries = 1
     yield t_shape, t_dtype, entries
@@ -24,7 +24,8 @@ def input() -> Iterator[Tuple[Tuple[int, ...], dtype, int]]:
 
 @pytest.fixture(scope="function")
 def standard_remote_buffer(
-        input: Tuple[Tuple[int, ...], dtype, int]) -> Iterator[RemoteBuffer]:
+    input: Tuple[Tuple[int, ...], dtype, int]
+) -> Iterator[RemoteBuffer]:
     """Return the standard remote buffer handle for the tests.
 
     Args:
@@ -35,9 +36,9 @@ def standard_remote_buffer(
     """
     t_shape, t_dtype, entries = input
     with popxl.Ir().main_graph:
-        standard_remote_buffer = RemoteBuffer(tensor_shape=t_shape,
-                                              tensor_dtype=t_dtype,
-                                              entries=entries)
+        standard_remote_buffer = RemoteBuffer(
+            tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+        )
     yield standard_remote_buffer
 
 
@@ -51,27 +52,26 @@ class TestRemoteBuffer:
         # Test the initializer
         t_shape, t_dtype, entries = input
         with popxl.Ir().main_graph:
-            standard_remote_buffer = RemoteBuffer(tensor_shape=t_shape,
-                                                  tensor_dtype=t_dtype,
-                                                  entries=entries)
+            standard_remote_buffer = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
             assert standard_remote_buffer.remote_buffer_id == 1
             assert standard_remote_buffer.tensor_shape == t_shape
             assert standard_remote_buffer.tensor_dtype == t_dtype
             assert standard_remote_buffer.entries == entries
 
             # Test that the buffer id is incremented
-            remote_buffer_2 = RemoteBuffer(tensor_shape=t_shape,
-                                           tensor_dtype=t_dtype,
-                                           entries=entries)
+            remote_buffer_2 = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
             assert remote_buffer_2.remote_buffer_id == 2
 
             # Assert that entries have to be positive
             with pytest.raises(ValueError) as e_info:
-                _ = RemoteBuffer(tensor_shape=t_shape,
-                                 tensor_dtype=t_dtype,
-                                 entries=0)
+                _ = RemoteBuffer(tensor_shape=t_shape, tensor_dtype=t_dtype, entries=0)
         assert e_info.value.args[0].startswith(
-            "Entries must be a non-zero, positive integer")
+            "Entries must be a non-zero, positive integer"
+        )
 
     def test_tensor_shape(self, standard_remote_buffer: RemoteBuffer) -> None:
         """Test the setters on tensor_shape works as expected.
@@ -84,7 +84,10 @@ class TestRemoteBuffer:
         standard_remote_buffer = standard_remote_buffer
         with pytest.raises(AttributeError) as e_info:
             standard_remote_buffer.tensor_shape = (
-                11, 11, 11)  # This is not ok since it's a new value
+                11,
+                11,
+                11,
+            )  # This is not ok since it's a new value
         assert e_info.value.args[0] == "can't set attribute"
 
     def test_tensor_dtype(self, standard_remote_buffer: RemoteBuffer) -> None:
@@ -97,11 +100,16 @@ class TestRemoteBuffer:
         # Test that it's not possible to reset the data type
         standard_remote_buffer = standard_remote_buffer
         with pytest.raises(AttributeError) as e_info:
-            standard_remote_buffer.tensor_dtype = int16  # This is not ok since it's a new value
+            standard_remote_buffer.tensor_dtype = (
+                int16  # This is not ok since it's a new value
+            )
         assert e_info.value.args[0] == "can't set attribute"
 
-    def test_entries(self, input: Tuple[Tuple[int, ...], dtype, int],
-                     standard_remote_buffer: RemoteBuffer) -> None:
+    def test_entries(
+        self,
+        input: Tuple[Tuple[int, ...], dtype, int],
+        standard_remote_buffer: RemoteBuffer,
+    ) -> None:
         """Test the setters on entires works as expected.
 
         Args:
@@ -118,19 +126,21 @@ class TestRemoteBuffer:
         with popxl.Ir().main_graph:
             with pytest.raises(ValueError) as e_info:
                 t_shape, t_dtype, _ = input
-                _ = RemoteBuffer(tensor_shape=t_shape,
-                                 tensor_dtype=t_dtype,
-                                 entries=0)
+                _ = RemoteBuffer(tensor_shape=t_shape, tensor_dtype=t_dtype, entries=0)
         assert e_info.value.args[0].startswith(
-            "Entries must be a non-zero, positive integer")
+            "Entries must be a non-zero, positive integer"
+        )
         with pytest.raises(ValueError) as e_info:
             standard_remote_buffer.entries = 0
         assert e_info.value.args[0].startswith(
-            "Entries must be a non-zero, positive integer")
+            "Entries must be a non-zero, positive integer"
+        )
 
     def test_set_remote_buffer_info(
-            self, input: Tuple[Tuple[int, ...], dtype, int],
-            standard_remote_buffer: RemoteBuffer) -> None:
+        self,
+        input: Tuple[Tuple[int, ...], dtype, int],
+        standard_remote_buffer: RemoteBuffer,
+    ) -> None:
         """Test that once can set, but not reset the remote buffer info.
 
         Args:
@@ -150,25 +160,24 @@ class TestRemoteBuffer:
             remote_buffer_1 = standard_remote_buffer
             remote_buffer_1.validate_tensor_matches_buffer(t)
             # Create an instance equivalent of standard_remote_buffer
-            remote_buffer_2 = RemoteBuffer(tensor_shape=t_shape,
-                                           tensor_dtype=t_dtype,
-                                           entries=entries)
+            remote_buffer_2 = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
             remote_buffer_2.validate_tensor_matches_buffer(t)
             # Create an instance equivalent of standard_remote_buffer, but with shape changed
-            remote_buffer_3 = RemoteBuffer(tensor_shape=(1, 3, 5),
-                                           tensor_dtype=t_dtype,
-                                           entries=entries)
+            remote_buffer_3 = RemoteBuffer(
+                tensor_shape=(1, 3, 5), tensor_dtype=t_dtype, entries=entries
+            )
             # Create an instance equivalent of standard_remote_buffer, but with dtype changed
-            remote_buffer_4 = RemoteBuffer(tensor_shape=t_shape,
-                                           tensor_dtype=int16,
-                                           entries=entries)
+            remote_buffer_4 = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=int16, entries=entries
+            )
 
         assume_fails = (remote_buffer_3, remote_buffer_4)
         for assume_fail in assume_fails:
             with pytest.raises(ValueError) as e_info:
                 assume_fail.validate_tensor_matches_buffer(t)
-            assert e_info.value.args[0].startswith(
-                "Tensor does not match buffer.")
+            assert e_info.value.args[0].startswith("Tensor does not match buffer.")
 
     def test_two_irs(self, input: Tuple[Tuple[int, ...], dtype, int]) -> None:
         """Test that the buffers of two IRs act independently.
@@ -179,19 +188,20 @@ class TestRemoteBuffer:
         t_shape, t_dtype, entries = input
 
         with popxl.Ir().main_graph:
-            rb_1 = RemoteBuffer(tensor_shape=t_shape,
-                                tensor_dtype=t_dtype,
-                                entries=entries)
+            rb_1 = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
 
         with popxl.Ir().main_graph:
-            rb_2 = RemoteBuffer(tensor_shape=t_shape,
-                                tensor_dtype=t_dtype,
-                                entries=entries)
+            rb_2 = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
 
         assert rb_1.remote_buffer_id == rb_2.remote_buffer_id
 
     def test_reset_remote_buffer_info(
-            self, standard_remote_buffer: RemoteBuffer) -> None:
+        self, standard_remote_buffer: RemoteBuffer
+    ) -> None:
         """Test that it's possible to reset the remote buffer.
 
         Args:
@@ -201,16 +211,19 @@ class TestRemoteBuffer:
         t_shape = (3, 11, 5)
         t_dtype = int16
         entries = 42
-        standard_remote_buffer.set_remote_buffer_info(tensor_dtype=t_dtype,
-                                                      tensor_shape=t_shape,
-                                                      entries=entries)
+        standard_remote_buffer.set_remote_buffer_info(
+            tensor_dtype=t_dtype, tensor_shape=t_shape, entries=entries
+        )
 
         assert standard_remote_buffer.tensor_shape == t_shape
         assert standard_remote_buffer.tensor_dtype == t_dtype
         assert standard_remote_buffer.entries == entries
 
-    def test_reset_entries(self, input: Tuple[Tuple[int, ...], dtype, int],
-                           standard_remote_buffer: RemoteBuffer) -> None:
+    def test_reset_entries(
+        self,
+        input: Tuple[Tuple[int, ...], dtype, int],
+        standard_remote_buffer: RemoteBuffer,
+    ) -> None:
         """Test that it's possible to reset the entries.
 
         Args:
@@ -226,8 +239,7 @@ class TestRemoteBuffer:
         assert standard_remote_buffer.tensor_dtype == t_dtype
         assert standard_remote_buffer.entries == entries
 
-    def test_remote_buffer(self,
-                           input: Tuple[Tuple[int, ...], dtype, int]) -> None:
+    def test_remote_buffer(self, input: Tuple[Tuple[int, ...], dtype, int]) -> None:
         """Test that creating the a remote buffer from the context works.
 
         Args:
@@ -238,13 +250,13 @@ class TestRemoteBuffer:
         with ir.main_graph:
             t_shape, t_dtype, entries = input
             # Creating with class
-            remote_buffer_class = RemoteBuffer(tensor_shape=t_shape,
-                                               tensor_dtype=t_dtype,
-                                               entries=entries)
+            remote_buffer_class = RemoteBuffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
             # Create with function
-            remote_buffer_context = remote_buffer(tensor_shape=t_shape,
-                                                  tensor_dtype=t_dtype,
-                                                  entries=entries)
+            remote_buffer_context = remote_buffer(
+                tensor_shape=t_shape, tensor_dtype=t_dtype, entries=entries
+            )
 
         assert remote_buffer_class._current_ir == remote_buffer_context._current_ir
         assert remote_buffer_class.tensor_shape == remote_buffer_context.tensor_shape

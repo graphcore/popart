@@ -2,23 +2,25 @@
 import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 from popart.session import _initAnchorArrays
+
 # Pylint detect this as a self-import
 # However, this import imports the original torch package (and not the contents of this dir)
 import torch  # pylint: disable=import-self
 import torch.nn as nn
 from torch.onnx.utils import _model_to_graph
 from torch.onnx import ONNX_ARCHIVE_MODEL_PROTO_NAME, ExportTypes, OperatorExportTypes
+
 # Import all of torchwriter into this namespace
 from .torchwriter import *
 
 POPART_TYPE_MAP = {
-    'torch.DoubleTensor': "FLOAT",
-    'torch.FloatTensor': "FLOAT",
-    'torch.HalfTensor': "FLOAT16",
-    'torch.LongTensor': "INT32",
-    'torch.IntTensor': "INT32",
-    'torch.ShortTensor': "INT16",
-    'torch.CharTensor': "INT8"
+    "torch.DoubleTensor": "FLOAT",
+    "torch.FloatTensor": "FLOAT",
+    "torch.HalfTensor": "FLOAT16",
+    "torch.LongTensor": "INT32",
+    "torch.IntTensor": "INT32",
+    "torch.ShortTensor": "INT16",
+    "torch.CharTensor": "INT8",
 }
 
 
@@ -30,18 +32,20 @@ def torch_to_popart_type(torch_type):
 
 
 class InferenceSession(_InferenceSessionCore):
-    def __init__(self,
-                 torchModel,
-                 inputs,
-                 targets,
-                 losses,
-                 deviceInfo,
-                 batch_size=1,
-                 batches_per_step=1,
-                 inputShapeInfo=popart.InputShapeInfo(),
-                 patterns=popart.Patterns(),
-                 userOptions=popart.SessionOptions(),
-                 name="inference"):
+    def __init__(
+        self,
+        torchModel,
+        inputs,
+        targets,
+        losses,
+        deviceInfo,
+        batch_size=1,
+        batches_per_step=1,
+        inputShapeInfo=popart.InputShapeInfo(),
+        patterns=popart.Patterns(),
+        userOptions=popart.SessionOptions(),
+        name="inference",
+    ):
 
         self.torchModel = torchModel
         self.batch_size = batch_size
@@ -56,25 +60,24 @@ class InferenceSession(_InferenceSessionCore):
         self.targets = tuple()
 
         if isinstance(inputs, torch.Tensor):
-            inputs = (inputs, )
+            inputs = (inputs,)
         if isinstance(targets, torch.Tensor):
-            targets = (targets, )
+            targets = (targets,)
 
         for tensor in inputs:
-            if (tensor.shape[0] !=
-                (self.batch_size * self.batches_per_step)) and (self.batch_size
-                                                                != 1):
+            if (tensor.shape[0] != (self.batch_size * self.batches_per_step)) and (
+                self.batch_size != 1
+            ):
                 raise RuntimeError(
                     f"Shape discrepancy in input tensor {tensor}, shape {tensor.shape}."
-                    + "Dim 0 should be equal to :" +
-                    f"batch size {self.batch_size} * bps {self.batches_per_step}"
+                    + "Dim 0 should be equal to :"
+                    + f"batch size {self.batch_size} * bps {self.batches_per_step}"
                 )
-            reshape = tensor.view(batches_per_step, batch_size,
-                                  *list(tensor.shape[1:]))
-            self.inputs = self.inputs + (reshape[0, :], )
+            reshape = tensor.view(batches_per_step, batch_size, *list(tensor.shape[1:]))
+            self.inputs = self.inputs + (reshape[0, :],)
         for tensor in targets:
             reshape = tensor.view(batches_per_step, batch_size)
-            self.targets = self.targets + (reshape[0, :], )
+            self.targets = self.targets + (reshape[0, :],)
 
         self.outputs = self.torchModel(*self.inputs)
 
@@ -91,12 +94,12 @@ class InferenceSession(_InferenceSessionCore):
         for idx, (out, tgt) in enumerate(zip(self.outputNames, self.targets)):
             self.inputShapeInfo.add(
                 f"target_{idx}",
-                popart.TensorInfo(torch_to_popart_type(tgt.type()),
-                                  list(tgt.shape)))
+                popart.TensorInfo(torch_to_popart_type(tgt.type()), list(tgt.shape)),
+            )
 
             losses.append(
-                self.createLosses(self.losses, out, f"target_{idx}",
-                                  f"loss_{idx}"))
+                self.createLosses(self.losses, out, f"target_{idx}", f"loss_{idx}")
+            )
             self.anchor_returns[out] = popart.AnchorReturnType("All")
             self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
@@ -106,13 +109,26 @@ class InferenceSession(_InferenceSessionCore):
         self.dataFlow = self.createdataFlow()
 
         super(InferenceSession, self).__init__(
-            proto, self.dataFlow, self.deviceInfo, losses, self.inputShapeInfo,
-            userOptions, patterns, self.name)
+            proto,
+            self.dataFlow,
+            self.deviceInfo,
+            losses,
+            self.inputShapeInfo,
+            userOptions,
+            patterns,
+            self.name,
+        )
 
-        self.replicationFactor = userOptions.replicatedGraphCount if \
-            userOptions.enableReplicatedGraphs else 1
-        self.accumulationFactor = userOptions.accumulationFactor if \
-            userOptions.enableGradientAccumulation else 1
+        self.replicationFactor = (
+            userOptions.replicatedGraphCount
+            if userOptions.enableReplicatedGraphs
+            else 1
+        )
+        self.accumulationFactor = (
+            userOptions.accumulationFactor
+            if userOptions.enableGradientAccumulation
+            else 1
+        )
 
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
@@ -130,20 +146,24 @@ class InferenceSession(_InferenceSessionCore):
 
     def createProto(self):
 
-        graph, params_dict, _ = _model_to_graph(self.torchModel,
-                                                args=self.inputs,
-                                                training=True,
-                                                verbose=True,
-                                                input_names=self.inputNames,
-                                                output_names=self.outputNames,
-                                                _retain_param_name=True,
-                                                do_constant_folding=True)
-        proto, _ = graph._export_onnx(initializers=params_dict,
-                                      dynamic_axes={},
-                                      onnx_opset_version=9,
-                                      defer_weight_export=False,
-                                      strip_doc_string=True,
-                                      keep_initializers_as_inputs=False)
+        graph, params_dict, _ = _model_to_graph(
+            self.torchModel,
+            args=self.inputs,
+            training=True,
+            verbose=True,
+            input_names=self.inputNames,
+            output_names=self.outputNames,
+            _retain_param_name=True,
+            do_constant_folding=True,
+        )
+        proto, _ = graph._export_onnx(
+            initializers=params_dict,
+            dynamic_axes={},
+            onnx_opset_version=9,
+            defer_weight_export=False,
+            strip_doc_string=True,
+            keep_initializers_as_inputs=False,
+        )
 
         return proto
 
@@ -167,19 +187,21 @@ class InferenceSession(_InferenceSessionCore):
 
 
 class TrainingSession(_TrainingSessionCore):
-    def __init__(self,
-                 torchModel,
-                 inputs,
-                 targets,
-                 optimizer,
-                 losses,
-                 deviceInfo,
-                 batch_size=1,
-                 batches_per_step=1,
-                 inputShapeInfo=popart.InputShapeInfo(),
-                 patterns=popart.Patterns(),
-                 userOptions=popart.SessionOptions(),
-                 name="training"):
+    def __init__(
+        self,
+        torchModel,
+        inputs,
+        targets,
+        optimizer,
+        losses,
+        deviceInfo,
+        batch_size=1,
+        batches_per_step=1,
+        inputShapeInfo=popart.InputShapeInfo(),
+        patterns=popart.Patterns(),
+        userOptions=popart.SessionOptions(),
+        name="training",
+    ):
 
         self.torchModel = torchModel
         self.batch_size = batch_size
@@ -195,25 +217,24 @@ class TrainingSession(_TrainingSessionCore):
         self.targets = tuple()
 
         if isinstance(inputs, torch.Tensor):
-            inputs = (inputs, )
+            inputs = (inputs,)
         if isinstance(targets, torch.Tensor):
-            targets = (targets, )
+            targets = (targets,)
 
         for tensor in inputs:
-            if (tensor.shape[0] !=
-                (self.batch_size * self.batches_per_step)) and (self.batch_size
-                                                                != 1):
+            if (tensor.shape[0] != (self.batch_size * self.batches_per_step)) and (
+                self.batch_size != 1
+            ):
                 raise RuntimeError(
                     f"Shape discrepancy in input tensor {tensor}, shape {tensor.shape}."
-                    + "Dim 0 should be equal to :" +
-                    f"batch size {self.batch_size} * bps {self.batches_per_step}"
+                    + "Dim 0 should be equal to :"
+                    + f"batch size {self.batch_size} * bps {self.batches_per_step}"
                 )
-            reshape = tensor.view(batches_per_step, batch_size,
-                                  *list(tensor.shape[1:]))
-            self.inputs = self.inputs + (reshape[0, :], )
+            reshape = tensor.view(batches_per_step, batch_size, *list(tensor.shape[1:]))
+            self.inputs = self.inputs + (reshape[0, :],)
         for tensor in targets:
             reshape = tensor.view(batches_per_step, batch_size)
-            self.targets = self.targets + (reshape[0, :], )
+            self.targets = self.targets + (reshape[0, :],)
 
         self.outputs = self.torchModel(*self.inputs)
 
@@ -230,12 +251,12 @@ class TrainingSession(_TrainingSessionCore):
         for idx, (out, tgt) in enumerate(zip(self.outputNames, self.targets)):
             self.inputShapeInfo.add(
                 f"target_{idx}",
-                popart.TensorInfo(torch_to_popart_type(tgt.type()),
-                                  list(tgt.shape)))
+                popart.TensorInfo(torch_to_popart_type(tgt.type()), list(tgt.shape)),
+            )
 
             losses.append(
-                self.createLosses(self.losses, out, f"target_{idx}",
-                                  f"loss_{idx}"))
+                self.createLosses(self.losses, out, f"target_{idx}", f"loss_{idx}")
+            )
             self.anchor_returns[out] = popart.AnchorReturnType("All")
             self.anchor_returns[f"loss_{idx}"] = popart.AnchorReturnType("All")
 
@@ -244,16 +265,28 @@ class TrainingSession(_TrainingSessionCore):
 
         self.dataFlow = self.createdataFlow()
 
-        super(TrainingSession,
-              self).__init__(proto, self.dataFlow, losses,
-                             self.createOptimizer(), self.deviceInfo,
-                             self.inputShapeInfo, userOptions, patterns,
-                             self.name)
+        super(TrainingSession, self).__init__(
+            proto,
+            self.dataFlow,
+            losses,
+            self.createOptimizer(),
+            self.deviceInfo,
+            self.inputShapeInfo,
+            userOptions,
+            patterns,
+            self.name,
+        )
 
-        self.replicationFactor = userOptions.replicatedGraphCount if \
-            userOptions.enableReplicatedGraphs else 1
-        self.accumulationFactor = userOptions.accumulationFactor if \
-            userOptions.enableGradientAccumulation else 1
+        self.replicationFactor = (
+            userOptions.replicatedGraphCount
+            if userOptions.enableReplicatedGraphs
+            else 1
+        )
+        self.accumulationFactor = (
+            userOptions.accumulationFactor
+            if userOptions.enableGradientAccumulation
+            else 1
+        )
 
     def createLosses(self, loss, output, label=None, name="loss"):
         self.inputNames.append(label)
@@ -271,20 +304,24 @@ class TrainingSession(_TrainingSessionCore):
 
     def createProto(self):
 
-        graph, params_dict, _ = _model_to_graph(self.torchModel,
-                                                args=self.inputs,
-                                                training=True,
-                                                verbose=True,
-                                                input_names=self.inputNames,
-                                                output_names=self.outputNames,
-                                                _retain_param_name=True,
-                                                do_constant_folding=True)
-        proto, _ = graph._export_onnx(initializers=params_dict,
-                                      dynamic_axes={},
-                                      onnx_opset_version=9,
-                                      defer_weight_export=False,
-                                      strip_doc_string=True,
-                                      keep_initializers_as_inputs=False)
+        graph, params_dict, _ = _model_to_graph(
+            self.torchModel,
+            args=self.inputs,
+            training=True,
+            verbose=True,
+            input_names=self.inputNames,
+            output_names=self.outputNames,
+            _retain_param_name=True,
+            do_constant_folding=True,
+        )
+        proto, _ = graph._export_onnx(
+            initializers=params_dict,
+            dynamic_axes={},
+            onnx_opset_version=9,
+            defer_weight_export=False,
+            strip_doc_string=True,
+            keep_initializers_as_inputs=False,
+        )
 
         return proto
 
@@ -293,13 +330,14 @@ class TrainingSession(_TrainingSessionCore):
             raise RuntimeError("PopART currently only accepts SGD optimizers.")
         elif self.optimizer.defaults["nesterov"]:
             raise RuntimeError("Nesterov momentum is currently not supported.")
-        return popart.SGD({
-            "defaultLearningRate": (self.optimizer.defaults["lr"], False),
-            "defaultMomentum": (self.optimizer.defaults["momentum"], False),
-            "defaultWeightDecay":
-            (self.optimizer.defaults["weight_decay"], False),
-            "defaultDampening": (self.optimizer.defaults["dampening"], False)
-        })
+        return popart.SGD(
+            {
+                "defaultLearningRate": (self.optimizer.defaults["lr"], False),
+                "defaultMomentum": (self.optimizer.defaults["momentum"], False),
+                "defaultWeightDecay": (self.optimizer.defaults["weight_decay"], False),
+                "defaultDampening": (self.optimizer.defaults["dampening"], False),
+            }
+        )
 
     def initAnchorArrays(self):
         self.anchorArrays = _initAnchorArrays(self)

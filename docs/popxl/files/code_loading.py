@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 Demonstration of the code loading API in PopXL.
-'''
+"""
 
 import popxl
 import popxl.ops as ops
@@ -26,7 +26,7 @@ def example():
 
         with popxl.in_sequence():
             # (2) load the code from remote memory into compute tiles on-chip
-            ops.remote_code_load(g, destination='executable')
+            ops.remote_code_load(g, destination="executable")
             # call the graph
             ops.call(g, x)
 
@@ -47,19 +47,19 @@ def example():
             # Dead...
 
             # Live
-            ops.remote_code_load(g, destination='executable')
+            ops.remote_code_load(g, destination="executable")
             ops.call(g, x)
 
             # Dead again, due to a subsequent load...
 
             # Live again
-            ops.remote_code_load(g, destination='executable')
+            ops.remote_code_load(g, destination="executable")
             ops.call(g, x)
 
             # Dead again, due to a subsequent load...
 
             # Live again
-            ops.remote_code_load(g, destination='executable')
+            ops.remote_code_load(g, destination="executable")
             ops.call(g, x)
 
             # Dead again, as graph never called again

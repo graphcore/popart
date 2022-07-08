@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def sumsquare(t: Tensor,
-              axis: Optional[Union[int, Iterable[int]]] = None,
-              keepdims: bool = False) -> Tensor:
+def sumsquare(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the sum of the squares of tensor elements over an axis.
 
@@ -38,9 +38,10 @@ def sumsquare(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceSumSquare')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceSumSquare", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ReduceSumSquare")
+    opid = _ir.OperatorIdentifier(
+        "ai.onnx", "ReduceSumSquare", 1, _ir.NumInputs(1, 1), 1
+    )
     op = pb_g.createConnectedOp_ReduceSumSquareOp(
         {
             0: t.id,

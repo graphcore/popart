@@ -11,8 +11,7 @@ def test_merge_exchange():
     with main:
         with popxl.transforms.merge_exchange():
             _ = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
-            ops.host_store(popxl.d2h_stream((), popxl.float32),
-                           popxl.constant(1.0))
+            ops.host_store(popxl.d2h_stream((), popxl.float32), popxl.constant(1.0))
 
     mg_ops = main._pb_graph.getOps()
     # Init and MultiExchange
@@ -25,13 +24,11 @@ def test_merge_exchange_targeted():
     ir = popxl.Ir()
     main = ir.main_graph
     with main:
-        ops.host_store(popxl.d2h_stream((), popxl.float32),
-                       popxl.constant(1.0))
+        ops.host_store(popxl.d2h_stream((), popxl.float32), popxl.constant(1.0))
 
         with popxl.transforms.merge_exchange():
             _ = ops.host_load(popxl.h2d_stream((), popxl.float32), "x")
-            ops.host_store(popxl.d2h_stream((), popxl.float32),
-                           popxl.constant(1.0))
+            ops.host_store(popxl.d2h_stream((), popxl.float32), popxl.constant(1.0))
 
     mg_ops = main._pb_graph.getOps()
     # Init and MultiExchange

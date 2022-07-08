@@ -43,15 +43,13 @@ def test_auto_virtual_graph_subgraphs_1():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         print(op)
-        assert (int(op["attributes"]["__ipu_number"]) == 0)
+        assert int(op["attributes"]["__ipu_number"]) == 0
 
 
 def test_auto_virtual_graph_subgraphs_2():
@@ -67,22 +65,18 @@ def test_auto_virtual_graph_subgraphs_2():
     input2 = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     # Subgraph 0
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-A")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-A")
     x0 = builder.aiOnnx.matmul([input1, w])
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-B")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-B")
     x0 = builder.aiOnnx.matmul([x0, w])
 
     # Subgraph 1
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-C")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-C")
     x1 = builder.aiOnnx.matmul([input2, w])
 
     # Subgraph 2
     x2 = builder.aiOnnx.add([x0, x1])
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-D")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-D")
     x2 = builder.aiOnnx.matmul([x2, w])
 
     output = x2
@@ -100,23 +94,21 @@ def test_auto_virtual_graph_subgraphs_2():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         ipu = op["attributes"]["__ipu_number"]
         for input in op["inputs"]:
-            if ("TESTID-A" in input["name"]):
-                assert (int(ipu) == 0)
-            if ("TESTID-B" in input["name"]):
-                assert (int(ipu) == 0)
-            if ("TESTID-C" in input["name"]):
-                assert (int(ipu) == 1)
-            if ("TESTID-D" in input["name"]):
-                assert (int(ipu) == 1)
+            if "TESTID-A" in input["name"]:
+                assert int(ipu) == 0
+            if "TESTID-B" in input["name"]:
+                assert int(ipu) == 0
+            if "TESTID-C" in input["name"]:
+                assert int(ipu) == 1
+            if "TESTID-D" in input["name"]:
+                assert int(ipu) == 1
 
 
 def test_auto_virtual_graph_subgraphs_4():
@@ -132,22 +124,18 @@ def test_auto_virtual_graph_subgraphs_4():
     input2 = builder.addInputTensor(popart.TensorInfo("FLOAT16", input_shape))
 
     # Subgraph 0
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-A")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-A")
     x0 = builder.aiOnnx.matmul([input1, w])
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-B")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-B")
     x0 = builder.aiOnnx.matmul([x0, w])
 
     # Subgraph 1
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-C")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-C")
     x1 = builder.aiOnnx.matmul([input2, w])
 
     # Subgraph 2
     x2 = builder.aiOnnx.add([x0, x1])
-    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16),
-                                          "TESTID-D")
+    w = builder.addInitializedInputTensor(np.zeros([64, 64], np.float16), "TESTID-D")
     x2 = builder.aiOnnx.matmul([x2, w])
 
     output = x2
@@ -165,23 +153,21 @@ def test_auto_virtual_graph_subgraphs_4():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     for op in ir["maingraph"]:
         ipu = op["attributes"]["__ipu_number"]
         for input in op["inputs"]:
-            if ("TESTID-A" in input["name"]):
-                assert (int(ipu) == 0)
-            if ("TESTID-B" in input["name"]):
-                assert (int(ipu) == 1)
-            if ("TESTID-C" in input["name"]):
-                assert (int(ipu) == 2)
-            if ("TESTID-D" in input["name"]):
-                assert (int(ipu) == 3)
+            if "TESTID-A" in input["name"]:
+                assert int(ipu) == 0
+            if "TESTID-B" in input["name"]:
+                assert int(ipu) == 1
+            if "TESTID-C" in input["name"]:
+                assert int(ipu) == 2
+            if "TESTID-D" in input["name"]:
+                assert int(ipu) == 3
 
 
 def test_auto_virtual_graph_inf_2():
@@ -211,10 +197,9 @@ def test_auto_virtual_graph_inf_2():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=device)
+        popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
 
 def test_auto_virtual_graph_inf_many():
@@ -244,10 +229,9 @@ def test_auto_virtual_graph_inf_many():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=device)
+        popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
 
 def test_auto_virtual_graph_train():
@@ -279,13 +263,14 @@ def test_auto_virtual_graph_train():
 
     with tu.create_test_device(numIpus=ipus) as device:
 
-        popart.TrainingSession(fnModel=proto,
-                               dataFlow=dataFlow,
-                               userOptions=opts,
-                               loss=loss,
-                               optimizer=popart.SGD(
-                                   {"defaultLearningRate": (0.01, True)}),
-                               deviceInfo=device)
+        popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=loss,
+            optimizer=popart.SGD({"defaultLearningRate": (0.01, True)}),
+            deviceInfo=device,
+        )
 
 
 @tu.requires_ipu_model
@@ -316,10 +301,10 @@ def test_auto_virtual_graph_not_enough_splits():
     with tu.create_test_device(numIpus=ipus) as device:
 
         with pytest.raises(popart.popart_exception) as e_info:
-            popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+            popart.InferenceSession(
+                fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+            )
 
-    assert (e_info.value.args[0].startswith(
-        "[AutoVirtualGraph] Couldn't find enough splits"))
+    assert e_info.value.args[0].startswith(
+        "[AutoVirtualGraph] Couldn't find enough splits"
+    )

@@ -95,8 +95,9 @@ def check_if_clone_is_defined(filename: str) -> int:
             ret_val = 1
             continue
 
-        if is_clone_signature_present(lines[definition_start:definition_start +
-                                            definition_relative_end]):
+        if is_clone_signature_present(
+            lines[definition_start : definition_start + definition_relative_end]
+        ):
             continue
 
         # +1 as line numbers start with 0
@@ -121,7 +122,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         int: 0 for success, 1 for fail
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs='*')
+    parser.add_argument("filenames", nargs="*")
     args = parser.parse_args(argv)
 
     ret_val = 0
@@ -132,5 +133,5 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return ret_val
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

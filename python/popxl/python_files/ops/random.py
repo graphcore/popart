@@ -8,11 +8,13 @@ from .utils import check_in_graph, convert_optional_dtype
 
 
 @op_debug_context
-def random_uniform(seed_tensor: Tensor,
-                   shape: Tuple[int, ...],
-                   low: float = 0.0,
-                   high: float = 1.0,
-                   dtype: dtypes.dtype = dtypes.float32):
+def random_uniform(
+    seed_tensor: Tensor,
+    shape: Tuple[int, ...],
+    low: float = 0.0,
+    high: float = 1.0,
+    dtype: dtypes.dtype = dtypes.float32,
+):
     """
     Randomly sample from a uniform distribution.
 
@@ -43,9 +45,8 @@ def random_uniform(seed_tensor: Tensor,
 
     check_in_graph(g, seed_tensor=seed_tensor)
 
-    settings = ctx._get_op_settings('random_uniform')
-    opid = _ir.OperatorIdentifier("ai.onnx", "RandomUniform", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("random_uniform")
+    opid = _ir.OperatorIdentifier("ai.onnx", "RandomUniform", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_RandomUniformOp(
         {0: seed_tensor.id},
         {0: g._create_tensor_id("random_uniform_out")},
@@ -61,11 +62,13 @@ def random_uniform(seed_tensor: Tensor,
 
 
 @op_debug_context
-def random_normal(seed_tensor: Tensor,
-                  shape: Tuple[int, ...],
-                  mean: float = 0.0,
-                  std: float = 1.0,
-                  dtype: dtypes.dtype = dtypes.float32):
+def random_normal(
+    seed_tensor: Tensor,
+    shape: Tuple[int, ...],
+    mean: float = 0.0,
+    std: float = 1.0,
+    dtype: dtypes.dtype = dtypes.float32,
+):
     """
     Randomly sample from a normal distribution.
 
@@ -95,9 +98,8 @@ def random_normal(seed_tensor: Tensor,
 
     check_in_graph(g, seed_tensor=seed_tensor)
 
-    settings = ctx._get_op_settings('random_normal')
-    opid = _ir.OperatorIdentifier("ai.onnx", "RandomNormal", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("random_normal")
+    opid = _ir.OperatorIdentifier("ai.onnx", "RandomNormal", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_RandomNormalOp(
         {0: seed_tensor.id},
         {0: g._create_tensor_id("random_normal_out")},

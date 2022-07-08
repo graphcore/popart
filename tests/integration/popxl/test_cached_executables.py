@@ -13,14 +13,15 @@ import sys
 import numpy as np
 import popart
 from pathlib import Path
+
 # `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import test_util as tu
 
 
 def create_ir_with_copy_var_update(
-        input_val: float, add_val: int,
-        init_val: float) -> Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]:
+    input_val: float, add_val: int, init_val: float
+) -> Tuple[popxl.Ir, popxl.Tensor, popxl.Tensor]:
     """Creates an IR where the output of an operation is copied to another tensor.
 
     Args:
@@ -39,16 +40,20 @@ def create_ir_with_copy_var_update(
         input_tensor = popxl.variable(input_val, name="input_tensor")
         output_tensor = input_tensor + add_val
 
-        copied_output = popxl.variable(init_val,
-                                       dtype=popxl.float32,
-                                       name="copied_output")
+        copied_output = popxl.variable(
+            init_val, dtype=popxl.float32, name="copied_output"
+        )
         popxl.ops.var_updates.copy_var_update_(copied_output, output_tensor)
     return ir, input_tensor, copied_output
 
 
-def run_and_compare(sess: popxl.Session, input_tensor: popxl.Tensor,
-                    copied_output: popxl.Tensor, input_val: float,
-                    output_val: float) -> None:
+def run_and_compare(
+    sess: popxl.Session,
+    input_tensor: popxl.Tensor,
+    copied_output: popxl.Tensor,
+    input_val: float,
+    output_val: float,
+) -> None:
     """Run the session and compare it with the expected results.
 
     Args:
@@ -83,9 +88,9 @@ def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
     started_engine_compilation = False
     loaded_poplar_executable = False
     for line in stderr.splitlines():
-        if 'Starting compilation' in line:
+        if "Starting compilation" in line:
             started_engine_compilation = True
-        elif 'Loading serialized PopART executable' in line:
+        elif "Loading serialized PopART executable" in line:
             loaded_poplar_executable = True
 
     # Assert that we didn't both start a compilation AND load an executable
@@ -94,8 +99,9 @@ def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
 
 
 @tu.requires_ipu
-def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
-                          capfd: pytest.CaptureFixture) -> None:
+def test_get_tensors_data(
+    tmp_path: Path, monkeypatch: MonkeyPatch, capfd: pytest.CaptureFixture
+) -> None:
     """Test that get_tensors_data is working with engine caching.
 
     Args:
@@ -103,25 +109,26 @@ def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
         monkeypatch (MonkeyPatch): MonkeyPatch used for setting the env variables safely
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
-    cache_path = tmp_path / 'saved_graph'
+    cache_path = tmp_path / "saved_graph"
     # Enable model caching
     monkeypatch.setenv("POPXL_CACHE_DIR", str(cache_path))
 
     # Need to activate the logger in order to check whether we are compiling or loading from cache
-    popart.getLogger().setLevel('DEBUG')
+    popart.getLogger().setLevel("DEBUG")
 
-    input_val = 5.
+    input_val = 5.0
     add_val = 10
     output_val = input_val + add_val
-    init_val = 0.
+    init_val = 0.0
 
     # Check that no cache lingers from previous tests
     assert len(list(cache_path.glob("**/*.popef"))) == 0
 
     # First run. Compile and run without executable cache
     ir, input_tensor, copied_output = create_ir_with_copy_var_update(
-        input_val, add_val, init_val)
-    sess = popxl.Session(ir, 'ipu_hw')
+        input_val, add_val, init_val
+    )
+    sess = popxl.Session(ir, "ipu_hw")
     run_and_compare(sess, input_tensor, copied_output, input_val, output_val)
 
     assert not loaded_saved_executable(capfd=capfd)
@@ -130,8 +137,9 @@ def test_get_tensors_data(tmp_path: Path, monkeypatch: MonkeyPatch,
 
     # Second run. Executable cache used
     ir, input_tensor, copied_output = create_ir_with_copy_var_update(
-        input_val, add_val, init_val)
-    sess = popxl.Session(ir, 'ipu_hw')
+        input_val, add_val, init_val
+    )
+    sess = popxl.Session(ir, "ipu_hw")
     # This was failing before T62680. copied_output was not input_val + add_val
     # but init_val.
     run_and_compare(sess, input_tensor, copied_output, input_val, output_val)

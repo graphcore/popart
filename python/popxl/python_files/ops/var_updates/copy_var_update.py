@@ -26,13 +26,10 @@ def copy_var_update_(t: Tensor, X: Tensor) -> Tensor:
     check_in_graph(g, t=t, X=X)
     check_tensor_ipu_and_tile_set(t=t, X=X)
 
-    settings = ctx._get_op_settings('copy_var_update')
+    settings = ctx._get_op_settings("copy_var_update")
     op = pb_g.createConnectedOp_CopyVarUpdateOp(
-        {
-            0: t.id,
-            1: X.id
-        },
-        {0: g._create_tensor_id('updated__' + t.name)},
+        {0: t.id, 1: X.id},
+        {0: g._create_tensor_id("updated__" + t.name)},
         settings,
     )
 

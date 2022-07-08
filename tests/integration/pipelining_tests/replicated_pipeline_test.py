@@ -6,6 +6,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -13,19 +14,21 @@ REPL_FACTOR = 2
 BPS = 8
 
 
-def get_model_anchors(doSharding,
-                      doPipelining,
-                      batchesPerStep,
-                      doTraining,
-                      replicated_graph_count=1,
-                      doProfiling=False,
-                      doDropout=False,
-                      doGradientAccl=False,
-                      acclSteps=1,
-                      doDevicex=True,
-                      anchorRestoredTensors=False,
-                      returnRawInput=False,
-                      explicit=False):
+def get_model_anchors(
+    doSharding,
+    doPipelining,
+    batchesPerStep,
+    doTraining,
+    replicated_graph_count=1,
+    doProfiling=False,
+    doDropout=False,
+    doGradientAccl=False,
+    acclSteps=1,
+    doDevicex=True,
+    anchorRestoredTensors=False,
+    returnRawInput=False,
+    explicit=False,
+):
     np.random.seed(seed=1)
 
     builder = popart.Builder()
@@ -42,19 +45,16 @@ def get_model_anchors(doSharding,
 
     s0 = builder.aiOnnx.sin([d0], "s0")
     e0 = builder.aiOnnx.exp([s0], "e0")
-    c0 = builder.aiOnnx.conv([e0, w0],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[1, 1],
-                             debugContext="c0")
+    c0 = builder.aiOnnx.conv(
+        [e0, w0], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1], debugContext="c0"
+    )
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [microBatchSize, 32])
     if doDropout:
         do0 = builder.aiOnnx.dropout([r0], num_outputs=1, ratio=0.2)[0]
         out = builder.aiOnnx.softmax([do0], axis=1, debugContext="sfm")
     else:
         out = builder.aiOnnx.softmax([r0], axis=1, debugContext="sfm")
-    nll = builder.aiGraphcore.nllloss([out, l0],
-                                      reduction=popart.ReductionType.Sum)
+    nll = builder.aiGraphcore.nllloss([out, l0], reduction=popart.ReductionType.Sum)
 
     art = popart.AnchorReturnType("All")
 
@@ -95,19 +95,21 @@ def get_model_anchors(doSharding,
     with tu.create_test_device(numIpus=numIpus) as device:
 
         if doTraining is True:
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(
-                                                 batchesPerStep, anchor_map),
-                                             loss=nll,
-                                             optimizer=popart.ConstSGD(0.01),
-                                             userOptions=opts,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                loss=nll,
+                optimizer=popart.ConstSGD(0.01),
+                userOptions=opts,
+                deviceInfo=device,
+            )
         else:
-            session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                              dataFlow=popart.DataFlow(
-                                                  batchesPerStep, anchor_map),
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                userOptions=opts,
+                deviceInfo=device,
+            )
 
         if doDevicex is False:
             return None
@@ -118,8 +120,7 @@ def get_model_anchors(doSharding,
 
         classes = np.prod(shape_d0) // (batchSize * batchesPerStep)
 
-        label = np.random.randint(low=0, high=classes,
-                                  size=shape_l0).astype(np.int32)
+        label = np.random.randint(low=0, high=classes, size=shape_l0).astype(np.int32)
 
         # With all options enabled return anchors are of the shape:
         # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
@@ -156,6 +157,7 @@ def get_model_anchors(doSharding,
 
         if doProfiling is True:
             from gcprofile import save_popart_report
+
             save_popart_report(session)
 
         if returnRawInput is True:
@@ -172,20 +174,18 @@ def compare_anchors_repl(no_repl_anchors, repl_anchors):
     disabled, the second replication enabled.
     """
     # Tensor loop:
-    for (tId1, t1), (tId2, t2) in zip(no_repl_anchors.items(),
-                                      repl_anchors.items()):
+    for (tId1, t1), (tId2, t2) in zip(no_repl_anchors.items(), repl_anchors.items()):
         # Batch loop:
         for i in range(BPS):
             # Replication loop:
             print(f"no replication, batch: {i} {tId1} {np.sum(t1[i])}")
             for j in range(REPL_FACTOR):
-                print(
-                    f"\treplication {j},  batch: {i} {tId2} {np.sum(t2[i, j])}"
-                )
+                print(f"\treplication {j},  batch: {i} {tId2} {np.sum(t2[i, j])}")
                 # Test the relevant batch and replication against the run with
                 # no replication.
-                assert np.allclose(t1[i], t2[i, j]), \
-                    f"""Arrays {tId1} replication {j} batch {i} not equal.
+                assert np.allclose(
+                    t1[i], t2[i, j]
+                ), f"""Arrays {tId1} replication {j} batch {i} not equal.
                 Max difference {np.max(np.abs(t1[i] - t2[i, j]))}"""
 
 
@@ -197,19 +197,23 @@ def compare_anchors_both_repl(no_pipe_anchors, pipe_anchors):
     have replication enabled, but not gradient accumulation.
     """
     # Tensor loop:
-    for (tId1, t1), (tId2, t2) in zip(no_pipe_anchors.items(),
-                                      pipe_anchors.items()):
+    for (tId1, t1), (tId2, t2) in zip(no_pipe_anchors.items(), pipe_anchors.items()):
         # Batch loop:
         for i in range(BPS):
             # Replication loop:
             for j in range(REPL_FACTOR):
-                print(f"no pipelining replication {j}, batch: {i} \
-                    {tId1} {np.sum(t1[i, j])}")
-                print(f"pipelining replication    {j}, batch: {i} \
-                    {tId2} {np.sum(t2[i, j])}")
+                print(
+                    f"no pipelining replication {j}, batch: {i} \
+                    {tId1} {np.sum(t1[i, j])}"
+                )
+                print(
+                    f"pipelining replication    {j}, batch: {i} \
+                    {tId2} {np.sum(t2[i, j])}"
+                )
                 # Test each equivalent replication against each equivalent batch
-                assert np.allclose(t1[i, j], t2[i, j]), \
-                    f"""Arrays {tId1} replication {j} batch {i} not equal.
+                assert np.allclose(
+                    t1[i, j], t2[i, j]
+                ), f"""Arrays {tId1} replication {j} batch {i} not equal.
                 Max difference {np.max(np.abs(t1[i, j] - t2[i, j]))}"""
 
 
@@ -221,19 +225,23 @@ def compare_anchors_pipe(no_pipe_anchors, pipe_anchors):
     have replication and gradient accumulation enabled.
     """
     # Tensor loop:
-    for (tId1, t1), (tId2, t2) in zip(no_pipe_anchors.items(),
-                                      pipe_anchors.items()):
+    for (tId1, t1), (tId2, t2) in zip(no_pipe_anchors.items(), pipe_anchors.items()):
         # Batch loop:
         for i in range(BPS):
             # Replication loop:
             for j in range(REPL_FACTOR):
-                print(f"no pipelining replication {j}, batch: {i} \
-                    {tId1} {np.sum(t1[i, :, j])}")
-                print(f"pipelining replication    {j}, batch: {i} \
-                    {tId2} {np.sum(t2[i, :, j])}")
+                print(
+                    f"no pipelining replication {j}, batch: {i} \
+                    {tId1} {np.sum(t1[i, :, j])}"
+                )
+                print(
+                    f"pipelining replication    {j}, batch: {i} \
+                    {tId2} {np.sum(t2[i, :, j])}"
+                )
                 # Test each equivalent replication against each equivalent batch
-                assert np.allclose(t1[i, :, j], t2[i, :, j]), \
-                    f"""Arrays {tId1} replication {j} batch {i} not equal.
+                assert np.allclose(
+                    t1[i, :, j], t2[i, :, j]
+                ), f"""Arrays {tId1} replication {j} batch {i} not equal.
                 Max difference {np.max(np.abs(t1[i, :, j] - t2[i, :, j]))}"""
 
 
@@ -248,18 +256,22 @@ def test_output_matches_replication_infer(explicit):
     Inference only
     """
 
-    no_repl_anchors = get_model_anchors(doSharding=True,
-                                        doPipelining=True,
-                                        batchesPerStep=BPS,
-                                        doTraining=False,
-                                        replicated_graph_count=1,
-                                        explicit=explicit)
-    repl_anchors = get_model_anchors(doSharding=True,
-                                     doPipelining=True,
-                                     batchesPerStep=BPS,
-                                     doTraining=False,
-                                     replicated_graph_count=REPL_FACTOR,
-                                     explicit=explicit)
+    no_repl_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=BPS,
+        doTraining=False,
+        replicated_graph_count=1,
+        explicit=explicit,
+    )
+    repl_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=BPS,
+        doTraining=False,
+        replicated_graph_count=REPL_FACTOR,
+        explicit=explicit,
+    )
 
     compare_anchors_repl(no_repl_anchors, repl_anchors)
 
@@ -275,18 +287,22 @@ def test_output_matches_pipeline_infer(explicit):
     Inference only
     """
 
-    pipe_anchors = get_model_anchors(doSharding=True,
-                                     doPipelining=True,
-                                     batchesPerStep=BPS,
-                                     doTraining=False,
-                                     replicated_graph_count=REPL_FACTOR,
-                                     explicit=explicit)
-    no_pipe_anchors = get_model_anchors(doSharding=True,
-                                        doPipelining=False,
-                                        batchesPerStep=BPS,
-                                        doTraining=False,
-                                        replicated_graph_count=REPL_FACTOR,
-                                        explicit=explicit)
+    pipe_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=BPS,
+        doTraining=False,
+        replicated_graph_count=REPL_FACTOR,
+        explicit=explicit,
+    )
+    no_pipe_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=BPS,
+        doTraining=False,
+        replicated_graph_count=REPL_FACTOR,
+        explicit=explicit,
+    )
 
     compare_anchors_both_repl(pipe_anchors, no_pipe_anchors)
 
@@ -301,22 +317,26 @@ def test_output_matches_pipeline_train(explicit):
 
     Training
     """
-    no_repl_anchors = get_model_anchors(doSharding=True,
-                                        doPipelining=False,
-                                        batchesPerStep=BPS,
-                                        doTraining=True,
-                                        doGradientAccl=True,
-                                        acclSteps=4,
-                                        replicated_graph_count=REPL_FACTOR,
-                                        explicit=explicit)
-    repl_anchors = get_model_anchors(doSharding=True,
-                                     doPipelining=True,
-                                     batchesPerStep=BPS,
-                                     doTraining=True,
-                                     doGradientAccl=True,
-                                     acclSteps=4,
-                                     replicated_graph_count=REPL_FACTOR,
-                                     explicit=explicit)
+    no_repl_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=BPS,
+        doTraining=True,
+        doGradientAccl=True,
+        acclSteps=4,
+        replicated_graph_count=REPL_FACTOR,
+        explicit=explicit,
+    )
+    repl_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=BPS,
+        doTraining=True,
+        doGradientAccl=True,
+        acclSteps=4,
+        replicated_graph_count=REPL_FACTOR,
+        explicit=explicit,
+    )
 
     compare_anchors_pipe(no_repl_anchors, repl_anchors)
 

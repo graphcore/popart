@@ -7,7 +7,10 @@ import test_util as tu
 import torch
 import json
 
-from loss_scaling_util_test import getModelProto, run_automatic_loss_scaling_comparison_test
+from loss_scaling_util_test import (
+    getModelProto,
+    run_automatic_loss_scaling_comparison_test,
+)
 
 
 def loss_scaling_test(constLossScaling):
@@ -40,24 +43,30 @@ def loss_scaling_test(constLossScaling):
         # Set up a training session.
         with tu.create_test_device() as device:
             dataFlow = popart.DataFlow(
-                1, {
+                1,
+                {
                     c1: popart.AnchorReturnType("Final"),
                     p1: popart.AnchorReturnType("Final"),
-                    out: popart.AnchorReturnType("Final")
-                })
+                    out: popart.AnchorReturnType("Final"),
+                },
+            )
 
             # We're testing losses other than nll/l1 work.
             loss = builder.aiOnnx.reducesum([out])
-            optimizer = popart.SGD({
-                "defaultLearningRate": (sgd_learning_rate, True),
-                "defaultMomentum": (sgd_moment, False),
-                "lossScaling": (200, constLossScaling)
-            })
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=dataFlow,
-                                             loss=loss,
-                                             optimizer=optimizer)
+            optimizer = popart.SGD(
+                {
+                    "defaultLearningRate": (sgd_learning_rate, True),
+                    "defaultMomentum": (sgd_moment, False),
+                    "lossScaling": (200, constLossScaling),
+                }
+            )
+            session = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=dataFlow,
+                loss=loss,
+                optimizer=optimizer,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -76,9 +85,7 @@ def loss_scaling_test(constLossScaling):
         out = torch.matmul(c1, p1)
 
         # Set up optimizer, compute loss.
-        optimizer = torch.optim.SGD([p1],
-                                    lr=sgd_learning_rate,
-                                    momentum=sgd_moment)
+        optimizer = torch.optim.SGD([p1], lr=sgd_learning_rate, momentum=sgd_moment)
         optimizer.zero_grad()
         loss = torch.sum(out)
 
@@ -93,15 +100,15 @@ def loss_scaling_test(constLossScaling):
     c1_pytorch, p1_pytorch, out_pytorch = get_updated_p1_pytorch()
 
     # We're not expecting changes in c1 or out, check anyway.
-    assert (np.isclose(c1_popart, c1_init))
-    assert (np.isclose(c1_pytorch, c1_init))
-    assert (np.isclose(out_popart, out_init))
-    assert (np.isclose(out_pytorch, out_init))
+    assert np.isclose(c1_popart, c1_init)
+    assert np.isclose(c1_pytorch, c1_init)
+    assert np.isclose(out_popart, out_init)
+    assert np.isclose(out_pytorch, out_init)
 
     # We expect p1 to match.
-    assert (np.isclose(
+    assert np.isclose(
         p1_popart, p1_pytorch
-    )), f'Expected p1_popart={p1_popart} to match p1_pytorch={p1_pytorch}'
+    ), f"Expected p1_popart={p1_popart} to match p1_pytorch={p1_pytorch}"
 
 
 def test_loss_scaling_with_const():
@@ -129,10 +136,12 @@ def test_auto_loss_scaling_with_inference_session():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            _ = popart.InferenceSession(builder.getModelProto(),
-                                        deviceInfo=device,
-                                        dataFlow=popart.DataFlow(1, [out]),
-                                        userOptions=opts)
+            _ = popart.InferenceSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [out]),
+                userOptions=opts,
+            )
     assert e_info.value.args[0].endswith("Only compatible when doing training")
 
 
@@ -160,14 +169,17 @@ def test_auto_loss_scaling_with_const_loss_scale_tensor():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            _ = popart.TrainingSession(builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, []),
-                                       loss=loss,
-                                       optimizer=optimizer,
-                                       userOptions=opts)
+            _ = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, []),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
     assert e_info.value.args[0].endswith(
-        "The optimizer must have non-const loss scaling")
+        "The optimizer must have non-const loss scaling"
+    )
 
 
 def test_auto_loss_scaling_with_no_tracked_tensors():
@@ -191,14 +203,17 @@ def test_auto_loss_scaling_with_no_tracked_tensors():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            _ = popart.TrainingSession(builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [loss]),
-                                       loss=loss,
-                                       optimizer=optimizer,
-                                       userOptions=opts)
+            _ = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss]),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
     assert e_info.value.args[0].endswith(
-        "No tracked gradient tensors of type fp16 were found.")
+        "No tracked gradient tensors of type fp16 were found."
+    )
 
 
 def test_auto_loss_scaling_histogram_schedule_priority():
@@ -241,19 +256,19 @@ def test_auto_loss_scaling_histogram_schedule_priority():
     anchor_ids = gradient_anchor_ids + [loss_scale_id]
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=device,
-                                         dataFlow=popart.DataFlow(
-                                             bps, anchor_ids),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(bps, anchor_ids),
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+        )
 
         bigNumber = 10000000000000000
         checkExpected = lambda p: p > bigNumber
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     ops = ir["maingraph"]
 
     # Check that ALS transform actually ran by seeing if the HistogramOps exist
@@ -265,9 +280,10 @@ def test_auto_loss_scaling_histogram_schedule_priority():
     # value is.
     assert all(
         map(
-            lambda op: checkExpected(
-                np.double(op["attributes"]["schedulePriority"])),
-            filter(lambda op: op["type"] == "Histogram", ops)))
+            lambda op: checkExpected(np.double(op["attributes"]["schedulePriority"])),
+            filter(lambda op: op["type"] == "Histogram", ops),
+        )
+    )
 
 
 def run_simple_training(optimizer, opts):
@@ -280,20 +296,22 @@ def run_simple_training(optimizer, opts):
     anchor_ids = gradient_anchor_ids + [loss_scale_id]
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=device,
-                                         dataFlow=popart.DataFlow(
-                                             bps, anchor_ids),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(bps, anchor_ids),
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+        )
         session.prepareDevice()
         session.weightsFromHost()
         anchors = session.initAnchorArrays()
 
         t0_data = np.random.rand(bps, *t_shape).astype(np.float16)
-        label_data = np.random.randint(0, label_shape[0],
-                                       bps * label_shape[0]).astype(np.int32)
+        label_data = np.random.randint(0, label_shape[0], bps * label_shape[0]).astype(
+            np.int32
+        )
         stepio = popart.PyStepIO({t0: t0_data, label: label_data}, anchors)
         session.run(stepio)
     return loss_scale_id, gradient_anchor_ids, anchors
@@ -314,8 +332,7 @@ def test_auto_loss_scaling_expected_loss_upscale_tensor_values():
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
-    loss_scale_id, gradient_anchor_ids, anchors = run_simple_training(
-        optimizer, opts)
+    loss_scale_id, gradient_anchor_ids, anchors = run_simple_training(optimizer, opts)
 
     # Manually determine the direction of the loss scale update
     f16_max = np.finfo(np.float16).max
@@ -331,7 +348,8 @@ def test_auto_loss_scaling_expected_loss_upscale_tensor_values():
             num_large_grad_elements += hist[1]
 
         proportion_small_grad_elements = num_small_grad_elements / (
-            num_small_grad_elements + num_large_grad_elements)
+            num_small_grad_elements + num_large_grad_elements
+        )
         # Observe that the proportion of small grad elements is large, as we
         # have started with a very small loss scale
         assert proportion_small_grad_elements > 0.9
@@ -365,8 +383,7 @@ def test_auto_loss_scaling_expected_loss_downscale_tensor_values():
     for i in range(len(anchors[loss_scale_id])):
         # Therefore the loss scale is halved each step
         if i > 0:
-            assert np.allclose(anchors[loss_scale_id][i],
-                               0.5 * prev_loss_scale)
+            assert np.allclose(anchors[loss_scale_id][i], 0.5 * prev_loss_scale)
             prev_loss_scale = anchors[loss_scale_id][i]
 
 
@@ -398,21 +415,23 @@ def test_auto_loss_scaling_and_continuous_update_pipelining():
 
     with tu.create_test_device(2) as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            _ = popart.TrainingSession(builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [loss]),
-                                       loss=loss,
-                                       optimizer=optimizer,
-                                       userOptions=opts)
+            _ = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss]),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
     assert e_info.value.args[0].endswith(
         "Automatic loss scaling is not currently supported when the 'enablePipelining' SessionOption is set to 'true', but the 'enableGradientAccumulation' SessionOption is set to 'false'"
     )
 
 
-@pytest.mark.parametrize("thresholdUpperCountProportion",
-                         [-0.1, 0.0, 0.5, 1.0, 1.1])
+@pytest.mark.parametrize("thresholdUpperCountProportion", [-0.1, 0.0, 0.5, 1.0, 1.1])
 def test_auto_loss_scaling_threshold_upper_count_proportion_range(
-        thresholdUpperCountProportion):
+    thresholdUpperCountProportion,
+):
     """Test if an error is thrown if the thresholdUpperCountProportion
     hyperparameter is outside [0, 1].
     """
@@ -429,27 +448,30 @@ def test_auto_loss_scaling_threshold_upper_count_proportion_range(
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
-    opts.automaticLossScalingSettings.thresholdUpperCountProportion = thresholdUpperCountProportion
+    opts.automaticLossScalingSettings.thresholdUpperCountProportion = (
+        thresholdUpperCountProportion
+    )
 
     with tu.create_test_device() as device:
         with ExitStack() as stack:
             e_info = None
             if not 0 <= thresholdUpperCountProportion <= 1:
-                e_info = stack.enter_context(
-                    pytest.raises(popart.popart_exception))
+                e_info = stack.enter_context(pytest.raises(popart.popart_exception))
 
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [loss]),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            session = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss]),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
             session.prepareDevice()
 
             if e_info:
                 assert e_info.value.args[0].startswith(
-                    "Out of range value for 'thresholdUpperCountProportion'.")
+                    "Out of range value for 'thresholdUpperCountProportion'."
+                )
 
 
 @pytest.mark.parametrize("binEdgeLocation", [-0.1, 0.0, 0.5, 1.0, 1.1])
@@ -476,16 +498,16 @@ def test_auto_loss_scaling_bin_edge_factor_range(binEdgeLocation):
         with ExitStack() as stack:
             e_info = None
             if not 0 <= binEdgeLocation <= 1:
-                e_info = stack.enter_context(
-                    pytest.raises(popart.popart_exception))
+                e_info = stack.enter_context(pytest.raises(popart.popart_exception))
 
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [loss]),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            session = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss]),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
 
             if e_info:
                 assert e_info.value.args[0].startswith(
@@ -520,12 +542,14 @@ def test_auto_loss_scaling_with_mixed_precision_trackable_tensors():
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(builder.getModelProto(),
-                                         deviceInfo=device,
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [loss]),
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+        )
         session.prepareDevice()
 
 
@@ -551,13 +575,14 @@ def test_auto_loss_scaling_remove_float32_from_to_track_tensors():
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
 
-            session = popart.TrainingSession(builder.getModelProto(),
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [loss]),
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             userOptions=opts)
+            session = popart.TrainingSession(
+                builder.getModelProto(),
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [loss]),
+                loss=loss,
+                optimizer=optimizer,
+                userOptions=opts,
+            )
             session.prepareDevice()
 
     assert e_info.value.args[0].endswith(
@@ -569,20 +594,24 @@ def test_weight_updates_for_larger_than_max_fp16(tmpdir):
     """
     Test that confirms weight updates match non-als when loss scale is >max(fp16).
     """
-    sgd0 = popart.SGD({
-        "lossScaling": (np.finfo(np.float16).max + 1, False),
-        "defaultMomentum": (0.5, False),
-        "defaultVelocityScaling": (0.5, False),
-        "defaultDampening": (0.5, False),
-        "defaultWeightDecay": (0.5, False)
-    })
-    sgd1 = popart.SGD({
-        "lossScaling": (1000 * np.finfo(np.float16).max, False),
-        "defaultMomentum": (0.5, False),
-        "defaultVelocityScaling": (0.5, False),
-        "defaultDampening": (0.5, False),
-        "defaultWeightDecay": (0.5, False)
-    })
+    sgd0 = popart.SGD(
+        {
+            "lossScaling": (np.finfo(np.float16).max + 1, False),
+            "defaultMomentum": (0.5, False),
+            "defaultVelocityScaling": (0.5, False),
+            "defaultDampening": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+        }
+    )
+    sgd1 = popart.SGD(
+        {
+            "lossScaling": (1000 * np.finfo(np.float16).max, False),
+            "defaultMomentum": (0.5, False),
+            "defaultVelocityScaling": (0.5, False),
+            "defaultDampening": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+        }
+    )
     run_automatic_loss_scaling_comparison_test(tmpdir, [sgd0, sgd1])
 
 
@@ -598,10 +627,9 @@ def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
     """
     np.random.seed(2)
     init_ls = 1000.0
-    optimizer = popart.SGD({
-        "lossScaling": (init_ls, False),
-        "defaultLearningRate": (20, False)
-    })
+    optimizer = popart.SGD(
+        {"lossScaling": (init_ls, False), "defaultLearningRate": (20, False)}
+    )
     opts = popart.SessionOptions()
     opts.automaticLossScalingSettings.enabled = True
 
@@ -612,18 +640,20 @@ def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
     final_ls_id = "finalLossScale"
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=device,
-                                         dataFlow=popart.DataFlow(
-                                             bps, [ls_id, final_ls_id]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(bps, [ls_id, final_ls_id]),
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+        )
         session.prepareDevice()
         session.weightsFromHost()
         t0_data = 10000.0 * np.random.rand(bps, *t_shape).astype(np.float16)
-        label_data = np.random.randint(0, label_shape[0],
-                                       bps * label_shape[0]).astype(np.int32)
+        label_data = np.random.randint(0, label_shape[0], bps * label_shape[0]).astype(
+            np.int32
+        )
         inputs = {t0: t0_data, label: label_data}
 
         anchors = session.initAnchorArrays()
@@ -639,10 +669,9 @@ def test_auto_loss_scaling_update_learning_rate_without_resetting_loss_scale():
                 assert final_ls != anchors[final_ls_id][i - 1]
 
         # Update the learning rate
-        new_optimizer = popart.SGD({
-            "lossScaling": (init_ls, False),
-            "defaultLearningRate": (12, False)
-        })
+        new_optimizer = popart.SGD(
+            {"lossScaling": (init_ls, False), "defaultLearningRate": (12, False)}
+        )
         session.updateOptimizerFromHost(new_optimizer)
 
         session.run(popart.PyStepIO(inputs, anchors))

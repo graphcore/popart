@@ -10,8 +10,7 @@ class VersionChecker:
     """Checks that the installed binaries needed for linting is at the right version."""
 
     def __init__(self) -> None:
-        """Set up class and populate members by calling check_version.
-        """
+        """Set up class and populate members by calling check_version."""
         self.install_dir = Path(__file__).parents[1].joinpath("install")
         version_file = self.install_dir.joinpath("versions.yaml")
 
@@ -32,26 +31,27 @@ class VersionChecker:
         self.check_versions()
 
     def check_versions(self) -> None:
-        """Make a subprocess.call to check whether the --version is correct.
-        """
+        """Make a subprocess.call to check whether the --version is correct."""
         for linter, version in self.version_list.items():
             try:
-                result = subprocess.run((linter, "--version"),
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        check=False)
+                result = subprocess.run(
+                    (linter, "--version"),
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
                 std_out = result.stdout.decode("utf-8")
                 if not version in std_out:
                     self.version_errors[
-                        linter] = f"{linter} does not have the correct version\n{linter} --version returned\n{std_out}\n"
+                        linter
+                    ] = f"{linter} does not have the correct version\n{linter} --version returned\n{std_out}\n"
                     self.linter_with_errors.add(linter)
             except FileNotFoundError:
                 self.missing_errors[linter] = f"{linter} was not found."
                 self.linter_with_errors.add(linter)
 
     def print_errors(self) -> None:
-        """Print all errors.
-        """
+        """Print all errors."""
         if len(self.missing_errors) != 0:
             self.print_missing_errors()
             print()
@@ -60,8 +60,9 @@ class VersionChecker:
             print()
         if len(self.missing_errors) != 0 or len(self.version_errors) != 0:
             repo_dir = Path(__file__).parents[3]
-            relative_path = self.install_dir.joinpath(
-                'install_linters.py').relative_to(repo_dir)
+            relative_path = self.install_dir.joinpath("install_linters.py").relative_to(
+                repo_dir
+            )
             module_path = str(relative_path.with_suffix("")).replace("/", ".")
             print(
                 "\n\n\x1b[0;30;43mInstall the correct linter versions with the following command:\x1b[0m"
@@ -72,14 +73,12 @@ class VersionChecker:
             )
 
     def print_missing_errors(self) -> None:
-        """Print the linters not found.
-        """
+        """Print the linters not found."""
         for _, error in self.missing_errors.items():
             print(error)
 
     def print_version_errors(self) -> None:
-        """Print the linters which did not coincide with the expected version.
-        """
+        """Print the linters which did not coincide with the expected version."""
         for _, error in self.version_errors.items():
             print(error)
 

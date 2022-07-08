@@ -96,7 +96,7 @@ def test_loss_inputs_untouched():
         return []
 
     session = PopartTestSession()
-    session.mode = 'train'
+    session.mode = "train"
     session.patterns = popart.Patterns(popart.PatternsLevel.Default)
     with tu.create_test_device() as device:
         session.prepare(init_builder, device=device)

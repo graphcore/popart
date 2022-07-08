@@ -8,8 +8,9 @@ from popxl.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
-def receptive_attributes(strides, pads, out_pads, dilations, in_dilations,
-                         auto_pad, ceil_mode):
+def receptive_attributes(
+    strides, pads, out_pads, dilations, in_dilations, auto_pad, ceil_mode
+):
     receptive_attributes = _ir.op.ReceptiveOpAttributes()
     if strides:
         receptive_attributes.strides = strides
@@ -23,10 +24,10 @@ def receptive_attributes(strides, pads, out_pads, dilations, in_dilations,
         receptive_attributes.inDilations = list(in_dilations)
     if auto_pad:
         pad_dict = {
-            'not_set': 'NOTSET',
-            'same_upper': 'SAME_UPPER',
-            'same_lower': 'SAME_LOWER',
-            'valid': 'VALID'
+            "not_set": "NOTSET",
+            "same_upper": "SAME_UPPER",
+            "same_lower": "SAME_LOWER",
+            "valid": "VALID",
         }
         receptive_attributes.auto_pad = pad_dict[auto_pad]
     if ceil_mode:
@@ -35,15 +36,17 @@ def receptive_attributes(strides, pads, out_pads, dilations, in_dilations,
 
 
 @op_debug_context
-def average_pool(t: Tensor,
-                 kernel_size: Tuple[int],
-                 stride: Optional[Tuple[int]] = None,
-                 padding: Optional[Tuple[int]] = None,
-                 out_pads: Optional[Tuple[int]] = None,
-                 dilation: Optional[Tuple[int]] = None,
-                 in_dilations: Optional[Tuple[int]] = None,
-                 auto_pad: Optional[PadType] = 'not_set',
-                 ceil_mode: bool = False) -> Tensor:
+def average_pool(
+    t: Tensor,
+    kernel_size: Tuple[int],
+    stride: Optional[Tuple[int]] = None,
+    padding: Optional[Tuple[int]] = None,
+    out_pads: Optional[Tuple[int]] = None,
+    dilation: Optional[Tuple[int]] = None,
+    in_dilations: Optional[Tuple[int]] = None,
+    auto_pad: Optional[PadType] = "not_set",
+    ceil_mode: bool = False,
+) -> Tensor:
     """
     Average pool a tensor.
 
@@ -119,32 +122,41 @@ def average_pool(t: Tensor,
     check_in_graph(g, t=t)
     check_tensor_ipu_and_tile_set(t=t)
 
-    settings = ctx._get_op_settings('averagepool')
-    opid = _ir.OperatorIdentifier("ai.onnx", "AveragePool", 11,
-                                  _ir.NumInputs(1, 1), 1)
-    recp_attr = receptive_attributes(stride, padding, out_pads, dilation,
-                                     in_dilations, auto_pad, ceil_mode)
+    settings = ctx._get_op_settings("averagepool")
+    opid = _ir.OperatorIdentifier("ai.onnx", "AveragePool", 11, _ir.NumInputs(1, 1), 1)
+    recp_attr = receptive_attributes(
+        stride, padding, out_pads, dilation, in_dilations, auto_pad, ceil_mode
+    )
     op = pb_g.createConnectedOp_AveragePoolOp(
         {
             0: t.id,
-        }, {
+        },
+        {
             0: g._create_tensor_id("averagepool_out"),
-        }, opid, 0, list(kernel_size), recp_attr, settings)
+        },
+        opid,
+        0,
+        list(kernel_size),
+        recp_attr,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def max_pool(t: Tensor,
-             kernel_size: Tuple[int],
-             stride: Optional[Tuple[int]] = None,
-             padding: Optional[Tuple[int]] = None,
-             out_pads: Optional[Tuple[int]] = None,
-             dilation: Optional[Tuple[int]] = None,
-             in_dilations: Optional[Tuple[int]] = None,
-             auto_pad: Optional[PadType] = 'not_set',
-             ceil_mode: bool = False,
-             storage_order: Literal['row', 'column'] = "row") -> Tensor:
+def max_pool(
+    t: Tensor,
+    kernel_size: Tuple[int],
+    stride: Optional[Tuple[int]] = None,
+    padding: Optional[Tuple[int]] = None,
+    out_pads: Optional[Tuple[int]] = None,
+    dilation: Optional[Tuple[int]] = None,
+    in_dilations: Optional[Tuple[int]] = None,
+    auto_pad: Optional[PadType] = "not_set",
+    ceil_mode: bool = False,
+    storage_order: Literal["row", "column"] = "row",
+) -> Tensor:
     """
     Max pool a tensor.
 
@@ -210,18 +222,25 @@ def max_pool(t: Tensor,
     check_in_graph(g, t=t)
     check_tensor_ipu_and_tile_set(t=t)
 
-    settings = ctx._get_op_settings('maxpool')
-    opid = _ir.OperatorIdentifier("ai.onnx", "MaxPool", 11, _ir.NumInputs(
-        1, 1), 1)
-    recp_attr = receptive_attributes(stride, padding, out_pads, dilation,
-                                     in_dilations, auto_pad, ceil_mode)
+    settings = ctx._get_op_settings("maxpool")
+    opid = _ir.OperatorIdentifier("ai.onnx", "MaxPool", 11, _ir.NumInputs(1, 1), 1)
+    recp_attr = receptive_attributes(
+        stride, padding, out_pads, dilation, in_dilations, auto_pad, ceil_mode
+    )
     storage_order_int = 0
     if storage_order == "column":
         storage_order_int = 1
     op = pb_g.createConnectedOp_MaxPoolOp(
         {
             0: t.id,
-        }, {
+        },
+        {
             0: g._create_tensor_id("maxpool_out"),
-        }, opid, list(kernel_size), storage_order_int, recp_attr, settings)
+        },
+        opid,
+        list(kernel_size),
+        storage_order_int,
+        recp_attr,
+        settings,
+    )
     return Tensor._from_pb_tensor(op.outTensor(0))

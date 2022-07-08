@@ -16,58 +16,64 @@ def weight_decay_is_required(weight_decay: Union[None, float, Tensor]):
     return False
 
 
-def create_adamupdater(acc_first_order: Tensor,
-                       acc_second_order: Tensor,
-                       ins,
-                       mode,
-                       weight: Optional[Tensor] = None,
-                       time_step: Optional[Tensor] = None,
-                       weight_decay: Optional[Union[float, Tensor]] = None,
-                       beta1: Optional[Union[float, Tensor]] = None,
-                       beta2: Optional[Union[float, Tensor]] = None,
-                       epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def create_adamupdater(
+    acc_first_order: Tensor,
+    acc_second_order: Tensor,
+    ins,
+    mode,
+    weight: Optional[Tensor] = None,
+    time_step: Optional[Tensor] = None,
+    weight_decay: Optional[Union[float, Tensor]] = None,
+    beta1: Optional[Union[float, Tensor]] = None,
+    beta2: Optional[Union[float, Tensor]] = None,
+    epsilon: Union[float, Tensor] = 1e-07,
+) -> Tensor:
 
     ctx = get_current_context()
     g = ctx.graph
     pb_g = g._pb_graph
 
-    tensors_to_check = dict(acc_first_order=acc_first_order,
-                            acc_second_order=acc_second_order)
+    tensors_to_check = dict(
+        acc_first_order=acc_first_order, acc_second_order=acc_second_order
+    )
 
     if isinstance(weight, Tensor):
-        tensors_to_check['weight'] = weight
+        tensors_to_check["weight"] = weight
     if isinstance(time_step, Tensor):
-        tensors_to_check['time_step'] = time_step
+        tensors_to_check["time_step"] = time_step
     if isinstance(weight_decay, Tensor):
-        tensors_to_check['weight_decay'] = weight_decay
+        tensors_to_check["weight_decay"] = weight_decay
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
 
     outs = {
-        0: g._create_tensor_id('Updater'),
+        0: g._create_tensor_id("Updater"),
     }
     wd = handle_optimizer_value(weight_decay, ins, 4)
     b1 = handle_optimizer_value(beta1, ins, 5)
     b2 = handle_optimizer_value(beta2, ins, 6)
     eps = handle_optimizer_value(epsilon, ins, 7)
 
-    settings = ctx._get_op_settings('adamupdater')
-    op = pb_g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2, eps,
-                                              settings)
+    settings = ctx._get_op_settings("adamupdater")
+    op = pb_g.createConnectedOp_AdamUpdaterOp(
+        ins, outs, mode, wd, b1, b2, eps, settings
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def adam_updater(acc_first_order: Tensor,
-                 acc_second_order: Tensor,
-                 weight: Optional[Tensor] = None,
-                 time_step: Optional[Tensor] = None,
-                 weight_decay: Optional[Union[float, Tensor]] = None,
-                 beta1: Optional[Union[float, Tensor]] = None,
-                 beta2: Optional[Union[float, Tensor]] = None,
-                 epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def adam_updater(
+    acc_first_order: Tensor,
+    acc_second_order: Tensor,
+    weight: Optional[Tensor] = None,
+    time_step: Optional[Tensor] = None,
+    weight_decay: Optional[Union[float, Tensor]] = None,
+    beta1: Optional[Union[float, Tensor]] = None,
+    beta2: Optional[Union[float, Tensor]] = None,
+    epsilon: Union[float, Tensor] = 1e-07,
+) -> Tensor:
     """
     Calculate an updater term to update the weights for Adam.
 
@@ -120,28 +126,38 @@ def adam_updater(acc_first_order: Tensor,
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
-        raise ValueError(
-            "Bias correction requires both beta1 and beta2 not None.")
+        raise ValueError("Bias correction requires both beta1 and beta2 not None.")
     if time_step is not None and beta1 is not None and beta2 is not None:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.Adam
     else:
         adam_mode = _ir.AdamMode.AdamNoBias
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, beta2, epsilon)
+    return create_adamupdater(
+        acc_first_order,
+        acc_second_order,
+        ins,
+        adam_mode,
+        weight,
+        time_step,
+        weight_decay,
+        beta1,
+        beta2,
+        epsilon,
+    )
 
 
 @op_debug_context
-def lamb_updater(acc_first_order: Tensor,
-                 acc_second_order: Tensor,
-                 weight: Optional[Tensor] = None,
-                 time_step: Optional[Tensor] = None,
-                 weight_decay: Optional[Union[float, Tensor]] = None,
-                 beta1: Optional[Union[float, Tensor]] = None,
-                 beta2: Optional[Union[float, Tensor]] = None,
-                 epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def lamb_updater(
+    acc_first_order: Tensor,
+    acc_second_order: Tensor,
+    weight: Optional[Tensor] = None,
+    time_step: Optional[Tensor] = None,
+    weight_decay: Optional[Union[float, Tensor]] = None,
+    beta1: Optional[Union[float, Tensor]] = None,
+    beta2: Optional[Union[float, Tensor]] = None,
+    epsilon: Union[float, Tensor] = 1e-07,
+) -> Tensor:
     """
     Calculate an updater term to update the weights for LAMB.
 
@@ -200,27 +216,37 @@ def lamb_updater(acc_first_order: Tensor,
         ins[0] = weight.id
 
     if time_step is not None and (beta1 is None or beta2 is None):
-        raise ValueError(
-            "Bias correction requires both beta1 and beta2 not None.")
+        raise ValueError("Bias correction requires both beta1 and beta2 not None.")
     if time_step is not None and beta1 is not None and beta2 is not None:
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.Lamb
     else:
         adam_mode = _ir.AdamMode.LambNoBias
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, beta2, epsilon)
+    return create_adamupdater(
+        acc_first_order,
+        acc_second_order,
+        ins,
+        adam_mode,
+        weight,
+        time_step,
+        weight_decay,
+        beta1,
+        beta2,
+        epsilon,
+    )
 
 
 @op_debug_context
-def adamax_updater(acc_first_order: Tensor,
-                   acc_second_order: Tensor,
-                   weight: Optional[Tensor] = None,
-                   time_step: Tensor = None,
-                   weight_decay: Optional[Union[float, Tensor]] = None,
-                   beta1: Union[float, Tensor] = 0.9,
-                   epsilon: Union[float, Tensor] = 1e-07) -> Tensor:
+def adamax_updater(
+    acc_first_order: Tensor,
+    acc_second_order: Tensor,
+    weight: Optional[Tensor] = None,
+    time_step: Tensor = None,
+    weight_decay: Optional[Union[float, Tensor]] = None,
+    beta1: Union[float, Tensor] = 0.9,
+    epsilon: Union[float, Tensor] = 1e-07,
+) -> Tensor:
     """
     Calculate an updater term to update the weights for Adamax.
 
@@ -272,6 +298,15 @@ def adamax_updater(acc_first_order: Tensor,
         ins[3] = time_step.id
         adam_mode = _ir.AdamMode.AdaMax
 
-    return create_adamupdater(acc_first_order, acc_second_order, ins,
-                              adam_mode, weight, time_step, weight_decay,
-                              beta1, None, epsilon)
+    return create_adamupdater(
+        acc_first_order,
+        acc_second_order,
+        ins,
+        adam_mode,
+        weight,
+        time_step,
+        weight_decay,
+        beta1,
+        None,
+        epsilon,
+    )

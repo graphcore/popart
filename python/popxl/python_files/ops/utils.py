@@ -8,14 +8,20 @@ from popxl.dtypes import dtype
 from popxl.errors import UndefinedValue
 
 __all__ = [
-    "cast_if_needed", "check_in_graph", "check_tensor_ipu_and_tile_set",
-    "handle_negative_axis", "convert_optional_float", "convert_optional_int",
-    "convert_optional_dtype", "convert_optional_int64_list"
+    "cast_if_needed",
+    "check_in_graph",
+    "check_tensor_ipu_and_tile_set",
+    "handle_negative_axis",
+    "convert_optional_float",
+    "convert_optional_int",
+    "convert_optional_dtype",
+    "convert_optional_int64_list",
 ]
 
 
 def cast_if_needed(t: Tensor, data_type: dtype) -> Tensor:
     from popxl.ops.cast import cast
+
     if t.dtype != data_type:
         return cast(t, data_type)
     return t
@@ -29,10 +35,11 @@ def check_in_graph(graph: Graph, *args, **tensors: Tensor):
 
     You must specify all tensors using keyword augments to make the error message clearer.
     """
-    #Python >=3.7 signature `check_in_graph(graph, *, **tensors: Tensor)`
+    # Python >=3.7 signature `check_in_graph(graph, *, **tensors: Tensor)`
     if len(args) > 0:
         raise Exception(
-            "Internal error: please specify all tensors as keyword arguments.")
+            "Internal error: please specify all tensors as keyword arguments."
+        )
 
     for name, tensor in tensors.items():
         if not isinstance(tensor, Tensor):
@@ -52,29 +59,35 @@ def check_tensor_ipu_and_tile_set(*args, **tensors: Tensor):
     If a tensor's IPU or tile set cannot be determined, the check is skipped.
     You must specify all tensors using keyword augments to make the error message clearer.
     """
-    #Python >=3.7 signature `check_tensor_ipu_and_tile_set(*, **tensors: Tensor)`
+    # Python >=3.7 signature `check_tensor_ipu_and_tile_set(*, **tensors: Tensor)`
     if len(args) > 0:
         raise Exception(
-            "Internal error: please specify all tensors as keyword arguments.")
+            "Internal error: please specify all tensors as keyword arguments."
+        )
 
     def get_ipu_and_tile_set(t):
         try:
-            return t._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
-                                           raise_on_undefined_ipu=False)
+            return t._get_ipu_and_tile_set(
+                raise_on_undefined_tile_set=False, raise_on_undefined_ipu=False
+            )
         except UndefinedValue:
             return None, None
 
-    ipus, tile_sets, names = zip(*[(*get_ipu_and_tile_set(tensor), name)
-                                   for name, tensor in tensors.items()])
+    ipus, tile_sets, names = zip(
+        *[(*get_ipu_and_tile_set(tensor), name) for name, tensor in tensors.items()]
+    )
 
     ipus_and_names = zip(ipus, names)
     tile_sets_and_names = zip(tile_sets, names)
 
-    ipus_and_names = [(ipu, name) for ipu, name in ipus_and_names
-                      if ipu is not None and ipu != -1]
-    tile_sets_and_names = [(tile_set, name)
-                           for tile_set, name in tile_sets_and_names
-                           if tile_set is not None and tile_set != 'undefined']
+    ipus_and_names = [
+        (ipu, name) for ipu, name in ipus_and_names if ipu is not None and ipu != -1
+    ]
+    tile_sets_and_names = [
+        (tile_set, name)
+        for tile_set, name in tile_sets_and_names
+        if tile_set is not None and tile_set != "undefined"
+    ]
 
     if len(ipus_and_names) > 1:
         ipu_0, name_0 = ipus_and_names[0]
@@ -106,10 +119,10 @@ def convert_optional_int(v: Optional[int]):
 
 
 def convert_optional_dtype(dt: Optional[dtype]):
-    return _ir.OptionalDataType(
-        dt._pb_dtype) if dt is not None else _ir.OptionalDataType()
+    return (
+        _ir.OptionalDataType(dt._pb_dtype) if dt is not None else _ir.OptionalDataType()
+    )
 
 
 def convert_optional_int64_list(l: Optional[List[int]]):
-    return _ir.OptionalInt64Vector(
-        l) if l is not None else _ir.OptionalInt64Vector()
+    return _ir.OptionalInt64Vector(l) if l is not None else _ir.OptionalInt64Vector()

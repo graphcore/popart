@@ -69,10 +69,13 @@ def generate_identity_inference_session_data():
     return data
 
 
-@pytest.mark.parametrize("inputShape,inputArray,BPS,art,R,explicit,expected",
-                         generate_identity_inference_session_data())
-def test_identity_inference_session(inputShape, inputArray, BPS, art, R,
-                                    explicit, expected):
+@pytest.mark.parametrize(
+    "inputShape,inputArray,BPS,art,R,explicit,expected",
+    generate_identity_inference_session_data(),
+)
+def test_identity_inference_session(
+    inputShape, inputArray, BPS, art, R, explicit, expected
+):
     builder = popart.Builder()
 
     inInfo = popart.TensorInfo("FLOAT", inputShape)
@@ -93,10 +96,9 @@ def test_identity_inference_session(inputShape, inputArray, BPS, art, R,
     opts.useHostCopyOps = explicit
 
     with tu.create_test_device(numIpus=R) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device,
-                                          userOptions=opts)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device, userOptions=opts
+        )
 
         session.prepareDevice()
 
@@ -107,7 +109,7 @@ def test_identity_inference_session(inputShape, inputArray, BPS, art, R,
 
         session.run(stepio)
 
-    assert (np.array_equal(anchors[o], expected))
+    assert np.array_equal(anchors[o], expected)
 
 
 def generate_simple_training_session_data():
@@ -151,17 +153,19 @@ def generate_simple_training_session_data():
     return data
 
 
-@pytest.mark.parametrize("inputShape,inputArray,BPS,art,GA,explicit,expected",
-                         generate_simple_training_session_data())
-def test_simple_training_session(inputShape, inputArray, BPS, art, GA,
-                                 explicit, expected):
+@pytest.mark.parametrize(
+    "inputShape,inputArray,BPS,art,GA,explicit,expected",
+    generate_simple_training_session_data(),
+)
+def test_simple_training_session(
+    inputShape, inputArray, BPS, art, GA, explicit, expected
+):
     builder = popart.Builder()
 
     inInfo = popart.TensorInfo("FLOAT", inputShape)
 
     i1 = builder.addInputTensor(inInfo)
-    w1 = builder.addInitializedInputTensor(
-        np.zeros(inputShape, dtype=np.float32), "w1")
+    w1 = builder.addInitializedInputTensor(np.zeros(inputShape, dtype=np.float32), "w1")
     o = builder.aiOnnx.add([i1, w1])
     l1 = builder.aiGraphcore.l1loss([o], 0.0)
 
@@ -177,12 +181,14 @@ def test_simple_training_session(inputShape, inputArray, BPS, art, GA,
     opts.useHostCopyOps = explicit
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         deviceInfo=device,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(0.01))
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            deviceInfo=device,
+            userOptions=opts,
+            loss=l1,
+            optimizer=popart.ConstSGD(0.01),
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -194,7 +200,7 @@ def test_simple_training_session(inputShape, inputArray, BPS, art, GA,
 
         session.run(stepio)
 
-    assert (np.array_equal(anchors[o], expected))
+    assert np.array_equal(anchors[o], expected)
 
 
 # Error cases
@@ -202,8 +208,7 @@ def test_invalid_art_id():
     with pytest.raises(popart.popart_exception) as e_info:
         popart.AnchorReturnType("INVALID")
 
-    assert (e_info.value.args[0] ==
-            "Invalid anchor return type ID supplied: INVALID")
+    assert e_info.value.args[0] == "Invalid anchor return type ID supplied: INVALID"
 
 
 def test_invalid_period1():
@@ -211,21 +216,20 @@ def test_invalid_period1():
         popart.AnchorReturnType("ALL", 2)
 
     assert (
-        e_info.value.args[0] ==
-        "A return period should not be supplied for this anchor return type")
+        e_info.value.args[0]
+        == "A return period should not be supplied for this anchor return type"
+    )
 
 
 def test_invalid_period2():
     with pytest.raises(popart.popart_exception) as e_info:
         popart.AnchorReturnType("EveryN", -1)
 
-    assert (e_info.value.args[0] ==
-            "Anchor return period must be greater than zero")
+    assert e_info.value.args[0] == "Anchor return period must be greater than zero"
 
 
 def test_invalid_period3():
     with pytest.raises(popart.popart_exception) as e_info:
         popart.AnchorReturnType("EveryN")
 
-    assert (e_info.value.args[0] ==
-            "Must specify return period with option 'EVERYN'")
+    assert e_info.value.args[0] == "Must specify return period with option 'EVERYN'"

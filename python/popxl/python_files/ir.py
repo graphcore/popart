@@ -4,8 +4,18 @@ import inspect
 import os
 from collections import OrderedDict
 from pathlib import Path
-from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
-                    Optional, Set, Tuple, Union)
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 from typing_extensions import Literal
 from weakref import WeakValueDictionary
 
@@ -17,11 +27,11 @@ from popxl.tensor import Tensor, TensorByRef, TensorSpec, graph_input, graph_out
 from popxl.replica_grouping import ReplicaGrouping
 
 if TYPE_CHECKING:
-    IrCache = WeakValueDictionary[int, 'Ir']
+    IrCache = WeakValueDictionary[int, "Ir"]
 
 
 class Ir:
-    def __init__(self, replication: Union[int, Literal['popdist']] = 1):
+    def __init__(self, replication: Union[int, Literal["popdist"]] = 1):
         """
         PopXL intermediate representation (IR).
 
@@ -47,13 +57,14 @@ class Ir:
         opts.explicitRecomputation = True
         opts.enableInplaceAmbiguityChecking = True
         # TODO(T64572): Remove below.
-        opts.engineOptions[
-            "debug.retainDebugInformation"] = opts.engineOptions.get(
-                "debug.retainDebugInformation", "false")
+        opts.engineOptions["debug.retainDebugInformation"] = opts.engineOptions.get(
+            "debug.retainDebugInformation", "false"
+        )
 
-        self._use_popdist = replication == 'popdist'
+        self._use_popdist = replication == "popdist"
         if self._use_popdist:
             import popdist.popart
+
             popdist.popart.configureSessionOptions(opts)
         else:
             self.replication_factor = replication
@@ -64,13 +75,13 @@ class Ir:
         if not self._pb_ir.getDataFlow().batchesPerStep():
             self._pb_ir.getDataFlow().setBatchesPerStep(1)
 
-    _ir_cache: 'IrCache' = WeakValueDictionary()
+    _ir_cache: "IrCache" = WeakValueDictionary()
 
     @classmethod
     def _from_pb(
-            cls,
-            pb_ir: '_ir.Ir',
-    ) -> 'Ir':
+        cls,
+        pb_ir: "_ir.Ir",
+    ) -> "Ir":
         """Return popxl.Ir for a pybind _ir.Ir.
 
         Used as a factory method.
@@ -91,11 +102,12 @@ class Ir:
             raise RuntimeError(
                 "Constructing a new Ir with _from_pb is unexpected. "
                 "This implies the Ir was garbage collected. "
-                "Is a popxl class missing a back reference to Ir?")
+                "Is a popxl class missing a back reference to Ir?"
+            )
         return Ir._ir_cache[_id]
 
     @property
-    def main_graph(self) -> 'Graph':
+    def main_graph(self) -> "Graph":
         """
         Every IR is initialised with a main graph. This method returns this graph.
 
@@ -106,12 +118,11 @@ class Ir:
         return Graph._from_pb(self._pb_ir.getMainGraph())
 
     def create_graph(
-            self,
-            fn: Union[Callable[..., Union[None, Tensor, Iterable[Tensor]]],
-                      Module],
-            *args: Any,
-            **kwargs: Any,
-    ) -> 'Graph':
+        self,
+        fn: Union[Callable[..., Union[None, Tensor, Iterable[Tensor]]], Module],
+        *args: Any,
+        **kwargs: Any,
+    ) -> "Graph":
         """
         Create a graph from a Python callable `fn` or the build method of a `Module`.
         The graph inputs are determined using the signature of the function `fn`
@@ -167,10 +178,11 @@ class Ir:
             func = fn.build
         else:
             # Note all Python functions will have __qualname__.
-            if not callable(fn) or not hasattr(fn, '__qualname__'):
+            if not callable(fn) or not hasattr(fn, "__qualname__"):
                 raise TypeError(
                     "Callable `fn` must be either a function or a class that "
-                    "extends popxl.Module")
+                    "extends popxl.Module"
+                )
             else:
                 qualname = fn.__qualname__
                 func = fn
@@ -181,7 +193,8 @@ class Ir:
         except TypeError as e:
             raise ValueError(
                 "The arguments, `args` and `kwargs`, do not match the signature"
-                " of the function `fn`.") from e
+                " of the function `fn`."
+            ) from e
         bound_args.apply_defaults()
         arguments = bound_args.arguments
 
@@ -195,11 +208,13 @@ class Ir:
 
                 if isinstance(arg, (Tensor, TensorSpec)):
                     by_ref = type_hint is TensorByRef
-                    arguments[name] = graph_input(arg.shape,
-                                                  arg.dtype,
-                                                  name,
-                                                  by_ref=by_ref,
-                                                  meta_shape=arg.meta_shape)
+                    arguments[name] = graph_input(
+                        arg.shape,
+                        arg.dtype,
+                        name,
+                        by_ref=by_ref,
+                        meta_shape=arg.meta_shape,
+                    )
 
                 # Supported args:
                 # 1. Argument that is a list `def func(x: List[Tensor])`
@@ -209,15 +224,19 @@ class Ir:
                     by_ref = False
                     signature_kind = signature.parameters[name].kind
 
-                    if (signature_kind is inspect.Parameter.VAR_POSITIONAL or
-                            signature_kind is inspect.Parameter.VAR_KEYWORD):
+                    if (
+                        signature_kind is inspect.Parameter.VAR_POSITIONAL
+                        or signature_kind is inspect.Parameter.VAR_KEYWORD
+                    ):
                         # Variable length argument (*arg)
                         # or variable keyword argument (**kwarg)
                         by_ref = type_hint is TensorByRef
                     elif isinstance(arg, (tuple, list)):
                         # Argument that is a list
-                        by_ref = type_hint is List[
-                            TensorByRef] or type_hint is Tuple[TensorByRef]
+                        by_ref = (
+                            type_hint is List[TensorByRef]
+                            or type_hint is Tuple[TensorByRef]
+                        )
                     elif isinstance(arg, dict):
                         # Argument that is a dict
                         continue
@@ -225,19 +244,20 @@ class Ir:
                     if isinstance(arg, dict):
                         items = arg.items()
                     else:
-                        items = zip([name + f'_{i}' for i in range(len(arg))],
-                                    arg)
+                        items = zip([name + f"_{i}" for i in range(len(arg))], arg)
 
                     in_args_sub = OrderedDict()
                     contains_tensor = False
 
                     for i, (subarg_name, subarg) in enumerate(items):
-                        if i > 0 and (isinstance(subarg, (Tensor, TensorSpec))
-                                      != contains_tensor):
+                        if i > 0 and (
+                            isinstance(subarg, (Tensor, TensorSpec)) != contains_tensor
+                        ):
                             raise TypeError(
                                 f"A {type(arg)} argument can't contain a "
                                 f"mixture of Tensors and other types. Arg name:"
-                                f" {name}. Value: {arg}")
+                                f" {name}. Value: {arg}"
+                            )
                         if isinstance(subarg, (Tensor, TensorSpec)):
                             contains_tensor = True
                             in_args_sub[subarg_name] = graph_input(
@@ -245,7 +265,8 @@ class Ir:
                                 subarg.dtype,
                                 subarg_name,
                                 by_ref=by_ref,
-                                meta_shape=subarg.meta_shape)
+                                meta_shape=subarg.meta_shape,
+                            )
                     if contains_tensor and isinstance(arg, dict):
                         arguments[name] = in_args_sub
                     elif contains_tensor and isinstance(arg, (tuple, list)):
@@ -254,12 +275,18 @@ class Ir:
             bounds_args_new = inspect.BoundArguments(signature, arguments)
             outputs = fn(*bounds_args_new.args, **bounds_args_new.kwargs)
 
-            if not (outputs is None or isinstance(outputs, Tensor) or
-                    (isinstance(outputs, Iterable)
-                     and all(isinstance(e, Tensor) for e in outputs))):
+            if not (
+                outputs is None
+                or isinstance(outputs, Tensor)
+                or (
+                    isinstance(outputs, Iterable)
+                    and all(isinstance(e, Tensor) for e in outputs)
+                )
+            ):
                 raise ValueError(
                     "Output of subgraph must be None, a Tensor or an iterable of Tensors."
-                    f" Output type: {type(outputs)}. Value {outputs}")
+                    f" Output type: {type(outputs)}. Value {outputs}"
+                )
 
             if outputs is None:
                 outputs = []
@@ -272,7 +299,7 @@ class Ir:
 
         return subgraph
 
-    def create_empty_graph(self, name: Optional[str] = None) -> 'Graph':
+    def create_empty_graph(self, name: Optional[str] = None) -> "Graph":
         """Create a new graph.
 
         Args:
@@ -282,13 +309,12 @@ class Ir:
             Graph: An empty graph.
         """
         name = self._create_name(name or "graph")
-        _pb_subgraph = self._pb_ir.createGraph(
-            name)  # type: ignore GraphId != str
+        _pb_subgraph = self._pb_ir.createGraph(name)  # type: ignore GraphId != str
         return Graph._from_pb(_pb_subgraph)
 
-    def dot_checkpoint(self,
-                       check: str,
-                       save_dir: Optional[Union[Path, str]] = None) -> None:
+    def dot_checkpoint(
+        self, check: str, save_dir: Optional[Union[Path, str]] = None
+    ) -> None:
         """Output a graphical representation of the graph in Graphviz DOT format.
 
         Checkpoints can be activated by either setting the `dotChecks` option in session
@@ -346,7 +372,7 @@ class Ir:
         name = self._pb_ir.createUniqueSubgraphId(name)
         return name
 
-    def get_all_d2h_streams(self) -> Set['DeviceToHostStream']:
+    def get_all_d2h_streams(self) -> Set["DeviceToHostStream"]:
         """
         Return all ``DeviceToHostStream`` in the IR which has a host_store op that streams along it.
         """
@@ -357,13 +383,12 @@ class Ir:
         # popxl.DeviceToHostStream from that.
         return {
             DeviceToHostStream._from_tensor(
-                Tensor._from_pb_tensor(
-                    self._pb_ir.getTensor(stream_tensor_id)))
-            for stream_tensor_id, _host_stored_tensors in
-            self._pb_ir.getHostStoreTensors().items()
+                Tensor._from_pb_tensor(self._pb_ir.getTensor(stream_tensor_id))
+            )
+            for stream_tensor_id, _host_stored_tensors in self._pb_ir.getHostStoreTensors().items()
         }
 
-    def get_all_h2d_streams(self) -> Set['HostToDeviceStream']:
+    def get_all_h2d_streams(self) -> Set["HostToDeviceStream"]:
         """
         Return all ``HostToDeviceStream``s in the IR which has a host_load op that streams along it.
         """
@@ -374,10 +399,9 @@ class Ir:
         # popxl.HostToDeviceStream from that.
         return {
             HostToDeviceStream._from_tensor(
-                Tensor._from_pb_tensor(
-                    self._pb_ir.getTensor(stream_tensor_id)))
-            for stream_tensor_id, _host_load_tensors in
-            self._pb_ir.getHostLoadTensors().items()
+                Tensor._from_pb_tensor(self._pb_ir.getTensor(stream_tensor_id))
+            )
+            for stream_tensor_id, _host_load_tensors in self._pb_ir.getHostLoadTensors().items()
         }
 
     @property
@@ -442,7 +466,7 @@ class Ir:
     def __hash__(self) -> int:
         return hash(self.id)
 
-    def __eq__(self, value: 'Ir') -> bool:
+    def __eq__(self, value: "Ir") -> bool:
         if not isinstance(value, Ir):
             raise TypeError(
                 f"Value must be of type popxl.Ir. Type: {type(value)}. Value: {value}."
@@ -452,10 +476,9 @@ class Ir:
     def __repr__(self) -> str:
         return f"Ir[id={self.id}]"
 
-    def replica_grouping(self,
-                         stride: int = 1,
-                         group_size: Optional[int] = None
-                         ) -> 'ReplicaGrouping':
+    def replica_grouping(
+        self, stride: int = 1, group_size: Optional[int] = None
+    ) -> "ReplicaGrouping":
         """
         Create a :py:class:`~popxl.ReplicaGrouping` object.
 
@@ -475,28 +498,28 @@ class Ir:
         .. code-block:: python
 
             ir.replica_grouping(1, 2).assignment
-            [0,0,1,1,2,2,3,3]
+            [0, 0, 1, 1, 2, 2, 3, 3]
 
         Group with ``stride`` 1 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
 
             ir.replica_grouping(1, 4).assignment
-            [0,0,0,0,1,1,1,1]
+            [0, 0, 0, 0, 1, 1, 1, 1]
 
         Group with ``stride`` 2 and ``group_size`` 4 for 8 replicas:
 
         .. code-block:: python
 
             ir.replica_grouping(2, 4).assignment
-            [0,1,0,1,0,1,0,1]
+            [0, 1, 0, 1, 0, 1, 0, 1]
 
         Group with ``stride`` 4 and ``group_size`` 2 for 8 replicas:
 
         .. code-block:: python
 
             ir.replica_grouping(4, 2).assignment
-            [0,1,2,3,0,1,2,3]
+            [0, 1, 2, 3, 0, 1, 2, 3]
 
         Args:
             stride (int): The offset between elements in a replica group. Defaults to 1.
@@ -506,6 +529,6 @@ class Ir:
         Returns:
             ReplicaGrouping: An object describing the replica grouping.
         """
-        return ReplicaGrouping._from_params(ir=self,
-                                            stride=stride,
-                                            group_size=group_size)
+        return ReplicaGrouping._from_params(
+            ir=self, stride=stride, group_size=group_size
+        )

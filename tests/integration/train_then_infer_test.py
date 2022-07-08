@@ -18,10 +18,9 @@ def test_train_then_infer_via_file():
     weight_data = np.ones([3, 2, 3, 3], np.float32)
     input = builder.addInputTensor(input_shape)
     weights = builder.addInitializedInputTensor(weight_data)
-    act = builder.aiOnnx.conv([input, weights],
-                              dilations=[1, 1],
-                              pads=[1, 1, 1, 1],
-                              strides=[1, 1])
+    act = builder.aiOnnx.conv(
+        [input, weights], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     o = builder.aiOnnx.relu([act])
 
     l1 = builder.aiGraphcore.l1loss([o], 0.1)
@@ -29,14 +28,16 @@ def test_train_then_infer_via_file():
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input,
-        popart.reservedGradientPrefix() + weights
+        popart.reservedGradientPrefix() + weights,
     ]
     training_dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
-            anchor_names[2]: popart.AnchorReturnType("All")
-        })
+            anchor_names[2]: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
@@ -58,14 +59,14 @@ def test_train_then_infer_via_file():
         # ----------------------------------------------
 
         # Prepare the Inference session
-        inference_dataFlow = popart.DataFlow(
-            1, {o: popart.AnchorReturnType("All")})
+        inference_dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         inference_session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=inference_dataFlow,
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         # Compile the inference graph
         inference_session.prepareDevice()
@@ -80,7 +81,8 @@ def test_train_then_infer_via_file():
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
             deviceInfo=device,
-            name="ivor")
+            name="ivor",
+        )
 
         # Compile the training graph
         training_session.prepareDevice()
@@ -94,8 +96,7 @@ def test_train_then_infer_via_file():
         training_inputs = {input: input_data}
 
         for _ in range(4):
-            training_session.run(
-                popart.PyStepIO(training_inputs, training_anchors))
+            training_session.run(popart.PyStepIO(training_inputs, training_anchors))
 
         # Save the trained weights
         training_session.modelToHost("test.onnx")
@@ -110,8 +111,7 @@ def test_train_then_infer_via_file():
         inference_anchors = inference_session.initAnchorArrays()
         inference_inputs = {input: input_data}
 
-        inference_session.run(
-            popart.PyStepIO(inference_inputs, inference_anchors))
+        inference_session.run(popart.PyStepIO(inference_inputs, inference_anchors))
 
     # check that the profile.pop as been created in the subdirectories
     assert (os.path.isfile(tempDir.name + "/inference/profile.pop"), True)
@@ -128,10 +128,9 @@ def test_cannot_call_resethostweights_with_constant_weights():
     weight_data = np.ones([3, 2, 3, 3], np.float32)
     input = builder.addInputTensor(input_shape)
     weights = builder.addInitializedInputTensor(weight_data)
-    act = builder.aiOnnx.conv([input, weights],
-                              dilations=[1, 1],
-                              pads=[1, 1, 1, 1],
-                              strides=[1, 1])
+    act = builder.aiOnnx.conv(
+        [input, weights], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     o = builder.aiOnnx.relu([act])
 
     builder.addOutputTensor(o)
@@ -146,14 +145,14 @@ def test_cannot_call_resethostweights_with_constant_weights():
         device.attach()
 
         # Prepare the Inference session
-        inference_dataFlow = popart.DataFlow(
-            1, {o: popart.AnchorReturnType("All")})
+        inference_dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
         inference_session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=inference_dataFlow,
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         # Compile the inference graph
         inference_session.prepareDevice()
@@ -165,8 +164,9 @@ def test_cannot_call_resethostweights_with_constant_weights():
         with pytest.raises(popart.popart_exception) as e_info:
             inference_session.resetHostWeights("test.onnx")
 
-        assert (e_info.value.args[0].startswith(
-            "Cannot call resetHostWeights when constantWeights is set"))
+        assert e_info.value.args[0].startswith(
+            "Cannot call resetHostWeights when constantWeights is set"
+        )
 
 
 @tu.requires_ipu_model
@@ -182,10 +182,9 @@ def test_modelToHost_calls_resetHostWeights():
     input = builder.addInputTensor(input_shape)
     weights = builder.addInitializedInputTensor(weight_data)
 
-    act = builder.aiOnnx.conv([input, weights],
-                              dilations=[1, 1],
-                              pads=[1, 1, 1, 1],
-                              strides=[1, 1])
+    act = builder.aiOnnx.conv(
+        [input, weights], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     o = builder.aiOnnx.relu([act])
     l1 = builder.aiGraphcore.l1loss([o], 0.1)
 
@@ -193,8 +192,8 @@ def test_modelToHost_calls_resetHostWeights():
 
     anchor_names = [o]
     data_flow = popart.DataFlow(
-        1, {i: popart.AnchorReturnType("All")
-            for i in anchor_names})
+        1, {i: popart.AnchorReturnType("All") for i in anchor_names}
+    )
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
@@ -204,12 +203,14 @@ def test_modelToHost_calls_resetHostWeights():
         device.attach()
 
         # Prepare the Training session
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=data_flow,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            loss=l1,
+            optimizer=popart.ConstSGD(0.1),
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         # Compile the training graph
         session.prepareDevice()
@@ -226,7 +227,7 @@ def test_modelToHost_calls_resetHostWeights():
             outputs.append(np.copy(anchors[o]))
 
         # The outputs of the two training runs should not be close
-        print('Checking first two outputs differ')
+        print("Checking first two outputs differ")
         assert not np.allclose(outputs[0], outputs[1])
 
         # Write weights from device to host
@@ -240,7 +241,7 @@ def test_modelToHost_calls_resetHostWeights():
         outputs.append(np.copy(anchors[o]))
 
         # Neither of the previous outputs should be close to the new output
-        print('Checking third output differs from first two')
+        print("Checking third output differs from first two")
         assert not np.allclose(outputs[2], outputs[0])
         assert not np.allclose(outputs[2], outputs[1])
 
@@ -248,5 +249,5 @@ def test_modelToHost_calls_resetHostWeights():
         # the difference between first and second outputs.
         delta_outputs = outputs[0] - outputs[1]
         expected_out = outputs[1] - delta_outputs
-        print('Checking third output is close to expected value')
+        print("Checking third output is close to expected value")
         assert np.allclose(outputs[2], expected_out)

@@ -5,18 +5,22 @@ from torch.optim import Optimizer
 
 
 class Lamb(Optimizer):
-    def __init__(self,
-                 params,
-                 lr=1e-3,
-                 betas=(0.9, 0.999),
-                 eps=1e-8,
-                 weight_decay=1e-2,
-                 biasCorrection=True):
-        defaults = dict(lr=lr,
-                        betas=betas,
-                        eps=eps,
-                        weight_decay=weight_decay,
-                        biasCorrection=biasCorrection)
+    def __init__(
+        self,
+        params,
+        lr=1e-3,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        weight_decay=1e-2,
+        biasCorrection=True,
+    ):
+        defaults = dict(
+            lr=lr,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            biasCorrection=biasCorrection,
+        )
         super(Lamb, self).__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -48,8 +52,8 @@ class Lamb(Optimizer):
                 beta1, beta2 = group["betas"]
 
                 if group["biasCorrection"]:
-                    bias_correction1 = 1 - beta1**state["step"]
-                    bias_correction2 = 1 - beta2**state["step"]
+                    bias_correction1 = 1 - beta1 ** state["step"]
+                    bias_correction2 = 1 - beta2 ** state["step"]
                 else:
                     bias_correction1 = 1
                     bias_correction2 = 1
@@ -58,10 +62,12 @@ class Lamb(Optimizer):
                 exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
 
                 denom = (exp_avg_sq.sqrt() / math.sqrt(bias_correction2)).add_(
-                    group["eps"])
+                    group["eps"]
+                )
 
-                upd = ((exp_avg / bias_correction1) /
-                       denom) + group["weight_decay"] * p.data
+                upd = ((exp_avg / bias_correction1) / denom) + group[
+                    "weight_decay"
+                ] * p.data
 
                 r1 = p.data.pow(2).sum().sqrt()
                 r2 = upd.pow(2).sum().sqrt()
@@ -71,6 +77,6 @@ class Lamb(Optimizer):
                 else:
                     trust = r1 / r2
 
-                p.data.add_(upd, alpha=-group['lr'] * trust)
+                p.data.add_(upd, alpha=-group["lr"] * trust)
 
         return loss

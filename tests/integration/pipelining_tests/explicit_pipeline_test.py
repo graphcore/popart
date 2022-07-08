@@ -44,11 +44,12 @@ def test_explicit_pipelining_0():
         opts.enableExplicitIR(isExplicit)
 
         with tu.create_test_device(numIpus=3) as device:
-            session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                              dataFlow=popart.DataFlow(
-                                                  bps, [t4]),
-                                              deviceInfo=device,
-                                              userOptions=opts)
+            session = popart.InferenceSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(bps, [t4]),
+                deviceInfo=device,
+                userOptions=opts,
+            )
 
             session.prepareDevice()
 

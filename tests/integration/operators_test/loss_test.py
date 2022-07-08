@@ -8,6 +8,7 @@ import torch
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -17,16 +18,16 @@ WEIGHT_DECAY = 1e-2
 
 def getTensorError(tA, pA):
     # pA, tA are corresponding tensors from two models
-    ss_err = np.sum((np.array(pA) - np.array(tA))**2)
-    ss_pA = np.sum(np.array(pA)**2)
-    ss_tA = np.sum(np.array(tA)**2)
+    ss_err = np.sum((np.array(pA) - np.array(tA)) ** 2)
+    ss_pA = np.sum(np.array(pA) ** 2)
+    ss_tA = np.sum(np.array(tA) ** 2)
     return ss_err / (math.sqrt(ss_pA * ss_tA) + 1.0e-8)
 
 
 def checkResult(result, margin):
     if np.isnan(result):
         raise Exception(str(result) + " is NaN")
-    elif (result > margin):
+    elif result > margin:
         raise Exception(str(result) + " is greater than " + str(margin))
 
 
@@ -41,10 +42,9 @@ def get_torch_reduction_type(popart_reduction_type):
         return "none"
 
 
-def get_pytorch_equivalent_loss(torch_loss_fn,
-                                popart_reduction_type,
-                                loss_inputs,
-                                extra_args={}):
+def get_pytorch_equivalent_loss(
+    torch_loss_fn, popart_reduction_type, loss_inputs, extra_args={}
+):
 
     reduction = get_torch_reduction_type(popart_reduction_type)
     return torch_loss_fn(reduction=reduction, **extra_args)(*loss_inputs)
@@ -92,33 +92,37 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
 
     nll0 = builder.aiGraphcore.nllloss([out, lb], popart_reduction_type)
 
-    patterns = (popart.Patterns(
-        popart.PatternsLevel.All) if with_patterns else popart.Patterns(
-            popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
+    patterns = (
+        popart.Patterns(popart.PatternsLevel.All)
+        if with_patterns
+        else popart.Patterns(popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
+            False
+        )
+    )
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
         with tu.create_test_device() as device:
             with pytest.raises(popart.popart_exception) as e_info:
-                popart.TrainingSession(fnModel=builder.getModelProto(),
-                                       dataFlow=popart.DataFlow(
-                                           1, [nll0, out]),
-                                       optimizer=popart.ConstSGD(
-                                           LEARNING_RATE, WEIGHT_DECAY),
-                                       loss=nll0,
-                                       patterns=patterns,
-                                       deviceInfo=device)
-        assert (e_info.value.args[0].endswith("must be a scalar tensor"))
+                popart.TrainingSession(
+                    fnModel=builder.getModelProto(),
+                    dataFlow=popart.DataFlow(1, [nll0, out]),
+                    optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+                    loss=nll0,
+                    patterns=patterns,
+                    deviceInfo=device,
+                )
+        assert e_info.value.args[0].endswith("must be a scalar tensor")
         return
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(
-                                             1, [nll0, out]),
-                                         optimizer=popart.ConstSGD(
-                                             LEARNING_RATE, WEIGHT_DECAY),
-                                         loss=nll0,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [nll0, out]),
+            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+            loss=nll0,
+            patterns=patterns,
+            deviceInfo=device,
+        )
         session.prepareDevice()
         session.weightsFromHost()
 
@@ -144,7 +148,8 @@ def run_3d_nll_loss_input(popart_reduction_type, with_patterns):
     sm_out = softmax(input)
     logsm = torch.log(sm_out)
     output = get_pytorch_equivalent_loss(
-        torch.nn.NLLLoss, popart_reduction_type, [logsm, target])
+        torch.nn.NLLLoss, popart_reduction_type, [logsm, target]
+    )
 
     ###
     # Compare
@@ -179,13 +184,17 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     ip = builder.addInitializedInputTensor(ip_data)
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    nll = builder.aiGraphcore.nllloss([out, lb],
-                                      ignoreIndex=ignoreInd,
-                                      reduction=popart_reduction_type)
+    nll = builder.aiGraphcore.nllloss(
+        [out, lb], ignoreIndex=ignoreInd, reduction=popart_reduction_type
+    )
 
-    patterns = (popart.Patterns(
-        popart.PatternsLevel.All) if with_patterns else popart.Patterns(
-            popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(False))
+    patterns = (
+        popart.Patterns(popart.PatternsLevel.All)
+        if with_patterns
+        else popart.Patterns(popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
+            False
+        )
+    )
 
     if popart_reduction_type == popart.ReductionType.NoReduction:
         with tu.create_test_device() as device:
@@ -196,18 +205,20 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
                     optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
                     loss=nll,
                     patterns=patterns,
-                    deviceInfo=device)
-        assert (e_info.value.args[0].endswith("must be a scalar tensor"))
+                    deviceInfo=device,
+                )
+        assert e_info.value.args[0].endswith("must be a scalar tensor")
         return
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(1, [nll]),
-                                         optimizer=popart.ConstSGD(
-                                             LEARNING_RATE, WEIGHT_DECAY),
-                                         loss=nll,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [nll]),
+            optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
+            loss=nll,
+            patterns=patterns,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -227,8 +238,10 @@ def run_nll_loss_with_ignored_index(popart_reduction_type, with_patterns):
     logsm = torch.log(sm_out)
     output = get_pytorch_equivalent_loss(
         torch.nn.NLLLoss,
-        popart_reduction_type, [logsm, target],
-        extra_args={'ignore_index': ignoreInd})
+        popart_reduction_type,
+        [logsm, target],
+        extra_args={"ignore_index": ignoreInd},
+    )
 
     ###
     # Compare
@@ -264,20 +277,20 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     ip = builder.addInitializedInputTensor(ip_data)
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-    nll = builder.aiGraphcore.nllloss([out, lb],
-                                      ignoreIndex=ignoreInd,
-                                      reduction=popart_reduction_type)
+    nll = builder.aiGraphcore.nllloss(
+        [out, lb], ignoreIndex=ignoreInd, reduction=popart_reduction_type
+    )
 
     ## 2 sessions: one with "SoftmaxGradDirect" pattern, one without
     def getPreparesSession(patterns, device):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(1,
-                                     [popart.reservedGradientPrefix() + ip]),
+            dataFlow=popart.DataFlow(1, [popart.reservedGradientPrefix() + ip]),
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             loss=nll,
             patterns=patterns,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -289,9 +302,11 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     # 1)
     with tu.create_test_device() as device:
         session_SMD = getPreparesSession(
-            popart.Patterns(["PreUniRepl",
-                             "SoftmaxGradDirect"]).enableRuntimeAsserts(False),
-            device)
+            popart.Patterns(["PreUniRepl", "SoftmaxGradDirect"]).enableRuntimeAsserts(
+                False
+            ),
+            device,
+        )
         anchors_SMD = session_SMD.initAnchorArrays()
         stepio_SMD = popart.PyStepIO(inputs, anchors_SMD)
         session_SMD.run(stepio_SMD)
@@ -299,8 +314,8 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     # 2)
     with tu.create_test_device() as device:
         session_NoSMD = getPreparesSession(
-            popart.Patterns(["PreUniRepl"]).enableRuntimeAsserts(False),
-            device)
+            popart.Patterns(["PreUniRepl"]).enableRuntimeAsserts(False), device
+        )
         anchors_NoSMD = session_NoSMD.initAnchorArrays()
         stepio_NoSMD = popart.PyStepIO(inputs, anchors_NoSMD)
         session_NoSMD.run(stepio_NoSMD)
@@ -324,8 +339,10 @@ def run_nll_loss_grad_with_ignored_index(popart_reduction_type):
     logsm = torch.log(sm_out)
     output = get_pytorch_equivalent_loss(
         torch.nn.NLLLoss,
-        popart_reduction_type, [logsm, target],
-        extra_args={'ignore_index': ignoreInd})
+        popart_reduction_type,
+        [logsm, target],
+        extra_args={"ignore_index": ignoreInd},
+    )
 
     output.sum().backward(retain_graph=True)
 
@@ -362,8 +379,7 @@ def test_nll_loss_input_with_invalid_input():
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
 
-    nll0 = builder.aiGraphcore.nllloss([out, lb],
-                                       popart.ReductionType.NoReduction)
+    nll0 = builder.aiGraphcore.nllloss([out, lb], popart.ReductionType.NoReduction)
 
     patterns = popart.PatternsLevel.NoPatterns
 
@@ -375,17 +391,20 @@ def test_nll_loss_input_with_invalid_input():
                 optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
                 loss=nll0,
                 patterns=popart.Patterns(patterns).enableRuntimeAsserts(False),
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
-    assert (e_info.value.args[0].startswith(
+    assert e_info.value.args[0].startswith(
         "The label tensor (INT32   [2 5]) must have shape [2 4] to match all but the final dimension of the probabilities tensor (FLOAT   [2 4 3])"
-    ))
+    )
 
 
 def run_all_combinations(test_fn):
-    for reduction in (popart.ReductionType.Mean,
-                      popart.ReductionType.NoReduction,
-                      popart.ReductionType.Sum):
+    for reduction in (
+        popart.ReductionType.Mean,
+        popart.ReductionType.NoReduction,
+        popart.ReductionType.Sum,
+    ):
         for patterns in (False, True):
             print(reduction)
             print(patterns, flush=True)
@@ -407,8 +426,9 @@ def test_nll_loss_grad_with_ignored_index():
 
 
 @pytest.mark.parametrize("ignore_index", (None, 1, -1))
-@pytest.mark.parametrize("popart_reduction_type",
-                         (popart.ReductionType.Mean, popart.ReductionType.Sum))
+@pytest.mark.parametrize(
+    "popart_reduction_type", (popart.ReductionType.Mean, popart.ReductionType.Sum)
+)
 def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
     nll_scale = 1.2
     l1_scale = 1.5
@@ -428,23 +448,23 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
         lb = builder.addInputTensor(lb_data.astype(np.int32))
 
         sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
-        nll = builder.aiGraphcore.nllloss([sm, lb],
-                                          reduction=popart_reduction_type,
-                                          ignoreIndex=ignore_index)
+        nll = builder.aiGraphcore.nllloss(
+            [sm, lb], reduction=popart_reduction_type, ignoreIndex=ignore_index
+        )
         nll_scaled = builder.aiGraphcore.scale([nll], nll_scale)
 
-        l1 = builder.aiGraphcore.l1loss([ip],
-                                        1.0,
-                                        reduction=popart_reduction_type)
+        l1 = builder.aiGraphcore.l1loss([ip], 1.0, reduction=popart_reduction_type)
         l1_scaled = builder.aiGraphcore.scale([l1], l1_scale)
 
         out = builder.aiOnnx.add([nll_scaled, l1_scaled])
         builder.addOutputTensor(out)
 
         result = [
-            out, l1_scaled, nll_scaled,
+            out,
+            l1_scaled,
+            nll_scaled,
             popart.reservedGradientPrefix() + ip,
-            popart.reservedGradientPrefix() + out
+            popart.reservedGradientPrefix() + out,
         ]
         return result
 
@@ -453,16 +473,18 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
         target = torch.tensor(lb_data, requires_grad=False)
 
         logsm = torch.nn.LogSoftmax(dim=1)(input)
-        extra_args = {'ignore_index': ignore_index} if ignore_index else {}
-        nll = get_pytorch_equivalent_loss(torch.nn.NLLLoss,
-                                          popart_reduction_type,
-                                          [logsm, target],
-                                          extra_args=extra_args)
+        extra_args = {"ignore_index": ignore_index} if ignore_index else {}
+        nll = get_pytorch_equivalent_loss(
+            torch.nn.NLLLoss,
+            popart_reduction_type,
+            [logsm, target],
+            extra_args=extra_args,
+        )
         nll_scaled = nll * nll_scale
 
         l1 = get_pytorch_equivalent_loss(
-            torch.nn.L1Loss, popart_reduction_type,
-            [input, torch.zeros_like(input)])
+            torch.nn.L1Loss, popart_reduction_type, [input, torch.zeros_like(input)]
+        )
         l1_scaled = l1 * l1_scale
 
         out = nll_scaled + l1_scaled
@@ -474,7 +496,7 @@ def test_loss_scaling(ignore_index, popart_reduction_type, op_tester):
         return result
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_nllloss_reduction_equiv():
@@ -494,17 +516,22 @@ def test_nllloss_reduction_equiv():
                 sm = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
                 if extraReduction:
                     nll = builder.aiGraphcore.nllloss(
-                        [sm, lb], reduction=popart.ReductionType.NoReduction)
+                        [sm, lb], reduction=popart.ReductionType.NoReduction
+                    )
                     loss = builder.aiOnnx.reducesum([nll])
                 else:
                     loss = builder.aiGraphcore.nllloss(
-                        [sm, lb], reduction=popart.ReductionType.Sum)
+                        [sm, lb], reduction=popart.ReductionType.Sum
+                    )
 
                 anchors = [popart.reservedGradientPrefix() + ip]
                 # Always test 'loss' too, except for when we want to test with
                 # the SoftmaxGradDirect pattern, which requires 'loss' to be
                 # anchored
-                if 'SoftmaxGradDirect' not in patternsList or 'NlllWithSoftmaxGradDirect' in patternsList:
+                if (
+                    "SoftmaxGradDirect" not in patternsList
+                    or "NlllWithSoftmaxGradDirect" in patternsList
+                ):
                     anchors.append(loss)
 
                 with tu.create_test_device() as device:
@@ -514,13 +541,14 @@ def test_nllloss_reduction_equiv():
                         dataFlow=popart.DataFlow(1, anchors),
                         optimizer=popart.ConstSGD(0.1),
                         deviceInfo=device,
-                        patterns=popart.Patterns(
-                            patternsList).enableRuntimeAsserts(False))
+                        patterns=popart.Patterns(patternsList).enableRuntimeAsserts(
+                            False
+                        ),
+                    )
                     session.prepareDevice()
                     session.weightsFromHost()
                     anchors = session.initAnchorArrays()
-                    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)},
-                                             anchors)
+                    stepio = popart.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
                     session.run(stepio)
                 return anchors
 
@@ -531,14 +559,14 @@ def test_nllloss_reduction_equiv():
             er_anchors = getAnchors(True)
 
             # check they are equivalent
-            for (_, a0), (_, a1) in zip(lr_anchors.items(),
-                                        er_anchors.items()):
+            for (_, a0), (_, a1) in zip(lr_anchors.items(), er_anchors.items()):
                 checkResult(getTensorError(a0, a1), 1e-8)
 
-        test(['PreUniRepl'])  # Nll, NllGrad and SoftmaxGrad Ops
-        test(['PreUniRepl', 'SoftmaxGradDirect'])  # SoftmaxGradDirect Op
-        test(['PreUniRepl', 'SoftmaxGradDirect',
-              'NlllWithSoftmaxGradDirect'])  # NllWithSoftmaxGradDirect Op
+        test(["PreUniRepl"])  # Nll, NllGrad and SoftmaxGrad Ops
+        test(["PreUniRepl", "SoftmaxGradDirect"])  # SoftmaxGradDirect Op
+        test(
+            ["PreUniRepl", "SoftmaxGradDirect", "NlllWithSoftmaxGradDirect"]
+        )  # NllWithSoftmaxGradDirect Op
 
 
 @tu.requires_ipu_model
@@ -547,10 +575,15 @@ def test_nll_no_underflow():
 
     # Input probabilities
     probs_np = np.array(
-        [[1., 0., 0., 0., 0.], [0.5, 0.5, 0., 0., 0.],
-         [1 / 3.0, 1 / 3.0, 1 / 3.0, 0., 0.], [0.25, 0.25, 0.25, 0.25, 0.],
-         [0.2, 0.2, 0.2, 0.2, 0.2]],
-        dtype=dtype)
+        [
+            [1.0, 0.0, 0.0, 0.0, 0.0],
+            [0.5, 0.5, 0.0, 0.0, 0.0],
+            [1 / 3.0, 1 / 3.0, 1 / 3.0, 0.0, 0.0],
+            [0.25, 0.25, 0.25, 0.25, 0.0],
+            [0.2, 0.2, 0.2, 0.2, 0.2],
+        ],
+        dtype=dtype,
+    )
 
     labels_np = np.array([0, 1, 2, 3, 4], dtype=np.int32)
 
@@ -559,13 +592,13 @@ def test_nll_no_underflow():
     builder.addOutputTensor(builder.aiOnnx.identity([probs]))
     dprobs = popart.reservedGradientPrefix() + probs
     labels = builder.addInputTensor(popart.TensorInfo("INT32", [5]))
-    loss = builder.aiGraphcore.nllloss([probs, labels],
-                                       popart.ReductionType.Sum,
-                                       debugContext="nllLossVal")
+    loss = builder.aiGraphcore.nllloss(
+        [probs, labels], popart.ReductionType.Sum, debugContext="nllLossVal"
+    )
 
     anchor_desc = {
         dprobs: popart.AnchorReturnType("ALL"),
-        loss: popart.AnchorReturnType("ALL")
+        loss: popart.AnchorReturnType("ALL"),
     }
     dataFlow = popart.DataFlow(1, anchor_desc)
     session = popart.TrainingSession(
@@ -573,7 +606,8 @@ def test_nll_no_underflow():
         loss=loss,
         deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
         optimizer=popart.ConstSGD(0.00001),
-        dataFlow=dataFlow)
+        dataFlow=dataFlow,
+    )
     session.prepareDevice()
     session.weightsFromHost()
     anchors = session.initAnchorArrays()
@@ -636,7 +670,7 @@ def test_nll_input_is_log_probability_training(op_tester):
         return [nll, p.grad, None]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train', seed=8)
+    op_tester.run(init_builder, reference, step_type="train", seed=8)
 
 
 def test_nll_all_ingoreindex(op_tester):
@@ -657,9 +691,9 @@ def test_nll_all_ingoreindex(op_tester):
         x = builder.aiOnnx.matmul([P, W])
         out = builder.aiOnnx.add([x, B])
         logP = builder.aiOnnx.logsoftmax([P], axis=1)
-        nll = builder.aiGraphcore.nllloss([logP, T],
-                                          ignoreIndex=-1,
-                                          reduction=popart.ReductionType.Mean)
+        nll = builder.aiGraphcore.nllloss(
+            [logP, T], ignoreIndex=-1, reduction=popart.ReductionType.Mean
+        )
         builder.addOutputTensor(nll)
         builder.addOutputTensor(out)
         return [out, nll]
@@ -669,8 +703,7 @@ def test_nll_all_ingoreindex(op_tester):
             def __init__(self):
                 super().__init__()
                 self.linear = torch.nn.Linear(10, 1)
-                self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1,
-                                                      reduction='mean')
+                self.loss = torch.nn.CrossEntropyLoss(ignore_index=-1, reduction="mean")
                 self.linear.weight.data = torch.tensor(weight.reshape(1, 10))
                 self.linear.bias.data = torch.tensor(bias.reshape(10, 1))
 
@@ -686,9 +719,10 @@ def test_nll_all_ingoreindex(op_tester):
 
     op_tester.options.enableFloatingPointChecks = True
     op_tester.equal_nan = False  # Make sure NaNs aren't accepted.
-    op_tester.setPatterns(["MatMulRhsGradOp", "MatMulLhsGradOp"],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train', seed=8)
+    op_tester.setPatterns(
+        ["MatMulRhsGradOp", "MatMulLhsGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, step_type="train", seed=8)
 
 
 @pytest.mark.parametrize("blank", [0, 1])
@@ -700,7 +734,7 @@ def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
     reductionTypeMap = {
         "none": popart.ReductionType.NoReduction,
         "mean": popart.ReductionType.Mean,
-        "sum": popart.ReductionType.Sum
+        "sum": popart.ReductionType.Sum,
     }
 
     # max input length
@@ -719,14 +753,14 @@ def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
     # [N, S] targets (not blank=0)
     targets_data = np.random.randint(1, C, size=(N, S)).astype(np.uint32)
     # Lengths of inputs.
-    input_lengths_data = np.full(shape=(N, ), fill_value=T).astype(np.uint32)
+    input_lengths_data = np.full(shape=(N,), fill_value=T).astype(np.uint32)
     # Lengths of targets.
-    target_lengths_data = np.random.randint(0, S + 1,
-                                            size=(N, )).astype(np.uint32)
+    target_lengths_data = np.random.randint(0, S + 1, size=(N,)).astype(np.uint32)
 
     if blank != 0:
-        targets_data = np.where(targets_data == blank, 0,
-                                targets_data).astype(np.uint32)
+        targets_data = np.where(targets_data == blank, 0, targets_data).astype(
+            np.uint32
+        )
 
     def init_builder(builder):
         logits = builder.addInputTensor(logits_data)
@@ -740,7 +774,8 @@ def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
             [log_probs, targets, input_lengths, target_lengths],
             reductionTypeMap[reduction],
             blank,
-            zeroInfinity=zero_infinity)
+            zeroInfinity=zero_infinity,
+        )
         builder.addOutputTensor(ctc)
 
         # Check shape inference.
@@ -754,21 +789,23 @@ def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
         # logsoftmax inside the CTC loss. If this is the case the gradient of
         # log_probs would nott match (but the gradient of logits should still
         # match when this is the case as logsoftmax is idempotent).
-        if step_type == 'infer':
+        if step_type == "infer":
             return [ctc, logits, log_probs]
         else:
             return [
-                ctc, logits, log_probs,
+                ctc,
+                logits,
+                log_probs,
                 popart.reservedGradientPrefix() + logits,
-                popart.reservedGradientPrefix() + ctc
+                popart.reservedGradientPrefix() + ctc,
             ]
 
     def reference(ref_data):
 
         logsoftmax = torch.nn.LogSoftmax(dim=2)
-        loss = torch.nn.CTCLoss(blank=blank,
-                                reduction=reduction,
-                                zero_infinity=zero_infinity)
+        loss = torch.nn.CTCLoss(
+            blank=blank, reduction=reduction, zero_infinity=zero_infinity
+        )
 
         logits = torch.tensor(logits_data, requires_grad=True)
         targets = torch.tensor(targets_data.astype(np.int32))
@@ -780,7 +817,7 @@ def test_ctc_loss(op_tester, blank, step_type, reduction, zero_infinity):
         ctc = loss(log_probs, targets, input_lengths, target_lengths)
         ctc.retain_grad()
 
-        if step_type == 'infer':
+        if step_type == "infer":
             return [ctc, logits, log_probs]
         else:
             d__ctc = ref_data.getOutputTensorGrad(0)

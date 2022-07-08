@@ -12,10 +12,10 @@ def test_all_opsets_in_builder___getattr___return_annotation():
     """
     pattern = re.compile("^AiOnnxOpset[0-9]+$")
     opsets = [prop for prop in dir(popart) if pattern.fullmatch(prop)]
-    implemented_opsets = [eval(f'popart.{opset}') for opset in opsets]
-    annotated_opsets = signature(
-        popart.Builder.__getattr__).return_annotation.__args__
+    implemented_opsets = [eval(f"popart.{opset}") for opset in opsets]
+    annotated_opsets = signature(popart.Builder.__getattr__).return_annotation.__args__
     for opset in implemented_opsets:
         assert opset in annotated_opsets, (
             f"Opset {opset} is implemented, but not added as return type "
-            "annotation to \"popart.Builder.__getattr__()\".")
+            'annotation to "popart.Builder.__getattr__()".'
+        )

@@ -9,4 +9,4 @@ def test_import():
     # and some utility python functions.
     import popart.writer
 
-    assert ('SGD' in dir(popart))
+    assert "SGD" in dir(popart)

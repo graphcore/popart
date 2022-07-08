@@ -28,10 +28,13 @@ def test_prune_all_error():
 
     # Exception should be thrown here.
     with pytest.raises(popart.popart_exception) as e_info:
-        _ = popart.InferenceSession(fnModel=model,
-                                    deviceInfo=deviceInfo,
-                                    dataFlow=popart.DataFlow(
-                                        batchesPerStep, anchors))
+        _ = popart.InferenceSession(
+            fnModel=model,
+            deviceInfo=deviceInfo,
+            dataFlow=popart.DataFlow(batchesPerStep, anchors),
+        )
 
-    assert (e_info.value.args[0] ==
-            "All operations in the main graph were pruned, nothing to compute")
+    assert (
+        e_info.value.args[0]
+        == "All operations in the main graph were pruned, nothing to compute"
+    )

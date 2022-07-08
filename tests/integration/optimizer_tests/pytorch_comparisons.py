@@ -8,6 +8,7 @@ import numpy as np
 import numpy.random as npr
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -64,16 +65,14 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
         popartOpt = popart.SGD
     elif optType == "sgd1":
         popartOpt = popart.SGD
-        optkwargs[
-            "accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Combined
+        optkwargs["accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Combined
     elif optType == "sgd2":
         popartOpt = popart.SGD
-        optkwargs[
-            "accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Separate
+        optkwargs["accumulatorAndMomentum"] = popart.SGDAccumulatorAndMomentum.Separate
     else:
         raise "Unknown optType: " + optType
 
-    #L1 loss value
+    # L1 loss value
     lambda1 = 1.0
 
     # tensor dimensions and replications
@@ -91,7 +90,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     microBatchShape = [samplesPerMicroBatch, height, height]
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
-    #initial weight and input values
+    # initial weight and input values
     w0vals = np.array(npr.randn(height, height), dtype=np.float32)
     w1vals = np.array(npr.randn(height, height), dtype=np.float32)
     inputVals = [
@@ -116,19 +115,19 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     l1 = builder.aiGraphcore.l1loss([mm1], lambda1)
     _ = popart.AnchorReturnType("All")
     dataFlow = popart.DataFlow(batchesPerStep, {})
-    with tu.create_test_device(numIpus=nIPUs, opts={"compileIPUCode":
-                                                    False}) as device:
+    with tu.create_test_device(numIpus=nIPUs, opts={"compileIPUCode": False}) as device:
         userOptions = popart.SessionOptions()
         userOptions.enableGradientAccumulation = False
         userOptions.enablePrefetchDatastreams = False
 
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=dataFlow,
-                                         userOptions=userOptions,
-                                         loss=l1,
-                                         optimizer=popartOpt(
-                                             optMaps[0], **optkwargs),
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            userOptions=userOptions,
+            loss=l1,
+            optimizer=popartOpt(optMaps[0], **optkwargs),
+            deviceInfo=device,
+        )
 
         anchorArrays = session.initAnchorArrays()
 
@@ -139,9 +138,10 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
             stepio = popart.PyStepIO({input0: inputVals[step]}, anchorArrays)
             session.run(stepio)
 
-            if (step < numberOfSteps - 1):
+            if step < numberOfSteps - 1:
                 session.updateOptimizerFromHost(
-                    popartOpt(optMaps[step + 1], **optkwargs))
+                    popartOpt(optMaps[step + 1], **optkwargs)
+                )
 
         session.weightsToHost()
         w0R = np.array(-777.0 * np.ones(sampleShape), dtype=np.float32)
@@ -172,49 +172,65 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
             optimizer = optim.Adam(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
-                betas=(optMaps[step]["defaultBeta1"][0],
-                       optMaps[step]["defaultBeta2"][0]),
+                betas=(
+                    optMaps[step]["defaultBeta1"][0],
+                    optMaps[step]["defaultBeta2"][0],
+                ),
                 eps=optMaps[step]["defaultEps"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
         elif optType == "adamw":
             optimizer = optim.AdamW(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
-                betas=(optMaps[step]["defaultBeta1"][0],
-                       optMaps[step]["defaultBeta2"][0]),
+                betas=(
+                    optMaps[step]["defaultBeta1"][0],
+                    optMaps[step]["defaultBeta2"][0],
+                ),
                 eps=optMaps[step]["defaultEps"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
         elif optType == "adamax":
             optimizer = optim.Adamax(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
-                betas=(optMaps[step]["defaultBeta1"][0],
-                       optMaps[step]["defaultBeta2"][0]),
+                betas=(
+                    optMaps[step]["defaultBeta1"][0],
+                    optMaps[step]["defaultBeta2"][0],
+                ),
                 eps=optMaps[step]["defaultEps"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
         elif optType == "lamb":
             optimizer = torch_lamb.Lamb(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
-                betas=(optMaps[step]["defaultBeta1"][0],
-                       optMaps[step]["defaultBeta2"][0]),
+                betas=(
+                    optMaps[step]["defaultBeta1"][0],
+                    optMaps[step]["defaultBeta2"][0],
+                ),
                 eps=optMaps[step]["defaultEps"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
         elif optType == "lambnobias":
             optimizer = torch_lamb.Lamb(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
-                betas=(optMaps[step]["defaultBeta1"][0],
-                       optMaps[step]["defaultBeta2"][0]),
+                betas=(
+                    optMaps[step]["defaultBeta1"][0],
+                    optMaps[step]["defaultBeta2"][0],
+                ),
                 eps=optMaps[step]["defaultEps"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0],
-                biasCorrection=False)
+                biasCorrection=False,
+            )
         elif optType == "adagrad":
             optimizer = optim.Adagrad(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0],
-                eps=optMaps[step]["defaultEps"][0])
+                eps=optMaps[step]["defaultEps"][0],
+            )
         elif optType == "rmsprop":
             optimizer = optim.RMSprop(
                 net.parameters(),
@@ -223,7 +239,9 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
                 eps=optMaps[step]["defaultEps"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0],
                 momentum=optMaps[step]["defaultMomentum"][0]
-                if "defaultMomentum" in optMaps[step] else 0.0)
+                if "defaultMomentum" in optMaps[step]
+                else 0.0,
+            )
         elif optType == "centeredrmsprop":
             optimizer = optim.RMSprop(
                 net.parameters(),
@@ -232,55 +250,59 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
                 eps=optMaps[step]["defaultEps"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0],
                 momentum=optMaps[step]["defaultMomentum"][0]
-                if "defaultMomentum" in optMaps[step] else 0.0,
-                centered=True)
+                if "defaultMomentum" in optMaps[step]
+                else 0.0,
+                centered=True,
+            )
         elif optType == "adadelta":
             optimizer = optim.Adadelta(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
                 rho=optMaps[step]["defaultAlpha"][0],
                 eps=optMaps[step]["defaultEps"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
         else:  # Same for SGD1 and SGD2.
             optimizer = optim.SGD(
                 net.parameters(),
                 lr=optMaps[step]["defaultLearningRate"][0],
                 momentum=optMaps[step]["defaultMomentum"][0],
                 dampening=optMaps[step]["defaultDampening"][0],
-                weight_decay=optMaps[step]["defaultWeightDecay"][0])
+                weight_decay=optMaps[step]["defaultWeightDecay"][0],
+            )
 
         if step is 0:
             for group in optimizer.param_groups:
-                for p in group['params']:
-                    optimizer.state[p]['momentum_buffer'] = p.data * 0
-                    optimizer.state[p]['exp_avg'] = p.data * 0
-                    optimizer.state[p]['exp_avg_sq'] = p.data * 0
-                    optimizer.state[p]['exp_inf'] = p.data * 0
-                    optimizer.state[p]['square_avg'] = p.data * 0
-                    optimizer.state[p]['grad_avg'] = p.data * 0
-                    optimizer.state[p]['acc_delta'] = p.data * 0
-                    optimizer.state[p]['sum'] = p.data * 0
-                    optimizer.state[p]['step'] = 0
+                for p in group["params"]:
+                    optimizer.state[p]["momentum_buffer"] = p.data * 0
+                    optimizer.state[p]["exp_avg"] = p.data * 0
+                    optimizer.state[p]["exp_avg_sq"] = p.data * 0
+                    optimizer.state[p]["exp_inf"] = p.data * 0
+                    optimizer.state[p]["square_avg"] = p.data * 0
+                    optimizer.state[p]["grad_avg"] = p.data * 0
+                    optimizer.state[p]["acc_delta"] = p.data * 0
+                    optimizer.state[p]["sum"] = p.data * 0
+                    optimizer.state[p]["step"] = 0
         else:
-            for group, oldGroup in zip(optimizer.param_groups,
-                                       oldOptimizer.param_groups):
-                for p, _ in zip(group['params'], oldGroup['params']):
-                    optimizer.state[p]['momentum_buffer'] = oldOptimizer.state[
-                        p]['momentum_buffer']
-                    optimizer.state[p]['exp_avg'] = oldOptimizer.state[p][
-                        'exp_avg']
-                    optimizer.state[p]['exp_avg_sq'] = oldOptimizer.state[p][
-                        'exp_avg_sq']
-                    optimizer.state[p]['exp_inf'] = oldOptimizer.state[p][
-                        'exp_inf']
-                    optimizer.state[p]['square_avg'] = oldOptimizer.state[p][
-                        'square_avg']
-                    optimizer.state[p]['grad_avg'] = oldOptimizer.state[p][
-                        'grad_avg']
-                    optimizer.state[p]['acc_delta'] = oldOptimizer.state[p][
-                        'acc_delta']
-                    optimizer.state[p]['sum'] = oldOptimizer.state[p]['sum']
-                    optimizer.state[p]['step'] = oldOptimizer.state[p]['step']
+            for group, oldGroup in zip(
+                optimizer.param_groups, oldOptimizer.param_groups
+            ):
+                for p, _ in zip(group["params"], oldGroup["params"]):
+                    optimizer.state[p]["momentum_buffer"] = oldOptimizer.state[p][
+                        "momentum_buffer"
+                    ]
+                    optimizer.state[p]["exp_avg"] = oldOptimizer.state[p]["exp_avg"]
+                    optimizer.state[p]["exp_avg_sq"] = oldOptimizer.state[p][
+                        "exp_avg_sq"
+                    ]
+                    optimizer.state[p]["exp_inf"] = oldOptimizer.state[p]["exp_inf"]
+                    optimizer.state[p]["square_avg"] = oldOptimizer.state[p][
+                        "square_avg"
+                    ]
+                    optimizer.state[p]["grad_avg"] = oldOptimizer.state[p]["grad_avg"]
+                    optimizer.state[p]["acc_delta"] = oldOptimizer.state[p]["acc_delta"]
+                    optimizer.state[p]["sum"] = oldOptimizer.state[p]["sum"]
+                    optimizer.state[p]["step"] = oldOptimizer.state[p]["step"]
 
         for i in range(batchesPerStep):
             out = net(torch.from_numpy(inputVals[step][i]), i)
@@ -302,12 +324,12 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     print("Total moved by w1: ", np.sum(np.abs(w1R - w1vals)))
     print("l1 error for w0: ", error0)
     print("l1 error for w1: ", error1)
-    assert (error0 < 1e-5)
-    assert (error1 < 1e-5)
+    assert error0 < 1e-5
+    assert error1 < 1e-5
 
 
 def sgd_test_against_pytorch(optType):
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.5
     defaultLearningRate1 = 0.3
     defaultLearningRate2 = 0.1
@@ -327,7 +349,7 @@ def sgd_test_against_pytorch(optType):
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
-        "defaultWeightDecay": (defaultWeightDecay0, False)
+        "defaultWeightDecay": (defaultWeightDecay0, False),
     }
 
     optMap1 = {
@@ -336,7 +358,7 @@ def sgd_test_against_pytorch(optType):
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
-        "defaultWeightDecay": (defaultWeightDecay0, False)
+        "defaultWeightDecay": (defaultWeightDecay0, False),
     }
 
     optMap2 = {
@@ -345,7 +367,7 @@ def sgd_test_against_pytorch(optType):
         "defaultDampening": (defaultDampening0, False),
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
-        "defaultWeightDecay": (defaultWeightDecay0, False)
+        "defaultWeightDecay": (defaultWeightDecay0, False),
     }
 
     compare_against_pytorch(optType, [optMap0, optMap1, optMap2])
@@ -396,13 +418,13 @@ def test_sgd1_against_pytorch():
 
 
 @tu.requires_ipu_model
-@pytest.mark.parametrize('scaled', (True, False))
+@pytest.mark.parametrize("scaled", (True, False))
 def test_adam_against_pytorch(scaled):
     """
     Comparison of popart and PyTorch optimizers (Adam, AdamW, AdaMax, Lamb)
     """
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.005
     defaultLearningRate1 = 0.003
     defaultLearningRate2 = 0.001
@@ -442,16 +464,13 @@ def test_adam_against_pytorch(scaled):
 
     # Test Adam/AdamW against pytorch
     compare_against_pytorch("adam", [optMap0, optMap1, optMap2], scaled=scaled)
-    compare_against_pytorch("adamw", [optMap0, optMap1, optMap2],
-                            scaled=scaled)
+    compare_against_pytorch("adamw", [optMap0, optMap1, optMap2], scaled=scaled)
     # Test Lamb against pytorch (implemented in torch_lamb.py)
     compare_against_pytorch("lamb", [optMap0, optMap1, optMap2], scaled=scaled)
     # Test Lamb without bias correction (V3 paper)
-    compare_against_pytorch("lambnobias", [optMap0, optMap1, optMap2],
-                            scaled=scaled)
+    compare_against_pytorch("lambnobias", [optMap0, optMap1, optMap2], scaled=scaled)
     # Test AdaMax
-    compare_against_pytorch("adamax", [optMap0, optMap1, optMap2],
-                            scaled=scaled)
+    compare_against_pytorch("adamax", [optMap0, optMap1, optMap2], scaled=scaled)
 
 
 @tu.requires_ipu_model
@@ -460,7 +479,7 @@ def test_adaptive_against_pytorch():
     Comparison of popart and PyTorch optimizers (AdaGrad, RMSProp, AdaDelta)
     """
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.005
     defaultLearningRate1 = 0.003
     defaultLearningRate2 = 0.001

@@ -21,11 +21,10 @@ class TestRoiAlign:
         ir = popxl.Ir()
         g = ir.main_graph
         with g:
-            a = popxl.variable(
-                np.random.randn(batch_size, channel, width, height))
+            a = popxl.variable(np.random.randn(batch_size, channel, width, height))
             b = popxl.variable(np.random.randn(num_roi, 4))
             c = popxl.variable(
-                np.random.randint(0, batch_size, (num_roi), dtype=np.int32))
-            _ = ops.roi_align(a, b, c, output_size, spatial_scale,
-                              sampling_ratio)
+                np.random.randint(0, batch_size, (num_roi), dtype=np.int32)
+            )
+            _ = ops.roi_align(a, b, c, output_size, spatial_scale, sampling_ratio)
         assert contains_op_of_type("RoiAlign", _ir.op.RoiAlignOp, g)

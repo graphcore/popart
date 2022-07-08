@@ -19,14 +19,14 @@ group_size = 2
 communication_group = CommGroup(CommGroupType.Consecutive, group_size)
 
 # VariableSettings to read from groups
-settings_grouped    = VariableSettings(\
-                            communication_group,\
-                            VariableRetrievalMode.OnePerGroup)
+settings_grouped = VariableSettings(
+    communication_group, VariableRetrievalMode.OnePerGroup
+)
 
 # VariableSettings to read from all replicas
-settings_individual = VariableSettings(\
-                            communication_group,\
-                            VariableRetrievalMode.AllReplicas)
+settings_individual = VariableSettings(
+    communication_group, VariableRetrievalMode.AllReplicas
+)
 
 # get init buffer:
 num_groups = settings_grouped.groupCount(repl_factor)
@@ -40,10 +40,8 @@ a = builder.addInitializedInputTensor(initializer, settings_grouped)
 b = builder.addInitializedInputTensor(initializer, settings_individual)
 
 # get IO buffer shapes
-shape_a = [settings_grouped.numReplicasReturningVariable(repl_factor)] \
-            + base_shape
-shape_b = [settings_individual.numReplicasReturningVariable(repl_factor)] \
-            + base_shape
+shape_a = [settings_grouped.numReplicasReturningVariable(repl_factor)] + base_shape
+shape_b = [settings_individual.numReplicasReturningVariable(repl_factor)] + base_shape
 
 # get IO buffers
 buffer_a = numpy.ndarray(shape_a)

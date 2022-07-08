@@ -15,7 +15,7 @@ output_name = "output"
 torch.onnx.export(model, input_, "alexnet.onnx", output_names=[output_name])
 
 # Obtain inputs/outputs name of loaded model
-loaded_model = onnx.load('alexnet.onnx')
+loaded_model = onnx.load("alexnet.onnx")
 inputs_name = [node.name for node in loaded_model.graph.input]
 outputs_name = [node.name for node in loaded_model.graph.output]
 
@@ -33,4 +33,4 @@ session.prepareDevice()
 
 input_1 = np.random.randn(4, 3, 224, 224).astype(np.float32)
 
-stepio = popart.PyStepIO({'input.1': input_1}, session.initAnchorArrays())
+stepio = popart.PyStepIO({"input.1": input_1}, session.initAnchorArrays())

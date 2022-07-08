@@ -2,14 +2,18 @@
 import popart._internal.ir as _ir
 from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
-from .utils import check_in_graph, check_tensor_ipu_and_tile_set, convert_optional_int64_list
+from .utils import (
+    check_in_graph,
+    check_tensor_ipu_and_tile_set,
+    convert_optional_int64_list,
+)
 from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def max(t: Tensor,
-        axis: Optional[Union[int, Iterable[int]]] = None,
-        keepdims: bool = False) -> Tensor:
+def max(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the maximum value of the elements in a tensor along specified axes.
 
@@ -40,9 +44,8 @@ def max(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceMax')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceMax", 1, _ir.NumInputs(
-        1, 1), 1)
+    settings = ctx._get_op_settings("ReduceMax")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceMax", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReduceMaxOp(
         {
             0: t.id,
@@ -80,11 +83,10 @@ def maximum(*ts: Tensor) -> Tensor:
     check_in_graph(g, **{f"ts_{i}": t for i, t in enumerate(ts)})
     check_tensor_ipu_and_tile_set(**{f"ts_{i}": t for i, t in enumerate(ts)})
 
-    settings = ctx._get_op_settings('maximum')
+    settings = ctx._get_op_settings("maximum")
     opid = _ir.OperatorIdentifier("ai.onnx", "Max", 6, _ir.NumInputs(1, -1), 1)
     op = pb_g.createConnectedOp_MaxOp(
-        {i: t.id
-         for i, t in enumerate(ts)},
+        {i: t.id for i, t in enumerate(ts)},
         {
             0: g._create_tensor_id("maximum_out"),
         },

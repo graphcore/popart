@@ -9,6 +9,7 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -22,24 +23,26 @@ def to_array(weight):
     return np_weight
 
 
-def run_adaptive_mixed_mode(steps,
-                            opt_dicts,
-                            enable_outlining,
-                            tmpdir,
-                            dtype=np.float32):
+def run_adaptive_mixed_mode(
+    steps, opt_dicts, enable_outlining, tmpdir, dtype=np.float32
+):
     def run(opt_dict, enable_outlining, model_file_name):
         np.random.seed(1878)
         dsize = 10
         builder = popart.Builder()
         ip = builder.addInputTensor(
-            popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
-                              [dsize, dsize]))
+            popart.TensorInfo(
+                "FLOAT" if dtype == np.float32 else "FLOAT16", [dsize, dsize]
+            )
+        )
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(
-                np.random.rand(dsize, dsize).astype(dtype), "w_" + name)
+                np.random.rand(dsize, dsize).astype(dtype), "w_" + name
+            )
             b = builder.addInitializedInputTensor(
-                np.random.rand(dsize).astype(dtype), "b_" + name)
+                np.random.rand(dsize).astype(dtype), "b_" + name
+            )
             matmul_id = builder.aiOnnx.gemm([in_id, w, b], 1, 1, False, False)
             return matmul_id
 
@@ -69,7 +72,8 @@ def run_adaptive_mixed_mode(steps,
                 loss=out,
                 patterns=popart.Patterns(popart.PatternsLevel.All),
                 userOptions=opts,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -105,7 +109,7 @@ def run_adaptive_mixed_mode(steps,
 # Test RMSProp with different parameters constant / non-constant
 def test_adaptive_mixed_mode_0(tmpdir):
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate = 0.005
     defaultAlpha = 0.8
     defaultMomentum = 0.5
@@ -113,19 +117,21 @@ def test_adaptive_mixed_mode_0(tmpdir):
     defaultEps = 1e-6
     lossScaling = 10.0
 
-    optMaps = [{
-        0:
-        popart.Adaptive(
-            {
-                "defaultLearningRate": (defaultLearningRate, True),
-                "defaultAlpha": (defaultAlpha, True),
-                "defaultMomentum": (defaultMomentum, True),
-                "defaultWeightDecay": (defaultWeightDecay, True),
-                "defaultEps": (defaultEps, True),
-                "lossScaling": (lossScaling, True),
-            },
-            mode=popart.AdaptiveMode.CenteredRMSProp)
-    }]
+    optMaps = [
+        {
+            0: popart.Adaptive(
+                {
+                    "defaultLearningRate": (defaultLearningRate, True),
+                    "defaultAlpha": (defaultAlpha, True),
+                    "defaultMomentum": (defaultMomentum, True),
+                    "defaultWeightDecay": (defaultWeightDecay, True),
+                    "defaultEps": (defaultEps, True),
+                    "lossScaling": (lossScaling, True),
+                },
+                mode=popart.AdaptiveMode.CenteredRMSProp,
+            )
+        }
+    ]
     outlining = [False]
 
     for i in range(6):
@@ -137,10 +143,9 @@ def test_adaptive_mixed_mode_0(tmpdir):
             "defaultEps": (defaultEps, i != 4),
             "lossScaling": (lossScaling, i != 5),
         }
-        optMaps = optMaps + [{
-            0:
-            popart.Adaptive(optMap, mode=popart.AdaptiveMode.CenteredRMSProp)
-        }]
+        optMaps = optMaps + [
+            {0: popart.Adaptive(optMap, mode=popart.AdaptiveMode.CenteredRMSProp)}
+        ]
         outlining = outlining + [False]
 
     for i in range(6):
@@ -152,10 +157,9 @@ def test_adaptive_mixed_mode_0(tmpdir):
             "defaultEps": (defaultEps, i != 4),
             "lossScaling": (lossScaling, i != 5),
         }
-        optMaps = optMaps + [{
-            0:
-            popart.Adaptive(optMap, mode=popart.AdaptiveMode.CenteredRMSProp)
-        }]
+        optMaps = optMaps + [
+            {0: popart.Adaptive(optMap, mode=popart.AdaptiveMode.CenteredRMSProp)}
+        ]
         outlining = outlining + [True]
 
     run_adaptive_mixed_mode(10, optMaps, outlining, tmpdir, np.float32)
@@ -165,7 +169,7 @@ def test_adaptive_mixed_mode_0(tmpdir):
 # Test RMSProp with weight specific const and non-const parameters
 def test_adaptive_mixed_mode_1(tmpdir):
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.005
     defaultLearningRate5 = 0.0025
 
@@ -175,125 +179,96 @@ def test_adaptive_mixed_mode_1(tmpdir):
     defaultEps = 1e-6
     lossScaling = 10.0
 
-    adaptive00 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultAlpha": (defaultAlpha, True),
-        "defaultMomentum": (defaultMomentum, True),
-        "defaultWeightDecay": (defaultWeightDecay, True),
-        "defaultEps": (defaultEps, True),
-        "lossScaling": (lossScaling, True),
-    })
+    adaptive00 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultAlpha": (defaultAlpha, True),
+            "defaultMomentum": (defaultMomentum, True),
+            "defaultWeightDecay": (defaultWeightDecay, True),
+            "defaultEps": (defaultEps, True),
+            "lossScaling": (lossScaling, True),
+        }
+    )
 
-    adaptive00.insertSpecific("w_0", {
-        "alpha": (0.7, True),
-        "momentum": (0.8, True)
-    })
-    adaptive00.insertSpecific("b_0", {
-        "alpha": (0.7, True),
-        "momentum": (0.8, True)
-    })
+    adaptive00.insertSpecific("w_0", {"alpha": (0.7, True), "momentum": (0.8, True)})
+    adaptive00.insertSpecific("b_0", {"alpha": (0.7, True), "momentum": (0.8, True)})
 
-    adaptive05 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultAlpha": (defaultAlpha, True),
-        "defaultMomentum": (defaultMomentum, True),
-        "defaultWeightDecay": (defaultWeightDecay, True),
-        "defaultEps": (defaultEps, True),
-        "lossScaling": (lossScaling, True),
-    })
+    adaptive05 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultAlpha": (defaultAlpha, True),
+            "defaultMomentum": (defaultMomentum, True),
+            "defaultWeightDecay": (defaultWeightDecay, True),
+            "defaultEps": (defaultEps, True),
+            "lossScaling": (lossScaling, True),
+        }
+    )
 
-    adaptive05.insertSpecific("w_0", {
-        "alpha": (0.7, True),
-        "momentum": (0.8, True)
-    })
-    adaptive05.insertSpecific("b_0", {
-        "alpha": (0.7, True),
-        "momentum": (0.8, True)
-    })
+    adaptive05.insertSpecific("w_0", {"alpha": (0.7, True), "momentum": (0.8, True)})
+    adaptive05.insertSpecific("b_0", {"alpha": (0.7, True), "momentum": (0.8, True)})
 
-    adaptive10 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultAlpha": (defaultAlpha, False),
-        "defaultMomentum": (defaultMomentum, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adaptive10 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultAlpha": (defaultAlpha, False),
+            "defaultMomentum": (defaultMomentum, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adaptive10.insertSpecific("w_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, False)
-    })
-    adaptive10.insertSpecific("b_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, False)
-    })
+    adaptive10.insertSpecific("w_0", {"alpha": (0.7, False), "momentum": (0.8, False)})
+    adaptive10.insertSpecific("b_0", {"alpha": (0.7, False), "momentum": (0.8, False)})
 
-    adaptive15 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultAlpha": (defaultAlpha, False),
-        "defaultMomentum": (defaultMomentum, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adaptive15 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultAlpha": (defaultAlpha, False),
+            "defaultMomentum": (defaultMomentum, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adaptive15.insertSpecific("w_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, False)
-    })
-    adaptive15.insertSpecific("b_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, False)
-    })
+    adaptive15.insertSpecific("w_0", {"alpha": (0.7, False), "momentum": (0.8, False)})
+    adaptive15.insertSpecific("b_0", {"alpha": (0.7, False), "momentum": (0.8, False)})
 
-    adaptive20 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultAlpha": (defaultAlpha, True),
-        "defaultMomentum": (defaultMomentum, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adaptive20 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultAlpha": (defaultAlpha, True),
+            "defaultMomentum": (defaultMomentum, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adaptive20.insertSpecific("w_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, True)
-    })
-    adaptive20.insertSpecific("b_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, True)
-    })
+    adaptive20.insertSpecific("w_0", {"alpha": (0.7, False), "momentum": (0.8, True)})
+    adaptive20.insertSpecific("b_0", {"alpha": (0.7, False), "momentum": (0.8, True)})
 
-    adaptive25 = popart.Adaptive({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultAlpha": (defaultAlpha, True),
-        "defaultMomentum": (defaultMomentum, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adaptive25 = popart.Adaptive(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultAlpha": (defaultAlpha, True),
+            "defaultMomentum": (defaultMomentum, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adaptive25.insertSpecific("w_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, True)
-    })
-    adaptive25.insertSpecific("b_0", {
-        "alpha": (0.7, False),
-        "momentum": (0.8, True)
-    })
+    adaptive25.insertSpecific("w_0", {"alpha": (0.7, False), "momentum": (0.8, True)})
+    adaptive25.insertSpecific("b_0", {"alpha": (0.7, False), "momentum": (0.8, True)})
 
     # Change RMSProp optimizer after 0 and 5 steps
-    optMaps = [{
-        0: adaptive00,
-        5: adaptive05
-    }, {
-        0: adaptive10,
-        5: adaptive15
-    }, {
-        0: adaptive20,
-        5: adaptive25
-    }]
+    optMaps = [
+        {0: adaptive00, 5: adaptive05},
+        {0: adaptive10, 5: adaptive15},
+        {0: adaptive20, 5: adaptive25},
+    ]
 
     outlining = [True, True, True]
 
@@ -311,15 +286,17 @@ def test_adaptive_mixed_mode_1(tmpdir):
     with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
-            if context['layer'] == "popart" and \
-               'opid' in context and \
-               'Adaptive' in context['opid']:
-                parents.add(context['parentId'])
+            if (
+                context["layer"] == "popart"
+                and "opid" in context
+                and "Adaptive" in context["opid"]
+            ):
+                parents.add(context["parentId"])
                 num_adaptives += 1
         for context in data["contexts"]:
-            if context['id'] in parents:
-                parents.remove(context['id'])
-                assert context['layer'] == "popart_builder"
-                assert data['stringTable'][context['name']] == "adaptive"
+            if context["id"] in parents:
+                parents.remove(context["id"])
+                assert context["layer"] == "popart_builder"
+                assert data["stringTable"][context["name"]] == "adaptive"
     assert num_adaptives == 24
     assert len(parents) == 0

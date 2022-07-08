@@ -33,7 +33,7 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
         alpha = default_alpha
 
     def reference(_):  # ref_data is an unused argument
-        if (use_torch):
+        if use_torch:
             torch_test_data = torch.tensor(input_data, requires_grad=False)
             torch_leakyrelu = torch.nn.LeakyReLU(negative_slope=alpha)
             m = torch_leakyrelu(torch_test_data)
@@ -41,9 +41,9 @@ def test_lrelu_inf(op_tester, inplace, alpha, use_torch):
             m = leaky_relu(input_data, alpha)
         return [m]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
     op_tester.inplacing = inplace
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("inplace", [True, False])
@@ -64,7 +64,7 @@ def test_lrelu_train(op_tester, alpha, inplace):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     if alpha is None:
@@ -78,10 +78,10 @@ def test_lrelu_train(op_tester, alpha, inplace):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
     op_tester.inplacing = inplace
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("inplace", [True, False])
@@ -102,7 +102,7 @@ def test_lrelu_train16(op_tester, alpha, inplace):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     if alpha is None:
@@ -117,16 +117,13 @@ def test_lrelu_train16(op_tester, alpha, inplace):
         b = torch_lrelu(a)
         d__o = ref_data.getOutputTensorGrad(0)
         b.backward(torch.tensor(d__o))
-        return [
-            b.type(dtype=torch.float16),
-            a.grad.type(dtype=torch.float16), None
-        ]
+        return [b.type(dtype=torch.float16), a.grad.type(dtype=torch.float16), None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
     op_tester.inplacing = inplace
 
     # Need to relax the test tolerance as we're comparing 16-bit floats to
     # 32-bit (ish) reference values
     op_tester.rtol = 1e-02
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

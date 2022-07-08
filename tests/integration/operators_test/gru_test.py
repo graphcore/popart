@@ -8,6 +8,7 @@ from pathlib import Path
 
 # `import test_util` requires adding to sys.path
 import sys
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -47,12 +48,13 @@ def test_gru(op_tester):
     op_tester.rtol = 1e-03
     with tu.create_test_device() as device:
         op_tester.device = device
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")
 
 
 def test_gru_torch(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 3
@@ -75,10 +77,7 @@ def test_gru_torch(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3],
-                                    2,
-                                    clip=None,
-                                    linear_before_reset=1)
+        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3], 2, clip=None, linear_before_reset=1)
 
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
@@ -96,14 +95,15 @@ def test_gru_torch(op_tester):
 
         return [Y, Y_h]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
     # No need to relax tolerances!
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gru_torch_grad(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 3
@@ -171,11 +171,11 @@ def test_gru_torch_grad(op_tester):
 
         return [Y1, Y1.grad, a.grad, wig, whg, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
 
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-05
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_gru_biases(op_tester):
@@ -185,10 +185,8 @@ def test_gru_biases(op_tester):
     hidden_size = 5
     num_directions = 1
 
-    d2 = np.random.rand(num_directions, 3 * hidden_size,
-                        input_size).astype(np.float32)
-    d3 = np.random.rand(num_directions, 3 * hidden_size,
-                        hidden_size).astype(np.float32)
+    d2 = np.random.rand(num_directions, 3 * hidden_size, input_size).astype(np.float32)
+    d3 = np.random.rand(num_directions, 3 * hidden_size, hidden_size).astype(np.float32)
     d4 = np.random.rand(num_directions, 6 * hidden_size).astype(np.float32)
 
     def init_builder(builder):
@@ -208,12 +206,13 @@ def test_gru_biases(op_tester):
 
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gru_biases_torch(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 3
@@ -253,10 +252,9 @@ def test_gru_biases_torch(op_tester):
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
         i4 = builder.addInputTensor(d6)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4],
-                                    2,
-                                    clip=None,
-                                    linear_before_reset=1)
+        Y, Y_h = builder.aiOnnx.gru(
+            [i1, i2, i3, i4], 2, clip=None, linear_before_reset=1
+        )
 
         builder.addOutputTensor(Y_h)
         return [Y, Y_h]
@@ -274,12 +272,13 @@ def test_gru_biases_torch(op_tester):
 
         return [Y, Y_h]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gru_initial_hc(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     seq_length = d1.shape[0]
     batch_size = d1.shape[1]
@@ -287,16 +286,15 @@ def test_gru_initial_hc(op_tester):
     hidden_size = 5
     num_directions = 1
 
-    d2 = np.random.rand(num_directions, 3 * hidden_size,
-                        input_size).astype(np.float32)
-    d3 = np.random.rand(num_directions, 3 * hidden_size,
-                        hidden_size).astype(np.float32)
+    d2 = np.random.rand(num_directions, 3 * hidden_size, input_size).astype(np.float32)
+    d3 = np.random.rand(num_directions, 3 * hidden_size, hidden_size).astype(np.float32)
     d4 = np.random.rand(num_directions, 6 * hidden_size).astype(np.float32)
 
     seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32)
 
-    initial_h = np.random.rand(num_directions, batch_size,
-                               hidden_size).astype(np.float32)
+    initial_h = np.random.rand(num_directions, batch_size, hidden_size).astype(
+        np.float32
+    )
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -315,12 +313,13 @@ def test_gru_initial_hc(op_tester):
 
         return [Y, Y_h]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gru_torch_grad_all_inputs(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     seq_length = d1.shape[0]
     batch_size = d1.shape[1]
@@ -356,8 +355,9 @@ def test_gru_torch_grad_all_inputs(op_tester):
 
     seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32)
 
-    initial_h = np.random.rand(num_directions, batch_size,
-                               hidden_size).astype(np.float32)
+    initial_h = np.random.rand(num_directions, batch_size, hidden_size).astype(
+        np.float32
+    )
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -366,22 +366,22 @@ def test_gru_torch_grad_all_inputs(op_tester):
         i4 = builder.addInputTensor(biases)
         i5 = builder.addInputTensor(seq_lens)
         i6 = builder.addInputTensor(initial_h)
-        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4, i5, i6],
-                                    2,
-                                    linear_before_reset=1)
+        Y, Y_h = builder.aiOnnx.gru([i1, i2, i3, i4, i5, i6], 2, linear_before_reset=1)
         Ys = builder.aiOnnx.squeeze([Y], [])
         Y1 = builder.aiOnnx.add([Ys, Y_h])
 
         builder.addOutputTensor(Y1)
-        print([
-            Y1,
-            popart.reservedGradientPrefix() + Y1,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + i4,
-            popart.reservedGradientPrefix() + i6
-        ])
+        print(
+            [
+                Y1,
+                popart.reservedGradientPrefix() + Y1,
+                popart.reservedGradientPrefix() + i1,
+                popart.reservedGradientPrefix() + i2,
+                popart.reservedGradientPrefix() + i3,
+                popart.reservedGradientPrefix() + i4,
+                popart.reservedGradientPrefix() + i6,
+            ]
+        )
         return [
             Y1,
             popart.reservedGradientPrefix() + Y1,
@@ -389,7 +389,7 @@ def test_gru_torch_grad_all_inputs(op_tester):
             popart.reservedGradientPrefix() + i2,  # input/1
             popart.reservedGradientPrefix() + i3,  # input/2
             popart.reservedGradientPrefix() + i4,  # input/3
-            popart.reservedGradientPrefix() + i6  # input/4
+            popart.reservedGradientPrefix() + i6,  # input/4
         ]
 
     def reference(ref_data):
@@ -427,15 +427,14 @@ def test_gru_torch_grad_all_inputs(op_tester):
         # reorder the biases for comparison with popart
         bir, biz, bih = torch.split(gru.bias_ih_l0.grad, hidden_size, dim=1)
         bhr, bhz, bhh = torch.split(gru.bias_hh_l0.grad, hidden_size, dim=1)
-        b_grad = torch.cat((biz, bir, bih, bhz, bhr, bhh)).view(
-            1, 6 * hidden_size)
+        b_grad = torch.cat((biz, bir, bih, bhz, bhr, bhh)).view(1, 6 * hidden_size)
 
         return [Y1, Y1.grad, a.grad, wig, whg, b_grad, h0.grad]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
     op_tester.atol = 1e-05
     op_tester.rtol = 1e-05
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 if __name__ == "__main__":
@@ -451,16 +450,13 @@ if __name__ == "__main__":
     i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", d1.shape))
     i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", d2.shape))
     i3 = builder.addInputTensor(popart.TensorInfo("FLOAT", d3.shape))
-    Y, Y_h = builder.aiOnnx.gru([i1, i2, i3],
-                                2,
-                                clip=None,
-                                direction="bidirectional")
+    Y, Y_h = builder.aiOnnx.gru([i1, i2, i3], 2, clip=None, direction="bidirectional")
     builder.addOutputTensor(Y)
 
     dataFlow = popart.DataFlow(1, {Y: popart.AnchorReturnType("All")})
 
     # Create a session to compile and the graph for inference
-    #------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------
     inferenceOptions = popart.SessionOptions()
     # Need to compile the inference graph with variable weights we they can be updated
     # before execution
@@ -469,7 +465,8 @@ if __name__ == "__main__":
         fnModel=builder.getModelProto(),
         dataFlow=dataFlow,
         userOptions=inferenceOptions,
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+    )
 
     # Compile graph
     inferenceSession.prepareDevice()

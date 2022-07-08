@@ -9,8 +9,7 @@ from .init import init
 
 
 @op_debug_context
-def host_load(h2d_stream: HostToDeviceStream,
-              name: Optional[str] = None) -> Tensor:
+def host_load(h2d_stream: HostToDeviceStream, name: Optional[str] = None) -> Tensor:
     """
     Transfer a tensor from the host to the IPU.
 
@@ -41,17 +40,16 @@ def host_load(h2d_stream: HostToDeviceStream,
         pb_main = gmg()._pb_graph
         name = _ir.removeScope(pb_main, stream_tensor_id)
 
-    init_tensor = init(shape, dtype, name + '_init', 'undef')
+    init_tensor = init(shape, dtype, name + "_init", "undef")
 
-    name_hostload = g._create_tensor_id(name + '_hostload')
+    name_hostload = g._create_tensor_id(name + "_hostload")
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "HostLoad", 1,
-                                  _ir.NumInputs(1), 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "HostLoad", 1, _ir.NumInputs(1), 1)
     pb_g.createConnectedOp_HostLoadOp(
         {0: init_tensor.id},
         {0: name_hostload},
         opid,
-        ctx._get_op_settings('host_load'),
+        ctx._get_op_settings("host_load"),
         stream_tensor_id,
     )
 

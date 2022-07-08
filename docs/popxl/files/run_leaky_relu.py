@@ -11,8 +11,9 @@ import popxl.ops as ops
 from leaky_relu_op import leaky_relu
 
 
-def build_and_run_graph(input_data: Union[float, np.ndarray],
-                        alpha: float) -> np.ndarray:
+def build_and_run_graph(
+    input_data: Union[float, np.ndarray], alpha: float
+) -> np.ndarray:
     """Build a PopXL graph with the leaky relu custom op in and run it.
 
     Args:
@@ -29,9 +30,7 @@ def build_and_run_graph(input_data: Union[float, np.ndarray],
     input_array = np.array(input_data)
     with main:
         # host load
-        input0 = popxl.h2d_stream(input_array.shape,
-                                  popxl.float32,
-                                  name="in_stream")
+        input0 = popxl.h2d_stream(input_array.shape, popxl.float32, name="in_stream")
         a = ops.host_load(input0, "a")
 
         # custom leaky relu.
@@ -55,16 +54,17 @@ def build_and_run_graph(input_data: Union[float, np.ndarray],
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--alpha",
-                        help="sets the lrelu alpha attribute",
-                        type=float,
-                        default=0.02)
-    parser.add_argument("--input_data",
-                        metavar="X",
-                        type=float,
-                        nargs="+",
-                        help="input tensor data",
-                        default=0.01)
+    parser.add_argument(
+        "--alpha", help="sets the lrelu alpha attribute", type=float, default=0.02
+    )
+    parser.add_argument(
+        "--input_data",
+        metavar="X",
+        type=float,
+        nargs="+",
+        help="input tensor data",
+        default=0.01,
+    )
 
     args = parser.parse_args()
 

@@ -12,15 +12,15 @@ except ModuleNotFoundError:
     torch = None
 
 # A dictionary to map from numpy to popxl types.
-_NP_TO_POPXL: Mapping[np.dtype, 'dtype'] = {}
+_NP_TO_POPXL: Mapping[np.dtype, "dtype"] = {}
 # A dictionary to map from string to popxl types.
-_STR_TO_POPXL: Mapping[str, 'dtype'] = {}
+_STR_TO_POPXL: Mapping[str, "dtype"] = {}
 # A dictionary to map from Python to popxl types.
-_PY_TO_POPXL: Mapping[Any, 'dtype'] = {}
+_PY_TO_POPXL: Mapping[Any, "dtype"] = {}
 # A dictionart to map from popart._ir to popxl types.
-_PB_TO_POPXL: Mapping[_ir.DataType, 'dtype'] = {}
+_PB_TO_POPXL: Mapping[_ir.DataType, "dtype"] = {}
 # A dictionary to map from PyTorch to popxl types
-_PT_TO_POPXL: Mapping[Any, 'dtype'] = {}
+_PT_TO_POPXL: Mapping[Any, "dtype"] = {}
 
 
 class dtype:
@@ -93,7 +93,7 @@ class dtype:
         return self._is_signed
 
     @classmethod
-    def from_name(cls, name: str) -> 'dtype':
+    def from_name(cls, name: str) -> "dtype":
         """Convert a dtype name into a dtype.
 
         Args:
@@ -110,11 +110,10 @@ class dtype:
         except (KeyError, TypeError):
             pass
 
-        raise ValueError(
-            f'There is not a `popxl.dtype` that has a name: {name}.')
+        raise ValueError(f"There is not a `popxl.dtype` that has a name: {name}.")
 
     @classmethod
-    def as_dtype(cls, type_value: Any) -> 'dtype':
+    def as_dtype(cls, type_value: Any) -> "dtype":
         """Convert the given `type_value` to a `popxl.dtype`.
 
         Args:
@@ -159,7 +158,7 @@ class dtype:
         except (KeyError, TypeError):
             pass
 
-        if hasattr(type_value, 'dtype'):
+        if hasattr(type_value, "dtype"):
             try:
                 return _NP_TO_POPXL[type_value.dtype]
             except (KeyError, TypeError):
@@ -171,8 +170,9 @@ class dtype:
                 pass
 
         raise ValueError(
-            f'There is not a `popxl.dtype` that is compatible'
-            f' with value: {type_value}, type: {type(type_value)}.')
+            f"There is not a `popxl.dtype` that is compatible"
+            f" with value: {type_value}, type: {type(type_value)}."
+        )
 
     def as_numpy(self) -> np.dtype:
         """Convert the `popxl.dtype` to a corresponding `numpy.dtype`.
@@ -188,8 +188,9 @@ class dtype:
         if self._np_type is not None:
             return self._np_type
         else:
-            raise TypeError(f'`popxl.{self._name}` does not have a '
-                            f'corresponding NumPy dtype.')
+            raise TypeError(
+                f"`popxl.{self._name}` does not have a " f"corresponding NumPy dtype."
+            )
 
     def as_torch(self) -> np.dtype:
         """Convert the `popxl.dtype` to a corresponding `torch.dtype`.
@@ -209,25 +210,26 @@ class dtype:
         if self._pt_type is not None:
             return self._pt_type
         else:
-            raise TypeError(f'`popxl.{self._name}` does not have a '
-                            f'corresponding PyTorch dtype.')
+            raise TypeError(
+                f"`popxl.{self._name}` does not have a " f"corresponding PyTorch dtype."
+            )
 
     def __repr__(self) -> str:
-        return f'{self.__module__}.{self._name}'
+        return f"{self.__module__}.{self._name}"
 
     @classmethod
     def _factory(
-            cls,
-            name: str,
-            is_complex: bool,
-            is_int: bool,
-            is_floating_point: bool,
-            is_signed: bool,
-            np_type: np.dtype,
-            pt_type: str,
-            py_type: Any,
-            pb_type: _ir.DataType,
-    ) -> 'dtype':
+        cls,
+        name: str,
+        is_complex: bool,
+        is_int: bool,
+        is_floating_point: bool,
+        is_signed: bool,
+        np_type: np.dtype,
+        pt_type: str,
+        py_type: Any,
+        pb_type: _ir.DataType,
+    ) -> "dtype":
         """Construct `dtype` instances.
 
         Used as a factory method.
@@ -258,7 +260,7 @@ class dtype:
         """
         global _NP_TO_POPXL, _STR_TO_POPXL, _PY_TO_POPXL, _PT_TO_POPXL
 
-        self: 'dtype' = super().__new__(cls)
+        self: "dtype" = super().__new__(cls)
         self._is_complex = is_complex
         self._is_int = is_int
         self._is_floating_point = is_floating_point

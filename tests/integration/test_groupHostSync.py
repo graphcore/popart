@@ -16,29 +16,31 @@ def test_groupHostSync():
 
     anchor_config = {
         o: popart.AnchorReturnType("All"),
-        l1: popart.AnchorReturnType("All")
+        l1: popart.AnchorReturnType("All"),
     }
     dataFlow = popart.DataFlow(1, anchor_config)
 
     options = popart.SessionOptions()
     options.engineOptions = {
         "debug.instrumentCompute": "true",
-        "debug.instrumentExternalExchange": "true"
+        "debug.instrumentExternalExchange": "true",
     }
-    options.groupHostSync = True  #The option we are testing
+    options.groupHostSync = True  # The option we are testing
     options.reportOptions = {
         "showVarStorage": "true",
         "showPerIpuMemoryUsage": "true",
-        "showExecutionSteps": "true"
+        "showExecutionSteps": "true",
     }
     patterns = popart.Patterns(popart.PatternsLevel.Minimal)
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device,
-                                          userOptions=options,
-                                          patterns=patterns)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            deviceInfo=device,
+            userOptions=options,
+            patterns=patterns,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -48,7 +50,7 @@ def test_groupHostSync():
         stepio = popart.PyStepIO({a: input_a}, anchors)
         session.run(stepio)
         summaryReport = session.getSummaryReport()
-    lines = summaryReport.split('\n')
+    lines = summaryReport.split("\n")
     order = []
     pastSwitch = False
     countSeq = 0
@@ -99,4 +101,4 @@ def test_groupHostSync():
     assert order.count("streamcopy") == 2
     # Everything else should be execution
     for i in order[2:-1]:
-        assert i == 'execution'
+        assert i == "execution"

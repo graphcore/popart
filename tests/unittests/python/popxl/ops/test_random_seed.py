@@ -19,8 +19,7 @@ class TestSplitRandomSeed:
 
         assert len(g.tensors) == 5
         assert len(g.variables) == 1
-        assert contains_op_of_type("ModifyRandomSeed",
-                                   _ir.op.ModifyRandomSeedOp, g)
+        assert contains_op_of_type("ModifyRandomSeed", _ir.op.ModifyRandomSeedOp, g)
 
     def test_many(self):
         ir = popxl.Ir()

@@ -8,7 +8,7 @@ import popxl.ops as ops
 from popart import InferenceSession
 
 
-class TestIOSizes():
+class TestIOSizes:
     def test_uneven_host_loads(self):
         """Check we can run :
         h2d_stream_1 = ...
@@ -35,9 +35,7 @@ class TestIOSizes():
         input_data = []
 
         for i in range(0, BPS * NUM_LOCAL_REPLICAS):
-            input_data += [
-                np.random.rand(DATA_SHAPE, DATA_SHAPE).astype(np.float32)
-            ]
+            input_data += [np.random.rand(DATA_SHAPE, DATA_SHAPE).astype(np.float32)]
 
         input_data: np.ndarray = np.concatenate(input_data)
 
@@ -47,22 +45,25 @@ class TestIOSizes():
 
         with main:
             repeat_sg = ir.create_empty_graph("repeat")
-            d0_h2d = popxl.h2d_stream((DATA_SHAPE, DATA_SHAPE),
-                                      popxl.float32,
-                                      name="d0_stream")
-            e0_h2d = popxl.h2d_stream((DATA_SHAPE, DATA_SHAPE),
-                                      popxl.float32,
-                                      name="e0_stream")
-            out_d2h = popxl.d2h_stream((DATA_SHAPE, DATA_SHAPE),
-                                       popxl.float32,
-                                       name="out_d2h_stream")
+            d0_h2d = popxl.h2d_stream(
+                (DATA_SHAPE, DATA_SHAPE), popxl.float32, name="d0_stream"
+            )
+            e0_h2d = popxl.h2d_stream(
+                (DATA_SHAPE, DATA_SHAPE), popxl.float32, name="e0_stream"
+            )
+            out_d2h = popxl.d2h_stream(
+                (DATA_SHAPE, DATA_SHAPE), popxl.float32, name="out_d2h_stream"
+            )
             with repeat_sg, popxl.in_sequence():
 
                 d0 = ops.host_load(d0_h2d, "d")
                 d0 = ops.print_tensor(d0)
 
-                input_copy = input_data.copy().reshape(
-                    (BPS, DATA_SHAPE, DATA_SHAPE)).astype(np.float32)
+                input_copy = (
+                    input_data.copy()
+                    .reshape((BPS, DATA_SHAPE, DATA_SHAPE))
+                    .astype(np.float32)
+                )
 
                 data[d0_h2d] = np.concatenate([input_copy] * 2, axis=0)
                 data[e0_h2d] = np.concatenate([input_copy] * 2, axis=0)
@@ -90,8 +91,9 @@ class TestIOSizes():
             print(k, k.tensor_id, "data shape:", v.shape)
 
         outputs = {}
-        outputs[out_d2h] = np.zeros(
-            (BPS * 2, DATA_SHAPE, DATA_SHAPE)).astype(np.float32)
+        outputs[out_d2h] = np.zeros((BPS * 2, DATA_SHAPE, DATA_SHAPE)).astype(
+            np.float32
+        )
 
         with session:
             session.run_with_outputs(data, outputs)
@@ -112,18 +114,19 @@ class TestIOSizes():
     @pytest.mark.parametrize("data_size", [[1], [4, 4], [4]])
     @pytest.mark.parametrize("replication_factor", [1, 2, 4])
     @pytest.mark.parametrize("num_host_transfers", [2, 32])
-    def test_io_sizes(self, monkeypatch, data_size: Tuple[int],
-                      replication_factor: int, num_host_transfers: int):
+    def test_io_sizes(
+        self,
+        monkeypatch,
+        data_size: Tuple[int],
+        replication_factor: int,
+        num_host_transfers: int,
+    ):
         ir = popxl.Ir()
         main = ir.main_graph
         with main:
             repeat_sg = ir.create_empty_graph("repeat")
-            d0_h2d = popxl.h2d_stream(data_size,
-                                      popxl.float32,
-                                      name="d0_stream")
-            out_d2h = popxl.d2h_stream(data_size,
-                                       popxl.float32,
-                                       name="out_d2h_stream")
+            d0_h2d = popxl.h2d_stream(data_size, popxl.float32, name="d0_stream")
+            out_d2h = popxl.d2h_stream(data_size, popxl.float32, name="out_d2h_stream")
             with repeat_sg, popxl.in_sequence():
 
                 d0 = ops.host_load(d0_h2d, "d")
@@ -145,8 +148,7 @@ class TestIOSizes():
         # if called so we have to monkey patch it too.
         monkeypatch.setattr(InferenceSession, "prepareDevice", dummy_function)
 
-        monkeypatch.setattr(InferenceSession, "weightsFromHost",
-                            dummy_function)
+        monkeypatch.setattr(InferenceSession, "weightsFromHost", dummy_function)
 
         session = popxl.Session(ir, "ipu_model")
 

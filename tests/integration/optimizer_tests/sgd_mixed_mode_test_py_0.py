@@ -6,6 +6,7 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -25,7 +26,8 @@ def test_sgd_mixed_mode(tmpdir):
 
         input0Shape = [stepSize, batchSize, sampleDim]
         input0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", input0Shape), "input0")
+            popart.TensorInfo("FLOAT", input0Shape), "input0"
+        )
 
         w0data = np.array([100.0], dtype=np.float32)
         w0R = np.array([-777.0], dtype=np.float32)
@@ -57,12 +59,13 @@ def test_sgd_mixed_mode(tmpdir):
         with tu.create_test_device(opts={"compileIPUCode": False}) as device:
             session = popart.TrainingSession(
                 fnModel=proto,
-                dataFlow=dataFlow,\
+                dataFlow=dataFlow,
                 userOptions=opts,
                 loss=l1,
                 optimizer=opt0,
                 patterns=pat,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -86,52 +89,42 @@ def test_sgd_mixed_mode(tmpdir):
 
             session.readWeights(weightsRead)
 
-        assert (np.isclose(e0['initalValue'], w0R))
-        assert (np.isclose(e1['initalValue'], w1R))
-        assert (np.isclose(e2['initalValue'], w2R))
+        assert np.isclose(e0["initalValue"], w0R)
+        assert np.isclose(e1["initalValue"], w1R)
+        assert np.isclose(e2["initalValue"], w2R)
 
     # Test 1 (same as C++ test)
     defaultWeightDecay = (0, False)
     defaultLearningRate = (0.1, True)
     lossScaling = (10, True)
 
-    opt0 = popart.SGD({
-        "defaultLearningRate": defaultLearningRate,
-        "defaultWeightDecay": defaultWeightDecay,
-        "lossScaling": lossScaling
-    })
+    opt0 = popart.SGD(
+        {
+            "defaultLearningRate": defaultLearningRate,
+            "defaultWeightDecay": defaultWeightDecay,
+            "lossScaling": lossScaling,
+        }
+    )
 
-    opt0.insertSpecific(w1name, {
-        "weightDecay": (0, True),
-        "learningRate": (0.2, False)
-    })
+    opt0.insertSpecific(
+        w1name, {"weightDecay": (0, True), "learningRate": (0.2, False)}
+    )
 
-    opt1 = popart.SGD({
-        "defaultLearningRate": defaultLearningRate,
-        "defaultWeightDecay": defaultWeightDecay,
-        "lossScaling": lossScaling
-    })
+    opt1 = popart.SGD(
+        {
+            "defaultLearningRate": defaultLearningRate,
+            "defaultWeightDecay": defaultWeightDecay,
+            "lossScaling": lossScaling,
+        }
+    )
 
-    opt1.insertSpecific(w1name, {
-        "weightDecay": (0, True),
-        "learningRate": (0.5, False)
-    })
+    opt1.insertSpecific(
+        w1name, {"weightDecay": (0, True), "learningRate": (0.5, False)}
+    )
 
-    e0 = {
-        'initalValue': 100.0 - 0.1 - 0.1,
-        'constSlr': True,
-        'constSwdf': False
-    }
-    e1 = {
-        'initalValue': 200.0 - 0.2 - 0.5,
-        'constSlr': False,
-        'constSwdf': False
-    }
-    e2 = {
-        'initalValue': 300.0 - 0.1 - 0.1,
-        'constSlr': True,
-        'constSwdf': False
-    }
+    e0 = {"initalValue": 100.0 - 0.1 - 0.1, "constSlr": True, "constSwdf": False}
+    e1 = {"initalValue": 200.0 - 0.2 - 0.5, "constSlr": False, "constSwdf": False}
+    e2 = {"initalValue": 300.0 - 0.1 - 0.1, "constSlr": True, "constSwdf": False}
 
     debug_filename = str(tmpdir) + "/debug.json"
     popart.initializePoplarDebugInfo(debug_filename, "json")
@@ -145,15 +138,17 @@ def test_sgd_mixed_mode(tmpdir):
     with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
-            if context['layer'] == "popart" and \
-               'opid' in context and \
-               'SGD' in context['opid']:
-                parents.add(context['parentId'])
+            if (
+                context["layer"] == "popart"
+                and "opid" in context
+                and "SGD" in context["opid"]
+            ):
+                parents.add(context["parentId"])
                 num_sgds += 1
         for context in data["contexts"]:
-            if context['id'] in parents:
-                parents.remove(context['id'])
-                assert context['layer'] == "popart_builder"
-                assert data['stringTable'][context['name']] == "sgd"
+            if context["id"] in parents:
+                parents.remove(context["id"])
+                assert context["layer"] == "popart_builder"
+                assert data["stringTable"][context["name"]] == "sgd"
     assert num_sgds == 6
     assert len(parents) == 0

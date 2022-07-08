@@ -10,8 +10,9 @@ from .utils import handle_optimizer_value
 
 
 @op_debug_context
-def accumulate_(t: Tensor, X: Tensor,
-                f: Optional[Union[float, Tensor]] = None) -> Tensor:
+def accumulate_(
+    t: Tensor, X: Tensor, f: Optional[Union[float, Tensor]] = None
+) -> Tensor:
     """
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X)`.
 
@@ -37,7 +38,7 @@ def accumulate_(t: Tensor, X: Tensor,
 
     tensors_to_check = dict(t=t, X=X)
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
@@ -46,14 +47,13 @@ def accumulate_(t: Tensor, X: Tensor,
 
     ov = handle_optimizer_value(f, ins, 2)
 
-    settings = ctx._get_op_settings('accumulate')
+    settings = ctx._get_op_settings("accumulate")
     op = pb_g.createConnectedOp_AccumulateOp(
         ins,
         {
-            0: g._create_tensor_id('accumulate__' + t.name),
+            0: g._create_tensor_id("accumulate__" + t.name),
         },
-        _ir.AccumulationType.DampenedAdd
-        if f is not None else _ir.AccumulationType.Add,
+        _ir.AccumulationType.DampenedAdd if f is not None else _ir.AccumulationType.Add,
         ov,
         settings,
     )
@@ -62,8 +62,7 @@ def accumulate_(t: Tensor, X: Tensor,
 
 
 @op_debug_context
-def accumulate_square_(t: Tensor, X: Tensor,
-                       f: Union[float, Tensor] = 1.0) -> Tensor:
+def accumulate_square_(t: Tensor, X: Tensor, f: Union[float, Tensor] = 1.0) -> Tensor:
     """
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = t + (f * X^2)`.
 
@@ -89,7 +88,7 @@ def accumulate_square_(t: Tensor, X: Tensor,
 
     tensors_to_check = dict(t=t, X=X)
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
@@ -98,11 +97,11 @@ def accumulate_square_(t: Tensor, X: Tensor,
 
     ov = handle_optimizer_value(f, ins, 2)
 
-    settings = ctx._get_op_settings('accumulate')
+    settings = ctx._get_op_settings("accumulate")
     op = pb_g.createConnectedOp_AccumulateOp(
         ins,
         {
-            0: g._create_tensor_id('accumulate_square__' + t.name),
+            0: g._create_tensor_id("accumulate_square__" + t.name),
         },
         _ir.AccumulationType.DampenedAddSquare,
         ov,
@@ -113,8 +112,7 @@ def accumulate_square_(t: Tensor, X: Tensor,
 
 
 @op_debug_context
-def accumulate_mean_(t: Tensor, X: Tensor,
-                     step: Union[float, Tensor]) -> Tensor:
+def accumulate_mean_(t: Tensor, X: Tensor, step: Union[float, Tensor]) -> Tensor:
     """
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (step/(step+1)) * t + (1/(step+1)) * X`.
 
@@ -156,15 +154,11 @@ def accumulate_mean_(t: Tensor, X: Tensor,
     check_in_graph(g, t=t, X=X, step=step)
     check_tensor_ipu_and_tile_set(t=t, X=X, step=step)
 
-    settings = ctx._get_op_settings('accumulate')
+    settings = ctx._get_op_settings("accumulate")
     op = pb_g.createConnectedOp_AccumulateOp(
+        {0: t.id, 1: X.id, 2: step.id},
         {
-            0: t.id,
-            1: X.id,
-            2: step.id
-        },
-        {
-            0: g._create_tensor_id('accumulate_mean__' + t.name),
+            0: g._create_tensor_id("accumulate_mean__" + t.name),
         },
         _ir.AccumulationType.Mean,
         _ir.OptimizerValue(),
@@ -175,8 +169,7 @@ def accumulate_mean_(t: Tensor, X: Tensor,
 
 
 @op_debug_context
-def accumulate_moving_average_(t: Tensor, X: Tensor,
-                               f: Union[float, Tensor]) -> Tensor:
+def accumulate_moving_average_(t: Tensor, X: Tensor, f: Union[float, Tensor]) -> Tensor:
     """
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X)`.
 
@@ -202,7 +195,7 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 
     tensors_to_check = dict(t=t, X=X)
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
@@ -211,11 +204,11 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 
     ov = handle_optimizer_value(f, ins, 2)
 
-    settings = ctx._get_op_settings('accumulate')
+    settings = ctx._get_op_settings("accumulate")
     op = pb_g.createConnectedOp_AccumulateOp(
         ins,
         {
-            0: g._create_tensor_id('accumulate_moving_avg__' + t.name),
+            0: g._create_tensor_id("accumulate_moving_avg__" + t.name),
         },
         _ir.AccumulationType.MovingAverage,
         ov,
@@ -226,8 +219,9 @@ def accumulate_moving_average_(t: Tensor, X: Tensor,
 
 
 @op_debug_context
-def accumulate_moving_average_square_(t: Tensor, X: Tensor,
-                                      f: Union[float, Tensor]) -> Tensor:
+def accumulate_moving_average_square_(
+    t: Tensor, X: Tensor, f: Union[float, Tensor]
+) -> Tensor:
     """
     Update (in-place) tensor `t` given updater values `X` and a factor `f` according to `t = (f * t) + ((1-f) * X^2)`.
 
@@ -253,7 +247,7 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
 
     tensors_to_check = dict(t=t, X=X)
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
@@ -262,11 +256,11 @@ def accumulate_moving_average_square_(t: Tensor, X: Tensor,
 
     ov = handle_optimizer_value(f, ins, 2)
 
-    settings = ctx._get_op_settings('accumulate')
+    settings = ctx._get_op_settings("accumulate")
     op = pb_g.createConnectedOp_AccumulateOp(
         ins,
         {
-            0: g._create_tensor_id('accumulate_moving_avg_square__' + t.name),
+            0: g._create_tensor_id("accumulate_moving_avg_square__" + t.name),
         },
         _ir.AccumulationType.MovingAverageSquare,
         ov,
@@ -301,7 +295,7 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
 
     tensors_to_check = dict(t=t)
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
@@ -310,11 +304,11 @@ def accumulator_scale_(t: Tensor, f: Union[float, Tensor]) -> Tensor:
 
     ov = handle_optimizer_value(f, ins, 2)
 
-    settings = ctx._get_op_settings('accumulator_scale')
+    settings = ctx._get_op_settings("accumulator_scale")
     op = pb_g.createConnectedOp_AccumulatorScaleOp(
         ins,
         {
-            0: g._create_tensor_id('accumulator_scale__' + t.name),
+            0: g._create_tensor_id("accumulator_scale__" + t.name),
         },
         ov,
         settings,
@@ -339,12 +333,14 @@ def accumulator_zero_(t: Tensor) -> Tensor:
     return accumulator_scale_(t, 0.0)
 
 
-def sparse_accumulate_(t: Tensor,
-                       X: Tensor,
-                       indices: Tensor,
-                       axis: int = 0,
-                       f: Optional[Union[float, Tensor]] = None,
-                       W: Optional[Tensor] = None) -> Tensor:
+def sparse_accumulate_(
+    t: Tensor,
+    X: Tensor,
+    indices: Tensor,
+    axis: int = 0,
+    f: Optional[Union[float, Tensor]] = None,
+    W: Optional[Tensor] = None,
+) -> Tensor:
     """
     Apply a sparse accumulate operation to a tensor.
 
@@ -409,7 +405,7 @@ def sparse_accumulate_(t: Tensor,
 
     ov: _ir.OptimizerValue
     if isinstance(f, Tensor):
-        tensors_to_check['f'] = f
+        tensors_to_check["f"] = f
         ins[2] = f.id
         ov = _ir.OptimizerValue(0.0, False)
     elif f is None:
@@ -418,20 +414,19 @@ def sparse_accumulate_(t: Tensor,
         ov = _ir.OptimizerValue(f)
 
     if W is not None:
-        tensors_to_check['W'] = W
+        tensors_to_check["W"] = W
         ins[4] = W.id
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
 
-    settings = ctx._get_op_settings('sparse_accumulate')
+    settings = ctx._get_op_settings("sparse_accumulate")
     op = pb_g.createConnectedOp_SparseAccumulateOp(
         ins,
         {
-            0: g._create_tensor_id('sparse_accumulate__' + t.name),
+            0: g._create_tensor_id("sparse_accumulate__" + t.name),
         },
-        _ir.AccumulationType.DampenedAdd
-        if f is not None else _ir.AccumulationType.Add,
+        _ir.AccumulationType.DampenedAdd if f is not None else _ir.AccumulationType.Add,
         ov,
         axis,
         settings,

@@ -8,8 +8,9 @@ import popart
 from popart_core import _InferenceSessionCore, _TrainingSessionCore
 
 
-def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
-                      ) -> Dict[str, np.array]:
+def _initAnchorArrays(
+    sess: Union["InferenceSession", "TrainingSession"]
+) -> Dict[str, np.array]:
     """Create the anchor arrays to feed data back into Python.
 
     Args:
@@ -42,7 +43,10 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
         # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
 
         anchorArrayShape = [sess.replicationFactor]
-        if artId == popart.AnchorReturnTypeId.Final or artId == popart.AnchorReturnTypeId.Sum:
+        if (
+            artId == popart.AnchorReturnTypeId.Final
+            or artId == popart.AnchorReturnTypeId.Sum
+        ):
             pass
         elif artId == popart.AnchorReturnTypeId.All:
             anchorArrayShape.insert(0, sess.accumulationFactor)
@@ -50,7 +54,8 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
         elif artId == popart.AnchorReturnTypeId.EveryN:
             if batchesPerStep % sess.dataFlow.art(anchor).rp() != 0:
                 raise RuntimeError(
-                    "Invalid anchor period, is not divisble by batchesPerStep")
+                    "Invalid anchor period, is not divisble by batchesPerStep"
+                )
 
             arp = sess.dataFlow.art(anchor).rp()
             anchorArrayShape.insert(0, sess.accumulationFactor)
@@ -59,8 +64,9 @@ def _initAnchorArrays(sess: Union["InferenceSession", "TrainingSession"]
         anchorArrayShape = [x for x in anchorArrayShape if x != 1]
         anchorArrayShape = anchorArrayShape + anchorShape
 
-        anchorArrays[anchor] = np.empty(shape=anchorArrayShape,
-                                        dtype=anchorInfo.data_type_lcase())
+        anchorArrays[anchor] = np.empty(
+            shape=anchorArrayShape, dtype=anchorInfo.data_type_lcase()
+        )
 
     return anchorArrays
 
@@ -115,52 +121,53 @@ class InferenceSession(_InferenceSessionCore):
     """
 
     def __init__(
-            self,
-            fnModel: bytes,
-            dataFlow: Dict[int, Dict],
-            deviceInfo: popart.DeviceInfo,
-            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions(),
-            name: str = "inference") -> None:
+        self,
+        fnModel: bytes,
+        dataFlow: Dict[int, Dict],
+        deviceInfo: popart.DeviceInfo,
+        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+        patterns: popart.Patterns = None,
+        userOptions: popart.SessionOptions = popart.SessionOptions(),
+        name: str = "inference",
+    ) -> None:
         """Construct the ``InferenceSession`` class.
 
-            Arguments:
-                fnModel: ONNX model proto. Usually a loaded ONNX model, or from
-                    :py:func:`~popart.builder.getModelProto()`.
-                dataFlow: Configuration for the data feeds and fetches.
-                deviceInfo: :py:class:`~popart.DeviceInfo` object specifying
-                    the device type (``IPU``, ``IPUModel`` or ``CPU``) and
-                    number of each type.
-                inputShapeInfo: (Optional) The sizes and dtypes of the input
-                    tensors. This is used to specify the sizes of the input
-                    tensors in the case that the ONNX model does not include
-                    this information. The Poplar graph programmming framework
-                    uses statically allocated memory buffers and so it needs to
-                    know the size of tensors before the compilation. Default:
-                    :py:class:`~popart.InputShapeInfo()`.
-                patterns: (Optional) A user-selected set of graph transformation
-                    patterns which will be applied to the graph. If this is not
-                    specified, a default set of optimisation transformations
-                    will be applied. Default ``None``. Note: The default for
-                    patterns must not be :py:class:`~popart.Patterns()`. When
-                    ``import popart`` is run, the default arguments are created.
-                    If the user then loads a custom pattern using
-                    ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)`` then the
-                    already constructed ``popart.Patterns`` will not include the
-                    custom pattern. Default ``None``.
-                userOptions: (Optional) The user configuration options for the
-                    Session class. Default::py:class:`~popart.SessionOptions()`.
-                name: (Optional) The name of this inference session. Default:
-                    "inference".
+        Arguments:
+            fnModel: ONNX model proto. Usually a loaded ONNX model, or from
+                :py:func:`~popart.builder.getModelProto()`.
+            dataFlow: Configuration for the data feeds and fetches.
+            deviceInfo: :py:class:`~popart.DeviceInfo` object specifying
+                the device type (``IPU``, ``IPUModel`` or ``CPU``) and
+                number of each type.
+            inputShapeInfo: (Optional) The sizes and dtypes of the input
+                tensors. This is used to specify the sizes of the input
+                tensors in the case that the ONNX model does not include
+                this information. The Poplar graph programmming framework
+                uses statically allocated memory buffers and so it needs to
+                know the size of tensors before the compilation. Default:
+                :py:class:`~popart.InputShapeInfo()`.
+            patterns: (Optional) A user-selected set of graph transformation
+                patterns which will be applied to the graph. If this is not
+                specified, a default set of optimisation transformations
+                will be applied. Default ``None``. Note: The default for
+                patterns must not be :py:class:`~popart.Patterns()`. When
+                ``import popart`` is run, the default arguments are created.
+                If the user then loads a custom pattern using
+                ``ctypes.cdll.LoadLibrary(custom_pattern_lib.so)`` then the
+                already constructed ``popart.Patterns`` will not include the
+                custom pattern. Default ``None``.
+            userOptions: (Optional) The user configuration options for the
+                Session class. Default::py:class:`~popart.SessionOptions()`.
+            name: (Optional) The name of this inference session. Default:
+                "inference".
         """
 
         if patterns is None:
             patterns = popart.Patterns()
 
-        super(InferenceSession,
-              self).__init__(fnModel, dataFlow, deviceInfo, inputShapeInfo,
-                             userOptions, patterns, name)
+        super(InferenceSession, self).__init__(
+            fnModel, dataFlow, deviceInfo, inputShapeInfo, userOptions, patterns, name
+        )
 
     @property
     def dataFlow(self):
@@ -249,10 +256,9 @@ class InferenceSession(_InferenceSessionCore):
             raise popart.OutOfMemoryException(err)
 
     @classmethod
-    def fromIr(cls,
-               ir: "Ir",
-               deviceInfo: popart.DeviceInfo,
-               name: str = "fromIr") -> 'InferenceSession':
+    def fromIr(
+        cls, ir: "Ir", deviceInfo: popart.DeviceInfo, name: str = "fromIr"
+    ) -> "InferenceSession":
         """Create a session for inference from an IR.
 
         Arguments:
@@ -266,9 +272,7 @@ class InferenceSession(_InferenceSessionCore):
             InferenceSession: An inference session.
         """
         self = super().__new__(cls)
-        super(InferenceSession, self).__init__(ir=ir,
-                                               deviceInfo=deviceInfo,
-                                               name=name)
+        super(InferenceSession, self).__init__(ir=ir, deviceInfo=deviceInfo, name=name)
 
         return self
 
@@ -284,49 +288,58 @@ class TrainingSession(_TrainingSessionCore):
     """
 
     def __init__(
-            self,
-            fnModel: bytes,
-            dataFlow: Dict[int, Dict],
-            loss: "",
-            optimizer: popart.Optimizer,
-            deviceInfo: popart.DeviceInfo,
-            inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
-            patterns: popart.Patterns = None,
-            userOptions: popart.SessionOptions = popart.SessionOptions(),
-            name: str = "training") -> None:
+        self,
+        fnModel: bytes,
+        dataFlow: Dict[int, Dict],
+        loss: "",
+        optimizer: popart.Optimizer,
+        deviceInfo: popart.DeviceInfo,
+        inputShapeInfo: popart.InputShapeInfo = popart.InputShapeInfo(),
+        patterns: popart.Patterns = None,
+        userOptions: popart.SessionOptions = popart.SessionOptions(),
+        name: str = "training",
+    ) -> None:
         """Construct the ``TrainingSession`` class.
 
-            Arguments:
-                fnModel: ONNX model proto. Usually a loaded ONNX model, or from
-                    :py:func:`~popart.Builder.getModelProto()`.
-                dataFlow: Configuration for the data feeds and fetches.
-                loss: The identifier of the final scalar loss tensor for
-                    training.
-                optimizer: The name of an optimizer to use when training.
-                deviceInfo::py:class:`~popart.DeviceInfo` object specifying the
-                    device type (``IPU``, ``IPUModel`` or ``CPU``) and number
-                    of each type.
-                inputShapeInfo: (Optional) The sizes and dtypes of the input
-                    tensors. This is used to specify the sizes of the input
-                    tensors in the case that the ONNX model does not include
-                    this information. The Poplar graph programmming framework
-                    uses statically allocated memory buffers and so it needs to
-                    know the size of tensors before the compilation. Default:
-                    :py:class:`~popart.InputShapeInfo()`.
-                patterns: (Optional) The optimization patterns to apply.
-                    Default: ``None``.
-                userOptions: The user configuration options for the Session
-                    class. Default: :py:class:`~popart.SessionOptions()`.
-                name: (Optional) The name of this training session. Default:
-                    ``training``
+        Arguments:
+            fnModel: ONNX model proto. Usually a loaded ONNX model, or from
+                :py:func:`~popart.Builder.getModelProto()`.
+            dataFlow: Configuration for the data feeds and fetches.
+            loss: The identifier of the final scalar loss tensor for
+                training.
+            optimizer: The name of an optimizer to use when training.
+            deviceInfo::py:class:`~popart.DeviceInfo` object specifying the
+                device type (``IPU``, ``IPUModel`` or ``CPU``) and number
+                of each type.
+            inputShapeInfo: (Optional) The sizes and dtypes of the input
+                tensors. This is used to specify the sizes of the input
+                tensors in the case that the ONNX model does not include
+                this information. The Poplar graph programmming framework
+                uses statically allocated memory buffers and so it needs to
+                know the size of tensors before the compilation. Default:
+                :py:class:`~popart.InputShapeInfo()`.
+            patterns: (Optional) The optimization patterns to apply.
+                Default: ``None``.
+            userOptions: The user configuration options for the Session
+                class. Default: :py:class:`~popart.SessionOptions()`.
+            name: (Optional) The name of this training session. Default:
+                ``training``
         """
 
         if patterns is None:
             patterns = popart.Patterns()
 
-        super(TrainingSession,
-              self).__init__(fnModel, dataFlow, loss, optimizer, deviceInfo,
-                             inputShapeInfo, userOptions, patterns, name)
+        super(TrainingSession, self).__init__(
+            fnModel,
+            dataFlow,
+            loss,
+            optimizer,
+            deviceInfo,
+            inputShapeInfo,
+            userOptions,
+            patterns,
+            name,
+        )
 
     @property
     def dataFlow(self):

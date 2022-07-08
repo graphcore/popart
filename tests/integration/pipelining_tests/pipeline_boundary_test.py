@@ -5,6 +5,7 @@ import popart
 # importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -12,8 +13,8 @@ import test_util as tu
 @tu.requires_ipu_model
 def test_pipeline_boundary():
     np.random.seed(0)
-    input_ = np.random.random_sample([4, 4, 2]).astype('float32')
-    w0_init = np.random.random_sample([2, 4]).astype('float32')
+    input_ = np.random.random_sample([4, 4, 2]).astype("float32")
+    w0_init = np.random.random_sample([2, 4]).astype("float32")
 
     def run(inplaceReshape=True):
 
@@ -36,7 +37,8 @@ def test_pipeline_boundary():
 
         builder.addOutputTensor(actIn)
         builder.setInplacePreferences(
-            r0, {"ReshapeInplace": 10 if inplaceReshape else -10})
+            r0, {"ReshapeInplace": 10 if inplaceReshape else -10}
+        )
         opts = popart.SessionOptions()
 
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -47,14 +49,15 @@ def test_pipeline_boundary():
         patterns.InPlace = True
 
         with tu.create_test_device(numIpus=numIpus) as device:
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(
-                                                 4, [actIn]),
-                                             deviceInfo=device,
-                                             optimizer=popart.ConstSGD(0.1),
-                                             loss=loss,
-                                             userOptions=opts,
-                                             patterns=patterns)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(4, [actIn]),
+                deviceInfo=device,
+                optimizer=popart.ConstSGD(0.1),
+                loss=loss,
+                userOptions=opts,
+                patterns=patterns,
+            )
 
             anchors = session.initAnchorArrays()
 
@@ -74,9 +77,7 @@ def test_pipeline_boundary():
     print("Shape: ", anchor_pl.shape)
     for i in range(4):
         assert np.allclose(anchor_pl[i, :], anchor_no_pl[i, :])
-        print("Abs diff: ",
-              np.max(np.abs(anchor_pl[i, :] - anchor_no_pl[i, :])))
-        print("Sum diff: ",
-              np.sum(anchor_pl[i, :]) - np.sum(anchor_no_pl[i, :]))
+        print("Abs diff: ", np.max(np.abs(anchor_pl[i, :] - anchor_no_pl[i, :])))
+        print("Sum diff: ", np.sum(anchor_pl[i, :]) - np.sum(anchor_no_pl[i, :]))
 
     print("Total Abs diff: ", np.max(np.abs(anchor_pl - anchor_no_pl)))

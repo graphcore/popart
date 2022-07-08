@@ -16,10 +16,9 @@ class ILinter(ABC):
         self.include = self._convert_to_string_if_regex_list(config.include)
         self.exclude = self._convert_to_string_if_regex_list(config.exclude)
         self.config_file = config.config_file
-        self._linter_message = 'Lint error.'
+        self._linter_message = "Lint error."
 
-    def _convert_to_string_if_regex_list(self,
-                                         regex: Union[str, List[str]]) -> str:
+    def _convert_to_string_if_regex_list(self, regex: Union[str, List[str]]) -> str:
         if regex is not None:
             if type(regex) is list:
                 if not all(type(s) is str for s in regex):
@@ -46,7 +45,7 @@ class ILinter(ABC):
             return file_contents
 
     def set_linter_message(self, message: str) -> None:
-        """"Set the message describing and/or explaining the changes applied by this linter."""
+        """ "Set the message describing and/or explaining the changes applied by this linter."""
         self._linter_message = message
 
     def get_linter_message(self) -> str:
@@ -77,11 +76,11 @@ class ILinter(ABC):
 
     @abstractmethod
     def is_available(self) -> bool:
-        """"Check if the linter is installed."""
+        """ "Check if the linter is installed."""
 
     @abstractmethod
-    def install_instructions(self, required_version='') -> str:
-        """"Return a string describing how the linter should be installed."""
+    def install_instructions(self, required_version="") -> str:
+        """ "Return a string describing how the linter should be installed."""
 
     def is_applicable(self, filename: str) -> bool:
         """Return true if this linter is applicable to filename, false otherwise."""

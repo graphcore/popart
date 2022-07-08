@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-'''
+"""
 Demonstrate how to use graph_input in a function and how to call the subgraph multiple times.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -27,14 +27,12 @@ with main:
     increment_graph = ir.create_graph(increment_fn, x)
 
     # two variable values
-    value1 = popxl.variable(np.ones(x.shape, x.dtype.as_numpy()),
-                            name="value1")
-    value2 = popxl.variable(2 * np.ones(x.shape, x.dtype.as_numpy()),
-                            name="value2")
+    value1 = popxl.variable(np.ones(x.shape, x.dtype.as_numpy()), name="value1")
+    value2 = popxl.variable(2 * np.ones(x.shape, x.dtype.as_numpy()), name="value2")
 
     # call graph
-    o, = ops.call(increment_graph, x, value1)
-    o, = ops.call(increment_graph, o, value2)
+    (o,) = ops.call(increment_graph, x, value1)
+    (o,) = ops.call(increment_graph, o, value2)
     # Op end
 
     # host store

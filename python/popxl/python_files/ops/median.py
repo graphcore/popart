@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def median(t: Tensor,
-           axis: Optional[Union[int, Iterable[int]]] = None,
-           keepdims: bool = False) -> Tensor:
+def median(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the median of elements in a tensor along axes.
 
@@ -40,9 +40,10 @@ def median(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceMedian')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReduceMedian", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ReduceMedian")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReduceMedian", 1, _ir.NumInputs(1, 1), 1
+    )
     op = pb_g.createConnectedOp_ReduceMedianOp(
         {
             0: t.id,

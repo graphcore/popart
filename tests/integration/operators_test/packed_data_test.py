@@ -18,7 +18,7 @@ def gen_packed_sequences(lengths, shape, dtype=np.float32):
 def unpack(data, offsets, lengths, sequenceLength):
     sequences = []
     for offset, length in zip(offsets, lengths):
-        sequence = data[offset:offset + length]
+        sequence = data[offset : offset + length]
         padding = [[0, 0] for _ in range(sequence.ndim)]
         padding[0][1] = sequenceLength - sequence.shape[0]
         sequence = np.pad(sequence, padding)
@@ -31,7 +31,7 @@ def pack(data, result, offsets, lengths):
         offset = offsets[i]
         length = lengths[i]
         sequence = data[i, :length]
-        result[offset:offset + length] = sequence
+        result[offset : offset + length] = sequence
 
 
 # `inputs`: [data1, offsets1, lengths1, ..., dataN, offsetsN, lengthsN, resultOffsets, resultLengths].
@@ -39,8 +39,9 @@ def pack(data, result, offsets, lengths):
 # `destination`: The array used for the result.
 # `callbackBatchSize`: Number of sequences to pass to the func.
 # `func`: The function to run.
-def _packed_data_block_reference(inputs, maxSequenceLengths, result_size,
-                                 callbackBatchSize, func):
+def _packed_data_block_reference(
+    inputs, maxSequenceLengths, result_size, callbackBatchSize, func
+):
     # get the result offsets and lengths
     assert len(inputs) > 2
     resultOffsets = inputs[-2]
@@ -66,8 +67,12 @@ def _packed_data_block_reference(inputs, maxSequenceLengths, result_size,
     for i in range(nSequences // callbackBatchSize):
         ins = []
         for di in data_inputs:
-            ins.append(di[(i * callbackBatchSize):(i * callbackBatchSize) +
-                          callbackBatchSize])
+            ins.append(
+                di[
+                    (i * callbackBatchSize) : (i * callbackBatchSize)
+                    + callbackBatchSize
+                ]
+            )
         r = func(*ins)
         results.append(r)
 
@@ -80,8 +85,7 @@ def _packed_data_block_reference(inputs, maxSequenceLengths, result_size,
 
             offset = resultOffsets[idx]
             length = resultLengths[idx]
-            destination[offset:offset +
-                        length] = results[i][innerSequence][:length]
+            destination[offset : offset + length] = results[i][innerSequence][:length]
 
     return destination
 
@@ -109,10 +113,13 @@ def test_packed_data_block_reference(callbackBatchSize):
             dt = np.transpose(d, [0, 2, 1])
             return np.matmul(d, dt)
 
-        result = _packed_data_block_reference([
-            data, sequenceOffsets, sequenceLengths, sequenceOffsets,
-            sequenceLengths
-        ], [maxSequenceLength], data.shape[0], callbackBatchSize, func)
+        result = _packed_data_block_reference(
+            [data, sequenceOffsets, sequenceLengths, sequenceOffsets, sequenceLengths],
+            [maxSequenceLength],
+            data.shape[0],
+            callbackBatchSize,
+            func,
+        )
 
         # Check how many times `func` was called.
         nSequences = len(sequenceLengths)
@@ -124,8 +131,9 @@ def test_packed_data_block_reference(callbackBatchSize):
     unpacked_result = unpacked_ref(d)
 
     packed_result = packed_ref(data)
-    packed_result = unpack(packed_result, sequenceOffsets, sequenceLengths,
-                           maxSequenceLength)
+    packed_result = unpack(
+        packed_result, sequenceOffsets, sequenceLengths, maxSequenceLength
+    )
 
     assert unpacked_result.shape == packed_result.shape
     assert np.array_equal(packed_result, unpacked_result)
@@ -158,11 +166,19 @@ def test_packeddatablockop(op_tester, callbackBatchSize):
 
         subgraph_builder.addOutputTensor(out)
 
-        out = builder.aiGraphcore.packedDataBlock([
-            dataId, sequenceOffsetsId, sequenceLengthsId, sequenceOffsetsId,
-            sequenceLengthsId
-        ], [maxSequenceLength], data.shape[0], callbackBatchSize,
-                                                  subgraph_builder)
+        out = builder.aiGraphcore.packedDataBlock(
+            [
+                dataId,
+                sequenceOffsetsId,
+                sequenceLengthsId,
+                sequenceOffsetsId,
+                sequenceLengthsId,
+            ],
+            [maxSequenceLength],
+            data.shape[0],
+            callbackBatchSize,
+            subgraph_builder,
+        )
 
         builder.addOutputTensor(out)
         return [out]
@@ -176,7 +192,7 @@ def test_packeddatablockop(op_tester, callbackBatchSize):
         return [result]
 
     op_tester.patterns.enablePattern("PackedDataBlock", True)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_bertlike_attention(op_tester):
@@ -193,11 +209,11 @@ def test_bertlike_attention(op_tester):
     max_tokens_per_sequence = sequence_length
 
     lengths = [
-        random.randint(2, max_tokens_per_sequence)
-        for i in range(micro_batch_size)
+        random.randint(2, max_tokens_per_sequence) for i in range(micro_batch_size)
     ]
     packed_data, offsets = gen_packed_sequences(
-        lengths, [attention_heads * qkv_length * 3])
+        lengths, [attention_heads * qkv_length * 3]
+    )
     lengths = np.array(lengths).astype(np.uint32)
     offsets = np.array(offsets).astype(np.uint32)
 
@@ -205,8 +221,8 @@ def test_bertlike_attention(op_tester):
     # [micro_batch_size * sequence_length, attention_heads * qkv_length * 3]
     packed_data = np.pad(
         packed_data,
-        [(0, (micro_batch_size * sequence_length) - packed_data.shape[0]),
-         (0, 0)])
+        [(0, (micro_batch_size * sequence_length) - packed_data.shape[0]), (0, 0)],
+    )
 
     def init_builder(builder):
         dataId = builder.addInputTensor(packed_data, "data")
@@ -220,8 +236,7 @@ def test_bertlike_attention(op_tester):
 
         def extract_head(t, perm):
             comb_shape = [sequence_length, attention_heads, qkv_length]
-            t = subgraph_builder.reshape_const(subgraph_builder.aiOnnx, [t],
-                                               comb_shape)
+            t = subgraph_builder.reshape_const(subgraph_builder.aiOnnx, [t], comb_shape)
             return subgraph_builder.aiOnnx.transpose([t], perm)
 
         q = extract_head(q, [1, 0, 2])
@@ -237,17 +252,26 @@ def test_bertlike_attention(op_tester):
 
         x = subgraph_builder.aiOnnx.matmul([x, v])
         x = subgraph_builder.aiOnnx.transpose([x], [1, 0, 2])
-        x = subgraph_builder.reshape_const(subgraph_builder.aiOnnx, [x],
-                                           [1, sequence_length, hidden_size])
+        x = subgraph_builder.reshape_const(
+            subgraph_builder.aiOnnx, [x], [1, sequence_length, hidden_size]
+        )
         out = x
 
         subgraph_builder.addOutputTensor(out)
 
-        out = builder.aiGraphcore.packedDataBlock([
-            dataId, sequenceOffsetsId, sequenceLengthsId, sequenceOffsetsId,
-            sequenceLengthsId
-        ], [max_tokens_per_sequence], packed_data.shape[0], 1,
-                                                  subgraph_builder)
+        out = builder.aiGraphcore.packedDataBlock(
+            [
+                dataId,
+                sequenceOffsetsId,
+                sequenceLengthsId,
+                sequenceOffsetsId,
+                sequenceLengthsId,
+            ],
+            [max_tokens_per_sequence],
+            packed_data.shape[0],
+            1,
+            subgraph_builder,
+        )
 
         builder.addOutputTensor(out)
         return [out]
@@ -262,7 +286,10 @@ def test_bertlike_attention(op_tester):
 
         def extract_head(t, perm):
             comb_shape = [
-                micro_batch_size, sequence_length, attention_heads, qkv_length
+                micro_batch_size,
+                sequence_length,
+                attention_heads,
+                qkv_length,
             ]
             t = np.reshape(t, comb_shape)
             return np.transpose(t, perm)
@@ -280,10 +307,11 @@ def test_bertlike_attention(op_tester):
         x = np.transpose(x, [0, 2, 1, 3])
         x = np.reshape(x, [micro_batch_size, sequence_length, hidden_size])
 
-        result = np.zeros([micro_batch_size * sequence_length,
-                           hidden_size]).astype(np.float32)
+        result = np.zeros([micro_batch_size * sequence_length, hidden_size]).astype(
+            np.float32
+        )
         pack(x, result, offsets, lengths)
         return [result]
 
     op_tester.patterns.enablePattern("PackedDataBlock", True)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

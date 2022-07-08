@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 The intention of this example is to demonstrate the semantics of nested session contexts.
-'''
+"""
 
 import popxl
 import popxl.ops as ops

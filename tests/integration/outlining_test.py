@@ -8,10 +8,13 @@ import json
 import pytest
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_weight_update(tmpdir, subgraphCopyingStrategy):
     def run(model_file_name, enableOutlining):
         dsize = 10
@@ -19,8 +22,7 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
 
         def add_layer(in_id):
-            w = builder.addInitializedInputTensor(
-                np.ones([dsize, dsize], np.float32))
+            w = builder.addInitializedInputTensor(np.ones([dsize, dsize], np.float32))
             matmul_id = builder.aiOnnx.matmul([in_id, w])
             return matmul_id
 
@@ -55,7 +57,8 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
                 loss=out,
                 patterns=popart.Patterns(popart.PatternsLevel.All),
                 userOptions=opts,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -68,14 +71,14 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
 
             session.modelToHost(str(tmpdir / model_file_name))
 
-    run('without_outlining.onnx', False)
-    run('with_outlining.onnx', True)
+    run("without_outlining.onnx", False)
+    run("with_outlining.onnx", True)
 
-    with_outlining = onnx.load(str(tmpdir / 'without_outlining.onnx'))
-    without_outlining = onnx.load(str(tmpdir / 'with_outlining.onnx'))
+    with_outlining = onnx.load(str(tmpdir / "without_outlining.onnx"))
+    without_outlining = onnx.load(str(tmpdir / "with_outlining.onnx"))
 
     for i in range(len(without_outlining.graph.initializer)):
-        print(f'Checking initializer {i}')
+        print(f"Checking initializer {i}")
         lhs = without_outlining.graph.initializer[i]
         lhs = numpy_helper.to_array(lhs)
         rhs = with_outlining.graph.initializer[i]
@@ -83,10 +86,13 @@ def test_weight_update(tmpdir, subgraphCopyingStrategy):
         assert np.allclose(lhs, rhs)
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
     def run(enableOutlining):
         dsize = 10
@@ -95,8 +101,7 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
         ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [dsize, dsize]))
 
         def add_layer(in_id):
-            w = builder.addInitializedInputTensor(
-                np.ones([dsize, dsize], np.float32))
+            w = builder.addInitializedInputTensor(np.ones([dsize, dsize], np.float32))
             # w = builder.aiGraphcore.printtensor([w])
             matmul_id = builder.aiOnnx.matmul([in_id, w])
             return matmul_id
@@ -129,14 +134,14 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
                 loss=out,
                 patterns=popart.Patterns(popart.PatternsLevel.All),
                 userOptions=opts,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
             anchors = session.initAnchorArrays()
 
-            ip_data = np.ones((batches_per_step, dsize, dsize),
-                              dtype=np.float32)
+            ip_data = np.ones((batches_per_step, dsize, dsize), dtype=np.float32)
             stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
             session.run(stepio)
@@ -147,17 +152,20 @@ def test_batches_per_step_greater_than_one(subgraphCopyingStrategy):
     with_outlining = run(True)
 
     for key in without_outlining.keys():
-        print(f'Checking anchor {key}')
+        print(f"Checking anchor {key}")
         lhs = without_outlining[key]
         rhs = with_outlining[key]
 
         assert np.allclose(lhs, rhs)
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
     data = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
     weights = [np.random.rand(4, 4).astype(np.float32) for i in range(2)]
@@ -176,7 +184,7 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
 
         def create_subgraph():
             subgraph_builder = bld.createSubgraphBuilder()
-            tensor_info = popart.TensorInfo('FLOAT', [4, 4])
+            tensor_info = popart.TensorInfo("FLOAT", [4, 4])
             i0 = subgraph_builder.addInputTensor(tensor_info)
             i1 = subgraph_builder.addInputTensor(tensor_info)
             i2 = subgraph_builder.addInputTensor(tensor_info)
@@ -194,10 +202,12 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
         opts.subgraphCopyingStrategy = subgraphCopyingStrategy
 
         with tu.create_test_device() as device:
-            sess = popart.InferenceSession(fnModel=proto,
-                                           deviceInfo=device,
-                                           dataFlow=popart.DataFlow(1, [o]),
-                                           userOptions=opts)
+            sess = popart.InferenceSession(
+                fnModel=proto,
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [o]),
+                userOptions=opts,
+            )
             sess.prepareDevice()
 
             anchors = sess.initAnchorArrays()
@@ -207,7 +217,8 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
 
             sess.run(stepio)
         return anchors[o], json.loads(
-            sess._serializeIr(popart.IrSerializationFormat.JSON))
+            sess._serializeIr(popart.IrSerializationFormat.JSON)
+        )
 
     def run_reference():
         x = data[0] + data[1]
@@ -222,35 +233,38 @@ def test_outlining_in_subgraphs(subgraphCopyingStrategy, tmpdir):
 
     popart_output, ir = run_popart()
     ref_output = run_reference()
-    print(f'popart_output: {popart_output}\n')
-    print(f'ref_output: {ref_output}')
+    print(f"popart_output: {popart_output}\n")
+    print(f"ref_output: {ref_output}")
     assert np.allclose(popart_output, ref_output)
 
-    ops = [j['type'] for i in ir.values() for j in i]
+    ops = [j["type"] for i in ir.values() for j in i]
 
     # Outlining should have added another subgraph.
     graph_count = len(ir)
     assert graph_count == 3
 
     # The 2 MatMul ops should have been outlined.
-    assert ops.count('MatMul') == 1
+    assert ops.count("MatMul") == 1
 
     # 2 Call ops should have been added for the outlined MatMuls.
-    assert ops.count('Call') == 3
+    assert ops.count("Call") == 3
 
     popart.closePoplarDebugInfo()
     num_outlined_calls = 0
     with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
-            if context['layer'] == "popart" and \
-               'attributes' in context and \
-               'callee' in context['attributes'] and \
-               context['attributes']['callee'] == 'call_subgraph(0)':
+            if (
+                context["layer"] == "popart"
+                and "attributes" in context
+                and "callee" in context["attributes"]
+                and context["attributes"]["callee"] == "call_subgraph(0)"
+            ):
                 num_outlined_calls += 1
-                assert 'outlinedDebugContextIds' in context
-                assert 'replacedDebugContextIds' in context
-                assert len(context['outlinedDebugContextIds']) > 0
-                assert len(context['outlinedDebugContextIds']) == \
-                       len(context['replacedDebugContextIds'])
+                assert "outlinedDebugContextIds" in context
+                assert "replacedDebugContextIds" in context
+                assert len(context["outlinedDebugContextIds"]) > 0
+                assert len(context["outlinedDebugContextIds"]) == len(
+                    context["replacedDebugContextIds"]
+                )
     assert num_outlined_calls == 2

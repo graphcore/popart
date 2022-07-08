@@ -23,8 +23,9 @@ def lamb_square(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('lamb_square')
+    settings = ctx._get_op_settings("lamb_square")
     op = pb_g.createConnectedOp_LambSquareOp(
-        {0: t.id}, {0: g._create_tensor_id("lamb_square_out")}, settings)
+        {0: t.id}, {0: g._create_tensor_id("lamb_square_out")}, settings
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

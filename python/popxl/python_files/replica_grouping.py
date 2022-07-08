@@ -11,16 +11,15 @@ if TYPE_CHECKING:
 
 class ReplicaGrouping:
     def __init__(self):
-        """ Not intended to be called directly, use :py:func:`~popxl.Ir.replica_grouping` instead."""
+        """Not intended to be called directly, use :py:func:`~popxl.Ir.replica_grouping` instead."""
         raise RuntimeError(
             "popxl.ReplicaGrouping cannot be constructed directly (use `ir.replica_grouping`)."
         )
 
     @classmethod
-    def _from_params(cls,
-                     ir: 'Ir',
-                     stride: int = 1,
-                     group_size: Optional[int] = None) -> 'ReplicaGrouping':
+    def _from_params(
+        cls, ir: "Ir", stride: int = 1, group_size: Optional[int] = None
+    ) -> "ReplicaGrouping":
         self = super().__new__(cls)
         self._ir = ir
         self._stride = stride
@@ -48,8 +47,8 @@ class ReplicaGrouping:
 
     @classmethod
     def _from_variable_settings(
-            cls, ir: 'Ir',
-            variable_settings: VariableSettings) -> "ReplicaGrouping":
+        cls, ir: "Ir", variable_settings: VariableSettings
+    ) -> "ReplicaGrouping":
         """Generate a ReplicaGrouping from a provided VariableSettings.
 
         The inverse of _to_variable_settings.
@@ -69,23 +68,32 @@ class ReplicaGrouping:
         comm_group = variable_settings.getSharedVariableDomain()
         replicas = ir.replication_factor
 
-        if comm_group.type == _ir.CommGroupType.Ungrouped and comm_group.replicaGroupSize == 0:
+        if (
+            comm_group.type == _ir.CommGroupType.Ungrouped
+            and comm_group.replicaGroupSize == 0
+        ):
             self = ReplicaGrouping._from_params(ir, group_size=1)
         elif comm_group.type == _ir.CommGroupType.All:
             self = ReplicaGrouping._from_params(ir, group_size=replicas)
-        elif comm_group.type == _ir.CommGroupType.Consecutive and replicas % comm_group.replicaGroupSize == 0:
+        elif (
+            comm_group.type == _ir.CommGroupType.Consecutive
+            and replicas % comm_group.replicaGroupSize == 0
+        ):
             self = ReplicaGrouping._from_params(
-                ir, group_size=comm_group.replicaGroupSize)
+                ir, group_size=comm_group.replicaGroupSize
+            )
         elif comm_group.type == _ir.CommGroupType.Orthogonal:
             self = ReplicaGrouping._from_params(
                 ir,
                 group_size=replicas // comm_group.replicaGroupSize,
-                stride=comm_group.replicaGroupSize)
+                stride=comm_group.replicaGroupSize,
+            )
         else:
             raise ValueError(
                 f"VariableSettings with num_replicas={replicas}, "
                 f"CommGroupType={comm_group.type } and replicaGroupSize"
-                f"={comm_group.replicaGroupSize} is not currently supported")
+                f"={comm_group.replicaGroupSize} is not currently supported"
+            )
 
         return self
 
@@ -156,8 +164,9 @@ class ReplicaGrouping:
         for i in range(self.num_groups):
             while assign[offset] is not None:
                 offset += 1
-            assign[offset:offset + self.group_size *
-                   self.stride:self.stride] = [i] * self.group_size
+            assign[offset : offset + self.group_size * self.stride : self.stride] = [
+                i
+            ] * self.group_size
 
         return assign
 
@@ -169,7 +178,7 @@ class ReplicaGrouping:
 
         Examples:
 
-        .. code-block:: python
+        .. code-block:: text
 
             [0, 0, 0, 0] -> [0, 1, 2, 3]
             [0, 1, 0, 1] -> [0, 0, 1, 1]
@@ -186,7 +195,10 @@ class ReplicaGrouping:
         Returns:
             ReplicaGrouping: A "transpose" replica grouping of self.
         """
-        if self.stride > 1 and self.stride * self.group_size != self._ir.replication_factor:
+        if (
+            self.stride > 1
+            and self.stride * self.group_size != self._ir.replication_factor
+        ):
             raise ValueError(
                 "The transpose of this replica grouping cannot be represented with a replica grouping."
             )
@@ -202,21 +214,24 @@ class ReplicaGrouping:
         Returns:
             str: A string representation of this ReplicaGrouping instance.
         """
-        return f"ReplicaGrouping(num_replicas={self._ir.replication_factor}, " \
+        return (
+            f"ReplicaGrouping(num_replicas={self._ir.replication_factor}, "
             f"stride={self.stride}, group_size={self.group_size}, num_groups={self.num_groups})"
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, ReplicaGrouping):
             raise TypeError(
                 f"Value must be of type popxl.ReplicaGrouping. Type: {type(other)}. Value: {other}."
             )
-        return (self.stride == other.stride
-                and self.group_size == other.group_size
-                and self._ir == other._ir)
+        return (
+            self.stride == other.stride
+            and self.group_size == other.group_size
+            and self._ir == other._ir
+        )
 
     def _to_variable_settings(
-            self,
-            retrieval_mode: Literal["one_per_group", "all_replicas"] = None
+        self, retrieval_mode: Literal["one_per_group", "all_replicas"] = None
     ) -> VariableSettings:
         """Create a popart.VariableSettings object from this ReplicaGrouping's stride and group_size.
 
@@ -251,23 +266,24 @@ class ReplicaGrouping:
         replicas = self._ir.replication_factor
 
         if self.group_size == 1:
-            return _ir.CommGroup(type=_ir.CommGroupType.Ungrouped,
-                                 replicaGroupSize=0)
+            return _ir.CommGroup(type=_ir.CommGroupType.Ungrouped, replicaGroupSize=0)
         # If replica_grouping.group_size==N => use CommGroupType::All
         elif self.group_size == replicas:
-            return _ir.CommGroup(type=_ir.CommGroupType.All,
-                                 replicaGroupSize=0)
+            return _ir.CommGroup(type=_ir.CommGroupType.All, replicaGroupSize=0)
         # If replica_grouping.stride==1 (and replica_grouping.group_size divides N) =>
         # use CommGroupType::Consecutive with size=replica_grouping.group_size
         elif self.stride == 1 and (replicas % self.group_size == 0):
-            return _ir.CommGroup(type=_ir.CommGroupType.Consecutive,
-                                 replicaGroupSize=self.group_size)
+            return _ir.CommGroup(
+                type=_ir.CommGroupType.Consecutive, replicaGroupSize=self.group_size
+            )
         # If replica_grouping.stride==N/replica_grouping.group_size =>
         # use CommGroupType::Orthogonal with size=replica_grouping.stride
         elif (replicas % self.group_size == 0) and self.stride == (
-                replicas // self.group_size):
-            return _ir.CommGroup(type=_ir.CommGroupType.Orthogonal,
-                                 replicaGroupSize=self.stride)
+            replicas // self.group_size
+        ):
+            return _ir.CommGroup(
+                type=_ir.CommGroupType.Orthogonal, replicaGroupSize=self.stride
+            )
         raise ValueError(
             f"Replica grouping with num_replicas={replicas}, "
             f"stride={self.stride} and group_size={self.group_size} is not currently supported"

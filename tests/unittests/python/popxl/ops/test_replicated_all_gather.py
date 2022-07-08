@@ -21,5 +21,6 @@ class TestReplicatedReduceScatter:
 
         assert t.nelms * 2 == gathered_t.nelms
         assert len(g.tensors) == 2
-        assert contains_op_of_type("ReplicatedAllGather",
-                                   _ir.op.collectives.ReplicatedAllGatherOp, g)
+        assert contains_op_of_type(
+            "ReplicatedAllGather", _ir.op.collectives.ReplicatedAllGatherOp, g
+        )

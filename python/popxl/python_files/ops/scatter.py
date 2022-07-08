@@ -7,11 +7,13 @@ from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_
 
 
 @op_debug_context
-def scatter(t: Tensor,
-            indices: Tensor,
-            values: Tensor,
-            axis: int = 0,
-            available_memory_proportion: Optional[float] = None) -> Tensor:
+def scatter(
+    t: Tensor,
+    indices: Tensor,
+    values: Tensor,
+    axis: int = 0,
+    available_memory_proportion: Optional[float] = None,
+) -> Tensor:
     """
     Update the values of multiple elements in an tensor.
 
@@ -70,21 +72,17 @@ def scatter(t: Tensor,
     check_in_graph(g, t=t, indices=indices, values=values)
     check_tensor_ipu_and_tile_set(t=t, indices=indices, values=values)
 
-    available_memory_proportion = convert_optional_float(
-        available_memory_proportion)
+    available_memory_proportion = convert_optional_float(available_memory_proportion)
 
-    opid = _ir.OperatorIdentifier("ai.onnx", "Scatter", 11, _ir.NumInputs(
-        3, 3), 1)
+    opid = _ir.OperatorIdentifier("ai.onnx", "Scatter", 11, _ir.NumInputs(3, 3), 1)
     settings = ctx._get_op_settings("scatter")
     op = pb_g.createConnectedOp_ScatterOp(
-        {
-            0: t.id,
-            1: indices.id,
-            2: values.id
-        }, {0: g._create_tensor_id("scatter_out")},
+        {0: t.id, 1: indices.id, 2: values.id},
+        {0: g._create_tensor_id("scatter_out")},
         axis_=axis,
         opid=opid,
         available_memory_proportion_=available_memory_proportion,
-        settings=settings)
+        settings=settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

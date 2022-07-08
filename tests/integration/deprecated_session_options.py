@@ -16,15 +16,13 @@ def test_deprecated_prefetchBufferingDepthMap_option(capfd, tensor_map):
     opts = popart.SessionOptions()
     opts.prefetchBufferingDepthMap = tensor_map
     assert opts.bufferingDepthMap == tensor_map
-    assert "prefetchBufferingDepthMap has been deprecated" in capfd.readouterr(
-    ).err
+    assert "prefetchBufferingDepthMap has been deprecated" in capfd.readouterr().err
 
 
 initialDefaultPrefetchBufferingDepthValue = 111122
 
 
-@pytest.mark.parametrize("value",
-                         [initialDefaultPrefetchBufferingDepthValue, 100])
+@pytest.mark.parametrize("value", [initialDefaultPrefetchBufferingDepthValue, 100])
 def test_deprecated_defaultPrefetchBufferingDepth_option(capfd, value):
     """
     Test deprecation of defaultPrefetchBufferingDepth.
@@ -37,5 +35,4 @@ def test_deprecated_defaultPrefetchBufferingDepth_option(capfd, value):
     opts = popart.SessionOptions()
     opts.defaultPrefetchBufferingDepth = value
     assert opts.defaultBufferingDepth == value
-    assert "defaultPrefetchBufferingDepth has been deprecated" in capfd.readouterr(
-    ).err
+    assert "defaultPrefetchBufferingDepth has been deprecated" in capfd.readouterr().err

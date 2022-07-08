@@ -5,8 +5,9 @@ import pytest
 import torch
 
 
-@pytest.mark.skipif(not hasattr(torch.nn, 'SiLU'),
-                    reason='Remove after T38031 is resolved')
+@pytest.mark.skipif(
+    not hasattr(torch.nn, "SiLU"), reason="Remove after T38031 is resolved"
+)
 def test_swish(op_tester):
     data = np.linspace(
         np.finfo(np.float32).min,
@@ -19,7 +20,7 @@ def test_swish(op_tester):
         tensor = builder.addInputTensor(data)
         out = builder.aiGraphcore.swish(
             [tensor],
-            debugContext='test_swish',
+            debugContext="test_swish",
         )
         builder.addOutputTensor(out)
         return [out]
@@ -29,11 +30,12 @@ def test_swish(op_tester):
         swish = torch.nn.SiLU()
         return [swish(torch.tensor(data))]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
-@pytest.mark.skipif(not hasattr(torch.nn, 'SiLU'),
-                    reason='Remove after T38031 is resolved')
+@pytest.mark.skipif(
+    not hasattr(torch.nn, "SiLU"), reason="Remove after T38031 is resolved"
+)
 def test_swish_grad(op_tester):
     data = np.linspace(
         np.finfo(np.float32).min,
@@ -46,7 +48,7 @@ def test_swish_grad(op_tester):
         tensor = builder.addInputTensor(data)
         out = builder.aiGraphcore.swish(
             [tensor],
-            debugContext='test_swish_grad',
+            debugContext="test_swish_grad",
         )
         builder.addOutputTensor(out)
         return [
@@ -64,7 +66,7 @@ def test_swish_grad(op_tester):
         out.backward(torch.tensor(ref_data.getOutputTensorGrad(0)))
         return [out, out.grad, tensor.grad]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_swish_shape_infer():
@@ -73,7 +75,7 @@ def test_swish_shape_infer():
     tensor = builder.addInputTensor(popart.TensorInfo(data))
     out = builder.aiGraphcore.swish(
         [tensor],
-        debugContext='test_swish_grad',
+        debugContext="test_swish_grad",
     )
     builder.addOutputTensor(out)
     assert builder.getTensorShape(out) == [5, 3, 4, 4]

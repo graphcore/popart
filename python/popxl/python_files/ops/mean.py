@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def mean(t: Tensor,
-         axis: Optional[Union[int, Iterable[int]]] = None,
-         keepdims: bool = False) -> Tensor:
+def mean(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the arithmetic mean of elements in a tensor along the specified axes.
 
@@ -40,9 +40,8 @@ def mean(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceMean')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceMean", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ReduceMean")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceMean", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReduceMeanOp(
         {
             0: t.id,

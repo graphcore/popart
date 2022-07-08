@@ -3,8 +3,7 @@ import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("dtype",
-                         [np.float16, np.float32, np.uint32, np.int32])
+@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.uint32, np.int32])
 @pytest.mark.parametrize("inplace", [False, True])
 def test_incrementmod(op_tester, dtype, inplace):
     increment = 3.0
@@ -19,10 +18,9 @@ def test_incrementmod(op_tester, dtype, inplace):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        out = np.fmod((d1 + np.asarray(increment, dtype)),
-                      np.asarray(modulus, dtype))
+        out = np.fmod((d1 + np.asarray(increment, dtype)), np.asarray(modulus, dtype))
         return [out]
 
     if inplace:
-        op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+        op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")

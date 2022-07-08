@@ -1,16 +1,18 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import popart._internal.ir as _ir
-from popxl.context import debug_context_frame_offset, get_current_context, op_debug_context
+from popxl.context import (
+    debug_context_frame_offset,
+    get_current_context,
+    op_debug_context,
+)
 from popxl.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def group_norm(t: Tensor,
-               weight: Tensor,
-               bias: Tensor,
-               num_groups: int,
-               eps: float = 1e-5) -> Tensor:
+def group_norm(
+    t: Tensor, weight: Tensor, bias: Tensor, num_groups: int, eps: float = 1e-5
+) -> Tensor:
     """
     Apply group normalisation to a tensor.
 
@@ -33,15 +35,12 @@ def group_norm(t: Tensor,
     check_in_graph(g, t=t, weight=weight, bias=bias)
     check_tensor_ipu_and_tile_set(t=t, weight=weight, bias=bias)
 
-    settings = ctx._get_op_settings('group_norm')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,
-                                  _ir.NumInputs(3, 3), 3)
+    settings = ctx._get_op_settings("group_norm")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "GroupNormalization", 1, _ir.NumInputs(3, 3), 3
+    )
     op = pb_g.createConnectedOp_GroupNormOp(
-        {
-            0: t.id,
-            1: weight.id,
-            2: bias.id
-        },
+        {0: t.id, 1: weight.id, 2: bias.id},
         {
             0: g._create_tensor_id("group_norm_out"),
             1: g._create_tensor_id("group_norm_mean"),
@@ -57,8 +56,7 @@ def group_norm(t: Tensor,
 
 
 @debug_context_frame_offset(1)
-def layer_norm(t: Tensor, weight: Tensor, bias: Tensor,
-               eps: float = 1e-5) -> Tensor:
+def layer_norm(t: Tensor, weight: Tensor, bias: Tensor, eps: float = 1e-5) -> Tensor:
     """
     Apply layer normalisation to a tensor.
 

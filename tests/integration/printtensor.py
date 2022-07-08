@@ -29,18 +29,17 @@ def test_basic(capfd):
     opts.enableOutliningCopyCostPruning = False
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         anchors = session.initAnchorArrays()
 
         inputs = {
-            i1: np.array([1., 2., 3.], dtype=np.float32),
-            i2: np.array([4., 5., 6.], dtype=np.float32)
+            i1: np.array([1.0, 2.0, 3.0], dtype=np.float32),
+            i2: np.array([4.0, 5.0, 6.0], dtype=np.float32),
         }
         stepio = popart.PyStepIO(inputs, anchors)
 
@@ -52,24 +51,24 @@ def test_basic(capfd):
     output = captured.err
 
     # patterns to match a1 and a2
-    a1_pattern = f'(?:{a1})'
-    a2_pattern = f'(?:{a2})'
+    a1_pattern = f"(?:{a1})"
+    a2_pattern = f"(?:{a2})"
     # pattern to match a1 or a2
-    a1_or_a2 = f'(?:{a1_pattern}|{a2_pattern})'
+    a1_or_a2 = f"(?:{a1_pattern}|{a2_pattern})"
     # pattern to match tensor values
-    value_pattern = r'{\d+,\d+,\d+}'
-    pat = f'{a1_or_a2}: {value_pattern}'
+    value_pattern = r"{\d+,\d+,\d+}"
+    pat = f"{a1_or_a2}: {value_pattern}"
     matches = re.findall(pat, output)
 
     assert len(matches) == 2
-    assert matches[0] == 'Add:0: {5,7,9}'
-    assert matches[1] == 'Add:0/1: {6,9,12}'
+    assert matches[0] == "Add:0: {5,7,9}"
+    assert matches[1] == "Add:0/1: {6,9,12}"
 
 
 def test_train(capfd):
-    filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
+    filt_data = np.array([1.0, 2.0, 1.0, 2.0], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])
-    input_data = np.array([1., 2., 3., 4.], dtype=np.float32)
+    input_data = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     input_data = np.reshape(input_data, [1, 1, 2, 2])
 
     builder = popart.Builder()
@@ -82,16 +81,13 @@ def test_train(capfd):
     # both i2 and d__i2 will be printed
     p1 = builder.aiGraphcore.printtensor([i2])
 
-    c1 = builder.aiOnnx.conv([i1, p1],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[2, 2])
+    c1 = builder.aiOnnx.conv(
+        [i1, p1], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[2, 2]
+    )
 
     # c1 will be printed, but d__c1 will not
     o = builder.aiGraphcore.printtensor([c1], print_gradient=0)
-    l1 = builder.aiGraphcore.l1loss([o],
-                                    0.1,
-                                    reduction=popart.ReductionType.Sum)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1, reduction=popart.ReductionType.Sum)
 
     proto = builder.getModelProto()
 
@@ -102,12 +98,14 @@ def test_train(capfd):
     opts.enableOutliningCopyCostPruning = False
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=l1,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            optimizer=popart.ConstSGD(0.1),
+            loss=l1,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
 
@@ -126,20 +124,20 @@ def test_train(capfd):
     output = captured.err
 
     # Remove ESC characters
-    output = re.sub(chr(27), '', output)
+    output = re.sub(chr(27), "", output)
 
     # Remove termcolor sequences
-    output = re.sub(r'\[\d\dm', '', output)
+    output = re.sub(r"\[\d\dm", "", output)
 
     # Remove popart log lines
-    output = re.sub(r'\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
+    output = re.sub(r"\[\d\d\d\d-\d\d-\d\d .*?\n", "", output)
 
     # remove all whitespace
-    output = re.sub(r'\s+', '', output)
+    output = re.sub(r"\s+", "", output)
 
-    pattern = 'name:{{{{float,float},{float,float}}}}'
-    pattern = re.sub('name', r'[\\w:]+', pattern)
-    pattern = re.sub('float', r'\\d(?:\\.\\d+)?', pattern)
+    pattern = "name:{{{{float,float},{float,float}}}}"
+    pattern = re.sub("name", r"[\\w:]+", pattern)
+    pattern = re.sub("float", r"\\d(?:\\.\\d+)?", pattern)
 
     matches = re.findall(pattern, output)
 
@@ -152,9 +150,9 @@ def test_train(capfd):
 
 
 def test_custom_title(capfd):
-    filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
+    filt_data = np.array([1.0, 2.0, 1.0, 2.0], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])
-    input_data = np.array([1., 2., 3., 4.], dtype=np.float32)
+    input_data = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     input_data = np.reshape(input_data, [1, 1, 2, 2])
 
     builder = popart.Builder()
@@ -167,16 +165,13 @@ def test_custom_title(capfd):
     # both i2 and d__i2 will be printed
     p1 = builder.aiGraphcore.printtensor([i2], print_gradient=1, title="foo")
 
-    c1 = builder.aiOnnx.conv([i1, p1],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[2, 2])
+    c1 = builder.aiOnnx.conv(
+        [i1, p1], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[2, 2]
+    )
 
     # c1 will be printed, but d__c1 will not
     o = builder.aiGraphcore.printtensor([c1], print_gradient=1, title="bar")
-    l1 = builder.aiGraphcore.l1loss([o],
-                                    0.1,
-                                    reduction=popart.ReductionType.Sum)
+    l1 = builder.aiGraphcore.l1loss([o], 0.1, reduction=popart.ReductionType.Sum)
 
     proto = builder.getModelProto()
 
@@ -187,12 +182,14 @@ def test_custom_title(capfd):
     opts.enableOutliningCopyCostPruning = False
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=l1,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            optimizer=popart.ConstSGD(0.1),
+            loss=l1,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
 
@@ -211,20 +208,20 @@ def test_custom_title(capfd):
     output = captured.err
 
     # Remove ESC characters
-    output = re.sub(chr(27), '', output)
+    output = re.sub(chr(27), "", output)
 
     # Remove termcolor sequences
-    output = re.sub(r'\[\d\dm', '', output)
+    output = re.sub(r"\[\d\dm", "", output)
 
     # Remove popart log lines
-    output = re.sub(r'\[\d\d\d\d-\d\d-\d\d .*?\n', '', output)
+    output = re.sub(r"\[\d\d\d\d-\d\d-\d\d .*?\n", "", output)
 
     # remove all whitespace
-    output = re.sub(r'\s+', '', output)
+    output = re.sub(r"\s+", "", output)
 
-    pattern = 'name:{{{{float,float},{float,float}}}}'
-    pattern = re.sub('name', r'[\\w:]+', pattern)
-    pattern = re.sub('float', r'\\d(?:\\.\\d+)?', pattern)
+    pattern = "name:{{{{float,float},{float,float}}}}"
+    pattern = re.sub("name", r"[\\w:]+", pattern)
+    pattern = re.sub("float", r"\\d(?:\\.\\d+)?", pattern)
 
     matches = re.findall(pattern, output)
 

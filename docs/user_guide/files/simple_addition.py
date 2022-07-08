@@ -23,7 +23,8 @@ dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 session = popart.InferenceSession(
     fnModel=proto,
     dataFlow=dataFlow,
-    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+)
 
 # Compile graph
 session.prepareDevice()

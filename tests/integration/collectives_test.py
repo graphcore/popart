@@ -22,10 +22,9 @@ def test_replicated_allreduce():
     numIpus = 2
 
     with tu.create_test_device(numIpus=numIpus) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -44,9 +43,12 @@ def test_replicated_allreduce():
 @tu.requires_ipu
 @pytest.mark.parametrize(
     "commGroupAndVarSettings",
-    [(None, False),
-     (popart.CommGroup(popart.CommGroupType.Consecutive, 2), False),
-     (popart.CommGroup(popart.CommGroupType.Consecutive, 2), True)])
+    [
+        (None, False),
+        (popart.CommGroup(popart.CommGroupType.Consecutive, 2), False),
+        (popart.CommGroup(popart.CommGroupType.Consecutive, 2), True),
+    ],
+)
 def test_replicated_reducescatter(commGroupAndVarSettings):
     commGroup = commGroupAndVarSettings[0]
     useVarSettings = commGroupAndVarSettings[1]
@@ -87,10 +89,9 @@ def test_replicated_reducescatter(commGroupAndVarSettings):
     opts.replicatedGraphCount = replicatedGraphCount
 
     with tu.create_test_device(numIpus=numIpus) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -102,8 +103,7 @@ def test_replicated_reducescatter(commGroupAndVarSettings):
 
         session.run(stepio)
 
-    ground_truth = num_shards * input_data.reshape(
-        [num_groups, num_shards, -1])
+    ground_truth = num_shards * input_data.reshape([num_groups, num_shards, -1])
 
     print(ground_truth)
     print(anchors[o])
@@ -112,7 +112,8 @@ def test_replicated_reducescatter(commGroupAndVarSettings):
         for j in range(replicas_per_group):
             assert np.allclose(
                 anchors[o][i * replicas_per_group + j].flatten(),
-                ground_truth[i][j % num_shards].flatten())
+                ground_truth[i][j % num_shards].flatten(),
+            )
 
 
 @tu.requires_ipu
@@ -120,10 +121,9 @@ def test_gcl_comm_group_attrs():
     input_data = np.array(range(10), dtype=np.float32)
     builder = popart.Builder()
     t = builder.addInitializedInputTensor(input_data, "input")
-    o1 = builder.aiGraphcore.replicatedallreduce([t],
-                                                 commGroup=popart.CommGroup(
-                                                     popart.CommGroupType.All,
-                                                     4))
+    o1 = builder.aiGraphcore.replicatedallreduce(
+        [t], commGroup=popart.CommGroup(popart.CommGroupType.All, 4)
+    )
     with builder.commGroup(popart.CommGroupType.Consecutive, 4):
         o2 = builder.aiGraphcore.replicatedallreduce([t])
     with builder.commGroup(popart.CommGroupType.Orthogonal, 4):
@@ -133,14 +133,12 @@ def test_gcl_comm_group_attrs():
     builder.addOutputTensor(o3)
     attributes = builder.getAllNodeAttributeNames(set([o2]))
     assert "__collectiveCommGroup" in attributes
-    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup",
-                                               set([o2]))
+    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup", set([o2]))
     assert attr == [int(popart.CommGroupType.Consecutive), 4]
 
     attributes = builder.getAllNodeAttributeNames(set([o3]))
     assert "__collectiveCommGroup" in attributes
 
-    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup",
-                                               set([o3]))
+    attr = builder.getInt64VectorNodeAttribute("__collectiveCommGroup", set([o3]))
 
     assert attr == [int(popart.CommGroupType.Orthogonal), 4]

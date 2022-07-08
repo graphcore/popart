@@ -66,7 +66,7 @@ def test_split_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -79,5 +79,5 @@ def test_split_grad(op_tester):
 
         return [out, x.grad, None]
 
-    op_tester.setPatterns(['SplitGradOpToConcat'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["SplitGradOpToConcat"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

@@ -6,14 +6,13 @@ import popart
 
 import test_util as tu
 
-_DataType = namedtuple('_DataType', ['builder_type', 'np_type'])
-_INT8 = _DataType('INT8', np.int8)
-_UINT8 = _DataType('UINT8', np.uint8)
+_DataType = namedtuple("_DataType", ["builder_type", "np_type"])
+_INT8 = _DataType("INT8", np.int8)
+_UINT8 = _DataType("UINT8", np.uint8)
 
 
 @pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
-def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(
-        cast_type):
+def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(cast_type):
     """
     Test can stream an int8 input to device, and an int8 output back to host.
 
@@ -41,9 +40,11 @@ def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(
 
     ### Create session and run program ###
     with tu.create_test_device() as device:
-        s = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                    dataFlow=popart.DataFlow(1, [out]),
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [out]),
+            deviceInfo=device,
+        )
         s.prepareDevice()
 
         anchors = s.initAnchorArrays()
@@ -59,7 +60,7 @@ def test_int8_hd_stream_then_cast_then_op_then_cast_then_int8_dh_stream(
 
     expected = in0_host * scale_factor
 
-    assert (np.array_equal(anchors[out], expected))
+    assert np.array_equal(anchors[out], expected)
 
 
 @pytest.mark.parametrize("cast_type", [_INT8, _UINT8])
@@ -83,15 +84,17 @@ def test_fail_stream_int8_no_cast_then_op(cast_type):
 
     proto = builder.getModelProto()
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             i1: popart.AnchorReturnType("Final"),
             i2: popart.AnchorReturnType("Final"),
-            o: popart.AnchorReturnType("Final")
-        })
+            o: popart.AnchorReturnType("Final"),
+        },
+    )
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         with pytest.raises(popart.poplar_exception):
             session.prepareDevice()
@@ -152,14 +155,14 @@ def test_pipelining_recomp(cast_type):
 
     ### Create session and run program ###
     with tu.create_test_device(numIpus=2) as device:
-        session = popart.TrainingSession(deviceInfo=device,
-                                         dataFlow=popart.DataFlow(
-                                             1, [loss, w],
-                                             popart.AnchorReturnType("Final")),
-                                         fnModel=builder.getModelProto(),
-                                         loss=loss,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [loss, w], popart.AnchorReturnType("Final")),
+            fnModel=builder.getModelProto(),
+            loss=loss,
+            optimizer=popart.ConstSGD(0.1),
+            userOptions=opts,
+        )
 
         session.prepareDevice()
 

@@ -21,7 +21,6 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_custom_op(self):
         """Test the weights example"""
         filename = "run_leaky_relu.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir,
-                        input_data=0.1)
+        self.run_python(
+            filename, file_dir=working_dir, working_dir=working_dir, input_data=0.1
+        )

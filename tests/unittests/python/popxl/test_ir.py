@@ -67,7 +67,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(foo, v1, v2, 5)
 
-            _, = ops.call(g, v1, v2)
+            (_,) = ops.call(g, v1, v2)
 
         assert len(g._by_ref_inputs) == 1
         x = g.inputs[0]
@@ -82,7 +82,7 @@ class TestCreateGraph:
                 self.y: popxl.Tensor = None
 
             def build(self, a, b):
-                self.y = popxl.graph_input((1, ), popxl.int32, "y")
+                self.y = popxl.graph_input((1,), popxl.int32, "y")
                 return a + b + self.y
 
         with ir.main_graph:
@@ -93,7 +93,7 @@ class TestCreateGraph:
             bar = Bar()
             g = ir.create_graph(bar, a, b)
 
-            _, = ops.call(g, a, b, inputs_dict={bar.y: y})
+            (_,) = ops.call(g, a, b, inputs_dict={bar.y: y})
 
         assert len(g.inputs) == 3
         assert len(g.outputs) == 1
@@ -162,7 +162,7 @@ class TestCreateGraph:
 
             g = ir.create_graph(sum_xab, x)
 
-            _, = ops.call(g, x)
+            (_,) = ops.call(g, x)
 
         assert len(g.inputs) == 1
         assert len(g.outputs) == 1
@@ -251,13 +251,14 @@ class TestCreateGraph:
         ir = popxl.Ir()
 
         def sum_all(
-                a,
-                b: List[popxl.Tensor],
-                _: bool,  # c is an unused argument
-                *args: popxl.TensorByRef,
-                e: popxl.Tensor,
-                f: int = 0,
-                **kwargs: popxl.Tensor):
+            a,
+            b: List[popxl.Tensor],
+            _: bool,  # c is an unused argument
+            *args: popxl.TensorByRef,
+            e: popxl.Tensor,
+            f: int = 0,
+            **kwargs: popxl.Tensor
+        ):
             x = a + f
             for t in b + list(args) + [e] + list(kwargs.values()):
                 x += t
@@ -266,16 +267,11 @@ class TestCreateGraph:
         with ir.main_graph:
             x = [popxl.variable(1) for i in range(8)]
 
-            g = ir.create_graph(sum_all,
-                                x[0], [x[1], x[2]],
-                                True,
-                                x[3],
-                                x[4],
-                                e=x[5],
-                                x=x[6],
-                                z=x[7])
+            g = ir.create_graph(
+                sum_all, x[0], [x[1], x[2]], True, x[3], x[4], e=x[5], x=x[6], z=x[7]
+            )
 
-            _, = ops.call(g, *x)
+            (_,) = ops.call(g, *x)
 
         assert len(g.inputs) == len(x)
         assert len(g.outputs) == 1
@@ -325,8 +321,12 @@ class TestCreateGraph:
             return (x * c) + y
 
         with ir.main_graph:
-            g = ir.create_graph(foo, popxl.TensorSpec((), popxl.int32),
-                                popxl.TensorSpec((), popxl.int32), 5)
+            g = ir.create_graph(
+                foo,
+                popxl.TensorSpec((), popxl.int32),
+                popxl.TensorSpec((), popxl.int32),
+                5,
+            )
 
         assert len(g._by_ref_inputs) == 1
         x = g.inputs[0]

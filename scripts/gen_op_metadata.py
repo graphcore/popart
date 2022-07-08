@@ -64,35 +64,73 @@ class DepthCursor(cindex.Cursor):
         # Only recurse if we are above the max depth
         if self.depth <= max_depth:
             for child in self.cursor.get_children():
-                for descendant in DepthCursor(
-                        child, self.depth).walk_preorder_depth(max_depth):
+                for descendant in DepthCursor(child, self.depth).walk_preorder_depth(
+                    max_depth
+                ):
                     yield descendant
 
 
 exceptions = [
-    'DynamicBaseOp', 'DynamicBinaryBaseOp', 'DynamicSliceBaseOp',
-    'DynamicTernaryBaseOp', 'ElementWiseBinaryBaseOp', 'MultiConvBaseOp',
-    'MultiConvDataGradBaseOp', 'MultiConvWeightsGradBaseOp', 'RandomBaseOp',
-    'RandomNormalBaseOp', 'RandomUniformBaseOp', 'ReshapeBaseOp',
-    'TransposeBaseOp', 'ZerosBaseOp', "FmodArg0GradOp", 'ExchangeDescriptor',
-    "LeakyReluOpBaseAttributes", "MultiConvOptions", "ShapeOrLikeOp",
-    'ReverseBaseOp', 'DropoutBaseOp', 'CollectivesBaseOp', 'SubsampleBaseOp',
-    'BaseSliceOp', 'LossOp', 'BasePadOp', 'BasePadOutplaceOp',
-    'OneWayUnaryInPlaceOp', 'OneWayUnaryOp', 'BaseSortOp',
-    'ElementWiseNonLinearUnaryGradOp', 'ElementWiseBinaryOp',
-    'ElementWiseUnaryBooleanOp', 'ElementWiseUnaryOp', 'SGD0VarUpdateOpBase',
-    'DynamicBinaryBaseInplaceOp', 'ElementWiseInplaceUnaryOp',
-    'DynamicTernaryBaseInplaceOp', 'TiedGatherGradOp', 'ScanOp', 'ConcatOp',
-    'ConcatInplaceOp', 'ConcatGradOp', 'ExpandInplaceOp', 'ExpandGradOp',
-    'ExpandOp', 'IdentityInplaceOp', 'UpsampleOp', 'PopartLSTMOp',
-    'PopartLSTMGradOp', 'IpuCopyOp', 'CallOp', 'LoopOp',
-    'MultiCollectiveBaseOp'
+    "DynamicBaseOp",
+    "DynamicBinaryBaseOp",
+    "DynamicSliceBaseOp",
+    "DynamicTernaryBaseOp",
+    "ElementWiseBinaryBaseOp",
+    "MultiConvBaseOp",
+    "MultiConvDataGradBaseOp",
+    "MultiConvWeightsGradBaseOp",
+    "RandomBaseOp",
+    "RandomNormalBaseOp",
+    "RandomUniformBaseOp",
+    "ReshapeBaseOp",
+    "TransposeBaseOp",
+    "ZerosBaseOp",
+    "FmodArg0GradOp",
+    "ExchangeDescriptor",
+    "LeakyReluOpBaseAttributes",
+    "MultiConvOptions",
+    "ShapeOrLikeOp",
+    "ReverseBaseOp",
+    "DropoutBaseOp",
+    "CollectivesBaseOp",
+    "SubsampleBaseOp",
+    "BaseSliceOp",
+    "LossOp",
+    "BasePadOp",
+    "BasePadOutplaceOp",
+    "OneWayUnaryInPlaceOp",
+    "OneWayUnaryOp",
+    "BaseSortOp",
+    "ElementWiseNonLinearUnaryGradOp",
+    "ElementWiseBinaryOp",
+    "ElementWiseUnaryBooleanOp",
+    "ElementWiseUnaryOp",
+    "SGD0VarUpdateOpBase",
+    "DynamicBinaryBaseInplaceOp",
+    "ElementWiseInplaceUnaryOp",
+    "DynamicTernaryBaseInplaceOp",
+    "TiedGatherGradOp",
+    "ScanOp",
+    "ConcatOp",
+    "ConcatInplaceOp",
+    "ConcatGradOp",
+    "ExpandInplaceOp",
+    "ExpandGradOp",
+    "ExpandOp",
+    "IdentityInplaceOp",
+    "UpsampleOp",
+    "PopartLSTMOp",
+    "PopartLSTMGradOp",
+    "IpuCopyOp",
+    "CallOp",
+    "LoopOp",
+    "MultiCollectiveBaseOp",
 ]
 
 # Complie some regexes ahead of time for speed.
 PATTERNS = [
-    (re.compile(r'(?<!^)(?=[A-Z])'), '_'),
-    (re.compile(r'[^A-Za-z0-9]+'), '_'),
+    (re.compile(r"(?<!^)(?=[A-Z])"), "_"),
+    (re.compile(r"[^A-Za-z0-9]+"), "_"),
 ]
 
 
@@ -116,7 +154,7 @@ def format_alt_name(str_: str) -> str:
     return str_.strip()
 
 
-class CppArgument():
+class CppArgument:
     """A wrapper round the cindex.Cursor that represents a cpp constructor argument.
 
     Some of the properties / functions on the cindex cursor objects aren't very
@@ -159,8 +197,9 @@ class CppArgument():
 
     @property
     def default(self) -> str:
-        return " ".join(
-            self.tokens).split("=")[-1].strip() if "=" in self.tokens else ""
+        return (
+            " ".join(self.tokens).split("=")[-1].strip() if "=" in self.tokens else ""
+        )
 
     @property
     def alt_name(self) -> str:
@@ -182,15 +221,17 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
 
     for c in node.get_arguments():
         cpp_arg = CppArgument(c)
-        args_.append({
-            "arg_name": cpp_arg.name,
-            "alt_arg_name": cpp_arg.alt_name,
-            "arg_type": cpp_arg.type_name,
-            "const": cpp_arg.is_const,
-            "ref": cpp_arg.is_ref,
-            "has_default": cpp_arg.has_default,
-            "default": cpp_arg.default
-        })
+        args_.append(
+            {
+                "arg_name": cpp_arg.name,
+                "alt_arg_name": cpp_arg.alt_name,
+                "arg_type": cpp_arg.type_name,
+                "const": cpp_arg.is_const,
+                "ref": cpp_arg.is_ref,
+                "has_default": cpp_arg.has_default,
+                "default": cpp_arg.default,
+            }
+        )
     # Add the full string of args, to avoid having to re-create later.
     full_args = ""
     for i, arg in enumerate(args_):
@@ -201,25 +242,22 @@ def find_constructors(node: cindex.Cursor, base: cindex.Cursor) -> Dict:
     # Get the relative include path
     file_ = node.location.file.name
 
-    file_ = Path(file_).resolve().relative_to(
-        Path(__file__).resolve().parents[1])
+    file_ = Path(file_).resolve().relative_to(Path(__file__).resolve().parents[1])
 
     return {
-        "name":
-        node.spelling,
-        "constructors": [{
-            "args": args_,
-            "full_args": full_args,
-        }],
-        "display_name":
-        node.displayname,
-        "hash":
-        node.hash,
-        "file":
-        str(file_),
-        "base_class":
-        base.spelling.replace("class ", "")
-        if hasattr(base, "spelling") else "popart::Op"
+        "name": node.spelling,
+        "constructors": [
+            {
+                "args": args_,
+                "full_args": full_args,
+            }
+        ],
+        "display_name": node.displayname,
+        "hash": node.hash,
+        "file": str(file_),
+        "base_class": base.spelling.replace("class ", "")
+        if hasattr(base, "spelling")
+        else "popart::Op",
     }
 
 
@@ -236,8 +274,8 @@ def is_template(node: cindex.Cursor) -> bool:
 
 
 def process_op_header(
-        filename: Path, ops_path: str,
-        include_directories: List[str]) -> Tuple[Path, List[Dict]]:
+    filename: Path, ops_path: str, include_directories: List[str]
+) -> Tuple[Path, List[Dict]]:
     """Go through the file's definitions and process each child node in turn.
 
     Args:
@@ -258,8 +296,8 @@ def process_op_header(
 
     # `-ferror-limit=0` is required to prevent `clang` from stopping on too many
     # errors.
-    args = ['--language=c++', '--std=c++11', '-ferror-limit=0']
-    args += [f'-I{dir}' for dir in include_directories]
+    args = ["--language=c++", "--std=c++11", "-ferror-limit=0"]
+    args += [f"-I{dir}" for dir in include_directories]
     opts = bor(
         cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES,
         cindex.TranslationUnit.PARSE_DETAILED_PREPROCESSING_RECORD,
@@ -273,11 +311,14 @@ def process_op_header(
     tu = idx.parse(str(path), args=args, options=opts)
 
     # Skip some known errors
-    known_errors = ['stddef.h', 'stdarg.h']
+    known_errors = ["stddef.h", "stdarg.h"]
     print("Clang translation unit diagnostics:")
     for d in tu.diagnostics:
-        if d.Fatal and d.category_number == 1 and not any(
-                x in d.spelling for x in known_errors):
+        if (
+            d.Fatal
+            and d.category_number == 1
+            and not any(x in d.spelling for x in known_errors)
+        ):
             raise cindex.LibclangError(
                 f"{d.category_name} {d.category_number} {d.spelling} fatal error."
             )
@@ -285,13 +326,13 @@ def process_op_header(
     for d in include_directories:
         if not Path(str(d)).is_dir() or Path(str(d)).is_file():
             raise FileNotFoundError(
-                f"Include path {str(d)} not found. {__file__} exiting.")
+                f"Include path {str(d)} not found. {__file__} exiting."
+            )
 
     base_class = None
     has_pure_virtual = False
 
-    for node in DepthCursor(cursor=tu.cursor,
-                            depth=0).walk_preorder_depth(max_depth=3):
+    for node in DepthCursor(cursor=tu.cursor, depth=0).walk_preorder_depth(max_depth=3):
         # Skip if not in current file.
         if not (node.location.file and str(node.location.file) == str(path)):
             continue
@@ -301,15 +342,15 @@ def process_op_header(
             continue
 
         # Skip struct constructors
-        if hasattr(
-                node.semantic_parent, "kind"
-        ) and node.semantic_parent.kind == cindex.CursorKind.STRUCT_DECL:
+        if (
+            hasattr(node.semantic_parent, "kind")
+            and node.semantic_parent.kind == cindex.CursorKind.STRUCT_DECL
+        ):
             continue
 
         if node.kind == cindex.CursorKind.CLASS_DECL:
             for c in node.get_children():
-                if hasattr(c, "is_pure_virtual_method"
-                           ) and c.is_pure_virtual_method():
+                if hasattr(c, "is_pure_virtual_method") and c.is_pure_virtual_method():
                     has_pure_virtual = True
                     exceptions.append(node.spelling)
                     continue
@@ -321,8 +362,10 @@ def process_op_header(
             continue
 
         # We only want public constructors.
-        if not ((node.kind == cindex.CursorKind.CONSTRUCTOR) and
-                (node.access_specifier == cindex.AccessSpecifier.PUBLIC)):
+        if not (
+            (node.kind == cindex.CursorKind.CONSTRUCTOR)
+            and (node.access_specifier == cindex.AccessSpecifier.PUBLIC)
+        ):
             continue
 
         # Don't want template classes, only specific derived classes.
@@ -338,13 +381,12 @@ def process_op_header(
         if d and not has_pure_virtual:
             ops[node.spelling] = d
 
-    return (path, [o for o in ops.values() if o['file'] in str(path)])
+    return (path, [o for o in ops.values() if o["file"] in str(path)])
 
 
-def parse_ops(ops_dir: Path,
-              filenames: List[Path],
-              include_directories: List[Path],
-              jobs: int = 1) -> Tuple[List, List, List]:
+def parse_ops(
+    ops_dir: Path, filenames: List[Path], include_directories: List[Path], jobs: int = 1
+) -> Tuple[List, List, List]:
     """Run over all the files in the given dir and process with process_file, one thread per file.
 
     Args:
@@ -356,9 +398,10 @@ def parse_ops(ops_dir: Path,
     data = None
 
     with Pool(jobs) as p:
-        data = p.starmap(process_op_header,
-                         [(name, ops_dir, include_directories)
-                          for name in filenames])
+        data = p.starmap(
+            process_op_header,
+            [(name, ops_dir, include_directories) for name in filenames],
+        )
 
     assert data is not None, "Op parsing failed."
 
@@ -368,7 +411,7 @@ def parse_ops(ops_dir: Path,
 
     n_ops = sum(len(ops) for ops in opss)
     assert n_ops > 0, "No ops were parsed. Please check your arguments."
-    print(f'Extracted metadata for {n_ops} ops.')
+    print(f"Extracted metadata for {n_ops} ops.")
 
     return filenames, namespaces, opss
 
@@ -389,7 +432,7 @@ def parse_op_filenames(ops_dir: Path, filenames: Any) -> List[Path]:
     Returns:
         List[Path]: The parsed filenames
     """
-    filenames = filenames.split(';')
+    filenames = filenames.split(";")
     filenames = [Path(name).resolve() for name in filenames]
     filenames = [os.path.relpath(name, ops_dir) for name in filenames]
     filenames = [Path(name) for name in filenames]
@@ -417,55 +460,53 @@ def namespaces_from_filename(ops_dir: Path, filename: Path) -> Tuple[str, ...]:
         Tuple[str]: The namespaces.
     """
     relpath = Path(os.path.relpath(filename, ops_dir))
-    parts = (ops_dir.parts[-1], ) + relpath.parts[:-1]
+    parts = (ops_dir.parts[-1],) + relpath.parts[:-1]
     return parts
 
 
 def main(filenames: List[Path], out: Path, include_directories: Any):
     proj_root = get_project_source_dir()
-    ops_dir = proj_root / 'willow/include/popart/op'
+    ops_dir = proj_root / "willow/include/popart/op"
     rel_filenames = parse_op_filenames(ops_dir, filenames)
 
-    filenames, namespaces, opss = parse_ops(ops_dir, rel_filenames,
-                                            include_directories, 16)
+    filenames, namespaces, opss = parse_ops(
+        ops_dir, rel_filenames, include_directories, 16
+    )
 
-    metadata = [{
-        'filename': str(f),
-        'namespaces': n,
-        'ops': o
-    } for f, n, o in zip(filenames, namespaces, opss)]
+    metadata = [
+        {"filename": str(f), "namespaces": n, "ops": o}
+        for f, n, o in zip(filenames, namespaces, opss)
+    ]
 
-    with open(out, 'w', encoding='utf-8') as f:
+    with open(out, "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--headers',
+        "--headers",
         type=str,
         required=True,
-        help='Colon-separated list of absolute paths for op headers.',
+        help="Colon-separated list of absolute paths for op headers.",
     )
     parser.add_argument(
-        '--out',
+        "--out",
         type=str,
         required=True,
-        help=
-        'The absolute path of the directory where metadata will be written to.',
+        help="The absolute path of the directory where metadata will be written to.",
     )
     parser.add_argument(
         "--include-directories",
         type=str,
-        help='A semicolon separated list of include directories.')
+        help="A semicolon separated list of include directories.",
+    )
     args = parser.parse_args()
 
     include_directories_: Any = []
     if args.include_directories:
-        include_directories_ = set(args.include_directories.split(';'))
-        include_directories_.discard('')
+        include_directories_ = set(args.include_directories.split(";"))
+        include_directories_.discard("")
         include_directories_ = list(include_directories_)
-        include_directories_ = [
-            Path(inc).resolve() for inc in include_directories_
-        ]
+        include_directories_ = [Path(inc).resolve() for inc in include_directories_]
     main(args.headers, Path(args.out).resolve(), include_directories_)

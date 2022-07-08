@@ -7,8 +7,9 @@ from popxl.tensor import Tensor
 
 
 class RemoteBuffer:
-    def __init__(self, tensor_shape: Tuple[int, ...], tensor_dtype: dtype,
-                 entries: int) -> None:
+    def __init__(
+        self, tensor_shape: Tuple[int, ...], tensor_dtype: dtype, entries: int
+    ) -> None:
         """Store to or load from remote buffers residing in Streaming Memory.
 
         This constructor will automatically assign a buffer ID and store the buffer information in
@@ -24,7 +25,8 @@ class RemoteBuffer:
         """
         if entries < 1:
             raise ValueError(
-                f"Entries must be a non-zero, positive integer. Got {entries}")
+                f"Entries must be a non-zero, positive integer. Got {entries}"
+            )
 
         # Get the python bound ir
         self._current_ir = gcg().ir._pb_ir
@@ -43,13 +45,13 @@ class RemoteBuffer:
         self._remote_buffer_id = remote_buffer_id
 
         # Set the remote buffer info
-        self.set_remote_buffer_info(tensor_dtype=tensor_dtype,
-                                    tensor_shape=tensor_shape,
-                                    entries=entries)
+        self.set_remote_buffer_info(
+            tensor_dtype=tensor_dtype, tensor_shape=tensor_shape, entries=entries
+        )
 
-    def set_remote_buffer_info(self, tensor_dtype: dtype,
-                               tensor_shape: Tuple[int, ...],
-                               entries: int) -> None:
+    def set_remote_buffer_info(
+        self, tensor_dtype: dtype, tensor_shape: Tuple[int, ...], entries: int
+    ) -> None:
         """Store the buffer information in the underlying remoteBufferInfoMap.
 
         Args:
@@ -60,11 +62,9 @@ class RemoteBuffer:
         # Set the remote buffer info map
         tensor_info = _ir.TensorInfo(tensor_dtype._pb_dtype, tensor_shape)
         remote_buffer_info = _ir.RemoteBufferInfo(tensor_info, entries)
-        self._current_ir.setRemoteBufferInfo(self._remote_buffer_id,
-                                             remote_buffer_info)
+        self._current_ir.setRemoteBufferInfo(self._remote_buffer_id, remote_buffer_info)
 
-    def validate_tensor_matches_buffer(self, t: Tensor,
-                                       num_shards: int = 1) -> None:
+    def validate_tensor_matches_buffer(self, t: Tensor, num_shards: int = 1) -> None:
         """Validate whether the tensor information matches that of the buffer.
 
         Args:
@@ -74,8 +74,7 @@ class RemoteBuffer:
         Raises:
             ValueError: If the tensor does not match the buffer.
         """
-        remote_buffer_info = self._current_ir.getRemoteBufferInfo(
-            self.remote_buffer_id)
+        remote_buffer_info = self._current_ir.getRemoteBufferInfo(self.remote_buffer_id)
 
         if num_shards == 1:
             existing_shape = tuple(remote_buffer_info.TensorInfo.shape())
@@ -85,15 +84,16 @@ class RemoteBuffer:
 
         tensor_shape = t.shape
         tensor_dtype = t.dtype._pb_dtype
-        if (tensor_shape != existing_shape) or (tensor_dtype !=
-                                                existing_dtype):
-            raise ValueError(f"Tensor does not match buffer.\n"
-                             f"Existing remote buffer has "
-                             f"shape={existing_shape} and "
-                             f"dtype={existing_dtype}.\n"
-                             f"The tensor has "
-                             f"shape={tensor_shape}, "
-                             f"dtype={tensor_dtype}.")
+        if (tensor_shape != existing_shape) or (tensor_dtype != existing_dtype):
+            raise ValueError(
+                f"Tensor does not match buffer.\n"
+                f"Existing remote buffer has "
+                f"shape={existing_shape} and "
+                f"dtype={existing_dtype}.\n"
+                f"The tensor has "
+                f"shape={tensor_shape}, "
+                f"dtype={tensor_dtype}."
+            )
 
     @property
     def remote_buffer_id(self) -> int:
@@ -117,7 +117,9 @@ class RemoteBuffer:
         """
         return tuple(
             self._current_ir.getRemoteBufferInfo(
-                self._remote_buffer_id).TensorInfo.shape())
+                self._remote_buffer_id
+            ).TensorInfo.shape()
+        )
 
     @property
     def tensor_dtype(self) -> dtype:
@@ -130,7 +132,9 @@ class RemoteBuffer:
         """
         return dtype.as_dtype(
             self._current_ir.getRemoteBufferInfo(
-                self._remote_buffer_id).TensorInfo.dataType())
+                self._remote_buffer_id
+            ).TensorInfo.dataType()
+        )
 
     @property
     def entries(self) -> int:
@@ -144,8 +148,7 @@ class RemoteBuffer:
         Raises:
             ValueError: If set to a value that is a not a positive integer.
         """
-        return self._current_ir.getRemoteBufferInfo(
-            self._remote_buffer_id).repeats
+        return self._current_ir.getRemoteBufferInfo(self._remote_buffer_id).repeats
 
     @entries.setter
     def entries(self, _entries: int) -> None:
@@ -154,9 +157,11 @@ class RemoteBuffer:
                 f"Entries must be a non-zero, positive integer. Got {_entries}"
             )
         else:
-            self.set_remote_buffer_info(tensor_dtype=self.tensor_dtype,
-                                        tensor_shape=self.tensor_shape,
-                                        entries=_entries)
+            self.set_remote_buffer_info(
+                tensor_dtype=self.tensor_dtype,
+                tensor_shape=self.tensor_shape,
+                entries=_entries,
+            )
 
     @property
     def meta_shape(self) -> Tuple[int, ...]:
@@ -170,9 +175,9 @@ class RemoteBuffer:
         return hash((self._current_ir, self.remote_buffer_id))
 
 
-def remote_buffer(tensor_shape: Tuple[int, ...],
-                  tensor_dtype: dtype,
-                  entries: int = 1) -> RemoteBuffer:
+def remote_buffer(
+    tensor_shape: Tuple[int, ...], tensor_dtype: dtype, entries: int = 1
+) -> RemoteBuffer:
     """Return a remote buffer based on the current IR from the context.
 
     Args:

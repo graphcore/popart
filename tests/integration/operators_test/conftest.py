@@ -8,6 +8,7 @@ import torch
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -116,34 +117,31 @@ def op_tester(tmpdir):
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
                 if t1.shape != ref.shape:
-                    print('shape mismatch {} != {}'.format(
-                        t1.shape, ref.shape))
+                    print("shape mismatch {} != {}".format(t1.shape, ref.shape))
                 assert t1.shape == ref.shape
 
             if self.check_dtypes:
                 if t1.dtype != ref.dtype:
-                    print('dtype mismatch {} != {}'.format(
-                        t1.dtype, ref.dtype))
+                    print("dtype mismatch {} != {}".format(t1.dtype, ref.dtype))
                 assert t1.dtype == ref.dtype
 
             if not np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan):
-                print('rtol:{} atol:{}'.format(self.rtol, self.atol))
-                print('Popart:\n{}'.format(t1))
-                print('Torch:\n{}'.format(ref))
-                print('Diff:\n{}'.format(np.subtract(t1, ref)))
-                isclose = np.isclose(t1, ref, self.rtol, self.atol,
-                                     self.equal_nan)
-                print('IsClose:\n{}'.format(isclose))
+                print("rtol:{} atol:{}".format(self.rtol, self.atol))
+                print("Popart:\n{}".format(t1))
+                print("Torch:\n{}".format(ref))
+                print("Diff:\n{}".format(np.subtract(t1, ref)))
+                isclose = np.isclose(t1, ref, self.rtol, self.atol, self.equal_nan)
+                print("IsClose:\n{}".format(isclose))
                 indices = np.argwhere(np.logical_not(isclose))
-                print('# not close:', indices.shape[0])
+                print("# not close:", indices.shape[0])
                 for i in indices[0:10]:
-                    print(i, 'Popart:', t1[tuple(i)], 'Torch:', ref[tuple(i)])
+                    print(i, "Popart:", t1[tuple(i)], "Torch:", ref[tuple(i)])
 
             assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
         def setPatterns(self, patterns, enableRuntimeAsserts=None):
-            """ Accept either a Patterns instance, a list of strings or a PatternsLevel. If enableRuntimeAsserts
-                is set you will get an error if you don't enable all mandatory patterns.
+            """Accept either a Patterns instance, a list of strings or a PatternsLevel. If enableRuntimeAsserts
+            is set you will get an error if you don't enable all mandatory patterns.
             """
             if isinstance(patterns, popart.Patterns):
                 self.patterns = patterns
@@ -154,18 +152,20 @@ def op_tester(tmpdir):
                 self.patterns.enableRuntimeAsserts(enableRuntimeAsserts)
 
         def tearDown(self):
-            """ Clear up resources, fixture is no longer needed. """
+            """Clear up resources, fixture is no longer needed."""
             if self.device is not None:
                 self.device.detach()
 
-        def run(self,
-                init_builder,
-                reference,
-                step_type='infer',
-                opsets=None,
-                optimizer=popart.ConstSGD(0.01),
-                seed=None):
-            assert step_type in ('infer', 'train')
+        def run(
+            self,
+            init_builder,
+            reference,
+            step_type="infer",
+            opsets=None,
+            optimizer=popart.ConstSGD(0.01),
+            seed=None,
+        ):
+            assert step_type in ("infer", "train")
 
             bld = Builder(opsets=opsets, check_model=self.check_model)
 
@@ -190,39 +190,45 @@ def op_tester(tmpdir):
 
             if self.tilesPerIPU is not None:
                 self.device = tu.create_test_device(
-                    numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU).device
-                print(f"Created device {self.device} with {self.numIPUs}"
-                      f" IPUs and {self.tilesPerIPU} tiles per IPU")
+                    numIpus=self.numIPUs, tilesPerIPU=self.tilesPerIPU
+                ).device
+                print(
+                    f"Created device {self.device} with {self.numIPUs}"
+                    f" IPUs and {self.tilesPerIPU} tiles per IPU"
+                )
             else:
-                self.device = tu.create_test_device(
-                    numIpus=self.numIPUs).device
+                self.device = tu.create_test_device(numIpus=self.numIPUs).device
                 print(f"Created device {self.device} with {self.numIPUs} IPUs")
 
             self.patterns.InPlace = self.inplacing
-            if step_type == 'infer':
-                session = popart.InferenceSession(fnModel=bld.getModelProto(),
-                                                  dataFlow=dataFlow,
-                                                  deviceInfo=self.device,
-                                                  patterns=self.patterns,
-                                                  userOptions=self.options)
+            if step_type == "infer":
+                session = popart.InferenceSession(
+                    fnModel=bld.getModelProto(),
+                    dataFlow=dataFlow,
+                    deviceInfo=self.device,
+                    patterns=self.patterns,
+                    userOptions=self.options,
+                )
             else:
-                assert step_type == 'train'
+                assert step_type == "train"
                 # Apply reduction to output (assumed to be the
                 # first anchorId) to ensure it is scalar
                 lossId = anchorIds[0]
                 lossId = bld.aiGraphcore.identityloss(
-                    [lossId], reduction=self.lossReduction)
-                if (self.options.virtualGraphMode ==
-                        popart.VirtualGraphMode.Manual):
+                    [lossId], reduction=self.lossReduction
+                )
+                if self.options.virtualGraphMode == popart.VirtualGraphMode.Manual:
                     bld.virtualGraph(lossId, 0)
 
-                session = popart.TrainingSession(fnModel=bld.getModelProto(),
-                                                 dataFlow=dataFlow,
-                                                 loss=lossId,
-                                                 optimizer=optimizer,
-                                                 deviceInfo=self.device,
-                                                 patterns=self.patterns,
-                                                 userOptions=self.options)
+                session = popart.TrainingSession(
+                    fnModel=bld.getModelProto(),
+                    dataFlow=dataFlow,
+                    loss=lossId,
+                    optimizer=optimizer,
+                    deviceInfo=self.device,
+                    patterns=self.patterns,
+                    userOptions=self.options,
+                )
 
             anchor_map = session.initAnchorArrays()
 
@@ -232,24 +238,24 @@ def op_tester(tmpdir):
                 session.setRandomSeed(seed)
 
             for k, v in bld._input_map.items():
-                if not v.flags['C_CONTIGUOUS']:
+                if not v.flags["C_CONTIGUOUS"]:
                     # need to call np.ascontiguousarray
                     # `x = np.ascontiguousarray(x)`
                     raise Exception(
-                        'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.
-                        format(k))
+                        'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.format(k)
+                    )
 
             # Add the replication dimension to the inputs
             inputs = {}
             for k, v in bld._input_map.items():
                 if self.options.replicatedGraphCount > 1:
-                    um = (self.options.replicatedGraphCount, )
+                    um = (self.options.replicatedGraphCount,)
                     um = um + tuple([1] * np.ndim(v))
 
                     # we add this offset to ensure that samples on devices are distinct
-                    offset = 1 * np.arange(
-                        self.options.replicatedGraphCount).astype(
-                            v.dtype).reshape(um)
+                    offset = 1 * np.arange(self.options.replicatedGraphCount).astype(
+                        v.dtype
+                    ).reshape(um)
 
                     inputs[k] = np.tile(v, um) + offset
 
@@ -258,12 +264,12 @@ def op_tester(tmpdir):
 
             stepio = popart.PyStepIO(inputs, anchor_map)
 
-            if (step_type == 'train'):
+            if step_type == "train":
                 session.weightsFromHost()
 
             session.run(stepio)
 
-            if (step_type == 'train'):
+            if step_type == "train":
                 session.weightsToHost()
 
             ref_out = reference(RefData(bld._outputs, anchor_map))
@@ -282,7 +288,7 @@ def op_tester(tmpdir):
                 elif t is None:
                     return None
                 else:
-                    raise Exception('unexpected type', type(t))
+                    raise Exception("unexpected type", type(t))
 
             ref_out = [fix_type(i) for i in ref_out]
             for index, key in enumerate(anchorIds):
@@ -291,26 +297,27 @@ def op_tester(tmpdir):
                         print('Testing anchor "{}"...'.format(key))
                         self.verifyTensor(anchor_map[key], ref_out[index])
                     else:
-                        print('Not Testing anchor "{}" as it is None'.format(
-                            key))
+                        print('Not Testing anchor "{}" as it is None'.format(key))
                 elif key in bld._init_input_map:
                     if ref_out[index] is not None:
                         print('Testing weight "{}"...'.format(key))
                         weightInfo = session.getInfo(key)
-                        print('Weight info shape:{} type:{}',
-                              weightInfo.shape(), weightInfo.data_type_lcase())
+                        print(
+                            "Weight info shape:{} type:{}",
+                            weightInfo.shape(),
+                            weightInfo.data_type_lcase(),
+                        )
                         weights = {}
                         weights[key] = np.empty(
-                            shape=weightInfo.shape(),
-                            dtype=weightInfo.data_type_lcase())
+                            shape=weightInfo.shape(), dtype=weightInfo.data_type_lcase()
+                        )
                         weightsIo = popart.PyWeightsIO(weights)
                         session.readWeights(weightsIo)
 
                         self.verifyTensor(weights[key], ref_out[index])
 
                     else:
-                        print('Not Testing weight "{}" as it is None'.format(
-                            key))
+                        print('Not Testing weight "{}" as it is None'.format(key))
 
             return session
 

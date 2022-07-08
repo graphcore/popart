@@ -19,8 +19,9 @@ import leaky_relu_op_impl
 
 # Define a function to build and run the leaky relu graph with
 # specified input tensor data and alpha value
-def build_and_run_graph(input_data: Union[float, np.ndarray],
-                        alpha: float) -> np.ndarray:
+def build_and_run_graph(
+    input_data: Union[float, np.ndarray], alpha: float
+) -> np.ndarray:
     """Build a PopART graph with the leaky relu custom op in and run it.
 
     Args:
@@ -34,8 +35,7 @@ def build_and_run_graph(input_data: Union[float, np.ndarray],
     builder = popart.Builder()
     input_len = len(input_data)
 
-    input_tensor = builder.addInputTensor(
-        popart.TensorInfo("FLOAT", [input_len]))
+    input_tensor = builder.addInputTensor(popart.TensorInfo("FLOAT", [input_len]))
 
     opid = leaky_relu_op_impl.LeakyRelu.default_opid()
     output_tensor = builder.customOp(
@@ -73,15 +73,12 @@ def build_and_run_graph(input_data: Union[float, np.ndarray],
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--alpha",
-                        help="sets the lrelu alpha attribute",
-                        type=float,
-                        default=0.02)
-    parser.add_argument("--input_data",
-                        metavar="X",
-                        type=float,
-                        nargs="+",
-                        help="input tensor data")
+    parser.add_argument(
+        "--alpha", help="sets the lrelu alpha attribute", type=float, default=0.02
+    )
+    parser.add_argument(
+        "--input_data", metavar="X", type=float, nargs="+", help="input tensor data"
+    )
 
     args = parser.parse_args()
 

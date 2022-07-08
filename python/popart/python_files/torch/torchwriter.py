@@ -11,17 +11,22 @@ import onnx
 
 def conv3x3(in_planes, out_planes, stride=1):
     """Create 3x3 convolution with padding."""
-    return torch.nn.Conv2d(in_planes,
-                           out_planes,
-                           kernel_size=3,
-                           stride=stride,
-                           padding=1,
-                           bias=False)
+    return torch.nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, optimizer, dataFlow, inputShapeInfo,
-                 module, samplesPerBatch):
+    def __init__(
+        self,
+        inNames,
+        outNames,
+        optimizer,
+        dataFlow,
+        inputShapeInfo,
+        module,
+        samplesPerBatch,
+    ):
         """
         Create a PytorchNetWriter class.
 
@@ -30,12 +35,14 @@ class PytorchNetWriter(NetWriter):
         all others:
           -- parameters passed to base class.
         """
-        NetWriter.__init__(self,
-                           inNames=inNames,
-                           outNames=outNames,
-                           optimizer=optimizer,
-                           inputShapeInfo=inputShapeInfo,
-                           dataFlow=dataFlow)
+        NetWriter.__init__(
+            self,
+            inNames=inNames,
+            outNames=outNames,
+            optimizer=optimizer,
+            inputShapeInfo=inputShapeInfo,
+            dataFlow=dataFlow,
+        )
 
         self.module = module
         self.samplesPerBatch = samplesPerBatch
@@ -44,18 +51,18 @@ class PytorchNetWriter(NetWriter):
         """
         Convert PopART's Optimizer to a torch Optimizer.
         """
-        if (isinstance(self.optimizer, SGD)
-                or isinstance(self.optimizer, ConstSGD)):
+        if isinstance(self.optimizer, SGD) or isinstance(self.optimizer, ConstSGD):
             return torch.optim.SGD(
                 self.module.parameters(),
                 lr=self.optimizer.learningRates().getDefault().val(),
                 weight_decay=self.optimizer.weightDecays().getDefault().val(),
-                momentum=self.optimizer.momentums().getDefault().val())
+                momentum=self.optimizer.momentums().getDefault().val(),
+            )
         else:
             raise RuntimeError("unrecognised optimizer")
 
     def saveModel(self, fnModel):
-        print("Writing ONNX model to protobuf file %s" % (fnModel, ))
+        print("Writing ONNX model to protobuf file %s" % (fnModel,))
         # jump into eval mode, just to write the onnx model.
         # note that this might do strange things with batch-normalisation (?)
         self.module.eval()
@@ -71,12 +78,14 @@ class PytorchNetWriter(NetWriter):
                 containsint64 = True
             inputData.append(torch.from_numpy(np.ones(shape=shape, dtype=dt)))
 
-        torch.onnx.export(self.module,
-                          inputData,
-                          fnModel,
-                          verbose=False,
-                          input_names=self.inNames,
-                          output_names=self.outNames)
+        torch.onnx.export(
+            self.module,
+            inputData,
+            fnModel,
+            verbose=False,
+            input_names=self.inNames,
+            output_names=self.outNames,
+        )
 
         # If the model contains 'long' tensors (e.g. in case of exporting
         # nllloss), they must be converted to int32
@@ -120,8 +129,7 @@ class PytorchNetWriter(NetWriter):
                 dt = self.inputShapeInfo.get(name).data_type_lcase()
                 if dt == "int32":
                     dt = "int64"  # torch labels must be 'long'
-                substepInputs.append(
-                    torch.tensor(substepInMap[name].astype(dt)))
+                substepInputs.append(torch.tensor(substepInMap[name].astype(dt)))
 
             # forward pass
             substepOutput = self.module(substepInputs)
@@ -159,8 +167,7 @@ class PytorchNetWriter(NetWriter):
         for substepi in range(self.dataFlow.batchesPerStep()):
 
             substepTorchInputs = [
-                torch.Tensor(inMap[inId][substepi][0:])
-                for inId in inMap.keys()
+                torch.Tensor(inMap[inId][substepi][0:]) for inId in inMap.keys()
             ]
 
             # forward pass
@@ -168,8 +175,7 @@ class PytorchNetWriter(NetWriter):
             substepOutputTensors = substepOutputs.detach()
 
             if len(self.outNames) == 1:
-                stepOutMap[self.outNames[0]].append(
-                    substepOutputTensors.numpy())
+                stepOutMap[self.outNames[0]].append(substepOutputTensors.numpy())
             else:
                 for j, outName in enumerate(self.outNames):
                     npTensor = substepOutputTensors[j].numpy()

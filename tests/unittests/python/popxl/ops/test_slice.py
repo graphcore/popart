@@ -11,13 +11,13 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(
-    str(
-        Path(__file__).resolve().parent.parent.parent.parent.parent /
-        "integration"))
+    str(Path(__file__).resolve().parent.parent.parent.parent.parent / "integration")
+)
 import test_util as tu
 
-data = np.arange(64).reshape(4, 4, 4).astype('float32')
+data = np.arange(64).reshape(4, 4, 4).astype("float32")
 
 
 def run_ir(ir: popxl.Ir, y: popxl.Tensor):
@@ -27,7 +27,8 @@ def run_ir(ir: popxl.Ir, y: popxl.Tensor):
     y_id = y_d2h.tensor_id
 
     dataFlow = popart.DataFlow(
-        batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")})
+        batchesPerStep=1, anchorTensors={y_id: popart.AnchorReturnType("All")}
+    )
     ir_.setDataFlow(dataFlow)
 
     opts = ir_.getSessionOptions()
@@ -71,8 +72,7 @@ class TestSlice:
         if not inplace:
             assert contains_op_of_type("Slice", _ir.op.SliceOp, g)
         else:
-            assert contains_op_of_type("SliceInplace", _ir.op.SliceInplaceOp,
-                                       g)
+            assert contains_op_of_type("SliceInplace", _ir.op.SliceInplaceOp, g)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
 

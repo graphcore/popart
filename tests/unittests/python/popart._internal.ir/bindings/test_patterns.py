@@ -6,12 +6,18 @@ import popart
 import popart._internal.ir as _ir
 
 
-@pytest.mark.parametrize("patterns_level", [
-    _ir.patterns.PatternsLevel.NoPatterns, _ir.patterns.PatternsLevel.Minimal,
-    _ir.patterns.PatternsLevel.Default, _ir.patterns.PatternsLevel.All
-])
+@pytest.mark.parametrize(
+    "patterns_level",
+    [
+        _ir.patterns.PatternsLevel.NoPatterns,
+        _ir.patterns.PatternsLevel.Minimal,
+        _ir.patterns.PatternsLevel.Default,
+        _ir.patterns.PatternsLevel.All,
+    ],
+)
 def test_check_applying_patterns_level(
-        patterns_level: _ir.patterns.PatternsLevel) -> None:
+    patterns_level: _ir.patterns.PatternsLevel,
+) -> None:
     """Test you can set the patterns object via the PatternsLevelEnum
 
     Args:
@@ -76,5 +82,4 @@ def test_get_set_patterns_constructor(pattern: str) -> None:
     else:
         with pytest.raises(popart.popart_exception) as e_info:
             p.enablePattern(pattern, False)
-            assert e_info.value.args[
-                0] == f"Pattern '{pattern}' must be enabled"
+            assert e_info.value.args[0] == f"Pattern '{pattern}' must be enabled"

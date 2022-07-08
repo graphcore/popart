@@ -38,8 +38,7 @@ def test_reducemedian_values(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext='test_reducemedian_values_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
         )
         builder.addOutputTensor(out[0])
         return [out[0]]
@@ -47,7 +46,7 @@ def test_reducemedian_values(op_tester, type, keepdims, axes):
     def reference(_):  # ref_data is an unused argument
         return [np.median(data, axis=axes, keepdims=keepdims).astype(type)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 test_reducemedian_indices_1_axes = [[0], [1], [2], [3], [4]]
@@ -62,9 +61,11 @@ def test_reducemedian_indices_1(op_tester, type, keepdims, axes):
         # Torch/PopART may not return the first occurrence of the median value
         # unless it is unique and the exact behaviour may be differ between the
         # two implementations.
-        data = np.random.default_rng().choice(10000,
-                                              size=[1, 3, 4, 7, 8],
-                                              replace=False).astype(type)
+        data = (
+            np.random.default_rng()
+            .choice(10000, size=[1, 3, 4, 7, 8], replace=False)
+            .astype(type)
+        )
     elif np.issubdtype(type, np.floating):
         data = np.random.randn(1, 3, 4, 7, 8).astype(type)
     else:
@@ -76,8 +77,7 @@ def test_reducemedian_indices_1(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext='test_reducemedian_indices_1_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_indices_1_{}_{}".format(axes, keepdims),
         )
         builder.addOutputTensor(out[1])
         return [out[1]]
@@ -87,7 +87,7 @@ def test_reducemedian_indices_1(op_tester, type, keepdims, axes):
         out = torch.median(tensor, dim=axes[0], keepdim=keepdims)
         return [out.indices.numpy().astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 test_reducemedian_indices_2_axes = [[0, 1], USE_DEFAULT_AXES]
@@ -98,8 +98,9 @@ test_reducemedian_indices_2_axes = [[0, 1], USE_DEFAULT_AXES]
 @pytest.mark.parametrize("axes", test_reducemedian_indices_2_axes)
 def test_reducemedian_indices_2(op_tester, type, keepdims, axes):
     # Reduction over multiple axes (incompatible with torch).
-    data = np.asarray([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]],
-                      dtype=type)
+    data = np.asarray(
+        [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]], dtype=type
+    )
 
     def init_builder(builder):
         tensor = builder.addInputTensor(data)
@@ -107,8 +108,7 @@ def test_reducemedian_indices_2(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext='test_reducemedian_indices_2_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_indices_2_{}_{}".format(axes, keepdims),
         )
         builder.addOutputTensor(out[1])
         return [out[1]]
@@ -121,7 +121,7 @@ def test_reducemedian_indices_2(op_tester, type, keepdims, axes):
             out = tensor.copy()
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 test_reducemedian_training_1_axes = [[0], [1], [2], [3]]
@@ -136,9 +136,11 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
         # Torch/PopART may not return the first occurrence of the median value
         # unless it is unique and the exact behaviour may be differ between the
         # two implementations.
-        data = np.random.default_rng().choice(10000,
-                                              size=[3, 4, 7, 8],
-                                              replace=False).astype(type)
+        data = (
+            np.random.default_rng()
+            .choice(10000, size=[3, 4, 7, 8], replace=False)
+            .astype(type)
+        )
     elif np.issubdtype(type, np.floating):
         data = np.random.randn(3, 4, 7, 8).astype(type)
     else:
@@ -150,14 +152,12 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext='test_reducemedian_training_1_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_training_1_{}_{}".format(axes, keepdims),
         )
         sum = builder.aiOnnx.reducesum(
             [out[0]],
             keepdims=False,
-            debugContext='test_reducemedian_training_1_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_training_1_{}_{}".format(axes, keepdims),
         )
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
@@ -175,10 +175,10 @@ def test_reducemedian_training_1(op_tester, type, keepdims, axes):
         return [
             sum.type(tensor.dtype),
             out.values.type(tensor.dtype),
-            tensor_float.grad.type(tensor.dtype)
+            tensor_float.grad.type(tensor.dtype),
         ]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 test_reducemedian_training_2_axes = [[0, 1], USE_DEFAULT_AXES]
@@ -189,8 +189,9 @@ test_reducemedian_training_2_axes = [[0, 1], USE_DEFAULT_AXES]
 @pytest.mark.parametrize("axes", test_reducemedian_training_2_axes)
 def test_reducemedian_training_2(op_tester, type, keepdims, axes):
     # Reduction over multiple axes (incompatible with torch).
-    data = np.asarray([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]],
-                      dtype=type)
+    data = np.asarray(
+        [[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]], dtype=type
+    )
 
     def init_builder(builder):
         tensor = builder.addInputTensor(data)
@@ -198,14 +199,12 @@ def test_reducemedian_training_2(op_tester, type, keepdims, axes):
             [tensor],
             axes=axes,
             keepdims=keepdims,
-            debugContext='test_reducemedian_training_2_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_training_2_{}_{}".format(axes, keepdims),
         )
         sum = builder.aiOnnx.reducesum(
             [out[0]],
             keepdims=False,
-            debugContext='test_reducemedian_training_2_{}_{}'.format(
-                axes, keepdims),
+            debugContext="test_reducemedian_training_2_{}_{}".format(axes, keepdims),
         )
         builder.addOutputTensor(sum)
         return [sum, out[0], popart.reservedGradientPrefix() + tensor]
@@ -220,7 +219,7 @@ def test_reducemedian_training_2(op_tester, type, keepdims, axes):
             out = tensor.copy()
         return [tensor, out, grad]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("keepdims", keepdims_list)
@@ -234,7 +233,7 @@ def test_reducemedian_values_shape_infer(keepdims, axes):
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext='test_reducemedian_values_{}_{}'.format(axes, keepdims),
+        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
     )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])
@@ -251,12 +250,14 @@ def test_reducemedian_values_shape_infer(keepdims, axes):
         shapes = []
         for a in anchors:
             shapes.append(tuple(builder.getTensorShape(a)))
-        session = popart.TrainingSession(fnModel=proto,
-                                         loss=lossId,
-                                         dataFlow=dataFlow,
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(0.01),
-                                         userOptions=options)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            loss=lossId,
+            dataFlow=dataFlow,
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(0.01),
+            userOptions=options,
+        )
         anchors = session.initAnchorArrays()
         session.prepareDevice()
         inputs = {tensor: data}
@@ -280,7 +281,7 @@ def test_reducemedian_indices_1_shape_infer(keepdims, axes):
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext='test_reducemedian_values_{}_{}'.format(axes, keepdims),
+        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
     )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])
@@ -297,12 +298,14 @@ def test_reducemedian_indices_1_shape_infer(keepdims, axes):
         shapes = []
         for a in anchors:
             shapes.append(tuple(builder.getTensorShape(a)))
-        session = popart.TrainingSession(fnModel=proto,
-                                         loss=lossId,
-                                         dataFlow=dataFlow,
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(0.01),
-                                         userOptions=options)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            loss=lossId,
+            dataFlow=dataFlow,
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(0.01),
+            userOptions=options,
+        )
         anchors = session.initAnchorArrays()
         session.prepareDevice()
         inputs = {tensor: data}
@@ -326,7 +329,8 @@ def test_reducemedian_shape_infer():
         [tensor],
         axes=axes,
         keepdims=keepdims,
-        debugContext='test_reducemedian_values_{}_{}'.format(axes, keepdims))
+        debugContext="test_reducemedian_values_{}_{}".format(axes, keepdims),
+    )
     builder.addOutputTensor(out[0])
     builder.addOutputTensor(out[1])
     assert builder.getTensorShape(out[0]) == [1, 3, 7, 8]

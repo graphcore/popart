@@ -24,8 +24,10 @@ optimizer = popart.ConstSGD(0.001)
 
 # Run session on CPU
 device = popart.DeviceManager().createCpuDevice()
-session = popart.TrainingSession(builder.getModelProto(),
-                                 deviceInfo=device,
-                                 dataFlow=dataFlow,
-                                 loss=nlll,
-                                 optimizer=optimizer)
+session = popart.TrainingSession(
+    builder.getModelProto(),
+    deviceInfo=device,
+    dataFlow=dataFlow,
+    loss=nlll,
+    optimizer=optimizer,
+)

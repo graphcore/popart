@@ -15,40 +15,42 @@ import test_util as tu
 
 
 def run_model(
-        tmpdir,
-        model_file_name,
-        execution_mode="normal",
-        enable_matmul_serialization=False,
-        enable_outlining=False,
-        enable_accum=False,
-        accum_factor=1,
-        activation_tensor_location_settings=None,
-        weight_tensor_location_settings=None,
-        optimizer_state_tensor_location_settings=None,
-        accumulator_tensor_location_settings=None,
-        num_layers=3,
-        dsize=37,  # Choose a prime number to force padding
-        batch_size=1,
-        num_iterations=1,
-        num_replicas=1,
-        optimizer=popart.SGD({"defaultLearningRate": (0.5, False)}),
-        reduction=popart.ReductionType.Sum):
+    tmpdir,
+    model_file_name,
+    execution_mode="normal",
+    enable_matmul_serialization=False,
+    enable_outlining=False,
+    enable_accum=False,
+    accum_factor=1,
+    activation_tensor_location_settings=None,
+    weight_tensor_location_settings=None,
+    optimizer_state_tensor_location_settings=None,
+    accumulator_tensor_location_settings=None,
+    num_layers=3,
+    dsize=37,  # Choose a prime number to force padding
+    batch_size=1,
+    num_iterations=1,
+    num_replicas=1,
+    optimizer=popart.SGD({"defaultLearningRate": (0.5, False)}),
+    reduction=popart.ReductionType.Sum,
+):
 
     np.random.seed(10911)
-    matmul_serialization_mode = 'output_channels'
+    matmul_serialization_mode = "output_channels"
     matmul_serialization_factor = 2
 
     builder = popart.Builder()
-    ip = builder.addInputTensor(
-        popart.TensorInfo("FLOAT", [batch_size, dsize, dsize]))
+    ip = builder.addInputTensor(popart.TensorInfo("FLOAT", [batch_size, dsize, dsize]))
 
     def add_layer(index, in_id):
         w = builder.addInitializedInputTensor(
-            np.random.rand(dsize, dsize).astype(np.float32), f"W{index}")
+            np.random.rand(dsize, dsize).astype(np.float32), f"W{index}"
+        )
         matmul_id = builder.aiOnnx.matmul([in_id, w])
         if enable_matmul_serialization:
-            builder.setSerializeMatMul({matmul_id}, matmul_serialization_mode,
-                                       matmul_serialization_factor)
+            builder.setSerializeMatMul(
+                {matmul_id}, matmul_serialization_mode, matmul_serialization_factor
+            )
         return matmul_id
 
     out = ip
@@ -63,13 +65,15 @@ def run_model(
             vgid = i
         else:
             raise ValueError(f"Execution mode {execution_mode} unsupported")
-        with builder.executionPhase(i), builder.pipelineStage(
-                i), builder.virtualGraph(vgid):
+        with builder.executionPhase(i), builder.pipelineStage(i), builder.virtualGraph(
+            vgid
+        ):
             out = add_layer(i, out)
 
         if i == num_layers - 1:
             with builder.executionPhase(i), builder.pipelineStage(
-                    i), builder.virtualGraph(vgid):
+                i
+            ), builder.virtualGraph(vgid):
                 l1 = builder.aiGraphcore.l1loss([out], 0.1, reduction)
 
     anchorIds = []
@@ -81,7 +85,7 @@ def run_model(
     elif execution_mode == "phased":
         num_ipus = 2
     elif execution_mode == "pipelined":
-        num_ipus = 2**math.ceil(math.log2(num_layers))
+        num_ipus = 2 ** math.ceil(math.log2(num_layers))
     else:
         raise ValueError(f"Execution mode {execution_mode} unsupported")
 
@@ -102,7 +106,9 @@ def run_model(
     if weight_tensor_location_settings is not None:
         opts.weightTensorLocationSettings = weight_tensor_location_settings
     if optimizer_state_tensor_location_settings is not None:
-        opts.optimizerStateTensorLocationSettings = optimizer_state_tensor_location_settings
+        opts.optimizerStateTensorLocationSettings = (
+            optimizer_state_tensor_location_settings
+        )
     if accumulator_tensor_location_settings is not None:
         opts.accumulatorTensorLocationSettings = accumulator_tensor_location_settings
 
@@ -123,25 +129,28 @@ def run_model(
     patterns = popart.Patterns(popart.PatternsLevel.All)
     # patterns.InPlace = False
 
-    with tu.create_test_device(num_replicas * num_ipus,
-                               pattern=popart.SyncPattern.Full) as device:
+    with tu.create_test_device(
+        num_replicas * num_ipus, pattern=popart.SyncPattern.Full
+    ) as device:
 
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=popart.DataFlow(
-                                             1, dfAnchors),
-                                         optimizer=optimizer,
-                                         loss=l1,
-                                         patterns=patterns,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=popart.DataFlow(1, dfAnchors),
+            optimizer=optimizer,
+            loss=l1,
+            patterns=patterns,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
         anchors = session.initAnchorArrays()
 
         for i in range(num_iterations):
-            ip_data = np.random.rand(num_replicas, accum_factor, batch_size,
-                                     dsize, dsize).astype(np.float32)
+            ip_data = np.random.rand(
+                num_replicas, accum_factor, batch_size, dsize, dsize
+            ).astype(np.float32)
             stepio = popart.PyStepIO({ip: ip_data}, anchors)
             session.run(stepio)
 
@@ -155,11 +164,11 @@ def check_model(lhs_model, rhs_model):
         lhs = lhs_model.graph.initializer[i]
         for j in range(len(rhs_model.graph.initializer)):
             rhs = rhs_model.graph.initializer[j]
-            if (rhs.name == lhs.name):
-                print(f'Checking initializer {i} ({lhs.name} - {rhs.name})')
+            if rhs.name == lhs.name:
+                print(f"Checking initializer {i} ({lhs.name} - {rhs.name})")
                 lhsa = numpy_helper.to_array(lhs)
                 rhsa = numpy_helper.to_array(rhs)
-                assert np.allclose(lhsa, rhsa, rtol=1.e-4, atol=1.e-5)
+                assert np.allclose(lhsa, rhsa, rtol=1.0e-4, atol=1.0e-5)
 
 
 # Standard OnChip settings
@@ -168,9 +177,11 @@ onChipLocation = popart.TensorLocationSettings(
         storage=popart.TensorStorage.OnChip,
         loadTileSet=popart.TileSet.Compute,
         storageTileSet=popart.TileSet.Compute,
-        replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
+        replicatedTensorSharding=popart.ReplicatedTensorSharding.Off,
+    ),
     minElementsForOffChip=0,
-    minElementsForReplicatedTensorSharding=2)
+    minElementsForReplicatedTensorSharding=2,
+)
 
 # Standard OffChip settings
 offChipLocation = popart.TensorLocationSettings(
@@ -178,9 +189,11 @@ offChipLocation = popart.TensorLocationSettings(
         storage=popart.TensorStorage.OffChip,
         loadTileSet=popart.TileSet.Compute,
         storageTileSet=popart.TileSet.Compute,
-        replicatedTensorSharding=popart.ReplicatedTensorSharding.Off),
+        replicatedTensorSharding=popart.ReplicatedTensorSharding.Off,
+    ),
     minElementsForOffChip=0,
-    minElementsForReplicatedTensorSharding=2)
+    minElementsForReplicatedTensorSharding=2,
+)
 
 # Replicated tensor sharding OffChip settings
 offChipRtsLocation = popart.TensorLocationSettings(
@@ -188,9 +201,11 @@ offChipRtsLocation = popart.TensorLocationSettings(
         storage=popart.TensorStorage.OffChip,
         loadTileSet=popart.TileSet.Compute,
         storageTileSet=popart.TileSet.Compute,
-        replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+        replicatedTensorSharding=popart.ReplicatedTensorSharding.On,
+    ),
     minElementsForOffChip=0,
-    minElementsForReplicatedTensorSharding=2)
+    minElementsForReplicatedTensorSharding=2,
+)
 
 # Replicated tensor sharding OnChip settings
 onChipRtsLocation = popart.TensorLocationSettings(
@@ -198,58 +213,68 @@ onChipRtsLocation = popart.TensorLocationSettings(
         storage=popart.TensorStorage.OnChip,
         loadTileSet=popart.TileSet.Compute,
         storageTileSet=popart.TileSet.Compute,
-        replicatedTensorSharding=popart.ReplicatedTensorSharding.On),
+        replicatedTensorSharding=popart.ReplicatedTensorSharding.On,
+    ),
     minElementsForOffChip=0,
-    minElementsForReplicatedTensorSharding=2)
+    minElementsForReplicatedTensorSharding=2,
+)
 
 
 @tu.requires_ipu
 def test_weight_update(tmpdir):
-    run_model(tmpdir, 'without_phased.onnx', "normal", False, True)
-    run_model(tmpdir,
-              'with_phased.onnx',
-              execution_mode="phased",
-              enable_matmul_serialization=False,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
+    run_model(tmpdir, "without_phased.onnx", "normal", False, True)
+    run_model(
+        tmpdir,
+        "with_phased.onnx",
+        execution_mode="phased",
+        enable_matmul_serialization=False,
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
 
-    without_phased = onnx.load(str(tmpdir / 'without_phased.onnx'))
-    with_phased = onnx.load(str(tmpdir / 'with_phased.onnx'))
+    without_phased = onnx.load(str(tmpdir / "without_phased.onnx"))
+    with_phased = onnx.load(str(tmpdir / "with_phased.onnx"))
 
     check_model(without_phased, with_phased)
 
 
 @tu.requires_ipu
 def test_onchip_memory(tmpdir):
-    run_model(tmpdir, 'model_normal.onnx', execution_mode="normal")
-    run_model(tmpdir,
-              'model_onchip_act.onnx',
-              execution_mode="phased",
-              activation_tensor_location_settings=onChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=onChipLocation)
-    run_model(tmpdir,
-              'model_onchip_weights.onnx',
-              execution_mode="phased",
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=onChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=onChipLocation)
-    run_model(tmpdir,
-              'model_onchip_opt_state.onnx',
-              execution_mode="phased",
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=onChipLocation,
-              accumulator_tensor_location_settings=onChipLocation)
+    run_model(tmpdir, "model_normal.onnx", execution_mode="normal")
+    run_model(
+        tmpdir,
+        "model_onchip_act.onnx",
+        execution_mode="phased",
+        activation_tensor_location_settings=onChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=onChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "model_onchip_weights.onnx",
+        execution_mode="phased",
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=onChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=onChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "model_onchip_opt_state.onnx",
+        execution_mode="phased",
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=onChipLocation,
+        accumulator_tensor_location_settings=onChipLocation,
+    )
 
-    normal = onnx.load(str(tmpdir / 'model_normal.onnx'))
-    onchip_act = onnx.load(str(tmpdir / 'model_onchip_act.onnx'))
-    onchip_weights = onnx.load(str(tmpdir / 'model_onchip_weights.onnx'))
-    onchip_opt_state = onnx.load(str(tmpdir / 'model_onchip_opt_state.onnx'))
+    normal = onnx.load(str(tmpdir / "model_normal.onnx"))
+    onchip_act = onnx.load(str(tmpdir / "model_onchip_act.onnx"))
+    onchip_weights = onnx.load(str(tmpdir / "model_onchip_weights.onnx"))
+    onchip_opt_state = onnx.load(str(tmpdir / "model_onchip_opt_state.onnx"))
 
     check_model(normal, onchip_act)
     check_model(normal, onchip_weights)
@@ -261,51 +286,59 @@ def test_onchip_memory(tmpdir):
 @tu.requires_ipu
 def test_replicated_sgd0_weight_update(tmpdir):
 
-    run_model(tmpdir,
-              'phased.onnx',
-              execution_mode="phased",
-              batch_size=4,
-              num_replicas=1,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=2,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated_rws.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=2,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipRtsLocation)
-    run_model(tmpdir,
-              'phased_replicated_rws_acc.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              enable_accum=True,
-              accum_factor=2,
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=onChipLocation)
+    run_model(
+        tmpdir,
+        "phased.onnx",
+        execution_mode="phased",
+        batch_size=4,
+        num_replicas=1,
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=2,
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated_rws.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=2,
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipRtsLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated_rws_acc.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        enable_accum=True,
+        accum_factor=2,
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=onChipLocation,
+    )
 
-    phased = onnx.load(str(tmpdir / 'phased.onnx'))
-    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
-    phased_replicated_rws = onnx.load(
-        str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / "phased.onnx"))
+    phased_replicated = onnx.load(str(tmpdir / "phased_replicated.onnx"))
+    phased_replicated_rws = onnx.load(str(tmpdir / "phased_replicated_rws.onnx"))
     phased_replicated_rws_acc = onnx.load(
-        str(tmpdir / 'phased_replicated_rws_acc.onnx'))
+        str(tmpdir / "phased_replicated_rws_acc.onnx")
+    )
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
@@ -314,7 +347,7 @@ def test_replicated_sgd0_weight_update(tmpdir):
 
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with SGD1
-@pytest.mark.parametrize('sgdType', ['SGD1', 'SGD2'])
+@pytest.mark.parametrize("sgdType", ["SGD1", "SGD2"])
 @tu.requires_ipu
 def test_replicated_sgd1and2_weight_update(tmpdir, sgdType):
 
@@ -324,79 +357,83 @@ def test_replicated_sgd1and2_weight_update(tmpdir, sgdType):
         "defaultDampening": (0.2, False),
         "defaultVelocityScaling": (0.1, False),
         "lossScaling": (1.0, True),
-        "defaultWeightDecay": (0.2, True)
+        "defaultWeightDecay": (0.2, True),
     }
-    if sgdType == 'SGD1':
+    if sgdType == "SGD1":
         sgdAccMm = popart.SGDAccumulatorAndMomentum.Combined
-    elif sgdType == 'SGD2':
+    elif sgdType == "SGD2":
         sgdAccMm = popart.SGDAccumulatorAndMomentum.Separate
     else:
-        raise RuntimeError('Unknown sgdType={sgdType} in test')
+        raise RuntimeError("Unknown sgdType={sgdType} in test")
 
-    run_model(tmpdir,
-              'phased.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=1,
-              num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict,
-                                   accumulatorAndMomentum=sgdAccMm),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict,
-                                   accumulatorAndMomentum=sgdAccMm),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated_rws.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.SGD(optimizer_dict,
-                                   accumulatorAndMomentum=sgdAccMm),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipRtsLocation)
+    run_model(
+        tmpdir,
+        "phased.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=1,
+        num_iterations=5,
+        optimizer=popart.SGD(optimizer_dict, accumulatorAndMomentum=sgdAccMm),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.SGD(optimizer_dict, accumulatorAndMomentum=sgdAccMm),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated_rws.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.SGD(optimizer_dict, accumulatorAndMomentum=sgdAccMm),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipRtsLocation,
+    )
 
     # For SGD2, where accumulator and optimizer state are separate tensors, add
     # another test case for when only the optimizer state is RTS.
-    if sgdType == 'SGD2':
-        run_model(tmpdir,
-                  'phased_replicated_rts_os_only.onnx',
-                  execution_mode="phased",
-                  batch_size=1,
-                  num_replicas=2,
-                  num_iterations=5,
-                  optimizer=popart.SGD(optimizer_dict,
-                                       accumulatorAndMomentum=sgdAccMm),
-                  activation_tensor_location_settings=offChipLocation,
-                  weight_tensor_location_settings=offChipRtsLocation,
-                  optimizer_state_tensor_location_settings=offChipRtsLocation,
-                  accumulator_tensor_location_settings=offChipLocation)
+    if sgdType == "SGD2":
+        run_model(
+            tmpdir,
+            "phased_replicated_rts_os_only.onnx",
+            execution_mode="phased",
+            batch_size=1,
+            num_replicas=2,
+            num_iterations=5,
+            optimizer=popart.SGD(optimizer_dict, accumulatorAndMomentum=sgdAccMm),
+            activation_tensor_location_settings=offChipLocation,
+            weight_tensor_location_settings=offChipRtsLocation,
+            optimizer_state_tensor_location_settings=offChipRtsLocation,
+            accumulator_tensor_location_settings=offChipLocation,
+        )
 
-    phased = onnx.load(str(tmpdir / 'phased.onnx'))
-    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
-    phased_replicated_rws = onnx.load(
-        str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / "phased.onnx"))
+    phased_replicated = onnx.load(str(tmpdir / "phased_replicated.onnx"))
+    phased_replicated_rws = onnx.load(str(tmpdir / "phased_replicated_rws.onnx"))
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
 
-    if sgdType == 'SGD2':
+    if sgdType == "SGD2":
         phased_replicated_rts_os_only = onnx.load(
-            str(tmpdir / 'phased_replicated_rts_os_only.onnx'))
+            str(tmpdir / "phased_replicated_rts_os_only.onnx")
+        )
         check_model(phased, phased_replicated_rts_os_only)
 
 
@@ -414,44 +451,49 @@ def test_replicated_adam_weight_update(tmpdir):
         "lossScaling": (10.0, True),
     }
 
-    run_model(tmpdir,
-              'phased.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=1,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation)
-    run_model(tmpdir,
-              'phased_replicated_rws.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipRtsLocation)
+    run_model(
+        tmpdir,
+        "phased.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=1,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+    )
+    run_model(
+        tmpdir,
+        "phased_replicated_rws.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipRtsLocation,
+    )
 
-    phased = onnx.load(str(tmpdir / 'phased.onnx'))
-    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
-    phased_replicated_rws = onnx.load(
-        str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / "phased.onnx"))
+    phased_replicated = onnx.load(str(tmpdir / "phased_replicated.onnx"))
+    phased_replicated_rws = onnx.load(str(tmpdir / "phased_replicated_rws.onnx"))
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
@@ -460,8 +502,9 @@ def test_replicated_adam_weight_update(tmpdir):
 # Check that 2 batches on 1 replica or 1 batch per replica on 2 replicas
 # results in the same updated weight with Lamb
 @pytest.mark.parametrize("isConst", [False, True])
-@pytest.mark.parametrize("reduction",
-                         [popart.ReductionType.Sum, popart.ReductionType.Mean])
+@pytest.mark.parametrize(
+    "reduction", [popart.ReductionType.Sum, popart.ReductionType.Mean]
+)
 @tu.requires_ipu
 def test_replicated_lamb_weight_update(tmpdir, isConst, reduction):
     # Test both const & non-const optimizer parameters
@@ -475,87 +518,98 @@ def test_replicated_lamb_weight_update(tmpdir, isConst, reduction):
     }
 
     # Off-chip, but no RTS (1x replica)
-    run_model(tmpdir,
-              'phased.onnx',
-              execution_mode="phased",
-              batch_size=4,
-              num_replicas=1,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation,
-              reduction=reduction)
+    run_model(
+        tmpdir,
+        "phased.onnx",
+        execution_mode="phased",
+        batch_size=4,
+        num_replicas=1,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+        reduction=reduction,
+    )
 
     # Off-chip, but no RTS (2x replicas)
-    run_model(tmpdir,
-              'phased_replicated.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipLocation,
-              optimizer_state_tensor_location_settings=offChipLocation,
-              accumulator_tensor_location_settings=offChipLocation,
-              reduction=reduction)
+    run_model(
+        tmpdir,
+        "phased_replicated.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipLocation,
+        optimizer_state_tensor_location_settings=offChipLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+        reduction=reduction,
+    )
 
     # Weights and optimizer off-chip, RTS
-    run_model(tmpdir,
-              'phased_replicated_rws.onnx',
-              execution_mode="phased",
-              batch_size=2,
-              num_replicas=2,
-              num_iterations=5,
-              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipLocation,
-              reduction=reduction)
+    run_model(
+        tmpdir,
+        "phased_replicated_rws.onnx",
+        execution_mode="phased",
+        batch_size=2,
+        num_replicas=2,
+        num_iterations=5,
+        optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+        reduction=reduction,
+    )
 
     # Weights and optimizer off-chip, accumulator off chip, RTS
-    run_model(tmpdir,
-              'phased_replicated_rws_acc.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              enable_accum=True,
-              accum_factor=2,
-              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=offChipRtsLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=offChipLocation,
-              reduction=reduction)
+    run_model(
+        tmpdir,
+        "phased_replicated_rws_acc.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        enable_accum=True,
+        accum_factor=2,
+        optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=offChipRtsLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=offChipLocation,
+        reduction=reduction,
+    )
 
     # Weights on-chip, non-RTS, optimizer state off-chip, RTS
-    run_model(tmpdir,
-              'phased_replicated_rws_acc_nw.onnx',
-              execution_mode="phased",
-              batch_size=1,
-              num_replicas=2,
-              num_iterations=5,
-              enable_accum=True,
-              accum_factor=2,
-              optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
-              activation_tensor_location_settings=offChipLocation,
-              weight_tensor_location_settings=onChipLocation,
-              optimizer_state_tensor_location_settings=offChipRtsLocation,
-              accumulator_tensor_location_settings=onChipLocation,
-              reduction=reduction)
+    run_model(
+        tmpdir,
+        "phased_replicated_rws_acc_nw.onnx",
+        execution_mode="phased",
+        batch_size=1,
+        num_replicas=2,
+        num_iterations=5,
+        enable_accum=True,
+        accum_factor=2,
+        optimizer=popart.Adam(optimizer_dict, popart.AdamMode.Lamb),
+        activation_tensor_location_settings=offChipLocation,
+        weight_tensor_location_settings=onChipLocation,
+        optimizer_state_tensor_location_settings=offChipRtsLocation,
+        accumulator_tensor_location_settings=onChipLocation,
+        reduction=reduction,
+    )
 
-    phased = onnx.load(str(tmpdir / 'phased.onnx'))
-    phased_replicated = onnx.load(str(tmpdir / 'phased_replicated.onnx'))
-    phased_replicated_rws = onnx.load(
-        str(tmpdir / 'phased_replicated_rws.onnx'))
+    phased = onnx.load(str(tmpdir / "phased.onnx"))
+    phased_replicated = onnx.load(str(tmpdir / "phased_replicated.onnx"))
+    phased_replicated_rws = onnx.load(str(tmpdir / "phased_replicated_rws.onnx"))
     phased_replicated_rws_acc = onnx.load(
-        str(tmpdir / 'phased_replicated_rws_acc.onnx'))
+        str(tmpdir / "phased_replicated_rws_acc.onnx")
+    )
     phased_replicated_rws_acc_nw = onnx.load(
-        str(tmpdir / 'phased_replicated_rws_acc_nw.onnx'))
+        str(tmpdir / "phased_replicated_rws_acc_nw.onnx")
+    )
 
     check_model(phased, phased_replicated)
     check_model(phased, phased_replicated_rws)
@@ -583,7 +637,9 @@ def test_gradient_clipping(tmpdir):
             },
             popart.AdamMode.Lamb,
             weight_decay_mode=popart.WeightDecayMode.Decay,
-            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)]))
+            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)],
+        ),
+    )
 
     run_model(
         tmpdir,
@@ -606,9 +662,11 @@ def test_gradient_clipping(tmpdir):
             },
             popart.AdamMode.Lamb,
             weight_decay_mode=popart.WeightDecayMode.Decay,
-            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)]))
+            clip_norm_settings=[popart.ClipNormSettings.clipAllWeights(0.1)],
+        ),
+    )
 
-    without_rts = onnx.load(str(tmpdir / 'gradient_clipping_without_rts.onnx'))
-    with_rts = onnx.load(str(tmpdir / 'gradient_clipping_with_rts.onnx'))
+    without_rts = onnx.load(str(tmpdir / "gradient_clipping_without_rts.onnx"))
+    with_rts = onnx.load(str(tmpdir / "gradient_clipping_with_rts.onnx"))
 
     check_model(without_rts, with_rts)

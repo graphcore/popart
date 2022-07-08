@@ -25,16 +25,15 @@ def test_dynamicadd_training(op_tester):
         add_tensors = [
             builder.addInitializedInputTensor(data0),
             builder.addInitializedInputTensor(data1),
-            builder.addInitializedInputTensor(data2)
+            builder.addInitializedInputTensor(data2),
         ]
         out = tensor
         for i, slicex, slicey in [[0, 1, 2], [1, 2, 0], [2, 2, 2]]:
-            index = builder.addInputTensor(
-                np.asarray([slicex, slicey], np.uint32))
+            index = builder.addInputTensor(np.asarray([slicex, slicey], np.uint32))
             add = builder.aiGraphcore.scale([add_tensors[i]], float(1 + i))
-            out = builder.aiGraphcore.dynamicadd([out, index, add],
-                                                 axes=axes,
-                                                 sizes=sizes)
+            out = builder.aiGraphcore.dynamicadd(
+                [out, index, add], axes=axes, sizes=sizes
+            )
             # Check the shape inference has run.
             assert builder.getTensorShape(out) == list(data.shape)
 
@@ -83,10 +82,13 @@ def test_dynamicadd_training(op_tester):
 
         result = [
             sum,
-            torch.tensor(d__o), tensor.grad, tensor0.grad, tensor1.grad,
-            tensor2.grad
+            torch.tensor(d__o),
+            tensor.grad,
+            tensor0.grad,
+            tensor1.grad,
+            tensor2.grad,
         ] + result
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

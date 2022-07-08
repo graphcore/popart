@@ -4,6 +4,7 @@ import popart
 import test_util as tu
 import onnx
 from onnx import numpy_helper
+
 # pva is needed for allclose to return True
 import pva  # pylint: disable=unused-import
 import tempfile
@@ -13,50 +14,65 @@ def test_streamingmemory_momentum(tmpdir):
     def model():
         t_size = 4096  # any smaller and poplar will use 64bit copies
         np.random.seed(1984)
-        input_data = np.random.randint(0, 512, (16, )).astype(np.uint32)
+        input_data = np.random.randint(0, 512, (16,)).astype(np.uint32)
         weight_data = np.random.rand(t_size, 512).astype(np.float32)
 
         builder = popart.Builder()
 
         d0 = builder.addInputTensor(
-            popart.TensorInfo('UINT32', input_data.shape), 'data0')
+            popart.TensorInfo("UINT32", input_data.shape), "data0"
+        )
 
-        w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+        w0 = builder.addInitializedInputTensor(weight_data, "weight0")
 
-        with builder.executionPhase(0), builder.virtualGraph(
-                0), builder.nameScope("pp0"):
+        with builder.executionPhase(0), builder.virtualGraph(0), builder.nameScope(
+            "pp0"
+        ):
             w0_t = builder.aiOnnx.transpose([w0])
             x = builder.aiOnnx.gather([w0_t, d0])
             x = builder.aiGraphcore.detach([x])
 
-        with builder.executionPhase(1), builder.virtualGraph(
-                1), builder.nameScope("pp1"):
-            x = builder.aiOnnx.add([
-                x,
-                builder.addInitializedInputTensor(
-                    np.random.rand(t_size).astype(np.float32), 'weight1')
-            ])
+        with builder.executionPhase(1), builder.virtualGraph(1), builder.nameScope(
+            "pp1"
+        ):
+            x = builder.aiOnnx.add(
+                [
+                    x,
+                    builder.addInitializedInputTensor(
+                        np.random.rand(t_size).astype(np.float32), "weight1"
+                    ),
+                ]
+            )
 
-        with builder.executionPhase(2), builder.virtualGraph(
-                0), builder.nameScope("pp2"):
-            x = builder.aiOnnx.sub([
-                x,
-                builder.addInitializedInputTensor(
-                    np.random.rand(t_size).astype(np.float32), 'weight2')
-            ])
+        with builder.executionPhase(2), builder.virtualGraph(0), builder.nameScope(
+            "pp2"
+        ):
+            x = builder.aiOnnx.sub(
+                [
+                    x,
+                    builder.addInitializedInputTensor(
+                        np.random.rand(t_size).astype(np.float32), "weight2"
+                    ),
+                ]
+            )
 
-        with builder.executionPhase(3), builder.virtualGraph(
-                1), builder.nameScope("pp3"):
-            x = builder.aiOnnx.mul([
-                x,
-                builder.addInitializedInputTensor(
-                    np.random.rand(t_size).astype(np.float32), 'weight3')
-            ])
+        with builder.executionPhase(3), builder.virtualGraph(1), builder.nameScope(
+            "pp3"
+        ):
+            x = builder.aiOnnx.mul(
+                [
+                    x,
+                    builder.addInitializedInputTensor(
+                        np.random.rand(t_size).astype(np.float32), "weight3"
+                    ),
+                ]
+            )
 
-        with builder.executionPhase(4), builder.virtualGraph(
-                0), builder.nameScope("pp4"):
+        with builder.executionPhase(4), builder.virtualGraph(0), builder.nameScope(
+            "pp4"
+        ):
             x = builder.aiOnnx.matmul([x, w0])
-            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
+            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext="loss")
 
         return builder.getModelProto(), {d0: input_data}, x, loss
 
@@ -66,11 +82,13 @@ def test_streamingmemory_momentum(tmpdir):
         options = popart.SessionOptions()
         patterns = popart.Patterns()
 
-        optimizer = popart.SGD({
-            "defaultLearningRate": (0.1, True),
-            "defaultMomentum": (0.9, True),
-            "defaultDampening": (0, True)
-        })
+        optimizer = popart.SGD(
+            {
+                "defaultLearningRate": (0.1, True),
+                "defaultMomentum": (0.9, True),
+                "defaultDampening": (0, True),
+            }
+        )
 
         options.enableOutlining = True
         options.outlineThreshold = -np.inf
@@ -94,17 +112,20 @@ def test_streamingmemory_momentum(tmpdir):
 
         request_ipus = 2
 
-        with tu.create_test_device(request_ipus,
-                                   pattern=popart.SyncPattern.Full) as device:
+        with tu.create_test_device(
+            request_ipus, pattern=popart.SyncPattern.Full
+        ) as device:
             dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
 
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -121,10 +142,9 @@ def test_streamingmemory_momentum(tmpdir):
             post_proto = onnx.load(file_path)
 
         report = session.getReport()
-        total_memory = np.sum([
-            tile.memory.total.excludingGaps
-            for tile in report.compilation.tiles
-        ])
+        total_memory = np.sum(
+            [tile.memory.total.excludingGaps for tile in report.compilation.tiles]
+        )
 
         return anchors[x], post_proto, total_memory
 

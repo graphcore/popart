@@ -66,9 +66,9 @@ def test_detach_grad(op_tester, inplacing):
                 self.weight_param = w_t
 
             def forward(self, x):
-                pow1 = x**2
+                pow1 = x ** 2
                 with torch.no_grad():
-                    pow2 = x**2
+                    pow2 = x ** 2
                 out = pow1 + pow2 + self.weight_param
                 out = torch.softmax(out, dim=1)
                 return out
@@ -81,9 +81,9 @@ def test_detach_grad(op_tester, inplacing):
 
         return [out, x.grad, net.weight_param.grad, None]
 
-    op_tester.setPatterns(['PowArg0GradOp'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PowArg0GradOp"], enableRuntimeAsserts=False)
     op_tester.inplacing = inplacing
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 # Test the 4 possibilities of detaching the right hand branch in popART vs pytorch:
@@ -141,24 +141,27 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
 
     builder = popart.Builder()
 
-    input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", dshape),
-                                    "input_i1")
+    input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", dshape), "input_i1")
 
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     w1 = builder.addInitializedInputTensor(w1_data)
     w2 = builder.addInitializedInputTensor(w2_data)
 
-    conv1 = builder.aiOnnx.conv([input_, w1],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1],
-                                debugContext="conv")
+    conv1 = builder.aiOnnx.conv(
+        [input_, w1],
+        dilations=[1, 1],
+        pads=[1, 1, 1, 1],
+        strides=[1, 1],
+        debugContext="conv",
+    )
     r1 = builder.reshape_const(builder.aiOnnx, [conv1], [Batchsize, Classes])
-    conv2 = builder.aiOnnx.conv([input_, w2],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1],
-                                debugContext="conv")
+    conv2 = builder.aiOnnx.conv(
+        [input_, w2],
+        dilations=[1, 1],
+        pads=[1, 1, 1, 1],
+        strides=[1, 1],
+        debugContext="conv",
+    )
     r2 = builder.reshape_const(builder.aiOnnx, [conv2], [Batchsize, Classes])
     if detach_branch_popart:
         r2 = builder.aiGraphcore.detach([r2])
@@ -167,11 +170,17 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
     o = builder.aiOnnx.softmax([add], axis=np.size(lb_data.shape))
     loss = builder.aiGraphcore.nllloss([o, lb])
 
-    dataFlow = popart.DataFlow(1, [
-        o, loss,
-        popart.reservedGradientPrefix() + o,
-        popart.reservedGradientPrefix() + input_, w1, w2
-    ])
+    dataFlow = popart.DataFlow(
+        1,
+        [
+            o,
+            loss,
+            popart.reservedGradientPrefix() + o,
+            popart.reservedGradientPrefix() + input_,
+            w1,
+            w2,
+        ],
+    )
 
     opts = popart.SessionOptions()
     session = popart.TrainingSession(
@@ -180,7 +189,8 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
         loss=loss,
         optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
         userOptions=opts,
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+    )
 
     session.prepareDevice()
 
@@ -217,9 +227,7 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
             return x
 
     net = Net()
-    optimizer = optim.SGD(net.parameters(),
-                          lr=LEARNING_RATE,
-                          weight_decay=WEIGHT_DECAY)
+    optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
 
     input_t = torch.tensor(ip_data, requires_grad=True, dtype=torch.float32)
     label_t = torch.tensor(lb_data, requires_grad=False, dtype=torch.long)
@@ -244,13 +252,10 @@ def test_detach_grad_branches(detach_branch_popart, detach_branch_pytorch):
         # Check the weights match if the branches are the same, if not,
         # make sure the right hand branch doesn't match
         if detach_branch_popart == detach_branch_pytorch:
-            assert np.allclose(anchors[w1], net.conv1.weight.data.numpy(),
-                               1e-4)
-            assert np.allclose(anchors[w2], net.conv2.weight.data.numpy(),
-                               1e-4)
+            assert np.allclose(anchors[w1], net.conv1.weight.data.numpy(), 1e-4)
+            assert np.allclose(anchors[w2], net.conv2.weight.data.numpy(), 1e-4)
         else:
-            assert not np.allclose(anchors[w2], net.conv2.weight.data.numpy(),
-                                   1e-4)
+            assert not np.allclose(anchors[w2], net.conv2.weight.data.numpy(), 1e-4)
 
 
 # Single branch, with a detach operations, similar to above:
@@ -283,17 +288,18 @@ def test_detach_error():
 
     builder = popart.Builder()
 
-    input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", dshape),
-                                    "input_i1")
+    input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", dshape), "input_i1")
 
     lb = builder.addInputTensor(popart.TensorInfo("INT32", lshape))
     w1 = builder.addInitializedInputTensor(w1_data)
 
-    conv1 = builder.aiOnnx.conv([input_, w1],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1],
-                                debugContext="conv")
+    conv1 = builder.aiOnnx.conv(
+        [input_, w1],
+        dilations=[1, 1],
+        pads=[1, 1, 1, 1],
+        strides=[1, 1],
+        debugContext="conv",
+    )
     o = builder.reshape_const(builder.aiOnnx, [conv1], [Batchsize, Classes])
     o = builder.aiGraphcore.detach([o])
 
@@ -301,8 +307,7 @@ def test_detach_error():
 
     loss = builder.aiGraphcore.nllloss([o, lb])
 
-    dataFlow = popart.DataFlow(
-        1, [o, loss, popart.reservedGradientPrefix() + input_])
+    dataFlow = popart.DataFlow(1, [o, loss, popart.reservedGradientPrefix() + input_])
     opts = popart.SessionOptions()
     with pytest.raises(popart.popart_exception) as e_info:
         _ = popart.TrainingSession(
@@ -311,8 +316,9 @@ def test_detach_error():
             loss=loss,
             optimizer=popart.ConstSGD(LEARNING_RATE, WEIGHT_DECAY),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+            deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
+        )
 
-    assert (e_info.value.args[0].startswith(
+    assert e_info.value.args[0].startswith(
         f"Anchor tensor `{popart.reservedGradientPrefix() + input_}' not in Ir Tensors."
-    ))
+    )

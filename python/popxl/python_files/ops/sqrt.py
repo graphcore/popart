@@ -25,9 +25,10 @@ def sqrt(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('sqrt')
+    settings = ctx._get_op_settings("sqrt")
     opid = _ir.OperatorIdentifier("ai.onnx", "Sqrt", 6, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_SqrtOp(
-        {0: t.id}, {0: g._create_tensor_id("sqrt_out")}, opid, settings)
+        {0: t.id}, {0: g._create_tensor_id("sqrt_out")}, opid, settings
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

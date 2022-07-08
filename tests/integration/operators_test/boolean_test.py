@@ -20,7 +20,7 @@ def test_and(op_tester):
         out = t1 & t2
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_and(op_tester):
@@ -40,7 +40,7 @@ def test_broadcast_and(op_tester):
         out = t1 & t2
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_or(op_tester):
@@ -60,7 +60,7 @@ def test_or(op_tester):
         out = t1 | t2
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_or(op_tester):
@@ -81,7 +81,7 @@ def test_broadcast_or(op_tester):
         out = t1 | t2
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_not(op_tester):
@@ -97,7 +97,7 @@ def test_not(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [np.logical_not(d1)]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_equal(op_tester):
@@ -119,7 +119,7 @@ def test_equal(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_equal(op_tester):
@@ -142,4 +142,4 @@ def test_broadcast_equal(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")

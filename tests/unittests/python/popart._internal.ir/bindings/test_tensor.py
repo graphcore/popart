@@ -6,7 +6,7 @@ import pytest
 
 
 def test_tensor_type_creation():
-    """ Test that we can create a popart._internal.ir.TensorType enum. """
+    """Test that we can create a popart._internal.ir.TensorType enum."""
     _ir.TensorType.ActGrad
     _ir.TensorType.Const
     _ir.TensorType.Stream
@@ -16,15 +16,14 @@ def test_tensor_type_creation():
 
 
 def test_variable_update_type_creation():
-    """ Test that we can create a popart._internal.ir.VariableUpdateType enum.
-    """
+    """Test that we can create a popart._internal.ir.VariableUpdateType enum."""
     _ir.VariableUpdateType.None_
     _ir.VariableUpdateType.Gradient
     _ir.VariableUpdateType.Copy
 
 
 def test_tensor_construction():
-    """ Test that we can construct a popart._internal.ir.Tensor object. """
+    """Test that we can construct a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     tId = "t"
@@ -35,7 +34,7 @@ def test_tensor_construction():
 
 
 def test_tensor_str():
-    """ Test the str() method of a popart._internal.ir.Tensor object. """
+    """Test the str() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     Tensor = lambda id: _ir.Tensor(id, _ir.TensorType.ActGrad, g)
@@ -44,7 +43,7 @@ def test_tensor_str():
 
 
 def test_tensor_clone():
-    """ Test the clone() method of a popart._internal.ir.Tensor object. """
+    """Test the clone() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t0 = _ir.Tensor("t0", _ir.TensorType.ActGrad, g)
@@ -54,7 +53,7 @@ def test_tensor_clone():
 
 
 def test_tensor_tensor_type0():
-    """ Test the tensorType() method of a popart._internal.ir.Tensor object. """
+    """Test the tensorType() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     Tensor = lambda id, type: _ir.Tensor(id, type, g)
@@ -64,8 +63,7 @@ def test_tensor_tensor_type0():
 
 
 def test_tensor_tensor_type1():
-    """ Test the tensor_type() method of a popart._internal.ir.Tensor object.
-    """
+    """Test the tensor_type() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     Tensor = lambda id, type: _ir.Tensor(id, type, g)
@@ -75,8 +73,7 @@ def test_tensor_tensor_type1():
 
 
 def test_tensor_set_tensor_type():
-    """ Test the setTensorType() method of a popart._internal.ir.Tensor object.
-    """
+    """Test the setTensorType() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     tTypeOld = _ir.TensorType.ActGrad
@@ -88,7 +85,7 @@ def test_tensor_set_tensor_type():
 
 
 def test_tensor_get_set_replicated_streaming_mode():
-    """ Test the getReplicatedStreamMode() and setReplicatedStreamMode() methods
+    """Test the getReplicatedStreamMode() and setReplicatedStreamMode() methods
     of a popart._internal.ir.Tensor object.
     """
     ir = _ir.Ir()
@@ -100,8 +97,7 @@ def test_tensor_get_set_replicated_streaming_mode():
 
 
 def test_tensor_has_tensor_data():
-    """ Test the hasTensorData() method of a popart._internal.ir.Tensor object.
-    """
+    """Test the hasTensorData() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -113,7 +109,7 @@ def test_tensor_has_tensor_data():
 
 
 def test_tensor_tensor_data():
-    """ Test the tensorData() and setTensorData() methods of a
+    """Test the tensorData() and setTensorData() methods of a
     popart._internal.ir.Tensor object.
     """
     ir = _ir.Ir()
@@ -132,7 +128,7 @@ def test_tensor_tensor_data():
 
 
 def test_tensor_get_graph():
-    """ Test the getGraph() method of a popart._internal.ir.Tensor object. """
+    """Test the getGraph() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -143,7 +139,7 @@ def test_tensor_get_graph():
 
 
 def test_tensor_get_ir():
-    """ Test the getIr() method of a popart._internal.ir.Tensor object. """
+    """Test the getIr() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -154,7 +150,7 @@ def test_tensor_get_ir():
 
 
 def test_tensor_has_virtual_graph_id():
-    """ Test the hasVirtualGraphId() method of a popart._internal.ir.Tensor
+    """Test the hasVirtualGraphId() method of a popart._internal.ir.Tensor
     object.
     """
     ir = _ir.Ir()
@@ -165,7 +161,7 @@ def test_tensor_has_virtual_graph_id():
 
 
 def test_tensor_get_virtual_graph_id():
-    """ Test the getVirtualGraphId() method of a popart._internal.ir.Tensor
+    """Test the getVirtualGraphId() method of a popart._internal.ir.Tensor
     object.
     """
     ir = _ir.Ir()
@@ -174,12 +170,13 @@ def test_tensor_get_virtual_graph_id():
     with pytest.raises(popart.popart_exception) as e_info:
         t.getVirtualGraphId()
         assert e_info.value.args[0] == (
-            "Invalid call to getVirtualGraphId, Tensor does not have one")
+            "Invalid call to getVirtualGraphId, Tensor does not have one"
+        )
     # TODO(T42205): Test that getVirtualGraphId() returns the expected values.
 
 
 def test_tensor_get_virtual_graph_id_unsafe():
-    """ Test the getVirtualGraphIdUnsafe() method of a
+    """Test the getVirtualGraphIdUnsafe() method of a
     popart._internal.ir.Tensor object.
     """
     ir = _ir.Ir()
@@ -191,8 +188,7 @@ def test_tensor_get_virtual_graph_id_unsafe():
 
 
 def test_tensor_get_batch_axis():
-    """ Test the getBatchAxis() method of a popart._internal.ir.Tensor object.
-    """
+    """Test the getBatchAxis() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -202,8 +198,7 @@ def test_tensor_get_batch_axis():
 
 
 def test_tensor_get_debug_info():
-    """ Test the getDebugInfo() method of a popart._internal.ir.Tensor object.
-    """
+    """Test the getDebugInfo() method of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -211,7 +206,7 @@ def test_tensor_get_debug_info():
 
 
 def test_tensor_id():
-    """ Test the id attribute of a popart._internal.ir.Tensor object. """
+    """Test the id attribute of a popart._internal.ir.Tensor object."""
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
@@ -219,7 +214,7 @@ def test_tensor_id():
 
 
 def test_replicated_stream_mode_creation():
-    """ Test that we can create a
+    """Test that we can create a
     popart._internal.ir.Tensor.ReplicatedStreamMode enum.
     """
     popart.ReplicatedStreamMode.Replicate

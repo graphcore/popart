@@ -5,8 +5,16 @@ import torch
 
 
 def poplibs_gelu(x):
-    return x * 0.5 * (1. + torch.tanh(7.978845608000000 * 1e-01 * x +
-                                      3.567740813617200 * 1e-2 * x**3))
+    return (
+        x
+        * 0.5
+        * (
+            1.0
+            + torch.tanh(
+                7.978845608000000 * 1e-01 * x + 3.567740813617200 * 1e-2 * x ** 3
+            )
+        )
+    )
 
 
 def test_gelu(op_tester):
@@ -27,7 +35,7 @@ def test_gelu(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gelu_inplace(op_tester):
@@ -48,8 +56,8 @@ def test_gelu_inplace(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gelu_torch(op_tester):
@@ -69,8 +77,8 @@ def test_gelu_torch(op_tester):
         m = torch_gelu(torch_test_data)
         return [m]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_gelu_training(op_tester):
@@ -87,7 +95,7 @@ def test_gelu_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -99,8 +107,8 @@ def test_gelu_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_gelu_torch_training(op_tester):
@@ -117,7 +125,7 @@ def test_gelu_torch_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -128,5 +136,5 @@ def test_gelu_torch_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

@@ -15,5 +15,4 @@ include-what-you-use: "0.17"
 # https://github.com/oclint/oclint
 oclint: "21.10"
 uncrustify: "0.74.0"
-yapf: "0.27.0"
 pylint: "2.13.9"

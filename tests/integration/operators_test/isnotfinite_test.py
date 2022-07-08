@@ -16,12 +16,12 @@ def test_isnan(op_tester):
         b = np.isnan(d1)
         return [b]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_isinf(op_tester):
     # create test data
-    #d1 = np.random.rand(4).astype(np.float32)
+    # d1 = np.random.rand(4).astype(np.float32)
     d1 = np.array([np.inf, -np.inf, 3.14159, np.nan], np.float32)
 
     def init_builder(builder):
@@ -34,4 +34,4 @@ def test_isinf(op_tester):
         b = np.isinf(d1)
         return [b]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

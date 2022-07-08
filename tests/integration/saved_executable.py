@@ -79,10 +79,10 @@ def get_subtract_model() -> Tuple[bytes, str, str, str]:
 
 
 def create_inference_session(
-        device: popart.DeviceInfo,
-        bps: int,
-        opts: Optional[popart.SessionOptions] = None,
-        model: Literal["add_model", "subtract_model"] = "add_model"
+    device: popart.DeviceInfo,
+    bps: int,
+    opts: Optional[popart.SessionOptions] = None,
+    model: Literal["add_model", "subtract_model"] = "add_model",
 ) -> Tuple[popart.InferenceSession, str, str, str]:
     """Create an inference session.
 
@@ -118,19 +118,24 @@ def create_inference_session(
         opts = popart.SessionOptions()
 
     # Create a session to compile and execute the graph
-    return popart.InferenceSession(fnModel=proto,
-                                   dataFlow=data_flow,
-                                   userOptions=opts,
-                                   deviceInfo=device), lhs, rhs, output
+    return (
+        popart.InferenceSession(
+            fnModel=proto, dataFlow=data_flow, userOptions=opts, deviceInfo=device
+        ),
+        lhs,
+        rhs,
+        output,
+    )
 
 
 def run_session_and_check_result(
-        session: popart.InferenceSession,
-        bps: int,
-        lhs: str,
-        rhs: str,
-        output: str,
-        model: Literal["add_model", "subtract_model"] = "add_model"):
+    session: popart.InferenceSession,
+    bps: int,
+    lhs: str,
+    rhs: str,
+    output: str,
+    model: Literal["add_model", "subtract_model"] = "add_model",
+):
     """Run the session and check the result
 
     Args:
@@ -168,10 +173,11 @@ def run_session_and_check_result(
         raise ValueError(f"Model '{model}' not supported")
 
 
-def run_model_test(bps: int,
-                   opts: Optional[popart.SessionOptions] = None,
-                   model: Literal["add_model", "subtract_model"] = "add_model"
-                   ) -> popart.InferenceSession:
+def run_model_test(
+    bps: int,
+    opts: Optional[popart.SessionOptions] = None,
+    model: Literal["add_model", "subtract_model"] = "add_model",
+) -> popart.InferenceSession:
     """Test that the output is expected for a given model with given options.
 
     Args:
@@ -185,16 +191,10 @@ def run_model_test(bps: int,
         popart.InferenceSession: The session used in the test
     """
     with tu.create_test_device() as device:
-        session, lhs, rhs, output = create_inference_session(device=device,
-                                                             bps=bps,
-                                                             opts=opts,
-                                                             model=model)
-        run_session_and_check_result(session,
-                                     bps,
-                                     lhs,
-                                     rhs,
-                                     output,
-                                     model=model)
+        session, lhs, rhs, output = create_inference_session(
+            device=device, bps=bps, opts=opts, model=model
+        )
+        run_session_and_check_result(session, bps, lhs, rhs, output, model=model)
     return session
 
 
@@ -214,9 +214,9 @@ def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
     started_engine_compilation = False
     loaded_poplar_executable = False
     for line in stderr.splitlines():
-        if 'Starting compilation' in line:
+        if "Starting compilation" in line:
             started_engine_compilation = True
-        elif 'Loading serialized PopART executable' in line:
+        elif "Loading serialized PopART executable" in line:
             loaded_poplar_executable = True
 
     # Assert that we didn't both start a compilation AND load an executable
@@ -225,8 +225,7 @@ def loaded_saved_executable(capfd: pytest.CaptureFixture) -> bool:
 
 
 @tu.requires_ipu
-def test_manual_save_load(tmp_path: Path,
-                          capfd: pytest.CaptureFixture) -> None:
+def test_manual_save_load(tmp_path: Path, capfd: pytest.CaptureFixture) -> None:
     """
     Perform the tests described below with explicit compilation and exporting of the cache file.
 
@@ -239,7 +238,7 @@ def test_manual_save_load(tmp_path: Path,
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
     # Need to activate the logger in order to check whether we are compiling or loading from cache
-    popart.getLogger().setLevel('DEBUG')
+    popart.getLogger().setLevel("DEBUG")
 
     def compile_and_export(bps, filename):
         with tu.create_test_device() as device:
@@ -250,14 +249,13 @@ def test_manual_save_load(tmp_path: Path,
 
     def load_and_run(bps, filename):
         with tu.create_test_device() as device:
-            session, lhs, rhs, output = create_inference_session(device=device,
-                                                                 bps=bps)
+            session, lhs, rhs, output = create_inference_session(device=device, bps=bps)
             if filename is not None:
                 session.loadExecutable(filename)
 
         run_session_and_check_result(session, bps, lhs, rhs, output)
 
-    executable_path = str(tmp_path / 'model.popart')
+    executable_path = str(tmp_path / "model.popart")
     compile_and_export(2, executable_path)
     assert loaded_saved_executable(capfd) is False
 
@@ -284,11 +282,11 @@ def test_simple_cache_hit(tmp_path: Path, capfd: pytest.CaptureFixture):
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
     # Need to activate the logger in order to check whether we are compiling or loading from cache
-    popart.getLogger().setLevel('DEBUG')
+    popart.getLogger().setLevel("DEBUG")
 
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
-    opts.cachePath = str(tmp_path / 'saved_graph')
+    opts.cachePath = str(tmp_path / "saved_graph")
 
     run_model_test(2, opts)
     assert loaded_saved_executable(capfd) is False
@@ -304,7 +302,8 @@ def test_simple_cache_hit(tmp_path: Path, capfd: pytest.CaptureFixture):
 
 @tu.requires_ipu
 def test_cache_miss_on_engine_option_change(
-        tmp_path: Path, capfd: pytest.CaptureFixture) -> None:
+    tmp_path: Path, capfd: pytest.CaptureFixture
+) -> None:
     """
     Test that no cache is hit if we change engine options affecting the executable between runs.
 
@@ -313,16 +312,16 @@ def test_cache_miss_on_engine_option_change(
         capfd (pytest.CaptureFixture): The output captured from the file descriptors
     """
     # Need to activate the logger in order to check whether we are compiling or loading from cache
-    popart.getLogger().setLevel('DEBUG')
+    popart.getLogger().setLevel("DEBUG")
 
     opts1 = popart.SessionOptions()
     opts1.enableEngineCaching = True
-    opts1.cachePath = str(tmp_path / 'saved_graph')
+    opts1.cachePath = str(tmp_path / "saved_graph")
     opts1.engineOptions["opt.enableInlining"] = "false"
 
     opts2 = popart.SessionOptions()
     opts2.enableEngineCaching = True
-    opts2.cachePath = str(tmp_path / 'saved_graph')
+    opts2.cachePath = str(tmp_path / "saved_graph")
     opts2.engineOptions["opt.enableInlining"] = "true"
 
     run_model_test(2, opts1)
@@ -335,9 +334,9 @@ def test_cache_miss_on_engine_option_change(
 
 @tu.requires_ipu
 @pytest.mark.parametrize("varname", ["POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
-def test_cache_environment_variable(tmp_path: Path, monkeypatch: MonkeyPatch,
-                                    capfd: pytest.CaptureFixture,
-                                    varname: str) -> None:
+def test_cache_environment_variable(
+    tmp_path: Path, monkeypatch: MonkeyPatch, capfd: pytest.CaptureFixture, varname: str
+) -> None:
     """Test caching as enabled via env POPART_CACHE_DIR or POPXL_CACHE_DIR.
 
     Args:
@@ -347,9 +346,9 @@ def test_cache_environment_variable(tmp_path: Path, monkeypatch: MonkeyPatch,
         varname (str): Variable name to set as environmental variable
     """
     # Need to activate the logger in order to check whether we are compiling or loading from cache
-    popart.getLogger().setLevel('DEBUG')
+    popart.getLogger().setLevel("DEBUG")
 
-    monkeypatch.setenv(varname, str(tmp_path / 'saved_graph'))
+    monkeypatch.setenv(varname, str(tmp_path / "saved_graph"))
 
     opts = popart.SessionOptions()
 
@@ -371,13 +370,13 @@ def test_bad_load(tmp_path: Path) -> None:
     """
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
-    opts.cachePath = str(tmp_path / 'saved_graph')
+    opts.cachePath = str(tmp_path / "saved_graph")
 
-    print('Running first model')
+    print("Running first model")
     run_model_test(bps=1, opts=opts, model="add_model")
     print()
 
-    print('Running second model')
+    print("Running second model")
     run_model_test(bps=1, opts=opts, model="subtract_model")
     print()
 
@@ -391,12 +390,12 @@ def test_get_reports(tmp_path: Path) -> None:
     """
     opts = popart.SessionOptions()
     opts.enableEngineCaching = True
-    opts.cachePath = str(tmp_path / 'saved_graph')
+    opts.cachePath = str(tmp_path / "saved_graph")
 
     run_model_test(bps=1, opts=opts, model="add_model")
     cached_session = run_model_test(bps=1, opts=opts, model="add_model")
 
-    expected_error = 'Unable to get reports when using a cached executable.'
+    expected_error = "Unable to get reports when using a cached executable."
 
     with pytest.raises(popart.popart_exception) as e_info:
         cached_session.getSummaryReport()
@@ -419,16 +418,17 @@ def is_stored_restored(capfd: pytest.CaptureFixture) -> Tuple[bool, bool]:
     stored_profile = False
     restored_profile = False
     for line in stderr.splitlines():
-        if 'Storing profiles to cache' in line:
+        if "Storing profiles to cache" in line:
             stored_profile = True
-        if 'Restoring profiles from cache' in line:
+        if "Restoring profiles from cache" in line:
             restored_profile = True
     return stored_profile, restored_profile
 
 
 @tu.requires_ipu
-def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
-                                 capfd: pytest.CaptureFixture) -> None:
+def test_manual_cached_profiling(
+    tmp_path: Path, monkeypatch: MonkeyPatch, capfd: pytest.CaptureFixture
+) -> None:
     """Test that profiling works with cached executables.
 
     Args:
@@ -438,11 +438,11 @@ def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
     """
     # Set the environment variable so that we can capture the output
     monkeypatch.setenv("POPLAR_PROFILER_LOG_LEVEL", "DEBUG")
-    popart.getLogger().setLevel('INFO')
+    popart.getLogger().setLevel("INFO")
 
     # Set cache and profile directories
-    cache_dir = tmp_path / 'saved_graph'
-    profile_dir = tmp_path / 'saved_profiles'
+    cache_dir = tmp_path / "saved_graph"
+    profile_dir = tmp_path / "saved_profiles"
 
     # Enable profiling and caching
     opts = popart.SessionOptions()
@@ -457,9 +457,7 @@ def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
     profile_cache_path = cache_dir / "inference" / "profile.pop"
 
     with tu.create_test_device() as device:
-        session, _, _, _ = create_inference_session(device=device,
-                                                    bps=bps,
-                                                    opts=opts)
+        session, _, _, _ = create_inference_session(device=device, bps=bps, opts=opts)
         # The files should not exist by this point
         assert not executable_path.is_file()
         assert not profile_cache_path.is_file()
@@ -485,9 +483,9 @@ def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
     profile_profile_path.unlink()
 
     with tu.create_test_device() as device:
-        session, lhs, rhs, output = create_inference_session(device=device,
-                                                             bps=bps,
-                                                             opts=opts)
+        session, lhs, rhs, output = create_inference_session(
+            device=device, bps=bps, opts=opts
+        )
         session.loadExecutable(str(executable_path))
         run_session_and_check_result(session, bps, lhs, rhs, output)
 
@@ -504,14 +502,16 @@ def test_manual_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("cache_env_var",
-                         [None, "POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
+@pytest.mark.parametrize("cache_env_var", [None, "POPART_CACHE_DIR", "POPXL_CACHE_DIR"])
 # TODO: T63870 - enable profiling_env_var True
 # @pytest.mark.parametrize("profiling_env_var", [False, True])
 @pytest.mark.parametrize("profiling_env_var", [False])
-def test_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
-                          cache_env_var: Optional[str],
-                          profiling_env_var: bool) -> None:
+def test_cached_profiling(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+    cache_env_var: Optional[str],
+    profiling_env_var: bool,
+) -> None:
     """Test profiling of cached executables.
 
     Test with:
@@ -526,8 +526,8 @@ def test_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
             variable or as a session option
     """
     # Set paths
-    cache_dir = tmp_path / 'saved_graph'
-    profile_dir = tmp_path / 'saved_profiles'
+    cache_dir = tmp_path / "saved_graph"
+    profile_dir = tmp_path / "saved_profiles"
     profile_file = profile_dir.joinpath("inference", "profile.pop")
     cached_profile_file = cache_dir.joinpath("inference", "profile.pop")
     debug_file = cache_dir.joinpath("inference", "debug.cbor")
@@ -553,8 +553,9 @@ def test_cached_profiling(tmp_path: Path, monkeypatch: MonkeyPatch,
     if profiling_env_var:
         # TODO: T63870 - update environment variable
         #       (will probably not be POPLAR_ENGINE_OPTIONS in the future)
-        monkeypatch.setenv("POPLAR_ENGINE_OPTIONS",
-                           str(engine_option_dict).replace("'", '"'))
+        monkeypatch.setenv(
+            "POPLAR_ENGINE_OPTIONS", str(engine_option_dict).replace("'", '"')
+        )
     else:
         for key, val in engine_option_dict.items():
             opts.engineOptions[key] = val
@@ -594,28 +595,22 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Temporary directory
     """
-    filename = str(tmp_path / 'model.popart')
+    filename = str(tmp_path / "model.popart")
 
     hidden_size = 5
     batches_per_step = 2
     accumulation_factor = 4
     input_shape = [hidden_size, hidden_size]
 
-    data = np.random.normal(0, 0.02,
-                            [hidden_size, hidden_size]).astype(np.float32)
+    data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(np.float32)
 
     input_data = np.random.normal(
-        0, 0.02, [batches_per_step, accumulation_factor] + input_shape).astype(
-            np.float32)
+        0, 0.02, [batches_per_step, accumulation_factor] + input_shape
+    ).astype(np.float32)
 
-    builder = popart.Builder(opsets={
-        "ai.onnx": 9,
-        "ai.onnx.ml": 1,
-        "ai.graphcore": 1
-    })
+    builder = popart.Builder(opsets={"ai.onnx": 9, "ai.onnx.ml": 1, "ai.graphcore": 1})
 
-    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                  "x_in")
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape), "x_in")
 
     w0 = builder.addInitializedInputTensor(data, "w0")
     w1 = builder.addInitializedInputTensor(data, "w1")
@@ -629,8 +624,7 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
 
     proto = builder.getModelProto()
 
-    data_flow = popart.DataFlow(batches_per_step,
-                                {l1: popart.AnchorReturnType("All")})
+    data_flow = popart.DataFlow(batches_per_step, {l1: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
     # Disable outlining to make debugging easier
@@ -647,13 +641,15 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
     pat = popart.Patterns(popart.PatternsLevel.Default)
 
     with tu.create_test_device(numIpus=4) as device0:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=data_flow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(1),
-                                         patterns=pat,
-                                         deviceInfo=device0)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=data_flow,
+            userOptions=opts,
+            loss=l1,
+            optimizer=popart.ConstSGD(1),
+            patterns=pat,
+            deviceInfo=device0,
+        )
 
         session.prepareDevice()
 
@@ -661,13 +657,15 @@ def test_implicit_pipelining_custom_fwd_only_cache(tmp_path: Path) -> None:
         session.compileAndExport(filename)
 
         # New session
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=data_flow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(1),
-                                         patterns=pat,
-                                         deviceInfo=device0)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=data_flow,
+            userOptions=opts,
+            loss=l1,
+            optimizer=popart.ConstSGD(1),
+            patterns=pat,
+            deviceInfo=device0,
+        )
 
         session.loadExecutable(filename)
 

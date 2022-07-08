@@ -17,9 +17,14 @@ class TestRemoteLoad:
     @pytest.mark.parametrize("tensor_dtype", [float16, float32])
     @pytest.mark.parametrize("offset_as_int", [True, False])
     @pytest.mark.parametrize("inplace", [True, False])
-    def test_remote_load_graph(self, tensor_shape: Tuple[int, ...],
-                               entries: int, tensor_dtype: dtype,
-                               offset_as_int: bool, inplace: bool) -> None:
+    def test_remote_load_graph(
+        self,
+        tensor_shape: Tuple[int, ...],
+        entries: int,
+        tensor_dtype: dtype,
+        offset_as_int: bool,
+        inplace: bool,
+    ) -> None:
         """Test that the graph is correct when using the remote load op
 
         Args:
@@ -36,24 +41,24 @@ class TestRemoteLoad:
             if offset_as_int:
                 offset = 0
             else:
-                offset = popxl.constant([0], name='offset')
+                offset = popxl.constant([0], name="offset")
             # With this option the graph should contain
             # 1. t
             # 2. offset
             # 3. out
             n_tensors = 3
 
-            remote_buffer = RemoteBuffer(tensor_shape=tensor_shape,
-                                         tensor_dtype=tensor_dtype,
-                                         entries=entries)
+            remote_buffer = RemoteBuffer(
+                tensor_shape=tensor_shape, tensor_dtype=tensor_dtype, entries=entries
+            )
 
             if not inplace:
                 ops.remote_load(remote_buffer, offset)
                 n_variables = 0
             else:
                 t = popxl.variable(
-                    np.random.rand(*tensor_shape).astype(
-                        tensor_dtype.as_numpy()))
+                    np.random.rand(*tensor_shape).astype(tensor_dtype.as_numpy())
+                )
                 ops.remote_load_(remote_buffer, offset, t)
                 # t is the only variable
                 n_variables = 1
@@ -62,5 +67,9 @@ class TestRemoteLoad:
         # Only t is a variable
         assert len(g.variables) == n_variables
         type_string = "RemoteLoad" if not inplace else "RemoteLoadInplace"
-        pb_type = _ir.op.exchange.RemoteLoadOp if not inplace else _ir.op.exchange.RemoteLoadInplaceOp
+        pb_type = (
+            _ir.op.exchange.RemoteLoadOp
+            if not inplace
+            else _ir.op.exchange.RemoteLoadInplaceOp
+        )
         assert contains_op_of_type(type_string, pb_type, g)

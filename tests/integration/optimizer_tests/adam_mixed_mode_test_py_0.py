@@ -9,6 +9,7 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -22,24 +23,24 @@ def to_array(weight):
     return np_weight
 
 
-def run_adam_mixed_mode(steps,
-                        opt_dicts,
-                        enable_outlining,
-                        tmpdir,
-                        dtype=np.float32):
+def run_adam_mixed_mode(steps, opt_dicts, enable_outlining, tmpdir, dtype=np.float32):
     def run(opt_dict, enable_outlining, model_file_name):
         np.random.seed(1878)
         dsize = 10
         builder = popart.Builder()
         ip = builder.addInputTensor(
-            popart.TensorInfo("FLOAT" if dtype == np.float32 else "FLOAT16",
-                              [dsize, dsize]))
+            popart.TensorInfo(
+                "FLOAT" if dtype == np.float32 else "FLOAT16", [dsize, dsize]
+            )
+        )
 
         def add_layer(in_id, name):
             w = builder.addInitializedInputTensor(
-                np.random.rand(dsize, dsize).astype(dtype), "w_" + name)
+                np.random.rand(dsize, dsize).astype(dtype), "w_" + name
+            )
             b = builder.addInitializedInputTensor(
-                np.random.rand(dsize).astype(dtype), "b_" + name)
+                np.random.rand(dsize).astype(dtype), "b_" + name
+            )
             matmul_id = builder.aiOnnx.gemm([in_id, w, b], 1, 1, False, False)
             return matmul_id
 
@@ -69,7 +70,8 @@ def run_adam_mixed_mode(steps,
                 loss=out,
                 patterns=popart.Patterns(popart.PatternsLevel.All),
                 userOptions=opts,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -105,7 +107,7 @@ def run_adam_mixed_mode(steps,
 # Test Adam with different parameters constant / non-constant
 def test_adam_mixed_mode_0(tmpdir):
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate = 0.005
     defaultBeta1 = 0.7
     defaultBeta2 = 0.8
@@ -113,17 +115,20 @@ def test_adam_mixed_mode_0(tmpdir):
     defaultEps = 1e-6
     lossScaling = 10.0
 
-    optMaps = [{
-        0:
-        popart.Adam({
-            "defaultLearningRate": (defaultLearningRate, True),
-            "defaultBeta1": (defaultBeta1, True),
-            "defaultBeta2": (defaultBeta2, True),
-            "defaultWeightDecay": (defaultWeightDecay, True),
-            "defaultEps": (defaultEps, True),
-            "lossScaling": (lossScaling, True),
-        })
-    }]
+    optMaps = [
+        {
+            0: popart.Adam(
+                {
+                    "defaultLearningRate": (defaultLearningRate, True),
+                    "defaultBeta1": (defaultBeta1, True),
+                    "defaultBeta2": (defaultBeta2, True),
+                    "defaultWeightDecay": (defaultWeightDecay, True),
+                    "defaultEps": (defaultEps, True),
+                    "lossScaling": (lossScaling, True),
+                }
+            )
+        }
+    ]
     outlining = [False]
 
     for i in range(6):
@@ -157,7 +162,7 @@ def test_adam_mixed_mode_0(tmpdir):
 # Test Adam with weight specific const and non-const parameters
 def test_adam_mixed_mode_1(tmpdir):
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.005
     defaultLearningRate5 = 0.0025
 
@@ -167,113 +172,92 @@ def test_adam_mixed_mode_1(tmpdir):
     defaultEps = 1e-6
     lossScaling = 10.0
 
-    adam00 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultBeta1": (defaultBeta1, True),
-        "defaultBeta2": (defaultBeta2, True),
-        "defaultWeightDecay": (defaultWeightDecay, True),
-        "defaultEps": (defaultEps, True),
-        "lossScaling": (lossScaling, True),
-    })
+    adam00 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultBeta1": (defaultBeta1, True),
+            "defaultBeta2": (defaultBeta2, True),
+            "defaultWeightDecay": (defaultWeightDecay, True),
+            "defaultEps": (defaultEps, True),
+            "lossScaling": (lossScaling, True),
+        }
+    )
 
     adam00.insertSpecific("w_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
     adam00.insertSpecific("b_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
 
-    adam05 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultBeta1": (defaultBeta1, True),
-        "defaultBeta2": (defaultBeta2, True),
-        "defaultWeightDecay": (defaultWeightDecay, True),
-        "defaultEps": (defaultEps, True),
-        "lossScaling": (lossScaling, True),
-    })
+    adam05 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultBeta1": (defaultBeta1, True),
+            "defaultBeta2": (defaultBeta2, True),
+            "defaultWeightDecay": (defaultWeightDecay, True),
+            "defaultEps": (defaultEps, True),
+            "lossScaling": (lossScaling, True),
+        }
+    )
 
     adam05.insertSpecific("w_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
     adam05.insertSpecific("b_0", {"beta1": (0.9, True), "beta2": (0.99, True)})
 
-    adam10 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultBeta1": (defaultBeta1, False),
-        "defaultBeta2": (defaultBeta2, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adam10 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultBeta1": (defaultBeta1, False),
+            "defaultBeta2": (defaultBeta2, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adam10.insertSpecific("w_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, False)
-    })
-    adam10.insertSpecific("b_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, False)
-    })
+    adam10.insertSpecific("w_0", {"beta1": (0.9, False), "beta2": (0.99, False)})
+    adam10.insertSpecific("b_0", {"beta1": (0.9, False), "beta2": (0.99, False)})
 
-    adam15 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultBeta1": (defaultBeta1, False),
-        "defaultBeta2": (defaultBeta2, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adam15 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultBeta1": (defaultBeta1, False),
+            "defaultBeta2": (defaultBeta2, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adam15.insertSpecific("w_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, False)
-    })
-    adam15.insertSpecific("b_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, False)
-    })
+    adam15.insertSpecific("w_0", {"beta1": (0.9, False), "beta2": (0.99, False)})
+    adam15.insertSpecific("b_0", {"beta1": (0.9, False), "beta2": (0.99, False)})
 
-    adam20 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate0, False),
-        "defaultBeta1": (defaultBeta1, True),
-        "defaultBeta2": (defaultBeta2, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adam20 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate0, False),
+            "defaultBeta1": (defaultBeta1, True),
+            "defaultBeta2": (defaultBeta2, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adam20.insertSpecific("w_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, True)
-    })
-    adam20.insertSpecific("b_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, True)
-    })
+    adam20.insertSpecific("w_0", {"beta1": (0.9, False), "beta2": (0.99, True)})
+    adam20.insertSpecific("b_0", {"beta1": (0.9, False), "beta2": (0.99, True)})
 
-    adam25 = popart.Adam({
-        "defaultLearningRate": (defaultLearningRate5, False),
-        "defaultBeta1": (defaultBeta1, True),
-        "defaultBeta2": (defaultBeta2, False),
-        "defaultWeightDecay": (defaultWeightDecay, False),
-        "defaultEps": (defaultEps, False),
-        "lossScaling": (lossScaling, False),
-    })
+    adam25 = popart.Adam(
+        {
+            "defaultLearningRate": (defaultLearningRate5, False),
+            "defaultBeta1": (defaultBeta1, True),
+            "defaultBeta2": (defaultBeta2, False),
+            "defaultWeightDecay": (defaultWeightDecay, False),
+            "defaultEps": (defaultEps, False),
+            "lossScaling": (lossScaling, False),
+        }
+    )
 
-    adam25.insertSpecific("w_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, True)
-    })
-    adam25.insertSpecific("b_0", {
-        "beta1": (0.9, False),
-        "beta2": (0.99, True)
-    })
+    adam25.insertSpecific("w_0", {"beta1": (0.9, False), "beta2": (0.99, True)})
+    adam25.insertSpecific("b_0", {"beta1": (0.9, False), "beta2": (0.99, True)})
 
     # Change Adam optimizer after 0 and 5 steps
-    optMaps = [{
-        0: adam00,
-        5: adam05
-    }, {
-        0: adam10,
-        5: adam15
-    }, {
-        0: adam20,
-        5: adam25
-    }]
+    optMaps = [{0: adam00, 5: adam05}, {0: adam10, 5: adam15}, {0: adam20, 5: adam25}]
 
     outlining = [True, True, True]
 
@@ -291,15 +275,17 @@ def test_adam_mixed_mode_1(tmpdir):
     with open(debug_filename, encoding="utf-8") as json_file:
         data = json.load(json_file)
         for context in data["contexts"]:
-            if context['layer'] == "popart" and \
-               'opid' in context and \
-               'Adam' in context['opid']:
-                parents.add(context['parentId'])
+            if (
+                context["layer"] == "popart"
+                and "opid" in context
+                and "Adam" in context["opid"]
+            ):
+                parents.add(context["parentId"])
                 num_adams += 1
         for context in data["contexts"]:
-            if context['id'] in parents:
-                parents.remove(context['id'])
-                assert context['layer'] == "popart_builder"
-                assert data['stringTable'][context['name']] == "adam"
+            if context["id"] in parents:
+                parents.remove(context["id"])
+                assert context["layer"] == "popart_builder"
+                assert data["stringTable"][context["name"]] == "adam"
     assert num_adams == 84
     assert len(parents) == 0

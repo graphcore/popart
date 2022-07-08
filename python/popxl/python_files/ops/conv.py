@@ -7,11 +7,16 @@ from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-PadType = Literal['not_set', 'same_upper', 'same_lower', 'valid']
+PadType = Literal["not_set", "same_upper", "same_lower", "valid"]
 
 
-def multi_conv_options(sess_opts, attr_param, available_memory_proportions,
-                       partials_types, enable_conv_dithering):
+def multi_conv_options(
+    sess_opts,
+    attr_param,
+    available_memory_proportions,
+    partials_types,
+    enable_conv_dithering,
+):
     multi_conv_options = _ir.op.MultiConvOptions(sess_opts, attr_param)
     if available_memory_proportions:
         multi_conv_options.availableMemoryProportions = available_memory_proportions
@@ -35,13 +40,13 @@ def _convert_pad_type(mode: PadType) -> _ir.op.AutoPad:
     Returns:
         _ir.op.AutoPad: An internal IR object representing the pad type settings.
     """
-    if mode == 'not_set':
+    if mode == "not_set":
         return _ir.op.AutoPad.NOTSET
-    elif mode == 'same_upper':
+    elif mode == "same_upper":
         return _ir.op.AutoPad.SAME_UPPER
-    elif mode == 'same_lower':
+    elif mode == "same_lower":
         return _ir.op.AutoPad.SAME_LOWER
-    elif mode == 'valid':
+    elif mode == "valid":
         return _ir.op.AutoPad.VALID
     else:
         raise ValueError(
@@ -50,16 +55,18 @@ def _convert_pad_type(mode: PadType) -> _ir.op.AutoPad:
 
 
 @op_debug_context
-def conv(t: Tensor,
-         weight: Tensor,
-         stride: Optional[Tuple[int]] = (1, 1),
-         padding: Optional[Tuple[int]] = (0, 0, 0, 0),
-         dilation: Optional[Tuple[int]] = (1, 1),
-         groups: Optional[int] = 1,
-         pad_type: Optional[PadType] = 'not_set',
-         available_memory_proportions: Optional[List[float]] = None,
-         partials_types: Optional[List[str]] = None,
-         enable_conv_dithering: Optional[List[int]] = None) -> Tensor:
+def conv(
+    t: Tensor,
+    weight: Tensor,
+    stride: Optional[Tuple[int]] = (1, 1),
+    padding: Optional[Tuple[int]] = (0, 0, 0, 0),
+    dilation: Optional[Tuple[int]] = (1, 1),
+    groups: Optional[int] = 1,
+    pad_type: Optional[PadType] = "not_set",
+    available_memory_proportions: Optional[List[float]] = None,
+    partials_types: Optional[List[str]] = None,
+    enable_conv_dithering: Optional[List[int]] = None,
+) -> Tensor:
     """
     Use the convolution operator on a tensor.
 
@@ -126,21 +133,31 @@ def conv(t: Tensor,
     check_in_graph(g, t=t, weight=weight)
     check_tensor_ipu_and_tile_set(t=t, weight=weight)
 
-    settings = ctx._get_op_settings('conv')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Conv", 11, _ir.NumInputs(1, 1),
-                                  1)
+    settings = ctx._get_op_settings("conv")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Conv", 11, _ir.NumInputs(1, 1), 1)
     auto_pad = _convert_pad_type(pad_type)
     sess_opts = g.ir._pb_ir.getSessionOptions().convolutionOptions
     attr_param = _ir.op.Attributes()
-    options = multi_conv_options(sess_opts, attr_param,
-                                 available_memory_proportions, partials_types,
-                                 enable_conv_dithering)
-    op = pb_g.createConnectedOp_ConvOp({
-        0: t.id,
-        1: weight.id
-    }, {
-        0: g._create_tensor_id("conv_out"),
-    }, opid, settings, list(stride), list(padding), list(dilation), groups,
-                                       auto_pad, options)
+    options = multi_conv_options(
+        sess_opts,
+        attr_param,
+        available_memory_proportions,
+        partials_types,
+        enable_conv_dithering,
+    )
+    op = pb_g.createConnectedOp_ConvOp(
+        {0: t.id, 1: weight.id},
+        {
+            0: g._create_tensor_id("conv_out"),
+        },
+        opid,
+        settings,
+        list(stride),
+        list(padding),
+        list(dilation),
+        groups,
+        auto_pad,
+        options,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

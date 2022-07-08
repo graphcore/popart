@@ -7,7 +7,7 @@ import torch
 
 class TestCos:
     def test_cos(self):
-        input_data = np.random.rand(10, 20).astype('float32')
+        input_data = np.random.rand(10, 20).astype("float32")
         ir = popxl.Ir()
         main = ir.main_graph
 
@@ -27,7 +27,9 @@ class TestCos:
         torch_outputs = torch_t.cos()
 
         # compare the result between PopXL and torch
-        np.testing.assert_allclose(torch_outputs.detach().numpy(),
-                                   list(outputs.values())[0],
-                                   rtol=1e-6,
-                                   atol=1e-6)
+        np.testing.assert_allclose(
+            torch_outputs.detach().numpy(),
+            list(outputs.values())[0],
+            rtol=1e-6,
+            atol=1e-6,
+        )

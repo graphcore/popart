@@ -39,8 +39,7 @@ import argparse
 import datetime
 import re
 
-datetime_re = re.compile(
-    r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\.(\d{3})\]')
+datetime_re = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\.(\d{3})\]")
 
 
 def strip_timestamps(input_file, output_file):
@@ -50,7 +49,7 @@ def strip_timestamps(input_file, output_file):
     This is useful if you are comparing two log files with one another but you do not care about timings.
     """
     for line in input_file.readlines():
-        line = re.sub(datetime_re, '[<timestamp>]', line)
+        line = re.sub(datetime_re, "[<timestamp>]", line)
         output_file.write(line)
 
 
@@ -64,21 +63,21 @@ def rebase_timestamps(input_file, output_file):
     for line in input_file.readlines():
         match = datetime_re.match(line)
         if match:
-            dt = datetime.datetime.strptime(match.groups()[0],
-                                            '%Y-%m-%d %H:%M:%S')
+            dt = datetime.datetime.strptime(match.groups()[0], "%Y-%m-%d %H:%M:%S")
             dt = dt.replace(microsecond=int(match.groups()[1]) * 1000)
             if inception is None:
                 inception = dt
-                line = re.sub(datetime_re, '[00-00 00:00:00.000]', line)
+                line = re.sub(datetime_re, "[00-00 00:00:00.000]", line)
             else:
                 td = dt - inception
-                td_str = '[{weeks:02d}-{days:02d} {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}]'.format(
+                td_str = "[{weeks:02d}-{days:02d} {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}]".format(
                     weeks=td.days // 7,
                     days=td.days % 7,
                     hours=td.seconds // 3600,
                     minutes=(td.seconds // 60) % 60,
                     seconds=td.seconds % 60,
-                    milliseconds=td.microseconds // 1000)
+                    milliseconds=td.microseconds // 1000,
+                )
                 line = re.sub(datetime_re, td_str, line)
         output_file.write(line)
 
@@ -93,20 +92,20 @@ def delta_timestamps(input_file, output_file):
     for line in input_file.readlines():
         match = datetime_re.match(line)
         if match:
-            dt = datetime.datetime.strptime(match.groups()[0],
-                                            '%Y-%m-%d %H:%M:%S')
+            dt = datetime.datetime.strptime(match.groups()[0], "%Y-%m-%d %H:%M:%S")
             dt = dt.replace(microsecond=int(match.groups()[1]) * 1000)
             if prev_dt is None:
-                line = re.sub(datetime_re, '[<timediff-unavail>]', line)
+                line = re.sub(datetime_re, "[<timediff-unavail>]", line)
             else:
                 td = dt - prev_dt
-                td_str = '[{weeks:02d}-{days:02d} {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}]'.format(
+                td_str = "[{weeks:02d}-{days:02d} {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}]".format(
                     weeks=td.days // 7,
                     days=td.days % 7,
                     hours=td.seconds // 3600,
                     minutes=(td.seconds // 60) % 60,
                     seconds=td.seconds % 60,
-                    milliseconds=td.microseconds // 1000)
+                    milliseconds=td.microseconds // 1000,
+                )
                 line = re.sub(datetime_re, td_str, line)
             prev_dt = dt
         output_file.write(line)
@@ -116,28 +115,28 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_file", help="Input log file")
     parser.add_argument("output_file", help="Output log file")
-    parser.add_argument("-s",
-                        "--strip-timestamps",
-                        action="store_true",
-                        help="Strip all timestamps from the log file")
+    parser.add_argument(
+        "-s",
+        "--strip-timestamps",
+        action="store_true",
+        help="Strip all timestamps from the log file",
+    )
     parser.add_argument(
         "-z",
         "--rebase-timestamps",
         action="store_true",
-        help=
-        "Change all timestamps in a log file to the time difference relative to the first log entry"
+        help="Change all timestamps in a log file to the time difference relative to the first log entry",
     )
     parser.add_argument(
         "-d",
         "--delta-timestamps",
         action="store_true",
-        help=
-        "Change all timestamps in a log file to the time difference relative to the first previous log entry"
+        help="Change all timestamps in a log file to the time difference relative to the first previous log entry",
     )
     args = parser.parse_args()
 
-    with open(args.input_file, 'r', encoding="utf-8") as input_file:
-        with open(args.output_file, 'w', encoding="utf-8") as output_file:
+    with open(args.input_file, "r", encoding="utf-8") as input_file:
+        with open(args.output_file, "w", encoding="utf-8") as output_file:
             if args.rebase_timestamps:
                 rebase_timestamps(input_file, output_file)
             elif args.strip_timestamps:
@@ -145,11 +144,9 @@ def main():
             elif args.delta_timestamps:
                 delta_timestamps(input_file, output_file)
             else:
-                print(
-                    "No processing option set, defaulting to '--strip-timestamps'"
-                )
+                print("No processing option set, defaulting to '--strip-timestamps'")
                 strip_timestamps(input_file, output_file)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

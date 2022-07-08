@@ -26,21 +26,20 @@ def test_rts_sharding_factor():
 
         # TODO: Test with replica_grouping with stride > 1
         w_v, w_shard = popxl.replica_sharded_variable(
-            input_w, popxl.float32, "w", shard_grouping=w_rts_grouping)
+            input_w, popxl.float32, "w", shard_grouping=w_rts_grouping
+        )
 
-        m_buffer = popxl.replica_sharded_buffer(input_m.shape,
-                                                popxl.float32,
-                                                shard_grouping=m_rts_grouping)
+        m_buffer = popxl.replica_sharded_buffer(
+            input_m.shape, popxl.float32, shard_grouping=m_rts_grouping
+        )
         m_v = popxl.remote_replica_sharded_variable(input_m, m_buffer)
 
-        w = ops.collectives.replicated_all_gather(w_shard,
-                                                  group=w_rts_grouping)
+        w = ops.collectives.replicated_all_gather(w_shard, group=w_rts_grouping)
 
         y = x @ w
 
         m_shard = ops.remote_load(m_buffer, 0)
-        m = ops.collectives.replicated_all_gather(m_shard,
-                                                  group=m_rts_grouping)
+        m = ops.collectives.replicated_all_gather(m_shard, group=m_rts_grouping)
 
         z = y @ m
 
@@ -66,26 +65,26 @@ def test_invalid_sharding_factor():
     with ir.main_graph:
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
-                (4, 4),
-                popxl.float32,
-                shard_grouping=ir.replica_grouping(group_size=16))
+                (4, 4), popxl.float32, shard_grouping=ir.replica_grouping(group_size=16)
+            )
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
-                (4, 4),
-                popxl.float32,
-                shard_grouping=ir.replica_grouping(stride=2))
+                (4, 4), popxl.float32, shard_grouping=ir.replica_grouping(stride=2)
+            )
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
                 (4, 4),
                 popxl.float32,
                 replica_grouping=ir.replica_grouping(group_size=4),
-                shard_grouping=ir.replica_grouping(group_size=8))
+                shard_grouping=ir.replica_grouping(group_size=8),
+            )
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
                 (4, 4),
                 popxl.float32,
                 replica_grouping=ir.replica_grouping(stride=4),
-                shard_grouping=ir.replica_grouping(stride=2))
+                shard_grouping=ir.replica_grouping(stride=2),
+            )
 
 
 if __name__ == "__main__":

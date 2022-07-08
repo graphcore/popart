@@ -5,6 +5,7 @@ import numpy as np
 # importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -30,7 +31,7 @@ def test_decompose_gradient_sum():
         shape = [4, 4]
         numLayers = 4
         in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", shape))
-        w0_init = np.random.rand(*shape).astype('float32')
+        w0_init = np.random.rand(*shape).astype("float32")
         w0 = builder.addInitializedInputTensor(w0_init)
 
         actIn = in0
@@ -58,11 +59,12 @@ def test_decompose_gradient_sum():
                     deviceInfo=device,
                     optimizer=popart.ConstSGD(0.1),
                     loss=loss,
-                    userOptions=opts)
+                    userOptions=opts,
+                )
 
                 anchors = session.initAnchorArrays()
                 np.random.seed(1)  # ensure same input vals between sessions
-                inputs = {in0: np.random.rand(*shape).astype('float32')}
+                inputs = {in0: np.random.rand(*shape).astype("float32")}
                 stepio = popart.PyStepIO(inputs, anchors)
 
                 session.prepareDevice()

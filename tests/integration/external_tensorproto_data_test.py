@@ -39,10 +39,10 @@ def test_save_tensors_externally():
             assert os.path.getsize(file) == 8
 
             # Read the binary data back in and check the value is as expected
-            assert np.array_equal(np.fromfile(file, dtype=np.float32, count=1),
-                                  d1)
+            assert np.array_equal(np.fromfile(file, dtype=np.float32, count=1), d1)
             assert np.array_equal(
-                np.fromfile(file, dtype=np.float16, count=2, offset=4), d2)
+                np.fromfile(file, dtype=np.float16, count=2, offset=4), d2
+            )
 
         # Test GraphTransformer
         tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
@@ -103,12 +103,13 @@ def test_load_externally_saved_tensors():
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
-            deviceInfo=popart.DeviceManager().createCpuDevice())
+            deviceInfo=popart.DeviceManager().createCpuDevice(),
+        )
         anchors = session.initAnchorArrays()
         session.prepareDevice()
         stepio = popart.PyStepIO({}, anchors)
         session.run(stepio)
-        assert (np.array_equal(anchors[o], d1 + d2))
+        assert np.array_equal(anchors[o], d1 + d2)
 
 
 def test_save_back_externally_saved_tensors():
@@ -133,7 +134,7 @@ def test_save_back_externally_saved_tensors():
     anchorsDef = {}
     out = in0
     for layer in range(numLayers):
-        w_init = np.random.rand(*shape).astype('float32')
+        w_init = np.random.rand(*shape).astype("float32")
         initWeights.append(w_init)
         weightsIds.append(builder.addInitializedInputTensor(w_init))
         anchorsDef[weightsIds[layer]] = popart.AnchorReturnType("All")
@@ -146,22 +147,21 @@ def test_save_back_externally_saved_tensors():
 
         # Verify the initial weights are saved correctly
         for layer in range(numLayers):
-            saved_weights = np.fromfile(tmpfile_weights,
-                                        dtype=np.float32,
-                                        count=elms,
-                                        offset=layer * elms * 4)
-            assert (np.array_equal(initWeights[layer].flatten(),
-                                   saved_weights))
+            saved_weights = np.fromfile(
+                tmpfile_weights, dtype=np.float32, count=elms, offset=layer * elms * 4
+            )
+            assert np.array_equal(initWeights[layer].flatten(), saved_weights)
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, anchorsDef),
             deviceInfo=popart.DeviceManager().createCpuDevice(),
             optimizer=popart.ConstSGD(10),
-            loss=loss)
+            loss=loss,
+        )
 
         anchors = session.initAnchorArrays()
-        inputs = {in0: np.random.rand(*shape).astype('float32')}
+        inputs = {in0: np.random.rand(*shape).astype("float32")}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.prepareDevice()
@@ -171,8 +171,7 @@ def test_save_back_externally_saved_tensors():
 
         # Check the weights have been updated
         for layer in range(numLayers):
-            assert not np.allclose(anchors[weightsIds[layer]],
-                                   initWeights[layer])
+            assert not np.allclose(anchors[weightsIds[layer]], initWeights[layer])
 
         # Save the model with updated weights back to disk
         tmpfile_model = os.path.join(tmpdir, "model.onnx")
@@ -180,40 +179,52 @@ def test_save_back_externally_saved_tensors():
 
         # Verify that the file containing tensor data has also been updated
         for layer in range(numLayers):
-            saved_weights = np.fromfile(tmpfile_weights,
-                                        dtype=np.float32,
-                                        count=elms,
-                                        offset=layer * elms * 4)
-            assert np.array_equal(anchors[weightsIds[layer]].flatten(),
-                                  saved_weights)
+            saved_weights = np.fromfile(
+                tmpfile_weights, dtype=np.float32, count=elms, offset=layer * elms * 4
+            )
+            assert np.array_equal(anchors[weightsIds[layer]].flatten(), saved_weights)
 
 
 optimizerInfos = []
 # 1. SGD with momentum
-optimizerInfos.append((popart.SGD({
-    "defaultLearningRate": (0.2, True),
-    "defaultMomentum": (0.5, True)
-}), [popart.reservedAcclPrefix()]))
+optimizerInfos.append(
+    (
+        popart.SGD(
+            {"defaultLearningRate": (0.2, True), "defaultMomentum": (0.5, True)}
+        ),
+        [popart.reservedAcclPrefix()],
+    )
+)
 # 2. Adam
-optimizerInfos.append((popart.Adam({
-    "defaultLearningRate": (0.2, True),
-    "defaultBeta1": (0.1, True),
-    "defaultBeta2": (0.1, True),
-    "defaultWeightDecay": (0.5, True),
-    "defaultEps": (1e-5, True),
-    "lossScaling": (2, True)
-}), [
-    popart.reservedAccl1Prefix(),
-    popart.reservedAccl2Prefix(),
-    popart.reservedStepPrefix()
-]))
+optimizerInfos.append(
+    (
+        popart.Adam(
+            {
+                "defaultLearningRate": (0.2, True),
+                "defaultBeta1": (0.1, True),
+                "defaultBeta2": (0.1, True),
+                "defaultWeightDecay": (0.5, True),
+                "defaultEps": (1e-5, True),
+                "lossScaling": (2, True),
+            }
+        ),
+        [
+            popart.reservedAccl1Prefix(),
+            popart.reservedAccl2Prefix(),
+            popart.reservedStepPrefix(),
+        ],
+    )
+)
 # 3. Adaptive
 optimizerInfos.append(
-    (popart.Adaptive({"defaultLearningRate": (0.2, True)},
-                     mode=popart.AdaptiveMode.CenteredRMSProp), [
-                         popart.reservedAccl1Prefix(),
-                         popart.reservedAccl2Prefix()
-                     ]))
+    (
+        popart.Adaptive(
+            {"defaultLearningRate": (0.2, True)},
+            mode=popart.AdaptiveMode.CenteredRMSProp,
+        ),
+        [popart.reservedAccl1Prefix(), popart.reservedAccl2Prefix()],
+    )
+)
 
 
 @pytest.mark.parametrize("optimizerInfo", optimizerInfos)
@@ -256,7 +267,8 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
             fnModel=builder.getModelProto(),
             loss=loss,
             optimizer=optimizer,
-            dataFlow=popart.DataFlow(1, anchorIds))
+            dataFlow=popart.DataFlow(1, anchorIds),
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -285,7 +297,7 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
         expectedSize = (d1.size * 4) + (d2.size * 4)
         for pref in extraOptimizerStatePrefs:
             if pref == popart.reservedStepPrefix():
-                expectedSize += (2 * 4)
+                expectedSize += 2 * 4
             else:
                 expectedSize += d1.size * 4
                 expectedSize += d2.size * 4
@@ -294,17 +306,20 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
 
         # Compare anchors with external data written to file
         saved_weights = np.fromfile(tmpfile, dtype=np.float32)
-        assert np.allclose(saved_weights[0:d1.size], weightsMap[i1].flatten())
+        assert np.allclose(saved_weights[0 : d1.size], weightsMap[i1].flatten())
         totalSize = d1.size + d2.size
-        assert np.allclose(saved_weights[d1.size:totalSize],
-                           weightsMap[i2].flatten())
+        assert np.allclose(saved_weights[d1.size : totalSize], weightsMap[i2].flatten())
 
         for pref in extraOptimizerStatePrefs:
-            assert np.allclose(saved_weights[totalSize:totalSize + d1.size],
-                               weightsMap[pref + i1].flatten())
+            assert np.allclose(
+                saved_weights[totalSize : totalSize + d1.size],
+                weightsMap[pref + i1].flatten(),
+            )
             totalSize += d1.size
-            assert np.allclose(saved_weights[totalSize:totalSize + d2.size],
-                               weightsMap[pref + i2].flatten())
+            assert np.allclose(
+                saved_weights[totalSize : totalSize + d2.size],
+                weightsMap[pref + i2].flatten(),
+            )
             totalSize += d2.size
 
         # Create new session
@@ -313,7 +328,8 @@ def test_save_tensors_optimizer_state_externally(optimizerInfo):
             fnModel=tmpfile1,
             loss=loss,
             optimizer=optimizer,
-            dataFlow=popart.DataFlow(1, anchorIds))
+            dataFlow=popart.DataFlow(1, anchorIds),
+        )
         new_anchors = new_session.initAnchorArrays()
         new_session.prepareDevice()
         new_session.weightsFromHost()
@@ -352,16 +368,17 @@ def test_external_location_relative_path():
             with change_directory("dummy_dir"):
                 with pytest.raises(RuntimeError) as e_info:
                     _ = popart.Builder("../model.onnx")
-                assert "model_tensors.onnx, but it doesn't exist or is not accessible" in e_info.value.args[
-                    0]
+                assert (
+                    "model_tensors.onnx, but it doesn't exist or is not accessible"
+                    in e_info.value.args[0]
+                )
 
 
 def test_external_location_path_does_not_exist():
     # Try to save tensors externally to file whose parent directory doesn't
     # exist
     builder = popart.Builder()
-    i1 = builder.addInitializedInputTensor(
-        np.array([-1, 6]).astype(np.float32))
+    i1 = builder.addInitializedInputTensor(np.array([-1, 6]).astype(np.float32))
     _ = builder.aiOnnx.add([i1, i1])
 
     with TemporaryDirectory() as tmpdir:
@@ -385,17 +402,17 @@ def test_overwriting_external_data_file():
         tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
         builder.saveInitializersExternally([i1], tmpfile0)
 
-        optimizer = popart.SGD({
-            "defaultLearningRate": (0.2, True),
-            "defaultMomentum": (0.5, True)
-        })
+        optimizer = popart.SGD(
+            {"defaultLearningRate": (0.2, True), "defaultMomentum": (0.5, True)}
+        )
 
         session = popart.TrainingSession(
             deviceInfo=popart.DeviceManager().createCpuDevice(),
             fnModel=builder.getModelProto(),
             loss=loss,
             optimizer=optimizer,
-            dataFlow=popart.DataFlow(1, []))
+            dataFlow=popart.DataFlow(1, []),
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -418,8 +435,7 @@ def test_checkpointing_with_externally_stored_tensor_data0():
     #   - New external data files are not created unless there is an explicit
     #     call
     builder = popart.Builder()
-    i1 = builder.addInitializedInputTensor(
-        np.array([1, -1]).astype(np.float32))
+    i1 = builder.addInitializedInputTensor(np.array([1, -1]).astype(np.float32))
     o = builder.aiOnnx.add([i1, i1])
 
     with TemporaryDirectory() as tmpdir:
@@ -433,7 +449,8 @@ def test_checkpointing_with_externally_stored_tensor_data0():
             session = popart.InferenceSession(
                 fnModel=builder.getModelProto(),
                 dataFlow=popart.DataFlow(1, [o]),
-                deviceInfo=popart.DeviceManager().createCpuDevice())
+                deviceInfo=popart.DeviceManager().createCpuDevice(),
+            )
             anchors = session.initAnchorArrays()
             session.prepareDevice()
 
@@ -446,8 +463,7 @@ def test_checkpointing_with_externally_stored_tensor_data0():
             with change_directory("checlpoint0"):
                 with pytest.raises(popart.popart_exception) as e_info:
                     session.modelToHost("model.onnx")
-                assert "Unrecognised file name 'tensors.onnx" in e_info.value.args[
-                    0]
+                assert "Unrecognised file name 'tensors.onnx" in e_info.value.args[0]
 
                 # New external data file has not been created
                 assert not os.path.exists("tensors.onnx")
@@ -466,17 +482,17 @@ def test_checkpointing_with_externally_stored_tensor_data1():
         tmpfile0 = os.path.join(tmpdir, "model_tensors0.onnx")
         builder.saveInitializersExternally([i1], tmpfile0)
 
-        optimizer = popart.SGD({
-            "defaultLearningRate": (0.2, True),
-            "defaultMomentum": (0.5, True)
-        })
+        optimizer = popart.SGD(
+            {"defaultLearningRate": (0.2, True), "defaultMomentum": (0.5, True)}
+        )
 
         session = popart.TrainingSession(
             deviceInfo=popart.DeviceManager().createCpuDevice(),
             fnModel=builder.getModelProto(),
             loss=loss,
             optimizer=optimizer,
-            dataFlow=popart.DataFlow(1, []))
+            dataFlow=popart.DataFlow(1, []),
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -503,8 +519,7 @@ def test_checkpointing_with_externally_stored_tensor_data1():
         assert os.path.exists(tmpfile2)
         tmpfile3 = os.path.join(tmpdir, "model1.onnx")
         session.modelToHost(tmpfile3)
-        assert np.array_equal(np.fromfile(tmpfile2, dtype=np.float32),
-                              weights1)
+        assert np.array_equal(np.fromfile(tmpfile2, dtype=np.float32), weights1)
 
         # Update external weight location.
         # Save the onnx model to a new location, this time with running the session.
@@ -515,8 +530,7 @@ def test_checkpointing_with_externally_stored_tensor_data1():
         assert os.path.exists(tmpfile4)
         tmpfile5 = os.path.join(tmpdir, "model2.onnx")
         session.modelToHost(tmpfile5)
-        assert not np.array_equal(np.fromfile(tmpfile4, dtype=np.float32),
-                                  weights1)
+        assert not np.array_equal(np.fromfile(tmpfile4, dtype=np.float32), weights1)
 
 
 def test_invalid_tensor_location_updates():
@@ -532,34 +546,33 @@ def test_invalid_tensor_location_updates():
         origpath = os.path.join(tmpdir, "model_tensors0.onnx")
         builder.saveInitializersExternally([i1], origpath)
 
-        optimizer = popart.SGD({
-            "defaultLearningRate": (0.2, True),
-            "defaultMomentum": (0.5, True)
-        })
+        optimizer = popart.SGD(
+            {"defaultLearningRate": (0.2, True), "defaultMomentum": (0.5, True)}
+        )
 
         session = popart.TrainingSession(
             deviceInfo=popart.DeviceManager().createCpuDevice(),
             fnModel=builder.getModelProto(),
             loss=loss,
             optimizer=optimizer,
-            dataFlow=popart.DataFlow(1, []))
+            dataFlow=popart.DataFlow(1, []),
+        )
 
         updatedpath0 = os.path.join(tmpdir, "model_tensors1.onnx")
 
         # Try to update from from a path that doesn't exist
         fakepath = os.path.join(tmpdir, "foo.bar")
         with pytest.raises(popart.popart_exception) as e_info:
-            session.updateExternallySavedTensorLocations(
-                fakepath, updatedpath0)
-        assert "but file '" + fakepath + "' does not exist" in e_info.value.args[
-            0]
+            session.updateExternallySavedTensorLocations(fakepath, updatedpath0)
+        assert "but file '" + fakepath + "' does not exist" in e_info.value.args[0]
 
         session.updateExternallySavedTensorLocations(origpath, updatedpath0)
 
         # Try to update from from old path
         updatedpath1 = os.path.join(tmpdir, "model_tensors2.onnx")
         with pytest.raises(popart.popart_exception) as e_info:
-            session.updateExternallySavedTensorLocations(
-                origpath, updatedpath1)
-        assert "No ONNX model initializers have external location set to" in e_info.value.args[
-            0]
+            session.updateExternallySavedTensorLocations(origpath, updatedpath1)
+        assert (
+            "No ONNX model initializers have external location set to"
+            in e_info.value.args[0]
+        )

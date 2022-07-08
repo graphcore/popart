@@ -2,7 +2,11 @@
 from typing import Mapping, Union, Tuple, Optional, Iterable, List, Dict
 
 import popart._internal.ir as _ir
-from popxl.context import get_current_context, debug_context_frame_offset, op_debug_context
+from popxl.context import (
+    get_current_context,
+    debug_context_frame_offset,
+    op_debug_context,
+)
 from popxl.graph import Graph
 from popxl.tensor import Tensor, TensorLike
 
@@ -85,7 +89,8 @@ class CallSiteInfo:
         # Throws if not an input
         op_in_idx = self._op.firstInIndex(parent_tensor._pb_tensor)
         pb_sub_tensor = pb_subgraph.getInputTensor(
-            self._op.opInToSubgraphInIndex(op_in_idx))
+            self._op.opInToSubgraphInIndex(op_in_idx)
+        )
 
         return Tensor._from_pb_tensor(pb_sub_tensor)
 
@@ -107,8 +112,7 @@ class CallSiteInfo:
         Returns:
             Tuple[Tensor, ...]
         """
-        return tuple(
-            Tensor._from_pb_tensor(t) for t in self._op.getInputTensors())
+        return tuple(Tensor._from_pb_tensor(t) for t in self._op.getInputTensors())
 
     @property
     def outputs(self) -> Tuple[Tensor, ...]:
@@ -118,12 +122,11 @@ class CallSiteInfo:
         Returns:
             Tuple[Tensor, ...]
         """
-        return tuple(
-            Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
+        return tuple(Tensor._from_pb_tensor(t) for t in self._op.getOutputTensors())
 
-    def set_parent_input_modified(self,
-                                  parent_tensor: Tensor,
-                                  infer_modified_regions: bool = True):
+    def set_parent_input_modified(
+        self, parent_tensor: Tensor, infer_modified_regions: bool = True
+    ):
         """
         Specify that the parent graph's input tensor `parent_tensor` is modified by the call op.
 
@@ -140,8 +143,7 @@ class CallSiteInfo:
         """
         index = self._op.inIndex(parent_tensor._pb_tensor)
         _graph = self._op.getCalledGraph()
-        _sg_tensor = _graph.getInputTensor(
-            self.parent_to_graph_input_index(index))
+        _sg_tensor = _graph.getInputTensor(self.parent_to_graph_input_index(index))
         if infer_modified_regions:
             _regions = _sg_tensor.modifiedRegionsByOps(_graph.getOps())
         else:
@@ -151,9 +153,9 @@ class CallSiteInfo:
 
 @debug_context_frame_offset(1)
 def call(
-        graph: Graph,
-        *inputs: Union[TensorLike, Iterable[TensorLike]],
-        inputs_dict: Optional[Mapping[Tensor, TensorLike]] = None,
+    graph: Graph,
+    *inputs: Union[TensorLike, Iterable[TensorLike]],
+    inputs_dict: Optional[Mapping[Tensor, TensorLike]] = None,
 ) -> Tuple[Tensor, ...]:
     """
     Call a graph.
@@ -184,10 +186,10 @@ def call(
 
 @op_debug_context("call")
 def call_with_info(
-        graph: Graph,
-        *inputs: Union[TensorLike, Iterable[TensorLike]],
-        inputs_dict: Optional[Mapping[Tensor, TensorLike]] = None,
-        check_inputs: bool = True,
+    graph: Graph,
+    *inputs: Union[TensorLike, Iterable[TensorLike]],
+    inputs_dict: Optional[Mapping[Tensor, TensorLike]] = None,
+    check_inputs: bool = True,
 ) -> CallSiteInfo:
     """
     Call a graph and return information about the call site.
@@ -232,13 +234,13 @@ def call_with_info(
     pb_g = parent_graph._pb_graph
     pb_sg = graph._pb_graph
 
-    op_name = parent_graph.name + '--call--' + graph.name
+    op_name = parent_graph.name + "--call--" + graph.name
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, _ir.NumInputs(),
-                                  0)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Call", 1, _ir.NumInputs(), 0)
 
-    pb_callop = pb_g.createOp_CallOp(opid, graph._pb_graph,
-                                     ctx._get_op_settings(op_name))
+    pb_callop = pb_g.createOp_CallOp(
+        opid, graph._pb_graph, ctx._get_op_settings(op_name)
+    )
 
     inputs, inputs_dict = _prep_inputs_pre_validation(inputs, inputs_dict)
     _validate_inputs(parent_graph, graph, inputs, inputs_dict)
@@ -249,31 +251,29 @@ def call_with_info(
     for graph_input_idx, parent_tensor in enumerate(inputs):
         call_in_idx = pb_callop.subgraphInToOpInIndex(graph_input_idx)
         pb_callop.connectInTensor(call_in_idx, parent_tensor.id)
-        connected_inputs += [{
-            'graph_input_idx': graph_input_idx,
-            'parent_tensor': parent_tensor
-        }]
+        connected_inputs += [
+            {"graph_input_idx": graph_input_idx, "parent_tensor": parent_tensor}
+        ]
 
     # 2. Connect tensors passed via a dict via `inputs_dict`
     for graph_tensor, parent_tensor in inputs_dict.items():
         graph_input_idx = pb_sg.getInputIndex(graph_tensor.id)
         call_in_idx = pb_callop.subgraphInToOpInIndex(graph_input_idx)
         pb_callop.connectInTensor(call_in_idx, parent_tensor.id)
-        connected_inputs += [{
-            'graph_input_idx': graph_input_idx,
-            'parent_tensor': parent_tensor
-        }]
+        connected_inputs += [
+            {"graph_input_idx": graph_input_idx, "parent_tensor": parent_tensor}
+        ]
 
-    _validate_connected_tensors(check_inputs, connected_inputs, graph, inputs,
-                                inputs_dict)
+    _validate_connected_tensors(
+        check_inputs, connected_inputs, graph, inputs, inputs_dict
+    )
 
     # 3. Connect outputs. We introspect the subgraph to get its outputs then,
     #    for each one, create an output tensor of the call op in the parent
     #    graph.
 
     def id_like_subgraph_tensor(tensor_id: str) -> str:
-        return parent_graph._create_tensor_id(_ir.removeScope(
-            pb_sg, tensor_id))
+        return parent_graph._create_tensor_id(_ir.removeScope(pb_sg, tensor_id))
 
     for sg_out_idx, pb_sg_out_id in enumerate(pb_sg.getOutputIds()):
         call_out_idx = pb_callop.subgraphOutToOpOutIndex(sg_out_idx)
@@ -293,8 +293,8 @@ def call_with_info(
 
 # Internal function shared with ops.repeat
 def _prep_inputs_pre_validation(
-        inputs: Iterable[Union[TensorLike, Iterable[TensorLike]]],
-        inputs_dict: Dict[Tensor, TensorLike],
+    inputs: Iterable[Union[TensorLike, Iterable[TensorLike]]],
+    inputs_dict: Dict[Tensor, TensorLike],
 ):
     inputs_dict = inputs_dict if inputs_dict is not None else {}
 
@@ -310,13 +310,17 @@ def _prep_inputs_pre_validation(
 
 
 # Internal function shared with ops.repeat
-def _validate_inputs(parent_graph: Graph, graph: Graph,
-                     inputs: List[TensorLike],
-                     inputs_dict: Dict[Tensor, TensorLike]):
+def _validate_inputs(
+    parent_graph: Graph,
+    graph: Graph,
+    inputs: List[TensorLike],
+    inputs_dict: Dict[Tensor, TensorLike],
+):
     if len(inputs) > len(graph.inputs):
         raise ValueError(
-            f'Too many inputs have been provided. The number of positional inputs exceeds the number of inputs.'
-            f'{len(inputs)} > {len(graph.inputs)}')
+            f"Too many inputs have been provided. The number of positional inputs exceeds the number of inputs."
+            f"{len(inputs)} > {len(graph.inputs)}"
+        )
 
     for graph_input_idx, parent_tensor in enumerate(inputs):
         if isinstance(parent_tensor, Tensor):
@@ -340,25 +344,27 @@ def _validate_inputs(parent_graph: Graph, graph: Graph,
                 check_in_graph(parent_graph, parent_tensor=parent_tensor)
             except ValueError:
                 raise ValueError(
-                    f'The parent input tensor {parent_tensor} is not in the parent graph {parent_graph}.'
+                    f"The parent input tensor {parent_tensor} is not in the parent graph {parent_graph}."
                 )
 
         graph_input_idx = graph._pb_graph.getInputIndex(graph_tensor.id)
         if graph_input_idx in range(len(inputs)):
             raise ValueError(
-                f'Graph input tensor is specified twice, in `inputs_dict` and positionally in `inputs`: {graph_tensor}'
+                f"Graph input tensor is specified twice, in `inputs_dict` and positionally in `inputs`: {graph_tensor}"
             )
 
 
 # Internal function shared with ops.repeat
-def _prep_inputs(graph: Graph, inputs: List[TensorLike],
-                 inputs_dict: Dict[Tensor, TensorLike]):
+def _prep_inputs(
+    graph: Graph, inputs: List[TensorLike], inputs_dict: Dict[Tensor, TensorLike]
+):
     for graph_input_idx, parent_tensor in enumerate(inputs):
         if not isinstance(parent_tensor, Tensor):
             graph_tensor = graph.inputs[graph_input_idx]
             try:
                 parent_tensor = graph_tensor._ensure_tensor(
-                    parent_tensor)  # Coerce input into tensor of same dtype
+                    parent_tensor
+                )  # Coerce input into tensor of same dtype
             except ValueError:
                 raise TypeError(
                     f"Input at position {graph_input_idx} could not be coerced into a tensor: Type {type(parent_tensor)}. Value: {parent_tensor}"
@@ -369,7 +375,8 @@ def _prep_inputs(graph: Graph, inputs: List[TensorLike],
         if not isinstance(parent_tensor, Tensor):
             try:
                 parent_tensor = graph_tensor._ensure_tensor(
-                    parent_tensor)  # Coerce input into tensor of same dtype
+                    parent_tensor
+                )  # Coerce input into tensor of same dtype
             except ValueError:
                 raise TypeError(
                     f"Input ({graph_tensor}) could not be coerced into a tensor: Type {type(parent_tensor)}. Value: {parent_tensor}"
@@ -381,26 +388,34 @@ def _prep_inputs(graph: Graph, inputs: List[TensorLike],
 
 # Internal function shared with ops.repeat
 def _validate_connected_tensors(
-        check_inputs: bool,
-        connected_inputs: List[Dict],
-        graph: Graph,
-        inputs: List[Tensor],
-        inputs_dict: Dict[Tensor, Tensor],
+    check_inputs: bool,
+    connected_inputs: List[Dict],
+    graph: Graph,
+    inputs: List[Tensor],
+    inputs_dict: Dict[Tensor, Tensor],
 ):
     # Check if any tensors are missing.
     # Dont need to check if too many tensors are provided as previous "input specified twice" check should prevent that
     if check_inputs and len(inputs) + len(inputs_dict) < len(graph.inputs):
         connected_tensors = set(
-            graph.inputs[d['graph_input_idx']] for d in connected_inputs)
-        connected_inputs = sorted(connected_inputs,
-                                  key=lambda d: d['graph_input_idx'])
-        missing_inputs_tb = [("Index", "Graph Tensor")] + \
-            [(idx, t.id) for idx, t in enumerate(graph.inputs) if t not in connected_tensors]
-        connected_inputs_tb = [("Index", "Graph Tensor", "Parent Graph Tensor")] \
-            + [(d['graph_input_idx'], graph.inputs[d['graph_input_idx']].id, d['parent_tensor'].id)
-                for d in connected_inputs]
+            graph.inputs[d["graph_input_idx"]] for d in connected_inputs
+        )
+        connected_inputs = sorted(connected_inputs, key=lambda d: d["graph_input_idx"])
+        missing_inputs_tb = [("Index", "Graph Tensor")] + [
+            (idx, t.id)
+            for idx, t in enumerate(graph.inputs)
+            if t not in connected_tensors
+        ]
+        connected_inputs_tb = [("Index", "Graph Tensor", "Parent Graph Tensor")] + [
+            (
+                d["graph_input_idx"],
+                graph.inputs[d["graph_input_idx"]].id,
+                d["parent_tensor"].id,
+            )
+            for d in connected_inputs
+        ]
 
-        msg = ("Not enough inputs have been provided.\n\nMissing inputs:\n")
+        msg = "Not enough inputs have been provided.\n\nMissing inputs:\n"
         msg += table_to_string(missing_inputs_tb)
         msg += "\n\nConnected inputs:\n"
         msg += table_to_string(connected_inputs_tb)

@@ -9,13 +9,14 @@ from popxl.tensor import Tensor, graph_input
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
 def test_session():
-    w_input = [2.]
-    c_input = [1.]
+    w_input = [2.0]
+    c_input = [1.0]
 
     ir = popxl.Ir()
     with ir.main_graph, popxl.in_sequence():
@@ -26,7 +27,8 @@ def test_session():
         y_d2h = popxl.d2h_stream(y.shape, y.dtype)
         ops.host_store(y_d2h, y)
         ops.var_updates.accumulate_(
-            w, popxl.constant(c_input, popxl.dtypes.float32), 1.)
+            w, popxl.constant(c_input, popxl.dtypes.float32), 1.0
+        )
 
     session, inputs, outputs = run_session(ir, [x], [x_h2d], 1)
 
@@ -34,8 +36,8 @@ def test_session():
     assert np.allclose(outputs[y_d2h], inputs[x_h2d] * w_input)
     assert np.allclose(
         w_data,
-        np.array(w_input).astype(np.float32) +
-        np.array(c_input).astype(np.float32))
+        np.array(w_input).astype(np.float32) + np.array(c_input).astype(np.float32),
+    )
 
 
 class LinearHostLoad(popxl.Module):
@@ -46,13 +48,12 @@ class LinearHostLoad(popxl.Module):
         self.h2d = popxl.h2d_stream((2, 2), popxl.float32, name="x_stream")
         self.d2h = popxl.d2h_stream((2, 2), popxl.float32, name="y_stream")
 
-    def build(self, out_features: int,
-              bias: bool = True) -> Tuple[Tensor, ...]:
+    def build(self, out_features: int, bias: bool = True) -> Tuple[Tensor, ...]:
         x = ops.host_load(self.h2d, "x")
         self.W = graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = graph_input((out_features, ), popxl.float32, "b")
+            self.b = graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         ops.host_store(self.d2h, y)
         return self.W, self.b
@@ -70,12 +71,7 @@ def test_session_multi_iteration():
         linear = LinearHostLoad()
         linear_graph = ir.create_graph(linear, out_features=2)
 
-        W, b = ops.repeat(linear_graph,
-                          bps,
-                          inputs_dict={
-                              linear.W: W,
-                              linear.b: b
-                          })
+        W, b = ops.repeat(linear_graph, bps, inputs_dict={linear.W: W, linear.b: b})
 
     _, inputs, outputs = run_session(ir, [linear.h2d.spec], [linear.h2d], bps)
 
@@ -116,8 +112,7 @@ def run_session(ir, input_tensors, input_d2hs, num_host_transfers):
 
     inputs = {}
     for t, t_d2h in zip(input_tensors, input_d2hs):
-        shape = (num_host_transfers,
-                 ) + t.shape if num_host_transfers > 1 else t.shape
+        shape = (num_host_transfers,) + t.shape if num_host_transfers > 1 else t.shape
         t_input = np.random.normal(0, 0.4, shape).astype(t.dtype.as_numpy())
         inputs[t_d2h] = t_input
 
@@ -133,8 +128,8 @@ def test_get_tensor_data_bad_argument_type():
     mg = ir.main_graph
 
     with mg:
-        c = popxl.constant(1.)
-        w = popxl.variable(2.)
+        c = popxl.constant(1.0)
+        w = popxl.variable(2.0)
         h2d = popxl.h2d_stream(w.shape, w.dtype)
         x = ops.host_load(h2d)
 
@@ -145,7 +140,7 @@ def test_get_tensor_data_bad_argument_type():
     session.device = tu.create_test_device(numIpus=1).device
 
     with session:
-        session.run({h2d: np.array(1.)})
+        session.run({h2d: np.array(1.0)})
 
     # Variable permitted.
     session.get_tensor_data(w)

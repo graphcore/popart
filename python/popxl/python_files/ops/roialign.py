@@ -8,9 +8,14 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
-              output_size: Tuple[int], spatial_scale: float,
-              sampling_ratio: int) -> Tensor:
+def roi_align(
+    t: Tensor,
+    rois: Tensor,
+    batch_index: Tensor,
+    output_size: Tuple[int],
+    spatial_scale: float,
+    sampling_ratio: int,
+) -> Tensor:
     """
     Apply pooling across each region of interest (RoIs).
 
@@ -54,19 +59,21 @@ def roi_align(t: Tensor, rois: Tensor, batch_index: Tensor,
     check_in_graph(g, t=t, rois=rois, batch_index=batch_index)
     check_tensor_ipu_and_tile_set(t=t, rois=rois, batch_index=batch_index)
 
-    settings = ctx._get_op_settings('roi_align')
-    opid = _ir.OperatorIdentifier("ai.onnx", "RoiAlign", 10, _ir.NumInputs(
-        2, 2), 1)
+    settings = ctx._get_op_settings("roi_align")
+    opid = _ir.OperatorIdentifier("ai.onnx", "RoiAlign", 10, _ir.NumInputs(2, 2), 1)
     aligned_height = output_size[0]
     aligned_width = output_size[1]
     op = pb_g.createConnectedOp_RoiAlignOp(
+        {0: t.id, 1: rois.id, 2: batch_index.id},
         {
-            0: t.id,
-            1: rois.id,
-            2: batch_index.id
-        }, {
             0: g._create_tensor_id("roi_align_out"),
-        }, opid, settings, spatial_scale, sampling_ratio, aligned_height,
-        aligned_width)
+        },
+        opid,
+        settings,
+        spatial_scale,
+        sampling_ratio,
+        aligned_height,
+        aligned_width,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

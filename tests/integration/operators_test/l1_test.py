@@ -7,6 +7,7 @@ import torch
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -33,7 +34,8 @@ def test_l1(op_tester):
             (9, 7, 2, 12),
             (3, 256, 256),
             # (2, 1024, 1024) - not working: T9764
-        ]):
+        ],
+    ):
         data = np.random.random_sample(shape).astype(dtype) - 0.5
         scale = np.random.rand() - 0.5
 
@@ -42,30 +44,31 @@ def test_l1(op_tester):
         def init_builder(builder):
             tensor = builder.addInputTensor(data)
             l1 = builder.aiGraphcore.l1loss(
-                [tensor], scale, reduction=popart.ReductionType.NoReduction)
+                [tensor], scale, reduction=popart.ReductionType.NoReduction
+            )
             return [l1]
 
         def reference(_):  # ref_data is an unused argument
             return [np.abs(data) * scale]
 
-        op_tester.passes = ['PreUniRepl']
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.passes = ["PreUniRepl"]
+        op_tester.run(init_builder, reference, "infer")
 
 
 def test_l1_training(op_tester):
     op_tester.rtol = 1e-02
     op_tester.atol = 1e-05
 
-    for reduction_type in (popart.ReductionType.Mean,
-                           popart.ReductionType.Sum):
+    for reduction_type in (popart.ReductionType.Mean, popart.ReductionType.Sum):
         for dtype, shape in itertools.product(
             [np.float16, np.float32],
             [
                 (5, 3, 7),
                 (9, 7, 2, 12),
                 (3, 256, 256),
-                #(2, 1024, 1024) - not working: T9764
-            ]):
+                # (2, 1024, 1024) - not working: T9764
+            ],
+        ):
             data = np.random.random_sample(shape).astype(dtype)
 
             if reduction_type == popart.ReductionType.Mean:
@@ -83,9 +86,9 @@ def test_l1_training(op_tester):
             def init_builder(builder):
                 result = []
                 tensor = builder.addInputTensor(data)
-                l1 = builder.aiGraphcore.l1loss([tensor],
-                                                scale,
-                                                reduction=reduction_type)
+                l1 = builder.aiGraphcore.l1loss(
+                    [tensor], scale, reduction=reduction_type
+                )
                 result.append(l1)
                 result.append(popart.reservedGradientPrefix() + tensor)
                 return result
@@ -93,11 +96,13 @@ def test_l1_training(op_tester):
             def reference(_):  # ref_data is an unused argument
                 result = []
 
-                tensor = torch.tensor(data.astype(np.float32),
-                                      requires_grad=True)
-                out = torch.nn.L1Loss(
-                    reduction=get_torch_reduction_type(reduction_type))(
-                        tensor, torch.zeros_like(tensor)) * scale
+                tensor = torch.tensor(data.astype(np.float32), requires_grad=True)
+                out = (
+                    torch.nn.L1Loss(reduction=get_torch_reduction_type(reduction_type))(
+                        tensor, torch.zeros_like(tensor)
+                    )
+                    * scale
+                )
                 result.append(out)
                 result.append(tensor)
                 out.backward(torch.ones_like(out))
@@ -106,7 +111,7 @@ def test_l1_training(op_tester):
                 return result
 
             op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
-            op_tester.run(init_builder, reference, 'train')
+            op_tester.run(init_builder, reference, "train")
 
 
 def test_l1_reduction_equiv():
@@ -120,11 +125,13 @@ def test_l1_reduction_equiv():
 
             if extraReduction:
                 l1 = builder.aiGraphcore.l1loss(
-                    [ip], 0.1, reduction=popart.ReductionType.NoReduction)
+                    [ip], 0.1, reduction=popart.ReductionType.NoReduction
+                )
                 loss = builder.aiOnnx.reducesum([l1])
             else:
                 loss = builder.aiGraphcore.l1loss(
-                    [ip], 0.1, reduction=popart.ReductionType.Sum)
+                    [ip], 0.1, reduction=popart.ReductionType.Sum
+                )
 
             anchors = [loss, popart.reservedGradientPrefix() + ip]
 
@@ -136,8 +143,9 @@ def test_l1_reduction_equiv():
                     optimizer=popart.ConstSGD(0.1),
                     deviceInfo=device,
                     patterns=popart.Patterns(
-                        popart.PatternsLevel.NoPatterns).enableRuntimeAsserts(
-                            False))
+                        popart.PatternsLevel.NoPatterns
+                    ).enableRuntimeAsserts(False),
+                )
                 session.prepareDevice()
                 session.weightsFromHost()
                 anchors = session.initAnchorArrays()

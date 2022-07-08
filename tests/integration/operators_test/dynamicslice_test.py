@@ -22,16 +22,16 @@ def test_dynamicslice(op_tester, slice_input):
         tensor = builder.addInputTensor(data)
         result = []
         for sliceid in range(4):
-            index = builder.addInputTensor(np.asarray([sliceid * 3],
-                                                      np.uint32))
+            index = builder.addInputTensor(np.asarray([sliceid * 3], np.uint32))
             slice_in = builder.aiGraphcore.init(
-                [5, 3, 7], popart.DataType.FLOAT, popart.InitType.Zero,
-                "slice_input")
+                [5, 3, 7], popart.DataType.FLOAT, popart.InitType.Zero, "slice_input"
+            )
             out = builder.aiGraphcore.dynamicslice(
                 [tensor, index, slice_in] if slice_input else [tensor, index],
                 axes=axes,
                 sizes=sizes,
-                noOverlap=True)
+                noOverlap=True,
+            )
             builder.addOutputTensor(out)
 
             # TODO T46821: The shape given by getTensorShape is wrong
@@ -44,11 +44,11 @@ def test_dynamicslice(op_tester, slice_input):
     def reference(_):  # ref_data is an unused argument
         result = []
         for sliceid in range(4):
-            result.append(data[:, sliceid * 3:(sliceid + 1) * 3, :])
+            result.append(data[:, sliceid * 3 : (sliceid + 1) * 3, :])
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 # Test a set of non-overlapping dynamic slices, the three
@@ -67,13 +67,12 @@ def test_dynamicslice_no_leading_slice_dim(op_tester):
         for sliceid in range(5):
             index = builder.addInputTensor(np.asarray([sliceid], np.uint32))
             # Note that the leading dimension `1` is dropped
-            slice_in = builder.aiGraphcore.init([12, 7], popart.DataType.FLOAT,
-                                                popart.InitType.Zero,
-                                                "slice_input")
-            out = builder.aiGraphcore.dynamicslice([tensor, index, slice_in],
-                                                   axes=axes,
-                                                   sizes=sizes,
-                                                   noOverlap=True)
+            slice_in = builder.aiGraphcore.init(
+                [12, 7], popart.DataType.FLOAT, popart.InitType.Zero, "slice_input"
+            )
+            out = builder.aiGraphcore.dynamicslice(
+                [tensor, index, slice_in], axes=axes, sizes=sizes, noOverlap=True
+            )
             builder.addOutputTensor(out)
 
             result.append(out)
@@ -86,7 +85,7 @@ def test_dynamicslice_no_leading_slice_dim(op_tester):
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 # Test a multi dimensional slice (createInputTensor)
@@ -103,10 +102,9 @@ def test_multi_dim_dynamicslice_create_input_tensor(op_tester):
         result = []
 
         index = builder.addInputTensor(np.asarray(indices, np.uint32))
-        out = builder.aiGraphcore.dynamicslice([tensor, index],
-                                               axes=axes,
-                                               sizes=sizes,
-                                               noOverlap=True)
+        out = builder.aiGraphcore.dynamicslice(
+            [tensor, index], axes=axes, sizes=sizes, noOverlap=True
+        )
         builder.addOutputTensor(out)
 
         # TODO T46821: The shape given by getTensorShape is wrong
@@ -119,13 +117,17 @@ def test_multi_dim_dynamicslice_create_input_tensor(op_tester):
     def reference(_):  # ref_data is an unused argument
         result = []
         result.append(
-            data[indices[0]:(indices[0] +
-                             sizes[0]), :, :, indices[1]:(indices[1] +
-                                                          sizes[1])])
+            data[
+                indices[0] : (indices[0] + sizes[0]),
+                :,
+                :,
+                indices[1] : (indices[1] + sizes[1]),
+            ]
+        )
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 # Test a multi dimensional slice (unwindTensorLayout)
@@ -141,8 +143,9 @@ def test_multi_dim_dynamicslice_unwind_tensor_layout(op_tester):
     #       broadcast accordingly
     #       Hence: We change the dimension of the two last axis to have a
     #       matching dim for matmul
-    multiplier = np.random.rand(sizes[0], data.shape[1], sizes[1],
-                                data.shape[2]).astype(np.float32)
+    multiplier = np.random.rand(
+        sizes[0], data.shape[1], sizes[1], data.shape[2]
+    ).astype(np.float32)
 
     def init_builder(builder):
         tensor = builder.addInputTensor(data)
@@ -151,10 +154,9 @@ def test_multi_dim_dynamicslice_unwind_tensor_layout(op_tester):
         index = builder.addInputTensor(np.asarray(indices, np.uint32))
         mul = builder.addInputTensor(multiplier)
 
-        dyn_slice = builder.aiGraphcore.dynamicslice([tensor, index],
-                                                     axes=axes,
-                                                     sizes=sizes,
-                                                     noOverlap=True)
+        dyn_slice = builder.aiGraphcore.dynamicslice(
+            [tensor, index], axes=axes, sizes=sizes, noOverlap=True
+        )
         out = builder.aiOnnx.matmul([dyn_slice, mul])
         builder.addOutputTensor(out)
 
@@ -167,15 +169,18 @@ def test_multi_dim_dynamicslice_unwind_tensor_layout(op_tester):
 
     def reference(_):  # ref_data is an unused argument
         result = []
-        dyn_slice = data[indices[0]:(indices[0] +
-                                     sizes[0]), :, :, indices[1]:(indices[1] +
-                                                                  sizes[1])]
+        dyn_slice = data[
+            indices[0] : (indices[0] + sizes[0]),
+            :,
+            :,
+            indices[1] : (indices[1] + sizes[1]),
+        ]
         out = np.matmul(dyn_slice, multiplier)
         result.append(out)
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 # Test training of non-overlapping dynamic slices
@@ -190,12 +195,10 @@ def test_dynamicslice_training(op_tester):
         outputs = []
         result = []
         for sliceid in range(4):
-            index = builder.addInputTensor(np.asarray([sliceid * 3],
-                                                      np.uint32))
-            out = builder.aiGraphcore.dynamicslice([tensor, index],
-                                                   axes=axes,
-                                                   sizes=sizes,
-                                                   noOverlap=True)
+            index = builder.addInputTensor(np.asarray([sliceid * 3], np.uint32))
+            out = builder.aiGraphcore.dynamicslice(
+                [tensor, index], axes=axes, sizes=sizes, noOverlap=True
+            )
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
 
             # TODO T46821: The shape given by getTensorShape is wrong
@@ -214,7 +217,7 @@ def test_dynamicslice_training(op_tester):
         result = [
             sum,
             popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.reservedGradientPrefix() + tensor,
         ] + result
         return result
 
@@ -223,7 +226,7 @@ def test_dynamicslice_training(op_tester):
         outputs = []
         result = []
         for sliceid in range(4):
-            out = tensor[:, sliceid * 3:(sliceid + 1) * 3, :]
+            out = tensor[:, sliceid * 3 : (sliceid + 1) * 3, :]
             out = out * float(1 + sliceid)
             outputs.append(out)
             result.append(out)
@@ -237,7 +240,7 @@ def test_dynamicslice_training(op_tester):
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 # Test to show that the gradient of dynamic slices are incorrect if noOverlap is
@@ -252,12 +255,10 @@ def test_dynamicslice_overlap_wrong(op_tester):
         outputs = []
         result = []
         for sliceid in range(2):
-            index = builder.addInputTensor(np.asarray([sliceid * 3],
-                                                      np.uint32))
-            out = builder.aiGraphcore.dynamicslice([tensor, index],
-                                                   axes=axes,
-                                                   sizes=sizes,
-                                                   noOverlap=True)
+            index = builder.addInputTensor(np.asarray([sliceid * 3], np.uint32))
+            out = builder.aiGraphcore.dynamicslice(
+                [tensor, index], axes=axes, sizes=sizes, noOverlap=True
+            )
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
 
             # TODO T46821: The shape given by getTensorShape is wrong
@@ -275,7 +276,7 @@ def test_dynamicslice_overlap_wrong(op_tester):
         result = [
             sum,
             popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.reservedGradientPrefix() + tensor,
         ] + result
         return result
 
@@ -284,7 +285,7 @@ def test_dynamicslice_overlap_wrong(op_tester):
         outputs = []
         result = []
         for sliceid in range(2):
-            out = tensor[sliceid * 3:sliceid * 3 + sizes[0]]
+            out = tensor[sliceid * 3 : sliceid * 3 + sizes[0]]
             out = out * float(1 + sliceid)
             outputs.append(out)
             result.append(out)
@@ -298,13 +299,14 @@ def test_dynamicslice_overlap_wrong(op_tester):
         # but dynamicslice with noOverlap=True gives a wrong gradient result
         # due to overlapping slices
         tensor.grad += torch.tensor(
-            np.asarray([0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+            np.asarray([0.0, 0.0, 0.0, -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        )
 
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 # Test to show that the gradient of dynamic slices are correct if noOverlap is
@@ -319,12 +321,10 @@ def test_dynamicslice_overlap_correct(op_tester):
         outputs = []
         result = []
         for sliceid in range(2):
-            index = builder.addInputTensor(np.asarray([sliceid * 3],
-                                                      np.uint32))
-            out = builder.aiGraphcore.dynamicslice([tensor, index],
-                                                   axes=axes,
-                                                   sizes=sizes,
-                                                   noOverlap=False)
+            index = builder.addInputTensor(np.asarray([sliceid * 3], np.uint32))
+            out = builder.aiGraphcore.dynamicslice(
+                [tensor, index], axes=axes, sizes=sizes, noOverlap=False
+            )
             out = builder.aiGraphcore.scale([out], float(1 + sliceid))
 
             # TODO T46821: The shape given by getTensorShape is wrong
@@ -342,7 +342,7 @@ def test_dynamicslice_overlap_correct(op_tester):
         result = [
             sum,
             popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.reservedGradientPrefix() + tensor,
         ] + result
         return result
 
@@ -351,7 +351,7 @@ def test_dynamicslice_overlap_correct(op_tester):
         outputs = []
         result = []
         for sliceid in range(2):
-            out = tensor[sliceid * 3:sliceid * 3 + sizes[0]]
+            out = tensor[sliceid * 3 : sliceid * 3 + sizes[0]]
             out = out * float(1 + sliceid)
             outputs.append(out)
             result.append(out)
@@ -364,13 +364,14 @@ def test_dynamicslice_overlap_correct(op_tester):
         # Note: Comparison equal with noOverlap=False handles overlapping
         # slices correctly (at higher computational cost). No correction needed.
         tensor.grad += torch.tensor(
-            np.asarray([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+            np.asarray([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        )
 
         result = [sum, torch.tensor(d__o), tensor.grad] + result
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 # Tests the situation in which there is no add or sum for the dynamic slice
@@ -382,18 +383,16 @@ def test_non_sum_add_grad_op(op_tester):
         tensor = builder.addInitializedInputTensor(data)
         start = builder.addInputTensor(np.asarray(0).astype(np.uint32))
 
-        bias = builder.addInitializedInputTensor(
-            np.asarray(1).astype(np.float32))
+        bias = builder.addInitializedInputTensor(np.asarray(1).astype(np.float32))
 
         shape_c = builder.aiOnnx.constant(np.array([2, 2]).astype(np.int64))
 
         out = builder.aiOnnx.add([tensor, bias])
 
         out = builder.aiOnnx.reshape([out, shape_c])
-        out = builder.aiGraphcore.dynamicslice([out, start],
-                                               axes=[0],
-                                               sizes=[2],
-                                               noOverlap=True)
+        out = builder.aiGraphcore.dynamicslice(
+            [out, start], axes=[0], sizes=[2], noOverlap=True
+        )
 
         sum = builder.aiOnnx.reducesum([out], axes=[0, 1], keepdims=False)
 
@@ -402,7 +401,7 @@ def test_non_sum_add_grad_op(op_tester):
         result = [
             sum,
             popart.reservedGradientPrefix() + sum,
-            popart.reservedGradientPrefix() + tensor
+            popart.reservedGradientPrefix() + tensor,
         ]
         return result
 
@@ -430,4 +429,4 @@ def test_non_sum_add_grad_op(op_tester):
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

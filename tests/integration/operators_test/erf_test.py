@@ -6,7 +6,7 @@ import pytest
 
 
 def test_erf_0(op_tester):
-    x = np.array([0., -1., 10.]).astype(np.float32)
+    x = np.array([0.0, -1.0, 10.0]).astype(np.float32)
 
     def init_builder(builder):
         i0 = builder.addInputTensor(x)
@@ -19,13 +19,13 @@ def test_erf_0(op_tester):
         out = torch.erf(tx)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float16])
 def test_erf_0b(op_tester, dtype):
-    x = np.array([0., -1., 10.]).astype(dtype)
-    expected = np.array([0., -0.84270079, 1.]).astype(dtype)
+    x = np.array([0.0, -1.0, 10.0]).astype(dtype)
+    expected = np.array([0.0, -0.84270079, 1.0]).astype(dtype)
 
     def init_builder(builder):
         i0 = builder.addInputTensor(x)
@@ -39,7 +39,7 @@ def test_erf_0b(op_tester, dtype):
     # Lower precision for float16
     if dtype == np.float16:
         op_tester.atol = 1e-03
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_erf_1(op_tester):
@@ -57,12 +57,11 @@ def test_erf_1(op_tester):
         return [out]
 
     op_tester.atol = 1e-05
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_erf_2(op_tester):
-    x = np.random.uniform(low=-10., high=20.3,
-                          size=(1, 2, 3, 20)).astype(np.float32)
+    x = np.random.uniform(low=-10.0, high=20.3, size=(1, 2, 3, 20)).astype(np.float32)
 
     def init_builder(builder):
         i0 = builder.addInputTensor(x)
@@ -75,11 +74,11 @@ def test_erf_2(op_tester):
         out = torch.erf(tx)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_erf_grad_0(op_tester):
-    x = np.array([0., -1., 10.]).astype(np.float32)
+    x = np.array([0.0, -1.0, 10.0]).astype(np.float32)
 
     def init_builder(builder):
         i0 = builder.addInputTensor(x)
@@ -98,7 +97,7 @@ def test_erf_grad_0(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_erf_grad_0b(op_tester):
@@ -110,8 +109,8 @@ def test_erf_grad_0b(op_tester):
     tesTypes = [np.float16, np.float32]
 
     for tesType in tesTypes:
-        x = np.array([0., -1., 10.]).astype(tesType)
-        expectedErf = np.array([0., -0.84270079, 1.]).astype(tesType)
+        x = np.array([0.0, -1.0, 10.0]).astype(tesType)
+        expectedErf = np.array([0.0, -0.84270079, 1.0]).astype(tesType)
 
         def init_builder(builder):
             i0 = builder.addInputTensor(x)
@@ -130,7 +129,7 @@ def test_erf_grad_0b(op_tester):
 
         # Lower precision for float16
         op_tester.atol = 1e-03
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
 
 def test_erf_grad_1(op_tester):
@@ -154,12 +153,11 @@ def test_erf_grad_1(op_tester):
         return [out, tx.grad, None]
 
     op_tester.atol = 1e-05
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_erf_grad_2(op_tester):
-    x = np.random.uniform(low=-10., high=20.3,
-                          size=(1, 2, 3, 20)).astype(np.float32)
+    x = np.random.uniform(low=-10.0, high=20.3, size=(1, 2, 3, 20)).astype(np.float32)
 
     def init_builder(builder):
         i0 = builder.addInputTensor(x)
@@ -178,4 +176,4 @@ def test_erf_grad_2(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

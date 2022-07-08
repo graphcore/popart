@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def logsum(t: Tensor,
-           axis: Optional[Union[int, Iterable[int]]] = None,
-           keepdims: bool = False) -> Tensor:
+def logsum(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the log of summed elements of a tensor along specified axes.
 
@@ -40,9 +40,8 @@ def logsum(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceLogSum')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceLogSum", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ReduceLogSum")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceLogSum", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReduceLogSumOp(
         {
             0: t.id,

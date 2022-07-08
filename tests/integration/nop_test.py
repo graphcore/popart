@@ -28,25 +28,23 @@ def test_basic():
     opts.enableOutliningCopyCostPruning = False
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         anchors = session.initAnchorArrays()
 
         inputs = {
-            i1: np.array([1., 2., 3.], dtype=np.float32),
-            i2: np.array([4., 5., 6.], dtype=np.float32)
+            i1: np.array([1.0, 2.0, 3.0], dtype=np.float32),
+            i2: np.array([4.0, 5.0, 6.0], dtype=np.float32),
         }
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
 
-    assert np.array_equal(anchors[o], np.array([6., 9., 12.],
-                                               dtype=np.float32))
+    assert np.array_equal(anchors[o], np.array([6.0, 9.0, 12.0], dtype=np.float32))
 
 
 def test_builder_shape_inference():
@@ -62,4 +60,4 @@ def test_builder_shape_inference():
     builder.addOutputTensor(o)
 
     nopShape = builder.getTensorShape(n1)
-    print(f'nopShape: {nopShape}')
+    print(f"nopShape: {nopShape}")

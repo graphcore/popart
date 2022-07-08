@@ -6,23 +6,23 @@ CommGroup = _ir.CommGroup
 CommGroupType = _ir.CommGroupType
 
 OP_MAP = {
-    'add': _ir.CollectiveOperator.Add,
-    'mean': _ir.CollectiveOperator.Mean,
-    'mul': _ir.CollectiveOperator.Mean,
-    'min': _ir.CollectiveOperator.Min,
-    'max': _ir.CollectiveOperator.Max,
-    'and': _ir.CollectiveOperator.LogicalAnd,
-    'or': _ir.CollectiveOperator.LogicalOr,
-    'square_add': _ir.CollectiveOperator.SquareAdd
+    "add": _ir.CollectiveOperator.Add,
+    "mean": _ir.CollectiveOperator.Mean,
+    "mul": _ir.CollectiveOperator.Mean,
+    "min": _ir.CollectiveOperator.Min,
+    "max": _ir.CollectiveOperator.Max,
+    "and": _ir.CollectiveOperator.LogicalAnd,
+    "or": _ir.CollectiveOperator.LogicalOr,
+    "square_add": _ir.CollectiveOperator.SquareAdd,
 }
 
-CollectiveOps = Literal['add', 'mean', 'mul', 'min', 'max', 'and', 'or',
-                        'square_add']
+CollectiveOps = Literal["add", "mean", "mul", "min", "max", "and", "or", "square_add"]
 
 
 def to_collective_op(op: CollectiveOps) -> _ir.CollectiveOperator:
     try:
         return OP_MAP[op]
     except KeyError:
-        raise ValueError(f"Not a valid op: {op}. "
-                         f"Must choose from: {', '.join(OP_MAP.keys())}")
+        raise ValueError(
+            f"Not a valid op: {op}. " f"Must choose from: {', '.join(OP_MAP.keys())}"
+        )

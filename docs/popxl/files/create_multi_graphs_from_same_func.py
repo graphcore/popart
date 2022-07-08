@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-'''
+"""
 The intention of this example is to show how to create multiple subgraphs from the same function.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -32,8 +32,8 @@ with main:
     # Op end
 
     # call graph
-    o, = ops.call(matmul_graph1, x, w1)
-    o, = ops.call(matmul_graph2, o, w2)
+    (o,) = ops.call(matmul_graph1, x, w1)
+    (o,) = ops.call(matmul_graph2, o, w2)
 
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")

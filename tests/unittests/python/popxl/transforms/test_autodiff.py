@@ -12,22 +12,21 @@ from typing import Callable
 
 
 @pytest.mark.parametrize(
-    "gradsRequiredFun",
-    [lambda fwd: [fwd.W, fwd.b], lambda fwd: [fwd.b, fwd.W]])
+    "gradsRequiredFun", [lambda fwd: [fwd.W, fwd.b], lambda fwd: [fwd.b, fwd.W]]
+)
 def test_subgraph(gradsRequiredFun):
     class ScaleNShift(popxl.Module):
         def __init__(self):
             self.W: popxl.Tensor = None
             self.b: popxl.Tensor = None
 
-        def build(self, x: popxl.Tensor, out_features: int,
-                  bias: bool = True) -> popxl.Tensor:
-            self.W = popxl.graph_input((x.shape[-1], out_features),
-                                       popxl.float32, "W")
+        def build(
+            self, x: popxl.Tensor, out_features: int, bias: bool = True
+        ) -> popxl.Tensor:
+            self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32, "W")
             y = ops.mul(x, self.W)
             if bias:
-                self.b = popxl.graph_input((out_features, ), popxl.float32,
-                                           "b")
+                self.b = popxl.graph_input((out_features,), popxl.float32, "b")
                 y = y + self.b
             return y
 
@@ -43,12 +42,7 @@ def test_subgraph(gradsRequiredFun):
         ss = ScaleNShift()
         ss_graph = ir.create_graph(ss, x, out_features=16)
 
-        call_info = ops.call_with_info(ss_graph,
-                                       x,
-                                       inputs_dict={
-                                           ss.W: W,
-                                           ss.b: b
-                                       })
+        call_info = ops.call_with_info(ss_graph, x, inputs_dict={ss.W: W, ss.b: b})
 
         y = call_info.outputs[0]
         d2h = popxl.d2h_stream(y.shape, y.dtype)
@@ -58,8 +52,7 @@ def test_subgraph(gradsRequiredFun):
     assert len(ss_graph.outputs) == 1
 
     grads_required = gradsRequiredFun(ss)
-    ss_bwd_info = popxl.transforms.autodiff(ss_graph,
-                                            grads_required=grads_required)
+    ss_bwd_info = popxl.transforms.autodiff(ss_graph, grads_required=grads_required)
 
     # Check expected outputs matches gradsRequired and that they are
     # in the same order.
@@ -79,31 +72,37 @@ def test_subgraph(gradsRequiredFun):
     assert len(ss_bwd_info.expected_outputs) == len(bwd_graph.outputs)
 
     for op in bwd_graph._pb_graph.getOps():
-        grad_ops = (_ir.op.SumOp, _ir.op.MulArg0GradOp, _ir.op.MulArg1GradOp,
-                    _ir.op.AddArg0GradOp, _ir.op.AddArg1GradOp)
+        grad_ops = (
+            _ir.op.SumOp,
+            _ir.op.MulArg0GradOp,
+            _ir.op.MulArg1GradOp,
+            _ir.op.AddArg0GradOp,
+            _ir.op.AddArg1GradOp,
+        )
         assert isinstance(op, grad_ops)
 
     with main:
         grad_seed = popxl.constant(np.ones((16, 16), np.float32))
         activations = ss_bwd_info.inputs_dict(call_info)
-        grads_with_info = ops.call_with_info(bwd_graph,
-                                             grad_seed,
-                                             inputs_dict=activations)
+        grads_with_info = ops.call_with_info(
+            bwd_graph, grad_seed, inputs_dict=activations
+        )
         grads = grads_with_info.outputs
 
     assert len(grads) == len(ss_bwd_info.expected_outputs)
 
     grad_subgraph_tensor_map = ss_bwd_info.fwd_graph_ins_to_grad_parent_outs(
-        grads_with_info)
+        grads_with_info
+    )
     assert all(t.name in g.name for t, g in grad_subgraph_tensor_map.items())
     assert all(t.shape == g.shape for t, g in grad_subgraph_tensor_map.items())
-    assert all(
-        'ScaleNShift' in t.id for t, g in grad_subgraph_tensor_map.items())
+    assert all("ScaleNShift" in t.id for t, g in grad_subgraph_tensor_map.items())
 
     grad_tensor_map = ss_bwd_info.fwd_parent_ins_to_grad_parent_outs(
-        call_info, grads_with_info)
+        call_info, grads_with_info
+    )
     assert all(t.shape == g.shape for t, g in grad_tensor_map.items())
-    assert all('ScaleNShift' not in t.id for t, g in grad_tensor_map.items())
+    assert all("ScaleNShift" not in t.id for t, g in grad_tensor_map.items())
 
 
 def test_grad_graph_info_repr():
@@ -125,7 +124,9 @@ def test_grad_graph_info_repr():
         assert bool(
             re.match(
                 r"GradGraphInfo\[(.|\n)*?graph\=(.|\n)*?expected_inputs\=(.|\n)*?expected_outputs\=(.|\n)*?\]",
-                bwd_info_repr))
+                bwd_info_repr,
+            )
+        )
 
 
 def modifying_subgraph_1(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
@@ -156,10 +157,15 @@ def modifying_subgraph_4(a: popxl.Tensor, b: popxl.Tensor) -> popxl.Tensor:
     return ops.var_updates.accumulate_(a, b, 0.1)
 
 
-@pytest.mark.parametrize("subgraph,willraise", [(modifying_subgraph_1, True),
-                                                (modifying_subgraph_2, True),
-                                                (modifying_subgraph_3, False),
-                                                (modifying_subgraph_4, True)])
+@pytest.mark.parametrize(
+    "subgraph,willraise",
+    [
+        (modifying_subgraph_1, True),
+        (modifying_subgraph_2, True),
+        (modifying_subgraph_3, False),
+        (modifying_subgraph_4, True),
+    ],
+)
 def test_modifying_ops(subgraph: Callable, willraise: bool):
     """Test that an error is/isn't thrown when trying to autodiff a subgraph with/without
     a modifying op in.
@@ -185,8 +191,8 @@ def test_modifying_ops(subgraph: Callable, willraise: bool):
             with pytest.raises(popart.popart_exception) as e_info:
                 _ = popxl.transforms.autodiff(fwd_graph)
 
-            assert (e_info.value.args[0].startswith(
+            assert e_info.value.args[0].startswith(
                 f"The graph {subgraph.__name__}_subgraph(0) contains a modifying op"
-            ))
+            )
         else:
             _ = popxl.transforms.autodiff(fwd_graph)

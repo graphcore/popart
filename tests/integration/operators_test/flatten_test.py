@@ -18,7 +18,7 @@ def test_flatten(op_tester):
         return [o]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_flatten_negative(op_tester):
@@ -35,7 +35,7 @@ def test_flatten_negative(op_tester):
         return [o]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_flatten_grad(op_tester):
@@ -48,7 +48,7 @@ def test_flatten_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -59,5 +59,5 @@ def test_flatten_grad(op_tester):
         o.backward(torch.tensor(d__o))
         return [o, i1.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

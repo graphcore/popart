@@ -8,6 +8,7 @@ import numpy.random as npr
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -21,16 +22,16 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     Test of pipelining with dropout, recomputation, graph replication,
     gradient accumulation
     """
-    #Has dependencies on T12562. T12976, T13098 for full support
+    # Has dependencies on T12562. T12976, T13098 for full support
 
     seed = 1015
     npr.seed(seed)
     torch.manual_seed(seed)
 
-    #L1 loss value
+    # L1 loss value
     lambda1 = 1.0
 
-    #optimizer parameters
+    # optimizer parameters
     defaultLearningRate0 = 0.001
     defaultMomentum0 = 0.01
     defaultDampening0 = 0.5
@@ -45,14 +46,14 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     accumulationFactor = 4
     samplesPerBatch = 48
     divvyFactor = replicationFactor * accumulationFactor
-    if (samplesPerBatch % divvyFactor != 0):
+    if samplesPerBatch % divvyFactor != 0:
         raise RuntimeError("Invalid divvy factor")
     samplesPerMicroBatch = samplesPerBatch // divvyFactor
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
-    #initial weight and input values
+    # initial weight and input values
     w0vals = np.array(npr.randn(height, height), dtype=np.float32)
     w1vals = np.array(npr.randn(height, height), dtype=np.float32)
     w2vals = np.array(npr.randn(height, height), dtype=np.float32)
@@ -65,7 +66,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     w1 = builder.addInitializedInputTensor(w1vals)
     w2 = builder.addInitializedInputTensor(w2vals)
 
-    scaleFactor = 1. / np.sqrt(height + 0.)
+    scaleFactor = 1.0 / np.sqrt(height + 0.0)
 
     # Model:
     #
@@ -97,15 +98,15 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         mm0 = builder.aiOnnx.matmul([input0, w0])
         scale0 = builder.aiGraphcore.scale([mm0], scaleFactor)
         ratio0 = 0.35
-        [dropout0, mask0] = builder.aiOnnx.dropout([scale0],
-                                                   num_outputs=2,
-                                                   ratio=ratio0)
+        [dropout0, mask0] = builder.aiOnnx.dropout(
+            [scale0], num_outputs=2, ratio=ratio0
+        )
         mm1 = builder.aiOnnx.matmul([dropout0, w1])
         scale1 = builder.aiGraphcore.scale([mm1], scaleFactor)
         ratio1 = 0.5
-        [dropout1, mask1] = builder.aiOnnx.dropout([scale1],
-                                                   num_outputs=2,
-                                                   ratio=ratio1)
+        [dropout1, mask1] = builder.aiOnnx.dropout(
+            [scale1], num_outputs=2, ratio=ratio1
+        )
         dropout1 = builder.aiGraphcore.scale([dropout1], 2.0)
         skipOut = builder.aiOnnx.add([mm0, dropout1])
         # See resolved task T13137
@@ -113,9 +114,9 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
             builder.setInplacePreferences(skipOut, {"AddRhsInplace": -1.0})
 
         ratioSkip = 0.6
-        [dropoutSkip, maskSkip] = builder.aiOnnx.dropout([skipOut],
-                                                         num_outputs=2,
-                                                         ratio=ratioSkip)
+        [dropoutSkip, maskSkip] = builder.aiOnnx.dropout(
+            [skipOut], num_outputs=2, ratio=ratioSkip
+        )
 
         # see T13142: we do this so that the recomputation does not modify the anchors
         mask0 = builder.aiOnnx.identity([mask0])
@@ -126,14 +127,14 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         mm2 = builder.aiOnnx.matmul([dropoutSkip, w2])
         scale2 = builder.aiGraphcore.scale([mm2], scaleFactor)
         ratio2 = 0.7
-        [dropout2, mask2] = builder.aiOnnx.dropout([scale2],
-                                                   num_outputs=2,
-                                                   ratio=ratio2)
+        [dropout2, mask2] = builder.aiOnnx.dropout(
+            [scale2], num_outputs=2, ratio=ratio2
+        )
 
         out = builder.aiOnnx.add([dropout2, dropout1])
-        l1 = builder.aiGraphcore.l1loss([out],
-                                        lambda1,
-                                        reduction=popart.ReductionType.Sum)
+        l1 = builder.aiGraphcore.l1loss(
+            [out], lambda1, reduction=popart.ReductionType.Sum
+        )
 
         # see T13142: we do this so that the recomputation does not modify the anchors
         mask2 = builder.aiOnnx.identity([mask2])
@@ -160,7 +161,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         if pipelineRecomputation:
             userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 
-        if (replicationFactor > 1):
+        if replicationFactor > 1:
             userOptions.enableReplicatedGraphs = True
             userOptions.replicatedGraphCount = replicationFactor
         userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -180,18 +181,21 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFlow=dataFlow,
-            optimizer=popart.SGD({
-                "defaultLearningRate": (defaultLearningRate0, False),
-                "defaultMomentum": (defaultMomentum0, False),
-                "defaultDampening": (defaultDampening0, False),
-                "defaultVelocityScaling": (defaultVelocityScaling0, False),
-                "lossScaling": (lossScaling0, True),
-                "defaultWeightDecay": (defaultWeightDecay0, True)
-            }),
+            optimizer=popart.SGD(
+                {
+                    "defaultLearningRate": (defaultLearningRate0, False),
+                    "defaultMomentum": (defaultMomentum0, False),
+                    "defaultDampening": (defaultDampening0, False),
+                    "defaultVelocityScaling": (defaultVelocityScaling0, False),
+                    "lossScaling": (lossScaling0, True),
+                    "defaultWeightDecay": (defaultWeightDecay0, True),
+                }
+            ),
             loss=l1,
             patterns=patterns,
             userOptions=userOptions,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         anchorArrays = session.initAnchorArrays()
 
@@ -214,53 +218,57 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
             # merge replication, accumulation
             flattenedShape = [anchorArrays[mask0].shape[0], -1, height, height]
             self.w0 = torch.nn.Parameter(torch.from_numpy(w0vals.copy()))
-            self.mask0 = torch.from_numpy(
-                anchorArrays[mask0].reshape(flattenedShape))
+            self.mask0 = torch.from_numpy(anchorArrays[mask0].reshape(flattenedShape))
 
             self.w1 = torch.nn.Parameter(torch.from_numpy(w1vals.copy()))
-            self.mask1 = torch.from_numpy(
-                anchorArrays[mask1].reshape(flattenedShape))
+            self.mask1 = torch.from_numpy(anchorArrays[mask1].reshape(flattenedShape))
 
             self.maskSkip = torch.from_numpy(
-                anchorArrays[maskSkip].reshape(flattenedShape))
+                anchorArrays[maskSkip].reshape(flattenedShape)
+            )
 
             self.w2 = torch.nn.Parameter(torch.from_numpy(w2vals.copy()))
-            self.mask2 = torch.from_numpy(
-                anchorArrays[mask2].reshape(flattenedShape))
+            self.mask2 = torch.from_numpy(anchorArrays[mask2].reshape(flattenedShape))
 
         def forward(self, x, i):
             mm0 = torch.matmul(x, self.w0)
-            dr0 = mm0 * scaleFactor * self.mask0[i].type(
-                torch.FloatTensor) / (1 - ratio0)
+            dr0 = (
+                mm0 * scaleFactor * self.mask0[i].type(torch.FloatTensor) / (1 - ratio0)
+            )
 
             mm1 = torch.matmul(dr0, self.w1)
-            dr1 = mm1 * scaleFactor * self.mask1[i].type(
-                torch.FloatTensor) / (1 - ratio1)
+            dr1 = (
+                mm1 * scaleFactor * self.mask1[i].type(torch.FloatTensor) / (1 - ratio1)
+            )
             dr1 = 2 * dr1
 
-            drSkip = (dr1 + mm0) * self.maskSkip[i].type(
-                torch.FloatTensor) / (1 - ratioSkip)
+            drSkip = (
+                (dr1 + mm0) * self.maskSkip[i].type(torch.FloatTensor) / (1 - ratioSkip)
+            )
 
             mm2 = torch.matmul(drSkip, self.w2)
-            dr2 = mm2 * scaleFactor * self.mask2[i].type(
-                torch.FloatTensor) / (1 - ratio2)
+            dr2 = (
+                mm2 * scaleFactor * self.mask2[i].type(torch.FloatTensor) / (1 - ratio2)
+            )
 
             out = dr1 + dr2
             return out
 
     net = Net()
 
-    optimizer = optim.SGD(net.parameters(),
-                          lr=defaultLearningRate0,
-                          momentum=defaultMomentum0,
-                          dampening=defaultDampening0,
-                          weight_decay=defaultWeightDecay0)
+    optimizer = optim.SGD(
+        net.parameters(),
+        lr=defaultLearningRate0,
+        momentum=defaultMomentum0,
+        dampening=defaultDampening0,
+        weight_decay=defaultWeightDecay0,
+    )
 
     # caveat : alternative work-around for TODO T13098
     for group in optimizer.param_groups:
-        for p in group['params']:
+        for p in group["params"]:
             param_state = optimizer.state[p]
-            param_state['momentum_buffer'] = p.data * 0
+            param_state["momentum_buffer"] = p.data * 0
 
     for i in range(batchesPerStep):
         out = net(torch.from_numpy(inputVals[i]), i)
@@ -287,23 +295,23 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     print("l1 error for w0: ", error0)
     print("l1 error for w1: ", error1)
     print("l1 error for w2: ", error2)
-    assert (error0 < 1e-5)
-    assert (error1 < 1e-5)
-    assert (error2 < 1e-5)
+    assert error0 < 1e-5
+    assert error1 < 1e-5
+    assert error2 < 1e-5
 
 
 @tu.requires_ipu
 def test_all_cases():
     # this unit test checks a previously failing case
-    runTest(forceAddOutOfPlace=False,
-            pipelineRecomputation=False,
-            hostRearrangeOnly=True)
-    runTest(forceAddOutOfPlace=False,
-            pipelineRecomputation=False,
-            hostRearrangeOnly=False)
+    runTest(
+        forceAddOutOfPlace=False, pipelineRecomputation=False, hostRearrangeOnly=True
+    )
+    runTest(
+        forceAddOutOfPlace=False, pipelineRecomputation=False, hostRearrangeOnly=False
+    )
 
     # TODO T19948 : fix and enable this test
     # with all features on,
-    #runTest(forceAddOutOfPlace=False, pipelineRecomputation=True)
+    # runTest(forceAddOutOfPlace=False, pipelineRecomputation=True)
 
     print("test_all_cases complete")

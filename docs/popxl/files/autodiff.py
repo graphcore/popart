@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-'''
+"""
 The intention of this example is to show how to get gradients with autodiff.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -20,13 +20,13 @@ class Linear(popxl.Module):
         self.W: popxl.Tensor = None
         self.b: popxl.Tensor = None
 
-    def build(self, x: popxl.Tensor, out_features: int,
-              bias: bool = True) -> Tuple[popxl.Tensor, ...]:
-        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32,
-                                   "W")
+    def build(
+        self, x: popxl.Tensor, out_features: int, bias: bool = True
+    ) -> Tuple[popxl.Tensor, ...]:
+        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = popxl.graph_input((out_features, ), popxl.float32, "b")
+            self.b = popxl.graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         return y
 
@@ -44,29 +44,24 @@ with main:
     linear = Linear()
     linear_graph = ir.create_graph(linear, x, out_features=2)
 
-    fwd_call_info = ops.call_with_info(linear_graph,
-                                       x,
-                                       inputs_dict={
-                                           linear.W: W,
-                                           linear.b: b
-                                       })
+    fwd_call_info = ops.call_with_info(
+        linear_graph, x, inputs_dict={linear.W: W, linear.b: b}
+    )
     y = fwd_call_info.outputs[0]
 
     # get the gradients from autodiff
     bwd_graph_info = transforms.autodiff(linear_graph)
     grad_seed = popxl.constant(np.ones((2, 2), np.float32))
     activations = bwd_graph_info.inputs_dict(fwd_call_info)
-    grads_x, grads_w, grads_b = ops.call(bwd_graph_info.graph,
-                                         grad_seed,
-                                         inputs_dict=activations)
+    grads_x, grads_w, grads_b = ops.call(
+        bwd_graph_info.graph, grad_seed, inputs_dict=activations
+    )
 
     # host store
     o_d2h = popxl.d2h_stream(y.shape, y.dtype, name="output_stream")
     ops.host_store(o_d2h, y)
 
-    grad_d2h = popxl.d2h_stream(grads_w.shape,
-                                grads_w.dtype,
-                                name="grad_stream")
+    grad_d2h = popxl.d2h_stream(grads_w.shape, grads_w.dtype, name="grad_stream")
     ops.host_store(grad_d2h, grads_w)
     # Op end
 

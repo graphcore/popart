@@ -11,6 +11,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -31,15 +32,15 @@ def test_call_pipelined_error():
         sgi0 = subgraph_builder.addInputTensor(info)
         sgi1 = subgraph_builder.addInputTensor(info)
 
-        if force_error == 'no_vgraph_id':
-            subgraph_builder.addOutputTensor(
-                subgraph_builder.aiOnnx.add([sgi0, sgi1]))
-        elif force_error == 'wrong_vgraph_id':
+        if force_error == "no_vgraph_id":
+            subgraph_builder.addOutputTensor(subgraph_builder.aiOnnx.add([sgi0, sgi1]))
+        elif force_error == "wrong_vgraph_id":
             with subgraph_builder.virtualGraph(0):
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnx.add([sgi0, sgi1]))
+                    subgraph_builder.aiOnnx.add([sgi0, sgi1])
+                )
         else:
-            raise Exception(f'Unknown value for `force_error`: {force_error}')
+            raise Exception(f"Unknown value for `force_error`: {force_error}")
 
         with builder.virtualGraph(0), builder.pipelineStage(0):
             act = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
@@ -54,28 +55,30 @@ def test_call_pipelined_error():
 
         with tu.create_test_device(numIpus=4, tilesPerIPU=20) as device:
             with pytest.raises(popart.popart_exception) as e_info:
-                _ = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                            dataFlow=popart.DataFlow(
-                                                10, [out]),
-                                            userOptions=opts,
-                                            deviceInfo=device)
+                _ = popart.InferenceSession(
+                    fnModel=builder.getModelProto(),
+                    dataFlow=popart.DataFlow(10, [out]),
+                    userOptions=opts,
+                    deviceInfo=device,
+                )
 
         print(e_info.value.args[0])
 
         error_pattern = {
-            'no_vgraph_id':
-            ('Op Op(.*) in subgraph ".*" does not have a virtual graph id. '
-             'When pipelining, subgraph ops must have a virtual graph id set.'
-             ),
-            'wrong_vgraph_id':
-            ('The virtual graph id .* for Op Op.* in subgraph .* does not match '
-             'the virtual graph id .* of the calling op. When pipelining, subgraph '
-             'ops must have a virtual graph id matching the calling op.')
+            "no_vgraph_id": (
+                'Op Op(.*) in subgraph ".*" does not have a virtual graph id. '
+                "When pipelining, subgraph ops must have a virtual graph id set."
+            ),
+            "wrong_vgraph_id": (
+                "The virtual graph id .* for Op Op.* in subgraph .* does not match "
+                "the virtual graph id .* of the calling op. When pipelining, subgraph "
+                "ops must have a virtual graph id matching the calling op."
+            ),
         }[force_error]
         assert re.match(error_pattern, e_info.value.args[0])
 
-    run_test('no_vgraph_id')
-    run_test('wrong_vgraph_id')
+    run_test("no_vgraph_id")
+    run_test("wrong_vgraph_id")
 
 
 # Check that call ops created using the builder can be used when pipelining.
@@ -94,8 +97,7 @@ def test_call_pipelined():
         sgi1 = subgraph_builder.addInputTensor(info)
 
         with subgraph_builder.virtualGraph(vgraph):
-            subgraph_builder.addOutputTensor(
-                subgraph_builder.aiOnnx.add([sgi0, sgi1]))
+            subgraph_builder.addOutputTensor(subgraph_builder.aiOnnx.add([sgi0, sgi1]))
         return subgraph_builder
 
     with builder.virtualGraph(0), builder.pipelineStage(0):
@@ -110,10 +112,12 @@ def test_call_pipelined():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=4, tilesPerIPU=20) as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(10, [out]),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(10, [out]),
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
 
@@ -128,8 +132,8 @@ def test_subgraph_attrs():
     learning_rate = 0.1
     shape = [4, 4]
 
-    input_ = np.random.rand(*shape).astype('float32')
-    w0_init = np.random.rand(*shape).astype('float32')
+    input_ = np.random.rand(*shape).astype("float32")
+    w0_init = np.random.rand(*shape).astype("float32")
     lbl = np.random.randint(0, 4, size=[4]).astype(np.int32)
 
     in0 = builder.addInputTensor(popart.TensorInfo(input_))
@@ -152,9 +156,9 @@ def test_subgraph_attrs():
         print(f"Layer: {layer}")
         with builder.virtualGraph(layer):
             w0 = builder.addInitializedInputTensor(w0_init)
-            actIn = builder.aiGraphcore.call([actIn, w0], 1,
-                                             create_subgraph(layer),
-                                             f"subgraph_{layer}")[0]
+            actIn = builder.aiGraphcore.call(
+                [actIn, w0], 1, create_subgraph(layer), f"subgraph_{layer}"
+            )[0]
             print(f"\t{actIn}, layer {layer} created on vgraph {layer}")
             assert builder.getVirtualGraph(actIn) == layer
 
@@ -164,10 +168,10 @@ def test_subgraph_attrs():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     opts.enablePipelining = True
 
-    dataFlow = popart.DataFlow(batches_per_step, {
-        actIn: popart.AnchorReturnType("All"),
-        w0: popart.AnchorReturnType("All")
-    })
+    dataFlow = popart.DataFlow(
+        batches_per_step,
+        {actIn: popart.AnchorReturnType("All"), w0: popart.AnchorReturnType("All")},
+    )
 
     lossId = builder.aiGraphcore.nllloss([actIn, lbl0])
     builder.virtualGraph(lossId, 2)
@@ -179,17 +183,19 @@ def test_subgraph_attrs():
         dataFlow=dataFlow,
         loss=lossId,
         optimizer=popart.ConstSGD(learning_rate),
-        deviceInfo=popart.DeviceManager().createIpuModelDevice(
-            {'numIPUs': numLayers}),
-        userOptions=opts)
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({"numIPUs": numLayers}),
+        userOptions=opts,
+    )
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()
     stepio = popart.PyStepIO(
         {
             in0: np.repeat(input_[np.newaxis, :, :], batches_per_step, axis=0),
-            lbl0: np.repeat(lbl[np.newaxis, :], batches_per_step, axis=0)
-        }, anchors)
+            lbl0: np.repeat(lbl[np.newaxis, :], batches_per_step, axis=0),
+        },
+        anchors,
+    )
 
     class Net(nn.Module):
         def __init__(self, layers):

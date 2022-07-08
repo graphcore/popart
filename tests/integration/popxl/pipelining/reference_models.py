@@ -7,8 +7,8 @@ import numpy as np
 
 
 def run_inference_torch_reference_model(
-        dataset_data: np.array, weights_and_biases: Dict[str, np.array],
-        dim: int) -> np.array:
+    dataset_data: np.array, weights_and_biases: Dict[str, np.array], dim: int
+) -> np.array:
     """Run inference on the reference model implemented in torch.
 
     Args:
@@ -39,7 +39,6 @@ def run_inference_torch_reference_model(
     # The output layer
     t_output_matmul = torch.matmul(t_hidden_layer_activation, output_weights)
     t_output_bias = torch.add(t_output_matmul, output_bias)
-    t_output_layer_activation = torch.nn.functional.softmax(t_output_bias,
-                                                            dim=dim)
+    t_output_layer_activation = torch.nn.functional.softmax(t_output_bias, dim=dim)
 
     return t_output_layer_activation.numpy()

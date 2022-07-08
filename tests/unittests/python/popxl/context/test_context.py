@@ -16,7 +16,7 @@ def test_context_manager():
     with main:
         assert popxl.gcg() == main
         assert popxl.gmg() == main
-        sg = ir.create_empty_graph('sg')
+        sg = ir.create_empty_graph("sg")
         with sg:
             assert popxl.gcg() == sg
             assert popxl.gmg() == main
@@ -45,7 +45,7 @@ def test_get_main_graph():
     main = ir.main_graph
 
     with main:
-        sg = ir.create_empty_graph('sg')
+        sg = ir.create_empty_graph("sg")
 
     # Main graph does not necessarily need to be top of context
     with sg:

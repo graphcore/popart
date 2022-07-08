@@ -2,13 +2,16 @@
 from typing import Tuple
 import numpy as np
 import popart._internal.ir as _ir
-from popxl.context import get_current_context, debug_context_frame_offset, op_debug_context
+from popxl.context import (
+    get_current_context,
+    debug_context_frame_offset,
+    op_debug_context,
+)
 from popxl.tensor import Tensor
 from .utils import check_in_graph
 
 
-def reshape_handle_negative_axis(t: Tensor,
-                                 shape: Tuple[int, ...]) -> Tuple[int, ...]:
+def reshape_handle_negative_axis(t: Tensor, shape: Tuple[int, ...]) -> Tuple[int, ...]:
     replacement = t.nelms // np.prod(np.abs(shape))
     return tuple(axis if axis > 0 else replacement for axis in shape)
 
@@ -49,12 +52,16 @@ def reshape(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
             f"Reshape shape can contain at most one '-1' value. Provided {shape}."
         )
 
-    settings = ctx._get_op_settings('reshape')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Reshape", 5, _ir.NumInputs(1, 1),
-                                  1)
+    settings = ctx._get_op_settings("reshape")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Reshape", 5, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReshapeOp(
-        {0: t.id}, {0: g._create_tensor_id(f"{t.name}_reshaped")}, opid,
-        reshape_handle_negative_axis(t, shape), settings, False)
+        {0: t.id},
+        {0: g._create_tensor_id(f"{t.name}_reshaped")},
+        opid,
+        reshape_handle_negative_axis(t, shape),
+        settings,
+        False,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
@@ -95,12 +102,17 @@ def reshape_(t: Tensor, shape: Tuple[int, ...]) -> Tensor:
             f"Reshape shape can contain at most one '-1' value. Provided {shape}."
         )
 
-    settings = ctx._get_op_settings('reshape_inplace')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReshapeInplace", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("reshape_inplace")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReshapeInplace", 1, _ir.NumInputs(1, 1), 1
+    )
     op = pb_g.createConnectedOp_ReshapeInplaceOp(
-        {0: t.id}, {0: g._create_tensor_id(f"{t.name}_reshaped")}, opid,
-        reshape_handle_negative_axis(t, shape), settings)
+        {0: t.id},
+        {0: g._create_tensor_id(f"{t.name}_reshaped")},
+        opid,
+        reshape_handle_negative_axis(t, shape),
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
@@ -120,7 +132,7 @@ def flatten(t: Tensor) -> Tensor:
     Returns:
         Tensor: Tensor with 1-D shape.
     """
-    return reshape(t, (-1, ))
+    return reshape(t, (-1,))
 
 
 @debug_context_frame_offset(1)
@@ -138,4 +150,4 @@ def flatten_(t: Tensor) -> Tensor:
     Returns:
         Tensor: An alias of the input tensor with a 1-D shape.
     """
-    return reshape_(t, (-1, ))
+    return reshape_(t, (-1,))

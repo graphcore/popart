@@ -8,6 +8,7 @@ from onnx import numpy_helper
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -22,9 +23,11 @@ def test_explicit_recomputation(tmpdir):
             np.random.seed(1)
             scaler = 0.01
             w = builder.addInitializedInputTensor(
-                np.random.randn(dsize, dsize).astype(np.float32) * scaler)
+                np.random.randn(dsize, dsize).astype(np.float32) * scaler
+            )
             b = builder.addInitializedInputTensor(
-                np.zeros((dsize, 1)).astype(np.float32))
+                np.zeros((dsize, 1)).astype(np.float32)
+            )
             matmul_id = builder.aiOnnxOpset10.gemm([in_id, w, b])
             return matmul_id
 
@@ -49,8 +52,7 @@ def test_explicit_recomputation(tmpdir):
 
             dataflow_anchors = {}
             for anchorId in anchorIds:
-                dataflow_anchors.update(
-                    {anchorId: popart.AnchorReturnType("All")})
+                dataflow_anchors.update({anchorId: popart.AnchorReturnType("All")})
 
             opts = popart.SessionOptions()
             opts.explicitRecomputation = explicit_recompute
@@ -64,7 +66,8 @@ def test_explicit_recomputation(tmpdir):
                 loss=out,
                 patterns=popart.Patterns(popart.PatternsLevel.All),
                 userOptions=opts,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -80,9 +83,11 @@ def test_explicit_recomputation(tmpdir):
     run("explicit_recomputation_enabled.onnx", True)
 
     explicit_recomputation_disabled = onnx.load(
-        str(tmpdir / "explicit_recomputation_disabled.onnx"))
+        str(tmpdir / "explicit_recomputation_disabled.onnx")
+    )
     explicit_recomputation_enabled = onnx.load(
-        str(tmpdir / "explicit_recomputation_enabled.onnx"))
+        str(tmpdir / "explicit_recomputation_enabled.onnx")
+    )
 
     for i in range(len(explicit_recomputation_disabled.graph.initializer)):
         print(f"Checking initializer {i}")
@@ -94,7 +99,7 @@ def test_explicit_recomputation(tmpdir):
 
 
 def test_explicit_recomputation_pipelining():
-    """ Test that pipeline recomputation recomputes as expected """
+    """Test that pipeline recomputation recomputes as expected"""
     batches_per_step = 3
     dsize = 10
     builder = popart.Builder()
@@ -104,9 +109,9 @@ def test_explicit_recomputation_pipelining():
         np.random.seed(1)
         scaler = 0.01
         w = builder.addInitializedInputTensor(
-            np.random.randn(dsize, dsize).astype(np.float32) * scaler)
-        b = builder.addInitializedInputTensor(
-            np.zeros((dsize, 1)).astype(np.float32))
+            np.random.randn(dsize, dsize).astype(np.float32) * scaler
+        )
+        b = builder.addInitializedInputTensor(np.zeros((dsize, 1)).astype(np.float32))
         matmul_id = builder.aiOnnxOpset10.gemm([in_id, w, b])
         act_id = builder.aiOnnxOpset10.relu([matmul_id])
         return act_id
@@ -122,8 +127,7 @@ def test_explicit_recomputation_pipelining():
     anchorIds = [out]
     builder.addOutputTensor(out)
 
-    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                False}) as device:
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
 
         dataflow_anchors = {}
         for anchorId in anchorIds:
@@ -145,7 +149,8 @@ def test_explicit_recomputation_pipelining():
             loss=out,
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -156,13 +161,13 @@ def test_explicit_recomputation_pipelining():
 
         session.run(stepio)
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
 
         stashes = [
-            op for graph in ir for op in ir[graph]
-            if (op["type"] == "DynamicUpdate"
-                or op["type"] == "DynamicUpdateInplace")
+            op
+            for graph in ir
+            for op in ir[graph]
+            if (op["type"] == "DynamicUpdate" or op["type"] == "DynamicUpdateInplace")
         ]
 
         # Due to the number of pipeline stages and only one tensor requring
@@ -170,7 +175,9 @@ def test_explicit_recomputation_pipelining():
         assert len(stashes) == 1
 
         recomputed = [
-            op for graph in ir for op in ir[graph]
+            op
+            for graph in ir
+            for op in ir[graph]
             if (op["attributes"]["recomputetype"] == "Recomputed")
         ]
 

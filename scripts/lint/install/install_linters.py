@@ -19,11 +19,13 @@ def call_command(cmd: str) -> None:
     Raises:
         RuntimeError: The error if the command returned a non-zero integer.
     """
-    process = subprocess.Popen(cmd.split(),
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE,
-                               cwd=Path(__file__).parent)
-    for c in iter(lambda: process.stdout.read(1), b''):
+    process = subprocess.Popen(
+        cmd.split(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=Path(__file__).parent,
+    )
+    for c in iter(lambda: process.stdout.read(1), b""):
         sys.stdout.buffer.write(c)
     return_code = None
     while return_code is None:
@@ -38,8 +40,7 @@ def call_command(cmd: str) -> None:
 
 
 class Installer:
-    """Class used to install linter binaries.
-    """
+    """Class used to install linter binaries."""
 
     def __init__(self, install_dir: str) -> None:
         """Set up the class and run the version checker.
@@ -88,19 +89,15 @@ class Installer:
 
         # Set the install_dir as a environmental variable
         os.environ["PATH"] = f"{self.path}:{os.environ['PATH']}"
-        os.environ[
-            "LD_LIBRARY_PATH"] = f"{self.ld_library_path}:{os.environ['PATH']}"
+        os.environ["LD_LIBRARY_PATH"] = f"{self.ld_library_path}:{os.environ['PATH']}"
 
         self.version_checker = VersionChecker()
         self.linters_to_install = self.version_checker.linter_with_errors
 
     def install_uninstalled(self) -> None:
-        """Install all linters marked for install.
-        """
+        """Install all linters marked for install."""
         if len(self.linters_to_install) == 0:
-            print(
-                "All linters appears to be installed with the correct version."
-            )
+            print("All linters appears to be installed with the correct version.")
 
         # llvm needs to be installed first due to dependencies
         self._install_uninstalled_llvm()
@@ -112,13 +109,13 @@ class Installer:
         self._print_success()
 
     def _install_uninstalled_llvm(self) -> None:
-        """Install the llvm suite.
-        """
+        """Install the llvm suite."""
         llvm_linters = ("clang", "clang-tidy")
-        llvm_dependent_linters = (*llvm_linters, "include-what-you-use",
-                                  "oclint")
-        if any(clang_linter in self.linters_to_install
-               for clang_linter in llvm_dependent_linters):
+        llvm_dependent_linters = (*llvm_linters, "include-what-you-use", "oclint")
+        if any(
+            clang_linter in self.linters_to_install
+            for clang_linter in llvm_dependent_linters
+        ):
             call_command(
                 f"bash install_llvm.sh {self.install_dir} {self.version_checker.version_list['clang']}"
             )
@@ -127,8 +124,7 @@ class Installer:
                     self.linters_to_install.remove(llvm_linter)
 
     def _install_uninstalled_iwyu(self) -> None:
-        """Install include-what-you-use.
-        """
+        """Install include-what-you-use."""
         if "include-what-you-use" in self.linters_to_install:
             # NOTE: The clang version needs to be passed, not the IWYU version
             call_command(
@@ -137,8 +133,7 @@ class Installer:
             self.linters_to_install.remove("include-what-you-use")
 
     def _install_uninstalled_oclint(self):
-        """Install oclint.
-        """
+        """Install oclint."""
         if "oclint" in self.linters_to_install:
             call_command(
                 f"bash install_oclint.sh {self.install_dir} {self.install_dir} {self.version_checker.version_list['oclint']}"
@@ -146,8 +141,7 @@ class Installer:
             self.linters_to_install.remove("oclint")
 
     def _install_uninstalled_pip_packages(self):
-        """Install pip packages.
-        """
+        """Install pip packages."""
         pip_packages = ("yapf", "clang-format", "pylint")
         for pip_package in pip_packages:
             if pip_package in self.linters_to_install:
@@ -156,8 +150,7 @@ class Installer:
                 self.linters_to_install.remove(pip_package)
 
     def _install_uninstalled_others(self):
-        """Install linters with a generic install script signature.
-        """
+        """Install linters with a generic install script signature."""
         for linter in self.linters_to_install.copy():
             call_command(
                 f"bash install_{linter}.sh {self.install_dir} {self.version_checker.version_list[linter]}"
@@ -165,17 +158,12 @@ class Installer:
             self.linters_to_install.remove(linter)
 
     def _print_success(self):
-        """Print the success message.
-        """
+        """Print the success message."""
         print("\n\x1b[6;30;42mSuccess!\x1b[0m\n")
         print("\n\n\x1b[0;30;43mFurther instructions:\x1b[0m")
-        print(
-            "Copy and paste the following to the bottom of your $HOME/.bashrc\n"
-        )
-        print(f"export PATH=\"{self.path}:$PATH\"")
-        print(
-            f"export LD_LIBRARY_PATH=\"{self.ld_library_path}:$LD_LIBRARY_PATH\""
-        )
+        print("Copy and paste the following to the bottom of your $HOME/.bashrc\n")
+        print(f'export PATH="{self.path}:$PATH"')
+        print(f'export LD_LIBRARY_PATH="{self.ld_library_path}:$LD_LIBRARY_PATH"')
         print("\nExplanation:")
         print("The linters must be visible for the shell.")
         print("They become visible by setting these environment variables.")
@@ -193,8 +181,9 @@ class Installer:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Install linters")
-    parser.add_argument("install_dir",
-                        help="Directory to install bin/ lib/ and include/ to")
+    parser.add_argument(
+        "install_dir", help="Directory to install bin/ lib/ and include/ to"
+    )
     args = parser.parse_args()
     installer = Installer(args.install_dir)
     installer.install_uninstalled()

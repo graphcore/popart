@@ -17,6 +17,7 @@ class ExpectedConnectionType(Enum):
     associated either with tensors in the forward graph or with gradients of
     tensors in the forward graph.
     """
+
     #: Expected input/output is a tensor of the forward graph.
     Fwd = "Fwd"
 
@@ -57,8 +58,9 @@ class ExpectedConnection:
         )
 
     @classmethod
-    def _from_pb(cls, fwd_graph: _ir.Graph,
-                 pb_ec: _ir.ExpectedConnection) -> "ExpectedConnection":
+    def _from_pb(
+        cls, fwd_graph: _ir.Graph, pb_ec: _ir.ExpectedConnection
+    ) -> "ExpectedConnection":
         self = super().__new__(cls)
         self._fwd_graph = fwd_graph
         self._pb_ec = pb_ec
@@ -70,8 +72,7 @@ class ExpectedConnection:
     @property
     def fwd_tensor(self) -> Tensor:
         """Get the tensor this connection applies to."""
-        return Tensor._from_pb_tensor(
-            self._fwd_graph.getTensor(self._pb_ec.fwdId))
+        return Tensor._from_pb_tensor(self._fwd_graph.getTensor(self._pb_ec.fwdId))
 
     @property
     def connection_type(self):
@@ -105,8 +106,9 @@ class GradGraphInfo:
         )
 
     @classmethod
-    def _from_pb(cls, ir: _ir.Ir, fwd_graph: _ir.Graph,
-                 _pb_bwd_info: _ir.BwdGraphInfo) -> "GradGraphInfo":
+    def _from_pb(
+        cls, ir: _ir.Ir, fwd_graph: _ir.Graph, _pb_bwd_info: _ir.BwdGraphInfo
+    ) -> "GradGraphInfo":
         self = super().__new__(cls)
         self._ir = ir
         self._fwd_graph = fwd_graph
@@ -162,8 +164,7 @@ class GradGraphInfo:
         result += "".join([f"    {repr(ec)}\n" for ec in self.expected_inputs])
         result += "  ]\n"
         result += "  expected_outputs=[\n"
-        result += "".join(
-            [f"    {repr(ec)}\n" for ec in self.expected_outputs])
+        result += "".join([f"    {repr(ec)}\n" for ec in self.expected_outputs])
         result += "  ]\n"
         result += "]"
         return result
@@ -194,14 +195,12 @@ class GradGraphInfo:
         .. code-block:: python
 
             # `module`: subgraph module, `x`: parent graph inputs, `x_dash`: gradient graph parent input
-            graph = ir.create_graph(module, x, out_features=16) # Forward graph
-            call_info = ops.call_with_info(
-                graph, x, inputs_dict={module.W: W, module.b: b})
+            graph = ir.create_graph(module, x, out_features=16)  # Forward graph
+            call_info = ops.call_with_info(graph, x, inputs_dict={module.W: W, module.b: b})
 
             grads_graph = popxl.transforms.autodiff(graph)
             activations = ss_bwd_info.inputs_dict(call_info)
-            grads_call_info = ops.call_with_info(
-                grads_graph, x_dash, inputs_dict=activations)
+            grads_call_info = ops.call_with_info(grads_graph, x_dash, inputs_dict=activations)
 
         This method raises a ``TypeError`` exception if the forward graph does
         not match the graph that was differentiated.
@@ -227,14 +226,16 @@ class GradGraphInfo:
             )
 
         return {
-            Tensor._from_pb_tensor(self.graph._pb_graph.getInputTensor(idx)):
-            fwd_call_info.graph_to_parent(act.fwd_tensor)
+            Tensor._from_pb_tensor(
+                self.graph._pb_graph.getInputTensor(idx)
+            ): fwd_call_info.graph_to_parent(act.fwd_tensor)
             for idx, act in enumerate(self.expected_inputs)
             if act.connection_type == ExpectedConnectionType.Fwd
         }
 
     def fwd_graph_ins_to_grad_parent_outs(
-            self, grad_call_info: CallSiteInfo) -> Dict[Tensor, Tensor]:
+        self, grad_call_info: CallSiteInfo
+    ) -> Dict[Tensor, Tensor]:
         """
         Return mapping between forward graph inputs and outputs of the parent of the gradient graph.
 
@@ -247,24 +248,27 @@ class GradGraphInfo:
         .. code-block:: python
 
             # `module`: subgraph module, `x`: parent graph inputs, `x_dash`: gradient parent graph input
-            graph = ir.create_graph(module, x, out_features=16) # Forward graph
-            call_info = ops.call_with_info(
-                graph, x, inputs_dict={module.W: W, module.b: b})
+            graph = ir.create_graph(module, x, out_features=16)  # Forward graph
+            call_info = ops.call_with_info(graph, x, inputs_dict={module.W: W, module.b: b})
 
             grads_graph = popxl.transforms.autodiff(graph)
             activations = ss_bwd_info.inputs_dict(call_info)
-            grads_call_info = ops.call_with_info(
-                grads_graph, x_dash, inputs_dict=activations)
+            grads_call_info = ops.call_with_info(grads_graph, x_dash, inputs_dict=activations)
 
             # Obtain a mapping between subgraph tensors that correspond to `x`, `W` and `b` and the corresponding parent gradient tensors outputs
             grad_tensor_map = grads_graph.fwd_graph_ins_to_grad_parent_outs(grads_call_info)
             assert all(t in graph for t in grad_tensor_map.keys())
             assert all(t in main for t in grad_tensor_map.values())
             assert [t.id for t in grad_tensor_map.keys()] == [
-                'Module_subgraph(0)/x', 'Module_subgraph(0)/W',
-                'Module_subgraph(0)/b']
+                "Module_subgraph(0)/x",
+                "Module_subgraph(0)/W",
+                "Module_subgraph(0)/b",
+            ]
             assert [t.id for t in grad_tensor_map.values()] == [
-                'Gradient___x', 'Gradient___W', 'Gradient___b']
+                "Gradient___x",
+                "Gradient___W",
+                "Gradient___b",
+            ]
 
         Args:
             grad_call_info (CallSiteInfo):
@@ -283,8 +287,8 @@ class GradGraphInfo:
         }
 
     def fwd_parent_ins_to_grad_parent_outs(
-            self, fwd_call_info: CallSiteInfo,
-            grad_call_info: CallSiteInfo) -> Dict[Tensor, Tensor]:
+        self, fwd_call_info: CallSiteInfo, grad_call_info: CallSiteInfo
+    ) -> Dict[Tensor, Tensor]:
         """
         Return mapping between forward's parent graph inputs and gradient's parent graph outputs.
 
@@ -297,18 +301,18 @@ class GradGraphInfo:
         .. code-block:: python
 
             # `module`: subgraph module, `x`: graph inputs, `x_dash`: gradient graph input
-            graph = ir.create_graph(module, x, out_features=16) # Forward graph
-            call_info = ops.call_with_info(
-                graph, x, inputs_dict={module.W: W, module.b: b})
+            graph = ir.create_graph(module, x, out_features=16)  # Forward graph
+            call_info = ops.call_with_info(graph, x, inputs_dict={module.W: W, module.b: b})
 
             grads_graph = popxl.transforms.autodiff(graph)
             activations = ss_bwd_info.inputs_dict(call_info)
-            grads_call_info = ops.call_with_info(
-                grads_graph, x_dash, inputs_dict=activations)
+            grads_call_info = ops.call_with_info(grads_graph, x_dash, inputs_dict=activations)
 
             # Obtain a mapping between input tensors `x`, `W` and `b` and the corresponding gradient tensors
-            grad_tensor_map = grads_graph.fwd_parent_ins_to_grad_parent_outs(call_info, grads_call_info)
-            assert [t.id for t in grad_tensor_map.keys()] == ['x', 'W', 'b']
+            grad_tensor_map = grads_graph.fwd_parent_ins_to_grad_parent_outs(
+                call_info, grads_call_info
+            )
+            assert [t.id for t in grad_tensor_map.keys()] == ["x", "W", "b"]
 
         Args:
             fwd_call_info (CallSiteInfo):
@@ -327,18 +331,20 @@ class GradGraphInfo:
                 graph.
         """
         return {
-            fwd_call_info.graph_to_parent(t):
-            grad_call_info.graph_to_parent(self.graph.outputs[idx])
+            fwd_call_info.graph_to_parent(t): grad_call_info.graph_to_parent(
+                self.graph.outputs[idx]
+            )
             for idx, t in enumerate(self.outputs)
         }
 
 
-def autodiff(graph: Graph,
-             grads_provided: Optional[Iterable[Tensor]] = None,
-             grads_required: Optional[Iterable[Tensor]] = None,
-             called_graphs_grad_info: Optional[
-                 Mapping[Graph, GradGraphInfo]] = None,
-             return_all_grad_graphs: bool = False):
+def autodiff(
+    graph: Graph,
+    grads_provided: Optional[Iterable[Tensor]] = None,
+    grads_required: Optional[Iterable[Tensor]] = None,
+    called_graphs_grad_info: Optional[Mapping[Graph, GradGraphInfo]] = None,
+    return_all_grad_graphs: bool = False,
+):
     """
     Perform automatic differentiation of a graph.
 
@@ -407,16 +413,20 @@ def autodiff(graph: Graph,
     """
     grads_provided = graph.outputs if grads_provided is None else grads_provided
     grads_required = graph.inputs if grads_required is None else grads_required
-    called_graphs_grad_info = {} if called_graphs_grad_info is None else called_graphs_grad_info
+    called_graphs_grad_info = (
+        {} if called_graphs_grad_info is None else called_graphs_grad_info
+    )
 
     _pb_ir = graph.ir._pb_ir
     transform = _ir.transforms.Autodiff()
 
     _pb_result = transform.apply(
-        _pb_ir, _ir.GraphId(graph.name), [t.id for t in grads_provided],
+        _pb_ir,
+        _ir.GraphId(graph.name),
+        [t.id for t in grads_provided],
         _ir.OptionalTensors([t.id for t in grads_required]),
-        {k: v._pb_bwd_info
-         for k, v in called_graphs_grad_info.items()})
+        {k: v._pb_bwd_info for k, v in called_graphs_grad_info.items()},
+    )
 
     result: Mapping[Graph, GradGraphInfo] = {}
     for k, v in _pb_result.items():

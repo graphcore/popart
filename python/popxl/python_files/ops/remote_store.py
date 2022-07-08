@@ -9,8 +9,9 @@ from .utils import check_in_graph
 
 
 @op_debug_context
-def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
-                 t: Tensor) -> None:
+def remote_store(
+    remote_buffer: RemoteBuffer, offset: Union[int, Tensor], t: Tensor
+) -> None:
     """
     Store a tensor in Streaming Memory.
 
@@ -61,11 +62,11 @@ def remote_store(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
 
     remote_buffer.validate_tensor_matches_buffer(t)
 
-    settings = ctx._get_op_settings('remote_store')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteStore", 1,
-                                  _ir.NumInputs(1, 2), 0)
+    settings = ctx._get_op_settings("remote_store")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "RemoteStore", 1, _ir.NumInputs(1, 2), 0
+    )
 
-    _ = pb_g.createConnectedOp_RemoteStoreOp({
-        0: t.id,
-        1: offset.id
-    }, {}, opid, settings, remote_buffer.remote_buffer_id)
+    _ = pb_g.createConnectedOp_RemoteStoreOp(
+        {0: t.id, 1: offset.id}, {}, opid, settings, remote_buffer.remote_buffer_id
+    )

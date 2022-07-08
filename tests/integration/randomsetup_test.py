@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import pytest
 import popart
+
 """
 NOTE: In theory random ops can produce identical output despite having different
 seeds, so checking for distinct outputs as a way of testing probabilistic
@@ -16,6 +17,7 @@ and there is no small probability of failure.
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -24,8 +26,7 @@ import test_util as tu
 Slice = collections.namedtuple("Slice", ["index", "total_slices"])
 
 # An object to hold the result of the "run_model" function.
-Run = collections.namedtuple("Run",
-                             ["anchors", "seed", "steps", "random_outs"])
+Run = collections.namedtuple("Run", ["anchors", "seed", "steps", "random_outs"])
 
 # Constant value for taking all of a tensor (first index, 1 slice in total).
 whole = Slice(index=0, total_slices=1)
@@ -48,25 +49,16 @@ def test_random_behaviour_governed_by_seed(useHostCopyOps):
     d0 = np.asarray([1.0] * num_elems * num_steps).astype(np.float32)
 
     def model_fn(builder):
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
         main_dropout0 = builder.aiOnnx.dropout([main_in0], 1, 0.5)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_dropout0], reduction=popart.ReductionType.Mean)
-        return loss, {main_in0: d0}, {'main_dropout0': main_dropout0}
+            [main_dropout0], reduction=popart.ReductionType.Mean
+        )
+        return loss, {main_in0: d0}, {"main_dropout0": main_dropout0}
 
-    run0 = run_model(builder_fn=model_fn,
-                     steps=num_steps,
-                     seed=0,
-                     options=options)
-    run1 = run_model(builder_fn=model_fn,
-                     steps=num_steps,
-                     seed=0,
-                     options=options)
-    run2 = run_model(builder_fn=model_fn,
-                     steps=num_steps,
-                     seed=11583,
-                     options=options)
+    run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0, options=options)
+    run1 = run_model(builder_fn=model_fn, steps=num_steps, seed=0, options=options)
+    run2 = run_model(builder_fn=model_fn, steps=num_steps, seed=11583, options=options)
 
     # run0 and run1 (which use the same seed) should agree on each step.
     for s in range(num_steps):
@@ -96,17 +88,19 @@ def test_distinct_random_behaviour_per_step():
     d0 = np.asarray([1.0] * num_elems * num_steps).astype(np.float32)
 
     def model_fn(builder):
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
         main_dropout0 = builder.aiOnnx.dropout([main_in0], 1, 0.5)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_dropout0], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout0_grad': popart.reservedGradientPrefix() + main_in0
-        }
+            [main_dropout0], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_in0,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -140,24 +134,25 @@ def test_distinct_random_behaviour_per_op():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
         main_ident0 = builder.aiGraphcore.scale([main_in0], 0.1)
         main_ident1 = builder.aiGraphcore.scale([main_in0], 0.2)
         main_dropout0 = builder.aiOnnx.dropout([main_ident0], 1, 0.5)[0]
         main_dropout1 = builder.aiOnnx.dropout([main_ident1], 1, 0.5)[0]
         main_add = builder.aiOnnx.add([main_dropout0, main_dropout1])
         loss = builder.aiGraphcore.identityloss(
-            [main_add], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout1': main_dropout1,
-            'main_dropout0_grad':
-            popart.reservedGradientPrefix() + main_ident0,
-            'main_dropout1_grad': popart.reservedGradientPrefix() + main_ident1
-        }
+            [main_add], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout1": main_dropout1,
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_ident0,
+                "main_dropout1_grad": popart.reservedGradientPrefix() + main_ident1,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -191,8 +186,7 @@ def test_random_op_in_subgraph():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
 
         sg0_builder = builder.createSubgraphBuilder()
         sg0_in0 = sg0_builder.addUntypedInputTensor()
@@ -200,13 +194,16 @@ def test_random_op_in_subgraph():
         sg0_builder.addOutputTensor(sg0_rnd0)
         main_dropout0 = builder.aiGraphcore.call([main_in0], 1, sg0_builder)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_dropout0], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout0_grad': popart.reservedGradientPrefix() + main_in0
-        }
+            [main_dropout0], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_in0,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -240,8 +237,7 @@ def test_two_calls_to_subgraph_with_random_op():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
 
         sg0_builder = builder.createSubgraphBuilder()
         sg0_in0 = sg0_builder.addUntypedInputTensor()
@@ -249,22 +245,22 @@ def test_two_calls_to_subgraph_with_random_op():
         sg0_builder.addOutputTensor(sg0_rnd0)
         main_ident0 = builder.aiGraphcore.scale([main_in0], 0.1)
         main_ident1 = builder.aiGraphcore.scale([main_in0], 0.2)
-        main_dropout0 = builder.aiGraphcore.call([main_ident0], 1,
-                                                 sg0_builder)[0]
-        main_dropout1 = builder.aiGraphcore.call([main_ident1], 1,
-                                                 sg0_builder)[0]
+        main_dropout0 = builder.aiGraphcore.call([main_ident0], 1, sg0_builder)[0]
+        main_dropout1 = builder.aiGraphcore.call([main_ident1], 1, sg0_builder)[0]
         main_add = builder.aiOnnx.add([main_dropout0, main_dropout1])
         loss = builder.aiGraphcore.identityloss(
-            [main_add], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout1': main_dropout1,
-            'main_dropout0_grad':
-            popart.reservedGradientPrefix() + main_ident0,
-            'main_dropout1_grad': popart.reservedGradientPrefix() + main_ident1
-        }
+            [main_add], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout1": main_dropout1,
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_ident0,
+                "main_dropout1_grad": popart.reservedGradientPrefix() + main_ident1,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -299,8 +295,7 @@ def test_nesting_of_subgraphs():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
 
         sg0_builder = builder.createSubgraphBuilder()
         sg0_in0 = sg0_builder.addUntypedInputTensor()
@@ -312,13 +307,16 @@ def test_nesting_of_subgraphs():
         sg1_builder.addOutputTensor(sg1_call0)
         main_dropout0 = builder.aiGraphcore.call([main_in0], 1, sg1_builder)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_dropout0], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout0_grad': popart.reservedGradientPrefix() + main_in0
-        }
+            [main_dropout0], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_in0,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -367,8 +365,7 @@ def test_distinct_random_behaviour_with_subgraphs():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
 
         sg0_builder = builder.createSubgraphBuilder()
         sg0_in0 = sg0_builder.addUntypedInputTensor()
@@ -384,17 +381,20 @@ def test_distinct_random_behaviour_with_subgraphs():
         main_add1 = builder.aiOnnx.add([main_dropout2, main_dropout3])
         main_add1 = builder.aiOnnx.add([main_add0, main_add1])
         loss = builder.aiGraphcore.identityloss(
-            [main_add1], reduction=popart.ReductionType.Mean)
-        return loss, {
-            main_in0: d0
-        }, {
-            'main_dropout0': main_dropout0,
-            'main_dropout1': main_dropout1,
-            'main_dropout2': main_dropout2,
-            'main_dropout3': main_dropout3,
-            # Grad not checked but needed here because of T36121
-            'main_dropout0_grad': popart.reservedGradientPrefix() + main_in0
-        }
+            [main_add1], reduction=popart.ReductionType.Mean
+        )
+        return (
+            loss,
+            {main_in0: d0},
+            {
+                "main_dropout0": main_dropout0,
+                "main_dropout1": main_dropout1,
+                "main_dropout2": main_dropout2,
+                "main_dropout3": main_dropout3,
+                # Grad not checked but needed here because of T36121
+                "main_dropout0_grad": popart.reservedGradientPrefix() + main_in0,
+            },
+        )
 
     run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0)
 
@@ -426,8 +426,7 @@ def test_random_op_in_loop_body():
 
     def model_fn(builder):
         # Model with 1 dropout.
-        main_in0 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        main_in0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
 
         # Num loop iterations.
         M = builder.aiOnnx.constant(np.array(num_iters).astype(np.int64), "M")
@@ -437,39 +436,33 @@ def test_random_op_in_loop_body():
         loop_builder = builder.createSubgraphBuilder()
         loop_builder.setGraphName("loop_body")
         # Trip counter.
-        loop_iters = loop_builder.addInputTensor(popart.TensorInfo(
-            "INT64", []))
+        loop_iters = loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
         # Termination condition.
         loop_cond = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
         # explicit input, loop carried.
-        loop_res = loop_builder.addInputTensor(
-            popart.TensorInfo("FLOAT", [num_elems]))
+        loop_res = loop_builder.addInputTensor(popart.TensorInfo("FLOAT", [num_elems]))
         # do the dropout (note: use tensor from parent scope as input).
         loop_rnd0 = loop_builder.aiOnnx.randomuniform(shape=[num_elems])
         # Calculate dynamic slice offset.
         offset = loop_builder.aiGraphcore.scale([loop_iters], num_elems)
         # Dynamic slice to stack the dropout result tensors.
         loop_res = loop_builder.aiGraphcore.dynamicupdate(
-            [loop_res, offset, loop_rnd0],
-            axes=[0],
-            sizes=[num_elems],
-            noOverlap=True)
+            [loop_res, offset, loop_rnd0], axes=[0], sizes=[num_elems], noOverlap=True
+        )
         loop_builder.addOutputTensor(loop_cond)
         loop_builder.addOutputTensor(loop_res)
 
-        loop_var = builder.aiGraphcore.init([num_iters * num_elems],
-                                            popart.DataType.FLOAT,
-                                            popart.InitType.NoInit)
+        loop_var = builder.aiGraphcore.init(
+            [num_iters * num_elems], popart.DataType.FLOAT, popart.InitType.NoInit
+        )
 
         main_rnd = builder.aiOnnx.loop([M, cond, loop_var], 1, loop_builder)[0]
         loss = builder.aiGraphcore.identityloss(
-            [main_rnd], reduction=popart.ReductionType.Mean)
-        return loss, {main_in0: d0}, {'loss': loss, 'main_rnd': main_rnd}
+            [main_rnd], reduction=popart.ReductionType.Mean
+        )
+        return loss, {main_in0: d0}, {"loss": loss, "main_rnd": main_rnd}
 
-    run0 = run_model(builder_fn=model_fn,
-                     steps=num_steps,
-                     seed=0,
-                     training=False)
+    run0 = run_model(builder_fn=model_fn, steps=num_steps, seed=0, training=False)
 
     # no step should yield the same mask.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
@@ -483,11 +476,7 @@ def test_random_op_in_loop_body():
                 # yapf: enable
 
 
-def run_model(builder_fn,
-              steps,
-              seed,
-              training=True,
-              options=popart.SessionOptions()):
+def run_model(builder_fn, steps, seed, training=True, options=popart.SessionOptions()):
     """
     Helper function that runs a model and returns the anchors.
 
@@ -505,9 +494,8 @@ def run_model(builder_fn,
     builder = popart.Builder()
     loss, inputs, random_outs = builder_fn(builder)
     dataFlow = popart.DataFlow(
-        steps,
-        {op[1]: popart.AnchorReturnType("ALL")
-         for op in random_outs.items()})
+        steps, {op[1]: popart.AnchorReturnType("ALL") for op in random_outs.items()}
+    )
 
     proto = builder.getModelProto()
     optimizer = popart.SGD({"defaultLearningRate": (0.1, True)})
@@ -516,19 +504,23 @@ def run_model(builder_fn,
     with tu.create_test_device(1, pattern=popart.SyncPattern.Full) as device:
 
         if training:
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+                deviceInfo=device,
+            )
         else:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=options,
-                                              patterns=patterns,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -537,10 +529,7 @@ def run_model(builder_fn,
         stepio = popart.PyStepIO(inputs, anchors)
         session.run(stepio)
 
-    return Run(anchors=anchors,
-               seed=seed,
-               steps=steps,
-               random_outs=random_outs)
+    return Run(anchors=anchors, seed=seed, steps=steps, random_outs=random_outs)
 
 
 def get_anchor_step(run, anchor, step, slice):
@@ -562,7 +551,7 @@ def get_anchor_step(run, anchor, step, slice):
 
     # Take a slice of the tensor.
     slice_size = out.shape[0] // slice.total_slices
-    out = out[slice.index * slice_size:(slice.index + 1) * slice_size]
+    out = out[slice.index * slice_size : (slice.index + 1) * slice_size]
     return out
 
 
@@ -573,13 +562,12 @@ def slice_to_str(slice):
     opposed to "Slice(index=0, total_slices=1)".
     """
     if slice == whole:
-        return 'whole'
+        return "whole"
     else:
         return f"({slice.index}/{slice.total_slices})"
 
 
-def ensure_mask_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
-                      slice1):
+def ensure_mask_equal(run0, anchor0, step0, slice0, run1, anchor1, step1, slice1):
     """
     Helper function to compare two random op outputs and assert they are the same.
 
@@ -587,15 +575,16 @@ def ensure_mask_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
     """
     tensor0 = get_anchor_step(run0, anchor0, step0, slice0) == 0
     tensor1 = get_anchor_step(run1, anchor1, step1, slice1) == 0
-    assert (np.array_equal(tensor0, tensor1)), f"""
+    assert np.array_equal(
+        tensor0, tensor1
+    ), f"""
       Expected output '{anchor0}', step {step0}, slice={slice_to_str(slice0)} (seed={run0.seed})
         {tensor0}
       to match output '{anchor1}', step {step1}, slice={slice_to_str(slice1)}  (seed={run1.seed})
         {tensor1}"""
 
 
-def ensure_mask_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
-                          slice1):
+def ensure_mask_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1, slice1):
     """
     Helper function to compare two random op outputs, ensuring they are different.
 
@@ -603,15 +592,16 @@ def ensure_mask_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
     """
     tensor0 = get_anchor_step(run0, anchor0, step0, slice0) == 0
     tensor1 = get_anchor_step(run1, anchor1, step1, slice1) == 0
-    assert (not np.array_equal(tensor0, tensor1)), f"""
+    assert not np.array_equal(
+        tensor0, tensor1
+    ), f"""
       Expected output '{anchor0}', step {step0}, slice={slice_to_str(slice0)} (seed={run0.seed})
         {tensor0}
       to be different from output '{anchor1}', step {step1}, slice={slice_to_str(slice1)} (seed={run1.seed})
         {tensor1}"""
 
 
-def ensure_value_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
-                           slice1):
+def ensure_value_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1, slice1):
     """
     Helper function to compare two random op outputs, ensuring they are different.
 
@@ -619,7 +609,9 @@ def ensure_value_not_equal(run0, anchor0, step0, slice0, run1, anchor1, step1,
     """
     tensor0 = get_anchor_step(run0, anchor0, step0, slice0)
     tensor1 = get_anchor_step(run1, anchor1, step1, slice1)
-    assert (not np.array_equal(tensor0, tensor1)), f"""
+    assert not np.array_equal(
+        tensor0, tensor1
+    ), f"""
       Expected output '{anchor0}', step {step0}, slice={slice_to_str(slice0)} (seed={run0.seed})
         {tensor0}
       to be different from output '{anchor1}', step {step1}, slice={slice_to_str(slice1)} (seed={run1.seed})

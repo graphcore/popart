@@ -31,12 +31,10 @@ def concat(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     check_in_graph(g, **{f"ts_{i}": t for i, t in enumerate(ts)})
     check_tensor_ipu_and_tile_set(**{f"ts_{i}": t for i, t in enumerate(ts)})
 
-    settings = ctx._get_op_settings('concat')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Concat", 11, _ir.NumInputs(
-        2, -1), 1)
+    settings = ctx._get_op_settings("concat")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Concat", 11, _ir.NumInputs(2, -1), 1)
     op = pb_g.createConnectedOp_ConcatOp(
-        {i: t.id
-         for i, t in enumerate(ts)},
+        {i: t.id for i, t in enumerate(ts)},
         {
             0: g._create_tensor_id("concat_out"),
         },
@@ -73,10 +71,9 @@ def concat_(ts: Iterable[Tensor], axis: int = 0) -> Tensor:
     check_in_graph(g, **{f"ts_{i}": t for i, t in enumerate(ts)})
     check_tensor_ipu_and_tile_set(**{f"ts_{i}": t for i, t in enumerate(ts)})
 
-    settings = ctx._get_op_settings('concat_inplace')
+    settings = ctx._get_op_settings("concat_inplace")
     op = pb_g.createConnectedOp_ConcatInplaceOp(
-        {i: t.id
-         for i, t in enumerate(ts)},
+        {i: t.id for i, t in enumerate(ts)},
         {
             0: g._create_tensor_id("concat_out"),
         },

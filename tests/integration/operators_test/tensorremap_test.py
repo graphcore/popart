@@ -3,12 +3,14 @@ import numpy as np
 import popart
 import torch
 import tempfile
+
 # pva is needed when calling session.getReport()
 import pva  # pylint: disable=unused-import
 
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(Path(__file__).resolve().parent.parent)
 
 
@@ -24,8 +26,7 @@ def test_tensorremap(op_tester):
 
     # Weights
     ws = [
-        np.random.rand(2, 16, size, size).astype(np.float32)
-        for i in range(num_matmuls)
+        np.random.rand(2, 16, size, size).astype(np.float32) for i in range(num_matmuls)
     ]
 
     # Bias
@@ -55,7 +56,7 @@ def test_tensorremap(op_tester):
             y = builder.aiOnnx.reducesum([x], keepdims=0)
 
             builder.addOutputTensor(y)
-            return ([y])
+            return [y]
 
         def reference(_):  # ref_data is an unused argument
             wst = [torch.tensor(w, requires_grad=True) for w in ws]
@@ -69,29 +70,27 @@ def test_tensorremap(op_tester):
 
             y = torch.sum(x)
 
-            return ([y])
+            return [y]
 
         tempDir = tempfile.TemporaryDirectory()
         op_tester.numIPUs = 1
         op_tester.tilesPerIPU = 64
-        op_tester.setPatterns(popart.PatternsLevel.Default,
-                              enableRuntimeAsserts=False)
+        op_tester.setPatterns(popart.PatternsLevel.Default, enableRuntimeAsserts=False)
         op_tester.options.enableOutlining = True
         op_tester.options.virtualGraphMode = popart.VirtualGraphMode.Auto
         op_tester.options.engineOptions["autoReport.directory"] = tempDir.name
-        op_tester.options.engineOptions[
-            "autoReport.outputGraphProfile"] = "true"
+        op_tester.options.engineOptions["autoReport.outputGraphProfile"] = "true"
 
-        session = op_tester.run(init_builder, reference, 'infer')
+        session = op_tester.run(init_builder, reference, "infer")
 
         report = session.getReport()
 
         total_mem = 0
         for t in report.compilation.tiles:
             total_mem = total_mem + t.memory.total.includingGaps
-        print(f'total_mem: {total_mem}')
+        print(f"total_mem: {total_mem}")
         return total_mem
 
     tm0 = get_memory(False)  # Reference value: 28326188
     tm1 = get_memory(True)  # Reference value: 28270760
-    assert (tm0 > tm1)
+    assert tm0 > tm1

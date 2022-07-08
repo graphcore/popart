@@ -16,8 +16,8 @@ class TestConcat:
         g = ir.main_graph
 
         with g:
-            a = popxl.variable((1, ))
-            b = popxl.variable((2, ))
+            a = popxl.variable((1,))
+            b = popxl.variable((2,))
             _ = ops.concat((a, b))
         assert len(g.tensors) == 3
         assert len(g.variables) == 2
@@ -28,9 +28,9 @@ class TestConcat:
         g = ir.main_graph
 
         with g:
-            a = popxl.variable((1, ))
-            b = popxl.variable((2, ))
-            c = popxl.variable((3, ))
+            a = popxl.variable((1,))
+            b = popxl.variable((2,))
+            c = popxl.variable((3,))
             _ = ops.concat((a, b, c))
         assert len(g.tensors) == 4
         assert len(g.variables) == 3
@@ -42,6 +42,6 @@ class TestConcat:
 
         with g:
             a = popxl.variable(np.zeros((2, 4)))
-            b = popxl.variable(np.zeros((3, )))
+            b = popxl.variable(np.zeros((3,)))
             with pytest.raises(popart.popart_exception):
                 _ = ops.concat((a, b))

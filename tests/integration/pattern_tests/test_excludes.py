@@ -7,6 +7,7 @@ import json
 # importing test_session requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
 import test_util as tu
@@ -19,7 +20,7 @@ def test_name_checking():
     input_data = np.random.rand(2, 2).astype(np.float32)
 
     def init_builder(builder):
-        d0 = builder.addInputTensor(input_data, 'data0')
+        d0 = builder.addInputTensor(input_data, "data0")
 
         x = builder.aiOnnx.identity([d0])
         builder.excludePatterns(x, ["ThisPatternDoesNotExist"])
@@ -34,7 +35,8 @@ def test_name_checking():
             session.prepare(init_builder, device=device)
 
     assert e_info.value.args[0].startswith(
-        "Invalid pattern name 'ThisPatternDoesNotExist'")
+        "Invalid pattern name 'ThisPatternDoesNotExist'"
+    )
 
 
 # Exclude an identity op from PostNRepl and check it is in the final ir.
@@ -45,7 +47,7 @@ def test_basic_exclusion():
     const_data = np.random.rand(2, 2).astype(np.float32)
 
     def init_builder(builder):
-        d0 = builder.addInputTensor(input_data, 'data0')
+        d0 = builder.addInputTensor(input_data, "data0")
         c0 = builder.aiOnnx.constant(const_data)
 
         x = builder.aiOnnx.add([d0, c0])
@@ -63,14 +65,13 @@ def test_basic_exclusion():
     with tu.create_test_device() as device:
         session.prepare(init_builder, device=device)
 
-    ir = json.loads(
-        session._session._serializeIr(popart.IrSerializationFormat.JSON))
+    ir = json.loads(session._session._serializeIr(popart.IrSerializationFormat.JSON))
 
-    main_graph = ir['maingraph']
+    main_graph = ir["maingraph"]
     assert len(main_graph) == 3
 
-    ops = [i['type'] for i in main_graph]
-    assert 'IdentityInplace' in ops
+    ops = [i["type"] for i in main_graph]
+    assert "IdentityInplace" in ops
 
 
 # Create two identity ops and exclude one of them from PostNRepl. Only one should be in the final ir.
@@ -81,7 +82,7 @@ def test_remove_one_identity():
     const_data = np.random.rand(2, 2).astype(np.float32)
 
     def init_builder(builder):
-        d0 = builder.addInputTensor(input_data, 'data0')
+        d0 = builder.addInputTensor(input_data, "data0")
         c0 = builder.aiOnnx.constant(const_data)
 
         x = builder.aiOnnx.add([d0, c0])
@@ -101,15 +102,14 @@ def test_remove_one_identity():
     with tu.create_test_device() as device:
         session.prepare(init_builder, device=device)
 
-    ir = json.loads(
-        session._session._serializeIr(popart.IrSerializationFormat.JSON))
+    ir = json.loads(session._session._serializeIr(popart.IrSerializationFormat.JSON))
 
-    main_graph = ir['maingraph']
+    main_graph = ir["maingraph"]
     assert len(main_graph) == 3
 
-    ops = [i['type'] for i in main_graph]
+    ops = [i["type"] for i in main_graph]
 
-    identities = [i for i in ops if i.startswith('Identity')]
+    identities = [i for i in ops if i.startswith("Identity")]
     assert len(identities) == 1
 
 
@@ -122,12 +122,12 @@ def test_inplace_exclude():
 
     input_data = np.random.rand(2, 2).astype(np.float32)
 
-    exclude_inplace_id = ''
+    exclude_inplace_id = ""
 
     def init_builder(builder):
         nonlocal exclude_inplace_id
 
-        d0 = builder.addInputTensor(input_data, 'data0')
+        d0 = builder.addInputTensor(input_data, "data0")
 
         x = d0
         for i in range(10):
@@ -146,15 +146,14 @@ def test_inplace_exclude():
     with tu.create_test_device() as device:
         session.prepare(init_builder, device=device)
 
-    ir = json.loads(
-        session._session._serializeIr(popart.IrSerializationFormat.JSON))
+    ir = json.loads(session._session._serializeIr(popart.IrSerializationFormat.JSON))
 
-    main_graph = ir['maingraph']
+    main_graph = ir["maingraph"]
     assert len(main_graph) == 10
 
     for i in main_graph:
-        o = i['outputs'][0]['name']
+        o = i["outputs"][0]["name"]
         if o == exclude_inplace_id:
-            assert i['type'] == 'Identity'
+            assert i["type"] == "Identity"
         else:
-            assert i['type'] == 'IdentityInplace'
+            assert i["type"] == "IdentityInplace"

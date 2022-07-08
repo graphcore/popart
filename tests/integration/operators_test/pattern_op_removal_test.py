@@ -9,7 +9,7 @@ def test_atan2_arg0_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.setPatterns(['Atan2Arg1GradOp'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["Atan2Arg1GradOp"], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -23,10 +23,11 @@ def test_atan2_arg0_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern Atan2Arg0GradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Atan2Arg0GradOp"
+    )
 
 
 def test_atan2_arg1_grad_error(op_tester):
@@ -34,7 +35,7 @@ def test_atan2_arg1_grad_error(op_tester):
     d2 = np.random.rand(2, 7).astype(np.float32)
 
     # No pattern passes, grad op will not be created.
-    op_tester.setPatterns(['Atan2Arg0GradOp'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["Atan2Arg0GradOp"], enableRuntimeAsserts=False)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -48,10 +49,11 @@ def test_atan2_arg1_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern Atan2Arg1GradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Atan2Arg1GradOp"
+    )
 
 
 def test_convflipweights_grad_error(op_tester):
@@ -69,12 +71,13 @@ def test_convflipweights_grad_error(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [None, None]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern ConvFlipWeightsGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern ConvFlipWeightsGradOp"
+    )
 
 
 def test_cos_grad_error(op_tester):
@@ -97,10 +100,11 @@ def test_cos_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern CosGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern CosGradOp"
+    )
 
 
 def test_reciprocal_grad_error(op_tester):
@@ -124,10 +128,11 @@ def test_reciprocal_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern ReciprocalGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern ReciprocalGradOp"
+    )
 
 
 def test_sqrt_grad_error(op_tester):
@@ -150,10 +155,11 @@ def test_sqrt_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern SqrtGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern SqrtGradOp"
+    )
 
 
 def test_subtract_grad_error(op_tester):
@@ -175,10 +181,11 @@ def test_subtract_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern SubtractArg1GradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern SubtractArg1GradOp"
+    )
 
 
 def test_exp_grad_error(op_tester):
@@ -201,10 +208,11 @@ def test_exp_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern ExpGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern ExpGradOp"
+    )
 
 
 def test_expm1_grad_error(op_tester):
@@ -227,10 +235,11 @@ def test_expm1_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern Expm1GradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Expm1GradOp"
+    )
 
 
 def test_cosh_grad_error(op_tester):
@@ -252,10 +261,11 @@ def test_cosh_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern CoshOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern CoshOp"
+    )
 
 
 def test_log1p_grad_error(op_tester):
@@ -278,7 +288,8 @@ def test_log1p_grad_error(op_tester):
         return [None, None]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+        op_tester.run(init_builder, reference, "train")
 
-    assert (e_info.value.args[0].endswith(
-        "This op should have been removed by pattern Log1pGradOp"))
+    assert e_info.value.args[0].endswith(
+        "This op should have been removed by pattern Log1pGradOp"
+    )

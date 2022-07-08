@@ -27,5 +27,6 @@ class TestIncrementMod:
             _ = ops.increment_mod_(a, 1, 3)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
-        assert contains_op_of_type("IncrementModInplace",
-                                   _ir.op.IncrementModInplaceOp, g)
+        assert contains_op_of_type(
+            "IncrementModInplace", _ir.op.IncrementModInplaceOp, g
+        )

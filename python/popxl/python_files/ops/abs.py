@@ -24,7 +24,7 @@ def abs(t: Tensor) -> Tensor:
     check_in_graph(g, x=t)
     check_tensor_ipu_and_tile_set(x=t)
 
-    settings = ctx._get_op_settings('abs')
+    settings = ctx._get_op_settings("abs")
     opid = _ir.OperatorIdentifier("ai.onnx", "Abs", 6, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_AbsOp(
         {

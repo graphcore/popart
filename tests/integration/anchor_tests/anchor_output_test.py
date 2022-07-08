@@ -13,6 +13,7 @@ LEARNING_RATE = 1.0
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -59,12 +60,13 @@ def test_anchor_output():
         # Accl factor must divide batch size
         "AccumulationFactor": 4,
         "Pipelining": True,
-        "ReturnType": "ALL"
+        "ReturnType": "ALL",
     }
     label_array = np.ones([BATCH_SIZE]).astype(np.int32)
 
-    micro_batch_size = BATCH_SIZE // (anchorDict["AccumulationFactor"] *
-                                      anchorDict["ReplicationFactor"])
+    micro_batch_size = BATCH_SIZE // (
+        anchorDict["AccumulationFactor"] * anchorDict["ReplicationFactor"]
+    )
 
     builder = popart.Builder()
     input_shape = [micro_batch_size, CHANNELS, DATA_LEN, DATA_LEN]
@@ -72,15 +74,16 @@ def test_anchor_output():
     data_shape = popart.TensorInfo("FLOAT", input_shape)
     lbl_shape = popart.TensorInfo("INT32", [micro_batch_size])
     w = builder.addInitializedInputTensor(
-        np.random.random_sample(input_shape).astype(np.float32))
+        np.random.random_sample(input_shape).astype(np.float32)
+    )
 
     ip = builder.addInputTensor(data_shape)
     lb = builder.addInputTensor(lbl_shape)
 
     a = builder.aiOnnx.matmul([ip, w])
     o = builder.reshape_const(
-        builder.aiOnnx, [a],
-        [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
+        builder.aiOnnx, [a], [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN]
+    )
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
     nll = builder.aiGraphcore.nllloss([o, lb])
@@ -88,14 +91,9 @@ def test_anchor_output():
     GRAD = popart.reservedGradientPrefix() + w
     ACCL = popart.reservedAccumPrefix() + w
     art = popart.AnchorReturnType("All")
-    data_flow = popart.DataFlow(BATCHES_PER_STEP, {
-        o: art,
-        a: art,
-        ip: art,
-        w: art,
-        GRAD: art,
-        ACCL: art
-    })
+    data_flow = popart.DataFlow(
+        BATCHES_PER_STEP, {o: art, a: art, ip: art, w: art, GRAD: art, ACCL: art}
+    )
 
     opts, deviceContext = return_options(anchorDict)
     with deviceContext as device:
@@ -108,22 +106,20 @@ def test_anchor_output():
             loss=nll,
             optimizer=popart.ConstSGD(LEARNING_RATE),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
 
         if anchorDict["ReplicationFactor"] > 1:
             input_shape = [anchorDict["ReplicationFactor"]] + input_shape
-            label_array = label_array.reshape(
-                [anchorDict["ReplicationFactor"], -1])
+            label_array = label_array.reshape([anchorDict["ReplicationFactor"], -1])
         if anchorDict["AccumulationFactor"] > 1:
             input_shape = [anchorDict["AccumulationFactor"]] + input_shape
-            label_array = label_array.reshape(
-                [anchorDict["AccumulationFactor"], -1])
+            label_array = label_array.reshape([anchorDict["AccumulationFactor"], -1])
         if BATCHES_PER_STEP > 1:
             input_shape = [BATCHES_PER_STEP] + input_shape
-            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP,
-                                    0)
+            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP, 0)
 
         anchors = session.initAnchorArrays()
         in_array = np.random.random_sample(input_shape).astype(np.float32)
@@ -139,8 +135,10 @@ def test_anchor_output():
             for replica in range(anchors[w].shape[1]):
                 # Weights should not change over the gradient accumulation
                 # dimension - only after gradAccl steps.
-                assert np.allclose(anchors[w][batch, 0, :, :, :, :, :],
-                                   anchors[w][batch, replica, :, :, :, :, :])
+                assert np.allclose(
+                    anchors[w][batch, 0, :, :, :, :, :],
+                    anchors[w][batch, replica, :, :, :, :, :],
+                )
 
         # Check that the accumulated gradient plus the weights for the current batch
         # equals the weights for the next batch.
@@ -152,10 +150,11 @@ def test_anchor_output():
                 # For each replica in each batch, take the relevant replica's
                 #  last weight tensor in the accumulation loop minus
                 # the sum of the accumulated gradients across replicas
-                calc_weight[replica] = anchors[w][batch, -1, replica, :, :, :, :] - \
-                    np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
+                calc_weight[replica] = anchors[w][
+                    batch, -1, replica, :, :, :, :
+                ] - np.sum(anchors[ACCL][batch, -1, :, :, :, :, :], axis=0)
                 # Then compare against the last weight tensor of the next batch,
                 # for the relevant replica. These should match.
                 assert np.allclose(
-                    calc_weight[replica],
-                    anchors[w][batch + 1, -1, replica, :, :, :, :])
+                    calc_weight[replica], anchors[w][batch + 1, -1, replica, :, :, :, :]
+                )

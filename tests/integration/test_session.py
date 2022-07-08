@@ -8,7 +8,7 @@ class PopartTestSession:
         self.options = popart.SessionOptions()
         self.device = None
         self.numIPUs = 1
-        self.mode = 'inference'
+        self.mode = "inference"
         self.patterns = None
         self.batchesPerStep = 1
 
@@ -28,13 +28,15 @@ class PopartTestSession:
 
         optimizer = popart.ConstSGD(0.01)
 
-        self._session = self._get_session(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          loss=loss,
-                                          optimizer=optimizer,
-                                          deviceInfo=device,
-                                          patterns=self.patterns,
-                                          userOptions=self.options)
+        self._session = self._get_session(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            deviceInfo=device,
+            patterns=self.patterns,
+            userOptions=self.options,
+        )
         self._device_prepared = False
 
     def run(self, ins=None):
@@ -51,10 +53,10 @@ class PopartTestSession:
 
     def _get_loss(self, anchorIds):
         if self._builder._loss:
-            print(f'Returning loss from builder {self._builder._loss}')
+            print(f"Returning loss from builder {self._builder._loss}")
             return self._builder._loss
         else:
-            print('Returning default loss')
+            print("Returning default loss")
             return anchorIds[0]
 
     def _get_session(self, **kwargs):
@@ -65,14 +67,24 @@ class PopartTestSession:
                     session_args[k] = v
             return session_type(**session_args)
 
-        if self.mode == 'inference':
-            return create_session(('fnModel', 'dataFlow', 'deviceInfo',
-                                   'patterns', 'userOptions'),
-                                  popart.InferenceSession)
-        elif self.mode == 'train':
-            return create_session(('fnModel', 'dataFlow', 'loss', 'optimizer',
-                                   'deviceInfo', 'patterns', 'userOptions'),
-                                  popart.TrainingSession)
+        if self.mode == "inference":
+            return create_session(
+                ("fnModel", "dataFlow", "deviceInfo", "patterns", "userOptions"),
+                popart.InferenceSession,
+            )
+        elif self.mode == "train":
+            return create_session(
+                (
+                    "fnModel",
+                    "dataFlow",
+                    "loss",
+                    "optimizer",
+                    "deviceInfo",
+                    "patterns",
+                    "userOptions",
+                ),
+                popart.TrainingSession,
+            )
 
     def _get_inputs(self, ins):
         inputs = {}
@@ -83,14 +95,12 @@ class PopartTestSession:
                 if self.batchesPerStep == 1:
                     inputs[k] = v
                 else:
-                    inputs[k] = np.stack(
-                        [v for _ in range(self.batchesPerStep)])
+                    inputs[k] = np.stack([v for _ in range(self.batchesPerStep)])
 
         if ins:
             for k in ins.keys():
                 if k not in inputs:
-                    raise KeyError(
-                        f'supplied input "{k}" is not a valid input id')
+                    raise KeyError(f'supplied input "{k}" is not a valid input id')
 
         return inputs
 
@@ -123,8 +133,7 @@ class _Builder:
 
     def addInitializedInputTensor(self, data, debug_prefix=None):
         if debug_prefix:
-            tensor_id = self._builder.addInitializedInputTensor(
-                data, debug_prefix)
+            tensor_id = self._builder.addInitializedInputTensor(data, debug_prefix)
         else:
             tensor_id = self._builder.addInitializedInputTensor(data)
 
@@ -144,12 +153,12 @@ class _Builder:
 
     def _check_inputs(self):
         for k, v in self._input_map.items():
-            if not v.flags['C_CONTIGUOUS']:
+            if not v.flags["C_CONTIGUOUS"]:
                 # need to call np.ascontiguousarray
                 # `x = np.ascontiguousarray(x)`
                 raise Exception(
-                    'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.format(
-                        k))
+                    'Input "{}" to popart.PyStepIO is not C_CONTIGUOS'.format(k)
+                )
 
     def _get_inputs(self):
         return {k: v for k, v in self._input_map.items()}
@@ -159,6 +168,6 @@ def _get_anchors(anchorIds, builder):
     anchors = {}
     for anchorId in anchorIds:
         if anchorId not in builder._init_input_map:
-            anchors[anchorId] = popart.AnchorReturnType('All')
+            anchors[anchorId] = popart.AnchorReturnType("All")
 
     return anchors

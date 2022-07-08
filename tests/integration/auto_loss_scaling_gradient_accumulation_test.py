@@ -7,12 +7,16 @@ import test_util as tu
 from loss_scaling_util_test import getModelProto
 
 
-@pytest.mark.parametrize("gradientTensorTrackingMethod", [
-    popart.GradientTensorTrackingMethod.ConvAndMatmulGradients,
-    popart.GradientTensorTrackingMethod.AllNonViewChangingGradientTensors
-])
+@pytest.mark.parametrize(
+    "gradientTensorTrackingMethod",
+    [
+        popart.GradientTensorTrackingMethod.ConvAndMatmulGradients,
+        popart.GradientTensorTrackingMethod.AllNonViewChangingGradientTensors,
+    ],
+)
 def test_loss_scale_updates_with_grad_accumulation_correctness(
-        gradientTensorTrackingMethod):
+    gradientTensorTrackingMethod,
+):
     """
     Run a session that has gradient accumulation and auto loss scaling
     enabled. Verify that:
@@ -27,7 +31,9 @@ def test_loss_scale_updates_with_grad_accumulation_correctness(
     opts.automaticLossScalingSettings.enabled = True
     opts.automaticLossScalingSettings.binEdgeLocation = 0.5
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
-    opts.automaticLossScalingSettings.gradientTensorTrackingMethod = gradientTensorTrackingMethod
+    opts.automaticLossScalingSettings.gradientTensorTrackingMethod = (
+        gradientTensorTrackingMethod
+    )
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = accumulation_factor
 
@@ -37,22 +43,23 @@ def test_loss_scale_updates_with_grad_accumulation_correctness(
     accl_stats_id = "Accum___autoLossScaleStats"
     ls_id = "finalLossScale"
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         deviceInfo=device,
-                                         dataFlow=popart.DataFlow(
-                                             bps, [accl_stats_id, ls_id]),
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(bps, [accl_stats_id, ls_id]),
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+        )
         session.prepareDevice()
         session.weightsFromHost()
         anchors = session.initAnchorArrays()
 
         step_size = bps * accumulation_factor
-        t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(
-            np.float16)
+        t0_data = 10000.0 * np.random.rand(step_size, *t_shape).astype(np.float16)
         label_data = np.random.randint(
-            0, label_shape[0], step_size * label_shape[0]).astype(np.int32)
+            0, label_shape[0], step_size * label_shape[0]
+        ).astype(np.int32)
         inputs = {t0: t0_data, label: label_data}
 
         session.run(popart.PyStepIO(inputs, anchors))
@@ -81,11 +88,16 @@ def test_loss_scale_updates_with_grad_accumulation_correctness(
             # And if 'gradientTensorTrackingMethod' is
             # 'AllNonViewChangingGradientTensors', then also
             #  - relu grad
-            if gradientTensorTrackingMethod == popart.GradientTensorTrackingMethod.ConvAndMatmulGradients:
+            if (
+                gradientTensorTrackingMethod
+                == popart.GradientTensorTrackingMethod.ConvAndMatmulGradients
+            ):
                 num_tracked_tensors = 3
-            elif gradientTensorTrackingMethod == popart.GradientTensorTrackingMethod.AllNonViewChangingGradientTensors:
+            elif (
+                gradientTensorTrackingMethod
+                == popart.GradientTensorTrackingMethod.AllNonViewChangingGradientTensors
+            ):
                 num_tracked_tensors = 4
 
             num_elms_gradstats = num_tracked_tensors * np.prod(t_shape)
-            assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx +
-                                                              1)
+            assert np.sum(minibatch) == num_elms_gradstats * (minibatch_idx + 1)

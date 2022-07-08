@@ -7,12 +7,17 @@ from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
-InterpolateType = Literal['nearest', 'linear', 'cubic']
-InterpolateNearestType = Literal['round_prefer_floor', 'round_prefer_ceil',
-                                 'floor', 'ceil']
+InterpolateType = Literal["nearest", "linear", "cubic"]
+InterpolateNearestType = Literal[
+    "round_prefer_floor", "round_prefer_ceil", "floor", "ceil"
+]
 InterpolateCoordinateTransformationType = Literal[
-    'half_pixel', 'pytorch_half_pixel', 'align_corners', 'asymmetric',
-    'tf_crop_and_resize']
+    "half_pixel",
+    "pytorch_half_pixel",
+    "align_corners",
+    "asymmetric",
+    "tf_crop_and_resize",
+]
 
 
 def _convert_interpolate_type(mode: InterpolateType) -> _ir.op.ResizeMode:
@@ -27,11 +32,11 @@ def _convert_interpolate_type(mode: InterpolateType) -> _ir.op.ResizeMode:
     Returns:
         _ir.op.ResizeMode: An internal IR object representing the interpolate type settings.
     """
-    if mode == 'nearest':
+    if mode == "nearest":
         return _ir.op.ResizeMode.Nearest
-    elif mode == 'linear':
+    elif mode == "linear":
         return _ir.op.ResizeMode.Linear
-    elif mode == 'cubic':
+    elif mode == "cubic":
         return _ir.op.ResizeMode.Cubic
     else:
         raise ValueError(
@@ -40,7 +45,8 @@ def _convert_interpolate_type(mode: InterpolateType) -> _ir.op.ResizeMode:
 
 
 def _convert_interpolate_nearest_type(
-        mode: InterpolateNearestType) -> _ir.op.ResizeNearestMode:
+    mode: InterpolateNearestType,
+) -> _ir.op.ResizeNearestMode:
     """Convert the given interpolate nearest type to ir.op.ResizeNearestMode.
 
     Args:
@@ -53,13 +59,13 @@ def _convert_interpolate_nearest_type(
         _ir.op.ResizeNearestMode: An internal IR object representing the interpolate nearest
             type settings.
     """
-    if mode == 'round_prefer_floor':
+    if mode == "round_prefer_floor":
         return _ir.op.ResizeNearestMode.RoundPreferFloor
-    elif mode == 'round_prefer_ceil':
+    elif mode == "round_prefer_ceil":
         return _ir.op.ResizeNearestMode.RoundPreferCeil
-    elif mode == 'floor':
+    elif mode == "floor":
         return _ir.op.ResizeNearestMode.Floor
-    elif mode == 'ceil':
+    elif mode == "ceil":
         return _ir.op.ResizeNearestMode.Ceil
     else:
         raise ValueError(
@@ -68,7 +74,7 @@ def _convert_interpolate_nearest_type(
 
 
 def _convert_interpolate_coordinate_transformation_type(
-        mode: InterpolateCoordinateTransformationType
+    mode: InterpolateCoordinateTransformationType,
 ) -> _ir.op.ResizeCoordinateTransformationMode:
     """
     Convert the given interpolate coordinate transformation type.
@@ -86,15 +92,15 @@ def _convert_interpolate_coordinate_transformation_type(
         _ir.op.ResizeCoordinateTransformationMode: An internal IR object representing the
             interpolate coordinate transformation type settings.
     """
-    if mode == 'half_pixel':
+    if mode == "half_pixel":
         return _ir.op.ResizeCoordinateTransformationMode.HalfPixel
-    elif mode == 'pytorch_half_pixel':
+    elif mode == "pytorch_half_pixel":
         return _ir.op.ResizeCoordinateTransformationMode.PytorchHalfPixel
-    elif mode == 'align_corners':
+    elif mode == "align_corners":
         return _ir.op.ResizeCoordinateTransformationMode.AlignCorners
-    elif mode == 'asymmetric':
+    elif mode == "asymmetric":
         return _ir.op.ResizeCoordinateTransformationMode.Asymmetric
-    elif mode == 'tf_crop_and_resize':
+    elif mode == "tf_crop_and_resize":
         return _ir.op.ResizeCoordinateTransformationMode.TfCropAndResize
     else:
         raise ValueError(
@@ -104,12 +110,14 @@ def _convert_interpolate_coordinate_transformation_type(
 
 @op_debug_context
 def interpolate(
-        t: Tensor,
-        scale_factor: Optional[Tuple[float]] = (1.0, 1.0, 1.0, 1.0),
-        mode: Optional[InterpolateType] = 'nearest',
-        nearest_mode: Optional[InterpolateNearestType] = 'round_prefer_floor',
-        coordinate_transformation_mode: Optional[
-            InterpolateCoordinateTransformationType] = 'half_pixel') -> Tensor:
+    t: Tensor,
+    scale_factor: Optional[Tuple[float]] = (1.0, 1.0, 1.0, 1.0),
+    mode: Optional[InterpolateType] = "nearest",
+    nearest_mode: Optional[InterpolateNearestType] = "round_prefer_floor",
+    coordinate_transformation_mode: Optional[
+        InterpolateCoordinateTransformationType
+    ] = "half_pixel",
+) -> Tensor:
     """
     Interpolate the input tensor. Each dimension value of the output tensor is: output_dimension = floor(input_dimension * scale_factor).
 
@@ -165,16 +173,24 @@ def interpolate(
     check_in_graph(g, t=t)
     check_tensor_ipu_and_tile_set(t=t)
 
-    settings = ctx._get_op_settings('interpolate')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Resize", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("interpolate")
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Resize", 1, _ir.NumInputs(1, 1), 1)
     sample_type = _convert_interpolate_type(mode)
     nearest_type = _convert_interpolate_nearest_type(nearest_mode)
-    coordinate_transformation_type = _convert_interpolate_coordinate_transformation_type(
-        coordinate_transformation_mode)
+    coordinate_transformation_type = (
+        _convert_interpolate_coordinate_transformation_type(
+            coordinate_transformation_mode
+        )
+    )
     op = pb_g.createConnectedOp_ResizeOp(
-        {0: t.id}, {0: g._create_tensor_id("interpolate_out")}, opid, settings,
-        sample_type, scale_factor, nearest_type,
-        coordinate_transformation_type)
+        {0: t.id},
+        {0: g._create_tensor_id("interpolate_out")},
+        opid,
+        settings,
+        sample_type,
+        scale_factor,
+        nearest_type,
+        coordinate_transformation_type,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

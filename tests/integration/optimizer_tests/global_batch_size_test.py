@@ -24,70 +24,103 @@ optimizers = ["SGD", "SGDM1", "SGDM2", "ADAM"]
 @pytest.mark.parametrize("batchserial", batchserial_options)
 @pytest.mark.parametrize("reduction_type", reduction_types)
 @pytest.mark.parametrize("optim", optimizers)
-def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
-                                            batchserial, explicit_loops):
+def test_global_batch_size_correctness_test(
+    tmpdir, optim, reduction_type, batchserial, explicit_loops
+):
     batches_per_step = 2
     hidden_size = 4
-    reduction = popart.ReductionType.Sum if reduction_type == "Sum" else popart.ReductionType.Mean
+    reduction = (
+        popart.ReductionType.Sum
+        if reduction_type == "Sum"
+        else popart.ReductionType.Mean
+    )
 
-    def model(compute_batch, batch_serialization_factor, accumulation_factor,
-              replication_factor):
-        global_batch = compute_batch * batch_serialization_factor * accumulation_factor * replication_factor
+    def model(
+        compute_batch,
+        batch_serialization_factor,
+        accumulation_factor,
+        replication_factor,
+    ):
+        global_batch = (
+            compute_batch
+            * batch_serialization_factor
+            * accumulation_factor
+            * replication_factor
+        )
         np.random.seed(1984)
-        input_data = np.random.rand(batches_per_step, global_batch,
-                                    hidden_size).astype(np.float32)
-        weight_data = np.random.rand(hidden_size,
-                                     hidden_size).astype(np.float32)
+        input_data = np.random.rand(batches_per_step, global_batch, hidden_size).astype(
+            np.float32
+        )
+        weight_data = np.random.rand(hidden_size, hidden_size).astype(np.float32)
 
         builder = popart.Builder()
 
         d0 = builder.addInputTensor(
             popart.TensorInfo(
-                'FLOAT',
-                (compute_batch * batch_serialization_factor, hidden_size)),
-            'data0')
+                "FLOAT", (compute_batch * batch_serialization_factor, hidden_size)
+            ),
+            "data0",
+        )
         data = {
-            d0:
-            input_data.reshape(
-                (batches_per_step, replication_factor, accumulation_factor,
-                 batch_serialization_factor * compute_batch, -1))
+            d0: input_data.reshape(
+                (
+                    batches_per_step,
+                    replication_factor,
+                    accumulation_factor,
+                    batch_serialization_factor * compute_batch,
+                    -1,
+                )
+            )
         }
 
-        w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+        w0 = builder.addInitializedInputTensor(weight_data, "weight0")
         x = builder.aiOnnx.matmul([d0, w0])
 
         x = builder.aiOnnx.softmax([x])
         l0 = builder.addInputTensor(
-            popart.TensorInfo('UINT32',
-                              (batch_serialization_factor * compute_batch, )),
-            'data0')
-        data[l0] = np.random.randint(0, hidden_size, size=batches_per_step * global_batch)\
-                    .reshape((batches_per_step,
-                        replication_factor,
-                        accumulation_factor,
-                        batch_serialization_factor * compute_batch,
-                        -1))\
-                    .astype(np.uint32)
-        loss = builder.aiGraphcore.nllloss([x, l0],
-                                           reduction=reduction,
-                                           debugContext='loss')
+            popart.TensorInfo("UINT32", (batch_serialization_factor * compute_batch,)),
+            "data0",
+        )
+        data[l0] = (
+            np.random.randint(0, hidden_size, size=batches_per_step * global_batch)
+            .reshape(
+                (
+                    batches_per_step,
+                    replication_factor,
+                    accumulation_factor,
+                    batch_serialization_factor * compute_batch,
+                    -1,
+                )
+            )
+            .astype(np.uint32)
+        )
+        loss = builder.aiGraphcore.nllloss(
+            [x, l0], reduction=reduction, debugContext="loss"
+        )
         return builder.getModelProto(), data, [x, loss], loss
 
-    def run_test(compute_batch, batch_serialization_factor,
-                 accumulation_factor, replication_factor, explicit_loops):
+    def run_test(
+        compute_batch,
+        batch_serialization_factor,
+        accumulation_factor,
+        replication_factor,
+        explicit_loops,
+    ):
 
-        proto, data, xs, loss = model(compute_batch,
-                                      batch_serialization_factor,
-                                      accumulation_factor, replication_factor)
+        proto, data, xs, loss = model(
+            compute_batch,
+            batch_serialization_factor,
+            accumulation_factor,
+            replication_factor,
+        )
 
         options = popart.SessionOptions()
         patterns = popart.Patterns(popart.PatternsLevel.All)
 
         if optim is "SGD":
-            optimizer = popart.SGD({
-                "defaultLearningRate": (0.1, False),
-                "lossScaling": (20, False)
-            })
+            optimizer = popart.SGD(
+                {"defaultLearningRate": (0.1, False), "lossScaling": (20, False)}
+            )
         elif optim is "SGDM1":
             optimizer = popart.SGD(
                 {
@@ -96,8 +129,8 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
                     "defaultDampening": (0.1, False),  # to increase errors
                     "lossScaling": (20, False),
                 },
-                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.
-                Combined)
+                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.Combined,
+            )
         elif optim is "SGDM2":
             optimizer = popart.SGD(
                 {
@@ -106,8 +139,8 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
                     "defaultDampening": (0.1, False),  # to increase errors
                     "lossScaling": (20, False),
                 },
-                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.
-                Separate)
+                accumulatorAndMomentum=popart.SGDAccumulatorAndMomentum.Separate,
+            )
         elif optim is "ADAM":
             optimizer = popart.Adam(
                 {
@@ -116,7 +149,8 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
                     "defaultBeta2": (0.999, False),
                     "lossScaling": (20, False),
                 },
-                mode=popart.AdamMode.AdamNoBias)  # to increase errors
+                mode=popart.AdamMode.AdamNoBias,
+            )  # to increase errors
 
         if explicit_loops:
             options.enableExplicitMainLoops = True
@@ -127,8 +161,12 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
         options.batchSerializationSettings.factor = batch_serialization_factor
 
         if batch_serialization_factor > 1 and batchserial == "Loop":
-            options.batchSerializationSettings.method = popart.BatchSerializationMethod.Loop
-            options.batchSerializationSettings.transformContext = popart.BatchSerializationTransformContext.Bwd
+            options.batchSerializationSettings.method = (
+                popart.BatchSerializationMethod.Loop
+            )
+            options.batchSerializationSettings.transformContext = (
+                popart.BatchSerializationTransformContext.Bwd
+            )
 
         options.accumulationAndReplicationReductionType = reduction
 
@@ -136,28 +174,34 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
             options.enableGradientAccumulation = True
             options.accumulationFactor = accumulation_factor
             if reduction_type == "MeanRunning":
-                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.Running
+                options.meanAccumulationAndReplicationReductionStrategy = (
+                    popart.MeanReductionStrategy.Running
+                )
             if reduction_type == "MeanPost":
-                options.meanAccumulationAndReplicationReductionStrategy = popart.MeanReductionStrategy.Post
+                options.meanAccumulationAndReplicationReductionStrategy = (
+                    popart.MeanReductionStrategy.Post
+                )
         if replication_factor > 1:
             options.enableReplicatedGraphs = True
             options.replicatedGraphCount = replication_factor
 
-        with tu.create_test_device(replication_factor,
-                                   pattern=popart.SyncPattern.Full) as device:
+        with tu.create_test_device(
+            replication_factor, pattern=popart.SyncPattern.Full
+        ) as device:
 
             dataFlow = popart.DataFlow(
-                batches_per_step,
-                {x: popart.AnchorReturnType("ALL")
-                 for x in xs})
+                batches_per_step, {x: popart.AnchorReturnType("ALL") for x in xs}
+            )
 
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -185,21 +229,20 @@ def test_global_batch_size_correctness_test(tmpdir, optim, reduction_type,
         run_test(4, 1, 4, 1, explicit_loops),
         run_test(4, 4, 1, 1, explicit_loops),
         run_test(4, 1, 2, 2, explicit_loops),
-        run_test(2, 2, 2, 2, explicit_loops)
+        run_test(2, 2, 2, 2, explicit_loops),
     ]
     # Remove 'skipped' tests
     tests = [i for i in tests if i]
 
-    rtol = 1.e-5
-    atol = 1.e-5
+    rtol = 1.0e-5
+    atol = 1.0e-5
 
     for i, results in enumerate(tests):
         print(f"Checking results of test {i}")
         outputs, proto = results
-        assert np.allclose(outputs[0].flatten(),
-                           baseline_outputs[0].flatten(),
-                           rtol=rtol,
-                           atol=atol)
+        assert np.allclose(
+            outputs[0].flatten(), baseline_outputs[0].flatten(), rtol=rtol, atol=atol
+        )
 
         loss = loss_fn(outputs[-1])
         print(loss)

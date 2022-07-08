@@ -37,19 +37,19 @@ class SearchHelper:
 
 class Tensor:
     def __init__(self, d):
-        self.name = d['name']
+        self.name = d["name"]
         self.consumers = Consumers()
         self.producer = None
 
     def __str__(self):
-        return f'Tensor({self.name})'
+        return f"Tensor({self.name})"
 
     def __repr__(self):
         return str(self)
 
     def set_producer(self, op):
         if self.producer is not None:
-            raise SystemError(f'{str(self)} already has a producer')
+            raise SystemError(f"{str(self)} already has a producer")
         self.producer = op
 
     def trace_children(self, generations=1):
@@ -68,7 +68,7 @@ class Tensor:
     def pipeline_stages(self):
         stages = self.consumers.pipeline_stages()
         if self.producer:
-            if self.producer.type == 'IpuCopy':
+            if self.producer.type == "IpuCopy":
                 stages.add(self.producer.get_pipeline_stage() + 1)
             else:
                 stages.add(self.producer.get_pipeline_stage())
@@ -108,20 +108,20 @@ class Tensor:
 class Op:
     def __init__(self, d, graph):
         self._dict = d
-        self.type = d['type']
-        self.name = d['name']
-        self.attributes = d['attributes']
+        self.type = d["type"]
+        self.name = d["name"]
+        self.attributes = d["attributes"]
 
         self.inputs = {}
-        for i in d['inputs']:
-            idx = int(i['index'])
+        for i in d["inputs"]:
+            idx = int(i["index"])
             tensor = graph.get_tensor(i)
             tensor.consumers._append(self)
             self.inputs[idx] = tensor
 
         self.outputs = {}
-        for i in d['outputs']:
-            idx = int(i['index'])
+        for i in d["outputs"]:
+            idx = int(i["index"])
             tensor = graph.get_tensor(i)
             tensor.set_producer(self)
             self.outputs[idx] = tensor
@@ -131,20 +131,20 @@ class Op:
         return str(tensor_dict)
 
     def __str__(self):
-        header = f'{self.type}:'
-        inputs = f'  Inputs: {self._format_tensor_dict(self.inputs)}'
-        outputs = f'  Outputs: {self._format_tensor_dict(self.outputs)}'
-        attributes = [f'    {k}: {v}' for k, v in self.attributes.items()]
-        attributes = '  Attributes:\n' + '\n'.join(attributes)
-        return f'{header}\n{inputs}\n{outputs}\n{attributes}'
+        header = f"{self.type}:"
+        inputs = f"  Inputs: {self._format_tensor_dict(self.inputs)}"
+        outputs = f"  Outputs: {self._format_tensor_dict(self.outputs)}"
+        attributes = [f"    {k}: {v}" for k, v in self.attributes.items()]
+        attributes = "  Attributes:\n" + "\n".join(attributes)
+        return f"{header}\n{inputs}\n{outputs}\n{attributes}"
 
     def __repr__(self):
-        source = f'{self._format_tensor_dict(self.inputs)}'
-        dest = f'{self._format_tensor_dict(self.outputs)}'
-        return f'Op({self.type}, {source} -> {dest})'
+        source = f"{self._format_tensor_dict(self.inputs)}"
+        dest = f"{self._format_tensor_dict(self.outputs)}"
+        return f"Op({self.type}, {source} -> {dest})"
 
     def get_pipeline_stage(self):
-        return int(self.attributes['__pipeline_stage'])
+        return int(self.attributes["__pipeline_stage"])
 
 
 class Graph:
@@ -154,18 +154,18 @@ class Graph:
         self.ops = [Op(op, self) for op in ops]
 
         def format_tensor_name(name):
-            name = name.replace(':', '_')
-            name = name.replace('/', '_')
+            name = name.replace(":", "_")
+            name = name.replace("/", "_")
             return name
 
         # Add members .tensor_<TensorName> to the graph
         # Allow use of tab auto completion to get a tensor from the ir
         for t in self.tensors.keys():
             name = format_tensor_name(t)
-            setattr(self, f'tensor_{name}', self.tensors[t])
+            setattr(self, f"tensor_{name}", self.tensors[t])
 
     def get_tensor(self, d):
-        name = d['name']
+        name = d["name"]
         if name not in self.tensors:
             t = Tensor(d)
             self.tensors[name] = t
@@ -173,22 +173,24 @@ class Graph:
         return self.tensors[name]
 
     def __str__(self):
-        return (f'Graph(name: {self.name}, ops: {len(self.ops)}'
-                ', tensors: {len(self.tensors)})')
+        return (
+            f"Graph(name: {self.name}, ops: {len(self.ops)}"
+            ", tensors: {len(self.tensors)})"
+        )
 
     def __repr__(self):
-        x = f'Graph({self.name}):'
-        x += '\n  ops:'
+        x = f"Graph({self.name}):"
+        x += "\n  ops:"
         first = True
         for op in self.ops:
             lines = str(op).splitlines()
-            lines = [f'    {i}' for i in lines]
-            lines = '\n'.join(lines)
+            lines = [f"    {i}" for i in lines]
+            lines = "\n".join(lines)
             if first:
-                x += f'{lines}'
+                x += f"{lines}"
                 first = False
             else:
-                x += f'\n\n{lines}'
+                x += f"\n\n{lines}"
 
         return x
 
@@ -202,19 +204,19 @@ class Ir:
         # Add members .graph_<GraphName> to the ir
         # Allow use of tab auto completion to get a graph from the ir
         for name in ir.keys():
-            setattr(self, f'graph_{name}', self.graphs[name])
+            setattr(self, f"graph_{name}", self.graphs[name])
 
     def __str__(self):
-        return f'Ir(graphs: {len(self.graphs)})'
+        return f"Ir(graphs: {len(self.graphs)})"
 
     def __repr__(self):
-        x = 'Ir:'
+        x = "Ir:"
         for graph in self.graphs.keys():
-            x += f'\n  {graph}'
+            x += f"\n  {graph}"
         return x
 
     def main_graph(self):
-        return self.graphs['maingraph']
+        return self.graphs["maingraph"]
 
 
 def load_from_string(x):
@@ -223,23 +225,25 @@ def load_from_string(x):
 
 
 def load_from_file(x):
-    with open(x, 'r', encoding='utf-8') as f:
+    with open(x, "r", encoding="utf-8") as f:
         y = f.read()
         ir = load_from_string(y)
     return ir
 
 
 def print_usage():
-    print('Usage:')
-    print(f'  python3 -i {sys.argv[0]} path_to_ir_dump.json')
+    print("Usage:")
+    print(f"  python3 -i {sys.argv[0]} path_to_ir_dump.json")
     print()
-    print("This will start an interactive python session, with the "
-          "ir dump loaded to the variable `ir'")
+    print(
+        "This will start an interactive python session, with the "
+        "ir dump loaded to the variable `ir'"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) == 1:
         print_usage()
     else:
         ir = load_from_file(sys.argv[1])
-        print(f'ir = load_from_file({sys.argv[1]})')
+        print(f"ir = load_from_file({sys.argv[1]})")

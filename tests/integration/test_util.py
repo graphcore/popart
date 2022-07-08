@@ -14,12 +14,14 @@ import popart
 def filter_dict(dict_to_filter, fun):
     sig = inspect.signature(fun)
     filter_keys = [
-        param.name for param in sig.parameters.values()
+        param.name
+        for param in sig.parameters.values()
         if param.kind == param.POSITIONAL_OR_KEYWORD
     ]
     filtered_dict = {
         filter_key: dict_to_filter[filter_key]
-        for filter_key in filter_keys if filter_key in dict_to_filter.keys()
+        for filter_key in filter_keys
+        if filter_key in dict_to_filter.keys()
     }
     return filtered_dict
 
@@ -41,14 +43,13 @@ class DeviceContext:
 
 
 def create_test_device(
-        numIpus: int = 1,
-        opts: Dict = None,
-        pattern: popart.SyncPattern = popart.SyncPattern.Full,
-        connectionType: popart.DeviceConnectionType = popart.
-        DeviceConnectionType.OnDemand,
-        selectionCriterion: popart.DeviceSelectionCriterion = popart.
-        DeviceSelectionCriterion.Random,
-        tilesPerIPU=None) -> DeviceContext:
+    numIpus: int = 1,
+    opts: Dict = None,
+    pattern: popart.SyncPattern = popart.SyncPattern.Full,
+    connectionType: popart.DeviceConnectionType = popart.DeviceConnectionType.OnDemand,
+    selectionCriterion: popart.DeviceSelectionCriterion = popart.DeviceSelectionCriterion.Random,
+    tilesPerIPU=None,
+) -> DeviceContext:
     testDeviceType = os.environ.get("TEST_TARGET")
 
     if opts:
@@ -57,7 +58,7 @@ def create_test_device(
 
     # NOTE: This function isn't symmetric with willow/include/popart/testdevice.hpp because it doesn't
     # pass on the number of tiles for simulated devices (perhaps it should).
-    if tilesPerIPU is None and testDeviceType in ('Hw', 'IpuModel', 'Sim'):
+    if tilesPerIPU is None and testDeviceType in ("Hw", "IpuModel", "Sim"):
         tilesPerIPU = 4
 
     if testDeviceType is None:
@@ -79,7 +80,8 @@ def create_test_device(
             tilesPerIpu=tilesPerIPU,
             pattern=pattern,
             connectionType=connectionType,
-            selectionCriterion=selectionCriterion)
+            selectionCriterion=selectionCriterion,
+        )
 
         assert device is not None
 
@@ -103,8 +105,8 @@ def create_test_device(
 
 def get_compute_sets_from_report(report):
 
-    lines = report.split('\n')
-    cs = [x for x in lines if re.search(r' OnTileExecute:', x)]
+    lines = report.split("\n")
+    cs = [x for x in lines if re.search(r" OnTileExecute:", x)]
     cs = [":".join(x.split(":")[1:]) for x in cs]
     cs = [x.strip() for x in cs]
     return set(cs)
@@ -114,7 +116,7 @@ def check_whitelist_entries_in_compute_sets(cs_list, whitelist):
 
     result = True
     fail_list = []
-    wl = [x + '*' for x in whitelist]
+    wl = [x + "*" for x in whitelist]
     for cs in cs_list:
         if len([x for x in wl if fnmatch.fnmatch(cs, x)]) == 0:
             fail_list += [cs]
@@ -128,7 +130,7 @@ def check_compute_sets_in_whitelist_entries(cs_list, whitelist):
 
     result = True
     fail_list = []
-    wl = [x + '*' for x in whitelist]
+    wl = [x + "*" for x in whitelist]
     for x in wl:
         if len([cs for cs in cs_list if fnmatch.fnmatch(cs, x)]) == 0:
             fail_list += [x]
@@ -140,8 +142,9 @@ def check_compute_sets_in_whitelist_entries(cs_list, whitelist):
 
 def check_all_compute_sets_and_list(cs_list, whitelist):
 
-    return (check_whitelist_entries_in_compute_sets(cs_list, whitelist)
-            and check_compute_sets_in_whitelist_entries(cs_list, whitelist))
+    return check_whitelist_entries_in_compute_sets(
+        cs_list, whitelist
+    ) and check_compute_sets_in_whitelist_entries(cs_list, whitelist)
 
 
 def get_compute_set_regex_count(regex, cs_list):
@@ -198,11 +201,13 @@ def requires_ipu_model(func):
     return decorated_func
 
 
-def set_autoreport_options(options,
-                           directory,
-                           output_graph_profile=True,
-                           output_execution_profile=False,
-                           max_execution_reports=1000):
+def set_autoreport_options(
+    options,
+    directory,
+    output_graph_profile=True,
+    output_execution_profile=False,
+    max_execution_reports=1000,
+):
     """Sets autoReport engine options in the IPUConfig.
 
     Set outputExecutionProfile to True to allow execution reports to be
@@ -214,10 +219,8 @@ def set_autoreport_options(options,
     engineOptions = {
         "autoReport.directory": str(directory),
         "autoReport.outputGraphProfile": str(output_graph_profile).lower(),
-        "autoReport.outputExecutionProfile":
-        str(output_execution_profile).lower(),
-        "autoReport.executionProfileProgramRunCount":
-        str(max_execution_reports),
+        "autoReport.outputExecutionProfile": str(output_execution_profile).lower(),
+        "autoReport.executionProfileProgramRunCount": str(max_execution_reports),
     }
     for opt in engineOptions:
         options.engineOptions[opt] = engineOptions[opt]

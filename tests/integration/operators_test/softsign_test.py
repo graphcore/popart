@@ -30,7 +30,7 @@ def test_softsign(op_tester):
         result = [F.softsign(torch_test_data)]
         return result
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_softsign_grad(op_tester):
@@ -41,13 +41,13 @@ def test_softsign_grad(op_tester):
         i1 = builder.addInputTensor(input_data)
         o = builder.aiOnnx.softsign([i1])
         builder.addOutputTensor(o)
-        op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
+        op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
         # Set the result to
         # ['Softsign:0', 'Gradient___input', 'Gradient___Softsign:0']
         result = [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
         return result
 
@@ -64,4 +64,4 @@ def test_softsign_grad(op_tester):
         result = [fwd, torch_test_data.grad, d__o]
         return result
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

@@ -29,14 +29,14 @@ import numpy as np
 
 
 # Taken from https://github.com/onnx/onnx/blob/rel-1.6.0/onnx/backend/test/case/node/rnn.py
-class RNN_Helper():
+class RNN_Helper:
     def __init__(self, **params):  # type: (**Any) -> None
         # RNN Input Names
-        X = str('X')
-        W = str('W')
-        R = str('R')
-        B = str('B')
-        H_0 = str('initial_h')
+        X = str("X")
+        W = str("W")
+        R = str("R")
+        B = str("B")
+        H_0 = str("initial_h")
 
         required_inputs = [X, W, R]
         for i in required_inputs:
@@ -52,10 +52,16 @@ class RNN_Helper():
             hidden_size = params[R].shape[-1]
             batch_size = params[X].shape[1]
 
-            b = params[B] if B in params else np.zeros(2 * hidden_size,
-                                                       dtype=np.float32)
-            h_0 = params[H_0] if H_0 in params else np.zeros(
-                (batch_size, hidden_size), dtype=np.float32)
+            b = (
+                params[B]
+                if B in params
+                else np.zeros(2 * hidden_size, dtype=np.float32)
+            )
+            h_0 = (
+                params[H_0]
+                if H_0 in params
+                else np.zeros((batch_size, hidden_size), dtype=np.float32)
+            )
 
             self.X = params[X]
             self.W = params[W]
@@ -73,9 +79,10 @@ class RNN_Helper():
         H_t = self.H_0
         for x in np.split(self.X, self.X.shape[0], axis=0):
             H = self.f(
-                np.dot(x, np.transpose(self.W)) +
-                np.dot(H_t, np.transpose(self.R)) +
-                np.add(*np.split(self.B, 2)))
+                np.dot(x, np.transpose(self.W))
+                + np.dot(H_t, np.transpose(self.R))
+                + np.add(*np.split(self.B, 2))
+            )
             h_list.append(H)
             H_t = H
         concatenated = np.concatenate(h_list)
@@ -85,15 +92,15 @@ class RNN_Helper():
 
 
 # Taken from https://github.com/onnx/onnx/blob/rel-1.6.0/onnx/backend/test/case/node/gru.py
-class GRU_Helper():
+class GRU_Helper:
     def __init__(self, **params):  # type: (*Any) -> None
         # GRU Input Names
-        X = str('X')
-        W = str('W')
-        R = str('R')
-        B = str('B')
-        H_0 = str('initial_h')
-        LBR = str('linear_before_reset')
+        X = str("X")
+        W = str("W")
+        R = str("R")
+        B = str("B")
+        H_0 = str("initial_h")
+        LBR = str("linear_before_reset")
         number_of_gates = 3
 
         required_inputs = [X, W, R]
@@ -110,10 +117,12 @@ class GRU_Helper():
             hidden_size = params[R].shape[-1]
             batch_size = params[X].shape[1]
 
-            b = params[B] if B in params else np.zeros(2 * number_of_gates *
-                                                       hidden_size)
-            h_0 = params[H_0] if H_0 in params else np.zeros(
-                (batch_size, hidden_size))
+            b = (
+                params[B]
+                if B in params
+                else np.zeros(2 * number_of_gates * hidden_size)
+            )
+            h_0 = params[H_0] if H_0 in params else np.zeros((batch_size, hidden_size))
             lbr = params[LBR] if LBR in params else 0
 
             self.X = params[X]
@@ -139,8 +148,7 @@ class GRU_Helper():
         [w_bz, w_br, w_bh, r_bz, r_br, r_bh] = np.split(self.B, 6)
         gates_w = np.transpose(np.concatenate((w_z, w_r)))
         gates_r = np.transpose(np.concatenate((r_z, r_r)))
-        gates_b = np.add(np.concatenate((w_bz, w_br)),
-                         np.concatenate((r_bz, r_br)))
+        gates_b = np.add(np.concatenate((w_bz, w_br)), np.concatenate((r_bz, r_br)))
 
         H_t = self.H_0
         for x in np.split(self.X, self.X.shape[0], axis=0):
@@ -149,11 +157,16 @@ class GRU_Helper():
             z = self.f(z)
             r = self.f(r)
             h_default = self.g(
-                np.dot(x, np.transpose(w_h)) +
-                np.dot(r * H_t, np.transpose(r_h)) + w_bh + r_bh)
+                np.dot(x, np.transpose(w_h))
+                + np.dot(r * H_t, np.transpose(r_h))
+                + w_bh
+                + r_bh
+            )
             h_linear = self.g(
-                np.dot(x, np.transpose(w_h)) + r *
-                (np.dot(H_t, np.transpose(r_h)) + r_bh) + w_bh)
+                np.dot(x, np.transpose(w_h))
+                + r * (np.dot(H_t, np.transpose(r_h)) + r_bh)
+                + w_bh
+            )
             h = h_linear if self.LBR else h_default
             H = (1 - z) * h + z * H_t
             h_list.append(H)
@@ -165,16 +178,16 @@ class GRU_Helper():
 
 
 # Based on LSTM_Helper from https://github.com/onnx/onnx/blob/rel-1.6.0/onnx/backend/test/case/node/lstm.py
-class LSTM_Helper():
+class LSTM_Helper:
     def __init__(self, **params):  # type: (*Any) -> None
         # LSTM Input Names
-        X = str('X')
-        W = str('W')
-        R = str('R')
-        B = str('B')
-        H_0 = str('initial_h')
-        C_0 = str('initial_c')
-        P = str('P')
+        X = str("X")
+        W = str("W")
+        R = str("R")
+        B = str("B")
+        H_0 = str("initial_h")
+        C_0 = str("initial_c")
+        P = str("P")
         number_of_gates = 4
         number_of_peepholes = 3
 
@@ -192,14 +205,26 @@ class LSTM_Helper():
             hidden_size = params[R].shape[-1]
             batch_size = params[X].shape[1]
 
-            b = params[B] if B in params else np.zeros(
-                2 * number_of_gates * hidden_size, dtype=np.float32)
-            p = params[P] if P in params else np.zeros(
-                number_of_peepholes * hidden_size, dtype=np.float32)
-            h_0 = params[H_0] if H_0 in params else np.zeros(
-                (batch_size, hidden_size), dtype=np.float32)
-            c_0 = params[C_0] if C_0 in params else np.zeros(
-                (batch_size, hidden_size), dtype=np.float32)
+            b = (
+                params[B]
+                if B in params
+                else np.zeros(2 * number_of_gates * hidden_size, dtype=np.float32)
+            )
+            p = (
+                params[P]
+                if P in params
+                else np.zeros(number_of_peepholes * hidden_size, dtype=np.float32)
+            )
+            h_0 = (
+                params[H_0]
+                if H_0 in params
+                else np.zeros((batch_size, hidden_size), dtype=np.float32)
+            )
+            c_0 = (
+                params[C_0]
+                if C_0 in params
+                else np.zeros((batch_size, hidden_size), dtype=np.float32)
+            )
 
             self.X = params[X]
             self.W = params[W]
@@ -226,8 +251,11 @@ class LSTM_Helper():
         H_t = self.H_0
         C_t = self.C_0
         for x in np.split(self.X, self.X.shape[0], axis=0):
-            gates = np.dot(x, np.transpose(self.W)) + np.dot(
-                H_t, np.transpose(self.R)) + np.add(*np.split(self.B, 2))
+            gates = (
+                np.dot(x, np.transpose(self.W))
+                + np.dot(H_t, np.transpose(self.R))
+                + np.add(*np.split(self.B, 2))
+            )
             i, o, f, c = np.split(gates, 4, -1)
             i = self.f(i + p_i * C_t)
             f = self.f(f + p_f * C_t)

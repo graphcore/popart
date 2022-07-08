@@ -6,10 +6,9 @@ from .utils import check_in_graph
 
 
 @op_debug_context
-def print_tensor(t: Tensor,
-                 title: str = None,
-                 print_self: bool = True,
-                 print_gradient: bool = False) -> Tensor:
+def print_tensor(
+    t: Tensor, title: str = None, print_self: bool = True, print_gradient: bool = False
+) -> Tensor:
     """
     Print a tensor.
 
@@ -31,9 +30,10 @@ def print_tensor(t: Tensor,
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('print_tensor')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "PrintTensor", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("print_tensor")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "PrintTensor", 1, _ir.NumInputs(1, 1), 1
+    )
     if title is None:
         title = f"print{t.name}"
 

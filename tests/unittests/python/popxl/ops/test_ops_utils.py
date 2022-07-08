@@ -27,8 +27,8 @@ class TestCheckTensorIpuAndTileSet:
         with pytest.raises(ValueError) as excinfo:
             check_tensor_ipu_and_tile_set(t1=t1, t2=t2, t3=t3)
 
-        assert 't2' in str(excinfo.value)
-        assert 'IPUs' in str(excinfo.value)
+        assert "t2" in str(excinfo.value)
+        assert "IPUs" in str(excinfo.value)
 
     def test_different_tile_sets(self):
         ir = popxl.Ir()
@@ -42,8 +42,8 @@ class TestCheckTensorIpuAndTileSet:
         with pytest.raises(ValueError) as excinfo:
             check_tensor_ipu_and_tile_set(t1=t1, t2=t2, t3=t3)
 
-        assert 't3' in str(excinfo.value)
-        assert 'tile sets' in str(excinfo.value)
+        assert "t3" in str(excinfo.value)
+        assert "tile sets" in str(excinfo.value)
 
     def test_one_missing_but_ok(self):
         ir = popxl.Ir()
@@ -67,5 +67,5 @@ class TestCheckTensorIpuAndTileSet:
         with pytest.raises(ValueError) as excinfo:
             check_tensor_ipu_and_tile_set(t1=t1, t2=t2, t3=t3)
 
-        assert 't2' in str(excinfo.value)
-        assert 'tile sets' in str(excinfo.value)
+        assert "t2" in str(excinfo.value)
+        assert "tile sets" in str(excinfo.value)

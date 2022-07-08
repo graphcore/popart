@@ -15,8 +15,7 @@ def test_simple_for_loop(op_tester):
             a = builder.addInputTensor(i1)
             b = builder.addInputTensor(i2)
             M = builder.aiOnnx.constant(np.array(10).astype(np.int64), "M")
-            cond = builder.aiOnnx.constant(
-                np.array(True).astype(np.bool), "cond")
+            cond = builder.aiOnnx.constant(np.array(True).astype(np.bool), "cond")
 
             # loop body subgraph
             loop_builder = builder.createSubgraphBuilder()
@@ -24,8 +23,7 @@ def test_simple_for_loop(op_tester):
 
             # loop body inputs: [iteration_number, condition_in, lcd_tensors]
             loop_builder.addInputTensor(popart.TensorInfo("INT64", []))
-            keepgoing = loop_builder.addInputTensor(
-                popart.TensorInfo("BOOL", []))
+            keepgoing = loop_builder.addInputTensor(popart.TensorInfo("BOOL", []))
             a_in = loop_builder.addUntypedInputTensor(a)
 
             if builder_setting == "InPlace":
@@ -65,13 +63,12 @@ def test_simple_for_loop(op_tester):
         output = model(a, b, m)
         return [output]
 
-    op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(popart.PatternsLevel.NoPatterns, enableRuntimeAsserts=False)
     # T23410: This test doesn't work with inplacing enabled.
     op_tester.inplacing = False
-    op_tester.run(get_init_builder("NoInplace"), reference, step_type='infer')
-    op_tester.run(get_init_builder("Inplace"), reference, step_type='infer')
-    op_tester.run(get_init_builder("Implicit"), reference, step_type='infer')
+    op_tester.run(get_init_builder("NoInplace"), reference, step_type="infer")
+    op_tester.run(get_init_builder("Inplace"), reference, step_type="infer")
+    op_tester.run(get_init_builder("Implicit"), reference, step_type="infer")
 
 
 def test_loop_matmul(op_tester):
@@ -114,9 +111,8 @@ def test_loop_matmul(op_tester):
 
         return [x]
 
-    op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(popart.PatternsLevel.NoPatterns, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_loop_stop(op_tester):
@@ -139,8 +135,7 @@ def test_loop_stop(op_tester):
         _ = loop_builder.addUntypedInputTensor(cond)
         a_in = loop_builder.addUntypedInputTensor(a)
         a_out = loop_builder.aiOnnx.mul([a_in, b])
-        max = loop_builder.aiOnnx.constant(
-            np.array([128]).astype(np.float32), "max")
+        max = loop_builder.aiOnnx.constant(np.array([128]).astype(np.float32), "max")
         keepgoing = loop_builder.aiOnnx.less([a_out, max])
 
         # Outputs: [condition_out, a_out]
@@ -163,9 +158,8 @@ def test_loop_stop(op_tester):
 
         return [x]
 
-    op_tester.setPatterns(popart.PatternsLevel.NoPatterns,
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(popart.PatternsLevel.NoPatterns, enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_loop_scanout(op_tester):
@@ -222,4 +216,4 @@ def test_loop_scanout(op_tester):
 
         return [x, np.asarray(scanx), np.asarray(scany)]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")

@@ -17,12 +17,11 @@ def test_version_number():
     assert pkg_hash
     assert isinstance(pkg_hash, str)
 
-    ver_path = os.path.abspath(
-        os.path.join(__file__, '..', '..', '..', 'version.json'))
+    ver_path = os.path.abspath(os.path.join(__file__, "..", "..", "..", "version.json"))
 
-    with open(ver_path, 'r', encoding="utf-8") as f:
+    with open(ver_path, "r", encoding="utf-8") as f:
         version_obj = json.load(f)
 
-    assert int(version_obj['major']) == ver[0]
-    assert int(version_obj['minor']) == ver[1]
-    assert int(version_obj['point']) == ver[2]
+    assert int(version_obj["major"]) == ver[0]
+    assert int(version_obj["minor"]) == ver[1]
+    assert int(version_obj["point"]) == ver[2]

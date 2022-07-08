@@ -7,6 +7,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -22,9 +23,10 @@ def test_batchserialisation_dropout():
         builder = popart.Builder()
 
         d0 = builder.addInputTensor(
-            popart.TensorInfo('FLOAT', input_data.shape), 'data0')
+            popart.TensorInfo("FLOAT", input_data.shape), "data0"
+        )
 
-        w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+        w0 = builder.addInitializedInputTensor(weight_data, "weight0")
         x = builder.aiOnnx.matmul([d0, w0])
         x1 = builder.aiOnnx.dropout([x], 1, debugContext="dropout0")[0]
 
@@ -32,7 +34,7 @@ def test_batchserialisation_dropout():
 
         o = builder.aiOnnx.add([x1, x2])
 
-        loss = builder.aiGraphcore.l1loss([o], 0.1, debugContext='loss')
+        loss = builder.aiGraphcore.l1loss([o], 0.1, debugContext="loss")
 
         return builder.getModelProto(), {d0: input_data}, [x1, x2], loss
 
@@ -49,20 +51,21 @@ def test_batchserialisation_dropout():
         options.explicitRecomputation = True
         options.batchSerializationSettings.factor = 4
 
-        with tu.create_test_device(1,
-                                   pattern=popart.SyncPattern.Full) as device:
+        with tu.create_test_device(1, pattern=popart.SyncPattern.Full) as device:
 
             dataFlow = popart.DataFlow(
-                1, {x: popart.AnchorReturnType("ALL")
-                    for x in xs})
+                1, {x: popart.AnchorReturnType("ALL") for x in xs}
+            )
 
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 

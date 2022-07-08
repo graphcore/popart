@@ -26,7 +26,7 @@ def test_float16_scales(op_tester):
         o = interpolate(x, s)
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_resize11_float16_scales(op_tester):
@@ -49,7 +49,7 @@ def test_resize11_float16_scales(op_tester):
         o = interpolate(x, s)
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("scale_factor, data_shape", [(3.0001, 2), (0.51, 6)])
@@ -73,12 +73,12 @@ def test_odd_scale_factors(op_tester, nearest_mode, scale_factor, data_shape):
             o = interpolate(x, s)
             return [o]
         else:
-            o = onnx_resize.interpolate_nd(data,
-                                           onnx_resize.nearest_coeffs,
-                                           scale_factors=scales)
+            o = onnx_resize.interpolate_nd(
+                data, onnx_resize.nearest_coeffs, scale_factors=scales
+            )
             return [o.astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("scale_factor, data_shape", [(3.0001, 2), (0.51, 6)])
@@ -114,8 +114,8 @@ def test_odd_scale_factors_grad(op_tester, scale_factor, data_shape):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize(
@@ -131,12 +131,13 @@ def test_odd_scale_factors_grad(op_tester, scale_factor, data_shape):
         ([5, 3], [0.3, 0.5]),
         # 3D
         ([5, 3, 4], [2.3, 2.5, 0.5]),
-    ])
+    ],
+)
 @pytest.mark.parametrize(
     "coordinate_transformation_mode",
-    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
-def test_resize_linear(op_tester, data_shape, scales,
-                       coordinate_transformation_mode):
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"],
+)
+def test_resize_linear(op_tester, data_shape, scales, coordinate_transformation_mode):
     data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
     scales = np.array(scales, dtype=np.float32)
@@ -148,7 +149,8 @@ def test_resize_linear(op_tester, data_shape, scales,
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             mode="linear",
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+        )
         builder.addOutputTensor(o)
         return [o]
 
@@ -157,10 +159,11 @@ def test_resize_linear(op_tester, data_shape, scales,
             data,
             onnx_resize.linear_coeffs,
             scale_factors=scales,
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+        )
         return [o.astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize(
@@ -174,7 +177,8 @@ def test_resize_linear(op_tester, data_shape, scales,
         # 2D cases
         ([4, 4], [9, 9]),
         ([4, 4], [5, 3]),
-    ])
+    ],
+)
 @pytest.mark.parametrize("sizes_dtype", [np.int64, np.int32])
 def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
     data = np.random.rand(*data_shape).astype(np.float32)
@@ -185,7 +189,7 @@ def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
         d = builder.addInputTensor(data)
         s = builder.aiOnnxOpset11.constant(sizes, False)
         r = builder.aiOnnxOpset11.constant(roi, False)
-        o = builder.aiOnnxOpset11.resize([d, r, '', s])
+        o = builder.aiOnnxOpset11.resize([d, r, "", s])
         builder.addOutputTensor(o)
         return [o]
 
@@ -196,15 +200,15 @@ def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
         for di, do in zip(data.shape, sizes):
             scales.append(do / di)
 
-        o = onnx_resize.interpolate_nd(data,
-                                       onnx_resize.nearest_coeffs,
-                                       scale_factors=scales)
+        o = onnx_resize.interpolate_nd(
+            data, onnx_resize.nearest_coeffs, scale_factors=scales
+        )
         # Check the output shape is correct.
         assert tuple(sizes) == o.shape
 
         return [o.astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize(
@@ -221,12 +225,13 @@ def test_resize_sizes_input(op_tester, data_shape, sizes, sizes_dtype):
         ([5, 4], [0.5, 0.5]),
         # 3D
         ([5, 3, 4], [2.3, 2.5, 0.5]),
-    ])
+    ],
+)
 @pytest.mark.parametrize(
     "coordinate_transformation_mode",
-    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
-def test_resize_cubic(op_tester, data_shape, scales,
-                      coordinate_transformation_mode):
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"],
+)
+def test_resize_cubic(op_tester, data_shape, scales, coordinate_transformation_mode):
     # This particular case has quite a large error.
     #   Popart:
     #   [[0.64254135 0.5632834 ]]
@@ -235,9 +240,11 @@ def test_resize_cubic(op_tester, data_shape, scales,
     #   Diff:
     #   [[-0.00827235  0.00767517]]
     # I'm not sure what is causing it, but it's the only failure in 52 tests, so skipping it for now.
-    if coordinate_transformation_mode == "pytorch_half_pixel" and data_shape == [
-            2, 4
-    ] and scales == [0.5, 0.5]:
+    if (
+        coordinate_transformation_mode == "pytorch_half_pixel"
+        and data_shape == [2, 4]
+        and scales == [0.5, 0.5]
+    ):
         pytest.skip()
 
     data = np.random.rand(*data_shape).astype(np.float32)
@@ -251,7 +258,8 @@ def test_resize_cubic(op_tester, data_shape, scales,
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             mode="cubic",
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+        )
         builder.addOutputTensor(o)
         return [o]
 
@@ -260,7 +268,8 @@ def test_resize_cubic(op_tester, data_shape, scales,
             data,
             onnx_resize.cubic_coeffs,
             scale_factors=scales,
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+        )
 
         return [o.astype(data.dtype)]
 
@@ -270,7 +279,7 @@ def test_resize_cubic(op_tester, data_shape, scales,
     elif len(data.shape) == 3:
         op_tester.atol = 1e-05
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize(
@@ -282,14 +291,15 @@ def test_resize_cubic(op_tester, data_shape, scales,
         # but the reset will only happen in backward pass(not forward pass),
         # so this is a bug in pytorch
         # so we temprarily comment this test
-        #([8, 8], [1.12, 1.12]),
+        # ([8, 8], [1.12, 1.12]),
         # upsample
         ([2, 2], [2.0, 3.0]),
         ([5, 3], [2.3, 2.5]),
         # downsample
         ([2, 8], [1.0, 3 / 8]),
         ([5, 4], [0.5, 0.5]),
-    ])
+    ],
+)
 def test_resize_cubic_grad(op_tester, data_shape, scales):
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
@@ -304,9 +314,8 @@ def test_resize_cubic_grad(op_tester, data_shape, scales):
         s = builder.aiOnnxOpset11.constant(scales, False)
         r = builder.aiOnnxOpset11.constant(roi, False)
         o = builder.aiOnnxOpset11.resize(
-            [d, r, s],
-            mode="cubic",
-            coordinate_transformation_mode='pytorch_half_pixel')
+            [d, r, s], mode="cubic", coordinate_transformation_mode="pytorch_half_pixel"
+        )
         o = builder.aiOnnx.mul([o, x])
         builder.addOutputTensor(o)
         return [
@@ -318,10 +327,9 @@ def test_resize_cubic_grad(op_tester, data_shape, scales):
     def reference(ref_data):
         a = torch.tensor(data, requires_grad=True)
         s = [i for i in scales[2:]]
-        b = torch.nn.functional.interpolate(a,
-                                            scale_factor=s,
-                                            mode='bicubic',
-                                            align_corners=False)
+        b = torch.nn.functional.interpolate(
+            a, scale_factor=s, mode="bicubic", align_corners=False
+        )
         b.retain_grad()
         o = b * torch.tensor(x_data)
 
@@ -329,10 +337,10 @@ def test_resize_cubic_grad(op_tester, data_shape, scales):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["MulArgGradOp"], enableRuntimeAsserts=False)
     # according to our experience, 1e-6 should be a good abosolute tolerance
     op_tester.atol = 1e-6
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize(
@@ -346,7 +354,8 @@ def test_resize_cubic_grad(op_tester, data_shape, scales):
         ([1, 1, 6], [1, 1, 5 / 6]),
         ([1, 1, 8], [1, 1, 3 / 4]),
         ([1, 1, 10], [1, 1, 0.7]),
-    ])
+    ],
+)
 def test_resize_torch_linear(op_tester, data_shape, scales):
     data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
@@ -359,20 +368,20 @@ def test_resize_torch_linear(op_tester, data_shape, scales):
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             mode="linear",
-            coordinate_transformation_mode='pytorch_half_pixel')
+            coordinate_transformation_mode="pytorch_half_pixel",
+        )
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         d = torch.Tensor(data)
         s = np.multiply(scales, data_shape).round().astype(np.int32)
-        o = torch.nn.functional.interpolate(d,
-                                            size=(s[2]),
-                                            mode='linear',
-                                            align_corners=False)
+        o = torch.nn.functional.interpolate(
+            d, size=(s[2]), mode="linear", align_corners=False
+        )
         return [o.numpy().astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize(
@@ -386,7 +395,8 @@ def test_resize_torch_linear(op_tester, data_shape, scales):
         ([1, 1, 4, 6], [1, 1, 0.5, 5 / 6]),
         ([1, 1, 5, 8], [1, 1, 0.2, 3 / 4]),
         ([1, 1, 7, 10], [1, 1, 4 / 7, 0.7]),
-    ])
+    ],
+)
 def test_resize_torch_bilinear(op_tester, data_shape, scales):
     data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
@@ -399,20 +409,20 @@ def test_resize_torch_bilinear(op_tester, data_shape, scales):
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             mode="linear",
-            coordinate_transformation_mode='pytorch_half_pixel')
+            coordinate_transformation_mode="pytorch_half_pixel",
+        )
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         d = torch.Tensor(data)
         s = np.multiply(scales, data_shape).round().astype(np.int32)
-        o = torch.nn.functional.interpolate(d,
-                                            size=(s[2], s[3]),
-                                            mode='bilinear',
-                                            align_corners=False)
+        o = torch.nn.functional.interpolate(
+            d, size=(s[2], s[3]), mode="bilinear", align_corners=False
+        )
         return [o.numpy().astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize(
@@ -426,7 +436,8 @@ def test_resize_torch_bilinear(op_tester, data_shape, scales):
         ([1, 1, 8, 4, 6], [1, 1, 3 / 8, 0.5, 5 / 6]),
         ([1, 1, 3, 5, 8], [1, 1, 2 / 3, 0.2, 3 / 4]),
         ([1, 1, 6, 7, 10], [1, 1, 0.5, 4 / 7, 0.7]),
-    ])
+    ],
+)
 def test_resize_torch_trilinear(op_tester, data_shape, scales):
     data = np.random.rand(*data_shape).astype(np.float32)
     roi = np.array([], dtype=np.float32)
@@ -439,17 +450,17 @@ def test_resize_torch_trilinear(op_tester, data_shape, scales):
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             mode="linear",
-            coordinate_transformation_mode='pytorch_half_pixel')
+            coordinate_transformation_mode="pytorch_half_pixel",
+        )
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         d = torch.Tensor(data)
         s = np.multiply(scales, data_shape).round().astype(np.int32)
-        o = torch.nn.functional.interpolate(d,
-                                            size=(s[2], s[3], s[4]),
-                                            mode='trilinear',
-                                            align_corners=False)
+        o = torch.nn.functional.interpolate(
+            d, size=(s[2], s[3], s[4]), mode="trilinear", align_corners=False
+        )
         return [o.numpy().astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

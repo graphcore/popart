@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def prod(t: Tensor,
-         axis: Optional[Union[int, Iterable[int]]] = None,
-         keepdims: bool = False) -> Tensor:
+def prod(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the product of elements along an axis.
 
@@ -40,9 +40,8 @@ def prod(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReducProd')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceProd", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("ReducProd")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceProd", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReduceProdOp(
         {
             0: t.id,

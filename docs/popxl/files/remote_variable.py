@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 This example shows how to use remote buffers and remote variables.
-'''
+"""
 
 import numpy as np
 

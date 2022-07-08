@@ -6,26 +6,28 @@ import popart._internal.ir as _ir
 
 
 def check_graph_inputs(graph, graph_inputs):
-    """ Helper function, graph inputs are what we expect. """
-    assert graph.getInputIds() == graph_inputs, \
-        f"Expected Graph {graph.getGraphString()} to have inputs {graph_inputs}, got {graph.getInputIds()}"
+    """Helper function, graph inputs are what we expect."""
+    assert (
+        graph.getInputIds() == graph_inputs
+    ), f"Expected Graph {graph.getGraphString()} to have inputs {graph_inputs}, got {graph.getInputIds()}"
 
 
 def check_graph_outputs(graph, graph_outputs):
-    """ Helper function, graph outputs are what we expect. """
-    assert graph.getOutputIds() == graph_outputs, \
-        f"Expected Graph {graph.getGraphString()} to have outputs {graph_outputs}, got {graph.getOutputIds()}"
+    """Helper function, graph outputs are what we expect."""
+    assert (
+        graph.getOutputIds() == graph_outputs
+    ), f"Expected Graph {graph.getGraphString()} to have outputs {graph_outputs}, got {graph.getOutputIds()}"
 
 
 def test_graph_construction():
-    """ Test that we can construct a popart._internal.ir.Graph object. """
+    """Test that we can construct a popart._internal.ir.Graph object."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     _ = _ir.Graph(ir, g1Id)
 
 
 def test_graph_graph_inputs():
-    """ Test we can add/remove graph inputs. """
+    """Test we can add/remove graph inputs."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     g1 = ir.createGraph(g1Id)
@@ -38,8 +40,7 @@ def test_graph_graph_inputs():
     check_graph_inputs(g1, ["inputA"])
     g1.addInput("inputB", _ir.TensorInfo(_ir.DataType.FLOAT, [65, 5]))
     check_graph_inputs(g1, ["inputA", "inputB"])
-    g1.addInput(1, "input1", _ir.TensorInfo(_ir.DataType.FLOAT, [65, 5]),
-                False)
+    g1.addInput(1, "input1", _ir.TensorInfo(_ir.DataType.FLOAT, [65, 5]), False)
     check_graph_inputs(g1, ["inputA", "input1", "inputB"])
     g1.addInput(1, "input2", _ir.TensorInfo(_ir.DataType.FLOAT, [65, 5]), True)
     check_graph_inputs(g1, ["inputA", "input2", "inputB"])
@@ -68,7 +69,7 @@ def test_graph_graph_inputs():
 
 
 def test_graph_graph_outputs():
-    """ Test we can add/remove graph outputs. """
+    """Test we can add/remove graph outputs."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     g1 = ir.createGraph(g1Id)
@@ -111,7 +112,7 @@ def test_graph_graph_outputs():
 
 
 def test_graph_scope_functions():
-    """ Test we can scope functions. """
+    """Test we can scope functions."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     g1 = ir.createGraph(g1Id)
@@ -132,7 +133,7 @@ def test_graph_scope_functions():
 
 
 def test_graph_id_member():
-    """ Test .id member binding. """
+    """Test .id member binding."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     g1 = ir.createGraph(g1Id)
@@ -141,7 +142,7 @@ def test_graph_id_member():
 
 
 def test_graph_get_graph_string():
-    """ Test getGraphString binding. """
+    """Test getGraphString binding."""
     ir = _ir.Ir()
     g1Id = _ir.GraphId("g1")
     g1 = ir.createGraph(g1Id)

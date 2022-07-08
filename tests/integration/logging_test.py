@@ -14,6 +14,6 @@ def test_setLevel(capfd):
         return err
 
     # Change the log level from trace to off and then back to trace again.
-    assert 'Adding ai.onnx.Abs' in check_loglevel('TRACE')
-    assert check_loglevel('OFF') == ''
-    assert 'Adding ai.onnx.Abs' in check_loglevel('TRACE')
+    assert "Adding ai.onnx.Abs" in check_loglevel("TRACE")
+    assert check_loglevel("OFF") == ""
+    assert "Adding ai.onnx.Abs" in check_loglevel("TRACE")

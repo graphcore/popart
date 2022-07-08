@@ -8,10 +8,9 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def scaled_add(X: Tensor,
-               Y: Tensor,
-               a: Union[float, Tensor] = 1.0,
-               b: Union[float, Tensor] = 1.0) -> Tensor:
+def scaled_add(
+    X: Tensor, Y: Tensor, a: Union[float, Tensor] = 1.0, b: Union[float, Tensor] = 1.0
+) -> Tensor:
     """
     Perform a scaled addition of two tensors.
 
@@ -40,34 +39,40 @@ def scaled_add(X: Tensor,
     ins = {0: X.id, 1: Y.id}
 
     if isinstance(a, Tensor):
-        tensors_to_check['a'] = a
+        tensors_to_check["a"] = a
         ins[2] = a.id
         a = 1.0
 
     if isinstance(b, Tensor):
-        tensors_to_check['b'] = b
+        tensors_to_check["b"] = b
         ins[3] = b.id
         b = 1.0
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
 
-    settings = ctx._get_op_settings('scaled_add')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ScaledAdd", 1,
-                                  _ir.NumInputs(2, 4), 1)
+    settings = ctx._get_op_settings("scaled_add")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ScaledAdd", 1, _ir.NumInputs(2, 4), 1
+    )
     op = pb_g.createConnectedOp_ScaledAddOp(
-        ins, {
-            0: g._create_tensor_id('scaled_add_out'),
-        }, opid, a, b, settings)
+        ins,
+        {
+            0: g._create_tensor_id("scaled_add_out"),
+        },
+        opid,
+        a,
+        b,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def scaled_add_(X: Tensor,
-                Y: Tensor,
-                a: Union[float, Tensor] = 1.0,
-                b: Union[float, Tensor] = 1.0) -> Tensor:
+def scaled_add_(
+    X: Tensor, Y: Tensor, a: Union[float, Tensor] = 1.0, b: Union[float, Tensor] = 1.0
+) -> Tensor:
     """
     Perform a scaled addition of two tensors (in-place).
 
@@ -95,22 +100,27 @@ def scaled_add_(X: Tensor,
     ins = {0: X.id, 1: Y.id}
 
     if isinstance(a, Tensor):
-        tensors_to_check['a'] = a
+        tensors_to_check["a"] = a
         ins[2] = a.id
         a = 1.0
 
     if isinstance(b, Tensor):
-        tensors_to_check['b'] = b
+        tensors_to_check["b"] = b
         ins[3] = b.id
         b = 1.0
 
     check_in_graph(g, **tensors_to_check)
     check_tensor_ipu_and_tile_set(**tensors_to_check)
 
-    settings = ctx._get_op_settings('scaled_add')
+    settings = ctx._get_op_settings("scaled_add")
     op = pb_g.createConnectedOp_ScaledAddLhsInplaceOp(
-        ins, {
-            0: g._create_tensor_id('scaled_add__' + X.name),
-        }, a, b, settings)
+        ins,
+        {
+            0: g._create_tensor_id("scaled_add__" + X.name),
+        },
+        a,
+        b,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

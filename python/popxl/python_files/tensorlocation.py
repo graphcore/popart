@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 class TensorStorage(Enum):
     """Enum type to specify whether to store tensors on-chp in tile memory, or in Streaming Memory."""
+
     OnChip = "OnChip"  #: Store the tensor in tile memory.
     OffChip = "OffChip"  #: Store the tensor in Streaming Memory.
 
@@ -28,6 +29,7 @@ class TensorStorage(Enum):
 
 class ReplicatedTensorSharding(Enum):
     """Enum type to specify whether to shard tensors over replicas."""
+
     On = "On"  #: Tensors will be sharded over replicas.
     Off = "Off"  #: Tensors will not be sharded over replicas.
 
@@ -48,14 +50,14 @@ TileSet = _ir.TileSet
 ExecutionContext = _ir.ExecutionContext
 
 
-class TensorLocation():
+class TensorLocation:
     """Class that describes the memory characteristics of one or multiple tensors."""
 
     def __init__(
-            self,
-            storage: TensorStorage = TensorStorage.OnChip,
-            replicated_tensor_sharding:
-            ReplicatedTensorSharding = ReplicatedTensorSharding.Off) -> None:
+        self,
+        storage: TensorStorage = TensorStorage.OnChip,
+        replicated_tensor_sharding: ReplicatedTensorSharding = ReplicatedTensorSharding.Off,
+    ) -> None:
         self._storage = storage
         self._replicated_tensor_sharding = replicated_tensor_sharding
 
@@ -64,7 +66,8 @@ class TensorLocation():
         self = super().__new__(cls)
         self._storage = TensorStorage._from__ir(_ir_tensor_location.storage)
         self._replicated_tensor_sharding = ReplicatedTensorSharding._from__ir(
-            _ir_tensor_location.replicatedTensorSharding)
+            _ir_tensor_location.replicatedTensorSharding
+        )
         return self
 
     @property
@@ -76,5 +79,6 @@ class TensorLocation():
         return self._replicated_tensor_sharding
 
     def _to__ir_location(self) -> _ir.TensorLocation:
-        return _ir.TensorLocation(self.storage._to__ir,
-                                  self.replicated_tensor_sharding._to__ir())
+        return _ir.TensorLocation(
+            self.storage._to__ir, self.replicated_tensor_sharding._to__ir()
+        )

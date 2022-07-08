@@ -25,7 +25,7 @@ def test_sub(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_sub(op_tester):
@@ -49,7 +49,7 @@ def test_broadcast_sub(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_sub_grad(op_tester):
@@ -66,7 +66,7 @@ def test_sub_grad(op_tester):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -83,7 +83,7 @@ def test_sub_grad(op_tester):
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
     op_tester.setPatterns(["SubtractArg1GradOp"], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_broadcast_sub_grad(op_tester):
@@ -100,7 +100,7 @@ def test_broadcast_sub_grad(op_tester):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -117,4 +117,4 @@ def test_broadcast_sub_grad(op_tester):
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
     op_tester.setPatterns(["SubtractArg1GradOp"], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

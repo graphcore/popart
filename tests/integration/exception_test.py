@@ -6,6 +6,7 @@ import tempfile
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -42,7 +43,7 @@ def test_out_of_memory_exception():
         options.engineOptions = {
             "debug.allowOutOfMemory": "true",
             "autoReport.outputGraphProfile": "true",
-            "autoReport.directory": tempDir.name
+            "autoReport.directory": tempDir.name,
         }
         patterns = popart.Patterns(popart.PatternsLevel.NoPatterns)
         patterns.enableRuntimeAsserts(False)
@@ -52,7 +53,8 @@ def test_out_of_memory_exception():
             dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
             userOptions=options,
             patterns=patterns,
-            deviceInfo=deviceInfo)
+            deviceInfo=deviceInfo,
+        )
 
         with pytest.raises(popart.popart_exception) as e:
             session.prepareDevice()

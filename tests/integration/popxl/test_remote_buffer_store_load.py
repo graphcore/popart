@@ -12,8 +12,7 @@ from popxl.dtypes import dtype
 
 
 def test_remote_buffer() -> None:
-    """Test the interaction with the remote buffer through popxl.
-    """
+    """Test the interaction with the remote buffer through popxl."""
     # Prepare the input and output data
     shape_1 = (1, 3, 5)
     shape_2 = (7, 11)
@@ -82,12 +81,12 @@ def test_remote_buffer() -> None:
             assert np.allclose(load_in_data_after_op_call, store_in_data)
         else:
             # Assert that the load in data has not been overwritten
-            assert np.allclose(load_in_data_after_op_call,
-                               load_in_data_before_op_call)
+            assert np.allclose(load_in_data_after_op_call, load_in_data_before_op_call)
 
 
-def build_model(data: Dict[str, np.array]
-                ) -> Tuple[popxl.Ir, Dict[str, DeviceToHostStream]]:
+def build_model(
+    data: Dict[str, np.array]
+) -> Tuple[popxl.Ir, Dict[str, DeviceToHostStream]]:
     """Build a model for storing and loading tensors from the remote buffer.
 
     Args:
@@ -116,69 +115,76 @@ def build_model(data: Dict[str, np.array]
         remote_buffer_1 = RemoteBuffer(
             tensor_shape=tensors["store_in_1"]._pb_tensor.info.shape(),
             tensor_dtype=dtype.as_dtype(
-                tensors["store_in_1"]._pb_tensor.info.data_type_lcase()),
-            entries=1)
+                tensors["store_in_1"]._pb_tensor.info.data_type_lcase()
+            ),
+            entries=1,
+        )
         offset_tensor_1 = popxl.constant(0, name="offset_1")
         # Ensure that the ops are in the order we define them in
         with popxl.in_sequence(True):
-            ops.remote_store(remote_buffer=remote_buffer_1,
-                             offset=offset_tensor_1,
-                             t=tensors["store_in_1"])
-            tensors["load_out_1"] = ops.remote_load(
+            ops.remote_store(
                 remote_buffer=remote_buffer_1,
                 offset=offset_tensor_1,
-                name="load_out_1")
+                t=tensors["store_in_1"],
+            )
+            tensors["load_out_1"] = ops.remote_load(
+                remote_buffer=remote_buffer_1, offset=offset_tensor_1, name="load_out_1"
+            )
             tensors["load_out_1_inplace"] = ops.remote_load_(
                 remote_buffer=remote_buffer_1,
                 offset=offset_tensor_1,
-                t=tensors["load_in_1_inplace"])
+                t=tensors["load_in_1_inplace"],
+            )
             # Anchor the input tensors to the load operator
             d2h_streams = make_stream(d2h_streams, tensors, "load_in_1")
-            d2h_streams = make_stream(d2h_streams, tensors,
-                                      "load_in_1_inplace")
+            d2h_streams = make_stream(d2h_streams, tensors, "load_in_1_inplace")
             # Anchor the output tensors of the load operator
             d2h_streams = make_stream(d2h_streams, tensors, "load_out_1")
-            d2h_streams = make_stream(d2h_streams, tensors,
-                                      "load_out_1_inplace")
+            d2h_streams = make_stream(d2h_streams, tensors, "load_out_1_inplace")
 
             # Store and load the second and third tensor using a new buffer id
             remote_buffer_2 = RemoteBuffer(
                 tensor_shape=tensors["store_in_2"]._pb_tensor.info.shape(),
                 tensor_dtype=dtype.as_dtype(
-                    tensors["store_in_2"]._pb_tensor.info.data_type_lcase()),
-                entries=2)
+                    tensors["store_in_2"]._pb_tensor.info.data_type_lcase()
+                ),
+                entries=2,
+            )
             # Index starts at 0
             offset_tensor_2 = popxl.constant(0, name="offset_2")
             offset_tensor_3 = 1  # Test that the int version of offset works
-            ops.remote_store(remote_buffer=remote_buffer_2,
-                             offset=offset_tensor_2,
-                             t=tensors["store_in_2"])
-            ops.remote_store(remote_buffer=remote_buffer_2,
-                             offset=offset_tensor_3,
-                             t=tensors["store_in_3"])
-            tensors["load_out_2"] = ops.remote_load(
+            ops.remote_store(
                 remote_buffer=remote_buffer_2,
                 offset=offset_tensor_2,
-                name="load_out_2")
+                t=tensors["store_in_2"],
+            )
+            ops.remote_store(
+                remote_buffer=remote_buffer_2,
+                offset=offset_tensor_3,
+                t=tensors["store_in_3"],
+            )
+            tensors["load_out_2"] = ops.remote_load(
+                remote_buffer=remote_buffer_2, offset=offset_tensor_2, name="load_out_2"
+            )
             tensors["load_out_3_inplace"] = ops.remote_load_(
                 remote_buffer=remote_buffer_2,
                 offset=offset_tensor_3,
-                t=tensors["load_in_3_inplace"])
+                t=tensors["load_in_3_inplace"],
+            )
 
             # Anchor the input tensors to the load operator
             d2h_streams = make_stream(d2h_streams, tensors, "load_in_2")
-            d2h_streams = make_stream(d2h_streams, tensors,
-                                      "load_in_3_inplace")
+            d2h_streams = make_stream(d2h_streams, tensors, "load_in_3_inplace")
             # Anchor the output tensors of the load operator
             d2h_streams = make_stream(d2h_streams, tensors, "load_out_2")
-            d2h_streams = make_stream(d2h_streams, tensors,
-                                      "load_out_3_inplace")
+            d2h_streams = make_stream(d2h_streams, tensors, "load_out_3_inplace")
 
     return ir, d2h_streams
 
 
-def make_stream(d2h_streams: Dict[str, str], tensors: Dict[str, Variable],
-                label: str) -> Dict[str, str]:
+def make_stream(
+    d2h_streams: Dict[str, str], tensors: Dict[str, Variable], label: str
+) -> Dict[str, str]:
     """Insert device to host anchors.
 
     Args:
@@ -192,6 +198,7 @@ def make_stream(d2h_streams: Dict[str, str], tensors: Dict[str, Variable],
     d2h_streams[label] = popxl.d2h_stream(
         tensors[label]._pb_tensor.info.shape(),
         dtype.as_dtype(tensors[label]._pb_tensor.info.data_type_lcase()),
-        name=f"{label}_d2h_stream")
+        name=f"{label}_d2h_stream",
+    )
     ops.host_store(d2h_streams[label], tensors[label])
     return d2h_streams

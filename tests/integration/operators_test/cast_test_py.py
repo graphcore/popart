@@ -8,28 +8,32 @@ import torch.nn as nn
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(Path(__file__).resolve().parent.parent)
 import test_util as tu
 
 
-@pytest.mark.parametrize("npSrcType,npDstType,builderDstType,reducePrecision",
-                         [(np.int32, np.float32, "FLOAT", False),
-                          (np.float32, np.int32, "INT32", False),
-                          (np.int16, np.float32, "FLOAT", False),
-                          (np.float32, np.int16, "INT16", False),
-                          (np.int16, np.float16, "FLOAT16", False),
-                          (np.float16, np.int16, "INT16", False),
-                          (np.uint16, np.float16, "FLOAT16", False),
-                          (np.float16, np.uint16, "UINT16", False),
-                          (np.int8, np.float16, "FLOAT16", False),
-                          (np.float16, np.int8, "INT8", False),
-                          (np.uint8, np.float16, "FLOAT16", False),
-                          (np.float16, np.uint8, "UINT8", False),
-                          (np.float32, np.float16, "FLOAT16", True),
-                          (np.float16, np.float32, "FLOAT", False),
-                          (np.int32, np.int32, "INT32", False)])
-def test_cast(op_tester, npSrcType, npDstType, builderDstType,
-              reducePrecision):
+@pytest.mark.parametrize(
+    "npSrcType,npDstType,builderDstType,reducePrecision",
+    [
+        (np.int32, np.float32, "FLOAT", False),
+        (np.float32, np.int32, "INT32", False),
+        (np.int16, np.float32, "FLOAT", False),
+        (np.float32, np.int16, "INT16", False),
+        (np.int16, np.float16, "FLOAT16", False),
+        (np.float16, np.int16, "INT16", False),
+        (np.uint16, np.float16, "FLOAT16", False),
+        (np.float16, np.uint16, "UINT16", False),
+        (np.int8, np.float16, "FLOAT16", False),
+        (np.float16, np.int8, "INT8", False),
+        (np.uint8, np.float16, "FLOAT16", False),
+        (np.float16, np.uint8, "UINT8", False),
+        (np.float32, np.float16, "FLOAT16", True),
+        (np.float16, np.float32, "FLOAT", False),
+        (np.int32, np.int32, "INT32", False),
+    ],
+)
+def test_cast(op_tester, npSrcType, npDstType, builderDstType, reducePrecision):
     d1 = np.random.uniform(0, 20, 5).astype(npSrcType)
 
     def init_builder(builder):
@@ -48,15 +52,18 @@ def test_cast(op_tester, npSrcType, npDstType, builderDstType,
     if reducePrecision:  # Some downcasts change values enough to fail for 1e-8
         op_tester.atol = 1e-2
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
-@pytest.mark.parametrize("npSrcType,torchDstType,builderDstType", [
-    (np.float32, torch.float32, "FLOAT"),
-    (np.float16, torch.float32, "FLOAT"),
-    (np.float32, torch.float16, "FLOAT16"),
-    (np.float16, torch.float16, "FLOAT16"),
-])
+@pytest.mark.parametrize(
+    "npSrcType,torchDstType,builderDstType",
+    [
+        (np.float32, torch.float32, "FLOAT"),
+        (np.float16, torch.float32, "FLOAT"),
+        (np.float32, torch.float16, "FLOAT16"),
+        (np.float16, torch.float16, "FLOAT16"),
+    ],
+)
 def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
     d1 = np.random.uniform(0, 10, 10).astype(npSrcType)
 
@@ -69,24 +76,26 @@ def test_cast_grad(op_tester, npSrcType, torchDstType, builderDstType):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
         c = torch.tensor(d1, dtype=torchDstType, requires_grad=True)
-        out = torch.sum(c).reshape((1, ))
+        out = torch.sum(c).reshape((1,))
         d_o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d_o))
         d_i1 = c.grad.numpy().astype(npSrcType)
         return [out, d_i1, d_o]
 
-    op_tester.setPatterns(['PreUniRepl', 'PostNRepl', 'SqrtGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "PostNRepl", "SqrtGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize(
-    "npSrcType", [np.int8, np.int16, np.int32, np.uint8, np.uint16, np.uint32])
+    "npSrcType", [np.int8, np.int16, np.int32, np.uint8, np.uint16, np.uint32]
+)
 @pytest.mark.parametrize("builderDstType", ["FLOAT", "FLOAT16"])
 def test_cast_no_grad(npSrcType, builderDstType):
     """Check that CastOp, doesn't return gradient Op when casted-from type is
@@ -105,32 +114,35 @@ def test_cast_no_grad(npSrcType, builderDstType):
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        1, {
-            output_:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + input_:
-            popart.AnchorReturnType("All"),
-        })
+        1,
+        {
+            output_: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + input_: popart.AnchorReturnType("All"),
+        },
+    )
 
     with tu.create_test_device() as device:
 
-        patterns = popart.Patterns(['PreUniRepl', 'PostNRepl',
-                                    'SqrtGradOp']).enableRuntimeAsserts(False)
+        patterns = popart.Patterns(
+            ["PreUniRepl", "PostNRepl", "SqrtGradOp"]
+        ).enableRuntimeAsserts(False)
         options = popart.SessionOptions()
         options.enableStochasticRounding = False
 
         with pytest.raises(popart.popart_exception) as e_info:
-            popart.TrainingSession(fnModel=proto,
-                                   loss=lossId,
-                                   dataFlow=dataFlow,
-                                   deviceInfo=device,
-                                   optimizer=popart.ConstSGD(0.01),
-                                   patterns=patterns,
-                                   userOptions=options)
+            popart.TrainingSession(
+                fnModel=proto,
+                loss=lossId,
+                dataFlow=dataFlow,
+                deviceInfo=device,
+                optimizer=popart.ConstSGD(0.01),
+                patterns=patterns,
+                userOptions=options,
+            )
 
-        assert (e_info.value.args[0].startswith(
+        assert e_info.value.args[0].startswith(
             f"Anchor tensor `{popart.reservedGradientPrefix() + input_}' not in Ir Tensors."
-        ))
+        )
 
 
 def test_cast_no_grad_branch(op_tester):
@@ -196,9 +208,9 @@ def test_cast_no_grad_branch(op_tester):
                 self.weight_param = w_t
 
             def forward(self, x):
-                pow1 = x**2
+                pow1 = x ** 2
                 with torch.no_grad():
-                    pow2 = x**2
+                    pow2 = x ** 2
                     pow2 = pow2.to(torch.int32)
                     pow2 = pow2.to(torch.float32)
                 out = pow1 + pow2 + self.weight_param
@@ -213,5 +225,5 @@ def test_cast_no_grad_branch(op_tester):
 
         return [out, x.grad, net.weight_param.grad, None]
 
-    op_tester.setPatterns(['PowArg0GradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PowArg0GradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

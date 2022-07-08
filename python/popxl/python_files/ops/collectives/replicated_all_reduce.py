@@ -8,9 +8,9 @@ from .collectives import CommGroup, to_collective_op, CollectiveOps
 from popxl.ops.utils import check_in_graph
 
 
-def replicated_all_reduce(t: Tensor,
-                          op: CollectiveOps = 'add',
-                          group: Optional[ReplicaGrouping] = None) -> Tensor:
+def replicated_all_reduce(
+    t: Tensor, op: CollectiveOps = "add", group: Optional[ReplicaGrouping] = None
+) -> Tensor:
     """Reduce a tensor across replicas.
 
     Args:
@@ -35,20 +35,26 @@ def replicated_all_reduce(t: Tensor,
     else:
         comm_group = group._to_comm_group()
 
-    settings = ctx._get_op_settings('replicated_all_reduce')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedAllReduce", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("replicated_all_reduce")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReplicatedAllReduce", 1, _ir.NumInputs(1, 2), 1
+    )
 
     _op = pb_g.createConnectedOp_ReplicatedAllReduceOp(
-        {0: t.id}, {0: g._create_tensor_id(t.name + "_all_reduce")}, opid, op,
-        comm_group, settings)
+        {0: t.id},
+        {0: g._create_tensor_id(t.name + "_all_reduce")},
+        opid,
+        op,
+        comm_group,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(_op.outTensor(0))
 
 
-def replicated_all_reduce_(t: Tensor,
-                           op: CollectiveOps = 'add',
-                           group: Optional[ReplicaGrouping] = None) -> Tensor:
+def replicated_all_reduce_(
+    t: Tensor, op: CollectiveOps = "add", group: Optional[ReplicaGrouping] = None
+) -> Tensor:
     """Reduces tensor `t` across replicas inplace on `t`.
 
     Args:
@@ -74,12 +80,18 @@ def replicated_all_reduce_(t: Tensor,
     else:
         comm_group = group._to_comm_group()
 
-    settings = ctx._get_op_settings('replicated_all_reduce_inplace')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedAllReduceInplace",
-                                  1, _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("replicated_all_reduce_inplace")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReplicatedAllReduceInplace", 1, _ir.NumInputs(1, 2), 1
+    )
 
     _op = pb_g.createConnectedOp_ReplicatedAllReduceInplaceOp(
-        {0: t.id}, {0: g._create_tensor_id(t.name + "_all_reduce")}, opid, op,
-        comm_group, settings)
+        {0: t.id},
+        {0: g._create_tensor_id(t.name + "_all_reduce")},
+        opid,
+        op,
+        comm_group,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(_op.outTensor(0))

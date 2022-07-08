@@ -31,10 +31,9 @@ def test_ipu_copy_bca1():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -66,17 +65,17 @@ def test_ipu_copy_aca1():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         with pytest.raises(popart.popart_exception) as e_info:
             s.prepareDevice()
 
-    assert (("inputs=[{}, {}], outputs=[{}]) " +
-             "has been assigned to an invalid virtual graph 10").format(
-                 o1 + "_c10", o2 + "_c10", o) in e_info.value.args[0])
+    assert (
+        "inputs=[{}, {}], outputs=[{}]) "
+        + "has been assigned to an invalid virtual graph 10"
+    ).format(o1 + "_c10", o2 + "_c10", o) in e_info.value.args[0]
 
 
 # Test that an input stream tensor is correctly mapped to multiple ipus
@@ -110,10 +109,9 @@ def test_ipu_copy_bca4():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -152,10 +150,9 @@ def test_ipu_copy_bca2():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -186,10 +183,9 @@ def test_ipu_copy_bca3():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=2) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -225,10 +221,9 @@ def test_ipu_copy_bca5():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -271,9 +266,8 @@ def test_copy_to_op_with_duplicate_inputs():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=3) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()

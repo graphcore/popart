@@ -25,55 +25,48 @@ configs = [
         "replicas": 2,
         "commType": popart.CommGroupType.All,
         # ->
-        "inputs": {
-            "stride": 1,
-            "group_size": 2
-        }
+        "inputs": {"stride": 1, "group_size": 2},
     },
     # ---------------------
     {
         "replicas": 4,
         "commType": popart.CommGroupType.Orthogonal,
         # ->
-        "inputs": {
-            "stride": 2,
-            "group_size": 2
-        }
+        "inputs": {"stride": 2, "group_size": 2},
     },
     # ----------------------
     {
         "replicas": 4,
         "commType": popart.CommGroupType.Consecutive,
         # ->
-        "inputs": {
-            "stride": 1,
-            "group_size": 2
-        }
+        "inputs": {"stride": 1, "group_size": 2},
     },
     # ----------------------
     {
         "replicas": 2,
         "commType": popart.CommGroupType.Ungrouped,
         # ->
-        "inputs": {
-            "stride": 1,
-            "group_size": 1
-        }
+        "inputs": {"stride": 1, "group_size": 1},
     },
     # ----------------------
     {
         "replicas": 2,
         "commType": popart.CommGroupType.All,
         # ->
-        "inputs": None  # No replica_grouping to check the defaults
+        "inputs": None,  # No replica_grouping to check the defaults
     },
 ]
 
 
-def create_variable(x: np.ndarray, rts: bool, remote: bool,
-                    rg: popxl.ReplicaGrouping, retrieval_mode: str,
-                    replication_factor: int,
-                    name: str) -> popxl.tensor.Variable:
+def create_variable(
+    x: np.ndarray,
+    rts: bool,
+    remote: bool,
+    rg: popxl.ReplicaGrouping,
+    retrieval_mode: str,
+    replication_factor: int,
+    name: str,
+) -> popxl.tensor.Variable:
     """
     Create a (possibly RTS / remote) variable given the replica grouping.
 
@@ -95,7 +88,7 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
     buffer = None
     v_remote = None
     if rts and remote:
-        shard_shape: Tuple[int, ...] = (x.size // replication_factor, )
+        shard_shape: Tuple[int, ...] = (x.size // replication_factor,)
         buffer = popxl.RemoteBuffer(shard_shape, dtypes.float32, 1)
         v_remote = popxl.remote_replica_sharded_variable(
             x,
@@ -103,7 +96,8 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
             dtype=dtypes.float32,
             name=name,
             replica_grouping=rg,
-            retrieval_mode=retrieval_mode)
+            retrieval_mode=retrieval_mode,
+        )
         v_loaded = ops.remote_load(buffer, 0)
     elif rts and not remote:
         v_remote, v_loaded = popxl.replica_sharded_variable(
@@ -111,26 +105,31 @@ def create_variable(x: np.ndarray, rts: bool, remote: bool,
             dtypes.float32,
             name=name,
             replica_grouping=rg,
-            retrieval_mode=retrieval_mode)
+            retrieval_mode=retrieval_mode,
+        )
     elif not rts and remote:
         shape = x.shape
         if rg is not None and rg.num_groups > 1:
             # Strip first (num_groups) dimension
             shape = list(x.shape)[1:]
         buffer = popxl.RemoteBuffer(shape, dtypes.float32, 1)
-        v_remote = popxl.remote_variable(x,
-                                         buffer,
-                                         dtype=dtypes.float32,
-                                         name=name,
-                                         replica_grouping=rg,
-                                         retrieval_mode=retrieval_mode)
+        v_remote = popxl.remote_variable(
+            x,
+            buffer,
+            dtype=dtypes.float32,
+            name=name,
+            replica_grouping=rg,
+            retrieval_mode=retrieval_mode,
+        )
         v_loaded = ops.remote_load(buffer, 0)
     else:
-        v_loaded = popxl.variable(x,
-                                  dtypes.float32,
-                                  name=name,
-                                  replica_grouping=rg,
-                                  retrieval_mode=retrieval_mode)
+        v_loaded = popxl.variable(
+            x,
+            dtypes.float32,
+            name=name,
+            replica_grouping=rg,
+            retrieval_mode=retrieval_mode,
+        )
         v_remote = v_loaded
     return v_loaded, v_remote, buffer
 
@@ -147,14 +146,14 @@ class Linear(popxl.Module):
         self.weights_shape = weights_shape
 
     def build(self, X: popxl.Tensor) -> Tuple[popxl.Tensor, ...]:
-        self.W = popxl.graph_input(self.weights_shape, popxl.float32,
-                                   "W_subgraph")
+        self.W = popxl.graph_input(self.weights_shape, popxl.float32, "W_subgraph")
         y = X @ self.W.transpose()
         return y
 
 
-def get_weights_array(shape: List[int], num_groups: int = 1,
-                      seed: int = 10111) -> np.ndarray:
+def get_weights_array(
+    shape: List[int], num_groups: int = 1, seed: int = 10111
+) -> np.ndarray:
     """
     Create num_groups random numpy arrays of size shape.
 
@@ -178,13 +177,20 @@ def get_weights_array(shape: List[int], num_groups: int = 1,
 
 
 def create_simple_model(
-        ir: popxl.Ir, session_type: Literal["inference", "training"],
-        rg: popxl.ReplicaGrouping,
-        retrieval_mode: Literal["one_per_group", "all_replicas"], rts: bool,
-        remote: bool
-) -> Tuple[np.ndarray, popxl.tensor.
-           Variable, Dict[popxl.HostToDeviceStream, np.ndarray], popxl.
-           DeviceToHostStream, np.ndarray, np.ndarray]:
+    ir: popxl.Ir,
+    session_type: Literal["inference", "training"],
+    rg: popxl.ReplicaGrouping,
+    retrieval_mode: Literal["one_per_group", "all_replicas"],
+    rts: bool,
+    remote: bool,
+) -> Tuple[
+    np.ndarray,
+    popxl.tensor.Variable,
+    Dict[popxl.HostToDeviceStream, np.ndarray],
+    popxl.DeviceToHostStream,
+    np.ndarray,
+    np.ndarray,
+]:
     """
     Create a simple model to run for our test.
 
@@ -241,30 +247,30 @@ def create_simple_model(
         # Set up input stream for the input to be multiplied by the weight
         X_h2d = popxl.h2d_stream(data_shape, dtypes.float32, "X_stream")
         X = ops.host_load(X_h2d, "X")
-        X_data = np.random.normal(0, 0.4,
-                                  re_data_shape).astype(X.dtype.as_numpy())
+        X_data = np.random.normal(0, 0.4, re_data_shape).astype(X.dtype.as_numpy())
         inputs[X_h2d] = X_data.copy()
 
         # Set up variable for which we use ReplicaGrouping
-        W_loaded, W_remote, buffer1 = create_variable(weights_array,
-                                                      rts,
-                                                      remote,
-                                                      rg,
-                                                      retrieval_mode,
-                                                      ir.replication_factor,
-                                                      name="W")
+        W_loaded, W_remote, buffer1 = create_variable(
+            weights_array,
+            rts,
+            remote,
+            rg,
+            retrieval_mode,
+            ir.replication_factor,
+            name="W",
+        )
         W_gathered = W_loaded
         if rts:
-            W_gathered = ops.collectives.replicated_all_gather(
-                W_loaded, default_rg)
+            W_gathered = ops.collectives.replicated_all_gather(W_loaded, default_rg)
 
         # Create linear model with required shapes and grouping
         linear = Linear(full_weights_shape)
         # Create and call subgraph for the linear model
         linear_graph = ir.create_graph(linear, X)
-        fwd_call_info = ops.call_with_info(linear_graph,
-                                           X,
-                                           inputs_dict={linear.W: W_gathered})
+        fwd_call_info = ops.call_with_info(
+            linear_graph, X, inputs_dict={linear.W: W_gathered}
+        )
         # Collect output
         y = fwd_call_info.outputs[0]
         y_d2h = popxl.d2h_stream(output_shape, popxl.float32, name="y_stream")
@@ -272,8 +278,7 @@ def create_simple_model(
 
         if session_type == "training":
             # Set up labels
-            label_h2d = popxl.h2d_stream(label_shape, dtypes.int32,
-                                         "label_stream")
+            label_h2d = popxl.h2d_stream(label_shape, dtypes.int32, "label_stream")
             label = ops.host_load(label_h2d, "label")
             # Random one-hot vector
             label_data = np.random.randint(C, size=re_label_shape)
@@ -282,21 +287,21 @@ def create_simple_model(
             # Pass inputs through softmax and nll optimizer to get gradients
             softmax = ops.softmax(y, 1)
             _, dy = ops.nll_loss_with_softmax_grad(softmax, label)
-            bwd_graph_info = transforms.autodiff(linear_graph,
-                                                 grads_required=[linear.W])
+            bwd_graph_info = transforms.autodiff(
+                linear_graph, grads_required=[linear.W]
+            )
             activations = bwd_graph_info.inputs_dict(fwd_call_info)
-            W_grad = ops.call(bwd_graph_info.graph,
-                              dy,
-                              inputs_dict=activations)[0]
-            w_grad_d2h = popxl.d2h_stream(full_weights_shape,
-                                          popxl.float32,
-                                          name="w_grad_stream")
+            W_grad = ops.call(bwd_graph_info.graph, dy, inputs_dict=activations)[0]
+            w_grad_d2h = popxl.d2h_stream(
+                full_weights_shape, popxl.float32, name="w_grad_stream"
+            )
             ops.host_store(w_grad_d2h, W_grad)
 
             if rts:
                 # Scatter W_grad
                 W_grad = ops.collectives.replicated_reduce_scatter(
-                    W_grad, 'add', default_rg, True)
+                    W_grad, "add", default_rg, True
+                )
 
             # Update W in-place
             ops.var_updates.accumulate_(W_loaded, W_grad, -1.0)
@@ -306,8 +311,9 @@ def create_simple_model(
     return weights_array_init, W_remote, inputs, y_d2h, X_data, label_data
 
 
-def replicate(W: np.ndarray, groups: List[List[int]],
-              replication_factor: int) -> np.ndarray:
+def replicate(
+    W: np.ndarray, groups: List[List[int]], replication_factor: int
+) -> np.ndarray:
     """
     Take a tensor that only returned one replica per group and replicate
     it to how it would look if it returned all replicas per group.
@@ -352,8 +358,9 @@ def dereplicate(data: np.ndarray, groups: List[List[int]]) -> np.ndarray:
     return new_data
 
 
-def get_torch_grads(Xs: np.ndarray, Ws: np.ndarray, labels: np.ndarray,
-                    Ys: np.ndarray) -> np.ndarray:
+def get_torch_grads(
+    Xs: np.ndarray, Ws: np.ndarray, labels: np.ndarray, Ys: np.ndarray
+) -> np.ndarray:
     """
     Simulate create_simple_model in torch, returning the gradients of W.
 
@@ -407,8 +414,7 @@ def accumulate_groups(data: np.ndarray, groups: List[List[int]]) -> np.ndarray:
 @pytest.mark.parametrize("remote", [False, True])
 @pytest.mark.parametrize("rts", [False, True])
 @pytest.mark.parametrize("retrieval_mode", ["all_replicas", "one_per_group"])
-def test_grouped_initialization(config, remote: bool, rts: bool,
-                                retrieval_mode: str):
+def test_grouped_initialization(config, remote: bool, rts: bool, retrieval_mode: str):
     """
     Run a simple model in PopART with the specified configs,
     and compare it's output to the same model run in torch.
@@ -433,7 +439,8 @@ def test_grouped_initialization(config, remote: bool, rts: bool,
         rg = ir.replica_grouping(**config["inputs"])
     # Create a simple linear model
     w_data, w, inputs, y_d2h, X_data, label_data = create_simple_model(
-        ir, session_type, rg, retrieval_mode, rts, remote)
+        ir, session_type, rg, retrieval_mode, rts, remote
+    )
 
     # Run a session on an ipu device
     with popxl.Session(ir, "ipu_hw") as session:
@@ -445,8 +452,7 @@ def test_grouped_initialization(config, remote: bool, rts: bool,
     if rg is None:
         # Model already run, so it's safe to initialize rg
         rg = ir.replica_grouping()
-    groups = rg._to_variable_settings(retrieval_mode).groups(
-        ir.replication_factor)
+    groups = rg._to_variable_settings(retrieval_mode).groups(ir.replication_factor)
 
     # Get forward pass output
     y = outputs[y_d2h]
@@ -469,10 +475,10 @@ def test_grouped_initialization(config, remote: bool, rts: bool,
             # The variables are shared, so we sum up the gradients from all group replicas
             grads = accumulate_groups(grads, groups)
         torch_final_weight = np.array(
-            [W - W_grad for W, W_grad in zip(W_replicated, grads)])
+            [W - W_grad for W, W_grad in zip(W_replicated, grads)]
+        )
         if retrieval_mode == "one_per_group":
             torch_final_weight = dereplicate(torch_final_weight, groups)
-        np.testing.assert_allclose(final_weight,
-                                   torch_final_weight,
-                                   rtol=1e-5,
-                                   atol=1e-8)
+        np.testing.assert_allclose(
+            final_weight, torch_final_weight, rtol=1e-5, atol=1e-8
+        )

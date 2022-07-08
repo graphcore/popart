@@ -23,7 +23,8 @@ def test_all_constexpr():
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
             patterns=popart.Patterns(popart.PatternsLevel.All),
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -33,5 +34,5 @@ def test_all_constexpr():
         session.run(stepio)
 
     # check the result is correct
-    assert (anchors[a3].shape == sum(datas).shape)
-    assert (np.allclose(anchors[a3], sum(datas)))
+    assert anchors[a3].shape == sum(datas).shape
+    assert np.allclose(anchors[a3], sum(datas))

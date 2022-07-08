@@ -22,7 +22,7 @@ def test_prelu_basic(op_tester):
         o = np.clip(data, 0, np.inf) + np.clip(data, -np.inf, 0) * slope
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_prelu_broadcast(op_tester):
@@ -45,4 +45,4 @@ def test_prelu_broadcast(op_tester):
         o = np.clip(data, 0, np.inf) + np.clip(data, -np.inf, 0) * slope
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

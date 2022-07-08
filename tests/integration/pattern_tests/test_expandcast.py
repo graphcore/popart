@@ -11,13 +11,14 @@ import pva  # pylint: disable=unused-import
 # `import op_tester` requires adding to sys.path
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent / 'operators_test'))
+
+sys.path.append(str(Path(__file__).resolve().parent.parent / "operators_test"))
 
 # pylint is disabled as op_tester is used as a fixture
 from conftest import op_tester  # pylint: disable=unused-import
 
 
-@pytest.mark.parametrize('expand_shape', ((2, 50, 3, 50), (2, 1, 3, 1)))
+@pytest.mark.parametrize("expand_shape", ((2, 50, 3, 50), (2, 1, 3, 1)))
 @pytest.mark.parametrize("inplace", (True, False))
 def test_expandcast(op_tester, expand_shape, inplace):
     in_shape = (2, 1, 3, 1)
@@ -37,7 +38,7 @@ def test_expandcast(op_tester, expand_shape, inplace):
             return [
                 a_t,
                 popart.reservedGradientPrefix() + a_t,
-                popart.reservedGradientPrefix() + x_t
+                popart.reservedGradientPrefix() + x_t,
             ]
 
         def reference(ref_data):
@@ -55,7 +56,7 @@ def test_expandcast(op_tester, expand_shape, inplace):
             patterns.append("ExpandCast")
         op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
 
-        session = op_tester.run(init_builder, reference, 'train')
+        session = op_tester.run(init_builder, reference, "train")
 
         report = session.getReport()
 
@@ -64,8 +65,8 @@ def test_expandcast(op_tester, expand_shape, inplace):
         for t in report.compilation.tiles:
             total_mem = total_mem + t.memory.total.includingGaps
             max_on_tile = max(max_on_tile, t.memory.total.includingGaps)
-        print(f'total_mem: {total_mem}')
-        print(f'max_on_tile: {max_on_tile}')
+        print(f"total_mem: {total_mem}")
+        print(f"max_on_tile: {max_on_tile}")
 
         return total_mem, max_on_tile
 
@@ -73,8 +74,8 @@ def test_expandcast(op_tester, expand_shape, inplace):
     tm1, max1 = get_memory(True)
 
     if expand_shape == in_shape:
-        assert (tm0 == tm1)
-        assert (max0 == max1)
+        assert tm0 == tm1
+        assert max0 == max1
     else:
-        assert (tm0 > tm1)
-        assert (max0 > max1)
+        assert tm0 > tm1
+        assert max0 > max1

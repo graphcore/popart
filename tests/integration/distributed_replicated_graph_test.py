@@ -17,7 +17,7 @@ import popdist.popart
 import onnx
 from onnx import numpy_helper
 
-PARTITION_NAME = 'partition0'
+PARTITION_NAME = "partition0"
 
 
 def mpi4py_installed():
@@ -37,7 +37,7 @@ def get_mpi_params():
     comm = MPI.COMM_WORLD
     mpi_size = comm.Get_size()
     mpi_rank = comm.Get_rank()
-    assert (mpi_size == 2)
+    assert mpi_size == 2
     return (mpi_size, mpi_rank)
 
 
@@ -48,20 +48,21 @@ def grad_id(tensor_id):
 # TODO: We need a foolproof way of telling when we are on a IPU POD
 def is_running_on_ipu_pod():
     ipuof_config_found = os.getenv("IPUOF_CONFIG_PATH") is not None
-    vipu_cli_found = shutil.which('vipu-cli') is not None
+    vipu_cli_found = shutil.which("vipu-cli") is not None
     return ipuof_config_found and vipu_cli_found
 
 
 def is_gcd_size(size):
     if not is_running_on_ipu_pod():
         return False
-    gcd0_config_file = os.path.join(os.getenv('HOME'), '.ipuof.conf.d',
-                                    PARTITION_NAME + '_gcd0_ipuof.conf')
-    with open(gcd0_config_file, 'r', encoding="utf-8") as fid:
+    gcd0_config_file = os.path.join(
+        os.getenv("HOME"), ".ipuof.conf.d", PARTITION_NAME + "_gcd0_ipuof.conf"
+    )
+    with open(gcd0_config_file, "r", encoding="utf-8") as fid:
         gcd0_config = fid.read()
     j = json.loads(gcd0_config)
 
-    return len(j['devices']) == size
+    return len(j["devices"]) == size
 
 
 # For the time being these tests can only be run on an IPU POD
@@ -74,7 +75,8 @@ def is_gcd_size(size):
 
 @pytest.mark.skipif(
     not mpi4py_installed() or not is_gcd_size(1),
-    reason="mpi4py needs to be installed. Test can only be run on a IPU pod")
+    reason="mpi4py needs to be installed. Test can only be run on a IPU pod",
+)
 def test_distributed_replicated_allreduce():
     mpi_params = get_mpi_params()
     _, mpi_rank = mpi_params
@@ -97,10 +99,9 @@ def test_distributed_replicated_allreduce():
     numIpus = 1
 
     with tu.create_test_device(numIpus=numIpus) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -117,7 +118,8 @@ def test_distributed_replicated_allreduce():
 
 @pytest.mark.skipif(
     not mpi4py_installed() or not is_gcd_size(1),
-    reason="mpi4py needs to be installed. Test can only be run on a IPU pod")
+    reason="mpi4py needs to be installed. Test can only be run on a IPU pod",
+)
 def test_distributed_replicated_weight_update():
     K = 6
     M = 7
@@ -168,9 +170,9 @@ def test_distributed_replicated_weight_update():
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
     G = builder.aiOnnx.matmul([F, D])
-    loss = builder.aiGraphcore.l1loss([G],
-                                      lossLambda,
-                                      reduction=popart.ReductionType.Sum)
+    loss = builder.aiGraphcore.l1loss(
+        [G], lossLambda, reduction=popart.ReductionType.Sum
+    )
     proto = builder.getModelProto()
 
     outputs = {
@@ -178,7 +180,7 @@ def test_distributed_replicated_weight_update():
         B: popart.AnchorReturnType("All"),
         C: popart.AnchorReturnType("All"),
         D: popart.AnchorReturnType("All"),
-        G: popart.AnchorReturnType("All")
+        G: popart.AnchorReturnType("All"),
     }
 
     dataFlow = popart.DataFlow(1, outputs)
@@ -193,12 +195,14 @@ def test_distributed_replicated_weight_update():
     numIpus = 1
 
     with tu.create_test_device(numIpus=numIpus) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         deviceInfo=device,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            deviceInfo=device,
+            userOptions=opts,
+        )
 
         session.prepareDevice()
 
@@ -223,8 +227,7 @@ def test_distributed_replicated_weight_update():
 # vipu-cli create partition partition_name --size 4 --gcds 2 --gcd-sync-replicas 4
 @pytest.mark.skipif(
     not mpi4py_installed() or not is_gcd_size(2),
-    reason=
-    "mpi4py needs to be installed. Test can only be run on a IPU pod with gcd size 2"
+    reason="mpi4py needs to be installed. Test can only be run on a IPU pod with gcd size 2",
 )
 def test_distributed_hierarchical_replicated_weight_update():
     K = 6
@@ -276,9 +279,9 @@ def test_distributed_hierarchical_replicated_weight_update():
     E = builder.aiOnnx.matmul([A, B])
     F = builder.aiOnnx.matmul([E, C])
     G = builder.aiOnnx.matmul([F, D])
-    loss = builder.aiGraphcore.l1loss([G],
-                                      lossLambda,
-                                      reduction=popart.ReductionType.Sum)
+    loss = builder.aiGraphcore.l1loss(
+        [G], lossLambda, reduction=popart.ReductionType.Sum
+    )
     builder.addOutputTensor(loss)
     proto = builder.getModelProto()
 
@@ -287,7 +290,7 @@ def test_distributed_hierarchical_replicated_weight_update():
         B: popart.AnchorReturnType("All"),
         C: popart.AnchorReturnType("All"),
         D: popart.AnchorReturnType("All"),
-        G: popart.AnchorReturnType("All")
+        G: popart.AnchorReturnType("All"),
     }
 
     dataFlow = popart.DataFlow(1, outputs)
@@ -303,12 +306,14 @@ def test_distributed_hierarchical_replicated_weight_update():
     numIpus = 2
 
     with tu.create_test_device(numIpus=numIpus) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         deviceInfo=device,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            deviceInfo=device,
+            userOptions=opts,
+        )
 
         session.prepareDevice()
 
@@ -357,10 +362,9 @@ def replicated_tensor_sharding_core():
     label_data = []
 
     for i in range(
-            0, batches_per_step * num_local_replicas * accumulation_factor *
-            compute_batch):
-        np.random.seed(popdist.getInstanceIndex() +
-                       i * popdist.getNumInstances())
+        0, batches_per_step * num_local_replicas * accumulation_factor * compute_batch
+    ):
+        np.random.seed(popdist.getInstanceIndex() + i * popdist.getNumInstances())
         input_data += [np.random.rand(hidden_size).astype(np.float32)]
         label_data += [np.random.randint(0, hidden_size, size=1)]
 
@@ -370,36 +374,33 @@ def replicated_tensor_sharding_core():
     builder = popart.Builder()
 
     d0 = builder.addInputTensor(
-        popart.TensorInfo("FLOAT", (compute_batch, hidden_size)), "d0")
-    l0 = builder.addInputTensor(popart.TensorInfo("UINT32", (compute_batch, )),
-                                "l0")
+        popart.TensorInfo("FLOAT", (compute_batch, hidden_size)), "d0"
+    )
+    l0 = builder.addInputTensor(popart.TensorInfo("UINT32", (compute_batch,)), "l0")
 
     data = {}
 
-    data[d0] = input_data.reshape((batches_per_step, num_local_replicas,
-                                   accumulation_factor, compute_batch, -1))
+    data[d0] = input_data.reshape(
+        (batches_per_step, num_local_replicas, accumulation_factor, compute_batch, -1)
+    )
 
-    w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+    w0 = builder.addInitializedInputTensor(weight_data, "weight0")
     x = builder.aiOnnx.matmul([d0, w0])
 
     x = builder.aiOnnx.softmax([x])
 
-    data[l0] = label_data.reshape((batches_per_step,
-                    num_local_replicas,
-                    accumulation_factor,
-                    compute_batch,
-                    -1))\
-                .astype(np.uint32)
-    loss = builder.aiGraphcore.nllloss([x, l0],
-                                       reduction=reduction,
-                                       debugContext='loss')
+    data[l0] = label_data.reshape(
+        (batches_per_step, num_local_replicas, accumulation_factor, compute_batch, -1)
+    ).astype(np.uint32)
+    loss = builder.aiGraphcore.nllloss(
+        [x, l0], reduction=reduction, debugContext="loss"
+    )
 
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        batches_per_step,
-        {av: popart.AnchorReturnType("ALL")
-         for av in [x, loss]})
+        batches_per_step, {av: popart.AnchorReturnType("ALL") for av in [x, loss]}
+    )
 
     opts = popart.SessionOptions()
     if accumulation_factor > 1:
@@ -423,10 +424,13 @@ def replicated_tensor_sharding_core():
         locationSetting.minElementsForOffChip = 0
         locationSetting.minElementsForReplicatedTensorSharding = num_total_replicas
         if tensor in args.tensors:
-            locationSetting.location.replicatedTensorSharding = popart.ReplicatedTensorSharding.On
+            locationSetting.location.replicatedTensorSharding = (
+                popart.ReplicatedTensorSharding.On
+            )
         if num_total_replicas > num_local_replicas:
             locationSetting.location.shardingDomain = popart.CommGroup(
-                popart.CommGroupType.Consecutive, num_local_replicas)
+                popart.CommGroupType.Consecutive, num_local_replicas
+            )
         setattr(opts, userOption, locationSetting)
 
     if args.optim == "Adam":
@@ -440,16 +444,19 @@ def replicated_tensor_sharding_core():
                 "lossScaling": (10, False),
             },
             weight_decay_mode=popart.WeightDecayMode.Decay,
-            mode=popart.AdamMode.LambNoBias)
+            mode=popart.AdamMode.LambNoBias,
+        )
     if args.optim == "SGD":
         optimizer = popart.ConstSGD(0.01)
 
-    session = popart.TrainingSession(fnModel=proto,
-                                     dataFlow=dataFlow,
-                                     deviceInfo=deviceInfo,
-                                     userOptions=opts,
-                                     loss=loss,
-                                     optimizer=optimizer)
+    session = popart.TrainingSession(
+        fnModel=proto,
+        dataFlow=dataFlow,
+        deviceInfo=deviceInfo,
+        userOptions=opts,
+        loss=loss,
+        optimizer=optimizer,
+    )
 
     session.prepareDevice()
 
@@ -483,7 +490,7 @@ rts_configs = [
             "num_replicas": 8,
             "num_instances": 1,
             "compute_batch": 3,
-        }
+        },
     ],
     [
         # Baseline: 8 replicas, 1 instance
@@ -499,7 +506,7 @@ rts_configs = [
             "num_replicas": 16,
             "num_instances": 2,
             "compute_batch": 3,
-        }
+        },
     ],
     [
         # Baseline: 16 replicas, 1 instance
@@ -510,7 +517,7 @@ rts_configs = [
             "compute_batch": 6,
             # Change following parameters such that they match the test system:
             "partition": "p",
-            "hosts": ["host0", "host1"]
+            "hosts": ["host0", "host1"],
         },
         # Comparison: 32 replicas, 2 instances (2 GCD, 2 ILD)
         {
@@ -520,9 +527,9 @@ rts_configs = [
             "compute_batch": 3,
             # Change following parameters such that they match the test system:
             "partition": "p",
-            "hosts": ["host0", "host1"]
-        }
-    ]
+            "hosts": ["host0", "host1"],
+        },
+    ],
 ]
 
 
@@ -531,11 +538,12 @@ rts_configs = [
 # GCD/ILD (orthogonal)
 @pytest.mark.parametrize("configs", rts_configs)
 @pytest.mark.parametrize(
-    "tensors", [[], ["weight", "optimizerState"], ["optimizerState"]])
+    "tensors", [[], ["weight", "optimizerState"], ["optimizerState"]]
+)
 @pytest.mark.parametrize("optim", ["SGD", "Adam"])
 def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
-    rtol = 1.e-3
-    atol = 1.e-5
+    rtol = 1.0e-3
+    atol = 1.0e-5
 
     debug = True
     reset = True
@@ -553,8 +561,8 @@ def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
         hosts = []
         if "hosts" in config:
             hosts = config["hosts"]
-        if (len(hosts) > config["num_instances"]):
-            hosts = hosts[0:config["num_instances"]]
+        if len(hosts) > config["num_instances"]:
+            hosts = hosts[0 : config["num_instances"]]
 
         num_replicas = config["num_replicas"]
         ipus_per_replica = 1
@@ -592,8 +600,7 @@ def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
         command.append("yes" if remove else "no")
 
         command.append("--mpi-global-args=--allow-run-as-root")
-        command.append(
-            "--mpi-local-args=-x LD_LIBRARY_PATH -x PYTHONPATH -x PATH")
+        command.append("--mpi-local-args=-x LD_LIBRARY_PATH -x PYTHONPATH -x PATH")
         command.append("python3")
         command.append(test_path)
         command.append("replicated_tensor_sharding_core")
@@ -632,5 +639,5 @@ def test_replicated_tensor_sharding(tmpdir, configs, tensors, optim):
 
 
 # Distributed test fixture entry point
-if __name__ == '__main__':
+if __name__ == "__main__":
     globals()[sys.argv[1]]()

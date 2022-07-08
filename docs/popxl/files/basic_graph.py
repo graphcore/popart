@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-'''
+"""
 The intention of this example is to show how to create and call a subgraph.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -26,7 +26,7 @@ with main:
     increment_graph = ir.create_graph(increment_fn, x)
 
     # call graph
-    o, = ops.call(increment_graph, x)
+    (o,) = ops.call(increment_graph, x)
     # Op end
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")

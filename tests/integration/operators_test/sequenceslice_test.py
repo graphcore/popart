@@ -5,14 +5,17 @@ import pytest
 
 @pytest.mark.parametrize("inplacing", [False, True])
 @pytest.mark.parametrize(
-    "source_shape, dest_shape, N, source_offset, dest_offset", [
+    "source_shape, dest_shape, N, source_offset, dest_offset",
+    [
         ([6, 6], [3, 6], [1, 1, 1], [0, 2, 4], [0, 1, 2]),
         ([6, 6], [3, 6], [1, 2], [0, 4], [2, 0]),
         ([6, 6], [3, 6], [1, 2], [0, 4], [2, 0]),
         ([6, 6], [4, 6], [1, 1], [0, 3], [0, 2]),
-    ])
-def test_sequenceslice(op_tester, inplacing, source_shape, dest_shape, N,
-                       source_offset, dest_offset):
+    ],
+)
+def test_sequenceslice(
+    op_tester, inplacing, source_shape, dest_shape, N, source_offset, dest_offset
+):
     source = np.arange(np.prod(source_shape)) + 10
     source = np.reshape(source, source_shape).astype(np.float32)
 
@@ -28,16 +31,18 @@ def test_sequenceslice(op_tester, inplacing, source_shape, dest_shape, N,
         source_offset_id = builder.addInputTensor(source_offset)
         dest_offset_id = builder.addInputTensor(dest_offset)
         o = builder.aiGraphcore.sequenceslice(
-            [source_id, dest_id, N_id, source_offset_id, dest_offset_id], True)
+            [source_id, dest_id, N_id, source_offset_id, dest_offset_id], True
+        )
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         result = np.copy(dest)
         for i in range(N.size):
-            result[dest_offset[i]:dest_offset[i] +
-                   N[i]] = source[source_offset[i]:source_offset[i] + N[i]]
+            result[dest_offset[i] : dest_offset[i] + N[i]] = source[
+                source_offset[i] : source_offset[i] + N[i]
+            ]
         return [result]
 
     op_tester.inplacing = inplacing
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

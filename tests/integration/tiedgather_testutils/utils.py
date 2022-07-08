@@ -16,6 +16,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -27,26 +28,27 @@ def make_tuple(something: Any) -> Tuple:
             return chain(accl, make_tuple(s))
 
         return tuple(reduce(concat, something, ()))
-    return (something, )
+    return (something,)
 
 
-def run_py(proto: onnx.ModelProto,
-           data: Mapping[str, np.ndarray],
-           outputs: Optional[Union[str, Iterable[str]]],
-           loss: Optional[str] = None,
-           optimizer: Optional[popart.Optimizer] = None,
-           patterns: Optional[popart.Patterns] = None,
-           user_options: Optional[Mapping[str, Any]] = None,
-           skip_execution: bool = False):
+def run_py(
+    proto: onnx.ModelProto,
+    data: Mapping[str, np.ndarray],
+    outputs: Optional[Union[str, Iterable[str]]],
+    loss: Optional[str] = None,
+    optimizer: Optional[popart.Optimizer] = None,
+    patterns: Optional[popart.Patterns] = None,
+    user_options: Optional[Mapping[str, Any]] = None,
+    skip_execution: bool = False,
+):
     batches_per_step = 1
 
     outputs = make_tuple(outputs)
 
     # Setting up the Session
     data_flow = popart.DataFlow(
-        batches_per_step,
-        {output: popart.AnchorReturnType("ALL")
-         for output in outputs})
+        batches_per_step, {output: popart.AnchorReturnType("ALL") for output in outputs}
+    )
 
     if user_options is None:
         user_options = {}
@@ -66,19 +68,23 @@ def run_py(proto: onnx.ModelProto,
 
         print("Compiling graph")
         if optimizer is not None:
-            session = popart.TrainingSession(fnModel=proto,
-                                             deviceInfo=device,
-                                             dataFlow=data_flow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                deviceInfo=device,
+                dataFlow=data_flow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+            )
         else:
-            session = popart.InferenceSession(fnModel=proto,
-                                              deviceInfo=device,
-                                              dataFlow=data_flow,
-                                              userOptions=options,
-                                              patterns=patterns)
+            session = popart.InferenceSession(
+                fnModel=proto,
+                deviceInfo=device,
+                dataFlow=data_flow,
+                userOptions=options,
+                patterns=patterns,
+            )
 
         if skip_execution:
             return session
@@ -99,18 +105,12 @@ def run_py(proto: onnx.ModelProto,
 
         rf = user_options.get("replicatedGraphCount")
         if rf is not None and rf > 1:
-            data = {
-                k: np.repeat(v[np.newaxis], rf, 0)
-                for k, v in data.items()
-            }
+            data = {k: np.repeat(v[np.newaxis], rf, 0) for k, v in data.items()}
 
         # Add a gradient accumulation factor dimension if needed
         af = user_options.get("accumulationFactor")
         if af is not None and af > 1:
-            data = {
-                k: np.repeat(v[np.newaxis], af, 0)
-                for k, v in data.items()
-            }
+            data = {k: np.repeat(v[np.newaxis], af, 0) for k, v in data.items()}
 
         stepio = popart.PyStepIO(data, anchors)
         session.run(stepio)
@@ -128,8 +128,7 @@ class TestFailureError(Exception):
 
 
 def check_tensor(A, B, A_name, B_name, margin=1.5e-8):
-    assert np.allclose(
-        A, B, atol=margin), f"Check failed for (1) {A_name} (2) {B_name}"
+    assert np.allclose(A, B, atol=margin), f"Check failed for (1) {A_name} (2) {B_name}"
 
 
 def check_oom_failures(torch_output: np.ndarray, onnx_output: np.ndarray):
@@ -143,25 +142,25 @@ def check_oom_failures(torch_output: np.ndarray, onnx_output: np.ndarray):
         failed_methods.append("ONNX")
 
     if len(failed_methods) > 0:
-        msg = "OOM in the following implementations: " + \
-            ", ".join(failed_methods)
+        msg = "OOM in the following implementations: " + ", ".join(failed_methods)
 
         raise TestFailureError(msg)
 
 
-def check_tensors(torch_outputs: Iterable[np.ndarray],
-                  onnx_outputs: Iterable[np.ndarray],
-                  left_names: Iterable[str],
-                  right_names: Iterable[str],
-                  margin: float = 1.5e-8):
-    for t_torch, t_onnx, lname, rname in zip(torch_outputs, onnx_outputs,
-                                             left_names, right_names):
+def check_tensors(
+    torch_outputs: Iterable[np.ndarray],
+    onnx_outputs: Iterable[np.ndarray],
+    left_names: Iterable[str],
+    right_names: Iterable[str],
+    margin: float = 1.5e-8,
+):
+    for t_torch, t_onnx, lname, rname in zip(
+        torch_outputs, onnx_outputs, left_names, right_names
+    ):
         check_oom_failures(t_torch, t_onnx)
-        check_tensor(t_onnx.reshape(t_torch.shape),
-                     t_torch,
-                     lname,
-                     rname,
-                     margin=margin)
+        check_tensor(
+            t_onnx.reshape(t_torch.shape), t_torch, lname, rname, margin=margin
+        )
 
 
 def onnx_to_numpy(tensor: onnx.TensorProto) -> np.ndarray:
@@ -174,11 +173,12 @@ def onnx_to_numpy(tensor: onnx.TensorProto) -> np.ndarray:
 
 
 def check_onnx_model(
-        model_1: onnx.ModelProto,
-        model_2: onnx.ModelProto,
-        onnx_to_onnx: Mapping[str, str] = {},
-        transform: Mapping[str, Callable[[np.ndarray], np.ndarray]] = {},
-        allow_missing: bool = True):
+    model_1: onnx.ModelProto,
+    model_2: onnx.ModelProto,
+    onnx_to_onnx: Mapping[str, str] = {},
+    transform: Mapping[str, Callable[[np.ndarray], np.ndarray]] = {},
+    allow_missing: bool = True,
+):
     model_1_weights = {}
     for weight in model_1.graph.initializer:
         model_1_weights[weight.name] = onnx_to_numpy(weight)
@@ -198,4 +198,5 @@ def check_onnx_model(
             else:
                 if not allow_missing:
                     raise TestFailureError(
-                        f"Missing weight mapping for model_2 weight {name}")
+                        f"Missing weight mapping for model_2 weight {name}"
+                    )

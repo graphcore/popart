@@ -20,19 +20,23 @@ def test_set_random_seed_error():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device(numIpus=2) as device:
-        s = popart.TrainingSession(fnModel=proto,
-                                   dataFlow=dataFlow,
-                                   optimizer=popart.ConstSGD(0.1),
-                                   loss=loss,
-                                   userOptions=popart.SessionOptions(),
-                                   deviceInfo=device)
+        s = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            optimizer=popart.ConstSGD(0.1),
+            loss=loss,
+            userOptions=popart.SessionOptions(),
+            deviceInfo=device,
+        )
 
         with pytest.raises(popart.popart_exception) as e_info:
             s.setRandomSeed(0)
 
         msg = e_info.value.args[0]
-        assert msg == ("Devicex::prepare() must be called before "
-                       "Devicex::setRandomSeedFromHost(uint64_t) is called.")
+        assert msg == (
+            "Devicex::prepare() must be called before "
+            "Devicex::setRandomSeedFromHost(uint64_t) is called."
+        )
 
 
 def test_stochastic_rounding():
@@ -52,7 +56,8 @@ def test_stochastic_rounding():
     iMean = builder.addInitializedInputTensor(mean)
     iVar = builder.addInitializedInputTensor(var)
     [o_y, _, _, _, _] = builder.aiOnnx.batchnormalization(
-        [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+        [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum
+    )
     loss = builder.aiGraphcore.identityloss([o_y])
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
@@ -64,12 +69,14 @@ def test_stochastic_rounding():
         options = popart.SessionOptions()
         options.enableStochasticRounding = True
 
-        sess = popart.TrainingSession(fnModel=proto,
-                                      optimizer=popart.ConstSGD(0.1),
-                                      loss=loss,
-                                      dataFlow=dataFlow,
-                                      deviceInfo=device,
-                                      userOptions=options)
+        sess = popart.TrainingSession(
+            fnModel=proto,
+            optimizer=popart.ConstSGD(0.1),
+            loss=loss,
+            dataFlow=dataFlow,
+            deviceInfo=device,
+            userOptions=options,
+        )
 
         _ = sess.initAnchorArrays()
         sess.prepareDevice()
@@ -97,14 +104,16 @@ def test_stochastic_rounding_behaviour():
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
         session.prepareDevice()
 
         data0 = np.ones(shape_d).astype(np.float16)
-        data1 = 1e-3 * np.random.uniform(low=-1.0, high=1.0,
-                                         size=shape_d).astype(np.float16)
+        data1 = 1e-3 * np.random.uniform(low=-1.0, high=1.0, size=shape_d).astype(
+            np.float16
+        )
 
         inputs = {d0: data0, d1: data1}
         stepio = popart.PyStepIO(inputs, anchors)
@@ -171,12 +180,14 @@ def test_reproducible_randomness_from_checkpoint(tmpdir):
         opts = popart.SessionOptions()
         opts.enableLoadAndOffloadRNGState = True
 
-        session = popart.TrainingSession(userOptions=opts,
-                                         fnModel=fnProto,
-                                         dataFlow=popart.DataFlow(1, [mm]),
-                                         loss=loss,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            userOptions=opts,
+            fnModel=fnProto,
+            dataFlow=popart.DataFlow(1, [mm]),
+            loss=loss,
+            optimizer=popart.ConstSGD(0.1),
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -196,7 +207,7 @@ def test_reproducible_randomness_from_checkpoint(tmpdir):
         seed = s0.getRandomSeed()
         rngState = s0.getRNGState()  # Not really needed when SR is off.
         s0.run(stepio0)
-    del (s0)  # free up IPU
+    del s0  # free up IPU
 
     # from checkpoint:
     #  - load model from after s0's first session.run

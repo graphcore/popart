@@ -21,7 +21,7 @@ def test_greater(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_greater(op_tester):
@@ -42,7 +42,7 @@ def test_broadcast_greater(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_less(op_tester):
@@ -63,7 +63,7 @@ def test_less(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_broadcast_less(op_tester):
@@ -84,4 +84,4 @@ def test_broadcast_less(op_tester):
 
         return [out]
 
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.run(init_builder, reference, step_type="infer")

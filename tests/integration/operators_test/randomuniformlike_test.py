@@ -8,12 +8,15 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 # Parameterize over supported data types using a (numpy, onnx) datatype tuple
-supported_dtypes = [(np.float32, onnx.helper.TensorProto.FLOAT),
-                    (np.float16, onnx.helper.TensorProto.FLOAT16)]
+supported_dtypes = [
+    (np.float32, onnx.helper.TensorProto.FLOAT),
+    (np.float16, onnx.helper.TensorProto.FLOAT16),
+]
 
 
 # CPU test: Check that randomuniformlike:
@@ -33,7 +36,8 @@ def test_randomuniformlike(dtypes):
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.setRandomSeed(seed)
@@ -49,12 +53,12 @@ def test_randomuniformlike(dtypes):
 
     # Check that the IR has RandomUniformLike replaced with RandomUniform
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    graph = ir['maingraph']
+    graph = ir["maingraph"]
 
-    like = [op for op in graph if op['type'] == 'RandomUniformLike']
+    like = [op for op in graph if op["type"] == "RandomUniformLike"]
     assert len(like) == 0, "Unexpected RandomUniformLike op in the IR."
 
-    rn = [op for op in graph if op['type'] == 'RandomUniform']
+    rn = [op for op in graph if op["type"] == "RandomUniform"]
     assert len(rn) == 1, "Expected one RandomUniform op in the IR."
 
 
@@ -69,9 +73,9 @@ def test_randomuniformlike_seederror(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert (e_info.value.args[0].endswith(
+    assert e_info.value.args[0].endswith(
         "Optional seed attribute is not supported. Use session::setRandomSeed instead."
-    ))
+    )
 
 
 # CPU test: check error with unsupported data type
@@ -85,7 +89,7 @@ def test_randomuniformlike_bad_dtype(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert ("Unsupported data type requested" in e_info.value.args[0])
+    assert "Unsupported data type requested" in e_info.value.args[0]
 
 
 # IPU test: checks that the dtype attribute is used over the input tensor dtype.
@@ -101,10 +105,9 @@ def test_randomuniformlike_stats(op_tester, dtypes):
 
     def init_builder(builder):
         T = builder.addInputTensor(data)
-        ru = builder.aiOnnx.randomuniformlike([T],
-                                              dtype=dtypes[1],
-                                              low=expected_min,
-                                              high=expected_max)
+        ru = builder.aiOnnx.randomuniformlike(
+            [T], dtype=dtypes[1], low=expected_min, high=expected_max
+        )
 
         actual_min = builder.aiOnnx.reducemin([ru], keepdims=False)
         builder.addOutputTensor(actual_min)

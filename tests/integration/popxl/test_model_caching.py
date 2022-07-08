@@ -12,19 +12,17 @@ def build_and_run(cache_path, engine_options=None):
     main = ir.main_graph
     with main:
         # Test host to device
-        x_h2d = popxl.h2d_stream((1, ), popxl.float32, name='x_stream')
-        x = ops.host_load(x_h2d, 'x')
+        x_h2d = popxl.h2d_stream((1,), popxl.float32, name="x_stream")
+        x = ops.host_load(x_h2d, "x")
 
         # Test variable
-        y = popxl.variable(4.0, name='y')
+        y = popxl.variable(4.0, name="y")
         z = ops.add(x, y)
 
         # Test random op
-        seed_h2d = popxl.h2d_stream(shape=(2, ),
-                                    dtype=dtypes.uint32,
-                                    name='seed_stream')
-        seed = ops.host_load(seed_h2d, 'seed')
-        r = ops.random_normal(seed, (1, ))
+        seed_h2d = popxl.h2d_stream(shape=(2,), dtype=dtypes.uint32, name="seed_stream")
+        seed = ops.host_load(seed_h2d, "seed")
+        r = ops.random_normal(seed, (1,))
 
         z = ops.add(z, r)
 
@@ -49,24 +47,23 @@ def build_and_run(cache_path, engine_options=None):
     session = popxl.Session(ir, "ipu_hw")
 
     with session:
-        outputs = session.run({
-            x_h2d: np.array(3.0, dtype='float32'),
-            seed_h2d: seed_tensors
-        })
+        outputs = session.run(
+            {x_h2d: np.array(3.0, dtype="float32"), seed_h2d: seed_tensors}
+        )
 
     return outputs[z_d2h]
 
 
 def loaded_saved_executable(capfd):
-    """ Check the log output to see if an engine was compiled, or if a cached
-        engine was used. """
+    """Check the log output to see if an engine was compiled, or if a cached
+    engine was used."""
     _, stderr = capfd.readouterr()
     startedEngineCompilation = False
     loadedPoplarExecutable = False
     for line in stderr.splitlines():
-        if 'Starting compilation' in line:
+        if "Starting compilation" in line:
             startedEngineCompilation = True
-        elif 'Loading serialized PopART executable' in line:
+        elif "Loading serialized PopART executable" in line:
             loadedPoplarExecutable = True
 
     assert startedEngineCompilation != loadedPoplarExecutable
@@ -74,11 +71,11 @@ def loaded_saved_executable(capfd):
 
 
 def test_model_caching(tmp_path, capfd):
-    """ Test if the first time we run a model we get a cache miss, and the
-    second time we get a cache hit. """
+    """Test if the first time we run a model we get a cache miss, and the
+    second time we get a cache hit."""
 
-    popart.getLogger().setLevel('DEBUG')
-    cache_path = str(tmp_path / 'model_caching')
+    popart.getLogger().setLevel("DEBUG")
+    cache_path = str(tmp_path / "model_caching")
 
     result0 = build_and_run(cache_path)
     assert loaded_saved_executable(capfd) is True
@@ -94,17 +91,15 @@ def test_model_caching(tmp_path, capfd):
 
 
 def test_model_caching_miss_on_engine_option_change(tmp_path, capfd):
-    """ Test that if we change engine options that affect the executable between
-    runs then we don't get a cache hit. """
+    """Test that if we change engine options that affect the executable between
+    runs then we don't get a cache hit."""
 
-    popart.getLogger().setLevel('DEBUG')
-    cache_path = str(tmp_path / 'model_caching')
+    popart.getLogger().setLevel("DEBUG")
+    cache_path = str(tmp_path / "model_caching")
 
-    result0 = build_and_run(cache_path,
-                            engine_options={"opt.enableInlining": "false"})
+    result0 = build_and_run(cache_path, engine_options={"opt.enableInlining": "false"})
     assert loaded_saved_executable(capfd) is True
 
-    result1 = build_and_run(cache_path,
-                            engine_options={"opt.enableInlining": "true"})
+    result1 = build_and_run(cache_path, engine_options={"opt.enableInlining": "true"})
     assert loaded_saved_executable(capfd) is True
     assert result0 == result1

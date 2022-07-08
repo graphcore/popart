@@ -8,11 +8,12 @@ from popxl.context import get_current_context, op_debug_context
 
 
 @op_debug_context
-def init(shape: Iterable[int],
-         dtype: dtypes.dtype,
-         name: Optional[str] = None,
-         init_type: Union[Literal["zero"], Literal["undef"]] = "zero"
-         ) -> Tensor:
+def init(
+    shape: Iterable[int],
+    dtype: dtypes.dtype,
+    name: Optional[str] = None,
+    init_type: Union[Literal["zero"], Literal["undef"]] = "zero",
+) -> Tensor:
     """
     Create a tensor that is initialised with zero or undefined values.
 
@@ -48,8 +49,7 @@ def init(shape: Iterable[int],
     else:
         raise ValueError(f"Unknown init_type: {init_type}")
 
-    opid_init = _ir.OperatorIdentifier("ai.graphcore", "Init", 1,
-                                       _ir.NumInputs(0), 1)
+    opid_init = _ir.OperatorIdentifier("ai.graphcore", "Init", 1, _ir.NumInputs(0), 1)
     op = pb_g.createConnectedOp_InitOp(
         {},
         {0: g._create_tensor_id(name)},
@@ -57,7 +57,7 @@ def init(shape: Iterable[int],
         info,
         _ir.TensorType.ActGrad,
         pb_init_type,
-        ctx._get_op_settings('init'),
+        ctx._get_op_settings("init"),
         -1,
     )
 

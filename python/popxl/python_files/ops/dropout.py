@@ -37,14 +37,10 @@ def dropout(t: Tensor, seed_tensor: Tensor, p: float):
     check_in_graph(g, t=t, seed_tensor=seed_tensor)
     check_tensor_ipu_and_tile_set(t=t, seed_tensor=seed_tensor)
 
-    settings = ctx._get_op_settings('dropout')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Dropout", 10, _ir.NumInputs(
-        1, 1), 1)
+    settings = ctx._get_op_settings("dropout")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Dropout", 10, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_DropoutOp(
-        {
-            0: t.id,
-            1: seed_tensor.id
-        },
+        {0: t.id, 1: seed_tensor.id},
         {0: g._create_tensor_id("dropout_out")},
         ratio_=p,
         opid=opid,

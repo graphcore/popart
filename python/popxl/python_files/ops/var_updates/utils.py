@@ -4,8 +4,9 @@ import popart._internal.ir as _ir
 from popxl.tensor import Tensor
 
 
-def handle_optimizer_value(f: Any, ins: Dict[int, str],
-                           index: int) -> _ir.OptimizerValue:
+def handle_optimizer_value(
+    f: Any, ins: Dict[int, str], index: int
+) -> _ir.OptimizerValue:
     if isinstance(f, Tensor):
         ins[index] = f.id
         return _ir.OptimizerValue(0.0, False)

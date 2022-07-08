@@ -19,7 +19,7 @@ def test_hardshrink(op_tester):
         m = torch_hardshrink(torch_test_data)
         return [m]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_softshrink(op_tester):
@@ -37,7 +37,7 @@ def test_softshrink(op_tester):
         m = torch_softshrink(torch_test_data)
         return [m]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_hardshrink_training(op_tester):
@@ -50,7 +50,7 @@ def test_hardshrink_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -61,8 +61,8 @@ def test_hardshrink_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_softshrink_training(op_tester):
@@ -75,7 +75,7 @@ def test_softshrink_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -86,5 +86,5 @@ def test_softshrink_training(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

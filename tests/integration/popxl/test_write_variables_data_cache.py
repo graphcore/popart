@@ -15,15 +15,15 @@ class TestWriteVariablesData:
     # they are not populated by IR but during second executablex constructor - deserialized
     # version. The issue was fixed by updating weights when calling write_variable_data.
     def test_write_variables_data_cache(self, tmp_path, monkeypatch):
-        popart.getLogger().setLevel('DEBUG')
-        monkeypatch.setenv("POPXL_CACHE_DIR", str(tmp_path / 'cache'))
+        popart.getLogger().setLevel("DEBUG")
+        monkeypatch.setenv("POPXL_CACHE_DIR", str(tmp_path / "cache"))
         ir = popxl.Ir()
         with ir.main_graph:
             v = popxl.variable(1, popxl.float32)
             d2h = popxl.d2h_stream(v.shape, v.dtype)
             ops.host_store(d2h, v)
 
-        with popxl.Session(ir, 'ipu_hw') as sess:
+        with popxl.Session(ir, "ipu_hw") as sess:
             assert sess.run()[d2h] == 1
             sess.write_variable_data(v, 2)
             assert sess.run()[d2h] == 2

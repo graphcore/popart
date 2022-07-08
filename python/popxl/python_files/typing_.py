@@ -3,7 +3,7 @@
 
 from typing import TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def NewAliasAnnotation(name: str, tp: T) -> T:
@@ -16,12 +16,16 @@ def NewAliasAnnotation(name: str, tp: T) -> T:
 
     .. code-block:: python
 
-        Id = NewAliasAnnotation('Id', int)
+        Id = NewAliasAnnotation("Id", int)
+
+
         def fn(x: Id):
             return x + 1
+
+
         fn(1)  # successful type check
 
-        inspect.signature(fn).parameters['x'].annotation is Id  # True
+        inspect.signature(fn).parameters["x"].annotation is Id  # True
 
     Args:
         name (str): Name to provide the alias annotation
@@ -31,7 +35,8 @@ def NewAliasAnnotation(name: str, tp: T) -> T:
     def symbol():
         raise NotImplementedError(
             f"{name} should only be used as an annotation. "
-            f"Try using the associated type alias instead: {tp}")
+            f"Try using the associated type alias instead: {tp}"
+        )
 
     symbol.__name__ = name
     return symbol  # type: ignore

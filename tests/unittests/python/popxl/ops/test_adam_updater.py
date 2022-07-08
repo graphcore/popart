@@ -13,8 +13,8 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
             _ = ops.var_updates.adam_updater(m, v)
 
         assert len(g.tensors) == 3
@@ -27,16 +27,12 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(2, name='t')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(2, name="t")
             b1 = 0.9
             b2 = 0.99
-            _ = ops.var_updates.adam_updater(m,
-                                             v,
-                                             time_step=t,
-                                             beta1=b1,
-                                             beta2=b2)
+            _ = ops.var_updates.adam_updater(m, v, time_step=t, beta1=b1, beta2=b2)
 
         assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -46,9 +42,9 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(2, name='t')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(2, name="t")
             b1 = 0.9
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.adam_updater(m, v, time_step=t, beta1=b1)
@@ -60,10 +56,10 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            w = popxl.variable(1, name='w')
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            wd = popxl.constant(0.2, name='wd')
+            w = popxl.variable(1, name="w")
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            wd = popxl.constant(0.2, name="wd")
 
             _ = ops.var_updates.adam_updater(m, v, weight=w, weight_decay=wd)
         assert len(g.tensors) == 5
@@ -74,15 +70,12 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(1, name='t')
-            wd = popxl.constant(0.2, name='wd')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(1, name="t")
+            wd = popxl.constant(0.2, name="wd")
             with pytest.raises(ValueError) as excinfo:
-                _ = ops.var_updates.adam_updater(m,
-                                                 v,
-                                                 time_step=t,
-                                                 weight_decay=wd)
+                _ = ops.var_updates.adam_updater(m, v, time_step=t, weight_decay=wd)
             message = str(excinfo.value)
         assert "Weight decay requires weight to be not None." in message
 
@@ -91,11 +84,11 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            w = popxl.variable(1, name='w')
-            t = popxl.variable(2, name='t')
-            wd = popxl.constant(0.2, name='wd')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            w = popxl.variable(1, name="w")
+            t = popxl.variable(2, name="t")
+            wd = popxl.constant(0.2, name="wd")
             b1 = 0.9
             b2 = 0.99
             _ = ops.var_updates.adam_updater(m, v, w, t, wd, b1, b2)
@@ -108,8 +101,8 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
             _ = ops.var_updates.lamb_updater(m, v)
 
         assert len(g.tensors) == 3
@@ -122,16 +115,12 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(2, name='t')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(2, name="t")
             b1 = 0.9
             b2 = 0.99
-            _ = ops.var_updates.lamb_updater(m,
-                                             v,
-                                             time_step=t,
-                                             beta1=b1,
-                                             beta2=b2)
+            _ = ops.var_updates.lamb_updater(m, v, time_step=t, beta1=b1, beta2=b2)
 
         assert len(g.tensors) == 4
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)
@@ -141,9 +130,9 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(2, name='t')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(2, name="t")
             b1 = 0.9
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.lamb_updater(m, v, time_step=t, beta1=b1)
@@ -155,10 +144,10 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            w = popxl.variable(1, name='w')
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            wd = popxl.constant(0.2, name='wd')
+            w = popxl.variable(1, name="w")
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            wd = popxl.constant(0.2, name="wd")
 
             _ = ops.var_updates.lamb_updater(m, v, weight=w, weight_decay=wd)
         assert len(g.tensors) == 5
@@ -169,15 +158,12 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(1, name='t')
-            wd = popxl.constant(0.2, name='wd')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(1, name="t")
+            wd = popxl.constant(0.2, name="wd")
             with pytest.raises(ValueError) as excinfo:
-                _ = ops.var_updates.lamb_updater(m,
-                                                 v,
-                                                 time_step=t,
-                                                 weight_decay=wd)
+                _ = ops.var_updates.lamb_updater(m, v, time_step=t, weight_decay=wd)
             message = str(excinfo.value)
         assert "Weight decay requires weight to be not None." in message
 
@@ -186,11 +172,11 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            w = popxl.variable(1, name='w')
-            t = popxl.variable(2, name='t')
-            wd = popxl.constant(0.2, name='wd')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            w = popxl.variable(1, name="w")
+            t = popxl.variable(2, name="t")
+            wd = popxl.constant(0.2, name="wd")
             b1 = 0.9
             b2 = 0.99
             _ = ops.var_updates.lamb_updater(m, v, w, t, wd, b1, b2)
@@ -203,9 +189,9 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(1, name='t')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(1, name="t")
 
             _ = ops.var_updates.adamax_updater(m, v, time_step=t)
         assert len(g.tensors) == 4
@@ -216,8 +202,8 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
             with pytest.raises(ValueError) as excinfo:
                 _ = ops.var_updates.adamax_updater(m, v)
             message = str(excinfo.value)
@@ -228,16 +214,14 @@ class TestAdamUpdater:
         g = ir.main_graph
 
         with g:
-            w = popxl.variable(1, name='w')
-            m = popxl.variable(1, name='m')
-            v = popxl.variable(2, name='v')
-            t = popxl.variable(1, name='t')
-            wd = popxl.constant(0.2, name='wd')
+            w = popxl.variable(1, name="w")
+            m = popxl.variable(1, name="m")
+            v = popxl.variable(2, name="v")
+            t = popxl.variable(1, name="t")
+            wd = popxl.constant(0.2, name="wd")
 
-            _ = ops.var_updates.adamax_updater(m,
-                                               v,
-                                               weight=w,
-                                               time_step=t,
-                                               weight_decay=wd)
+            _ = ops.var_updates.adamax_updater(
+                m, v, weight=w, time_step=t, weight_decay=wd
+            )
         assert len(g.tensors) == 6
         assert contains_op_of_type("AdamUpdater", _ir.op.AdamUpdaterOp, g)

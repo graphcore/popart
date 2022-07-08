@@ -15,9 +15,8 @@ from popxl.tensor import graph_input, Tensor, TensorByRef
 
 # `import test_util` requires adding to sys.path
 sys.path.append(
-    str(
-        Path(__file__).resolve().parent.parent.parent.parent.parent /
-        "integration"))
+    str(Path(__file__).resolve().parent.parent.parent.parent.parent / "integration")
+)
 import test_util as tu
 
 
@@ -34,12 +33,13 @@ class Linear(popxl.Module):
         self.W: Tensor = None
         self.b: Tensor = None
 
-    def build(self, x: Tensor, out_features: int,
-              bias: bool = True) -> Tuple[Tensor, ...]:
+    def build(
+        self, x: Tensor, out_features: int, bias: bool = True
+    ) -> Tuple[Tensor, ...]:
         self.W = graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = graph_input((out_features, ), popxl.float32, "b")
+            self.b = graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         # TODO: T49312 Add a helper that returns tensors from a subgraph as a mapping
         return y
@@ -53,20 +53,22 @@ class LinearHostLoad(popxl.Module):
         self.h2d = popxl.h2d_stream((16, 16), popxl.float32, name="x_stream")
         self.d2h = popxl.d2h_stream((16, 16), popxl.float32, name="y_stream")
 
-    def build(self, x: Tensor, out_features: int,
-              bias: bool = True) -> Tuple[Tensor, ...]:
+    def build(
+        self, x: Tensor, out_features: int, bias: bool = True
+    ) -> Tuple[Tensor, ...]:
         x = ops.host_load(self.h2d, "x")
         self.W = graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = graph_input((out_features, ), popxl.float32, "b")
+            self.b = graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         ops.host_store(self.d2h, y)
         return y
 
 
-def run_ir(ir: popxl.Ir, bps: int, y_id: str,
-           inputs: Dict[str, np.array]) -> np.ndarray:
+def run_ir(
+    ir: popxl.Ir, bps: int, y_id: str, inputs: Dict[str, np.array]
+) -> np.ndarray:
     """Take the given ir and inputs and run it.
 
     Args:
@@ -81,8 +83,8 @@ def run_ir(ir: popxl.Ir, bps: int, y_id: str,
     _pb_ir = ir._pb_ir  # Internal ir
 
     dataFlow = popart.DataFlow(
-        batchesPerStep=bps,
-        anchorTensors={y_id: popart.AnchorReturnType("All")})
+        batchesPerStep=bps, anchorTensors={y_id: popart.AnchorReturnType("All")}
+    )
     _pb_ir.setDataFlow(dataFlow)
 
     opts = _pb_ir.getSessionOptions()
@@ -93,8 +95,7 @@ def run_ir(ir: popxl.Ir, bps: int, y_id: str,
 
     _pb_ir.updateVertices()
 
-    _pb_ir.setPatterns(
-        _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Default))
+    _pb_ir.setPatterns(_ir.patterns.Patterns(_ir.patterns.PatternsLevel.Default))
 
     with tu.create_test_device() as device:
         session = popart.InferenceSession.fromIr(ir=_pb_ir, deviceInfo=device)
@@ -144,8 +145,8 @@ class TestRepeat:
 
     def test_repeat_module_with_internal_inputs_and_multiple_callsites(self):
         """This is the same as the call op's test
-            `test_call_module_with_internal_inputs_and_multiple_callsites`,
-            with repeats in place of call ops.
+        `test_call_module_with_internal_inputs_and_multiple_callsites`,
+        with repeats in place of call ops.
         """
         ir = popxl.Ir()
         g = ir.main_graph
@@ -168,19 +169,17 @@ class TestRepeat:
             add_weight_graph0 = ir.create_graph(add_weight0, x0)
 
             # First call site
-            ops.repeat(add_weight_graph0,
-                       repeat_count,
-                       x0,
-                       inputs_dict={add_weight0.w: w0})
+            ops.repeat(
+                add_weight_graph0, repeat_count, x0, inputs_dict={add_weight0.w: w0}
+            )
 
             # Second call site of same graph
             w1 = popxl.variable(1, name="w1")
             x1 = popxl.variable(1, name="x1")
 
-            ops.repeat(add_weight_graph0,
-                       repeat_count,
-                       x1,
-                       inputs_dict={add_weight0.w: w1})
+            ops.repeat(
+                add_weight_graph0, repeat_count, x1, inputs_dict={add_weight0.w: w1}
+            )
 
             # Second graph from new instance of module.
             # ir.create_graph should be able to create a new unique Graph name.
@@ -188,10 +187,9 @@ class TestRepeat:
             add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
-            ops.repeat(add_weight_graph1,
-                       repeat_count,
-                       x0,
-                       inputs_dict={add_weight1.w: w1})
+            ops.repeat(
+                add_weight_graph1, repeat_count, x0, inputs_dict={add_weight1.w: w1}
+            )
 
             # Third graph that reuses module add_weight1.
             # This calls `build` again, and thus simply overwrites add_weight1.w
@@ -202,10 +200,9 @@ class TestRepeat:
             assert old_w1_id != add_weight1.w.id
 
             # Call third graph. Reuse x1 and w0 as inputs.
-            ops.repeat(add_weight_graph2,
-                       repeat_count,
-                       x1,
-                       inputs_dict={add_weight1.w: w0})
+            ops.repeat(
+                add_weight_graph2, repeat_count, x1, inputs_dict={add_weight1.w: w0}
+            )
 
         # Test main graph
         # 4 vars + y0 + y1 + y2 + y3.
@@ -224,13 +221,10 @@ class TestRepeat:
         def test_subgraph(add_weight_subgraph: popxl.Graph):
             assert len(add_weight_subgraph.tensors) == 3
             assert len(add_weight_subgraph.variables) == 0
-            assert contains_op_of_type("Add", _ir.op.AddOp,
-                                       add_weight_subgraph)
+            assert contains_op_of_type("Add", _ir.op.AddOp, add_weight_subgraph)
             # Rudimentarily test subgraph has only expected ops with negative tests
-            assert not contains_op_of_type("Loop", _ir.op.LoopOp,
-                                           add_weight_subgraph)
-            assert not contains_op_of_type("Mul", _ir.op.MulOp,
-                                           add_weight_subgraph)
+            assert not contains_op_of_type("Loop", _ir.op.LoopOp, add_weight_subgraph)
+            assert not contains_op_of_type("Mul", _ir.op.MulOp, add_weight_subgraph)
 
         test_subgraph(add_weight_graph0)
         test_subgraph(add_weight_graph1)
@@ -252,11 +246,9 @@ class TestRepeat:
             add_one = AddOne()
             add_one_graph = ir.create_graph(add_one, one)
 
-            y, = ops.repeat(add_one_graph, repeat_count, one, inputs_dict={})
+            (y,) = ops.repeat(add_one_graph, repeat_count, one, inputs_dict={})
 
-            d2h = popxl.d2h_stream(y.shape,
-                                   popxl.dtypes.int32,
-                                   name="y_stream")
+            d2h = popxl.d2h_stream(y.shape, popxl.dtypes.int32, name="y_stream")
             ops.host_store(d2h, y)
 
         r_y = run_ir(ir, 1, d2h.tensor_id, {})
@@ -287,21 +279,14 @@ class TestRepeat:
             linear = Linear()
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
-            y, = ops.repeat(linear_graph,
-                            repeat_count,
-                            x,
-                            inputs_dict={
-                                linear.W: W,
-                                linear.b: b
-                            })
+            (y,) = ops.repeat(
+                linear_graph, repeat_count, x, inputs_dict={linear.W: W, linear.b: b}
+            )
             y_d2h = popxl.d2h_stream((16, 16), popxl.float32, name="y_stream")
             ops.host_store(y_d2h, y)
 
         data = np.random.random((16, 16)).astype(np.float32)
-        r_y = run_ir(ir,
-                     bps=1,
-                     y_id=y_d2h.tensor_id,
-                     inputs={x_h2d.tensor_id: data})
+        r_y = run_ir(ir, bps=1, y_id=y_d2h.tensor_id, inputs={x_h2d.tensor_id: data})
         out = data
         for _ in range(repeat_count):
             out = np.matmul(out, W_data, dtype=np.float32) + b_data
@@ -338,19 +323,17 @@ class TestRepeat:
             linear = LinearHostLoad()
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
-            _ = ops.repeat(linear_graph,
-                           repeat_count,
-                           x,
-                           inputs_dict={
-                               linear.W: W,
-                               linear.b: b
-                           })
+            _ = ops.repeat(
+                linear_graph, repeat_count, x, inputs_dict={linear.W: W, linear.b: b}
+            )
 
         data = np.random.random((repeat_count, 16, 16)).astype(np.float32)
-        r_y = run_ir(ir,
-                     bps=repeat_count,
-                     y_id=linear.d2h.tensor_id,
-                     inputs={linear.h2d.tensor_id: data})
+        r_y = run_ir(
+            ir,
+            bps=repeat_count,
+            y_id=linear.d2h.tensor_id,
+            inputs={linear.h2d.tensor_id: data},
+        )
 
         for i in range(repeat_count):
             print(f"Batch: {i}")
@@ -378,13 +361,12 @@ class TestRepeat:
             linear_graph = ir.create_graph(linear, x, out_features=16)
 
             with pytest.raises(ValueError) as e_info:
-                _ = ops.repeat(linear_graph,
-                               repeat_count,
-                               x,
-                               inputs_dict={
-                                   linear.W: W,
-                                   linear.b: b
-                               })
+                _ = ops.repeat(
+                    linear_graph,
+                    repeat_count,
+                    x,
+                    inputs_dict={linear.W: W, linear.b: b},
+                )
             assert e_info.value.args[0].startswith("Repeat count must be >= 0")
 
     def test_repeat_io_error(self):
@@ -419,8 +401,7 @@ class TestRepeat:
 
             with pytest.raises(ValueError) as e_info:
                 ops.repeat(graph, 8, x, y, z)
-            assert e_info.value.args[0].startswith(
-                "Too many inputs have been provided")
+            assert e_info.value.args[0].startswith("Too many inputs have been provided")
 
     def test_repeat_specified_twice_error(self):
         """Test an error is thrown when an argument is specified positionally and via input_dict"""
@@ -439,7 +420,8 @@ class TestRepeat:
             with pytest.raises(ValueError) as e_info:
                 ops.repeat(graph, 8, x, y, inputs_dict={graph.inputs[0]: z})
             assert e_info.value.args[0].startswith(
-                "Graph input tensor is specified twice")
+                "Graph input tensor is specified twice"
+            )
 
     def test_repeat_missing_inputs_error(self):
         """Test an error is thrown when an input is missing"""
@@ -457,7 +439,8 @@ class TestRepeat:
             with pytest.raises(ValueError) as e_info:
                 ops.repeat(graph, 8, x)
             assert e_info.value.args[0].startswith(
-                "Not enough inputs have been provided")
+                "Not enough inputs have been provided"
+            )
 
     def test_repeat_missing_inputs_error_in_graph(self):
         """Test an error is thrown when an input is not in graph"""
@@ -474,7 +457,7 @@ class TestRepeat:
 
             with pytest.raises(ValueError) as e_info:
                 ops.repeat(graph, 8, x, inputs_dict={x: y})
-            assert 'not in the called graph' in e_info.value.args[0]
+            assert "not in the called graph" in e_info.value.args[0]
 
     def test_not_by_ref(self):
         ir = popxl.Ir()
@@ -491,7 +474,8 @@ class TestRepeat:
 
         assert len(g._by_ref_inputs) == 0
         assert not loop_info._op.modifiesIndex(
-            2)  # Offset by 1 due to count and keep_going
+            2
+        )  # Offset by 1 due to count and keep_going
         assert not loop_info._op.modifiesIndex(3)
 
     def test_repeat_by_ref_implicit(self):

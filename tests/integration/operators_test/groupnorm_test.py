@@ -42,17 +42,20 @@ def test_groupnorm_0(op_tester):
         iOnePerGroup = builder.addInputTensor(one_per_group)
 
         (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups, epsilon)
+            [i1, iScale, iB], num_groups, epsilon
+        )
 
         o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
 
         builder.addOutputTensor(o_y)
         return [
-            o_y, o_mean, o_invstd,
+            o_y,
+            o_mean,
+            o_invstd,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + iB,
             popart.reservedGradientPrefix() + iScale,
-            popart.reservedGradientPrefix() + o_y
+            popart.reservedGradientPrefix() + o_y,
         ]
 
     def reference(ref_data):
@@ -75,9 +78,10 @@ def test_groupnorm_0(op_tester):
 
         return [_y, _mean, _invstd, None, None, None, d__o]
 
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_groupnorm_1(op_tester):
@@ -86,11 +90,13 @@ def test_groupnorm_1(op_tester):
     num_groups = 1
 
     # create test data
-    d1 = np.array([[[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]],
-                    [[1, 1], [1, 1]]],
-                   [[[1, 0], [0, 1]], [[1, 0], [0.5, 1]], [[1, 0], [0, 1]],
-                    [[1, 0], [0, 1]]]],
-                  dtype=np.float32)
+    d1 = np.array(
+        [
+            [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]],
+            [[[1, 0], [0, 1]], [[1, 0], [0.5, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+        ],
+        dtype=np.float32,
+    )
 
     # Init with same values as pytorch
     b = np.zeros(num_channels).astype(np.float32)
@@ -111,7 +117,8 @@ def test_groupnorm_1(op_tester):
         iOnePerGroup = builder.addInputTensor(one_per_group)
 
         (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups)
+            [i1, iScale, iB], num_groups
+        )
 
         o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
 
@@ -119,11 +126,13 @@ def test_groupnorm_1(op_tester):
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_invstd)
         return [
-            o_y, o_mean, o_invstd,
+            o_y,
+            o_mean,
+            o_invstd,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + iScale,
             popart.reservedGradientPrefix() + iB,
-            popart.reservedGradientPrefix() + o_y
+            popart.reservedGradientPrefix() + o_y,
         ]
 
     def reference(ref_data):
@@ -145,13 +154,12 @@ def test_groupnorm_1(op_tester):
         _mean = v.mean(-1)
         _invstd = 1 / torch.sqrt(v.var(-1, unbiased=False) + epsilon)
 
-        return [
-            _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
-        ]
+        return [_y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o]
 
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_groupnorm_2(op_tester):
@@ -171,7 +179,8 @@ def test_groupnorm_2(op_tester):
         iB = builder.addInputTensor(b)
 
         (o_y, o_mean, o_var) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups, epsilon)
+            [i1, iScale, iB], num_groups, epsilon
+        )
 
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
@@ -201,8 +210,8 @@ def test_groupnorm_2(op_tester):
 
         return [_y, _mean, _invstd]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_groupnorm_3(op_tester):
@@ -211,11 +220,13 @@ def test_groupnorm_3(op_tester):
     num_groups = 1
 
     # create test data
-    d1 = np.array([[[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]],
-                    [[1, 1], [1, 1]]],
-                   [[[1, 0], [0, 1]], [[1, 0], [0.5, 1]], [[1, 0], [0, 1]],
-                    [[1, 0], [0, 1]]]],
-                  dtype=np.float32)
+    d1 = np.array(
+        [
+            [[[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]], [[1, 1], [1, 1]]],
+            [[[1, 0], [0, 1]], [[1, 0], [0.5, 1]], [[1, 0], [0, 1]], [[1, 0], [0, 1]]],
+        ],
+        dtype=np.float32,
+    )
 
     # Only backprop  a few (3 out of 4) locations to avoid the gradient of the
     # summed loss term being numerially zero
@@ -238,18 +249,21 @@ def test_groupnorm_3(op_tester):
         i_few_places = builder.addInputTensor(a_few_places)
 
         (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups, epsilon)
+            [i1, iScale, iB], num_groups, epsilon
+        )
         o_y = builder.aiOnnx.mul([normed, i_few_places])
 
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_invstd)
         return [
-            o_y, o_mean, o_invstd,
+            o_y,
+            o_mean,
+            o_invstd,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + iScale,
             popart.reservedGradientPrefix() + iB,
-            popart.reservedGradientPrefix() + o_y
+            popart.reservedGradientPrefix() + o_y,
         ]
 
     def reference(ref_data):
@@ -272,13 +286,12 @@ def test_groupnorm_3(op_tester):
         # Get the mean and inv std dev
         _invstd = 1 / torch.sqrt(v.var(-1, unbiased=False) + epsilon)
 
-        return [
-            _y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o
-        ]
+        return [_y, _mean, _invstd, _input.grad, m.weight.grad, m.bias.grad, d__o]
 
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 # Test vs. numpy as well, just in case and at fp16
@@ -298,23 +311,21 @@ def test_groupnorm_4(op_tester):
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
         (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups, epsilon)
+            [i1, iScale, iB], num_groups, epsilon
+        )
         builder.addOutputTensor(o_y)
         return [o_y, o_mean, o_invstd]
 
     def reference(_):  # ref_data is an unused argument
 
-        _y, _mean, _invstd = refGroupNormFwd(d1,
-                                             scale,
-                                             b,
-                                             num_groups,
-                                             epsilon=epsilon,
-                                             data_format="NCHW")
+        _y, _mean, _invstd = refGroupNormFwd(
+            d1, scale, b, num_groups, epsilon=epsilon, data_format="NCHW"
+        )
 
         return [
             _y.astype(np.float16),
             _mean.astype(np.float16),
-            _invstd.astype(np.float16)
+            _invstd.astype(np.float16),
         ]
 
     # We have to relax the tolerances slightly to account for the fact the
@@ -324,19 +335,22 @@ def test_groupnorm_4(op_tester):
 
     op_tester.options.groupNormStridedChannelGrouping = True
 
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "infer")
 
 
-def refGroupNormFwd(inputs,
-                    gamma,
-                    beta,
-                    groups,
-                    mean=None,
-                    inv_std_dev=None,
-                    epsilon=0.0015,
-                    data_format="NHWC"):
+def refGroupNormFwd(
+    inputs,
+    gamma,
+    beta,
+    groups,
+    mean=None,
+    inv_std_dev=None,
+    epsilon=0.0015,
+    data_format="NHWC",
+):
     if data_format == "NHWC":
         feature_index = 3
     elif data_format == "NCHW":
@@ -389,10 +403,9 @@ def refGroupNormFwd(inputs,
 
     if mean is None and inv_std_dev is None:
         mean = np.mean(inputs, moments_axes, dtype=np.float32, keepdims=True)
-        variance = np.mean(np.power(inputs - mean, 2),
-                           moments_axes,
-                           dtype=np.float32,
-                           keepdims=True)
+        variance = np.mean(
+            np.power(inputs - mean, 2), moments_axes, dtype=np.float32, keepdims=True
+        )
     else:
         variance = np.power(inv_std_dev, -2) - epsilon
 
@@ -408,14 +421,18 @@ def refGroupNormFwd(inputs,
         from_idx = (to_idx % groups) * group_size + to_idx // groups
         reshuffled_output[to_idx] = output[from_idx]
     inv_std_dev = np.power(variance + epsilon, -0.5)
-    return (np.swapaxes(reshuffled_output, 0, feature_index),
-            np.reshape(np.squeeze(mean), (mean.size)),
-            np.reshape(np.squeeze(inv_std_dev), (inv_std_dev.size)))
+    return (
+        np.swapaxes(reshuffled_output, 0, feature_index),
+        np.reshape(np.squeeze(mean), (mean.size)),
+        np.reshape(np.squeeze(inv_std_dev), (inv_std_dev.size)),
+    )
 
 
 # Test stable group norm algorith - this test fails without it.
-@pytest.mark.skip(reason="""Some changes to pytorch's view operator seem
-     to have broken this in version 1.6.0""")
+@pytest.mark.skip(
+    reason="""Some changes to pytorch's view operator seem
+     to have broken this in version 1.6.0"""
+)
 def test_groupnorm_5(op_tester):
 
     epsilon = 1e-05
@@ -450,17 +467,20 @@ def test_groupnorm_5(op_tester):
         iOnePerGroup = builder.addInputTensor(one_per_group)
 
         (normed, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
-            [i1, iScale, iB], num_groups, epsilon)
+            [i1, iScale, iB], num_groups, epsilon
+        )
 
         o_y = builder.aiOnnx.mul([normed, iOnePerGroup])
 
         builder.addOutputTensor(o_y)
         return [
-            o_y, o_mean, o_invstd,
+            o_y,
+            o_mean,
+            o_invstd,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + iB,
             popart.reservedGradientPrefix() + iScale,
-            popart.reservedGradientPrefix() + o_y
+            popart.reservedGradientPrefix() + o_y,
         ]
 
     def reference(ref_data):
@@ -502,6 +522,7 @@ def test_groupnorm_5(op_tester):
     # Calculation is still pretty iffy at such large mean / std dev ratio.
     op_tester.rtol = 1e-3
     op_tester.atol = 1e-5
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")

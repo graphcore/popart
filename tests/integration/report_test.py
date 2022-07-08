@@ -22,17 +22,18 @@ def test_summary_report_before_execution():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.initAnchorArrays()
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.getSummaryReport()
 
-        assert (e_info.value.args[0].endswith(
-            "Session must have been prepared before a report can be fetched"))
+        assert e_info.value.args[0].endswith(
+            "Session must have been prepared before a report can be fetched"
+        )
 
 
 def test_graph_report_before_execution():
@@ -49,17 +50,18 @@ def test_graph_report_before_execution():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.initAnchorArrays()
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.getSummaryReport()
 
-        assert (e_info.value.args[0].endswith(
-            "Session must have been prepared before a report can be fetched"))
+        assert e_info.value.args[0].endswith(
+            "Session must have been prepared before a report can be fetched"
+        )
 
 
 @tu.requires_ipu_model
@@ -77,17 +79,18 @@ def test_execution_report_before_execution():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.initAnchorArrays()
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.getSummaryReport()
 
-        assert (e_info.value.args[0].endswith(
-            "Session must have been prepared before a report can be fetched"))
+        assert e_info.value.args[0].endswith(
+            "Session must have been prepared before a report can be fetched"
+        )
 
 
 @tu.requires_ipu_model
@@ -105,17 +108,18 @@ def test_report_before_execution():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.initAnchorArrays()
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.getReport()
 
-        assert (e_info.value.args[0].endswith(
-            "Session must have been prepared before a report can be fetched"))
+        assert e_info.value.args[0].endswith(
+            "Session must have been prepared before a report can be fetched"
+        )
 
 
 @tu.requires_ipu_model
@@ -140,19 +144,17 @@ def test_compilation_report():
     options.engineOptions["autoReport.outputGraphProfile"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=options,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=options, deviceInfo=device
+        )
 
         _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
         report = session.getReport()
-        assert (report.compilation.target.totalMemory > 0)
-        assert (report.compilation.target.architecture ==
-                pva.IPU.Architecture.Ipu2)
+        assert report.compilation.target.totalMemory > 0
+        assert report.compilation.target.architecture == pva.IPU.Architecture.Ipu2
 
 
 @tu.requires_ipu_model
@@ -177,16 +179,15 @@ def test_compilation_report_deprecated():
     options.engineOptions["autoReport.outputGraphProfile"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=options,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=options, deviceInfo=device
+        )
 
         _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        assert (len(session.getSummaryReport()) > 0)
+        assert len(session.getSummaryReport()) > 0
 
 
 @tu.requires_ipu_model
@@ -206,15 +207,15 @@ def test_compilation_report_cbor():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         _ = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        assert (len(session.getSummaryReport(True)) > 0)
+        assert len(session.getSummaryReport(True)) > 0
 
 
 @tu.requires_ipu_model
@@ -239,23 +240,22 @@ def test_execution_report():
     options.engineOptions["autoReport.all"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=options,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=options, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        d1 = np.array([10.]).astype(np.float32)
-        d2 = np.array([11.]).astype(np.float32)
+        d1 = np.array([10.0]).astype(np.float32)
+        d2 = np.array([11.0]).astype(np.float32)
         stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
 
         session.run(stepio, "Test message")
 
         report = session.getReport()
-        assert (report.execution.runs[0].name == "Test message")
+        assert report.execution.runs[0].name == "Test message"
 
 
 @tu.requires_ipu_model
@@ -280,17 +280,16 @@ def test_execution_report_new():
     options.engineOptions["autoReport.all"] = "true"
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=options,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=options, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        d1 = np.array([10.]).astype(np.float32)
-        d2 = np.array([11.]).astype(np.float32)
+        d1 = np.array([10.0]).astype(np.float32)
+        d2 = np.array([11.0]).astype(np.float32)
         stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
 
         session.run(stepio, "Test message")
@@ -319,16 +318,16 @@ def test_execution_report_reset():
     opts.engineOptions = {"debug.instrument": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        d1 = np.array([10.]).astype(np.float32)
-        d2 = np.array([11.]).astype(np.float32)
+        d1 = np.array([10.0]).astype(np.float32)
+        d2 = np.array([11.0]).astype(np.float32)
         stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
 
         session.run(stepio)
@@ -355,16 +354,16 @@ def test_execution_report_cbor():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
         session.prepareDevice()
 
-        d1 = np.array([10.]).astype(np.float32)
-        d2 = np.array([11.]).astype(np.float32)
+        d1 = np.array([10.0]).astype(np.float32)
+        d2 = np.array([11.0]).astype(np.float32)
         stepio = popart.PyStepIO({i1: d1, i2: d2}, anchors)
 
         session.run(stepio)
@@ -392,18 +391,18 @@ def test_no_compile():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(proto,
-                                          dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            proto, dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         with pytest.raises(popart.popart_exception) as e_info:
             session.getSummaryReport()
 
-        assert (e_info.value.args[0].endswith(
-            "Session must have been prepared before a report can be fetched"))
+        assert e_info.value.args[0].endswith(
+            "Session must have been prepared before a report can be fetched"
+        )
 
 
 @tu.requires_ipu_model
@@ -424,9 +423,9 @@ def test_serialized_graph_report():
     dataFlow = popart.DataFlow(1, {out: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         _ = session.initAnchorArrays()
 
@@ -434,4 +433,4 @@ def test_serialized_graph_report():
 
         # This is an encoded capnp report - so not easy to decode here
         rep = session.getSerializedGraph()
-        assert (len(rep))
+        assert len(rep)

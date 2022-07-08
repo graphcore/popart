@@ -57,15 +57,15 @@ def _append_definition(args: list, definition: str):
     """
 
     try:
-        macro, value = definition.strip().split('=')
+        macro, value = definition.strip().split("=")
         macro = shlex.quote(macro.strip())
-        value = shlex.quote(value.strip()) if value else '1'
+        value = shlex.quote(value.strip()) if value else "1"
 
         args.append(f"-D{macro}={value}")
     except ValueError:
         # most likely means there was no '=' given
         # check if argument is valid identifier
-        if re.search(r'^[A-Za-z_][A-Za-z0-9_]*', definition):
+        if re.search(r"^[A-Za-z_][A-Za-z0-9_]*", definition):
             args.append(f"-D{definition}")
         else:
             print(f"Failed to parse definition: {shlex.quote(definition)}")
@@ -81,17 +81,15 @@ def main():
     """
 
     parser = argparse.ArgumentParser(
-        prog='pybind11_mkdoc',
-        description=
-        "Processes a sequence of C/C++ headers and extracts comments for use in pybind11 binding code.",
-        epilog=
-        "(Other compiler flags that Clang understands can also be supplied)",
-        allow_abbrev=False)
+        prog="pybind11_mkdoc",
+        description="Processes a sequence of C/C++ headers and extracts comments for use in pybind11 binding code.",
+        epilog="(Other compiler flags that Clang understands can also be supplied)",
+        allow_abbrev=False,
+    )
 
-    parser.add_argument("-v",
-                        "--version",
-                        action="version",
-                        version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s {__version__}"
+    )
 
     parser.add_argument(
         "-o",
@@ -100,15 +98,18 @@ def main():
         type=str,
         dest="output",
         metavar="<file>",
-        help="Write to the specified file (default: use stdout).")
+        help="Write to the specified file (default: use stdout).",
+    )
 
-    parser.add_argument("-w",
-                        "--width",
-                        action="store",
-                        type=int,
-                        dest="width",
-                        metavar="<width>",
-                        help="Specify docstring width before wrapping.")
+    parser.add_argument(
+        "-w",
+        "--width",
+        action="store",
+        type=int,
+        dest="width",
+        metavar="<width>",
+        help="Specify docstring width before wrapping.",
+    )
 
     parser.add_argument(
         "-I",
@@ -116,7 +117,7 @@ def main():
         type=str,
         dest="include_dirs",
         metavar="<dir>",
-        help="Specify an directory to add to the list of include search paths."
+        help="Specify an directory to add to the list of include search paths.",
     )
 
     parser.add_argument(
@@ -125,14 +126,10 @@ def main():
         type=str,
         metavar="<macro>=<value>",
         dest="definitions",
-        help=
-        "Specify a compiler definition, i.e. define <macro> to <value> (or 1 if <value> omitted)."
+        help="Specify a compiler definition, i.e. define <macro> to <value> (or 1 if <value> omitted).",
     )
 
-    parser.add_argument("header",
-                        type=str,
-                        nargs='+',
-                        help="A header file to process.")
+    parser.add_argument("header", type=str, nargs="+", help="A header file to process.")
 
     [parsed_args, unparsed_args] = parser.parse_known_args()
 

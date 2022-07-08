@@ -15,8 +15,7 @@ def enable_poplibs_logging():
         yield
 
 
-def available_memory_proportion_harness(capfd, insert_operator,
-                                        avail_mem_prop):
+def available_memory_proportion_harness(capfd, insert_operator, avail_mem_prop):
     builder = popart.Builder()
 
     input_shape = popart.TensorInfo("FLOAT", [1, 2, 4, 4])
@@ -32,14 +31,16 @@ def available_memory_proportion_harness(capfd, insert_operator,
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input_,
-        popart.reservedGradientPrefix() + weights
+        popart.reservedGradientPrefix() + weights,
     ]
     training_dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
-            anchor_names[2]: popart.AnchorReturnType("All")
-        })
+            anchor_names[2]: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
@@ -49,8 +50,7 @@ def available_memory_proportion_harness(capfd, insert_operator,
         device.attach()
 
         # Prepare the input data
-        input_data = np.random.random_sample(input_shape.shape()).astype(
-            np.float32)
+        input_data = np.random.random_sample(input_shape.shape()).astype(np.float32)
 
         # Prepare the Training session
         training_session = popart.TrainingSession(
@@ -59,7 +59,8 @@ def available_memory_proportion_harness(capfd, insert_operator,
             loss=loss,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         # Compile the training graph
         training_session.prepareDevice()
@@ -70,8 +71,7 @@ def available_memory_proportion_harness(capfd, insert_operator,
         training_anchors = training_session.initAnchorArrays()
         training_inputs = {input_: input_data}
 
-        training_session.run(popart.PyStepIO(training_inputs,
-                                             training_anchors))
+        training_session.run(popart.PyStepIO(training_inputs, training_anchors))
 
         captured = capfd.readouterr()
 
@@ -81,16 +81,15 @@ def available_memory_proportion_harness(capfd, insert_operator,
 def assert_contains(pattern, output):
     # Find the regex matches.
     matches = re.findall(pattern, output)
-    assert len(
-        matches
-    ) > 0, f"Failed to find pattern {pattern} in log output:\n\n{output}"
+    assert (
+        len(matches) > 0
+    ), f"Failed to find pattern {pattern} in log output:\n\n{output}"
 
 
 def insert_conv(builder, inputs, weights, avail_mem_prop):
-    act = builder.aiOnnx.conv([inputs, weights],
-                              dilations=[1, 1],
-                              pads=[1, 1, 1, 1],
-                              strides=[1, 1])
+    act = builder.aiOnnx.conv(
+        [inputs, weights], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     builder.setAvailableMemoryProportion(act, avail_mem_prop)
     return act
 
@@ -122,8 +121,9 @@ def insert_scatter_reduce(builder, inputs, weights, avail_mem_prop):
 
 def insert_lstm(builder, inputs, weights, avail_mem_prop):
     np.random.seed(0)
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 7
@@ -153,8 +153,7 @@ def insert_lstm(builder, inputs, weights, avail_mem_prop):
 @tu.requires_ipu_model
 def test_conv_avail_memory_log(capfd):
     avail_mem_prop = 0.6
-    output = available_memory_proportion_harness(capfd, insert_conv,
-                                                 avail_mem_prop)
+    output = available_memory_proportion_harness(capfd, insert_conv, avail_mem_prop)
 
     # This is the available tile memory for the conv.
     # TODO: Update this if future chips have more memory per tile.
@@ -172,8 +171,7 @@ def test_conv_avail_memory_error(capfd):
     with pytest.raises(popart.popart_exception) as e_info:
         available_memory_proportion_harness(capfd, insert_conv, avail_mem_prop)
 
-    assert (e_info.value.args[0].startswith(
-        "availableMemoryProportion must be in (0,1]"))
+    assert e_info.value.args[0].startswith("availableMemoryProportion must be in (0,1]")
 
 
 # Test that poplar gets our instruction to set the available memory proportion.
@@ -181,8 +179,7 @@ def test_conv_avail_memory_error(capfd):
 @tu.requires_ipu_model
 def test_matmul_avail_memory_log(capfd):
     avail_mem_prop = 0.6
-    output = available_memory_proportion_harness(capfd, insert_matmul,
-                                                 avail_mem_prop)
+    output = available_memory_proportion_harness(capfd, insert_matmul, avail_mem_prop)
 
     # This is the available tile memory for the matmul.
     # TODO: Update this if future chips have more memory per tile.
@@ -194,8 +191,7 @@ def test_matmul_avail_memory_log(capfd):
 @tu.requires_ipu_model
 def test_gather_avail_memory_log(capfd):
     avail_mem_prop = 0.5
-    output = available_memory_proportion_harness(capfd, insert_gather,
-                                                 avail_mem_prop)
+    output = available_memory_proportion_harness(capfd, insert_gather, avail_mem_prop)
     pattern = f"availableMemoryProportion={avail_mem_prop:0.1f}"
     assert_contains(pattern, output)
 
@@ -203,8 +199,9 @@ def test_gather_avail_memory_log(capfd):
 @tu.requires_ipu_model
 def test_scatter_reduce_avail_memory_log(capfd):
     avail_mem_prop = 0.6
-    output = available_memory_proportion_harness(capfd, insert_scatter_reduce,
-                                                 avail_mem_prop)
+    output = available_memory_proportion_harness(
+        capfd, insert_scatter_reduce, avail_mem_prop
+    )
     pattern = f"availableMemoryProportion={avail_mem_prop:0.1f}"
     assert_contains(pattern, output)
 
@@ -212,8 +209,7 @@ def test_scatter_reduce_avail_memory_log(capfd):
 @tu.requires_ipu_model
 def test_lstm_avail_memory_log(capfd):
     avail_mem_prop = 0.4
-    output = available_memory_proportion_harness(capfd, insert_lstm,
-                                                 avail_mem_prop)
+    output = available_memory_proportion_harness(capfd, insert_lstm, avail_mem_prop)
     # This is the available tile memory for the matmul.
     # TODO: Update this if future chips have more memory per tile.
     avail_mem = int(np.floor(avail_mem_prop * 638976))

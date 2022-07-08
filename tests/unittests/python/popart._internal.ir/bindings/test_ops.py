@@ -7,13 +7,15 @@ from utils import *
 import popart._internal.ir as _ir
 
 
-def unary_op_tester(op_name: str,
-                    g: _ir.Graph,
-                    inplace: bool = False,
-                    connected: bool = False,
-                    n_outputs: int = 1,
-                    *args,
-                    **kwargs):
+def unary_op_tester(
+    op_name: str,
+    g: _ir.Graph,
+    inplace: bool = False,
+    connected: bool = False,
+    n_outputs: int = 1,
+    *args,
+    **kwargs,
+):
     """Helper to test unary ops
 
     Args:
@@ -26,21 +28,19 @@ def unary_op_tester(op_name: str,
     """
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
     ins = {0: in0}
-    outs = {
-        i: add_actgrad_tensor(f"out{i}", [1, 2, 3], g)
-        for i in range(n_outputs)
-    }
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
-                       **kwargs)
+    outs = {i: add_actgrad_tensor(f"out{i}", [1, 2, 3], g) for i in range(n_outputs)}
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args, **kwargs)
     op_assertions(op, ins, outs)
 
 
-def binary_op_tester(op_name: str,
-                     g: _ir.Graph,
-                     inplace: bool = False,
-                     connected: bool = False,
-                     *args,
-                     **kwargs):
+def binary_op_tester(
+    op_name: str,
+    g: _ir.Graph,
+    inplace: bool = False,
+    connected: bool = False,
+    *args,
+    **kwargs,
+):
     """Helper to test binary ops
 
     Args:
@@ -55,17 +55,18 @@ def binary_op_tester(op_name: str,
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0, 1: in1}
     outs = {0: out0}
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
-                       **kwargs)
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args, **kwargs)
     op_assertions(op, ins, outs)
 
 
-def ternary_op_tester(op_name: str,
-                      g: _ir.Graph,
-                      inplace: bool = False,
-                      connected: bool = False,
-                      *args,
-                      **kwargs):
+def ternary_op_tester(
+    op_name: str,
+    g: _ir.Graph,
+    inplace: bool = False,
+    connected: bool = False,
+    *args,
+    **kwargs,
+):
     """Helper to test ternary ops
 
     Args:
@@ -81,13 +82,11 @@ def ternary_op_tester(op_name: str,
     out0 = add_actgrad_tensor("out0", [1, 2, 3], g)
     ins = {0: in0, 1: in1, 2: in2}
     outs = {0: out0}
-    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args,
-                       **kwargs)
+    op = create_new_op(ins, outs, op_name, g, inplace, connected, *args, **kwargs)
     op_assertions(op, ins, outs)
 
 
-def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"],
-                  outs: Dict[int, "_ir.Tensor"]):
+def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"], outs: Dict[int, "_ir.Tensor"]):
     """
     Assert that the operators has proper input, output and no call graphs.
 
@@ -110,15 +109,36 @@ def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"],
 
 @pytest.mark.parametrize("connected", [True, False])
 # yapf: disable, pylint: disable-all
-@pytest.mark.parametrize("op_name,inplace,kwargs",
-[
-("DynamicUpdateOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False, "updateInInfo_": _ir.TensorInfo()}),
-("DynamicUpdateInplaceOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False, "updateInInfo_": _ir.TensorInfo()}),
-("WhereOp", False, {}),
-])
+@pytest.mark.parametrize(
+    "op_name,inplace,kwargs",
+    [
+        (
+            "DynamicUpdateOp",
+            False,
+            {
+                "axes_": [0],
+                "sizes_": [1],
+                "noOverlap_": False,
+                "updateInInfo_": _ir.TensorInfo(),
+            },
+        ),
+        (
+            "DynamicUpdateInplaceOp",
+            False,
+            {
+                "axes_": [0],
+                "sizes_": [1],
+                "noOverlap_": False,
+                "updateInInfo_": _ir.TensorInfo(),
+            },
+        ),
+        ("WhereOp", False, {}),
+    ],
+)
 # yapf: enable, pylint: enable-all
-def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
-                     kwargs: Dict[str, Any]) -> None:
+def test_ternary_ops(
+    connected: bool, inplace: bool, op_name: str, kwargs: Dict[str, Any]
+) -> None:
     """Test unary (3 in, 1 out) ops
 
     Args:
@@ -135,30 +155,34 @@ def test_ternary_ops(connected: bool, inplace: bool, op_name: str,
 
 # yapf mangles these param lists
 # yapf: disable, pylint: disable-all
-@pytest.mark.parametrize("op_name,inplace,kwargs",
-[("AddOp", False, {}),
-("MulOp", False, {}),
-("DivOp", False, {}),
-("EqualOp", False, {}),
-("AndOp", False, {}),
-("NotOp", False, {}),
-("PowOp", False, {}),
-("OrOp", False, {}),
-("SumOp", False, {}),
-("DynamicSliceOp", False, {"axes_":[0], "sizes_":[1], "noOverlap_":False}),
-("AddLhsInplaceOp", True, {}),
-("AddRhsInplaceOp", True, {}),
-("MulLhsInplaceOp", True, {}),
-("MulRhsInplaceOp", True, {}),
-("PowLhsInplaceOp", True, {}),
-("CopyVarUpdateOp", True, {}),
-("ScaledAddOp", False, {"scale_0_": 0.9, "scale_1_": 0.1}),
-("ScaledAddLhsInplaceOp", True, {"scale_0_": 0.9, "scale_1_": 0.1}),
-])
+@pytest.mark.parametrize(
+    "op_name,inplace,kwargs",
+    [
+        ("AddOp", False, {}),
+        ("MulOp", False, {}),
+        ("DivOp", False, {}),
+        ("EqualOp", False, {}),
+        ("AndOp", False, {}),
+        ("NotOp", False, {}),
+        ("PowOp", False, {}),
+        ("OrOp", False, {}),
+        ("SumOp", False, {}),
+        ("DynamicSliceOp", False, {"axes_": [0], "sizes_": [1], "noOverlap_": False}),
+        ("AddLhsInplaceOp", True, {}),
+        ("AddRhsInplaceOp", True, {}),
+        ("MulLhsInplaceOp", True, {}),
+        ("MulRhsInplaceOp", True, {}),
+        ("PowLhsInplaceOp", True, {}),
+        ("CopyVarUpdateOp", True, {}),
+        ("ScaledAddOp", False, {"scale_0_": 0.9, "scale_1_": 0.1}),
+        ("ScaledAddLhsInplaceOp", True, {"scale_0_": 0.9, "scale_1_": 0.1}),
+    ],
+)
 # yapf: enable, pylint: enable-all
 @pytest.mark.parametrize("connected", [True, False])
-def test_binary_ops(op_name: str, inplace: bool, connected: bool,
-                    kwargs: Dict[str, Any]) -> None:
+def test_binary_ops(
+    op_name: str, inplace: bool, connected: bool, kwargs: Dict[str, Any]
+) -> None:
     """Test binary (2 in, 1 out) ops
 
     Args:
@@ -175,49 +199,98 @@ def test_binary_ops(op_name: str, inplace: bool, connected: bool,
 
 @pytest.mark.parametrize("connected", [True, False])
 # yapf: disable, pylint: disable-all
-@pytest.mark.parametrize("op_name,kwargs,n_outputs",
-[
-("HostLoadOp", {"sid_": "streamTensor"}, 1),
-("ReluOp", {}, 1),
-("ReluInplaceOp", {}, 1),
-("GeluOp", {}, 1),
-("GeluInplaceOp", {}, 1),
-("TransposeOp", {"perm_": [0, 2, 1]}, 1),
-("SliceOp", {"starts_":[1], "ends_":[3], "steps_":[1], "axes_":[0]}, 1),
-("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}, 1),
-("NegateOp", {}, 1),
-("TanhOp", {}, 1),
-("NotOp", {}, 1),
-("SoftmaxOp", {"axis_": 0}, 1),
-("SplitOp", {"axis_": 0,"split_": [1]}, 1),
-("CastOp", {"_to": _ir.DataType.FLOAT}, 1),
-("DetachOp", {}, 1),
-("DropoutOp", {"ratio_": 0.7}, 1),
-("RandomUniformOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "low_": 0.0, "high_": 1.0}, 1),
-("RandomNormalOp", {"shape_": (2,3), "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),  "mean_": 0.0, "scale_": 1.0}, 1),
-("VarUpdateOp", {}, 1),
-("VarUpdateWithUpdaterOp", {}, 1),
-("IncrementModOp", {"increment_": 1, "modulus_": 3}, 1),
-("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}, 1),
-("ReplicatedAllReduceOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()}, 1),
-("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": False}, 1),
-("ReplicatedReduceScatterOp", {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup(), "configureOutputForReplicatedTensorSharding": True}, 1),
-("ReduceL1Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceL2Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceLogSumExpOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceMaxOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceMeanOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceMedianOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 2),
-("ReduceMinOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceProdOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-("ReduceSumSquareOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
-])
+@pytest.mark.parametrize(
+    "op_name,kwargs,n_outputs",
+    [
+        ("HostLoadOp", {"sid_": "streamTensor"}, 1),
+        ("ReluOp", {}, 1),
+        ("ReluInplaceOp", {}, 1),
+        ("GeluOp", {}, 1),
+        ("GeluInplaceOp", {}, 1),
+        ("TransposeOp", {"perm_": [0, 2, 1]}, 1),
+        ("SliceOp", {"starts_": [1], "ends_": [3], "steps_": [1], "axes_": [0]}, 1),
+        ("ReshapeOp", {"s": [3, 1, 2], "handleZero": False}, 1),
+        ("NegateOp", {}, 1),
+        ("TanhOp", {}, 1),
+        ("NotOp", {}, 1),
+        ("SoftmaxOp", {"axis_": 0}, 1),
+        ("SplitOp", {"axis_": 0, "split_": [1]}, 1),
+        ("CastOp", {"_to": _ir.DataType.FLOAT}, 1),
+        ("DetachOp", {}, 1),
+        ("DropoutOp", {"ratio_": 0.7}, 1),
+        (
+            "RandomUniformOp",
+            {
+                "shape_": (2, 3),
+                "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),
+                "low_": 0.0,
+                "high_": 1.0,
+            },
+            1,
+        ),
+        (
+            "RandomNormalOp",
+            {
+                "shape_": (2, 3),
+                "dataType_": _ir.OptionalDataType(_ir.DataType.FLOAT),
+                "mean_": 0.0,
+                "scale_": 1.0,
+            },
+            1,
+        ),
+        ("VarUpdateOp", {}, 1),
+        ("VarUpdateWithUpdaterOp", {}, 1),
+        ("IncrementModOp", {"increment_": 1, "modulus_": 3}, 1),
+        ("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}, 1),
+        (
+            "ReplicatedAllReduceOp",
+            {"op": _ir.CollectiveOperator.Add, "group": _ir.CommGroup()},
+            1,
+        ),
+        (
+            "ReplicatedReduceScatterOp",
+            {
+                "op": _ir.CollectiveOperator.Add,
+                "group": _ir.CommGroup(),
+                "configureOutputForReplicatedTensorSharding": False,
+            },
+            1,
+        ),
+        (
+            "ReplicatedReduceScatterOp",
+            {
+                "op": _ir.CollectiveOperator.Add,
+                "group": _ir.CommGroup(),
+                "configureOutputForReplicatedTensorSharding": True,
+            },
+            1,
+        ),
+        ("ReduceL1Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceL2Op", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceLogSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        (
+            "ReduceLogSumExpOp",
+            {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True},
+            1,
+        ),
+        ("ReduceMaxOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceMeanOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceMedianOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 2),
+        ("ReduceMinOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceProdOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        ("ReduceSumOp", {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True}, 1),
+        (
+            "ReduceSumSquareOp",
+            {"axes": _ir.OptionalInt64Vector([0]), "keepdims": True},
+            1,
+        ),
+    ],
+)
 # yapf: enable, pylint: enable-all
-def test_unary_ops(connected: bool, op_name: str, kwargs: Dict[str, Any],
-                   n_outputs: int) -> None:
+def test_unary_ops(
+    connected: bool, op_name: str, kwargs: Dict[str, Any], n_outputs: int
+) -> None:
     """Test unary (1 in, 1 out) ops
 
     Args:
@@ -229,8 +302,7 @@ def test_unary_ops(connected: bool, op_name: str, kwargs: Dict[str, Any],
     """
     _, graphs = create_ir()
     g = graphs[0]
-    unary_op_tester(op_name, g, "Inplace" in op_name, connected, n_outputs,
-                    **kwargs)
+    unary_op_tester(op_name, g, "Inplace" in op_name, connected, n_outputs, **kwargs)
 
 
 @pytest.mark.parametrize("connected", [True, False])
@@ -256,8 +328,9 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
         tensor_in_map[1] = offset.id
 
     # Set the remote buffer info
-    ir.setRemoteBufferInfo(remote_buffer_id,
-                           _ir.RemoteBufferInfo(t.info, remote_buffer_id))
+    ir.setRemoteBufferInfo(
+        remote_buffer_id, _ir.RemoteBufferInfo(t.info, remote_buffer_id)
+    )
 
     # Test that the ops are working with the remote buffer info set
     op = create_remote_store_op(g, connected, tensor_in_map, attributes)
@@ -275,8 +348,11 @@ def test_remote_store_op(connected: bool, use_offset: bool) -> None:
 
 
 def create_remote_store_op(
-        g: _ir.Graph, connected: bool, tensor_in_map: Dict[int, str],
-        attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int]) -> Any:
+    g: _ir.Graph,
+    connected: bool,
+    tensor_in_map: Dict[int, str],
+    attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int],
+) -> Any:
     """Setup and return a remote store op.
 
     Args:
@@ -302,8 +378,7 @@ def create_remote_store_op(
 @pytest.mark.parametrize("connected", [True, False])
 @pytest.mark.parametrize("use_offset", [True, False])
 @pytest.mark.parametrize("inplace", [True, False])
-def test_remote_load_op(connected: bool, use_offset: bool,
-                        inplace: bool) -> None:
+def test_remote_load_op(connected: bool, use_offset: bool, inplace: bool) -> None:
     """Test that the input and output tensors of remote load op are correct.
 
     Args:
@@ -325,14 +400,16 @@ def test_remote_load_op(connected: bool, use_offset: bool,
         tensor_in_map[1] = offset.id
 
     # Set the remote buffer info
-    ir.setRemoteBufferInfo(remote_buffer_id,
-                           _ir.RemoteBufferInfo(t.info, remote_buffer_id))
+    ir.setRemoteBufferInfo(
+        remote_buffer_id, _ir.RemoteBufferInfo(t.info, remote_buffer_id)
+    )
 
     # Test that the ops are working with the remote buffer info set
     output = add_actgrad_tensor("output", [1, 2, 3], g)
     tensor_out_map = {0: output.id}
-    op = create_remote_load_op(g, connected, inplace, tensor_in_map,
-                               tensor_out_map, attributes)
+    op = create_remote_load_op(
+        g, connected, inplace, tensor_in_map, tensor_out_map, attributes
+    )
 
     assert op.hasInput(0)
     assert op.inTensor(0) == t
@@ -348,9 +425,13 @@ def test_remote_load_op(connected: bool, use_offset: bool,
 
 
 def create_remote_load_op(
-        g: _ir.Graph, connected: bool, inplace: bool,
-        tensor_in_map: Dict[int, str], tensor_out_map: Dict[int, str],
-        attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int]) -> Any:
+    g: _ir.Graph,
+    connected: bool,
+    inplace: bool,
+    tensor_in_map: Dict[int, str],
+    tensor_out_map: Dict[int, str],
+    attributes: Tuple[_ir.OperatorIdentifier, _ir.Settings, int],
+) -> Any:
     """Setup and return a remote load op.
 
     Args:
@@ -364,8 +445,14 @@ def create_remote_load_op(
     Returns:
         Any: The op
     """
-    opCreator = g.createOp_RemoteLoadOp if not inplace else g.createOp_RemoteLoadInplaceOp
-    connectedOpCreator = g.createConnectedOp_RemoteLoadOp if not inplace else g.createConnectedOp_RemoteLoadInplaceOp
+    opCreator = (
+        g.createOp_RemoteLoadOp if not inplace else g.createOp_RemoteLoadInplaceOp
+    )
+    connectedOpCreator = (
+        g.createConnectedOp_RemoteLoadOp
+        if not inplace
+        else g.createConnectedOp_RemoteLoadInplaceOp
+    )
 
     if connected:
         op = connectedOpCreator(tensor_in_map, tensor_out_map, *attributes)
@@ -394,8 +481,9 @@ def test_host_store_op(connected: bool) -> None:
     opid = _ir.OperatorIdentifier("ai.onnx", "Init", 1, _ir.NumInputs(0, 0), 1)
     settings = _ir.Settings(g, "new_settings")
     if connected:
-        op = g.createConnectedOp_HostStoreOp({0: in0.id}, {}, opid, settings,
-                                             "streamTensor")
+        op = g.createConnectedOp_HostStoreOp(
+            {0: in0.id}, {}, opid, settings, "streamTensor"
+        )
     else:
         op = g.createOp_HostStoreOp(opid, settings, "streamTensor")
         op.connectInTensor(0, in0.id)
@@ -421,12 +509,12 @@ def test_ipu_copy_op(source: int, destination: int, connected: bool) -> None:
     _, graphs = create_ir()
     g = graphs[0]
     in0 = add_actgrad_tensor("in0", [1, 2, 3], g)
-    opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1,
-                                  _ir.NumInputs(0, 0), 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "IpuCopy", 1, _ir.NumInputs(0, 0), 1)
     settings = _ir.Settings(g, "new_settings")
     if connected:
-        op = g.createConnectedOp_IpuCopyOp({0: in0.id}, {0: "outId"}, opid,
-                                           source, destination, settings)
+        op = g.createConnectedOp_IpuCopyOp(
+            {0: in0.id}, {0: "outId"}, opid, source, destination, settings
+        )
         op.setup()
     else:
         op = g.createOp_IpuCopyOp(opid, destination, settings)
@@ -461,12 +549,13 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
     opid = _ir.OperatorIdentifier("ai.onnx", "Init", 1, _ir.NumInputs(0, 0), 1)
     settings = _ir.Settings(g, "new_settings")
     if connected:
-        op = g.createConnectedOp_InitOp({}, {0: out0.id}, opid, out0.info,
-                                        out0.tensorType(), init_type, settings,
-                                        0)
+        op = g.createConnectedOp_InitOp(
+            {}, {0: out0.id}, opid, out0.info, out0.tensorType(), init_type, settings, 0
+        )
     else:
-        op = g.createOp_InitOp(opid, out0.info, out0.tensorType(), init_type,
-                               settings, 0)
+        op = g.createOp_InitOp(
+            opid, out0.info, out0.tensorType(), init_type, settings, 0
+        )
         op.connectOutTensor(0, out0.id)
         op.setup()
     assert not op.hasInput(0)
@@ -475,18 +564,25 @@ def test_init_op(init_type: "_ir.InitType", connected: bool):
     assert op.outId(0) == out0.id
 
 
-@pytest.mark.parametrize("serialise_mode,serialise_factor",
-                         [(_ir.op.SerialiseSettingsMode.NoSerialisation, 0),
-                          (_ir.op.SerialiseSettingsMode.InputChannels, 2),
-                          (_ir.op.SerialiseSettingsMode.ReducingDim, 2),
-                          (_ir.op.SerialiseSettingsMode.OutputChannels, 2)])
 @pytest.mark.parametrize(
-    "partials_type",
-    [_ir.op.MatMulPartialsType.FLOAT, _ir.op.MatMulPartialsType.HALF])
+    "serialise_mode,serialise_factor",
+    [
+        (_ir.op.SerialiseSettingsMode.NoSerialisation, 0),
+        (_ir.op.SerialiseSettingsMode.InputChannels, 2),
+        (_ir.op.SerialiseSettingsMode.ReducingDim, 2),
+        (_ir.op.SerialiseSettingsMode.OutputChannels, 2),
+    ],
+)
+@pytest.mark.parametrize(
+    "partials_type", [_ir.op.MatMulPartialsType.FLOAT, _ir.op.MatMulPartialsType.HALF]
+)
 @pytest.mark.parametrize("connected", [True, False])
-def test_matmul_op(serialise_mode: _ir.op.SerialiseSettingsMode,
-                   serialise_factor: int,
-                   partials_type: _ir.op.MatMulPartialsType, connected: bool):
+def test_matmul_op(
+    serialise_mode: _ir.op.SerialiseSettingsMode,
+    serialise_factor: int,
+    partials_type: _ir.op.MatMulPartialsType,
+    connected: bool,
+):
     """Test the bindings for matmul op, a special case op with extra settings.
 
     Args:
@@ -501,8 +597,7 @@ def test_matmul_op(serialise_mode: _ir.op.SerialiseSettingsMode,
     in0 = add_actgrad_tensor("in0", [4, 6], g)
     in1 = add_actgrad_tensor("in1", [6, 12], g)
     out0 = add_actgrad_tensor("out0", [4, 12], g)
-    opid = _ir.OperatorIdentifier("ai.onnx", "MatMul", 1, _ir.NumInputs(2, 2),
-                                  1)
+    opid = _ir.OperatorIdentifier("ai.onnx", "MatMul", 1, _ir.NumInputs(2, 2), 1)
     serialise_settings = _ir.op.SerialiseSettings()
     serialise_settings.mode = serialise_mode
     serialise_settings.factor = serialise_factor
@@ -511,15 +606,21 @@ def test_matmul_op(serialise_mode: _ir.op.SerialiseSettingsMode,
     dtype = _ir.OptionalDataType(_ir.DataType.FLOAT)
 
     if connected:
-        op = g.createConnectedOp_MatMulOp({
-            0: in0.id,
-            1: in1.id
-        }, {0: out0.id}, opid, settings, optfloat, serialise_settings, dtype,
-                                          partials_type)
+        op = g.createConnectedOp_MatMulOp(
+            {0: in0.id, 1: in1.id},
+            {0: out0.id},
+            opid,
+            settings,
+            optfloat,
+            serialise_settings,
+            dtype,
+            partials_type,
+        )
         return
 
-    op = g.createOp_MatMulOp(opid, settings, optfloat, serialise_settings,
-                             dtype, partials_type)
+    op = g.createOp_MatMulOp(
+        opid, settings, optfloat, serialise_settings, dtype, partials_type
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, in1.id)
     op.connectOutTensor(0, out0.id)
@@ -554,8 +655,7 @@ def test_call_op(connected: bool):
     if connected:
         ins: Dict[int, str] = {0: in0.id}
         outs: Dict[int, str] = {0: out0.id}
-        op = main.createConnectedOp_CallOp(ins, outs, opid, sub_graph,
-                                           settings)
+        op = main.createConnectedOp_CallOp(ins, outs, opid, sub_graph, settings)
     else:
         op = main.createOp_CallOp(opid, sub_graph, settings)
         op.connectInTensor(0, in0.id)
@@ -567,16 +667,15 @@ def test_call_op(connected: bool):
 
 
 def test_loop_op():
-    """Test setting up the loop op.
-    """
+    """Test setting up the loop op."""
     _, graphs = create_ir(["sub_graph"])  # main graph and 'sub_graph'
     main = graphs[0]
     sub_graph = graphs[1]
     num_inputs = _ir.NumInputs(2, 2)
-    main.addConstInit("loopcount", _ir.TensorInfo(_ir.DataType.INT64, []),
-                      np.array(10))
-    main.addConstInit("keepgoing", _ir.TensorInfo(_ir.DataType.BOOL, []),
-                      np.array(True))
+    main.addConstInit("loopcount", _ir.TensorInfo(_ir.DataType.INT64, []), np.array(10))
+    main.addConstInit(
+        "keepgoing", _ir.TensorInfo(_ir.DataType.BOOL, []), np.array(True)
+    )
     a = add_actgrad_tensor("a", [1, 2, 3], main, _ir.DataType.FLOAT)
     b = add_actgrad_tensor("b", [1, 2, 3], main, _ir.DataType.FLOAT)
 
@@ -590,10 +689,7 @@ def test_loop_op():
     settings = _ir.Settings(main, "new_settings")
 
     add = sub_graph.createConnectedOp_AddOp(
-        {
-            0: a.id,
-            1: b.id
-        },
+        {0: a.id, 1: b.id},
         {0: "out"},
         _ir.OperatorIdentifier("ai.onnx", "Add", 1, num_inputs, 1),
         settings,
@@ -609,14 +705,15 @@ def test_loop_op():
     assert op.getCalledGraphIds()[0] == "sub_graph"
 
 
-@pytest.mark.parametrize("reduction", [
-    _ir.ReductionType.Mean, _ir.ReductionType.Sum,
-    _ir.ReductionType.NoReduction
-])
+@pytest.mark.parametrize(
+    "reduction",
+    [_ir.ReductionType.Mean, _ir.ReductionType.Sum, _ir.ReductionType.NoReduction],
+)
 @pytest.mark.parametrize("ignoreIndex", [0, 1, 2])
 @pytest.mark.parametrize("connected", [True, False])
-def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
-                connected: bool) -> None:
+def test_nll_op(
+    reduction: _ir.ReductionType, ignoreIndex: int, connected: bool
+) -> None:
     """Test the Nll Op, special case with unusual arguments.
 
     Args:
@@ -651,14 +748,16 @@ def test_nll_op(reduction: _ir.ReductionType, ignoreIndex: int,
             reduction=_ir.ReductionType.Mean,
             inputIsLogProbability=True,
             opid=opid,
-            settings=settings)
+            settings=settings,
+        )
         return
     op = main.createOp_NllOp(
         opid=opid,
         ignoreIndex=_ir.OptionalInt(ignoreIndex),  # <- Note this
         reduction=_ir.ReductionType.Mean,
         inputIsLogProbability=True,
-        settings=settings)
+        settings=settings,
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, l.id)
     op.connectOutTensor(0, out0.id)
@@ -677,8 +776,7 @@ def test_gather_op(connected: bool) -> None:
     main = graphs[0]
     num_inputs = _ir.NumInputs(2, 2)
     in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
-    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4],
-                                main)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4], main)
     out0 = add_actgrad_tensor("out0", [8, 4], main)
 
     opid = _ir.OperatorIdentifier("ai.graphcore", "Gather", 11, num_inputs, 1)
@@ -693,7 +791,8 @@ def test_gather_op(connected: bool) -> None:
             axis_=0,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
             zeroOutOfRangeIndices_=False,
-            settings=settings)
+            settings=settings,
+        )
 
         op.setup()
         return
@@ -702,7 +801,8 @@ def test_gather_op(connected: bool) -> None:
         axis_=0,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
         zeroOutOfRangeIndices_=False,
-        settings=settings)
+        settings=settings,
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)
     op.connectOutTensor(0, out0.id)
@@ -721,8 +821,7 @@ def test_tiedgather_op(connected: bool) -> None:
     main = graphs[0]
     num_inputs = _ir.NumInputs(2, 2)
     in0 = add_actgrad_tensor("in0", [8], main, _ir.DataType.INT32)
-    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4],
-                                main)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [16, 4], main)
     out0 = add_actgrad_tensor("out0", [8, 4], main)
 
     settings = _ir.Settings(main, "tiedgather")
@@ -735,14 +834,16 @@ def test_tiedgather_op(connected: bool) -> None:
             axis_=0,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
             zeroOutOfRangeIndices_=True,
-            settings=settings)
+            settings=settings,
+        )
         op.setup()
         return
     op = main.createOp_TiedGatherOp(
         axis_=0,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
         zeroOutOfRangeIndices_=True,
-        settings=settings)
+        settings=settings,
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)
     op.connectOutTensor(0, out0.id)
@@ -761,8 +862,7 @@ def test_scatter_op(connected: bool) -> None:
     main = graphs[0]
     num_inputs = _ir.NumInputs(3, 3)
     in0 = add_actgrad_tensor("in0", [3, 3], main, _ir.DataType.INT32)
-    indices = add_random_tensor("indices", _ir.TensorType.Variable, [2, 3],
-                                main)
+    indices = add_random_tensor("indices", _ir.TensorType.Variable, [2, 3], main)
     updates = add_actgrad_tensor("updates", [2, 3], main, _ir.DataType.INT32)
     out0 = add_actgrad_tensor("out0", [3, 3], main)
 
@@ -777,14 +877,16 @@ def test_scatter_op(connected: bool) -> None:
             axis_=0,
             opid=opid,
             available_memory_proportion_=_ir.OptionalFloat(0.4),
-            settings=settings)
+            settings=settings,
+        )
         op.setup()
         return
     op = main.createOp_ScatterOp(
         axis_=0,
         opid=opid,
         available_memory_proportion_=_ir.OptionalFloat(0.4),
-        settings=settings)
+        settings=settings,
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, indices.id)
     op.connectInTensor(2, updates.id)
@@ -812,24 +914,26 @@ def test_group_norm_op(connected: bool, num_groups: int) -> None:
     mean = add_actgrad_tensor("mean", [8 * num_groups], main)
     invstddev = add_actgrad_tensor("invstddev", [8 * num_groups], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "GroupNormalization", 1,
-                                  num_inputs, 3)
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "GroupNormalization", 1, num_inputs, 3
+    )
     settings = _ir.Settings(main, "nll")
 
     if connected:
         ins: Dict[int, str] = {0: in0.id, 1: weight.id, 2: bias.id}
         outs: Dict[int, str] = {0: out.id, 1: mean.id, 2: invstddev.id}
-        op = main.createConnectedOp_GroupNormOp(ins,
-                                                outs,
-                                                opid=opid,
-                                                num_groups_=num_groups,
-                                                epsilon_=1e-5,
-                                                settings=settings)
+        op = main.createConnectedOp_GroupNormOp(
+            ins,
+            outs,
+            opid=opid,
+            num_groups_=num_groups,
+            epsilon_=1e-5,
+            settings=settings,
+        )
         return
-    op = main.createOp_GroupNormOp(opid=opid,
-                                   num_groups_=num_groups,
-                                   epsilon_=1e-5,
-                                   settings=settings)
+    op = main.createOp_GroupNormOp(
+        opid=opid, num_groups_=num_groups, epsilon_=1e-5, settings=settings
+    )
     op.connectInTensor(0, in0.id)
     op.connectInTensor(1, weight.id)
     op.connectInTensor(2, bias.id)
@@ -855,8 +959,7 @@ def test_accumulate_base_op(connected: bool) -> None:
     factor = add_actgrad_tensor("factor", [4], main)
     out = add_actgrad_tensor("updated_weight", [4], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulateBaseOp", 1,
-                                  num_inputs, 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulateBaseOp", 1, num_inputs, 1)
     settings = _ir.Settings(main, "AccumulateBaseOp")
 
     if connected:
@@ -865,17 +968,22 @@ def test_accumulate_base_op(connected: bool) -> None:
         op = main.createConnectedOp_AccumulateBaseOp(
             ins,
             outs,
-            _ir.OperatorIdentifier("ai.graphcore", "AccumulateBaseOp", 1,
-                                   _ir.NumInputs(1, 1), 1),
+            _ir.OperatorIdentifier(
+                "ai.graphcore", "AccumulateBaseOp", 1, _ir.NumInputs(1, 1), 1
+            ),
             _ir.AccumulationType.Add,
             _ir.OptimizerValue(0.5),
-            settings=settings)
+            settings=settings,
+        )
         return
-    op = main.createOp_AccumulateBaseOp(_ir.OperatorIdentifier(
-        "ai.graphcore", "AccumulateBaseOp", 1, _ir.NumInputs(1, 1), 1),
-                                        _ir.AccumulationType.Add,
-                                        _ir.OptimizerValue(0.5),
-                                        settings=settings)
+    op = main.createOp_AccumulateBaseOp(
+        _ir.OperatorIdentifier(
+            "ai.graphcore", "AccumulateBaseOp", 1, _ir.NumInputs(1, 1), 1
+        ),
+        _ir.AccumulationType.Add,
+        _ir.OptimizerValue(0.5),
+        settings=settings,
+    )
     op.connectInTensor(0, input_.id)
     op.connectInTensor(1, updater.id)
     op.connectInTensor(2, factor.id)
@@ -898,22 +1006,23 @@ def test_accumulate_op(connected: bool) -> None:
     grad = add_actgrad_tensor("grad", [4], main)
     out = add_actgrad_tensor("updated_weight", [4], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Accumulate", 1, num_inputs,
-                                  1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Accumulate", 1, num_inputs, 1)
     settings = _ir.Settings(main, "accumulate")
 
     if connected:
         ins: Dict[int, str] = {0: weight.id, 1: grad.id}
         outs: Dict[int, str] = {0: out.id}
-        op = main.createConnectedOp_AccumulateOp(ins,
-                                                 outs,
-                                                 _ir.AccumulationType.Add,
-                                                 _ir.OptimizerValue(0.5),
-                                                 settings=settings)
+        op = main.createConnectedOp_AccumulateOp(
+            ins,
+            outs,
+            _ir.AccumulationType.Add,
+            _ir.OptimizerValue(0.5),
+            settings=settings,
+        )
         return
-    op = main.createOp_AccumulateOp(_ir.AccumulationType.Add,
-                                    _ir.OptimizerValue(0.5),
-                                    settings=settings)
+    op = main.createOp_AccumulateOp(
+        _ir.AccumulationType.Add, _ir.OptimizerValue(0.5), settings=settings
+    )
     op.connectInTensor(0, weight.id)
     op.connectInTensor(1, grad.id)
     op.connectOutTensor(0, out.id)
@@ -935,12 +1044,10 @@ def test_sparse_accumulate_op(connected: bool) -> None:
     updater = add_actgrad_tensor("updater", [4], main)
     factor = add_actgrad_tensor("factor", [4], main)
     indices = add_actgrad_tensor("indices", [4], main)
-    original_var = add_random_tensor("original_var", _ir.TensorType.Variable,
-                                     [4], main)
+    original_var = add_random_tensor("original_var", _ir.TensorType.Variable, [4], main)
     out = add_actgrad_tensor("updated_weight", [4], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "SparseAccumulate", 1,
-                                  num_inputs, 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "SparseAccumulate", 1, num_inputs, 1)
     settings = _ir.Settings(main, "SparseAccumulate")
 
     if connected:
@@ -949,7 +1056,7 @@ def test_sparse_accumulate_op(connected: bool) -> None:
             1: updater.id,
             2: factor.id,
             3: indices.id,
-            4: original_var.id
+            4: original_var.id,
         }
         outs: Dict[int, str] = {0: out.id}
         op = main.createConnectedOp_SparseAccumulateOp(
@@ -958,12 +1065,12 @@ def test_sparse_accumulate_op(connected: bool) -> None:
             _ir.AccumulationType.Add,
             _ir.OptimizerValue(0.5),
             0,
-            settings=settings)
+            settings=settings,
+        )
         return
-    op = main.createOp_SparseAccumulateOp(_ir.AccumulationType.Add,
-                                          _ir.OptimizerValue(0.5),
-                                          0,
-                                          settings=settings)
+    op = main.createOp_SparseAccumulateOp(
+        _ir.AccumulationType.Add, _ir.OptimizerValue(0.5), 0, settings=settings
+    )
     op.connectInTensor(0, input_.id)
     op.connectInTensor(1, updater.id)
     op.connectInTensor(2, factor.id)
@@ -998,13 +1105,11 @@ def test_accumulate_scale_op(connected: bool) -> None:
             2: factor.id,
         }
         outs: Dict[int, str] = {0: out.id}
-        op = main.createConnectedOp_AccumulatorScaleOp(ins,
-                                                       outs,
-                                                       _ir.OptimizerValue(0.5),
-                                                       settings=settings)
+        op = main.createConnectedOp_AccumulatorScaleOp(
+            ins, outs, _ir.OptimizerValue(0.5), settings=settings
+        )
         return
-    op = main.createOp_AccumulatorScaleOp(_ir.OptimizerValue(0.5),
-                                          settings=settings)
+    op = main.createOp_AccumulatorScaleOp(_ir.OptimizerValue(0.5), settings=settings)
     op.connectInTensor(0, input_.id)
     op.connectInTensor(1, updater.id)
     op.connectInTensor(2, factor.id)
@@ -1028,16 +1133,13 @@ def test_accumulate_zero_op(connected: bool) -> None:
     factor = add_actgrad_tensor("factor", [4], main)
     out = add_actgrad_tensor("updated_weight", [4], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulatorZeroOp", 1,
-                                  num_inputs, 1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AccumulatorZeroOp", 1, num_inputs, 1)
     settings = _ir.Settings(main, "AccumulatorZeroOp")
 
     if connected:
         ins: Dict[int, str] = {0: input_.id, 1: updater.id, 2: factor.id}
         outs: Dict[int, str] = {0: out.id}
-        op = main.createConnectedOp_AccumulatorZeroOp(ins,
-                                                      outs,
-                                                      settings=settings)
+        op = main.createConnectedOp_AccumulatorZeroOp(ins, outs, settings=settings)
         return
     op = main.createOp_AccumulatorZeroOp(settings=settings)
     op.connectInTensor(0, input_.id)
@@ -1050,8 +1152,7 @@ def test_accumulate_zero_op(connected: bool) -> None:
 @pytest.mark.parametrize("connected", [True, False])
 @pytest.mark.parametrize("const_lr", [True, False])
 @pytest.mark.parametrize("const_mwn", [True, False])
-def test_adam_var_update_op(connected: bool, const_lr: bool,
-                            const_mwn: bool) -> None:
+def test_adam_var_update_op(connected: bool, const_lr: bool, const_mwn: bool) -> None:
     """Test the AdamVarUpdate Op.
 
     Args:
@@ -1071,11 +1172,7 @@ def test_adam_var_update_op(connected: bool, const_lr: bool,
     out = add_actgrad_tensor("updated_weight", [4], main)
 
     settings = _ir.Settings(main, "adam_var_update")
-    ins: Dict[int, str] = {
-        0: weight.id,
-        2: lamb_r1_square.id,
-        3: lamb_r2_square.id
-    }
+    ins: Dict[int, str] = {0: weight.id, 2: lamb_r1_square.id, 3: lamb_r2_square.id}
     if not const_lr:
         learning_rate = add_actgrad_tensor("learning_rate", [1], main)
         ins[4] = learning_rate.id
@@ -1086,15 +1183,17 @@ def test_adam_var_update_op(connected: bool, const_lr: bool,
     if connected:
         ins,
         outs: Dict[int, str] = {0: out.id}
-        op = main.createConnectedOp_AdamVarUpdateOp(ins,
-                                                    outs,
-                                                    _ir.OptimizerValue(0.1),
-                                                    _ir.OptimizerValue(0.5),
-                                                    settings=settings)
+        op = main.createConnectedOp_AdamVarUpdateOp(
+            ins,
+            outs,
+            _ir.OptimizerValue(0.1),
+            _ir.OptimizerValue(0.5),
+            settings=settings,
+        )
     else:
-        op = main.createOp_AdamVarUpdateOp(_ir.OptimizerValue(0.1),
-                                           _ir.OptimizerValue(0.5),
-                                           settings=settings)
+        op = main.createOp_AdamVarUpdateOp(
+            _ir.OptimizerValue(0.1), _ir.OptimizerValue(0.5), settings=settings
+        )
         for k, v in ins.items():
             op.connectInTensor(k, v)
 
@@ -1128,8 +1227,9 @@ def test_adam_updater_op(connected: bool) -> None:
     settings = _ir.Settings(g, "new_settings")
 
     if connected:
-        op = g.createConnectedOp_AdamUpdaterOp(ins, outs, mode, wd, b1, b2,
-                                               eps, settings)
+        op = g.createConnectedOp_AdamUpdaterOp(
+            ins, outs, mode, wd, b1, b2, eps, settings
+        )
         op.setup()
         return
     op = g.createOp_AdamUpdaterOp(mode, wd, b1, b2, eps, settings)
@@ -1156,8 +1256,7 @@ def test_lambsquare_op(connected: bool) -> None:
     in_ = add_random_tensor("in_", _ir.TensorType.Variable, [4], main)
     out = add_actgrad_tensor("out", [4], main)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "LambSquare", 1, num_inputs,
-                                  1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "LambSquare", 1, num_inputs, 1)
     settings = _ir.Settings(main, "lambsquare")
 
     if connected:
@@ -1172,11 +1271,12 @@ def test_lambsquare_op(connected: bool) -> None:
 
 
 @pytest.mark.parametrize("connected", [True, False])
-@pytest.mark.parametrize(("identicalInputs", "identicalGradInputs"),
-                         [[False, False], [True, False], [False, True]])
+@pytest.mark.parametrize(
+    ("identicalInputs", "identicalGradInputs"),
+    [[False, False], [True, False], [False, True]],
+)
 def test_allreduce_op(connected, identicalInputs, identicalGradInputs) -> None:
-    """Test AllReduceOp.
-    """
+    """Test AllReduceOp."""
     _, graphs = create_ir()
     main = graphs[0]
     num_inputs = _ir.NumInputs(2, 2)
@@ -1190,22 +1290,24 @@ def test_allreduce_op(connected, identicalInputs, identicalGradInputs) -> None:
     col_op = _ir.CollectiveOperator.Add
     ipus = [0, 1]
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "AllReduceOp", 1, num_inputs,
-                                  1)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "AllReduceOp", 1, num_inputs, 1)
     settings = _ir.Settings(main, "AllReduce")
 
     if connected:
-        op = main.createConnectedOp_AllReduceOp(ins,
-                                                outs,
-                                                opid,
-                                                col_op,
-                                                ipus,
-                                                identicalInputs,
-                                                identicalGradInputs,
-                                                settings=settings)
+        op = main.createConnectedOp_AllReduceOp(
+            ins,
+            outs,
+            opid,
+            col_op,
+            ipus,
+            identicalInputs,
+            identicalGradInputs,
+            settings=settings,
+        )
     else:
-        op = main.createOp_AllReduceOp(opid, col_op, ipus, identicalInputs,
-                                       identicalGradInputs, settings)
+        op = main.createOp_AllReduceOp(
+            opid, col_op, ipus, identicalInputs, identicalGradInputs, settings
+        )
         for i, (in_, out_) in enumerate(zip(ins.values(), outs.values())):
             op.connectInTensor(i, in_)
             op.connectOutTensor(i, out_)
@@ -1214,8 +1316,7 @@ def test_allreduce_op(connected, identicalInputs, identicalGradInputs) -> None:
 
 @pytest.mark.parametrize("connected", [True, False])
 def test_codecopy_op(connected) -> None:
-    """Test CodeCopy.
-    """
+    """Test CodeCopy."""
     graphids = ["load1"]
     ir, graphs = create_ir()
     load1 = ir.createGraph(graphids[0])
@@ -1226,8 +1327,7 @@ def test_codecopy_op(connected) -> None:
     ins: Dict[int, str] = {}
     outs: Dict[int, str] = {}
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "CodeCopyOp", 0, num_inputs,
-                                  0)
+    opid = _ir.OperatorIdentifier("ai.graphcore", "CodeCopyOp", 0, num_inputs, 0)
     settings = _ir.Settings(main, "CodeCopy")
 
     if connected:
@@ -1237,10 +1337,10 @@ def test_codecopy_op(connected) -> None:
             opid,
             load1.id,
             _ir.CodeLocation.ExecutableMemory,
-            settings=settings)
+            settings=settings,
+        )
     else:
-        op = main.createOp_RemoteCodeLoadOp(opid,
-                                            load1.id,
-                                            _ir.CodeLocation.ExecutableMemory,
-                                            settings=settings)
+        op = main.createOp_RemoteCodeLoadOp(
+            opid, load1.id, _ir.CodeLocation.ExecutableMemory, settings=settings
+        )
         op.setup()

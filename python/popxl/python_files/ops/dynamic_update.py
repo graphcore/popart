@@ -7,9 +7,14 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
-                   axes: Iterable[int], sizes: Iterable[int],
-                   no_overlap: bool) -> Tensor:
+def dynamic_update(
+    t: Tensor,
+    index: Tensor,
+    t_update: Tensor,
+    axes: Iterable[int],
+    sizes: Iterable[int],
+    no_overlap: bool,
+) -> Tensor:
     """
     Update a slice of a tensor.
 
@@ -65,28 +70,37 @@ def dynamic_update(t: Tensor, index: Tensor, t_update: Tensor,
     check_in_graph(g, t=t, index=index, t_update=t_update)
     check_tensor_ipu_and_tile_set(t=t, index=index, t_update=t_update)
 
-    settings = ctx._get_op_settings('dynamicupdate')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdate", 1,
-                                  _ir.NumInputs(3, 3), 1)
+    settings = ctx._get_op_settings("dynamicupdate")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "DynamicUpdate", 1, _ir.NumInputs(3, 3), 1
+    )
     # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`
     # with `t_update`.
     # Does the user need control over this?
     settings.inferTensorMappingToFrom = {0: 2}
     op = pb_g.createConnectedOp_DynamicUpdateOp(
-        {
-            0: t.id,
-            1: index.id,
-            2: t_update.id
-        }, {0: g._create_tensor_id("dynamic_update_out")}, opid, axes, sizes,
-        no_overlap, settings, t_update._pb_tensor.info)
+        {0: t.id, 1: index.id, 2: t_update.id},
+        {0: g._create_tensor_id("dynamic_update_out")},
+        opid,
+        axes,
+        sizes,
+        no_overlap,
+        settings,
+        t_update._pb_tensor.info,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
-                    axes: Iterable[int], sizes: Iterable[int],
-                    no_overlap: bool) -> Tensor:
+def dynamic_update_(
+    t: Tensor,
+    index: Tensor,
+    t_update: Tensor,
+    axes: Iterable[int],
+    sizes: Iterable[int],
+    no_overlap: bool,
+) -> Tensor:
     """
     Update a slice of a tensor in place.
 
@@ -142,19 +156,23 @@ def dynamic_update_(t: Tensor, index: Tensor, t_update: Tensor,
     check_in_graph(g, t=t, index=index, t_update=t_update)
     check_tensor_ipu_and_tile_set(t=t, index=index, t_update=t_update)
 
-    settings = ctx._get_op_settings('dynamicupdate_inplace')
+    settings = ctx._get_op_settings("dynamicupdate_inplace")
     # This ensures that `t` is created by calling `popops::createSliceableTensorFromSlice`
     # with `t_update`.
     # Does the user need control over this?
     settings.inferTensorMappingToFrom = {0: 2}
-    opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicUpdateInplace", 1,
-                                  _ir.NumInputs(3, 3), 1)
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "DynamicUpdateInplace", 1, _ir.NumInputs(3, 3), 1
+    )
     op = pb_g.createConnectedOp_DynamicUpdateInplaceOp(
-        {
-            0: t.id,
-            1: index.id,
-            2: t_update.id
-        }, {0: g._create_tensor_id("dynamicupdateinplace_out")}, opid, axes,
-        sizes, no_overlap, settings, t_update._pb_tensor.info)
+        {0: t.id, 1: index.id, 2: t_update.id},
+        {0: g._create_tensor_id("dynamicupdateinplace_out")},
+        opid,
+        axes,
+        sizes,
+        no_overlap,
+        settings,
+        t_update._pb_tensor.info,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

@@ -5,6 +5,7 @@ import popart
 # importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -40,9 +41,7 @@ def test_pipelined_dropout():
             if do_sharding:
                 builder.virtualGraph(identity0, vgraph_num)
 
-            [dropout0] = builder.aiOnnx.dropout([identity0],
-                                                num_outputs=1,
-                                                ratio=ratio)
+            [dropout0] = builder.aiOnnx.dropout([identity0], num_outputs=1, ratio=ratio)
             if do_sharding:
                 builder.virtualGraph(dropout0, vgraph_num)
 
@@ -92,13 +91,15 @@ def test_pipelined_dropout():
             patterns = popart.Patterns(popart.PatternsLevel.Default)
             patterns.InPlace = False
 
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=dataFlow,
-                                             optimizer=popart.ConstSGD(0.1),
-                                             loss=loss,
-                                             userOptions=userOptions,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=dataFlow,
+                optimizer=popart.ConstSGD(0.1),
+                loss=loss,
+                userOptions=userOptions,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
             session.weightsFromHost()
@@ -114,22 +115,24 @@ def test_pipelined_dropout():
             # Check that none of the elements of the dropout inputs are zero
             for tid in dropoutInputs:
                 x = anchors[tid]
-                print(f'{tid}: {x}')
+                print(f"{tid}: {x}")
                 zero = np.zeros(x.shape)
-                assert not np.any(np.equal(x, zero)), \
-                       f'Some elements of dropout input {tid} are zero'
+                assert not np.any(
+                    np.equal(x, zero)
+                ), f"Some elements of dropout input {tid} are zero"
 
             print()
 
             # For each dropout, check that the masked out elements are the same
             # in the forward and backward passes.
             for fwdId, bwdId in zip(dropouts, dropoutGrads):
-                print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-                print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
+                print(f"{fwdId}:\n{np.sign(anchors[fwdId])}")
+                print(f"{bwdId}:\n{np.sign(anchors[bwdId])}")
                 lhs = np.sign(anchors[fwdId])
                 rhs = np.sign(anchors[bwdId])
-                assert np.array_equal(lhs, rhs), \
-                       f'{fwdId} and {bwdId} did not use the same dropout mask'
+                assert np.array_equal(
+                    lhs, rhs
+                ), f"{fwdId} and {bwdId} did not use the same dropout mask"
                 print()
 
             return anchors
@@ -162,9 +165,7 @@ def test_pipelined_recomputed_dropout():
         identity0 = builder.aiOnnx.identity([layer_input])
         builder.virtualGraph(identity0, vgraph_num)
 
-        [dropout0] = builder.aiOnnx.dropout([identity0],
-                                            num_outputs=1,
-                                            ratio=ratio)
+        [dropout0] = builder.aiOnnx.dropout([identity0], num_outputs=1, ratio=ratio)
         builder.virtualGraph(dropout0, vgraph_num)
 
         # the input to the forward pass dropout
@@ -215,13 +216,15 @@ def test_pipelined_recomputed_dropout():
         patterns = popart.Patterns(popart.PatternsLevel.Default)
         patterns.InPlace = False
 
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=dataFlow,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=loss,
-                                         userOptions=userOptions,
-                                         patterns=patterns,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=dataFlow,
+            optimizer=popart.ConstSGD(0.1),
+            loss=loss,
+            userOptions=userOptions,
+            patterns=patterns,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -237,20 +240,22 @@ def test_pipelined_recomputed_dropout():
         # Check that none of the elements of the dropout inputs are zero
         for tid in dropoutInputs:
             x = anchors[tid]
-            print(f'{tid}: {x}')
+            print(f"{tid}: {x}")
             zero = np.zeros(x.shape)
-            assert not np.any(np.equal(x, zero)), \
-                   f'Some elements of dropout input {tid} are zero'
+            assert not np.any(
+                np.equal(x, zero)
+            ), f"Some elements of dropout input {tid} are zero"
 
         print()
 
         # For each dropout, check that the masked out elements are the same
         # in the forward and backward passes.
         for fwdId, bwdId in zip(dropouts, dropoutGrads):
-            print(f'{fwdId}:\n{np.sign(anchors[fwdId])}')
-            print(f'{bwdId}:\n{np.sign(anchors[bwdId])}')
+            print(f"{fwdId}:\n{np.sign(anchors[fwdId])}")
+            print(f"{bwdId}:\n{np.sign(anchors[bwdId])}")
             lhs = np.sign(anchors[fwdId])
             rhs = np.sign(anchors[bwdId])
-            assert np.array_equal(lhs, rhs), \
-                   f'{fwdId} and {bwdId} did not use the same dropout mask'
+            assert np.array_equal(
+                lhs, rhs
+            ), f"{fwdId} and {bwdId} did not use the same dropout mask"
             print()

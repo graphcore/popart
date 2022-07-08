@@ -14,6 +14,7 @@
 import numpy as np
 from pathlib import Path
 import tensorflow as tf
+
 print("TensorFlow version is " + tf.__version__)
 import keras2onnx
 
@@ -53,7 +54,7 @@ def {name}(lstm_op_pattern):
 def _popart_root():
     here = Path(__file__)
     for x in reversed(here.parents):
-        if x.name == 'popart':
+        if x.name == "popart":
             return x
 
 
@@ -128,17 +129,18 @@ def _run_comparison_test(data, result, proto, expected_activations, lstm_op_patt
         for second in keras_supported_activations:
             try:
                 out += _generate_comparison_test(
-                    f"test_{first}_{second}", data, {
-                        'activation': first,
-                        'recurrent_activation': second
-                    }, [second, first, first])
+                    f"test_{first}_{second}",
+                    data,
+                    {"activation": first, "recurrent_activation": second},
+                    [second, first, first],
+                )
             except NotImplementedError:
                 pass
 
     here = Path(__file__).parent
-    out_path = here / 'keras_lstm_tests.py'
+    out_path = here / "keras_lstm_tests.py"
     out_path.write_text(out, encoding="utf-8")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

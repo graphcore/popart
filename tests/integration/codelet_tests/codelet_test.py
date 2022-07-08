@@ -7,6 +7,7 @@ import os
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -78,18 +79,17 @@ def test_codelet():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         anchors = session.initAnchorArrays()
 
         inputs = {
-            i1: np.array([1., 3.], dtype=np.float16),
-            i2: np.array([7., 8.], dtype=np.float16)
+            i1: np.array([1.0, 3.0], dtype=np.float16),
+            i2: np.array([7.0, 8.0], dtype=np.float16),
         }
         stepio = popart.PyStepIO(inputs, anchors)
 

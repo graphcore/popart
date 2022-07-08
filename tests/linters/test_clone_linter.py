@@ -1,6 +1,11 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
-from scripts.lint.linters.clone_linter import get_op_definition_start, get_closing_bracket, is_clone_signature_present, check_if_clone_is_defined
+from scripts.lint.linters.clone_linter import (
+    get_op_definition_start,
+    get_closing_bracket,
+    is_clone_signature_present,
+    check_if_clone_is_defined,
+)
 from pathlib import Path
 
 
@@ -9,13 +14,14 @@ def test_get_op_definition_start():
     test_lines = [
         "class HostLoadOp : public ExchangeBaseOp {",
         "Line with index 1, 2 and 3 will not give a hit",
-        "class Foo : public Bar {", "class MultiConvOptions {",
+        "class Foo : public Bar {",
+        "class MultiConvOptions {",
         "class HostLoadOp : private ExchangeBaseOp {",
         "class HostLoadOp : protected ExchangeBaseOp {",
         "class HostLoadOp : private ExchangeBaseOp, private Foo {",
         "class HostLoadOp : public Foo, private ExchangeBaseOp {",
         "class HostLoadOp : public Foo, private ExchangeBaseOp, protected Baz {",
-        "class ElementWiseUnaryOp : public Op {"
+        "class ElementWiseUnaryOp : public Op {",
     ]
     result = get_op_definition_start(test_lines)
     expected = [i for i in range(len(test_lines))]
@@ -50,7 +56,7 @@ def test_get_op_definition_start():
         "  Atan2LhsInplaceOp(const Op::Settings &_settings)",
         "      : ElementWiseBinaryInplaceLhsOp(Onnx::CustomOperators::Atan2Inplace,",
         r"                                      _settings) {}",
-        "};"
+        "};",
     ]
 
     expected = [5, 17]
@@ -68,15 +74,17 @@ def test_get_closing_bracket():
         "}",  # Here we have the first balance
         "{ Here we add",
         " a new set of } brackets",
-        "just to make the test more robust "
+        "just to make the test more robust ",
     ]
     result = get_closing_bracket(test_lines)
     expected = 4  # Line number of closing bracket
     assert result == expected
 
     test_lines = [
-        "This is an unbalanced bracket {", "{ lorem ipsum", " dolor } sit",
-        "amet"
+        "This is an unbalanced bracket {",
+        "{ lorem ipsum",
+        " dolor } sit",
+        "amet",
     ]
     result = get_closing_bracket(test_lines)
     assert result is None
@@ -85,14 +93,17 @@ def test_get_closing_bracket():
 def test_is_clone_definition_present():
     """Test that the clone definition can be found."""
     test_lines = [
-        "This has a definition", "just look at unique_ptr<Op> clone(), so",
-        "this should return True"
+        "This has a definition",
+        "just look at unique_ptr<Op> clone(), so",
+        "this should return True",
     ]
     result = is_clone_signature_present(test_lines)
     assert result
 
     test_lines = [
-        "This does not have", "The definition, so", "this should return False"
+        "This does not have",
+        "The definition, so",
+        "this should return False",
     ]
     result = is_clone_signature_present(test_lines)
     assert not result
@@ -115,7 +126,8 @@ def test_check_if_clone_is_defined(tmp_path: Path):
         "\n"
         "private:\n"
         "  TensorId hostStreamTensorId {return TensorId()}\n"
-        "};\n")
+        "};\n"
+    )
     tmp_success_file = tmp_path.joinpath("success.hpp")
     tmp_success_file.write_text(text)
     result = check_if_clone_is_defined(str(tmp_success_file))
@@ -157,7 +169,8 @@ def test_check_if_clone_is_defined(tmp_path: Path):
         "\n"
         "private:\n"
         "  TensorInfo forward_op_arg_info;\n"
-        "};\n")
+        "};\n"
+    )
     tmp_success_file = tmp_path.joinpath("newline_missing.hpp")
     tmp_success_file.write_text(text)
     result = check_if_clone_is_defined(str(tmp_success_file))

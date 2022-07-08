@@ -8,6 +8,7 @@ import numpy.random as npr
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -45,16 +46,15 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     nVirtualGraphs = 2
     samplesPerBatch = 48
     divvyFactor = replicationFactor * accumulationFactor
-    if (samplesPerBatch % divvyFactor != 0):
-        raise RuntimeError(
-            "Invalid divvy factor, does not divide samplesPerBatch")
+    if samplesPerBatch % divvyFactor != 0:
+        raise RuntimeError("Invalid divvy factor, does not divide samplesPerBatch")
     samplesPerMicroBatch = samplesPerBatch // divvyFactor
     nIPUs = replicationFactor * nVirtualGraphs
     stepDataShape = [batchesPerStep, samplesPerBatch, height, height]
     microBatchShape = [samplesPerMicroBatch, height, height]
     microBatchInfo = popart.TensorInfo("FLOAT", microBatchShape)
 
-    #initial weight and input values
+    # initial weight and input values
     w0vals = np.array(npr.randn(height, height), dtype=np.float32)
     w1vals = np.array(npr.randn(height, height), dtype=np.float32)
     inputVals = np.array(npr.randn(*stepDataShape), dtype=np.float32)
@@ -64,7 +64,7 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     input0 = builder.addInputTensor(microBatchInfo)
     w0 = builder.addInitializedInputTensor(w0vals)
     w1 = builder.addInitializedInputTensor(w1vals)
-    scaleFactor = 1. / np.sqrt(height + 0.)
+    scaleFactor = 1.0 / np.sqrt(height + 0.0)
 
     # all compute on IPU 0.
     with builder.virtualGraph(0):
@@ -74,14 +74,14 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
         skipOut = builder.aiOnnx.add([mm0, scale1])
 
     with builder.virtualGraph(1 if same_vgraph else 0):
-        loss2 = builder.aiGraphcore.l1loss([skipOut],
-                                           lambda2,
-                                           reduction=popart.ReductionType.Sum)
+        loss2 = builder.aiGraphcore.l1loss(
+            [skipOut], lambda2, reduction=popart.ReductionType.Sum
+        )
 
     with builder.virtualGraph(1):
-        loss1 = builder.aiGraphcore.l1loss([scale1],
-                                           lambda1,
-                                           reduction=popart.ReductionType.Sum)
+        loss1 = builder.aiGraphcore.l1loss(
+            [scale1], lambda1, reduction=popart.ReductionType.Sum
+        )
         finalLoss = builder.aiOnnx.sum([loss1, loss2])
 
     # input0  w0
@@ -97,12 +97,12 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     # - - - - - - - - - - -|
     #       |   |          |
     #     loss  |          |
-    #======================| <-- if same_vgraph == False
+    # ======================| <-- if same_vgraph == False
     #           |          |
     #         loss         |
     # - - - - - - - - - - -|
     #       |   |          |
-    #======================| <-- if same_vgraph == True
+    # ======================| <-- if same_vgraph == True
     #       |   |          |
     #     loss loss        |
     # - - - - - - - - - - -|
@@ -124,14 +124,17 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
             session = popart.TrainingSession(
                 fnModel=builder.getModelProto(),
                 dataFlow=dataFlow,
-                optimizer=popart.SGD({
-                    "defaultLearningRate": (defaultLearningRate0, False),
-                    "defaultMomentum": (defaultMomentum0, False),
-                    "defaultDampening": (defaultDampening0, False)
-                }),
+                optimizer=popart.SGD(
+                    {
+                        "defaultLearningRate": (defaultLearningRate0, False),
+                        "defaultMomentum": (defaultMomentum0, False),
+                        "defaultDampening": (defaultDampening0, False),
+                    }
+                ),
                 loss=finalLoss,
                 userOptions=userOptions,
-                deviceInfo=device)
+                deviceInfo=device,
+            )
 
             anchorArrays = session.initAnchorArrays()
 
@@ -164,16 +167,18 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
 
     net = Net()
 
-    optimizer = optim.SGD(net.parameters(),
-                          lr=defaultLearningRate0,
-                          momentum=defaultMomentum0,
-                          dampening=defaultDampening0)
+    optimizer = optim.SGD(
+        net.parameters(),
+        lr=defaultLearningRate0,
+        momentum=defaultMomentum0,
+        dampening=defaultDampening0,
+    )
     for i in range(batchesPerStep):
         dr1, dr2 = net(torch.from_numpy(inputVals[i]), i)
         loss = torch.sum(lambda1 * torch.abs(dr1) + lambda2 * torch.abs(dr2))
         # caveat on the SGD see TODO T13098
-        if (i == 0):
-            loss *= (1 - defaultDampening0)
+        if i == 0:
+            loss *= 1 - defaultDampening0
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -194,8 +199,8 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     print("Total moved by w1: ", np.sum(np.abs(w1R_out - w1vals)))
     print("l1 error for w0: ", error0)
     print("l1 error for w1: ", error1)
-    assert (error0 < 1e-5)
-    assert (error1 < 1e-5)
+    assert error0 < 1e-5
+    assert error1 < 1e-5
 
     error0 = np.sum(np.abs(w0R_with - net.w0.detach().numpy())) / delta0
     error1 = np.sum(np.abs(w1R_with - net.w1.detach().numpy())) / delta1
@@ -204,5 +209,5 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     print("Total moved by w1: ", np.sum(np.abs(w1R_with - w1vals)))
     print("l1 error for w0: ", error0)
     print("l1 error for w1: ", error1)
-    assert (error0 < 1e-5)
-    assert (error1 < 1e-5)
+    assert error0 < 1e-5
+    assert error1 < 1e-5

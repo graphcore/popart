@@ -24,7 +24,7 @@ def test_argmin_no_keepdims(op_tester):
         result = np.argmin(d1, axis=axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_argmin_keepdims(op_tester):
@@ -43,7 +43,7 @@ def test_argmin_keepdims(op_tester):
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_argmin_negative_axis(op_tester):
@@ -62,13 +62,9 @@ def test_argmin_negative_axis(op_tester):
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder,
-                  reference,
-                  'infer',
-                  opsets={
-                      "ai.onnx": 11,
-                      "ai.graphcore": 1
-                  })
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 11, "ai.graphcore": 1}
+    )
 
 
 def _test_argmax(op_tester, data, axis, keepdims, opsets):
@@ -84,7 +80,7 @@ def _test_argmax(op_tester, data, axis, keepdims, opsets):
             result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer', opsets=opsets)
+    op_tester.run(init_builder, reference, "infer", opsets=opsets)
 
 
 def test_argmax_2d(op_tester):
@@ -116,7 +112,7 @@ def test_argmax_no_keepdims(op_tester):
         result = np.argmax(d1, axis=axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_ceil(op_tester):
@@ -133,7 +129,7 @@ def test_ceil(op_tester):
         result = np.ceil(d1)
         return [result.astype(np.float32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_ceil_inplace(op_tester):
@@ -153,8 +149,8 @@ def test_ceil_inplace(op_tester):
         result = np.exp(np.ceil(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_ceil_grad(op_tester):
@@ -170,7 +166,7 @@ def test_ceil_grad(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [np.ceil(d1).astype(np.float32), np.zeros_like(d1)]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_floor(op_tester):
@@ -187,7 +183,7 @@ def test_floor(op_tester):
         result = np.floor(d1)
         return [result.astype(np.float32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_floor_inplace(op_tester):
@@ -207,8 +203,8 @@ def test_floor_inplace(op_tester):
         result = np.exp(np.floor(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_floor_grad(op_tester):
@@ -224,7 +220,7 @@ def test_floor_grad(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [np.floor(d1).astype(np.float32), np.zeros_like(d1)]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_clip(op_tester):
@@ -242,7 +238,7 @@ def test_clip(op_tester):
         result = torch.clamp(a, min=-1.5, max=1.5)
         return [result]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_clip_inplace(op_tester):
@@ -263,8 +259,8 @@ def test_clip_inplace(op_tester):
         result = torch.exp(torch.clamp(torch.log(a), min=4, max=7))
         return [result]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_clip_grad(op_tester):
@@ -278,7 +274,7 @@ def test_clip_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -291,8 +287,8 @@ def test_clip_grad(op_tester):
         print("b grad", b.grad)
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_clip11(op_tester):
@@ -314,13 +310,9 @@ def test_clip11(op_tester):
         result = torch.clamp(a, min=d_min[0], max=d_max[0])
         return [result]
 
-    op_tester.run(init_builder,
-                  reference,
-                  'infer',
-                  opsets={
-                      "ai.onnx": 11,
-                      "ai.graphcore": 1
-                  })
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 11, "ai.graphcore": 1}
+    )
 
 
 def test_clip11_default_min(op_tester):
@@ -331,24 +323,18 @@ def test_clip11_default_min(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         t_max = builder.aiOnnx.constant(d_max, False)
-        o = builder.aiOnnx.clip([i1, '', t_max])
+        o = builder.aiOnnx.clip([i1, "", t_max])
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         a = torch.tensor(d1)
-        result = torch.clamp(a,
-                             min=torch.finfo(torch.float32).min,
-                             max=d_max[0])
+        result = torch.clamp(a, min=torch.finfo(torch.float32).min, max=d_max[0])
         return [result]
 
-    op_tester.run(init_builder,
-                  reference,
-                  'infer',
-                  opsets={
-                      "ai.onnx": 11,
-                      "ai.graphcore": 1
-                  })
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 11, "ai.graphcore": 1}
+    )
 
 
 def test_clip11_default_max(op_tester):
@@ -369,13 +355,9 @@ def test_clip11_default_max(op_tester):
         result = torch.clamp(a, min=d_min[0], max=100)
         return [result]
 
-    op_tester.run(init_builder,
-                  reference,
-                  'infer',
-                  opsets={
-                      "ai.onnx": 11,
-                      "ai.graphcore": 1
-                  })
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 11, "ai.graphcore": 1}
+    )
 
 
 def test_argmax_keepdims(op_tester):
@@ -394,7 +376,7 @@ def test_argmax_keepdims(op_tester):
         result = np.expand_dims(result, axis)
         return [result.astype(np.int32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_instancenorm_grad(op_tester):
@@ -405,8 +387,7 @@ def test_instancenorm_grad(op_tester):
 
     non_zero_places = 5
 
-    data = np.random.rand(batch_size, features, width,
-                          height).astype(np.float32)
+    data = np.random.rand(batch_size, features, width, height).astype(np.float32)
 
     a_few_places = np.zeros_like(data.flatten())
 
@@ -429,26 +410,25 @@ def test_instancenorm_grad(op_tester):
         i_few_places = builder.addInputTensor(a_few_places)
 
         normed = builder.aiOnnx.instancenormalization(
-            [i_data, i_scale, i_bias], epsilon)
+            [i_data, i_scale, i_bias], epsilon
+        )
         out = builder.aiOnnx.mul([normed, i_few_places])
 
         builder.addOutputTensor(out)
 
         return [
-            out, normed,
+            out,
+            normed,
             popart.reservedGradientPrefix() + i_data,
             popart.reservedGradientPrefix() + i_scale,
             popart.reservedGradientPrefix() + i_bias,
-            popart.reservedGradientPrefix() + out
+            popart.reservedGradientPrefix() + out,
         ]
 
     def reference(ref_data):
         i_data = torch.tensor(data, requires_grad=True)
 
-        m = torch.nn.InstanceNorm2d(features,
-                                    eps=epsilon,
-                                    momentum=0,
-                                    affine=True)
+        m = torch.nn.InstanceNorm2d(features, eps=epsilon, momentum=0, affine=True)
         m.weight.data = torch.tensor(scale)
         m.bias.data = torch.tensor(bias)
         normed = m(i_data)
@@ -469,9 +449,10 @@ def test_instancenorm_grad(op_tester):
     # torch 1.10 and the test fails on one value very close to 0.
     op_tester.atol = 1e-6
 
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_instancenorm_grad_5D_input(op_tester):
@@ -506,26 +487,25 @@ def test_instancenorm_grad_5D_input(op_tester):
         i_few_places = builder.addInputTensor(a_few_places)
 
         normed = builder.aiOnnx.instancenormalization(
-            [i_data, i_scale, i_bias], epsilon)
+            [i_data, i_scale, i_bias], epsilon
+        )
         out = builder.aiOnnx.mul([normed, i_few_places])
 
         builder.addOutputTensor(out)
 
         return [
-            out, normed,
+            out,
+            normed,
             popart.reservedGradientPrefix() + i_data,
             popart.reservedGradientPrefix() + i_scale,
             popart.reservedGradientPrefix() + i_bias,
-            popart.reservedGradientPrefix() + out
+            popart.reservedGradientPrefix() + out,
         ]
 
     def reference(ref_data):
         i_data = torch.tensor(data, requires_grad=True)
 
-        m = torch.nn.InstanceNorm3d(features,
-                                    eps=epsilon,
-                                    momentum=0,
-                                    affine=True)
+        m = torch.nn.InstanceNorm3d(features, eps=epsilon, momentum=0, affine=True)
         m.weight.data = torch.tensor(scale)
         m.bias.data = torch.tensor(bias)
         normed = m(i_data)
@@ -543,9 +523,10 @@ def test_instancenorm_grad_5D_input(op_tester):
         return [out, normed, i_data.grad, m.weight.grad, m.bias.grad, None]
 
     op_tester.atol *= 10
-    op_tester.setPatterns(['PreUniRepl', 'ReciprocalGradOp', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp", "MulArgGradOp"], enableRuntimeAsserts=False
+    )
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_constantofshape(op_tester):
@@ -565,7 +546,7 @@ def test_constantofshape(op_tester):
         out = np.reshape(out, (1, 2, 3))
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_concat(op_tester):
@@ -583,7 +564,7 @@ def test_concat(op_tester):
         out = np.concatenate(values, 1)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_concat_negative_axis(op_tester):
@@ -601,7 +582,7 @@ def test_concat_negative_axis(op_tester):
         out = np.concatenate(values, -1)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_constant_of_shape(op_tester):
@@ -611,8 +592,7 @@ def test_constant_of_shape(op_tester):
     def init_builder(builder):
         in0 = builder.addInputTensor(data)
         c0 = builder.aiOnnx.constant(shape_data)
-        c = builder.aiOnnx.constantofshape([c0], np.array([5],
-                                                          dtype=np.float32))
+        c = builder.aiOnnx.constantofshape([c0], np.array([5], dtype=np.float32))
         o = builder.aiOnnx.add([in0, c])
 
         builder.addOutputTensor(o)
@@ -622,7 +602,7 @@ def test_constant_of_shape(op_tester):
         o = data + np.array([5], dtype=np.float32)
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_constant_of_shape_int32(op_tester):
@@ -632,8 +612,7 @@ def test_constant_of_shape_int32(op_tester):
     def init_builder(builder):
         in0 = builder.addInputTensor(data)
         c0 = builder.aiOnnx.constant(shape_data)
-        c = builder.aiOnnx.constantofshape([c0], np.array([5],
-                                                          dtype=np.float32))
+        c = builder.aiOnnx.constantofshape([c0], np.array([5], dtype=np.float32))
         o = builder.aiOnnx.add([in0, c])
 
         builder.addOutputTensor(o)
@@ -643,26 +622,24 @@ def test_constant_of_shape_int32(op_tester):
         o = data + np.array([5], dtype=np.float32)
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_convtranspose(op_tester):
     # Test modified from example `convtranspose` in onnx
     # operators documentation.
-    x = np.array([[[
-        [0., 1., 2.],  # (1, 1, 3, 3)
-        [3., 4., 5.],
-        [6., 7., 8.]
-    ]]]).astype(np.float32)
+    x = np.array(
+        [[[[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]]]]  # (1, 1, 3, 3)
+    ).astype(np.float32)
 
-    W = np.array([[
+    W = np.array(
         [
-            [1., 1., 1.],  # (1, 2, 3, 3)
-            [1., 1., 1.],
-            [1., 1., 1.]
-        ],
-        [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]
-    ]]).astype(np.float32)
+            [
+                [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],  # (1, 2, 3, 3)
+                [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+            ]
+        ]
+    ).astype(np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
@@ -672,39 +649,55 @@ def test_convtranspose(op_tester):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        y = np.array([[
+        y = np.array(
             [
-                [0., 1., 3., 3., 2.],  # (1, 2, 5, 5)
-                [3., 8., 15., 12., 7.],
-                [9., 21., 36., 27., 15.],
-                [9., 20., 33., 24., 13.],
-                [6., 13., 21., 15., 8.]
-            ],
-            [[0., 1., 3., 3., 2.], [3., 8., 15., 12., 7.],
-             [9., 21., 36., 27., 15.], [9., 20., 33., 24., 13.],
-             [6., 13., 21., 15., 8.]]
-        ]]).astype(np.float32)
+                [
+                    [
+                        [0.0, 1.0, 3.0, 3.0, 2.0],  # (1, 2, 5, 5)
+                        [3.0, 8.0, 15.0, 12.0, 7.0],
+                        [9.0, 21.0, 36.0, 27.0, 15.0],
+                        [9.0, 20.0, 33.0, 24.0, 13.0],
+                        [6.0, 13.0, 21.0, 15.0, 8.0],
+                    ],
+                    [
+                        [0.0, 1.0, 3.0, 3.0, 2.0],
+                        [3.0, 8.0, 15.0, 12.0, 7.0],
+                        [9.0, 21.0, 36.0, 27.0, 15.0],
+                        [9.0, 20.0, 33.0, 24.0, 13.0],
+                        [6.0, 13.0, 21.0, 15.0, 8.0],
+                    ],
+                ]
+            ]
+        ).astype(np.float32)
         return [y]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
-@pytest.mark.parametrize('with_pattern', [True, False])
+@pytest.mark.parametrize("with_pattern", [True, False])
 def test_convtranspose_grad(op_tester, with_pattern):
-    x = np.array([[[[-0.6548, 2.1528, -0.7060, 1.2557],
+    x = np.array(
+        [
+            [
+                [
+                    [-0.6548, 2.1528, -0.7060, 1.2557],
                     [0.5779, 1.6015, 0.0200, -0.5367],
                     [0.9002, -1.0468, -0.5903, -0.9868],
-                    [-0.0274, 0.0813, 0.3434, 0.0679]]]]).astype(np.float32)
-    W = np.array([[[[-0.2817, 0.2606], [-0.4299,
-                                        -0.4982]]]]).astype(np.float32)
+                    [-0.0274, 0.0813, 0.3434, 0.0679],
+                ]
+            ]
+        ]
+    ).astype(np.float32)
+    W = np.array([[[[-0.2817, 0.2606], [-0.4299, -0.4982]]]]).astype(np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
         f = builder.addInitializedInputTensor(W)
         o = builder.aiOnnxOpset11.convtranspose([d, f])
-        two = builder.aiOnnxOpset11.constant(np.array([2.0], dtype=np.float32),
-                                             False, "two")
+        two = builder.aiOnnxOpset11.constant(
+            np.array([2.0], dtype=np.float32), False, "two"
+        )
         o_sq = builder.aiOnnxOpset11.pow([o, two])
 
         builder.addOutputTensor(o_sq)
@@ -712,7 +705,7 @@ def test_convtranspose_grad(op_tester, with_pattern):
             o_sq,
             popart.reservedGradientPrefix() + d,
             popart.reservedGradientPrefix() + f,
-            popart.reservedGradientPrefix() + o_sq
+            popart.reservedGradientPrefix() + o_sq,
         ]
 
     def reference(ref_data):
@@ -722,7 +715,7 @@ def test_convtranspose_grad(op_tester, with_pattern):
         out = torch.nn.functional.conv_transpose2d(t1, t2)
 
         # Ensure the gradient varies throughout with a non-linearity
-        out = out**2.0
+        out = out ** 2.0
         print(out)
 
         d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
@@ -733,29 +726,26 @@ def test_convtranspose_grad(op_tester, with_pattern):
         return [out, t1.grad, t2.grad, None]
 
     patterns = [
-        'ConvTranspose', 'ConvFlipWeightsGradOp', 'ConvDataGrad',
-        'PowArg0GradOp', 'SqrtGradOp'
+        "ConvTranspose",
+        "ConvFlipWeightsGradOp",
+        "ConvDataGrad",
+        "PowArg0GradOp",
+        "SqrtGradOp",
     ]
 
     if with_pattern:
-        patterns.append('ConvFlipWeightsDoubleFlip')
+        patterns.append("ConvFlipWeightsDoubleFlip")
 
     op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train')
+    op_tester.run(init_builder, reference, step_type="train")
 
 
 def test_convtranspose_auto_pad(op_tester):
     # Test when the output shape is specified and that the padding is automatically
     # computed.
-    x = np.array([[[
-        [1., 2.],  # (1, 1, 2, 2)
-        [3., 4.]
-    ]]]).astype(np.float32)
+    x = np.array([[[[1.0, 2.0], [3.0, 4.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
 
-    W = np.array([[[
-        [1., 2.],  # (1, 1, 2, 2)
-        [2., 1.]
-    ]]]).astype(np.float32)
+    W = np.array([[[[1.0, 2.0], [2.0, 1.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
@@ -765,28 +755,19 @@ def test_convtranspose_auto_pad(op_tester):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        y = np.array([[[
-            [1., 4.],  # (1, 1, 2, 2)
-            [5., 15.]
-        ]]]).astype(np.float32)
+        y = np.array([[[[1.0, 4.0], [5.0, 15.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
         return [y]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_convtranspose_auto_pad_same_upper(op_tester):
     # Test when the output shape is specified and that the padding is automatically
     # computed and that auto_pad is set to SAME_UPPER
-    x = np.array([[[
-        [1., 2.],  # (1, 1, 2, 2)
-        [3., 4.]
-    ]]]).astype(np.float32)
+    x = np.array([[[[1.0, 2.0], [3.0, 4.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
 
-    W = np.array([[[
-        [1., 2.],  # (1, 1, 2, 2)
-        [2., 1.]
-    ]]]).astype(np.float32)
+    W = np.array([[[[1.0, 2.0], [2.0, 1.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
@@ -798,25 +779,19 @@ def test_convtranspose_auto_pad_same_upper(op_tester):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        y = np.array([[[
-            [15., 10.],  # (1, 1, 2, 2)
-            [11., 4.]
-        ]]]).astype(np.float32)
+        y = np.array([[[[15.0, 10.0], [11.0, 4.0]]]]).astype(np.float32)  # (1, 1, 2, 2)
         return [y]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_convtranspose_1d(op_tester):
     # Test modified from example `convtranspose_1d` in onnx
     # operators documentation.
-    x = np.array([[[0., 1., 2.]]]).astype(np.float32)  # (1, 1, 3)
+    x = np.array([[[0.0, 1.0, 2.0]]]).astype(np.float32)  # (1, 1, 3)
 
-    W = np.array([[
-        [1., 1., 1.],  # (1, 2, 3)
-        [1., 1., 1.]
-    ]]).astype(np.float32)
+    W = np.array([[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]).astype(np.float32)  # (1, 2, 3)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
@@ -826,34 +801,61 @@ def test_convtranspose_1d(op_tester):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        y = np.array([[
-            [0., 1., 3., 3., 2.],  # (1, 2, 5)
-            [0., 1., 3., 3., 2.]
-        ]]).astype(np.float32)
+        y = np.array(
+            [[[0.0, 1.0, 3.0, 3.0, 2.0], [0.0, 1.0, 3.0, 3.0, 2.0]]]  # (1, 2, 5)
+        ).astype(np.float32)
         return [y]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_convtranspose_3d(op_tester):
     # Test modified from example `convtranspose_3d` in onnx
     # operators documentation.
-    x = np.array([[[[[0., 1., 2., 3., 4.], [5., 6., 7., 8., 9.],
-                     [10., 11., 12., 13., 14.], [15., 16., 17., 18., 19.]],
-                    [[20., 21., 22., 23., 24.], [25., 26., 27., 28., 29.],
-                     [30., 31., 32., 33., 34.], [35., 36., 37., 38., 39.]],
-                    [[40., 41., 42., 43., 44.], [45., 46., 47., 48., 49.],
-                     [50., 51., 52., 53., 54.], [55., 56., 57., 58.,
-                                                 59.]]]]]).astype(np.float32)
+    x = np.array(
+        [
+            [
+                [
+                    [
+                        [0.0, 1.0, 2.0, 3.0, 4.0],
+                        [5.0, 6.0, 7.0, 8.0, 9.0],
+                        [10.0, 11.0, 12.0, 13.0, 14.0],
+                        [15.0, 16.0, 17.0, 18.0, 19.0],
+                    ],
+                    [
+                        [20.0, 21.0, 22.0, 23.0, 24.0],
+                        [25.0, 26.0, 27.0, 28.0, 29.0],
+                        [30.0, 31.0, 32.0, 33.0, 34.0],
+                        [35.0, 36.0, 37.0, 38.0, 39.0],
+                    ],
+                    [
+                        [40.0, 41.0, 42.0, 43.0, 44.0],
+                        [45.0, 46.0, 47.0, 48.0, 49.0],
+                        [50.0, 51.0, 52.0, 53.0, 54.0],
+                        [55.0, 56.0, 57.0, 58.0, 59.0],
+                    ],
+                ]
+            ]
+        ]
+    ).astype(np.float32)
 
-    W = np.array([[[[[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
-                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
-                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]]],
-                   [[[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
-                    [[1., 1., 1.], [1., 1., 1.], [1., 1., 1.]],
-                    [[1., 1., 1.], [1., 1., 1.], [1., 1.,
-                                                  1.]]]]]).astype(np.float32)
+    W = np.array(
+        [
+            [
+                [
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                ],
+                [
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                    [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
+                ],
+            ]
+        ]
+    ).astype(np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(x)
@@ -863,77 +865,106 @@ def test_convtranspose_3d(op_tester):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        y = np.array([[[[[0., 1., 3., 6., 9., 7., 4.],
-                         [5., 12., 21., 27., 33., 24., 13.],
-                         [15., 33., 54., 63., 72., 51., 27.],
-                         [30., 63., 99., 108., 117., 81., 42.],
-                         [25., 52., 81., 87., 93., 64., 33.],
-                         [15., 31., 48., 51., 54., 37., 19.]],
-                        [[20., 42., 66., 72., 78., 54., 28.],
-                         [50., 104., 162., 174., 186., 128., 66.],
-                         [90., 186., 288., 306., 324., 222., 114.],
-                         [120., 246., 378., 396., 414., 282., 144.],
-                         [90., 184., 282., 294., 306., 208., 106.],
-                         [50., 102., 156., 162., 168., 114., 58.]],
-                        [[60., 123., 189., 198., 207., 141., 72.],
-                         [135., 276., 423., 441., 459., 312., 159.],
-                         [225., 459., 702., 729., 756., 513., 261.],
-                         [270., 549., 837., 864., 891., 603., 306.],
-                         [195., 396., 603., 621., 639., 432., 219.],
-                         [105., 213., 324., 333., 342., 231., 117.]],
-                        [[60., 122., 186., 192., 198., 134., 68.],
-                         [130., 264., 402., 414., 426., 288., 146.],
-                         [210., 426., 648., 666., 684., 462., 234.],
-                         [240., 486., 738., 756., 774., 522., 264.],
-                         [170., 344., 522., 534., 546., 368., 186.],
-                         [90., 182., 276., 282., 288., 194., 98.]],
-                        [[40., 81., 123., 126., 129., 87., 44.],
-                         [85., 172., 261., 267., 273., 184., 93.],
-                         [135., 273., 414., 423., 432., 291., 147.],
-                         [150., 303., 459., 468., 477., 321., 162.],
-                         [105., 212., 321., 327., 333., 224., 113.],
-                         [55., 111., 168., 171., 174., 117., 59.]]],
-                       [[[0., 1., 3., 6., 9., 7., 4.],
-                         [5., 12., 21., 27., 33., 24., 13.],
-                         [15., 33., 54., 63., 72., 51., 27.],
-                         [30., 63., 99., 108., 117., 81., 42.],
-                         [25., 52., 81., 87., 93., 64., 33.],
-                         [15., 31., 48., 51., 54., 37., 19.]],
-                        [[20., 42., 66., 72., 78., 54., 28.],
-                         [50., 104., 162., 174., 186., 128., 66.],
-                         [90., 186., 288., 306., 324., 222., 114.],
-                         [120., 246., 378., 396., 414., 282., 144.],
-                         [90., 184., 282., 294., 306., 208., 106.],
-                         [50., 102., 156., 162., 168., 114., 58.]],
-                        [[60., 123., 189., 198., 207., 141., 72.],
-                         [135., 276., 423., 441., 459., 312., 159.],
-                         [225., 459., 702., 729., 756., 513., 261.],
-                         [270., 549., 837., 864., 891., 603., 306.],
-                         [195., 396., 603., 621., 639., 432., 219.],
-                         [105., 213., 324., 333., 342., 231., 117.]],
-                        [[60., 122., 186., 192., 198., 134., 68.],
-                         [130., 264., 402., 414., 426., 288., 146.],
-                         [210., 426., 648., 666., 684., 462., 234.],
-                         [240., 486., 738., 756., 774., 522., 264.],
-                         [170., 344., 522., 534., 546., 368., 186.],
-                         [90., 182., 276., 282., 288., 194., 98.]],
-                        [[40., 81., 123., 126., 129., 87., 44.],
-                         [85., 172., 261., 267., 273., 184., 93.],
-                         [135., 273., 414., 423., 432., 291., 147.],
-                         [150., 303., 459., 468., 477., 321., 162.],
-                         [105., 212., 321., 327., 333., 224., 113.],
-                         [55., 111., 168., 171., 174., 117.,
-                          59.]]]]]).astype(np.float32)
+        y = np.array(
+            [
+                [
+                    [
+                        [
+                            [0.0, 1.0, 3.0, 6.0, 9.0, 7.0, 4.0],
+                            [5.0, 12.0, 21.0, 27.0, 33.0, 24.0, 13.0],
+                            [15.0, 33.0, 54.0, 63.0, 72.0, 51.0, 27.0],
+                            [30.0, 63.0, 99.0, 108.0, 117.0, 81.0, 42.0],
+                            [25.0, 52.0, 81.0, 87.0, 93.0, 64.0, 33.0],
+                            [15.0, 31.0, 48.0, 51.0, 54.0, 37.0, 19.0],
+                        ],
+                        [
+                            [20.0, 42.0, 66.0, 72.0, 78.0, 54.0, 28.0],
+                            [50.0, 104.0, 162.0, 174.0, 186.0, 128.0, 66.0],
+                            [90.0, 186.0, 288.0, 306.0, 324.0, 222.0, 114.0],
+                            [120.0, 246.0, 378.0, 396.0, 414.0, 282.0, 144.0],
+                            [90.0, 184.0, 282.0, 294.0, 306.0, 208.0, 106.0],
+                            [50.0, 102.0, 156.0, 162.0, 168.0, 114.0, 58.0],
+                        ],
+                        [
+                            [60.0, 123.0, 189.0, 198.0, 207.0, 141.0, 72.0],
+                            [135.0, 276.0, 423.0, 441.0, 459.0, 312.0, 159.0],
+                            [225.0, 459.0, 702.0, 729.0, 756.0, 513.0, 261.0],
+                            [270.0, 549.0, 837.0, 864.0, 891.0, 603.0, 306.0],
+                            [195.0, 396.0, 603.0, 621.0, 639.0, 432.0, 219.0],
+                            [105.0, 213.0, 324.0, 333.0, 342.0, 231.0, 117.0],
+                        ],
+                        [
+                            [60.0, 122.0, 186.0, 192.0, 198.0, 134.0, 68.0],
+                            [130.0, 264.0, 402.0, 414.0, 426.0, 288.0, 146.0],
+                            [210.0, 426.0, 648.0, 666.0, 684.0, 462.0, 234.0],
+                            [240.0, 486.0, 738.0, 756.0, 774.0, 522.0, 264.0],
+                            [170.0, 344.0, 522.0, 534.0, 546.0, 368.0, 186.0],
+                            [90.0, 182.0, 276.0, 282.0, 288.0, 194.0, 98.0],
+                        ],
+                        [
+                            [40.0, 81.0, 123.0, 126.0, 129.0, 87.0, 44.0],
+                            [85.0, 172.0, 261.0, 267.0, 273.0, 184.0, 93.0],
+                            [135.0, 273.0, 414.0, 423.0, 432.0, 291.0, 147.0],
+                            [150.0, 303.0, 459.0, 468.0, 477.0, 321.0, 162.0],
+                            [105.0, 212.0, 321.0, 327.0, 333.0, 224.0, 113.0],
+                            [55.0, 111.0, 168.0, 171.0, 174.0, 117.0, 59.0],
+                        ],
+                    ],
+                    [
+                        [
+                            [0.0, 1.0, 3.0, 6.0, 9.0, 7.0, 4.0],
+                            [5.0, 12.0, 21.0, 27.0, 33.0, 24.0, 13.0],
+                            [15.0, 33.0, 54.0, 63.0, 72.0, 51.0, 27.0],
+                            [30.0, 63.0, 99.0, 108.0, 117.0, 81.0, 42.0],
+                            [25.0, 52.0, 81.0, 87.0, 93.0, 64.0, 33.0],
+                            [15.0, 31.0, 48.0, 51.0, 54.0, 37.0, 19.0],
+                        ],
+                        [
+                            [20.0, 42.0, 66.0, 72.0, 78.0, 54.0, 28.0],
+                            [50.0, 104.0, 162.0, 174.0, 186.0, 128.0, 66.0],
+                            [90.0, 186.0, 288.0, 306.0, 324.0, 222.0, 114.0],
+                            [120.0, 246.0, 378.0, 396.0, 414.0, 282.0, 144.0],
+                            [90.0, 184.0, 282.0, 294.0, 306.0, 208.0, 106.0],
+                            [50.0, 102.0, 156.0, 162.0, 168.0, 114.0, 58.0],
+                        ],
+                        [
+                            [60.0, 123.0, 189.0, 198.0, 207.0, 141.0, 72.0],
+                            [135.0, 276.0, 423.0, 441.0, 459.0, 312.0, 159.0],
+                            [225.0, 459.0, 702.0, 729.0, 756.0, 513.0, 261.0],
+                            [270.0, 549.0, 837.0, 864.0, 891.0, 603.0, 306.0],
+                            [195.0, 396.0, 603.0, 621.0, 639.0, 432.0, 219.0],
+                            [105.0, 213.0, 324.0, 333.0, 342.0, 231.0, 117.0],
+                        ],
+                        [
+                            [60.0, 122.0, 186.0, 192.0, 198.0, 134.0, 68.0],
+                            [130.0, 264.0, 402.0, 414.0, 426.0, 288.0, 146.0],
+                            [210.0, 426.0, 648.0, 666.0, 684.0, 462.0, 234.0],
+                            [240.0, 486.0, 738.0, 756.0, 774.0, 522.0, 264.0],
+                            [170.0, 344.0, 522.0, 534.0, 546.0, 368.0, 186.0],
+                            [90.0, 182.0, 276.0, 282.0, 288.0, 194.0, 98.0],
+                        ],
+                        [
+                            [40.0, 81.0, 123.0, 126.0, 129.0, 87.0, 44.0],
+                            [85.0, 172.0, 261.0, 267.0, 273.0, 184.0, 93.0],
+                            [135.0, 273.0, 414.0, 423.0, 432.0, 291.0, 147.0],
+                            [150.0, 303.0, 459.0, 468.0, 477.0, 321.0, 162.0],
+                            [105.0, 212.0, 321.0, 327.0, 333.0, 224.0, 113.0],
+                            [55.0, 111.0, 168.0, 171.0, 174.0, 117.0, 59.0],
+                        ],
+                    ],
+                ]
+            ]
+        ).astype(np.float32)
 
         return [y]
 
-    op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_convtranspose_pytorch(op_tester):
     def run_test(in_chans, out_chans, data, kernel):
-        print(f'run_test({in_chans}, {out_chans}, {data}, {kernel})')
+        print(f"run_test({in_chans}, {out_chans}, {data}, {kernel})")
         assert len(data) == len(kernel)
         x = np.random.rand(1, in_chans, *data).astype(np.float32)
         W = np.random.rand(in_chans, out_chans, *kernel).astype(np.float32)
@@ -953,15 +984,15 @@ def test_convtranspose_pytorch(op_tester):
             elif len(kernel) == 2:
                 conv = torch.nn.ConvTranspose2d(in_chans, out_chans, kernel)
             else:
-                raise SystemError(f'Bad kernel size {len(kernel)}')
+                raise SystemError(f"Bad kernel size {len(kernel)}")
             conv.weight.data = weights
             conv.bias.data = torch.zeros(conv.bias.size())
             o = conv(data)
             print(o.shape)
             return [o]
 
-        op_tester.setPatterns(['ConvTranspose'], enableRuntimeAsserts=False)
-        op_tester.run(init_builder, reference, step_type='infer')
+        op_tester.setPatterns(["ConvTranspose"], enableRuntimeAsserts=False)
+        op_tester.run(init_builder, reference, step_type="infer")
 
     # Test various 2d convtransposes
     run_test(in_chans=1, out_chans=2, data=[3, 3], kernel=[3, 3])
@@ -985,20 +1016,21 @@ def test_convtranspose_pytorch(op_tester):
 
 
 def test_convtranspose_pytorch_attributes(op_tester):
-    def run_test(in_chans,
-                 out_chans,
-                 data,
-                 kernel,
-                 groups=1,
-                 outshape=False,
-                 stride=None,
-                 output_padding=None,
-                 pads=None):
-        print(f'run_test({in_chans}, {out_chans}, {data}, {kernel})')
+    def run_test(
+        in_chans,
+        out_chans,
+        data,
+        kernel,
+        groups=1,
+        outshape=False,
+        stride=None,
+        output_padding=None,
+        pads=None,
+    ):
+        print(f"run_test({in_chans}, {out_chans}, {data}, {kernel})")
         assert len(data) == len(kernel)
         x = np.random.rand(1, in_chans, *data).astype(np.float32)
-        W = np.random.rand(in_chans, out_chans // groups,
-                           *kernel).astype(np.float32)
+        W = np.random.rand(in_chans, out_chans // groups, *kernel).astype(np.float32)
         bias = np.random.rand(out_chans).astype(np.float32)
 
         def reference(_):  # ref_data is an unused argument
@@ -1007,21 +1039,19 @@ def test_convtranspose_pytorch_attributes(op_tester):
 
             kwargs = {}
             if stride:
-                kwargs['stride'] = stride
+                kwargs["stride"] = stride
             if output_padding:
-                kwargs['output_padding'] = output_padding
+                kwargs["output_padding"] = output_padding
             if pads:
-                kwargs['padding'] = pads
-            kwargs['groups'] = groups
+                kwargs["padding"] = pads
+            kwargs["groups"] = groups
 
             if len(kernel) == 1:
-                conv = torch.nn.ConvTranspose1d(in_chans, out_chans, kernel,
-                                                **kwargs)
+                conv = torch.nn.ConvTranspose1d(in_chans, out_chans, kernel, **kwargs)
             elif len(kernel) == 2:
-                conv = torch.nn.ConvTranspose2d(in_chans, out_chans, kernel,
-                                                **kwargs)
+                conv = torch.nn.ConvTranspose2d(in_chans, out_chans, kernel, **kwargs)
             else:
-                raise SystemError(f'Bad kernel size {len(kernel)}')
+                raise SystemError(f"Bad kernel size {len(kernel)}")
             conv.weight.data = weights
             conv.bias.data = torch.tensor(bias)
             o = conv(data)
@@ -1039,40 +1069,33 @@ def test_convtranspose_pytorch_attributes(op_tester):
 
             kwargs = {}
             if stride:
-                kwargs['strides'] = stride
+                kwargs["strides"] = stride
             if output_padding:
-                kwargs['output_padding'] = output_padding
+                kwargs["output_padding"] = output_padding
             if pads:
-                kwargs['pads'] = pads + pads
+                kwargs["pads"] = pads + pads
 
             if torch_out_shape:
-                kwargs['output_shape'] = torch_out_shape
+                kwargs["output_shape"] = torch_out_shape
 
-            kwargs['group'] = groups
+            kwargs["group"] = groups
             o = builder.aiOnnxOpset10.convtranspose([d, f, b], **kwargs)
             builder.addOutputTensor(o)
             return [o]
 
         op_tester.setPatterns(popart.Patterns(popart.PatternsLevel.Default))
-        op_tester.run(init_builder, reference, step_type='infer')
+        op_tester.run(init_builder, reference, step_type="infer")
 
     # just testing strides
     run_test(in_chans=1, out_chans=2, data=[4], kernel=[4], stride=[5])
     run_test(in_chans=1, out_chans=2, data=[5], kernel=[4], stride=[5])
     run_test(in_chans=2, out_chans=3, data=[5], kernel=[4], stride=[5])
-    run_test(in_chans=2,
-             out_chans=3,
-             data=[5, 5],
-             kernel=[4, 4],
-             stride=[3, 5])
+    run_test(in_chans=2, out_chans=3, data=[5, 5], kernel=[4, 4], stride=[3, 5])
 
     # testing output padding
-    run_test(in_chans=1,
-             out_chans=2,
-             data=[4],
-             kernel=[4],
-             stride=[2],
-             output_padding=[1])
+    run_test(
+        in_chans=1, out_chans=2, data=[4], kernel=[4], stride=[2], output_padding=[1]
+    )
 
     # testing pads
     run_test(in_chans=1, out_chans=2, data=[3], kernel=[3], pads=[1])
@@ -1084,33 +1107,32 @@ def test_convtranspose_pytorch_attributes(op_tester):
     size_tuples = ((5, 3, 3), (9, 7, 7), (11, 9, 9))
     for d, k, p in size_tuples:
         for out_shape in (True, False):
-            run_test(in_chans=1,
-                     out_chans=2,
-                     data=[d],
-                     kernel=[k],
-                     pads=[p],
-                     outshape=out_shape)
+            run_test(
+                in_chans=1,
+                out_chans=2,
+                data=[d],
+                kernel=[k],
+                pads=[p],
+                outshape=out_shape,
+            )
 
     # stride and pads
-    run_test(in_chans=1,
-             out_chans=2,
-             data=[3, 3],
-             kernel=[3, 3],
-             stride=[3, 2],
-             pads=[1, 2],
-             output_padding=[2, 1])
+    run_test(
+        in_chans=1,
+        out_chans=2,
+        data=[3, 3],
+        kernel=[3, 3],
+        stride=[3, 2],
+        pads=[1, 2],
+        output_padding=[2, 1],
+    )
 
     # Test groups
     run_test(in_chans=4, out_chans=4, data=[3], kernel=[3], pads=[1], groups=4)
     run_test(in_chans=8, out_chans=8, data=[5], kernel=[3], pads=[1], groups=2)
 
     # Test output shape
-    run_test(in_chans=8,
-             out_chans=8,
-             data=[5],
-             kernel=[3],
-             pads=[1],
-             outshape=True)
+    run_test(in_chans=8, out_chans=8, data=[5], kernel=[3], pads=[1], outshape=True)
 
 
 def test_where_0(op_tester):
@@ -1133,13 +1155,13 @@ def test_where_0(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("side", ("lhs", "rhs"))
 def test_where_inplace(op_tester, side):
-    lhs = (side == "lhs")
-    rhs = (side == "rhs")
+    lhs = side == "lhs"
+    rhs = side == "rhs"
     assert lhs ^ rhs
 
     condition = np.random.rand(100, 200).astype(np.bool)
@@ -1153,10 +1175,9 @@ def test_where_inplace(op_tester, side):
 
         o = builder.aiOnnx.where([i1, i2, i3])
 
-        builder.setInplacePreferences(o, {
-            "WhereLhsInplace": 1 if lhs else 0,
-            "WhereRhsInplace": 1 if rhs else 0
-        })
+        builder.setInplacePreferences(
+            o, {"WhereLhsInplace": 1 if lhs else 0, "WhereRhsInplace": 1 if rhs else 0}
+        )
 
         builder.addOutputTensor(i2)
         builder.addOutputTensor(i3)
@@ -1174,7 +1195,7 @@ def test_where_inplace(op_tester, side):
     patterns = ["InPlace"]
     op_tester.setPatterns(patterns, enableRuntimeAsserts=False)
 
-    _ = op_tester.run(init_builder, reference, 'infer')
+    _ = op_tester.run(init_builder, reference, "infer")
 
 
 def test_round(op_tester):
@@ -1191,7 +1212,7 @@ def test_round(op_tester):
         result = np.round(d1)
         return [result.astype(np.float32)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_round_graphcore(op_tester):
@@ -1203,7 +1224,7 @@ def test_round_graphcore(op_tester):
         o = builder.aiGraphcore.round([i1], "test_round")
         builder.addOutputTensor(o)
         # Check builder shape inference
-        assert (builder.getTensorShape(o) == [2, 7])
+        assert builder.getTensorShape(o) == [2, 7]
         return [o]
 
     def reference(_):  # ref_data is an unused argument
@@ -1211,7 +1232,7 @@ def test_round_graphcore(op_tester):
         return [result.astype(np.float32)]
 
     op_tester.inplacing = False
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_round_inplace(op_tester):
@@ -1231,8 +1252,8 @@ def test_round_inplace(op_tester):
         result = np.exp(np.round(np.log(d1)))
         return [result.astype(np.float32)]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_round_grad(op_tester):
@@ -1248,7 +1269,7 @@ def test_round_grad(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [np.round(d1).astype(np.float32), np.zeros_like(d1)]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_1(op_tester):
@@ -1271,7 +1292,7 @@ def test_where_1(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_where_2(op_tester):
@@ -1294,7 +1315,7 @@ def test_where_2(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_where_3(op_tester):
@@ -1319,7 +1340,7 @@ def test_where_3(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_where_4(op_tester):
@@ -1344,7 +1365,7 @@ def test_where_4(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_where_5(op_tester):
@@ -1369,7 +1390,7 @@ def test_where_5(op_tester):
         out = torch.where(ct, cx, cy)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_where_grad0(op_tester):
@@ -1399,7 +1420,7 @@ def test_where_grad0(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_grad1(op_tester):
@@ -1429,7 +1450,7 @@ def test_where_grad1(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_grad2(op_tester):
@@ -1459,7 +1480,7 @@ def test_where_grad2(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_grad3(op_tester):
@@ -1491,7 +1512,7 @@ def test_where_grad3(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_grad4(op_tester):
@@ -1523,7 +1544,7 @@ def test_where_grad4(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_where_grad5(op_tester):
@@ -1555,7 +1576,7 @@ def test_where_grad5(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, ty.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize("npType", [np.int32, np.uint32])
@@ -1567,19 +1588,18 @@ def test_bitwise_not(op_tester, npType):
         o = builder.aiGraphcore.bitwisenot([i1], "test_bitwisenot")
         builder.addOutputTensor(o)
         # Check builder shape inference
-        assert (builder.getTensorShape(o) == [10])
+        assert builder.getTensorShape(o) == [10]
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         out = np.bitwise_not(d1)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @pytest.mark.parametrize("npType", [np.int32, np.uint32])
-@pytest.mark.parametrize("npOp",
-                         [np.bitwise_and, np.bitwise_or, np.bitwise_xor])
+@pytest.mark.parametrize("npOp", [np.bitwise_and, np.bitwise_or, np.bitwise_xor])
 def test_bitwise_binary_op(op_tester, npType, npOp):
     d1 = np.random.uniform(-10, 10, 10).astype(npType)
     d2 = np.random.uniform(-10, 10, 10).astype(npType)
@@ -1592,11 +1612,11 @@ def test_bitwise_binary_op(op_tester, npType, npOp):
         o = gcOp([i1, i2], "test_bitwise_binary_op")
         builder.addOutputTensor(o)
         # Check builder shape inference
-        assert (builder.getTensorShape(o) == [10])
+        assert builder.getTensorShape(o) == [10]
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         out = npOp(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

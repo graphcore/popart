@@ -38,31 +38,32 @@ def io_tile_exchange(verify_overlap: bool = True):
         graph_ops = set(graph._pb_graph.getOpIds())
         remaining_ops = added_ops.intersection(graph_ops)
         if len(remaining_ops) > 1:
-            ops_debug = '\n   '.join(
-                graph._pb_graph.getOp(opid).debugName()
-                for opid in remaining_ops)
+            ops_debug = "\n   ".join(
+                graph._pb_graph.getOp(opid).debugName() for opid in remaining_ops
+            )
             raise RuntimeError(
                 "More than one Op remained after `io_tile_exchange`. "
                 "This will prevent overlap with following compute. Remaining Ops:"
-                f"\n   {ops_debug}")
+                f"\n   {ops_debug}"
+            )
 
 
 @contextmanager
 def merge_exchange():
     """Combine RemoteLoad/RemoteStore/HostLoad/HostStore operations into a single MergeExchange operation.
-       This guarantees that any external synchronisation for these operations are merged allowing for the operations
-       to execute in parallel.
+    This guarantees that any external synchronisation for these operations are merged allowing for the operations
+    to execute in parallel.
 
-       Only applies to operations on the current graph. Used as a contextmanager:
+    Only applies to operations on the current graph. Used as a contextmanager:
 
-       .. code-block:: python
+    .. code-block:: python
 
-           with popxl.merge_exchange():
-               ops.host_load(..)
-               ops.host_store(..)
+        with popxl.merge_exchange():
+            ops.host_load(...)
+            ops.host_store(...)
 
-       Note: Operations must be able to be scheduled in any order to be merged. For this reason it is recommended to combine with
-       `with popxl.in_sequence(False)` to avoid topological constraints that would prevent merging. Related: :py:meth:`io_tile_exchange`.
+    Note: Operations must be able to be scheduled in any order to be merged. For this reason it is recommended to combine with
+    `with popxl.in_sequence(False)` to avoid topological constraints that would prevent merging. Related: :py:meth:`io_tile_exchange`.
     """
     ctx = get_current_context()
     graph = ctx.graph
@@ -75,7 +76,6 @@ def merge_exchange():
     yield
     graph.remove_op_created_hook(handle)
 
-    ops_created = _ir.transforms.MergeExchange().applyToOps(
-        graph._pb_graph, ops)
+    ops_created = _ir.transforms.MergeExchange().applyToOps(graph._pb_graph, ops)
     for op in ops_created:
         ctx._op_created(op)

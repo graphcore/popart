@@ -15,7 +15,7 @@ _OUT_FEATURES = 4
 
 _IN_SHAPE = (_BATCH_SIZE, _IN_FEATURES)
 _WEIGHT_SHAPE = (_IN_FEATURES, _OUT_FEATURES)
-_BIAS_SHAPE = (_OUT_FEATURES, )
+_BIAS_SHAPE = (_OUT_FEATURES,)
 _OUT_SHAPE = (_BATCH_SIZE, _OUT_FEATURES)
 
 
@@ -24,13 +24,13 @@ class Linear(popxl.Module):
         self.W: popxl.Tensor = None
         self.b: popxl.Tensor = None
 
-    def build(self, x: popxl.Tensor, out_features: int,
-              bias: bool = True) -> popxl.Tensor:
-        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32,
-                                   "W")
+    def build(
+        self, x: popxl.Tensor, out_features: int, bias: bool = True
+    ) -> popxl.Tensor:
+        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = popxl.graph_input((out_features, ), popxl.float32, "b")
+            self.b = popxl.graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         return y
 
@@ -38,10 +38,16 @@ class Linear(popxl.Module):
 # Build model using popxl API, then return the underlying Ir.
 # Also returns the streams for the input and output tensors, and the data of the
 # variables.
-def build_model(
-) -> Tuple[popxl.Ir, popxl.HostToDeviceStream, popxl.DeviceToHostStream, popxl.
-           DeviceToHostStream, popxl.DeviceToHostStream, popxl.
-           DeviceToHostStream, np.ndarray, np.ndarray]:
+def build_model() -> Tuple[
+    popxl.Ir,
+    popxl.HostToDeviceStream,
+    popxl.DeviceToHostStream,
+    popxl.DeviceToHostStream,
+    popxl.DeviceToHostStream,
+    popxl.DeviceToHostStream,
+    np.ndarray,
+    np.ndarray,
+]:
     ir = popxl.Ir()
 
     main = ir.main_graph
@@ -58,12 +64,9 @@ def build_model(
         lin = Linear()
         lin_graph = ir.create_graph(lin, x, out_features=_OUT_FEATURES)
 
-        lin_call_info = ops.call_with_info(lin_graph,
-                                           x,
-                                           inputs_dict={
-                                               lin.W: W,
-                                               lin.b: b
-                                           })
+        lin_call_info = ops.call_with_info(
+            lin_graph, x, inputs_dict={lin.W: W, lin.b: b}
+        )
         y = lin_call_info.outputs[0]
 
         assert y.shape == _OUT_SHAPE
@@ -78,7 +81,8 @@ def build_model(
         grad_seed = popxl.constant(np.ones(_OUT_SHAPE, np.float32))
         tensors_required_for_bwd = lin_bwd_info.inputs_dict(lin_call_info)
         lin_bwd_call_info = ops.call_with_info(
-            lin_bwd_graph, grad_seed, inputs_dict=tensors_required_for_bwd)
+            lin_bwd_graph, grad_seed, inputs_dict=tensors_required_for_bwd
+        )
 
     ##### Extract parent graph x_grad, W_grad, b_grad
 
@@ -90,7 +94,8 @@ def build_model(
     sg_b = lin_call_info.parent_to_graph(b)
 
     def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-            ec: ExpectedConnection) -> popxl.Tensor:
+        ec: ExpectedConnection,
+    ) -> popxl.Tensor:
         # If (t, FwdGrad) appears at index i in expected_outputs, it is
         # guaranteed that t' (the grad of t) appears at output index i in the
         # grad graph.
@@ -107,14 +112,11 @@ def build_model(
         sg_fwd_tensor = ec.fwd_tensor
 
         if sg_fwd_tensor == sg_x:
-            x_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                ec)
+            x_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(ec)
         elif sg_fwd_tensor == sg_W:
-            W_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                ec)
+            W_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(ec)
         elif sg_fwd_tensor == sg_b:
-            b_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                ec)
+            b_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(ec)
 
     assert x_grad is not None
     assert W_grad is not None
@@ -122,11 +124,10 @@ def build_model(
 
     # HostStore grads and collect d2h streams
     def host_store_and_return_d2h_stream(
-            grad: popxl.Tensor) -> popxl.DeviceToHostStream:
+        grad: popxl.Tensor,
+    ) -> popxl.DeviceToHostStream:
         with main:
-            d2h = popxl.d2h_stream(grad.shape,
-                                   grad.dtype,
-                                   name=grad.name + "_stream")
+            d2h = popxl.d2h_stream(grad.shape, grad.dtype, name=grad.name + "_stream")
             ops.host_store(d2h, grad)
         return d2h
 
@@ -153,12 +154,11 @@ def test_autodiff():
     Then compute in numpy:
     y, y_grad, W_grad, x_grad, b_grad
     """
-    ir, x_h2d, y_d2h, x_grad_d2h, W_grad_d2h, b_grad_d2h, W_data, b_data = build_model(
-    )
+    ir, x_h2d, y_d2h, x_grad_d2h, W_grad_d2h, b_grad_d2h, W_data, b_data = build_model()
 
     ir.num_host_transfers = 1
 
-    session = popxl.Session(ir, 'ipu_model')
+    session = popxl.Session(ir, "ipu_model")
 
     # Create data for input x
     x_data = np.ones(_IN_SHAPE, dtype=np.float32)

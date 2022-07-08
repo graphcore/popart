@@ -8,12 +8,15 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 # Parameterize over supported data types using a (numpy, onnx) datatype tuple
-supported_dtypes = [(np.float32, onnx.helper.TensorProto.FLOAT),
-                    (np.float16, onnx.helper.TensorProto.FLOAT16)]
+supported_dtypes = [
+    (np.float32, onnx.helper.TensorProto.FLOAT),
+    (np.float16, onnx.helper.TensorProto.FLOAT16),
+]
 
 
 # CPU test: Check that randomnormallike:
@@ -33,7 +36,8 @@ def test_randomnormallike(dtypes):
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(1, {out: popart.AnchorReturnType("All")}),
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         session.setRandomSeed(seed)
@@ -49,12 +53,12 @@ def test_randomnormallike(dtypes):
 
     # Check that the IR has RandomNormalLike replaced with RandomNormal
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    graph = ir['maingraph']
+    graph = ir["maingraph"]
 
-    like = [op for op in graph if op['type'] == 'RandomNormalLike']
+    like = [op for op in graph if op["type"] == "RandomNormalLike"]
     assert len(like) == 0, "Unexpected RandomNormalLike op in the IR."
 
-    rn = [op for op in graph if op['type'] == 'RandomNormal']
+    rn = [op for op in graph if op["type"] == "RandomNormal"]
     assert len(rn) == 1, "Expected one RandomNormal op in the IR."
 
 
@@ -69,9 +73,9 @@ def test_randomnormallike_seederror(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert (e_info.value.args[0].endswith(
+    assert e_info.value.args[0].endswith(
         "Optional seed attribute is not supported. Use session::setRandomSeed instead."
-    ))
+    )
 
 
 # CPU test: check error with unsupported data type
@@ -85,7 +89,7 @@ def test_randomnormallike_bad_dtype(op_tester):
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, None)
 
-    assert ("Unsupported data type requested" in e_info.value.args[0])
+    assert "Unsupported data type requested" in e_info.value.args[0]
 
 
 # IPU test: checks that the dtype attribute is used over the input tensor dtype.
@@ -101,10 +105,9 @@ def test_randomnormallike_stats(op_tester, dtypes):
 
     def init_builder(builder):
         T = builder.addInputTensor(data)
-        rn = builder.aiOnnx.randomnormallike([T],
-                                             dtype=dtypes[1],
-                                             mean=expected_mean,
-                                             scale=expected_stddev)
+        rn = builder.aiOnnx.randomnormallike(
+            [T], dtype=dtypes[1], mean=expected_mean, scale=expected_stddev
+        )
         actual_mean = builder.aiOnnx.reducemean([rn], keepdims=False)
         builder.addOutputTensor(actual_mean)
 

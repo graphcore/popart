@@ -30,24 +30,25 @@ class TestOfflineCompilation:
 
         self.session = popart.InferenceSession(
             fnModel=self.builder.getModelProto(),
-            dataFlow=popart.DataFlow(
-                1, {self.output: popart.AnchorReturnType("All")}),
-            deviceInfo=device)
+            dataFlow=popart.DataFlow(1, {self.output: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+        )
 
     def test_compileAndExport_model(self):
         self._init_builder()
         device = popart.DeviceManager().createIpuModelDevice({})
         session = popart.InferenceSession(
             fnModel=self.builder.getModelProto(),
-            dataFlow=popart.DataFlow(
-                1, {self.output: popart.AnchorReturnType("All")}),
-            deviceInfo=device)
+            dataFlow=popart.DataFlow(1, {self.output: popart.AnchorReturnType("All")}),
+            deviceInfo=device,
+        )
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             with pytest.raises(popart.popart_exception) as e:
                 session.compileAndExport(tmpdirname)
             assert "Executables for device type ipu-model cannot be saved" in str(
-                e.value)
+                e.value
+            )
 
     def test_compileAndExport_offline_ipu_dir(self):
         self._init_session()
@@ -63,7 +64,6 @@ class TestOfflineCompilation:
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             assert os.path.isdir(tmpdirname)
-            model_file = os.path.join(tmpdirname, "subfolder",
-                                      "my_model.popart")
+            model_file = os.path.join(tmpdirname, "subfolder", "my_model.popart")
             self.session.compileAndExport(model_file)
             assert os.path.exists(model_file)

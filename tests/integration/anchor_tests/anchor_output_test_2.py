@@ -16,6 +16,7 @@ np.random.seed = 0
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -46,11 +47,11 @@ def test_anchor_output():
     micro_batch_size = BATCH_SIZE // REPL_FACTOR
     data_shape = [CHANNELS, DATA_LEN, DATA_LEN]
     label_array = np.random.randint(
-        0, 100, [BATCHES_PER_STEP, REPL_FACTOR, micro_batch_size]).astype(
-            np.int32)
+        0, 100, [BATCHES_PER_STEP, REPL_FACTOR, micro_batch_size]
+    ).astype(np.int32)
     in_array = np.random.random_sample(
-        [BATCHES_PER_STEP, REPL_FACTOR, micro_batch_size,
-         *data_shape]).astype(np.float32)
+        [BATCHES_PER_STEP, REPL_FACTOR, micro_batch_size, *data_shape]
+    ).astype(np.float32)
     input_shape = [micro_batch_size, CHANNELS, DATA_LEN, DATA_LEN]
     weight_array = np.random.random_sample(input_shape).astype(np.float32)
 
@@ -71,27 +72,27 @@ def test_anchor_output():
 
         a = builder.aiOnnx.add([ip, w])
         o = builder.reshape_const(
-            builder.aiOnnx, [a],
-            [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
+            builder.aiOnnx, [a], [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN]
+        )
         o = builder.aiOnnx.relu([o])
         o = builder.aiOnnx.softmax([o])
         builder.addOutputTensor(o)
 
         art = popart.AnchorReturnType("ALL")
         data_flow = popart.DataFlow(
-            BATCHES_PER_STEP, {
+            BATCHES_PER_STEP,
+            {
                 o: art,
                 ip: art,
                 w: art,
                 popart.reservedGradientPrefix() + o: art,
                 popart.reservedGradientPrefix() + w: art,
-            })
+            },
+        )
 
-        opts, deviceContext = return_options({
-            "ReplicationFactor": REPL_FACTOR,
-            "Pipelining": False,
-            "ReturnType": "ALL"
-        })
+        opts, deviceContext = return_options(
+            {"ReplicationFactor": REPL_FACTOR, "Pipelining": False, "ReturnType": "ALL"}
+        )
         opts.enablePrefetchDatastreams = prefetch
         opts.enableStochasticRounding = False
 
@@ -105,7 +106,8 @@ def test_anchor_output():
                 dataFlow=data_flow,
                 loss=nlll,
                 optimizer=popart.ConstSGD(LEARNING_RATE),
-                userOptions=opts)
+                userOptions=opts,
+            )
 
             session.prepareDevice()
             session.setRandomSeed(0)

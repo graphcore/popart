@@ -1,5 +1,18 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from typing import TYPE_CHECKING, Any, Callable, DefaultDict, Dict, Iterable, List, Optional, Tuple, TypeVar, Union, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 from typing_extensions import Literal
 import inspect
 import os
@@ -22,11 +35,10 @@ class Context:
         self._patch_op_listener()
 
     def _reset(self):
-        self._graphs: List['Graph'] = []
+        self._graphs: List["Graph"] = []
         self._ipu_id: int = 0
         self._in_sequence: Optional[bool] = None
-        self._previous_ops: DefaultDict[InSequenceKey,
-                                        List[int]] = defaultdict(list)
+        self._previous_ops: DefaultDict[InSequenceKey, List[int]] = defaultdict(list)
         self._debug_info: Optional[_ir.DebugInfo] = None
         self._debug_context_frame_offset: int = 0
         self._name_scope: List[str] = []
@@ -38,7 +50,7 @@ class Context:
 
     def _get_op_settings(self, name: str) -> _ir.Settings:
         """Return an internal_ir Settings object using any values specified by a context.
-            For example: ipu"""
+        For example: ipu"""
         pb_g = self.graph._pb_graph
         settings = _ir.Settings(pb_g, "/".join((*self.name_scopes, name)))
 
@@ -74,15 +86,16 @@ class Context:
     def name_scopes(self):
         return list(self._name_scope)
 
-    def push_graph(self, g: 'Graph'):
+    def push_graph(self, g: "Graph"):
         if len(self._graphs) > 0 and self._graphs[0].ir != g.ir:
             raise RuntimeError(
                 f"Trying to a create a context manager nested in another context, "
                 "when the previous context's Ir is different. "
-                f"{self._graphs[0].ir} != {g.ir}")
+                f"{self._graphs[0].ir} != {g.ir}"
+            )
         self._graphs.append(g)
 
-    def pop_graph(self) -> 'Graph':
+    def pop_graph(self) -> "Graph":
         return self._graphs.pop()
 
     @property
@@ -92,7 +105,8 @@ class Context:
                 "Trying to access a graph, but no graph has been selected. Hint - "
                 "try performing the operations in a context manager (for example "
                 "`with graph_instance:`) or inside a function that's called by "
-                "`popxl.Ir().create_graph()`")
+                "`popxl.Ir().create_graph()`"
+            )
         return self._graphs[-1]
 
     @property
@@ -102,7 +116,8 @@ class Context:
                 "Trying to access the main_graph, but no graph has been selected. Hint - "
                 "try performing the operations in a context manager (for example "
                 "`with graph_instance:`) or inside a function that's called by "
-                "`popxl.Ir().create_graph()`")
+                "`popxl.Ir().create_graph()`"
+            )
         return self._graphs[0].main_graph
 
     @property
@@ -119,8 +134,7 @@ class Context:
 
     @in_sequence.deleter
     def in_sequence(self):
-        raise AttributeError(
-            "Cannot delete in_sequence. Set to 'False' instead.")
+        raise AttributeError("Cannot delete in_sequence. Set to 'False' instead.")
 
     def register_op_created_hook(self, fn: Callable[[_ir.Op], Any]) -> int:
         self._hook_handle += 1
@@ -135,8 +149,8 @@ class Context:
     def _patch_op_listener(self):
         """Wrap all `createConnectedOp` and `createOp` in the internal library.
 
-            Allowing for the creation of ops to be tracked by popxl.
-            Currently this is used for adding topological constraints to linearize graphs."""
+        Allowing for the creation of ops to be tracked by popxl.
+        Currently this is used for adding topological constraints to linearize graphs."""
 
         def _register_listener(name: str, fn: Callable):
             @wraps(fn)
@@ -164,28 +178,28 @@ class Context:
     def _add_in_sequence_topocons(self, op: _ir.Op):
         """Add topocons to ensure operations are executed in sequence.
 
-            If ``op`` is added in an ``in_sequence(True)`` context then
-                add a topocon from the Ops in the previous ops.
-                Then set the previous ops to only ``op``.
-            If ``op`` is added in an ``in_sequence(False)`` context then
-                add a topocon from the last op added in a True context.
-                Then append ``op`` to previous ops.
-            The above behavior results in Ops in a False context to be executed in
-            any order. But if the False context is nested inside a True context
-            then all Ops within the False context will be treated as a single Op for the purpose
-            of the outer True context. For example:
+        If ``op`` is added in an ``in_sequence(True)`` context then
+            add a topocon from the Ops in the previous ops.
+            Then set the previous ops to only ``op``.
+        If ``op`` is added in an ``in_sequence(False)`` context then
+            add a topocon from the last op added in a True context.
+            Then append ``op`` to previous ops.
+        The above behavior results in Ops in a False context to be executed in
+        any order. But if the False context is nested inside a True context
+        then all Ops within the False context will be treated as a single Op for the purpose
+        of the outer True context. For example:
 
-            .. code-block:: python
+        .. code-block:: python
 
-                with in_sequence(True):
-                    OpA()
-                    with in_sequence(False)
-                        OpB()
-                        OpC()
-                    OpD()
+            with in_sequence(True):
+                OpA()
+                with in_sequence(False):
+                    OpB()
+                    OpC()
+                OpD()
 
-            OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
-            """
+        OpA will be executed before OpB and OpC. OpD will be executed after OpB and OpC.
+        """
         g = op.getGraph()
         ops = g.getOpIds()
 
@@ -194,8 +208,7 @@ class Context:
                 g.topoCons().insert(g.getOp(before_id), op, False)
 
         if isinstance(self._in_sequence, bool):
-            previous_ops = self._previous_ops[(
-                g.id, op.getSettings().executionContext)]
+            previous_ops = self._previous_ops[(g.id, op.getSettings().executionContext)]
             if self._in_sequence:
                 for prev_op in previous_ops:
                     insert_topocon(prev_op)
@@ -217,7 +230,8 @@ class Context:
         else:
             raise ValueError(
                 f"`in_sequence` mode not understood: {self.in_sequence}. "
-                "Must be one of `True`, `False`, `'pass'`.")
+                "Must be one of `True`, `False`, `'pass'`."
+            )
 
 
 _CURRENT_CONTEXT = Context()
@@ -228,7 +242,7 @@ def get_current_context() -> Context:
     return _CURRENT_CONTEXT
 
 
-def get_current_graph() -> 'Graph':
+def get_current_graph() -> "Graph":
     """
     Get the current graph from the current context.
 
@@ -245,7 +259,7 @@ def get_current_graph() -> 'Graph':
     return get_current_context().graph
 
 
-def get_main_graph() -> 'Graph':
+def get_main_graph() -> "Graph":
     """
     Get the main graph from the current context.
 
@@ -279,7 +293,7 @@ def ipu(ipu: int):
 
 
 @contextmanager
-def in_sequence(mode: Union[bool, Literal['pass']] = True):
+def in_sequence(mode: Union[bool, Literal["pass"]] = True):
     """Force ops created in this context to execute in the order that they are created.
 
     This is achieved by adding topological constraints to the scheduling graph.
@@ -296,7 +310,7 @@ def in_sequence(mode: Union[bool, Literal['pass']] = True):
 
                   with in_sequence(True):
                       OpA()
-                      with in_sequence(False)
+                      with in_sequence(False):
                           OpB()
                           OpC()
                       OpD()
@@ -315,9 +329,10 @@ def in_sequence(mode: Union[bool, Literal['pass']] = True):
     # We use `None` to specify an empty scope. It must not be passed here:
     if mode is None:
         raise TypeError(
-            "`None` cannot be passed to `in_sequence`. Try `False` instead.")
+            "`None` cannot be passed to `in_sequence`. Try `False` instead."
+        )
 
-    if mode == 'pass':
+    if mode == "pass":
         mode = None
 
     ctx = get_current_context()
@@ -350,9 +365,9 @@ def name_scope(name: str):
 def debug_context_frame_offset(i: int):
     ctx = get_current_context()
     # Plus 1 to account for frame usage as a decorator
-    ctx._debug_context_frame_offset += (i + 1)
+    ctx._debug_context_frame_offset += i + 1
     yield ctx._debug_context_frame_offset
-    ctx._debug_context_frame_offset -= (i + 1)
+    ctx._debug_context_frame_offset -= i + 1
 
 
 @contextmanager
@@ -365,8 +380,10 @@ def _execution_context(execution_context: _ir.ExecutionContext):
 
 
 def _tensor_ids_from_maybe_tensors(
-        ts: Union['Tensor', Iterable[Any]]) -> _ir.ProfileValue:
+    ts: Union["Tensor", Iterable[Any]]
+) -> _ir.ProfileValue:
     from popxl.tensor import Tensor
+
     if isinstance(ts, Tensor):
         ids = [_ir.ProfileValue(ts.id)]
     else:
@@ -382,13 +399,13 @@ def get_source_location(offset: int):
         raise IndexError(
             f"Incorrect source location offset. Stack {len(stack)}, Offset {offset+1}"
         ) from e
-    return _ir.SourceLocation(debug_frame.function,
-                              os.path.realpath(debug_frame.filename),
-                              debug_frame.lineno)
+    return _ir.SourceLocation(
+        debug_frame.function, os.path.realpath(debug_frame.filename), debug_frame.lineno
+    )
 
 
 # overload is required so that `op_debug_context` does not remove typehints
-Fn = TypeVar('Fn')
+Fn = TypeVar("Fn")
 
 
 @overload
@@ -434,7 +451,8 @@ def op_debug_context(name):  # type: ignore
             # TODO: Allow for parent layer DebugInfo to be passed here.
             dc = _ir.DebugContext(
                 "/".join((*ctx.name_scopes, _name)),
-                get_source_location(ctx._debug_context_frame_offset + 1))
+                get_source_location(ctx._debug_context_frame_offset + 1),
+            )
 
             di = _ir.DebugInfo(dc, "popxl")
             di.setValue("category", "op")

@@ -5,16 +5,18 @@ from popxl.context import get_current_context, op_debug_context
 from popxl.tensor import Tensor
 from .utils import check_in_graph
 
-INT_MIN = -2**31
-INT_MAX = 2**31 - 1
+INT_MIN = -(2 ** 31)
+INT_MAX = 2 ** 31 - 1
 
 
 @op_debug_context
-def slice(t: Tensor,
-          start: Optional[Union[int, List[Optional[int]]]] = None,
-          stop: Optional[Union[int, List[Optional[int]]]] = None,
-          step: Optional[Union[int, List[Optional[int]]]] = None,
-          axis: Optional[Union[int, List[int]]] = None) -> Tensor:
+def slice(
+    t: Tensor,
+    start: Optional[Union[int, List[Optional[int]]]] = None,
+    stop: Optional[Union[int, List[Optional[int]]]] = None,
+    step: Optional[Union[int, List[Optional[int]]]] = None,
+    axis: Optional[Union[int, List[int]]] = None,
+) -> Tensor:
     """
     Select elements from a tensor using a slice or multiple slices.
 
@@ -29,10 +31,12 @@ def slice(t: Tensor,
     .. code-block:: python
 
         t == slice(t) == slice(t, axis=1)
-        slice(t, start=1)           # Slice axis 0 from start index 1
-        slice(t, start=[1,2]) == slice(t, start=[1,2], axis=[0,1])
-        slice(t, stop=-2)           # Slice axis 0 upto second last element (exclusive)
-        slice(t, stop=3, step=-1)   # Slice backwards from last element (inclusive) to third last element (exclusive)
+        slice(t, start=1)  # Slice axis 0 from start index 1
+        slice(t, start=[1, 2]) == slice(t, start=[1, 2], axis=[0, 1])
+        slice(t, stop=-2)  # Slice axis 0 upto second last element (exclusive)
+        slice(
+            t, stop=3, step=-1
+        )  # Slice backwards from last element (inclusive) to third last element (exclusive)
 
     See also `ONNX Slice <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Slice>`__.
 
@@ -58,8 +62,7 @@ def slice(t: Tensor,
 
     start, stop, step, axis = process_args(start, stop, step, axis)
 
-    opid = _ir.OperatorIdentifier("ai.onnx", "Slice", 11, _ir.NumInputs(1, 1),
-                                  1)
+    opid = _ir.OperatorIdentifier("ai.onnx", "Slice", 11, _ir.NumInputs(1, 1), 1)
     settings = ctx._get_op_settings("slice")
     op = pb_g.createConnectedOp_SliceOp(
         {0: t.id},
@@ -76,11 +79,13 @@ def slice(t: Tensor,
 
 
 @op_debug_context
-def slice_(t: Tensor,
-           start: Optional[Union[int, List[Optional[int]]]] = None,
-           stop: Optional[Union[int, List[Optional[int]]]] = None,
-           step: Optional[Union[int, List[Optional[int]]]] = None,
-           axis: Optional[Union[int, List[int]]] = None) -> Tensor:
+def slice_(
+    t: Tensor,
+    start: Optional[Union[int, List[Optional[int]]]] = None,
+    stop: Optional[Union[int, List[Optional[int]]]] = None,
+    step: Optional[Union[int, List[Optional[int]]]] = None,
+    axis: Optional[Union[int, List[int]]] = None,
+) -> Tensor:
     """
     Select elements from a tensor, in place, using a slice or multiple slices.
 
@@ -114,8 +119,9 @@ def slice_(t: Tensor,
 
     start, stop, step, axis = process_args(start, stop, step, axis)
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "SliceInplace", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "SliceInplace", 1, _ir.NumInputs(1, 1), 1
+    )
     settings = ctx._get_op_settings("slice_inplace")
     op = pb_g.createConnectedOp_SliceInplaceOp(
         {0: t.id},
@@ -131,11 +137,12 @@ def slice_(t: Tensor,
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def process_args(start: Optional[Union[int, List[Optional[int]]]] = None,
-                 stop: Optional[Union[int, List[Optional[int]]]] = None,
-                 step: Optional[Union[int, List[Optional[int]]]] = None,
-                 axis: Optional[Union[int, List[int]]] = None
-                 ) -> Tuple[List[int], List[int], List[int], List[int]]:
+def process_args(
+    start: Optional[Union[int, List[Optional[int]]]] = None,
+    stop: Optional[Union[int, List[Optional[int]]]] = None,
+    step: Optional[Union[int, List[Optional[int]]]] = None,
+    axis: Optional[Union[int, List[int]]] = None,
+) -> Tuple[List[int], List[int], List[int], List[int]]:
 
     # Convert to list if scalar
     start = [start] if start is not None and isinstance(start, int) else start
@@ -166,13 +173,17 @@ def process_args(start: Optional[Union[int, List[Optional[int]]]] = None,
     if start is None:
         start = [(0 if step_i > 0 else -1) for step_i in step]
     else:
-        start = [((0 if step[i] > 0 else -1) if e is None else e)
-                 for i, e in enumerate(start)]
+        start = [
+            ((0 if step[i] > 0 else -1) if e is None else e)
+            for i, e in enumerate(start)
+        ]
 
     if stop is None:
         stop = [(INT_MAX if step_i > 0 else INT_MIN) for step_i in step]
     else:
-        stop = [((INT_MAX if step[i] > 0 else INT_MIN) if e is None else e)
-                for i, e in enumerate(stop)]
+        stop = [
+            ((INT_MAX if step[i] > 0 else INT_MIN) if e is None else e)
+            for i, e in enumerate(stop)
+        ]
 
     return start, stop, step, axis

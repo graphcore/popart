@@ -36,12 +36,9 @@ def get_docstring_summary(obj):
 
 with open(sys.argv[1], "w", encoding="utf-8") as f:
 
-    for package_name in [
-            'popxl.ops', 'popxl.ops.collectives', 'popxl.ops.var_updates'
-    ]:
+    for package_name in ["popxl.ops", "popxl.ops.collectives", "popxl.ops.var_updates"]:
         name = package_name.replace(".", "_")
-        print(f".. list-table:: Available operations in ``{package_name}``",
-              file=f)
+        print(f".. list-table:: Available operations in ``{package_name}``", file=f)
         print("   :header-rows: 1", file=f)
         print("   :width: 100%", file=f)
         print("   :widths: 45, 55", file=f)

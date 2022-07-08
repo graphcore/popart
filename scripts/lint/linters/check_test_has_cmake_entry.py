@@ -20,19 +20,19 @@ from typing import Optional, Sequence
 def is_probably_pytest_file(file_path):
     with file_path.open() as f:
         for line in f.readlines():
-            if re.match('def test', line):
+            if re.match("def test", line):
                 return True
-            elif re.match('class Test', line):
+            elif re.match("class Test", line):
                 return True
-            elif re.match(r'\s*unittest\.main\(\)', line):
+            elif re.match(r"\s*unittest\.main\(\)", line):
                 return True
     return False
 
 
 def popart_root_dir():
     here = Path(__file__).resolve()
-    assert 'popart' in here.parts
-    while here.parent.name != 'popart':
+    assert "popart" in here.parts
+    while here.parent.name != "popart":
         here = here.parent
     return here.parent
 
@@ -47,12 +47,12 @@ def check_for_test_entry(lint_path, cmakelists_path):
             # We catch commented out entires as these are not tests where the
             # cmake entry has been forgotten, but usually tests that are broken
             # and have a task to fix attached.
-            pattern = r'(#\s*)?'
+            pattern = r"(#\s*)?"
             # Match instances of 'add_popart_py_unit_test(some_test_name '
-            pattern += r'add_popart_py_unit_test\('
+            pattern += r"add_popart_py_unit_test\("
             # Match only entries with the same lint_path
             pattern += Path(lint_path).stem
-            pattern += r'[\s,\)]'
+            pattern += r"[\s,\)]"
             if re.match(pattern, line):
                 return 0
 
@@ -61,16 +61,17 @@ def check_for_test_entry(lint_path, cmakelists_path):
     print(
         f"Could not find `add_popart_py_unit_test` entry for '{lint_path.name}' "
         f"in '{cmakelists_relative_path}'. If this is intentional, please exclude the "
-        f"path \"({test_relative_path})\" in both .arclint (for arc) and "
+        f'path "({test_relative_path})" in both .arclint (for arc) and '
         f".pre-commit-config.yaml (for pre-commit). You can find this "
         "setting under the 'popart-test-linter' section in both files.",
-        file=sys.stderr)
+        file=sys.stderr,
+    )
     return 1
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs='*')
+    parser.add_argument("filenames", nargs="*")
     args = parser.parse_args(argv)
 
     ret_val = 0
@@ -82,7 +83,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if not is_probably_pytest_file(lint_path):
             continue
 
-        cmakelists_path = lint_path.parent / 'CMakeLists.txt'
+        cmakelists_path = lint_path.parent / "CMakeLists.txt"
         # If there is no CMakeLists.txt in this directory, just return.
         if not cmakelists_path.exists():
             continue
@@ -91,5 +92,5 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return ret_val
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

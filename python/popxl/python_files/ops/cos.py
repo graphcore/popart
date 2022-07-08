@@ -24,7 +24,7 @@ def cos(t: Tensor) -> Tensor:
     check_in_graph(g, input=t)
     check_tensor_ipu_and_tile_set(input=t)
 
-    settings = ctx._get_op_settings('cos')
+    settings = ctx._get_op_settings("cos")
     opid = _ir.OperatorIdentifier("ai.onnx", "Cos", 7, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_CosOp(
         {

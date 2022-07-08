@@ -19,8 +19,15 @@ def create_session(device_type: str, ipus: int = 1):
 
 @pytest.mark.parametrize(
     "test_case",
-    (("ipu_hw", "ipu_hw"), ("ipu_model", "ipu_model"), ("ipu_hw", "ipu_model"),
-     ("ipu_hw", "cpu"), ("ipu_model", "ipu_hw"), ("cpu", "ipu_hw")))
+    (
+        ("ipu_hw", "ipu_hw"),
+        ("ipu_model", "ipu_model"),
+        ("ipu_hw", "ipu_model"),
+        ("ipu_hw", "cpu"),
+        ("ipu_model", "ipu_hw"),
+        ("cpu", "ipu_hw"),
+    ),
+)
 def test_check_compatibility(test_case):
     # Note poplar allows for `ipu_model -> cpu`
     compile_type, run_type = test_case

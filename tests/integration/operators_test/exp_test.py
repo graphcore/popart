@@ -7,7 +7,7 @@ def test_logexp0(op_tester):
     """
     Test of both ExpInplace (priority > 0) and Exp (priority <= 0)
     """
-    for inplace_priority in [-100., +100.]:
+    for inplace_priority in [-100.0, +100.0]:
         d1 = np.random.rand(4).astype(np.float32)
 
         def init_builder(builder):
@@ -28,7 +28,7 @@ def test_logexp0(op_tester):
             a = torch.tensor(d1, requires_grad=True)
             return [a * 1.0]
 
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")
 
 
 def test_exp0(op_tester):
@@ -37,7 +37,7 @@ def test_exp0(op_tester):
     1) 1 ExpInplace and 2 Exp (priority > 0) and
     2) 3 Exp (priority <= 0)
     """
-    for inplace_priority in [-100., +100.]:
+    for inplace_priority in [-100.0, +100.0]:
         d1 = np.random.rand(4).astype(np.float32)
 
         def init_builder(builder):
@@ -62,4 +62,4 @@ def test_exp0(op_tester):
             a = torch.tensor(3 * np.exp(d1), requires_grad=True)
             return [a]
 
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")

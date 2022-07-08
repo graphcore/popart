@@ -33,13 +33,10 @@ def logical_and(lhs: Tensor, rhs: Tensor) -> Tensor:
     lhs = cast_if_needed(lhs, dtypes.bool)
     rhs = cast_if_needed(rhs, dtypes.bool)
 
-    settings = ctx._get_op_settings('and')
+    settings = ctx._get_op_settings("and")
     opid = _ir.OperatorIdentifier("ai.onnx", "And", 7, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_AndOp(
-        {
-            0: lhs.id,
-            1: rhs.id
-        },
+        {0: lhs.id, 1: rhs.id},
         {
             0: g._create_tensor_id("and_out"),
         },

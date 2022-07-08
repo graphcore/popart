@@ -22,8 +22,7 @@ class TestDetach:
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         if inplace:
-            assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp,
-                                       g)
+            assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp, g)
         else:
             assert contains_op_of_type("Detach", _ir.op.DetachOp, g)
 
@@ -40,7 +39,6 @@ class TestDetach:
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         if inplace:
-            assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp,
-                                       g)
+            assert contains_op_of_type("DetachInplace", _ir.op.DetachInplaceOp, g)
         else:
             assert contains_op_of_type("Detach", _ir.op.DetachOp, g)

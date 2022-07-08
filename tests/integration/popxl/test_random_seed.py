@@ -8,10 +8,8 @@ def test_random_seed_setup():
     ir = popxl.Ir()
     main = ir.main_graph
     with main:
-        seed_h2d = popxl.h2d_stream(shape=(2, ),
-                                    dtype=dtypes.uint32,
-                                    name='seed_stream')
-        seed = ops.host_load(seed_h2d, 'seed')
+        seed_h2d = popxl.h2d_stream(shape=(2,), dtype=dtypes.uint32, name="seed_stream")
+        seed = ops.host_load(seed_h2d, "seed")
 
         x = popxl.variable(0.0)
         x = ops.dropout(x, seed + 1, p=0.1)

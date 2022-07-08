@@ -7,22 +7,22 @@ import test_util as tu
 def test_create_empty_options():
 
     opts = popart.SessionOptions()
-    assert (opts is not None)
+    assert opts is not None
     # assert that the dotChecks set is empty:
-    assert (not opts.dotChecks)
-    assert (len(opts.engineOptions) == 0)
-    assert (len(opts.convolutionOptions) == 0)
-    assert (len(opts.reportOptions) == 0)
-    assert (opts.logDir == "")
+    assert not opts.dotChecks
+    assert len(opts.engineOptions) == 0
+    assert len(opts.convolutionOptions) == 0
+    assert len(opts.reportOptions) == 0
+    assert opts.logDir == ""
 
 
 def test_set_dotchecks():
 
     opts = popart.SessionOptions()
-    assert (len(opts.dotChecks) == 0)
+    assert len(opts.dotChecks) == 0
 
     opts.dotChecks = {"Final", "Fwd0"}
-    assert (len(opts.dotChecks) == 2)
+    assert len(opts.dotChecks) == 2
 
 
 def test_set_enabledOutlining_flag():
@@ -37,34 +37,34 @@ def test_set_enabledOutlining_flag():
 def test_set_engineOptions():
 
     opts = popart.SessionOptions()
-    opts.engineOptions = {'option': 'value'}
+    opts.engineOptions = {"option": "value"}
 
-    assert (len(opts.engineOptions) == 1)
-    assert (len(opts.convolutionOptions) == 0)
-    assert (len(opts.reportOptions) == 0)
-    assert (opts.engineOptions['option'] == 'value')
+    assert len(opts.engineOptions) == 1
+    assert len(opts.convolutionOptions) == 0
+    assert len(opts.reportOptions) == 0
+    assert opts.engineOptions["option"] == "value"
 
 
 def test_set_convolutionOptions():
 
     opts = popart.SessionOptions()
-    opts.convolutionOptions = {'option': 'value'}
+    opts.convolutionOptions = {"option": "value"}
 
-    assert (len(opts.engineOptions) == 0)
-    assert (len(opts.convolutionOptions) == 1)
-    assert (len(opts.reportOptions) == 0)
-    assert (opts.convolutionOptions['option'] == 'value')
+    assert len(opts.engineOptions) == 0
+    assert len(opts.convolutionOptions) == 1
+    assert len(opts.reportOptions) == 0
+    assert opts.convolutionOptions["option"] == "value"
 
 
 def test_set_reportOptions():
 
     opts = popart.SessionOptions()
-    opts.reportOptions = {'option': 'value'}
+    opts.reportOptions = {"option": "value"}
 
-    assert (len(opts.engineOptions) == 0)
-    assert (len(opts.convolutionOptions) == 0)
-    assert (len(opts.reportOptions) == 1)
-    assert (opts.reportOptions['option'] == 'value')
+    assert len(opts.engineOptions) == 0
+    assert len(opts.convolutionOptions) == 0
+    assert len(opts.reportOptions) == 1
+    assert opts.reportOptions["option"] == "value"
 
 
 def test_engine_options_passed_to_engine():
@@ -87,19 +87,18 @@ def test_engine_options_passed_to_engine():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     opts = popart.SessionOptions()
-    opts.engineOptions = {'option': 'value'}
+    opts.engineOptions = {"option": "value"}
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.poplar_exception) as e_info:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+            )
 
             session.initAnchorArrays()
             session.prepareDevice()
 
-    assert (e_info.value.args[0].endswith("Unrecognised option 'option'"))
+    assert e_info.value.args[0].endswith("Unrecognised option 'option'")
 
 
 # An error should be thrown if the user tries to set an unrecognised option flag.
@@ -107,7 +106,7 @@ def test_engine_options_passed_to_engine():
 def test_set_bad_options():
     opts = popart.SessionOptions()
     with pytest.raises(AttributeError):
-        opts.foo = 'bar'
+        opts.foo = "bar"
 
 
 def test_update_options():

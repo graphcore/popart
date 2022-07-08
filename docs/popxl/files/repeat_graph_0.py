@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 Demonstrate how to call the same subgraph from a Python function with a repeat operation.
-'''
+"""
 import numpy as np
 import popxl
 import popxl.ops as ops
@@ -25,7 +25,7 @@ with main:
     increment_graph = ir.create_graph(increment_fn, x, value)
 
     # call graph in a loop
-    o, = ops.repeat(increment_graph, 2, x, value)
+    (o,) = ops.repeat(increment_graph, 2, x, value)
     # Op end
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")

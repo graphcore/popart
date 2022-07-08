@@ -9,6 +9,7 @@ from typing_extensions import Literal
 
 try:
     import torch
+
     torch_imported = True
 except ModuleNotFoundError:
     torch_imported = False
@@ -19,17 +20,17 @@ if TYPE_CHECKING:
 HW_DEVICE_CONNECTION_TIMEOUT = int(1e4)
 
 downcast_np_dtypes = {
-    np.dtype('int64'): np.dtype('int32'),
-    np.dtype('uint64'): np.dtype('uint32'),
-    np.dtype('float64'): np.dtype('float32'),
+    np.dtype("int64"): np.dtype("int32"),
+    np.dtype("uint64"): np.dtype("uint32"),
+    np.dtype("float64"): np.dtype("float32"),
 }
 
 
 def to_numpy(
-        x: 'HostScalarTensor',
-        dtype: Optional['dtypes.dtype'] = None,
-        downcast: bool = True,
-        copy: bool = True,
+    x: "HostScalarTensor",
+    dtype: Optional["dtypes.dtype"] = None,
+    downcast: bool = True,
+    copy: bool = True,
 ) -> np.ndarray:
     """
     Convert a `HostScalarTensor` to a numpy array and copies the data if enabled.
@@ -70,7 +71,7 @@ def to_numpy(
     return x
 
 
-def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
+def _popxl_to_numpy(t: Union["Constant", "Variable"]) -> np.ndarray:
     """Return the data contained in the tensor. See the cpp class `TensorData` for details.
 
     Note this is a memory view of the data, so will not allocate extra memory for the data, but
@@ -97,8 +98,9 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
     elif t.dtype == dtypes.float16:
         # TODO T50782: Handle fp16 conversion in cpp and avoid the .view() call.
         # See python/popart._internal.ir/bindings/tensor.cpp
-        return np.asarray(t_.dataAsFloat16().view(t.dtype.as_numpy()),
-                          t.dtype.as_numpy())
+        return np.asarray(
+            t_.dataAsFloat16().view(t.dtype.as_numpy()), t.dtype.as_numpy()
+        )
     elif t.dtype == dtypes.int64:
         return np.asarray(t_.dataAsInt64(), t.dtype.as_numpy())
     elif t.dtype == dtypes.int32:
@@ -122,7 +124,8 @@ def _popxl_to_numpy(t: Union['Constant', 'Variable']) -> np.ndarray:
 
 
 def _offline_device_from_str(
-        device_type: str, num_ipus: Optional[int] = None) -> popart.DeviceInfo:
+    device_type: str, num_ipus: Optional[int] = None
+) -> popart.DeviceInfo:
     """Return a PopART `DeviceInfo` object matching the name of a system.
         See poplar::Target::createIPUTarget for more details.
 
@@ -134,12 +137,15 @@ def _offline_device_from_str(
         popart.DeviceInfo: The device info for the given options
     """
     return popart.DeviceManager().createOfflineIpuFromSystemString(
-        device_type, num_ipus if num_ipus else 0)
+        device_type, num_ipus if num_ipus else 0
+    )
 
 
-def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
-                    num_ipus: int = 1,
-                    use_popdist: bool = False) -> popart.DeviceInfo:
+def _to_device_info(
+    device_type: Literal["ipu_hw", "ipu_model", "cpu"],
+    num_ipus: int = 1,
+    use_popdist: bool = False,
+) -> popart.DeviceInfo:
     """Return the PopART `DeviceInfo` object relating to the given parameters.
 
     Args:
@@ -159,15 +165,17 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
     """
     if device_type == "cpu":
         if num_ipus > 1:
-            raise ValueError(f"For a cpu device, multiple devices "
-                             f"(provided: {num_ipus}) are not supported.")
+            raise ValueError(
+                f"For a cpu device, multiple devices "
+                f"(provided: {num_ipus}) are not supported."
+            )
         return popart.DeviceManager().createCpuDevice()
     elif device_type == "ipu_model":
-        return popart.DeviceManager().createIpuModelDevice(
-            {"numIPUs": num_ipus})
+        return popart.DeviceManager().createIpuModelDevice({"numIPUs": num_ipus})
     elif device_type == "ipu_hw":
         if use_popdist:
             import popdist.popart
+
             return popdist.popart.getDevice()
 
         dm = popart.DeviceManager()
@@ -184,8 +192,10 @@ def _to_device_info(device_type: Literal["ipu_hw", "ipu_model", "cpu"],
         return _offline_device_from_str(device_type, num_ipus)
     except popart.exception:
         pass
-    raise ValueError(f"Incorrect device type provided: {device_type}, must be "
-                     "one of: `ipu_hw`, `ipu_model`, `cpu`")
+    raise ValueError(
+        f"Incorrect device type provided: {device_type}, must be "
+        "one of: `ipu_hw`, `ipu_model`, `cpu`"
+    )
 
 
 def _print_acquired():
@@ -199,18 +209,17 @@ def _print_acquired():
 
 def _print_waiting(elapsed, time_until_summary, update_frequency, devices):
     message = f"\r{devices} matching device{'s' if devices > 1 else ''}. Waiting for available device."
-    dots = min(time_until_summary // update_frequency,
-               elapsed // update_frequency)
-    message += ("." * int(dots))
+    dots = min(time_until_summary // update_frequency, elapsed // update_frequency)
+    message += "." * int(dots)
     if elapsed >= time_until_summary:
         # After `time_until_summary` seconds just print the elapsed time instead of more dots
         message += f" waited {int(elapsed)}s"
     print(message, end="")
 
 
-def _acquire_hw_device_with_timeout(num_ipus: int = 1,
-                                    timeout: int = HW_DEVICE_CONNECTION_TIMEOUT
-                                    ) -> popart.DeviceInfo:
+def _acquire_hw_device_with_timeout(
+    num_ipus: int = 1, timeout: int = HW_DEVICE_CONNECTION_TIMEOUT
+) -> popart.DeviceInfo:
     """Acquire a real IPU device with `num_ipus`.
 
     If there are matching devices available but they are busy, this method will wait for an available device.
@@ -253,8 +262,9 @@ def _acquire_hw_device_with_timeout(num_ipus: int = 1,
 
         elapsed = time.time() - start
         if elapsed > next_message:
-            _print_waiting(elapsed, time_until_summary_message,
-                           update_frequency, len(devices))
+            _print_waiting(
+                elapsed, time_until_summary_message, update_frequency, len(devices)
+            )
             next_message += update_frequency
 
     print(end="\n")
@@ -263,9 +273,9 @@ def _acquire_hw_device_with_timeout(num_ipus: int = 1,
     )
 
 
-def table_to_string(rows: Sequence[Sequence],
-                    delimiter: str = ' | ',
-                    header: bool = True):
+def table_to_string(
+    rows: Sequence[Sequence], delimiter: str = " | ", header: bool = True
+):
     """Create a string that resembles a table from inputs `rows`.
 
     Each item in rows represents a row which will be delimited with `delimiter`.
@@ -276,7 +286,7 @@ def table_to_string(rows: Sequence[Sequence],
     .. code-block:: python
 
         rows = [
-            ['num', 'foo', 'name'],
+            ["num", "foo", "name"],
             [3, "aaab", "args"],
             [4, "barrrr", "kwargs"],
             [3, "me", "inspect"],
@@ -307,8 +317,10 @@ def table_to_string(rows: Sequence[Sequence],
     col_widths = [max(map(len, map(str, col))) for col in zip(*rows)]
     output = ""
     for i, row in enumerate(rows):
-        row_str = delimiter.join(f"{col: <{width}}"
-                                 for col, width in zip(row, col_widths)) + "\n"
+        row_str = (
+            delimiter.join(f"{col: <{width}}" for col, width in zip(row, col_widths))
+            + "\n"
+        )
         output += row_str
         if header and i == 0 and len(rows) > 1:
             output += "-" * len(row_str) + "\n"

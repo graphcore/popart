@@ -6,6 +6,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -31,25 +32,26 @@ def get_simple_model_cycle_count(bps):
     with tu.create_test_device() as device:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
-            dataFlow=popart.DataFlow(bps,
-                                     {out: popart.AnchorReturnType("All")}),
+            dataFlow=popart.DataFlow(bps, {out: popart.AnchorReturnType("All")}),
             userOptions=opts,
             deviceInfo=device,
-            patterns=patterns)
+            patterns=patterns,
+        )
 
         session.prepareDevice()
         anchors = session.initAnchorArrays()
         if bps > 1:
             d_shape.insert(0, bps)
         stepio = popart.PyStepIO(
-            {d0: np.random.rand(*d_shape).astype(np.float32)}, anchors)
+            {d0: np.random.rand(*d_shape).astype(np.float32)}, anchors
+        )
         session.run(stepio)
 
         cycles = session.getCycleCount()
         cycles_ = session.getCycleCount()
     print("BPS: ", bps, " Cycles: ", cycles)
     # Verify that the tensor is not overwritten when streaming off device
-    assert (cycles == cycles_)
+    assert cycles == cycles_
     return cycles
 
 
@@ -82,16 +84,17 @@ def test_get_cycle_count_requires_run():
     opts.instrumentWithHardwareCycleCounter = True
 
     with tu.create_test_device() as d:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(1, [p]),
-                                          userOptions=opts,
-                                          deviceInfo=d)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [p]),
+            userOptions=opts,
+            deviceInfo=d,
+        )
         session.prepareDevice()
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = session.getCycleCount()
-        assert e_info.value.args[0].startswith(
-            "Must call run before getCycleCount")
+        assert e_info.value.args[0].startswith("Must call run before getCycleCount")
 
 
 @tu.requires_ipu
@@ -102,18 +105,22 @@ def test_get_cycle_count_requires_instrumentation_option():
 
     # Default SessionOptions - cycle count instrumentation off
     with tu.create_test_device() as d:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(1, [p]),
-                                          deviceInfo=d)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [p]),
+            deviceInfo=d,
+        )
         session.prepareDevice()
-        stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
-                                 session.initAnchorArrays())
+        stepio = popart.PyStepIO(
+            {d0: np.random.rand(1).astype(np.float32)}, session.initAnchorArrays()
+        )
         session.run(stepio)
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = session.getCycleCount()
         assert e_info.value.args[0].startswith(
-            "SessionOption 'instrumentWithHardwareCycleCounter' must be")
+            "SessionOption 'instrumentWithHardwareCycleCounter' must be"
+        )
 
 
 @tu.requires_ipu
@@ -126,13 +133,16 @@ def test_get_cycle_count_bad_id():
         opts = popart.SessionOptions()
         opts.instrumentWithHardwareCycleCounter = True
         opts.hardwareInstrumentations = instrumentation
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(1, [p]),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [p]),
+            userOptions=opts,
+            deviceInfo=device,
+        )
         session.prepareDevice()
-        stepio = popart.PyStepIO({d0: np.random.rand(1).astype(np.float32)},
-                                 session.initAnchorArrays())
+        stepio = popart.PyStepIO(
+            {d0: np.random.rand(1).astype(np.float32)}, session.initAnchorArrays()
+        )
         session.run(stepio)
         return session
 
@@ -168,13 +178,16 @@ def test_get_cycle_count_replication(useIOTiles):
         opts.enableReplicatedGraphs = True
         if useIOTiles is True:
             opts.numIOTiles = 32
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(20, [act]),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(20, [act]),
+            userOptions=opts,
+            deviceInfo=device,
+        )
         session.prepareDevice()
-        stepio = popart.PyStepIO({d0: np.random.rand(40).astype(np.float32)},
-                                 session.initAnchorArrays())
+        stepio = popart.PyStepIO(
+            {d0: np.random.rand(40).astype(np.float32)}, session.initAnchorArrays()
+        )
         session.run(stepio)
         return session
 
@@ -189,8 +202,8 @@ def test_get_cycle_count_replication(useIOTiles):
         tilesPerIPU = 4
     with tu.create_test_device(numIpus=4, tilesPerIPU=tilesPerIPU) as device:
         s = getInstrumentedSession(
-            {popart.Instrumentation.Outer, popart.Instrumentation.Inner},
-            device)
+            {popart.Instrumentation.Outer, popart.Instrumentation.Inner}, device
+        )
         print(s.getCycleCount())
         print(s.getCycleCount("inner_ipu_0"))
         print(s.getCycleCount("inner_ipu_1"))

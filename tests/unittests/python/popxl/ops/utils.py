@@ -5,8 +5,9 @@ import popxl
 import popart._internal.ir as _ir
 
 
-def contains_op_of_type(opType: str, PbOpType: Type[_ir.Op],
-                        graph: popxl.Graph) -> bool:
+def contains_op_of_type(
+    opType: str, PbOpType: Type[_ir.Op], graph: popxl.Graph
+) -> bool:
     pb_g = graph._pb_graph
 
     for pb_op in pb_g.getOps():
@@ -15,8 +16,7 @@ def contains_op_of_type(opType: str, PbOpType: Type[_ir.Op],
     return False
 
 
-def num_op_of_type(opType: str, PbOpType: Type[_ir.Op],
-                   graph: popxl.Graph) -> int:
+def num_op_of_type(opType: str, PbOpType: Type[_ir.Op], graph: popxl.Graph) -> int:
     pb_g = graph._pb_graph
 
     count = 0

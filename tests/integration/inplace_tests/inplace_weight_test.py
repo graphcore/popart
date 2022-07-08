@@ -8,6 +8,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -53,18 +54,18 @@ def test_inplace_weight_add(constantWeights):
     def create_session(inplacing, device):
         builder = popart.Builder()
 
-        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
-                                        "data")
+        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape), "data")
         sin = builder.aiOnnx.sin([input_], "sin")
-        w = builder.addInitializedInputTensor(weight, 'input_weights')
+        w = builder.addInitializedInputTensor(weight, "input_weights")
         add = builder.aiOnnx.add([sin, w], "add")
         builder.setInplacePreferences(
-            add, {"AddRhsInplace": +1e8})  # force weight inplacing
+            add, {"AddRhsInplace": +1e8}
+        )  # force weight inplacing
         cos = builder.aiOnnx.cos([add], "cos")
 
-        loss = builder.aiGraphcore.l1loss([cos],
-                                          0.1,
-                                          reduction=popart.ReductionType.Mean)
+        loss = builder.aiGraphcore.l1loss(
+            [cos], 0.1, reduction=popart.ReductionType.Mean
+        )
 
         builder.addOutputTensor(loss)
 
@@ -99,12 +100,11 @@ def test_inplace_weight_add(constantWeights):
         session2, stepio2, anchors2 = create_session(False, device=d2)
 
         def verify_inplacing(session, count):
-            ir = json.loads(
-                session._serializeIr(popart.IrSerializationFormat.JSON))
+            ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
             inplaceAdds = [
-                op for op in ir['maingraph'] if op['type'] == 'AddLhsInplace'
+                op for op in ir["maingraph"] if op["type"] == "AddLhsInplace"
             ]
-            assert (len(inplaceAdds) == count)
+            assert len(inplaceAdds) == count
 
         verify_inplacing(session1, 1)
 
@@ -136,9 +136,8 @@ def test_non_modifying_inplace(constantWeights):
     def create_session(inplacing, device):
         builder = popart.Builder()
 
-        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
-                                        "data")
-        w = builder.addInitializedInputTensor(weight, 'input_weights')
+        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape), "data")
+        w = builder.addInitializedInputTensor(weight, "input_weights")
 
         # If we set the priorities to the same, it will choose to inplace the
         # Rhs over the transpose. But we want it to try to Rhs the inplace
@@ -148,9 +147,9 @@ def test_non_modifying_inplace(constantWeights):
         add = builder.aiOnnx.add([input_, trans], "add")
         builder.setInplacePreferences(add, {"AddRhsInplace": +1e7})
 
-        loss = builder.aiGraphcore.l1loss([add],
-                                          0.1,
-                                          reduction=popart.ReductionType.Mean)
+        loss = builder.aiGraphcore.l1loss(
+            [add], 0.1, reduction=popart.ReductionType.Mean
+        )
 
         builder.addOutputTensor(loss)
 
@@ -183,9 +182,8 @@ def test_non_modifying_inplace(constantWeights):
         session2, stepio2, anchors2 = create_session(False, device=d2)
 
         def verify_inplacing(session, count, type_):
-            ir = json.loads(
-                session._serializeIr(popart.IrSerializationFormat.JSON))
-            inplaces = [op for op in ir['maingraph'] if op['type'] == type_]
+            ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+            inplaces = [op for op in ir["maingraph"] if op["type"] == type_]
 
             assert len(inplaces) == count
 
@@ -240,9 +238,8 @@ def test_non_modifying_inplace_2(constantWeights):
     def create_session(inplacing, device):
         builder = popart.Builder()
 
-        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape),
-                                        "data")
-        w = builder.addInitializedInputTensor(weight, 'input_weights')
+        input_ = builder.addInputTensor(popart.TensorInfo("FLOAT", data.shape), "data")
+        w = builder.addInitializedInputTensor(weight, "input_weights")
 
         shape = builder.aiOnnx.constant(np.array(input_size))
 
@@ -254,9 +251,9 @@ def test_non_modifying_inplace_2(constantWeights):
         add = builder.aiOnnx.add([input_, reshape], "add")
         builder.setInplacePreferences(add, {"AddRhsInplace": +1e7})
 
-        loss = builder.aiGraphcore.l1loss([add],
-                                          0.1,
-                                          reduction=popart.ReductionType.Mean)
+        loss = builder.aiGraphcore.l1loss(
+            [add], 0.1, reduction=popart.ReductionType.Mean
+        )
 
         builder.addOutputTensor(loss)
 
@@ -266,13 +263,15 @@ def test_non_modifying_inplace_2(constantWeights):
         opts = popart.SessionOptions()
         opts.constantWeights = constantWeights
 
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(1, [loss]),
-                                         deviceInfo=device,
-                                         userOptions=opts,
-                                         patterns=patterns,
-                                         loss=loss,
-                                         optimizer=popart.ConstSGD(1e-3))
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [loss]),
+            deviceInfo=device,
+            userOptions=opts,
+            patterns=patterns,
+            loss=loss,
+            optimizer=popart.ConstSGD(1e-3),
+        )
 
         session.prepareDevice()
 
@@ -289,16 +288,16 @@ def test_non_modifying_inplace_2(constantWeights):
         session2, stepio2, anchors2 = create_session(False, device=d2)
 
         def verify_inplacing(session, count, type_):
-            ir = json.loads(
-                session._serializeIr(popart.IrSerializationFormat.JSON))
+            ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
 
             # Hacky way to remove backwards ops.
             ir = [
-                op for op in ir['maingraph']
-                if not op['outputs'][0]['name'].startswith("Gradient___")
+                op
+                for op in ir["maingraph"]
+                if not op["outputs"][0]["name"].startswith("Gradient___")
             ]
 
-            inplaces = [op for op in ir if op['type'] == type_]
+            inplaces = [op for op in ir if op["type"] == type_]
             assert len(inplaces) == count
 
         verify_inplacing(session1, 1, "TransposeInplace")

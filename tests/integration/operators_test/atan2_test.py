@@ -22,7 +22,7 @@ def test_atan2_basic(op_tester):
         out = torch.atan2(torch_input_y, torch_input_x)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_atan2_float16(op_tester):
@@ -42,12 +42,13 @@ def test_atan2_float16(op_tester):
         torch_input_x = torch.tensor(input_x, requires_grad=False)
 
         # 16 bit-not supported on cpu
-        out = torch.atan2(torch_input_y.to(torch.float32),
-                          torch_input_x.to(torch.float32)).to(torch.float16)
+        out = torch.atan2(
+            torch_input_y.to(torch.float32), torch_input_x.to(torch.float32)
+        ).to(torch.float16)
         return [out]
 
-    op_tester.atol = 1e-02  #Allow for 16 vs 32 bit
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.atol = 1e-02  # Allow for 16 vs 32 bit
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_atan2_reshaped(op_tester):
@@ -70,7 +71,7 @@ def test_atan2_reshaped(op_tester):
         out = torch.atan2(torch_input_y, torch_input_x)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_atan2_broadcasting_y(op_tester):
@@ -90,7 +91,7 @@ def test_atan2_broadcasting_y(op_tester):
         out = torch.atan2(torch_input_y, torch_input_x)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_atan2_outplace(op_tester):
@@ -112,7 +113,7 @@ def test_atan2_outplace(op_tester):
         return [out]
 
     op_tester.inplacing = False
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_atan2_grad(op_tester):
@@ -128,7 +129,7 @@ def test_atan2_grad(op_tester):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -141,4 +142,4 @@ def test_atan2_grad(op_tester):
 
     # Need to have NaN == NaN to mirror numpy's functionality
     op_tester.equal_nan = True
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

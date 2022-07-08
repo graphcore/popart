@@ -6,6 +6,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -44,10 +45,19 @@ def test_multi_ipu(op_tester):
         subgraph_builder.addOutputTensor(out)
 
         with builder.virtualGraph(0):
-            x = builder.aiGraphcore.packedDataBlock([
-                dataId, sequenceOffsetsId, sequenceLengthsId,
-                sequenceOffsetsId, sequenceLengthsId
-            ], [maxSequenceLength], data.shape[0], 1, subgraph_builder)
+            x = builder.aiGraphcore.packedDataBlock(
+                [
+                    dataId,
+                    sequenceOffsetsId,
+                    sequenceLengthsId,
+                    sequenceOffsetsId,
+                    sequenceLengthsId,
+                ],
+                [maxSequenceLength],
+                data.shape[0],
+                1,
+                subgraph_builder,
+            )
 
         subgraph_builder = builder.createSubgraphBuilder()
 
@@ -59,10 +69,19 @@ def test_multi_ipu(op_tester):
         subgraph_builder.addOutputTensor(out)
 
         with builder.virtualGraph(1):
-            out = builder.aiGraphcore.packedDataBlock([
-                x, sequenceOffsetsId, sequenceLengthsId, sequenceOffsetsId,
-                sequenceLengthsId
-            ], [maxSequenceLength], data.shape[0], 1, subgraph_builder)
+            out = builder.aiGraphcore.packedDataBlock(
+                [
+                    x,
+                    sequenceOffsetsId,
+                    sequenceLengthsId,
+                    sequenceOffsetsId,
+                    sequenceLengthsId,
+                ],
+                [maxSequenceLength],
+                data.shape[0],
+                1,
+                subgraph_builder,
+            )
 
         builder.addOutputTensor(out)
         return [out]
@@ -84,4 +103,4 @@ def test_multi_ipu(op_tester):
     op_tester.options.virtualGraphMode = popart.VirtualGraphMode.Manual
     op_tester.options.autoRecomputation = popart.RecomputationType.Standard
     op_tester.patterns.enablePattern("PackedDataBlock", True)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

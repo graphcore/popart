@@ -2,7 +2,12 @@
 
 import pytest
 import numpy as np
-from popxl.random_seed import uint64_to_two_uint32, two_uint32_to_uint64, MAX_UINT64, create_seeds
+from popxl.random_seed import (
+    uint64_to_two_uint32,
+    two_uint32_to_uint64,
+    MAX_UINT64,
+    create_seeds,
+)
 
 
 def test_two_uint32_packing_and_unpacking():
@@ -37,15 +42,14 @@ def test_two_uint32_packing_and_unpacking():
 
 def test_create_seeds():
     seed_tensors = create_seeds(42)
-    assert str(seed_tensors.dtype) == 'uint32'
-    assert seed_tensors.shape == (2, )
+    assert str(seed_tensors.dtype) == "uint32"
+    assert seed_tensors.shape == (2,)
 
     seed_tensors_again = create_seeds(42)
     np.testing.assert_equal(seed_tensors, seed_tensors_again)
 
-    seed_tensors = create_seeds(42,
-                                batches_per_step=3,
-                                gradient_accumulation_factor=7,
-                                replicas=9)
-    assert str(seed_tensors.dtype) == 'uint32'
+    seed_tensors = create_seeds(
+        42, batches_per_step=3, gradient_accumulation_factor=7, replicas=9
+    )
+    assert str(seed_tensors.dtype) == "uint32"
     assert seed_tensors.shape == (3, 7, 9, 2)

@@ -12,8 +12,9 @@ _IN_FEATURES = 8
 _IN_SHAPE = (_BATCH_SIZE, _IN_FEATURES)
 
 
-def host_store_and_return_d2h_stream(g: popxl.Graph,
-                                     t_: Tensor) -> popxl.DeviceToHostStream:
+def host_store_and_return_d2h_stream(
+    g: popxl.Graph, t_: Tensor
+) -> popxl.DeviceToHostStream:
     """Create a host store op with the provided graph and return the stream.
 
     Args:
@@ -57,11 +58,11 @@ def test_inplacing_ambiguity_0():
 
     with pytest.raises(popart.popart_exception) as e_info:
         _ = setup_ir(ir)
-    assert (e_info.value.args[0].startswith("Inplacing ambiguity detected."))
+    assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
 def test_inplacing_ambiguity_subgraph():
-    """ Check there is the same ambiguity in a called subgraph"""
+    """Check there is the same ambiguity in a called subgraph"""
 
     class InplaceGraph(popxl.Module):
         def __init__(self):
@@ -90,8 +91,7 @@ def test_inplacing_ambiguity_subgraph():
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = setup_ir(ir)
-        assert (
-            e_info.value.args[0].startswith("Inplacing ambiguity detected."))
+        assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
 def test_inplacing_ambiguity_subgraph_1():
@@ -125,8 +125,7 @@ def test_inplacing_ambiguity_subgraph_1():
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = setup_ir(ir)
-        assert (
-            e_info.value.args[0].startswith("Inplacing ambiguity detected."))
+        assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
 def test_inplacing_ambiguity_subgraph_2():
@@ -146,9 +145,7 @@ def test_inplacing_ambiguity_subgraph_2():
 
     main = ir.main_graph
     with main:
-        input_ = popxl.h2d_stream(_IN_SHAPE,
-                                  popxl.float32,
-                                  name="input_stream")
+        input_ = popxl.h2d_stream(_IN_SHAPE, popxl.float32, name="input_stream")
         x0 = ops.host_load(input_, "x0")
 
         w1_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
@@ -162,21 +159,20 @@ def test_inplacing_ambiguity_subgraph_2():
 
         with pytest.raises(popart.popart_exception) as e_info:
             _ = setup_ir(ir)
-        assert (
-            e_info.value.args[0].startswith("Inplacing ambiguity detected."))
+        assert e_info.value.args[0].startswith("Inplacing ambiguity detected.")
 
 
 def test_inplacing_ambiguity_false_positive():
     """Simple example of a false positive inplacing ambiguity.
-   * a <- variable;
-   * b <- variable;
-   * d <- a.add_(5); // a's value changes.
-   * d <- a.copyFrom_(b); // copy from b to a.
-   * e <- d.add(5);
+    * a <- variable;
+    * b <- variable;
+    * d <- a.add_(5); // a's value changes.
+    * d <- a.copyFrom_(b); // copy from b to a.
+    * e <- d.add(5);
 
-   The issue with this case is that poprithms does not distinguish
-   between updates based on existing values, and updates to completely new
-   values.
+    The issue with this case is that poprithms does not distinguish
+    between updates based on existing values, and updates to completely new
+    values.
     """
     ir = popxl.Ir()
 
@@ -202,12 +198,12 @@ def test_inplacing_ambiguity_false_positive():
 
 def test_inplacing_ambiguity_false_positive_2():
     """Simple example of a false positive inplacing ambiguity. Poprithms can't tell that
-    relu_ is idempotent.
+     relu_ is idempotent.
 
-   a <- init();
-   b <- a.relu_(); // relu inplace
-   c <- a.relu_(); // if this were gelu_, there would be a genuine ambiguity,
-    as `relu(a) == relu(relu(a))` but `gelu(relu(a)) != relu(gelu(a)) != relu(a)`.
+    a <- init();
+    b <- a.relu_(); // relu inplace
+    c <- a.relu_(); // if this were gelu_, there would be a genuine ambiguity,
+     as `relu(a) == relu(relu(a))` but `gelu(relu(a)) != relu(gelu(a)) != relu(a)`.
 
     """
     ir = popxl.Ir()
@@ -218,8 +214,7 @@ def test_inplacing_ambiguity_false_positive_2():
         a = popxl.variable(a_data, name="a")
 
         b = ops.relu_(a)
-        c = ops.relu_(
-            a)  #if this were gelu_, there would be a genuine ambiguity.
+        c = ops.relu_(a)  # if this were gelu_, there would be a genuine ambiguity.
 
     _ = host_store_and_return_d2h_stream(main, b)
     _ = host_store_and_return_d2h_stream(main, c)
@@ -232,22 +227,18 @@ def test_inplacing_ambiguity_false_positive_2():
 def test_inplacing_ambiguity_subgraph_3():
     """As above but the second relu_ is now a gelu_ which causes a genuine ambiguity.
 
-   a <- init();
-   b <- a.relu_(); // relu inplace
-   c <- a.gelu_(); // This is now a genuine ambiguity.
-     See `test_inplacing_ambiguity_false_positive_2` for why.
+    a <- init();
+    b <- a.relu_(); // relu inplace
+    c <- a.gelu_(); // This is now a genuine ambiguity.
+      See `test_inplacing_ambiguity_false_positive_2` for why.
 
     """
     ir = popxl.Ir()
 
     main = ir.main_graph
     with main:
-        b_d2h = popxl.d2h_stream(_IN_SHAPE,
-                                 popxl.dtypes.float32,
-                                 name="b_stream")
-        c_d2h = popxl.d2h_stream(_IN_SHAPE,
-                                 popxl.dtypes.float32,
-                                 name="c_stream")
+        b_d2h = popxl.d2h_stream(_IN_SHAPE, popxl.dtypes.float32, name="b_stream")
+        c_d2h = popxl.d2h_stream(_IN_SHAPE, popxl.dtypes.float32, name="c_stream")
 
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = popxl.variable(a_data, name="a")
@@ -266,11 +257,11 @@ def test_inplacing_ambiguity_subgraph_3():
 def test_inplacing_ambiguity_subgraph_4():
     """As above failing example, but operations are now forced in order.
 
-   a <- init();
-   b <- a.relu_(); // relu inplace
-   c <- a.gelu_(); // gelu inplace
+    a <- init();
+    b <- a.relu_(); // relu inplace
+    c <- a.gelu_(); // gelu inplace
 
-   init -> relu_ -> gelu_ enforced.
+    init -> relu_ -> gelu_ enforced.
 
     """
     ir = popxl.Ir()
@@ -278,12 +269,8 @@ def test_inplacing_ambiguity_subgraph_4():
     main = ir.main_graph
 
     with main, popxl.in_sequence():
-        b_d2h = popxl.d2h_stream(_IN_SHAPE,
-                                 popxl.dtypes.float32,
-                                 name="b_stream")
-        c_d2h = popxl.d2h_stream(_IN_SHAPE,
-                                 popxl.dtypes.float32,
-                                 name="c_stream")
+        b_d2h = popxl.d2h_stream(_IN_SHAPE, popxl.dtypes.float32, name="b_stream")
+        c_d2h = popxl.d2h_stream(_IN_SHAPE, popxl.dtypes.float32, name="c_stream")
 
         a_data = np.random.normal(0, 0.1, _IN_SHAPE).astype(np.float32)
         a = popxl.variable(a_data, name="a")

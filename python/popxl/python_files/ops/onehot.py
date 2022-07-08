@@ -6,8 +6,7 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def onehot(t: Tensor, num_classes: Tensor, values: Tensor,
-           axis: int) -> Tensor:
+def onehot(t: Tensor, num_classes: Tensor, values: Tensor, axis: int) -> Tensor:
     """
     Produce a one-hot tensor based on inputs.
 
@@ -33,17 +32,14 @@ def onehot(t: Tensor, num_classes: Tensor, values: Tensor,
     check_in_graph(g, t=t, num_classes=num_classes, values=values)
     check_tensor_ipu_and_tile_set(t=t, num_classes=num_classes, values=values)
 
-    settings = ctx._get_op_settings('onehot')
-    opid = _ir.OperatorIdentifier("ai.onnx", "OneHot", 9, _ir.NumInputs(3, 3),
-                                  1)
+    settings = ctx._get_op_settings("onehot")
+    opid = _ir.OperatorIdentifier("ai.onnx", "OneHot", 9, _ir.NumInputs(3, 3), 1)
     op = pb_g.createConnectedOp_OnehotOp(
-        {
-            0: t.id,
-            1: num_classes.id,
-            2: values.id
-        }, {0: g._create_tensor_id("onehot_out")},
+        {0: t.id, 1: num_classes.id, 2: values.id},
+        {0: g._create_tensor_id("onehot_out")},
         opid=opid,
         axis_=axis,
-        settings=settings)
+        settings=settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

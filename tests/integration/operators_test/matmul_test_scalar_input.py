@@ -27,6 +27,6 @@ def test_matmul_scalar_input(op_tester):
         op_tester.run(init_builder, reference)
 
     assert (
-        e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) doesn't support scalar tensor input as the lhs input"
+        e_info.value.args[0]
+        == "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) doesn't support scalar tensor input as the lhs input"
     )

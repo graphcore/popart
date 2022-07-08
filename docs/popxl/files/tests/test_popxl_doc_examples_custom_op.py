@@ -21,7 +21,6 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_popxl_custom_op(self):
         """Test the popxl custom op"""
         filename = "run_leaky_relu.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir,
-                        input_data=0.01)
+        self.run_python(
+            filename, file_dir=working_dir, working_dir=working_dir, input_data=0.01
+        )

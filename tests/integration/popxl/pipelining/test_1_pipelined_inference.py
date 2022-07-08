@@ -12,9 +12,11 @@ from .pipeline_test_runner import PipelineTestRunner
 
 
 def pipelined_inference_model(
-        ir: popxl.Ir, stream_input_shape: Tuple[int],
-        weights_and_biases: Dict[str, np.array],
-        repeat_count: int) -> Tuple[HostToDeviceStream, DeviceToHostStream]:
+    ir: popxl.Ir,
+    stream_input_shape: Tuple[int],
+    weights_and_biases: Dict[str, np.array],
+    repeat_count: int,
+) -> Tuple[HostToDeviceStream, DeviceToHostStream]:
     """Build the (grouped) pipelined inference model using popxl API.
 
     The model consist of:
@@ -65,29 +67,33 @@ def pipelined_inference_model(
         # These weights are streamed once to the device
         tensor_variable = {}
         tensor_variable["hidden_weights"] = popxl.variable(
-            weights_and_biases["hidden_weights"], name="hidden_weights")
+            weights_and_biases["hidden_weights"], name="hidden_weights"
+        )
         tensor_variable["hidden_bias"] = popxl.variable(
-            weights_and_biases["hidden_bias"], name="hidden_bias")
+            weights_and_biases["hidden_bias"], name="hidden_bias"
+        )
         tensor_variable["output_weights"] = popxl.variable(
-            weights_and_biases["output_weights"], name="output_weights")
+            weights_and_biases["output_weights"], name="output_weights"
+        )
         tensor_variable["output_bias"] = popxl.variable(
-            weights_and_biases["output_bias"], name="output_bias")
+            weights_and_biases["output_bias"], name="output_bias"
+        )
 
         # Create the streams for loading and storing to the host
-        t_in_h2d = popxl.h2d_stream(stream_input_shape,
-                                    popxl.float32,
-                                    name="t_in_stream")
-        t_out_d2h = popxl.d2h_stream(tensor_variable["output_bias"].shape,
-                                     popxl.float32,
-                                     name="t_out_stream")
+        t_in_h2d = popxl.h2d_stream(
+            stream_input_shape, popxl.float32, name="t_in_stream"
+        )
+        t_out_d2h = popxl.d2h_stream(
+            tensor_variable["output_bias"].shape, popxl.float32, name="t_out_stream"
+        )
 
         # We use popxl.in_sequence in order to prevent the scheduling to optimise for minimal
         # tensor liveness (and thereby change the serialisation of the graph)
         with popxl.in_sequence(True):
             micro_batch_tensor = ramp_up(t_in_h2d, tensor_variable)
-            micro_batch_tensor = main_phase(repeat_count, t_in_h2d, t_out_d2h,
-                                            tensor_variable,
-                                            micro_batch_tensor)
+            micro_batch_tensor = main_phase(
+                repeat_count, t_in_h2d, t_out_d2h, tensor_variable, micro_batch_tensor
+            )
 
             # This is completing the last micro batch, so no need to return micro_batch_tensor
             ramp_down(t_out_d2h, tensor_variable, micro_batch_tensor)
@@ -95,8 +101,9 @@ def pipelined_inference_model(
     return t_in_h2d, t_out_d2h
 
 
-def ramp_up(t_in_h2d: HostToDeviceStream, tensor_variable: Dict[str, Variable]
-            ) -> Dict[int, Dict[str, Tensor]]:
+def ramp_up(
+    t_in_h2d: HostToDeviceStream, tensor_variable: Dict[str, Variable]
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the ramp up phase to the IR.
 
     The ramp up is also known as the "fill phase".
@@ -114,21 +121,20 @@ def ramp_up(t_in_h2d: HostToDeviceStream, tensor_variable: Dict[str, Variable]
     # This dict will map the micro batch to the desired tensors
     micro_batch_tensor = {}
 
-    micro_batch_tensor = pipeline_cycle_0(t_in_h2d, tensor_variable,
-                                          micro_batch_tensor)
-    micro_batch_tensor = pipeline_cycle_1(t_in_h2d, tensor_variable,
-                                          micro_batch_tensor)
-    micro_batch_tensor = pipeline_cycle_2(t_in_h2d, tensor_variable,
-                                          micro_batch_tensor)
+    micro_batch_tensor = pipeline_cycle_0(t_in_h2d, tensor_variable, micro_batch_tensor)
+    micro_batch_tensor = pipeline_cycle_1(t_in_h2d, tensor_variable, micro_batch_tensor)
+    micro_batch_tensor = pipeline_cycle_2(t_in_h2d, tensor_variable, micro_batch_tensor)
 
     return micro_batch_tensor
 
 
-def main_phase(repeat_count: int, t_in_h2d: HostToDeviceStream,
-               t_out_d2h: DeviceToHostStream,
-               tensor_variable: Dict[str, Variable],
-               micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-               ) -> Dict[int, Dict[str, Tensor]]:
+def main_phase(
+    repeat_count: int,
+    t_in_h2d: HostToDeviceStream,
+    t_out_d2h: DeviceToHostStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the main phase to the IR.
 
     Note: We are here unrolling the loop (meaning that all the iterations are written explicitly to
@@ -150,16 +156,18 @@ def main_phase(repeat_count: int, t_in_h2d: HostToDeviceStream,
     """
 
     for iteration_number in range(repeat_count):
-        micro_batch_tensor = pipeline_main_cycle(iteration_number, t_in_h2d,
-                                                 t_out_d2h, tensor_variable,
-                                                 micro_batch_tensor)
+        micro_batch_tensor = pipeline_main_cycle(
+            iteration_number, t_in_h2d, t_out_d2h, tensor_variable, micro_batch_tensor
+        )
 
     return micro_batch_tensor
 
 
-def ramp_down(t_out_d2h: DeviceToHostStream,
-              tensor_variable: Dict[str, Variable],
-              micro_batch_tensor: Dict[int, Dict[str, Tensor]]):
+def ramp_down(
+    t_out_d2h: DeviceToHostStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+):
     """Write the ramp down phase to the IR.
 
     The ramp down is also known as the "flush phase".
@@ -173,18 +181,21 @@ def ramp_down(t_out_d2h: DeviceToHostStream,
         micro_batch_tensor (Dict[int, Dict[str, Tensor]]): The map between the micro batch and the
           popxl tensors.
     """
-    micro_batch_tensor = pipeline_cycle_n_minus_2(t_out_d2h, tensor_variable,
-                                                  micro_batch_tensor)
-    micro_batch_tensor = pipeline_cycle_n_minus_1(t_out_d2h, tensor_variable,
-                                                  micro_batch_tensor)
+    micro_batch_tensor = pipeline_cycle_n_minus_2(
+        t_out_d2h, tensor_variable, micro_batch_tensor
+    )
+    micro_batch_tensor = pipeline_cycle_n_minus_1(
+        t_out_d2h, tensor_variable, micro_batch_tensor
+    )
     # This is completing the last micro batch, so no need to return micro_batch_tensor
     pipeline_cycle_n(t_out_d2h, micro_batch_tensor)
 
 
-def pipeline_cycle_0(t_in_h2d: HostToDeviceStream,
-                     tensor_variable: Dict[str, Variable],
-                     micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                     ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_cycle_0(
+    t_in_h2d: HostToDeviceStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the 0th pipeline cycle to the IR.
 
     Args:
@@ -205,22 +216,23 @@ def pipeline_cycle_0(t_in_h2d: HostToDeviceStream,
         #       barriers
         t_in = ops.host_load(t_in_h2d, "t_in")
         t_hidden_matmul = ops.matmul(t_in, tensor_variable["hidden_weights"])
-        t_hidden_layer_result = ops.add(t_hidden_matmul,
-                                        tensor_variable["hidden_bias"])
+        t_hidden_layer_result = ops.add(t_hidden_matmul, tensor_variable["hidden_bias"])
 
     # Copy part of the cycle
     with popxl.ipu(ipu=0):
         # Copy to IPU 1
         micro_batch_tensor[0]["hidden_layer"] = ops.ipu_copy(
-            t=t_hidden_layer_result, destination=1)
+            t=t_hidden_layer_result, destination=1
+        )
 
     return micro_batch_tensor
 
 
-def pipeline_cycle_1(t_in_h2d: HostToDeviceStream,
-                     tensor_variable: Dict[str, Variable],
-                     micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                     ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_cycle_1(
+    t_in_h2d: HostToDeviceStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the 1st pipeline cycle to the IR.
 
     Args:
@@ -241,13 +253,11 @@ def pipeline_cycle_1(t_in_h2d: HostToDeviceStream,
         #       data matches (the micro batches) matches the number of host_loads
         t_in = ops.host_load(t_in_h2d, "t_in")
         t_hidden_matmul = ops.matmul(t_in, tensor_variable["hidden_weights"])
-        t_hidden_layer_result = ops.add(t_hidden_matmul,
-                                        tensor_variable["hidden_bias"])
+        t_hidden_layer_result = ops.add(t_hidden_matmul, tensor_variable["hidden_bias"])
 
     with popxl.ipu(ipu=1):
         # The activation uses the 0th micro batch passed from pipeline cycle 0
-        t_hidden_layer_activation = ops.gelu(
-            micro_batch_tensor[0]["hidden_layer"])
+        t_hidden_layer_activation = ops.gelu(micro_batch_tensor[0]["hidden_layer"])
 
     # Copy part of the cycle
     # NOTE: We ensure that the copy operations are done last in order not to create communication
@@ -257,21 +267,24 @@ def pipeline_cycle_1(t_in_h2d: HostToDeviceStream,
         # This belong to micro batch 1 as it is the second time we host loaded data to the matmul
         # and add operations
         micro_batch_tensor[1]["hidden_layer"] = ops.ipu_copy(
-            t=t_hidden_layer_result, destination=1)
+            t=t_hidden_layer_result, destination=1
+        )
     with popxl.ipu(ipu=1):
         # Copy to IPU 2
         # The activation was working on micro batch 0, hence the result of the activation also
         # belongs to micro batch 0
         micro_batch_tensor[0]["hidden_layer_activation"] = ops.ipu_copy(
-            t=t_hidden_layer_activation, destination=2)
+            t=t_hidden_layer_activation, destination=2
+        )
 
     return micro_batch_tensor
 
 
-def pipeline_cycle_2(t_in_h2d: HostToDeviceStream,
-                     tensor_variable: Dict[str, Variable],
-                     micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                     ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_cycle_2(
+    t_in_h2d: HostToDeviceStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the 2nd pipeline cycle to the IR.
 
     Args:
@@ -290,44 +303,47 @@ def pipeline_cycle_2(t_in_h2d: HostToDeviceStream,
         # This is a new host load, meaning that IPU 0 will now work on micro batch 2
         t_in = ops.host_load(t_in_h2d, "t_in")
         t_hidden_matmul = ops.matmul(t_in, tensor_variable["hidden_weights"])
-        t_hidden_layer_result = ops.add(t_hidden_matmul,
-                                        tensor_variable["hidden_bias"])
+        t_hidden_layer_result = ops.add(t_hidden_matmul, tensor_variable["hidden_bias"])
 
     with popxl.ipu(ipu=1):
         # IPU 1 get passed micro batch 1 from IPU 0
-        t_hidden_layer_activation = ops.gelu(
-            micro_batch_tensor[1]["hidden_layer"])
+        t_hidden_layer_activation = ops.gelu(micro_batch_tensor[1]["hidden_layer"])
 
     with popxl.ipu(ipu=2):
         # IPU 2 get passed micro batch 0 from IPU 1
         t_output_matmul = ops.matmul(
             micro_batch_tensor[0]["hidden_layer_activation"],
-            tensor_variable["output_weights"])
-        t_output_layer_result = ops.add(t_output_matmul,
-                                        tensor_variable["output_bias"])
+            tensor_variable["output_weights"],
+        )
+        t_output_layer_result = ops.add(t_output_matmul, tensor_variable["output_bias"])
 
     # Copy part of the cycle
     with popxl.ipu(ipu=0):
         # Copy to IPU 1
         micro_batch_tensor[2]["hidden_layer"] = ops.ipu_copy(
-            t=t_hidden_layer_result, destination=1)
+            t=t_hidden_layer_result, destination=1
+        )
     with popxl.ipu(ipu=1):
         # Copy to IPU 2
         micro_batch_tensor[1]["hidden_layer_activation"] = ops.ipu_copy(
-            t=t_hidden_layer_activation, destination=2)
+            t=t_hidden_layer_activation, destination=2
+        )
     with popxl.ipu(ipu=2):
         # Copy to IPU 3
         micro_batch_tensor[0]["output_layer"] = ops.ipu_copy(
-            t=t_output_layer_result, destination=3)
+            t=t_output_layer_result, destination=3
+        )
 
     return micro_batch_tensor
 
 
-def pipeline_main_cycle(iteration_number: int, t_in_h2d: HostToDeviceStream,
-                        t_out_d2h: DeviceToHostStream,
-                        tensor_variable: Dict[str, Variable],
-                        micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                        ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_main_cycle(
+    iteration_number: int,
+    t_in_h2d: HostToDeviceStream,
+    t_out_d2h: DeviceToHostStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write a main pipeline cycle to the IR.
 
     Args:
@@ -362,46 +378,47 @@ def pipeline_main_cycle(iteration_number: int, t_in_h2d: HostToDeviceStream,
         # This will operate on the highest micro batch number
         t_in = ops.host_load(t_in_h2d, "t_in")
         t_hidden_matmul = ops.matmul(t_in, tensor_variable["hidden_weights"])
-        t_hidden_layer_result = ops.add(t_hidden_matmul,
-                                        tensor_variable["hidden_bias"])
+        t_hidden_layer_result = ops.add(t_hidden_matmul, tensor_variable["hidden_bias"])
 
     with popxl.ipu(ipu=1):
         # This will work on the data from the highest micro batch number from the previous
         # iteration. That is the highest_micro_batch - 1
         t_hidden_layer_activation = ops.gelu(
-            micro_batch_tensor[highest_micro_batch - 1]["hidden_layer"])
+            micro_batch_tensor[highest_micro_batch - 1]["hidden_layer"]
+        )
 
     with popxl.ipu(ipu=2):
         # This will work on the data from the second highest micro batch number from the previous
         # iteration. That is the highest_micro_batch - 2
         t_output_matmul = ops.matmul(
-            micro_batch_tensor[highest_micro_batch -
-                               2]["hidden_layer_activation"],
-            tensor_variable["output_weights"])
-        t_output_layer_result = ops.add(t_output_matmul,
-                                        tensor_variable["output_bias"])
+            micro_batch_tensor[highest_micro_batch - 2]["hidden_layer_activation"],
+            tensor_variable["output_weights"],
+        )
+        t_output_layer_result = ops.add(t_output_matmul, tensor_variable["output_bias"])
 
     with popxl.ipu(ipu=3):
         # This will work on the data from the third highest micro batch number from the previous
         # iteration. That is the highest_micro_batch - 3 = iteration_number
         t_output_activation = ops.softmax(
-            micro_batch_tensor[iteration_number]["output_layer"], axis=1)
+            micro_batch_tensor[iteration_number]["output_layer"], axis=1
+        )
 
     # Copy part of the cycle
     with popxl.ipu(ipu=0):
         # Copy to IPU 1
         micro_batch_tensor[highest_micro_batch]["hidden_layer"] = ops.ipu_copy(
-            t=t_hidden_layer_result, destination=1)
+            t=t_hidden_layer_result, destination=1
+        )
     with popxl.ipu(ipu=1):
         # Copy to IPU 2
-        micro_batch_tensor[highest_micro_batch -
-                           1]["hidden_layer_activation"] = ops.ipu_copy(
-                               t=t_hidden_layer_activation, destination=2)
+        micro_batch_tensor[highest_micro_batch - 1][
+            "hidden_layer_activation"
+        ] = ops.ipu_copy(t=t_hidden_layer_activation, destination=2)
     with popxl.ipu(ipu=2):
         # Copy to IPU 3
-        micro_batch_tensor[highest_micro_batch -
-                           2]["output_layer"] = ops.ipu_copy(
-                               t=t_output_layer_result, destination=3)
+        micro_batch_tensor[highest_micro_batch - 2]["output_layer"] = ops.ipu_copy(
+            t=t_output_layer_result, destination=3
+        )
 
     # Host store part of the cycle
     with popxl.ipu(ipu=2):
@@ -410,10 +427,11 @@ def pipeline_main_cycle(iteration_number: int, t_in_h2d: HostToDeviceStream,
     return micro_batch_tensor
 
 
-def pipeline_cycle_n_minus_2(t_out_d2h: DeviceToHostStream,
-                             tensor_variable: Dict[str, Variable],
-                             micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                             ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_cycle_n_minus_2(
+    t_out_d2h: DeviceToHostStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the third last pipeline cycle to the IR.
 
     Args:
@@ -436,36 +454,36 @@ def pipeline_cycle_n_minus_2(t_out_d2h: DeviceToHostStream,
         # As we are no longer doing any host load in this phase this equals to the
         # highest_micro_batch
         t_hidden_layer_activation = ops.gelu(
-            micro_batch_tensor[highest_micro_batch]["hidden_layer"])
+            micro_batch_tensor[highest_micro_batch]["hidden_layer"]
+        )
 
     with popxl.ipu(ipu=2):
         # This will work on the data from the second highest micro batch number from the previous
         # iteration. That is the highest_micro_batch - 1
         t_output_matmul = ops.matmul(
-            micro_batch_tensor[highest_micro_batch -
-                               1]["hidden_layer_activation"],
-            tensor_variable["output_weights"])
-        t_output_layer_result = ops.add(t_output_matmul,
-                                        tensor_variable["output_bias"])
+            micro_batch_tensor[highest_micro_batch - 1]["hidden_layer_activation"],
+            tensor_variable["output_weights"],
+        )
+        t_output_layer_result = ops.add(t_output_matmul, tensor_variable["output_bias"])
 
     with popxl.ipu(ipu=3):
         # This will work on the data from the third highest micro batch number from the previous
         # iteration. That is the highest_micro_batch - 2
         t_output_activation = ops.softmax(
-            micro_batch_tensor[highest_micro_batch - 2]["output_layer"],
-            axis=1)
+            micro_batch_tensor[highest_micro_batch - 2]["output_layer"], axis=1
+        )
 
     # Copy part of the cycle
     with popxl.ipu(ipu=1):
         # Copy to IPU 2
         micro_batch_tensor[highest_micro_batch][
-            "hidden_layer_activation"] = ops.ipu_copy(
-                t=t_hidden_layer_activation, destination=2)
+            "hidden_layer_activation"
+        ] = ops.ipu_copy(t=t_hidden_layer_activation, destination=2)
     with popxl.ipu(ipu=2):
         # Copy to IPU 3
-        micro_batch_tensor[highest_micro_batch -
-                           1]["output_layer"] = ops.ipu_copy(
-                               t=t_output_layer_result, destination=3)
+        micro_batch_tensor[highest_micro_batch - 1]["output_layer"] = ops.ipu_copy(
+            t=t_output_layer_result, destination=3
+        )
 
     # Host store part of the cycle
     with popxl.ipu(ipu=2):
@@ -474,10 +492,11 @@ def pipeline_cycle_n_minus_2(t_out_d2h: DeviceToHostStream,
     return micro_batch_tensor
 
 
-def pipeline_cycle_n_minus_1(t_out_d2h: DeviceToHostStream,
-                             tensor_variable: Dict[str, Variable],
-                             micro_batch_tensor: Dict[int, Dict[str, Tensor]]
-                             ) -> Dict[int, Dict[str, Tensor]]:
+def pipeline_cycle_n_minus_1(
+    t_out_d2h: DeviceToHostStream,
+    tensor_variable: Dict[str, Variable],
+    micro_batch_tensor: Dict[int, Dict[str, Tensor]],
+) -> Dict[int, Dict[str, Tensor]]:
     """Write the second last pipeline cycle to the IR.
 
     Args:
@@ -497,20 +516,21 @@ def pipeline_cycle_n_minus_1(t_out_d2h: DeviceToHostStream,
     with popxl.ipu(ipu=2):
         t_output_matmul = ops.matmul(
             micro_batch_tensor[highest_micro_batch]["hidden_layer_activation"],
-            tensor_variable["output_weights"])
-        t_output_layer_result = ops.add(t_output_matmul,
-                                        tensor_variable["output_bias"])
+            tensor_variable["output_weights"],
+        )
+        t_output_layer_result = ops.add(t_output_matmul, tensor_variable["output_bias"])
 
     with popxl.ipu(ipu=3):
         t_output_activation = ops.softmax(
-            micro_batch_tensor[highest_micro_batch - 1]["output_layer"],
-            axis=1)
+            micro_batch_tensor[highest_micro_batch - 1]["output_layer"], axis=1
+        )
 
     # Copy part of the cycle
     with popxl.ipu(ipu=2):
         # Copy to IPU 3
         micro_batch_tensor[highest_micro_batch]["output_layer"] = ops.ipu_copy(
-            t=t_output_layer_result, destination=3)
+            t=t_output_layer_result, destination=3
+        )
 
     # Host store part of the cycle
     with popxl.ipu(ipu=2):
@@ -519,8 +539,9 @@ def pipeline_cycle_n_minus_1(t_out_d2h: DeviceToHostStream,
     return micro_batch_tensor
 
 
-def pipeline_cycle_n(t_out_d2h: DeviceToHostStream,
-                     micro_batch_tensor: Dict[int, Dict[str, Tensor]]):
+def pipeline_cycle_n(
+    t_out_d2h: DeviceToHostStream, micro_batch_tensor: Dict[int, Dict[str, Tensor]]
+):
     """Write the last pipeline cycle to the IR.
 
     Args:
@@ -535,7 +556,8 @@ def pipeline_cycle_n(t_out_d2h: DeviceToHostStream,
     # Compute part of the cycle
     with popxl.ipu(ipu=3):
         t_output_activation = ops.softmax(
-            micro_batch_tensor[highest_micro_batch]["output_layer"], axis=1)
+            micro_batch_tensor[highest_micro_batch]["output_layer"], axis=1
+        )
     # Host store part of the cycle
     with popxl.ipu(ipu=2):
         ops.host_store(t_out_d2h, t_output_activation)
@@ -578,36 +600,49 @@ def test_pipelined_inference():
 
     This is one in a series of test which demonstrates the usage of pipelining.
     """
-    main_phase_repeats = 2  # How many times we will repeat the main phase of the pipelining
+    main_phase_repeats = (
+        2  # How many times we will repeat the main phase of the pipelining
+    )
     # This model has 4 pipeline stages, which means that the fill phase will have
     # 4-1 = 3 pipeline cycles
     micro_batch_size = 3 + main_phase_repeats
 
     pipeline_test_runner = PipelineTestRunner(
-        pipelined_inference_model, 2, micro_batch_size, main_phase_repeats)
+        pipelined_inference_model, 2, micro_batch_size, main_phase_repeats
+    )
 
     pipeline_test_runner.set_options()
     weights_and_biases = pipeline_test_runner.get_weights_and_biases()
     session, t_in_h2d, t_out_d2h = pipeline_test_runner.build_popxl_model(
-        weights_and_biases)
+        weights_and_biases
+    )
 
     # Initialize the result and full_dataset_data
     full_dataset_data = np.empty(
-        (pipeline_test_runner.batches["n_step_io_calls"],
-         pipeline_test_runner.batches["micro_batch_size"],
-         *pipeline_test_runner.stream_input_shape)).astype(np.float32)
+        (
+            pipeline_test_runner.batches["n_step_io_calls"],
+            pipeline_test_runner.batches["micro_batch_size"],
+            *pipeline_test_runner.stream_input_shape,
+        )
+    ).astype(np.float32)
     result = np.empty(
-        (pipeline_test_runner.batches["n_step_io_calls"],
-         pipeline_test_runner.batches["micro_batch_size"],
-         pipeline_test_runner.batches["compute_batches"],
-         pipeline_test_runner.nn_dims["n_outputs"])).astype(np.float32)
+        (
+            pipeline_test_runner.batches["n_step_io_calls"],
+            pipeline_test_runner.batches["micro_batch_size"],
+            pipeline_test_runner.batches["compute_batches"],
+            pipeline_test_runner.nn_dims["n_outputs"],
+        )
+    ).astype(np.float32)
 
     # Run the model
     for run_nr in range(pipeline_test_runner.batches["n_step_io_calls"]):
         # Create the dataset data
         dataset_data = pipeline_test_runner.create_data(
-            (pipeline_test_runner.batches["micro_batch_size"],
-             *pipeline_test_runner.stream_input_shape))
+            (
+                pipeline_test_runner.batches["micro_batch_size"],
+                *pipeline_test_runner.stream_input_shape,
+            )
+        )
         full_dataset_data[run_nr, ...] = dataset_data
 
         data = {t_in_h2d: dataset_data}
@@ -618,5 +653,6 @@ def test_pipelined_inference():
         result[run_nr, ...] = outputs[t_out_d2h]
 
     # Compare outcome from popxl with outcome from pytorch
-    pipeline_test_runner.compare_with_reference(result, full_dataset_data,
-                                                weights_and_biases)
+    pipeline_test_runner.compare_with_reference(
+        result, full_dataset_data, weights_and_biases
+    )

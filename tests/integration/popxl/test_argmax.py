@@ -7,14 +7,12 @@ import torch
 
 class TestArgMax:
     def test_argmax_1(self):
-        t = np.random.rand(10, 20).astype('float32')
+        t = np.random.rand(10, 20).astype("float32")
         ir = popxl.Ir()
         main = ir.main_graph
         with main:
             # host load
-            input0 = popxl.h2d_stream([10, 20],
-                                      popxl.float32,
-                                      name="in_stream_0")
+            input0 = popxl.h2d_stream([10, 20], popxl.float32, name="in_stream_0")
             a = ops.host_load(input0, "a")
             # custom argmax.
             o = ops.argmax(a, dim=0, keepdim=False)
@@ -28,20 +26,17 @@ class TestArgMax:
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.argmax(dim=0, keepdim=False)
         # compare the result between PopXL and torch
-        np.testing.assert_allclose(torch_outputs.detach().numpy(),
-                                   list(outputs.values())[0],
-                                   rtol=0,
-                                   atol=0)
+        np.testing.assert_allclose(
+            torch_outputs.detach().numpy(), list(outputs.values())[0], rtol=0, atol=0
+        )
 
     def test_argmax_2(self):
-        t = np.random.rand(5, 10, 20).astype('float32')
+        t = np.random.rand(5, 10, 20).astype("float32")
         ir = popxl.Ir()
         main = ir.main_graph
         with main:
             # host load
-            input0 = popxl.h2d_stream([5, 10, 20],
-                                      popxl.float32,
-                                      name="in_stream_0")
+            input0 = popxl.h2d_stream([5, 10, 20], popxl.float32, name="in_stream_0")
             a = ops.host_load(input0, "a")
             # custom argmax.
             o = ops.argmax(a, dim=-1, keepdim=True)
@@ -55,7 +50,6 @@ class TestArgMax:
         torch_t = torch.tensor(t).type(torch.float32)
         torch_outputs = torch_t.argmax(dim=-1, keepdim=True)
         # compare the result between PopXL and torch
-        np.testing.assert_allclose(torch_outputs.detach().numpy(),
-                                   list(outputs.values())[0],
-                                   rtol=0,
-                                   atol=0)
+        np.testing.assert_allclose(
+            torch_outputs.detach().numpy(), list(outputs.values())[0], rtol=0, atol=0
+        )

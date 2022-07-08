@@ -47,8 +47,7 @@ class Stream:
 
     def __eq__(self, other: Any) -> bool:
         """Perform an equality check."""
-        return isinstance(
-            other, Stream) and self._stream_tensor == other._stream_tensor
+        return isinstance(other, Stream) and self._stream_tensor == other._stream_tensor
 
     def __str__(self) -> str:
         """Return a string representation."""
@@ -85,15 +84,17 @@ class DeviceToHostStream(Stream):
         return f"DeviceToHostStream {super().__str__()}"
 
 
-def h2d_stream(shape: Iterable[int], dtype: dtype,
-               name: Optional[str] = None) -> HostToDeviceStream:
+def h2d_stream(
+    shape: Iterable[int], dtype: dtype, name: Optional[str] = None
+) -> HostToDeviceStream:
     g = gcg()
     mg = gmg()
 
     if g.name != mg.name:
         raise ValueError(
             "popxl: Can only call `h2d_stream` in context of main graph. You are in context of graph:",
-            g.name)
+            g.name,
+        )
 
     pb_mg = mg._pb_graph
 
@@ -104,11 +105,13 @@ def h2d_stream(shape: Iterable[int], dtype: dtype,
     pb_mg.addStream(name, _ir.TensorInfo(dtype._pb_dtype, list(shape)), name)
 
     return HostToDeviceStream._from_tensor(
-        Tensor._from_pb_tensor(pb_mg.getTensor(name)))
+        Tensor._from_pb_tensor(pb_mg.getTensor(name))
+    )
 
 
-def d2h_stream(shape: Iterable[int], dtype: dtype,
-               name: Optional[str] = None) -> DeviceToHostStream:
+def d2h_stream(
+    shape: Iterable[int], dtype: dtype, name: Optional[str] = None
+) -> DeviceToHostStream:
     g = gcg()
     mg = gmg()
     ir_ = mg.ir._pb_ir
@@ -116,7 +119,8 @@ def d2h_stream(shape: Iterable[int], dtype: dtype,
     if g.name != mg.name:
         raise ValueError(
             "popxl: Can only call `d2h_stream` in context of main graph. You are in context of graph:",
-            g.name)
+            g.name,
+        )
 
     pb_mg = mg._pb_graph
 

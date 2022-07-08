@@ -9,6 +9,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -32,10 +33,13 @@ import test_util as tu
 #        out
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_call(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
@@ -62,11 +66,11 @@ def test_call(op_tester, subgraphCopyingStrategy):
                 subgraph_builder.addInputTensorFromParentGraph(i1)
 
             if input_tensor_method == "from_higher_scope":
-                subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnx.add([i0, i1]))
+                subgraph_builder.addOutputTensor(subgraph_builder.aiOnnx.add([i0, i1]))
             else:
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnx.add([sgi0, sgi1]))
+                    subgraph_builder.aiOnnx.add([sgi0, sgi1])
+                )
 
             act = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
             out = builder.aiGraphcore.call([act, i2], 1, subgraph_builder)[0]
@@ -78,9 +82,9 @@ def test_call(op_tester, subgraphCopyingStrategy):
     def reference(_):  # ref_data is an unused argument
         return [d0 + d1 + d2]
 
-    op_tester.run(get_init_builder("untyped"), reference, 'infer')
-    op_tester.run(get_init_builder("with_info"), reference, 'infer')
-    op_tester.run(get_init_builder("from_higher_scope"), reference, 'infer')
+    op_tester.run(get_init_builder("untyped"), reference, "infer")
+    op_tester.run(get_init_builder("with_info"), reference, "infer")
+    op_tester.run(get_init_builder("from_higher_scope"), reference, "infer")
 
 
 #  Subgraph, sg:
@@ -101,10 +105,13 @@ def test_call(op_tester, subgraphCopyingStrategy):
 #     Call(sg)_1
 #         |
 #        out
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_call_grad_1(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     shape = [4, 4]
@@ -133,10 +140,12 @@ def test_call_grad_1(op_tester, subgraphCopyingStrategy):
 
             if input_tensor_method == "from_higher_scope":
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnx.matmul([i0, i1]))
+                    subgraph_builder.aiOnnx.matmul([i0, i1])
+                )
             else:
                 subgraph_builder.addOutputTensor(
-                    subgraph_builder.aiOnnx.matmul([sgi0, sgi1]))
+                    subgraph_builder.aiOnnx.matmul([sgi0, sgi1])
+                )
 
             act = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder)[0]
             out = builder.aiGraphcore.call([act, i2], 1, subgraph_builder)[0]
@@ -147,7 +156,7 @@ def test_call_grad_1(op_tester, subgraphCopyingStrategy):
                 popart.reservedGradientPrefix() + out,
                 popart.reservedGradientPrefix() + i0,
                 popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.reservedGradientPrefix() + i2,
             ]
 
         return init_builder
@@ -162,11 +171,10 @@ def test_call_grad_1(op_tester, subgraphCopyingStrategy):
 
         return [o, d__o, t0.grad, t1.grad, t2.grad]
 
-    op_tester.setPatterns(popart.PatternsLevel.Default,
-                          enableRuntimeAsserts=False)
-    op_tester.run(get_init_builder("untyped"), reference, 'train')
-    op_tester.run(get_init_builder("with_info"), reference, 'train')
-    op_tester.run(get_init_builder("from_higher_scope"), reference, 'train')
+    op_tester.setPatterns(popart.PatternsLevel.Default, enableRuntimeAsserts=False)
+    op_tester.run(get_init_builder("untyped"), reference, "train")
+    op_tester.run(get_init_builder("with_info"), reference, "train")
+    op_tester.run(get_init_builder("from_higher_scope"), reference, "train")
 
 
 #  Subgraph, sg1:      Subgraph, sg0
@@ -191,10 +199,13 @@ def test_call_grad_1(op_tester, subgraphCopyingStrategy):
 #     Call(sg)_1
 #         |
 #        out
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_nested_calls(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
@@ -233,13 +244,16 @@ def test_nested_calls(op_tester, subgraphCopyingStrategy):
 
         return [sg1(sg1(d0, d1), sg0(d2))]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_subgraph_with_zero_outputs(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
@@ -256,15 +270,20 @@ def test_subgraph_with_zero_outputs(op_tester, subgraphCopyingStrategy):
         return "dummy"
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, None, 'infer')
-    assert e_info.value.args[
-        0] == "For CallOp '', number of outputs (1) does not match that of the callee subgraph (0)"
+        op_tester.run(init_builder, None, "infer")
+    assert (
+        e_info.value.args[0]
+        == "For CallOp '', number of outputs (1) does not match that of the callee subgraph (0)"
+    )
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_subgraph_call_mismatch0(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
@@ -280,15 +299,20 @@ def test_subgraph_call_mismatch0(op_tester, subgraphCopyingStrategy):
         return builder.aiGraphcore.call([i0], 2, sg0_builder, "debug")
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, None, 'infer')
-    assert e_info.value.args[
-        0] == "For CallOp 'debug', number of outputs (2) does not match that of the callee subgraph (1)"
+        op_tester.run(init_builder, None, "infer")
+    assert (
+        e_info.value.args[0]
+        == "For CallOp 'debug', number of outputs (2) does not match that of the callee subgraph (1)"
+    )
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_subgraph_call_mismatch1(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.asarray([2, -1]).astype(np.int32)
@@ -306,9 +330,11 @@ def test_subgraph_call_mismatch1(op_tester, subgraphCopyingStrategy):
         return builder.aiGraphcore.call([i0, i1, i2], 1, sg0_builder, "debug")
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, None, 'infer')
-    assert e_info.value.args[
-        0] == "For CallOp 'debug', number of inputs (3) does not match that of the callee subgraph (1)"
+        op_tester.run(init_builder, None, "infer")
+    assert (
+        e_info.value.args[0]
+        == "For CallOp 'debug', number of inputs (3) does not match that of the callee subgraph (1)"
+    )
 
 
 #  Subgraph, sg:
@@ -325,10 +351,13 @@ def test_subgraph_call_mismatch1(op_tester, subgraphCopyingStrategy):
 #  Call(sg)_0
 #      |
 #     act
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_call_grad_2(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     d0 = np.random.normal(size=[4, 4]).astype(np.float32)
@@ -344,9 +373,11 @@ def test_call_grad_2(op_tester, subgraphCopyingStrategy):
         subgraph_builder.addInputTensorFromParentGraph(i1)
 
         subgraph_builder.addOutputTensor(
-            subgraph_builder.aiOnnx.matmul([i0, i1], "add_inside_subgraph"))
-        out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder,
-                                       "call_subgraph")[0]
+            subgraph_builder.aiOnnx.matmul([i0, i1], "add_inside_subgraph")
+        )
+        out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder, "call_subgraph")[
+            0
+        ]
 
         builder.addOutputTensor(out)
         return [
@@ -367,16 +398,18 @@ def test_call_grad_2(op_tester, subgraphCopyingStrategy):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.setPatterns(popart.PatternsLevel.Default,
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(popart.PatternsLevel.Default, enableRuntimeAsserts=False)
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_call_grad_3(subgraphCopyingStrategy):
     # Generate some random input data
     trainingData = np.random.rand(1, 2).astype(np.float16)
@@ -394,7 +427,7 @@ def test_call_grad_3(subgraphCopyingStrategy):
 
         w = builder.addInitializedInputTensor(np.ones([2, 2], np.float16))
         b = builder.addInitializedInputTensor(np.ones([2], np.float16))
-        gemm = builder.aiOnnx.gemm([ip, w, b], 1., 1., False, False)
+        gemm = builder.aiOnnx.gemm([ip, w, b], 1.0, 1.0, False, False)
         relu = builder.aiOnnx.relu([gemm])
 
         if subgraph:
@@ -404,8 +437,9 @@ def test_call_grad_3(subgraphCopyingStrategy):
             sm = subgraph_builder.aiOnnx.softmax([relu])
             subgraph_builder.addOutputTensor(sm)
 
-            call = builder.aiGraphcore.call([relu], 1, subgraph_builder,
-                                            "call_subgraph")[0]
+            call = builder.aiGraphcore.call(
+                [relu], 1, subgraph_builder, "call_subgraph"
+            )[0]
             nll = builder.aiGraphcore.nllloss([call, lb])
         else:
             sm = builder.aiOnnx.softmax([relu])
@@ -413,14 +447,16 @@ def test_call_grad_3(subgraphCopyingStrategy):
 
         art = popart.AnchorReturnType("All")
         dataFlow = popart.DataFlow(
-            1, {
+            1,
+            {
                 ip: art,
                 popart.reservedGradientPrefix() + ip: art,
                 relu: art,
                 popart.reservedGradientPrefix() + relu: art,
                 gemm: art,
-                popart.reservedGradientPrefix() + gemm: art
-            })
+                popart.reservedGradientPrefix() + gemm: art,
+            },
+        )
 
         trainingOptions = popart.SessionOptions()
         trainingOptions.subgraphCopyingStrategy = subgraphCopyingStrategy
@@ -432,7 +468,8 @@ def test_call_grad_3(subgraphCopyingStrategy):
                 optimizer=popart.ConstSGD(0.001),
                 userOptions=trainingOptions,
                 deviceInfo=device,
-                patterns=popart.Patterns(popart.PatternsLevel.Default))
+                patterns=popart.Patterns(popart.PatternsLevel.Default),
+            )
 
             # Compile graph
             trainingSession.prepareDevice()
@@ -441,10 +478,8 @@ def test_call_grad_3(subgraphCopyingStrategy):
             # Create buffers to receive results from the execution
             trainingAnchors = trainingSession.initAnchorArrays()
             trainingStepio = popart.PyStepIO(
-                {
-                    ip: trainingData,
-                    lb: trainingDataLables
-                }, trainingAnchors)
+                {ip: trainingData, lb: trainingDataLables}, trainingAnchors
+            )
 
             # Copy the weights to the device from the host
             trainingSession.weightsFromHost()
@@ -483,8 +518,9 @@ def test_call_grad_scoped(op_tester):
             c = subgraph_builder.aiOnnx.constant(c0, "subgraph_const")
             a = subgraph_builder.aiOnnx.add([m, c], "add_inside_subgraph")
             subgraph_builder.addOutputTensor(a)
-        out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder,
-                                       "call_subgraph")[0]
+        out = builder.aiGraphcore.call([i0, i1], 1, subgraph_builder, "call_subgraph")[
+            0
+        ]
 
         builder.addOutputTensor(out)
         return [
@@ -508,10 +544,9 @@ def test_call_grad_scoped(op_tester):
 
         return [r, r__o, d0_t.grad, d1_t.grad]
 
-    op_tester.setPatterns(popart.PatternsLevel.Default,
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(popart.PatternsLevel.Default, enableRuntimeAsserts=False)
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 # Model: N matmuls in series, sharing weights with a subgraph
@@ -537,17 +572,20 @@ def test_call_grad_scoped(op_tester):
 # Test:
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_stacked_subgraphs(op_tester, subgraphCopyingStrategy):
     op_tester.options.subgraphCopyingStrategy = subgraphCopyingStrategy
     np.random.seed(0)
     numLayers = 4
     shape = [4, 4]
-    input_ = np.random.rand(*shape).astype('float32')
-    w0_init = np.random.rand(*shape).astype('float32')
+    input_ = np.random.rand(*shape).astype("float32")
+    w0_init = np.random.rand(*shape).astype("float32")
 
     def init_builder(builder):
         in0 = builder.addInputTensor(input_)
@@ -563,8 +601,9 @@ def test_stacked_subgraphs(op_tester, subgraphCopyingStrategy):
 
         actIn = in0
         for layer in range(numLayers):
-            actIn = builder.aiGraphcore.call([actIn, w0], 1, subgraph_builder,
-                                             f"subgraph_{layer}")[0]
+            actIn = builder.aiGraphcore.call(
+                [actIn, w0], 1, subgraph_builder, f"subgraph_{layer}"
+            )[0]
 
         builder.addOutputTensor(actIn)
         return [
@@ -588,21 +627,23 @@ def test_stacked_subgraphs(op_tester, subgraphCopyingStrategy):
 
         return [r, r__o, in_t.grad, w_t.grad]
 
-    op_tester.setPatterns(popart.PatternsLevel.Default,
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(popart.PatternsLevel.Default, enableRuntimeAsserts=False)
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
-@pytest.mark.parametrize("subgraphCopyingStrategy", [
-    popart.SubgraphCopyingStrategy.OnEnterAndExit,
-    popart.SubgraphCopyingStrategy.JustInTime
-])
+@pytest.mark.parametrize(
+    "subgraphCopyingStrategy",
+    [
+        popart.SubgraphCopyingStrategy.OnEnterAndExit,
+        popart.SubgraphCopyingStrategy.JustInTime,
+    ],
+)
 def test_stacked_subgraphs_2(subgraphCopyingStrategy):
     np.random.seed(0)
     shape = [4, 4]
-    input_ = np.random.rand(*shape).astype('float32')
-    w0_init = np.random.rand(*shape).astype('float32')
+    input_ = np.random.rand(*shape).astype("float32")
+    w0_init = np.random.rand(*shape).astype("float32")
 
     def get_model(subgraph=False, steps=1):
         builder = popart.Builder()
@@ -624,12 +665,12 @@ def test_stacked_subgraphs_2(subgraphCopyingStrategy):
             actIn = in0
             for layer in range(numLayers):
                 actIn = builder.aiGraphcore.call(
-                    [actIn, w0], 1, subgraph_builder, f"subgraph_{layer}")[0]
+                    [actIn, w0], 1, subgraph_builder, f"subgraph_{layer}"
+                )[0]
         else:
             actIn = in0
             for layer in range(numLayers):
-                actIn = builder.aiOnnx.matmul([actIn, w0],
-                                              "mm_layer" + str(layer))
+                actIn = builder.aiOnnx.matmul([actIn, w0], "mm_layer" + str(layer))
                 actIn = builder.aiOnnx.relu([actIn], "relu_layer" + str(layer))
 
         actIn = builder.aiGraphcore.identityloss([actIn])
@@ -639,18 +680,19 @@ def test_stacked_subgraphs_2(subgraphCopyingStrategy):
             w0: art,
             popart.reservedGradientPrefix() + w0: art,
             in0: art,
-            popart.reservedGradientPrefix() + in0: art
+            popart.reservedGradientPrefix() + in0: art,
         }
         opts = popart.SessionOptions()
         opts.subgraphCopyingStrategy = subgraphCopyingStrategy
         with tu.create_test_device() as device:
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(
-                                                 1, anchor_returns),
-                                             deviceInfo=device,
-                                             optimizer=popart.ConstSGD(0.1),
-                                             loss=actIn,
-                                             userOptions=opts)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(1, anchor_returns),
+                deviceInfo=device,
+                optimizer=popart.ConstSGD(0.1),
+                loss=actIn,
+                userOptions=opts,
+            )
 
             anchors = session.initAnchorArrays()
 
@@ -676,18 +718,18 @@ def test_stacked_subgraphs_2(subgraphCopyingStrategy):
 @pytest.mark.skip(reason="Test not required")
 def test_subgraph_partitioning(op_tester):
     """
-      What we're trying to achieve:
-      main:
-        a = 1                     # a = 1
-        b = Call{'Callee':0}(a)   # b = 4 * (2 + a) = 12
-        c = Call{'Callee':0}(b)   # c = 4 * (2 + b) = 62
-        d = Call{'Callee':1}(a,c) # d = a + c = 63
-      subgraph0(x0) -> 4 * subgraph1(2, x0):
-        a0 = 2
-        a1 = Call{'Callee':1}(a0, x0)
-        out0 = 4 * a1
-      subgraph1(x1,y1) -> x1 + y1:
-        out1 = x1 + y1
+    What we're trying to achieve:
+    main:
+      a = 1                     # a = 1
+      b = Call{'Callee':0}(a)   # b = 4 * (2 + a) = 12
+      c = Call{'Callee':0}(b)   # c = 4 * (2 + b) = 62
+      d = Call{'Callee':1}(a,c) # d = a + c = 63
+    subgraph0(x0) -> 4 * subgraph1(2, x0):
+      a0 = 2
+      a1 = Call{'Callee':1}(a0, x0)
+      out0 = 4 * a1
+    subgraph1(x1,y1) -> x1 + y1:
+      out1 = x1 + y1
     """
 
     da = np.asarray([1]).astype(np.int32)
@@ -725,7 +767,7 @@ def test_subgraph_partitioning(op_tester):
 
         return [sg1(da, sg0(sg0(da)))]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 # TODO: uncomment-out test when T15830 is complete

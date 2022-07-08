@@ -7,6 +7,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -20,9 +21,11 @@ def test_replace_with_identity():
     o = builder.aiOnnx.transpose([o])
 
     with tu.create_test_device() as device:
-        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [o]))
+        sess = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [o]),
+        )
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()
@@ -32,12 +35,12 @@ def test_replace_with_identity():
 
         sess.run(stepio)
         ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-        assert len(
-            list(filter(lambda op: "Identity" in op["type"],
-                        ir["maingraph"]))) > 0
-        assert len(
-            list(filter(lambda op: "Transpose" in op["type"],
-                        ir["maingraph"]))) < 1
+        assert (
+            len(list(filter(lambda op: "Identity" in op["type"], ir["maingraph"]))) > 0
+        )
+        assert (
+            len(list(filter(lambda op: "Transpose" in op["type"], ir["maingraph"]))) < 1
+        )
         assert np.allclose(anchors[o], d1)
 
 
@@ -46,7 +49,8 @@ B = 20
 
 
 @pytest.mark.parametrize(
-    "reshape", [[1, B, A], [B, 1, A], [B, A, 1], [1, B, 1, 1, A, 1, 1]])
+    "reshape", [[1, B, A], [B, 1, A], [B, A, 1], [1, B, 1, 1, A, 1, 1]]
+)
 def test_replace_with_reshape(reshape):
     d1 = np.random.randn(A, B).astype(np.float32)
 
@@ -63,9 +67,11 @@ def test_replace_with_reshape(reshape):
     o = builder.aiOnnx.transpose([o], perm=perm)
 
     with tu.create_test_device() as device:
-        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [o]))
+        sess = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [o]),
+        )
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()
@@ -75,12 +81,12 @@ def test_replace_with_reshape(reshape):
 
         sess.run(stepio)
         ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-        assert len(
-            list(filter(lambda op: "Reshape" in op["type"],
-                        ir["maingraph"]))) > 0
-        assert len(
-            list(filter(lambda op: "Transpose" in op["type"],
-                        ir["maingraph"]))) < 1
+        assert (
+            len(list(filter(lambda op: "Reshape" in op["type"], ir["maingraph"]))) > 0
+        )
+        assert (
+            len(list(filter(lambda op: "Transpose" in op["type"], ir["maingraph"]))) < 1
+        )
         assert np.allclose(anchors[o].flatten(), d1.flatten())
 
 
@@ -94,9 +100,11 @@ def test_fail_due_to_non_trivial_reshape():
     o = builder.aiOnnx.transpose([o], perm=(0, 2, 1))
 
     with tu.create_test_device() as device:
-        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [o]))
+        sess = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [o]),
+        )
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()
@@ -106,12 +114,13 @@ def test_fail_due_to_non_trivial_reshape():
 
         sess.run(stepio)
         ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-        assert len(
-            list(filter(lambda op: "Reshape" in op["type"],
-                        ir["maingraph"]))) == 1
-        assert len(
-            list(filter(lambda op: "Transpose" in op["type"],
-                        ir["maingraph"]))) == 2
+        assert (
+            len(list(filter(lambda op: "Reshape" in op["type"], ir["maingraph"]))) == 1
+        )
+        assert (
+            len(list(filter(lambda op: "Transpose" in op["type"], ir["maingraph"])))
+            == 2
+        )
 
 
 def test_fail_due_to_mismatch_permutation():
@@ -123,9 +132,11 @@ def test_fail_due_to_mismatch_permutation():
     o = builder.aiOnnx.transpose([o], perm=(1, 2, 0))
 
     with tu.create_test_device() as device:
-        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [o]))
+        sess = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [o]),
+        )
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()
@@ -135,6 +146,7 @@ def test_fail_due_to_mismatch_permutation():
 
         sess.run(stepio)
         ir = json.loads(sess._serializeIr(popart.IrSerializationFormat.JSON))
-        assert len(
-            list(filter(lambda op: "Transpose" in op["type"],
-                        ir["maingraph"]))) == 2
+        assert (
+            len(list(filter(lambda op: "Transpose" in op["type"], ir["maingraph"])))
+            == 2
+        )

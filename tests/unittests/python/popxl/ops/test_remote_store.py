@@ -16,9 +16,13 @@ class TestRemoteStore:
     @pytest.mark.parametrize("entries", [3, 5])
     @pytest.mark.parametrize("tensor_dtype", [float16, float32])
     @pytest.mark.parametrize("offset_as_int", [True, False])
-    def test_remote_store_graph(self, tensor_shape: Tuple[int, ...],
-                                entries: int, tensor_dtype: dtype,
-                                offset_as_int: bool) -> None:
+    def test_remote_store_graph(
+        self,
+        tensor_shape: Tuple[int, ...],
+        entries: int,
+        tensor_dtype: dtype,
+        offset_as_int: bool,
+    ) -> None:
         """Test that the graph is correct when using the remote store op.
 
         Args:
@@ -32,25 +36,25 @@ class TestRemoteStore:
 
         with g:
             t = popxl.variable(
-                np.random.rand(*tensor_shape).astype(tensor_dtype.as_numpy()))
+                np.random.rand(*tensor_shape).astype(tensor_dtype.as_numpy())
+            )
 
             if offset_as_int:
                 offset = 0
             else:
-                offset = popxl.constant([0], name='offset')
+                offset = popxl.constant([0], name="offset")
             # With this option the graph should contain
             # 1. t
             # 2. offset
             n_tensors = 2
 
-            remote_buffer = RemoteBuffer(tensor_shape=tensor_shape,
-                                         tensor_dtype=tensor_dtype,
-                                         entries=entries)
+            remote_buffer = RemoteBuffer(
+                tensor_shape=tensor_shape, tensor_dtype=tensor_dtype, entries=entries
+            )
 
             ops.remote_store(remote_buffer, offset, t)
 
         assert len(g.tensors) == n_tensors
         # Only t is a variable
         assert len(g.variables) == 1
-        assert contains_op_of_type("RemoteStore",
-                                   _ir.op.exchange.RemoteStoreOp, g)
+        assert contains_op_of_type("RemoteStore", _ir.op.exchange.RemoteStoreOp, g)

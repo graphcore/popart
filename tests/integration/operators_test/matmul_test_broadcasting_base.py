@@ -41,7 +41,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
             else:
                 return [t1]
 
-        op_tester.run(init_builder_1, reference_1, 'infer')
+        op_tester.run(init_builder_1, reference_1, "infer")
 
     # Verify with torch
     print("")
@@ -86,10 +86,11 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                 o = builder.aiOnnx.add([i3, t1])
                 builder.addOutputTensor(o)
                 return [
-                    o, t1,
+                    o,
+                    t1,
                     popart.reservedGradientPrefix() + o,
                     popart.reservedGradientPrefix() + i1,
-                    popart.reservedGradientPrefix() + i2
+                    popart.reservedGradientPrefix() + i2,
                 ]
             else:
                 builder.addOutputTensor(t1)
@@ -97,7 +98,7 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                     t1,
                     popart.reservedGradientPrefix() + t1,
                     popart.reservedGradientPrefix() + i1,
-                    popart.reservedGradientPrefix() + i2
+                    popart.reservedGradientPrefix() + i2,
                 ]
 
         def reference_2(ref_data):
@@ -121,8 +122,10 @@ def _test_matmul_broadcasting_base(op_tester, shapes):
                 return [r, r__o, t1.grad, t2.grad]
 
         # Test with the MatMulXXGradOp to MatMulOp pass
-        op_tester.patterns = popart.Patterns(
-            popart.PatternsLevel.Minimal).enablePattern(
-                "MatMulLhsGradOp", True).enablePattern("MatMulRhsGradOp", True)
+        op_tester.patterns = (
+            popart.Patterns(popart.PatternsLevel.Minimal)
+            .enablePattern("MatMulLhsGradOp", True)
+            .enablePattern("MatMulRhsGradOp", True)
+        )
 
-        op_tester.run(init_builder_2, reference_2, 'train')
+        op_tester.run(init_builder_2, reference_2, "train")

@@ -7,21 +7,23 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 np.random.seed(0)
 
-_DataType = namedtuple('_DataType', ['builder_type', 'np_type'])
-_INT8 = _DataType('INT8', np.int8)
-_UINT8 = _DataType('UINT8', np.uint8)
+_DataType = namedtuple("_DataType", ["builder_type", "np_type"])
+_INT8 = _DataType("INT8", np.int8)
+_UINT8 = _DataType("UINT8", np.uint8)
 
 
 def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
     builder = popart.Builder()
     if inputType is not None:
         d0_i8 = builder.addInputTensor(
-            popart.TensorInfo(inputType.builder_type, d_shape))
+            popart.TensorInfo(inputType.builder_type, d_shape)
+        )
         d0 = builder.aiOnnx.cast([d0_i8], "FLOAT")
         in_name = d0_i8
     else:
@@ -33,10 +35,12 @@ def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
     opts.syntheticDataMode = syntheticDataMode
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=popart.DataFlow(1, [p]),
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, [p]),
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
         anchors = session.initAnchorArrays()
@@ -45,8 +49,8 @@ def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
 
 
 def numpy_array_from_printtensor_string(string):
-    stringData = string.partition('{')[2].partition('}')[0]
-    data = np.fromstring(stringData, dtype=float, sep=',')
+    stringData = string.partition("{")[2].partition("}")[0]
+    data = np.fromstring(stringData, dtype=float, sep=",")
     print(data)
     return data
 
@@ -69,9 +73,7 @@ def test_verify_synthetic_inputs(capfd, inputType):
     popart.getLogger().setLevel("OFF")
 
     ## A) Expect input is all zeros
-    run_pt_session(popart.SyntheticDataMode.Zeros,
-                   inputType=inputType,
-                   d_shape=d_shape)
+    run_pt_session(popart.SyntheticDataMode.Zeros, inputType=inputType, d_shape=d_shape)
     _, err0 = capfd.readouterr()
     zeroData = numpy_array_from_printtensor_string(err0)
     assert np.all(zeroData == 0)
@@ -81,9 +83,9 @@ def test_verify_synthetic_inputs(capfd, inputType):
         # Casting normal data to unsigned results in non-normal data.
         return
 
-    run_pt_session(popart.SyntheticDataMode.RandomNormal,
-                   inputType=inputType,
-                   d_shape=d_shape)
+    run_pt_session(
+        popart.SyntheticDataMode.RandomNormal, inputType=inputType, d_shape=d_shape
+    )
     _, err1 = capfd.readouterr()
     rnData = numpy_array_from_printtensor_string(err1)
 
@@ -104,7 +106,8 @@ def test_supported_input_type_float16():
             fnModel=builder.getModelProto(),
             userOptions=opts,
             deviceInfo=popart.DeviceManager().createCpuDevice(),
-            dataFlow=popart.DataFlow(1, [out]))
+            dataFlow=popart.DataFlow(1, [out]),
+        )
 
     run_with_input_of_type("FLOAT16")
     run_with_input_of_type("FLOAT")

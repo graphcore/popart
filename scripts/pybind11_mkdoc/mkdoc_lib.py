@@ -22,59 +22,68 @@ from threading import Thread, Semaphore
 from multiprocessing import cpu_count
 
 RECURSE_LIST = [
-    CursorKind.TRANSLATION_UNIT, CursorKind.NAMESPACE, CursorKind.CLASS_DECL,
-    CursorKind.STRUCT_DECL, CursorKind.ENUM_DECL, CursorKind.CLASS_TEMPLATE
+    CursorKind.TRANSLATION_UNIT,
+    CursorKind.NAMESPACE,
+    CursorKind.CLASS_DECL,
+    CursorKind.STRUCT_DECL,
+    CursorKind.ENUM_DECL,
+    CursorKind.CLASS_TEMPLATE,
 ]
 
 PRINT_LIST = [
-    CursorKind.CLASS_DECL, CursorKind.STRUCT_DECL, CursorKind.ENUM_DECL,
-    CursorKind.ENUM_CONSTANT_DECL, CursorKind.CLASS_TEMPLATE,
-    CursorKind.FUNCTION_DECL, CursorKind.FUNCTION_TEMPLATE,
-    CursorKind.CONVERSION_FUNCTION, CursorKind.CXX_METHOD,
-    CursorKind.CONSTRUCTOR, CursorKind.FIELD_DECL
+    CursorKind.CLASS_DECL,
+    CursorKind.STRUCT_DECL,
+    CursorKind.ENUM_DECL,
+    CursorKind.ENUM_CONSTANT_DECL,
+    CursorKind.CLASS_TEMPLATE,
+    CursorKind.FUNCTION_DECL,
+    CursorKind.FUNCTION_TEMPLATE,
+    CursorKind.CONVERSION_FUNCTION,
+    CursorKind.CXX_METHOD,
+    CursorKind.CONSTRUCTOR,
+    CursorKind.FIELD_DECL,
 ]
 
 PREFIX_BLACKLIST = [CursorKind.TRANSLATION_UNIT]
 
 CPP_OPERATORS = {
-    '<=': 'le',
-    '>=': 'ge',
-    '==': 'eq',
-    '!=': 'ne',
-    '[]': 'array',
-    '+=': 'iadd',
-    '-=': 'isub',
-    '*=': 'imul',
-    '/=': 'idiv',
-    '%=': 'imod',
-    '&=': 'iand',
-    '|=': 'ior',
-    '^=': 'ixor',
-    '<<=': 'ilshift',
-    '>>=': 'irshift',
-    '++': 'inc',
-    '--': 'dec',
-    '<<': 'lshift',
-    '>>': 'rshift',
-    '&&': 'land',
-    '||': 'lor',
-    '!': 'lnot',
-    '~': 'bnot',
-    '&': 'band',
-    '|': 'bor',
-    '+': 'add',
-    '-': 'sub',
-    '*': 'mul',
-    '/': 'div',
-    '%': 'mod',
-    '<': 'lt',
-    '>': 'gt',
-    '=': 'assign',
-    '()': 'call'
+    "<=": "le",
+    ">=": "ge",
+    "==": "eq",
+    "!=": "ne",
+    "[]": "array",
+    "+=": "iadd",
+    "-=": "isub",
+    "*=": "imul",
+    "/=": "idiv",
+    "%=": "imod",
+    "&=": "iand",
+    "|=": "ior",
+    "^=": "ixor",
+    "<<=": "ilshift",
+    ">>=": "irshift",
+    "++": "inc",
+    "--": "dec",
+    "<<": "lshift",
+    ">>": "rshift",
+    "&&": "land",
+    "||": "lor",
+    "!": "lnot",
+    "~": "bnot",
+    "&": "band",
+    "|": "bor",
+    "+": "add",
+    "-": "sub",
+    "*": "mul",
+    "/": "div",
+    "%": "mod",
+    "<": "lt",
+    ">": "gt",
+    "=": "assign",
+    "()": "call",
 }
 
-CPP_OPERATORS = OrderedDict(
-    sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
+CPP_OPERATORS = OrderedDict(sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
 
 job_count = cpu_count()
 job_semaphore = Semaphore(job_count)
@@ -87,56 +96,56 @@ class NoFilenamesError(ValueError):
 
 
 def d(s):
-    return s if isinstance(s, str) else s.decode('utf8')
+    return s if isinstance(s, str) else s.decode("utf8")
 
 
 def sanitize_name(name):
-    name = re.sub(r'type-parameter-0-([0-9]+)', r'T\1', name)
+    name = re.sub(r"type-parameter-0-([0-9]+)", r"T\1", name)
     for k, v in CPP_OPERATORS.items():
-        name = name.replace('operator%s' % k, 'operator_%s' % v)
-    name = re.sub('<.*>', '', name)
-    name = ''.join([ch if ch.isalnum() else '_' for ch in name])
-    name = re.sub('_$', '', re.sub('_+', '_', name))
-    return '__doc_' + name
+        name = name.replace("operator%s" % k, "operator_%s" % v)
+    name = re.sub("<.*>", "", name)
+    name = "".join([ch if ch.isalnum() else "_" for ch in name])
+    name = re.sub("_$", "", re.sub("_+", "_", name))
+    return "__doc_" + name
 
 
 def process_comment(comment):
-    result = ''
+    result = ""
 
     # Remove C++ comment syntax
-    leading_spaces = float('inf')
+    leading_spaces = float("inf")
     for s in comment.expandtabs(tabsize=4).splitlines():
         s = s.strip()
-        if s.startswith('/*'):
-            s = s[2:].lstrip('*')
-        elif s.endswith('*/'):
-            s = s[:-2].rstrip('*')
-        elif s.startswith('///'):
+        if s.startswith("/*"):
+            s = s[2:].lstrip("*")
+        elif s.endswith("*/"):
+            s = s[:-2].rstrip("*")
+        elif s.startswith("///"):
             s = s[3:]
-        if s.startswith('*'):
+        if s.startswith("*"):
             s = s[1:]
         if len(s) > 0:
             leading_spaces = min(leading_spaces, len(s) - len(s.lstrip()))
-        result += s + '\n'
+        result += s + "\n"
 
     # Remove any leading spaces present throughout all lines
-    if leading_spaces != float('inf'):
+    if leading_spaces != float("inf"):
         result2 = ""
         for s in result.splitlines():
-            result2 += s[leading_spaces:] + '\n'
+            result2 += s[leading_spaces:] + "\n"
         result = result2
 
     # Doxygen tags
-    cpp_group = r'([\w:\.<>\(\)]+)'
-    param_group = r'([\[\w:,\]]+)'
+    cpp_group = r"([\w:\.<>\(\)]+)"
+    param_group = r"([\[\w:,\]]+)"
 
     s = result
-    s = re.sub(r'[\\@]c\s+%s' % cpp_group, r'``\1``', s)
-    s = re.sub(r'[\\@]a\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'[\\@]e\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'[\\@]em\s+%s' % cpp_group, r'*\1*', s)
-    s = re.sub(r'[\\@]b\s+%s' % cpp_group, r'**\1**', s)
-    s = re.sub(r'[\\@]ingroup\s+%s' % cpp_group, r'', s)
+    s = re.sub(r"[\\@]c\s+%s" % cpp_group, r"``\1``", s)
+    s = re.sub(r"[\\@]a\s+%s" % cpp_group, r"*\1*", s)
+    s = re.sub(r"[\\@]e\s+%s" % cpp_group, r"*\1*", s)
+    s = re.sub(r"[\\@]em\s+%s" % cpp_group, r"*\1*", s)
+    s = re.sub(r"[\\@]b\s+%s" % cpp_group, r"**\1**", s)
+    s = re.sub(r"[\\@]ingroup\s+%s" % cpp_group, r"", s)
 
     # Turns
     #
@@ -164,14 +173,14 @@ def process_comment(comment):
     # No longer parameter section here
     # '''
     def convert_parameters(comment):
-        comment = comment.split('\n')
+        comment = comment.split("\n")
         pre_param_lines = []
         param_lines = []
         post_param_lines = []
         indent = -1
         for line in comment:
             space_len = len(line) - len(line.lstrip())
-            if re.fullmatch(r'\s+', line):
+            if re.fullmatch(r"\s+", line):
                 # empty line
                 if post_param_lines != []:
                     post_param_lines.append(line)
@@ -180,17 +189,17 @@ def process_comment(comment):
                 else:
                     pre_param_lines.append(line)
             # this line contains a param
-            elif re.match(
-                    r'(\s)*[\\@]param%s?\s+%s' % (param_group, cpp_group),
-                    line):
+            elif re.match(r"(\s)*[\\@]param%s?\s+%s" % (param_group, cpp_group), line):
                 param_lines.append(
                     re.sub(
-                        r'(\s*)[\\@]param%s?\s+%s' % (param_group, cpp_group),
-                        r'\1\3:', line))
+                        r"(\s*)[\\@]param%s?\s+%s" % (param_group, cpp_group),
+                        r"\1\3:",
+                        line,
+                    )
+                )
                 indent = space_len
             # line does not contain a param and we have finished with all the param lines
-            elif post_param_lines != [] or (param_lines != []
-                                            and space_len <= indent):
+            elif post_param_lines != [] or (param_lines != [] and space_len <= indent):
                 post_param_lines.append(line)
             # we have not yet encountered a param line
             elif param_lines == []:
@@ -198,12 +207,16 @@ def process_comment(comment):
             # we're inside a param description
             else:
                 param_lines.append(line)
-        param_lines = [' ' + i for i in param_lines]  # indent param lines
+        param_lines = [" " + i for i in param_lines]  # indent param lines
         if indent == -1:
-            return '\n'.join(pre_param_lines)
+            return "\n".join(pre_param_lines)
         else:
-            return '\n'.join(pre_param_lines + ['', ' ' * indent + 'Args:'] +
-                             param_lines + post_param_lines)
+            return "\n".join(
+                pre_param_lines
+                + ["", " " * indent + "Args:"]
+                + param_lines
+                + post_param_lines
+            )
 
     # Turns
     #
@@ -228,26 +241,26 @@ def process_comment(comment):
     #
     # anywhere in the comment (the occurances of `pattern` need not be sequential)
     def convert_keyword(comment, pattern, replacement):
-        comment = comment.split('\n')
+        comment = comment.split("\n")
         lines = []
         indent = -1
         inside_pattern = False
         for line in comment:
             space_len = len(line) - len(line.lstrip())
             # empty line
-            if re.fullmatch(r'\s+', line):
+            if re.fullmatch(r"\s+", line):
                 lines.append(line)
             # this line contains a pattern
             elif re.match(pattern, line):
-                lines.append('')
+                lines.append("")
                 indent = space_len
                 inside_pattern = True
                 new_line = re.sub(pattern, replacement, line)
                 # Move everything after the pattern to a new line if non-empty
-                m = re.match(r'(\s*)(%s)\s*(\S.*$)' % replacement, new_line)
+                m = re.match(r"(\s*)(%s)\s*(\S.*$)" % replacement, new_line)
                 if m:
                     lines.append(m.group(1) + m.group(2))
-                    lines.append(' ' * (indent + 1) + m.group(3))
+                    lines.append(" " * (indent + 1) + m.group(3))
                 else:
                     lines.append(line)
             # line does not contain a param and we have finished with all the param lines
@@ -260,77 +273,78 @@ def process_comment(comment):
             # we're inside a pattern description
             else:
                 # adjust indentation
-                line = re.sub(r'^\s*(\S.*$)', ' ' * (indent + 1) + r'\1', line)
+                line = re.sub(r"^\s*(\S.*$)", " " * (indent + 1) + r"\1", line)
                 lines.append(line)
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     s = convert_parameters(s)
-    s = re.sub(r'(\s*)[\\@]tparam%s?\s+%s' % (param_group, cpp_group),
-               r'\1Template parameter ``\2``: ', s)
+    s = re.sub(
+        r"(\s*)[\\@]tparam%s?\s+%s" % (param_group, cpp_group),
+        r"\1Template parameter ``\2``: ",
+        s,
+    )
 
     for in_, out_ in {
-            'returns': 'Returns',
-            'return': 'Returns',
-            'authors': 'Authors',
-            'author': 'Author',
-            'copyright': 'Copyright',
-            'date': 'Date',
-            'remark': 'Remark',
-            'sa': 'See Also',
-            'see': 'See Also',
-            'extends': 'Extends',
-            'throws': 'Throws',
-            'throw': 'Throws'
+        "returns": "Returns",
+        "return": "Returns",
+        "authors": "Authors",
+        "author": "Author",
+        "copyright": "Copyright",
+        "date": "Date",
+        "remark": "Remark",
+        "sa": "See Also",
+        "see": "See Also",
+        "extends": "Extends",
+        "throws": "Throws",
+        "throw": "Throws",
     }.items():
-        s = convert_keyword(s, r'\s*[\\@]%s\s*' % in_, r'%s:' % out_)
+        s = convert_keyword(s, r"\s*[\\@]%s\s*" % in_, r"%s:" % out_)
 
-    s = re.sub(r'[\\@]details\s*', r'\n\n', s)
-    s = re.sub(r'[\\@]brief\s*', r'', s)
-    s = re.sub(r'[\\@]short\s*', r'', s)
-    s = re.sub(r'[\\@]ref\s*', r'', s)
+    s = re.sub(r"[\\@]details\s*", r"\n\n", s)
+    s = re.sub(r"[\\@]brief\s*", r"", s)
+    s = re.sub(r"[\\@]short\s*", r"", s)
+    s = re.sub(r"[\\@]ref\s*", r"", s)
 
-    s = re.sub(r'(`[^`]+`)(?!`)', r':code:\1', s, flags=re.DOTALL)
-    s = re.sub(r'[\\@]code\s?(.*?)\s?[\\@]endcode',
-               r"```\n\1\n```\n",
-               s,
-               flags=re.DOTALL)
+    s = re.sub(r"(`[^`]+`)(?!`)", r":code:\1", s, flags=re.DOTALL)
+    s = re.sub(
+        r"[\\@]code\s?(.*?)\s?[\\@]endcode", r"```\n\1\n```\n", s, flags=re.DOTALL
+    )
 
-    s = re.sub(r'[\\@]warning\s?(.*?)\s?\n\n',
-               r'$.. warning::\n\n\1\n\n',
-               s,
-               flags=re.DOTALL)
+    s = re.sub(
+        r"[\\@]warning\s?(.*?)\s?\n\n", r"$.. warning::\n\n\1\n\n", s, flags=re.DOTALL
+    )
     # Deprecated expects a version number for reST and not for Doxygen. Here the first word of the
     # doxygen directives is assumed to correspond to the version number
-    s = re.sub(r'[\\@]deprecated\s(.*?)\s?(.*?)\s?\n\n',
-               r'$.. deprecated:: \1\n\n\2\n\n',
-               s,
-               flags=re.DOTALL)
-    s = re.sub(r'[\\@]since\s?(.*?)\s?\n\n',
-               r'.. versionadded:: \1\n\n',
-               s,
-               flags=re.DOTALL)
-    s = re.sub(r'[\\@]todo\s?(.*?)\s?\n\n',
-               r'$.. todo::\n\n\1\n\n',
-               s,
-               flags=re.DOTALL)
+    s = re.sub(
+        r"[\\@]deprecated\s(.*?)\s?(.*?)\s?\n\n",
+        r"$.. deprecated:: \1\n\n\2\n\n",
+        s,
+        flags=re.DOTALL,
+    )
+    s = re.sub(
+        r"[\\@]since\s?(.*?)\s?\n\n", r".. versionadded:: \1\n\n", s, flags=re.DOTALL
+    )
+    s = re.sub(r"[\\@]todo\s?(.*?)\s?\n\n", r"$.. todo::\n\n\1\n\n", s, flags=re.DOTALL)
 
     # replace html tags
-    s = re.sub(r'<a\s+href\s*=\s*[\'"]([^\'"]*)[\'"]>\s*(((?!</).)*)\s*</a>',
-               r'`\2 <\1>`_',
-               s,
-               flags=re.DOTALL)
-    s = re.sub(r'<tt>(.*?)</tt>', r'``\1``', s, flags=re.DOTALL)
-    s = re.sub(r'<pre>(.*?)</pre>', r"```\n\1\n```\n", s, flags=re.DOTALL)
-    s = re.sub(r'<em>(.*?)</em>', r'*\1*', s, flags=re.DOTALL)
-    s = re.sub(r'<b>(.*?)</b>', r'**\1**', s, flags=re.DOTALL)
-    s = re.sub(r'<li>', r'\n\n* ', s)
-    s = re.sub(r'</?ul>', r'', s)
-    s = re.sub(r'</li>', r'\n\n', s)
+    s = re.sub(
+        r'<a\s+href\s*=\s*[\'"]([^\'"]*)[\'"]>\s*(((?!</).)*)\s*</a>',
+        r"`\2 <\1>`_",
+        s,
+        flags=re.DOTALL,
+    )
+    s = re.sub(r"<tt>(.*?)</tt>", r"``\1``", s, flags=re.DOTALL)
+    s = re.sub(r"<pre>(.*?)</pre>", r"```\n\1\n```\n", s, flags=re.DOTALL)
+    s = re.sub(r"<em>(.*?)</em>", r"*\1*", s, flags=re.DOTALL)
+    s = re.sub(r"<b>(.*?)</b>", r"**\1**", s, flags=re.DOTALL)
+    s = re.sub(r"<li>", r"\n\n* ", s)
+    s = re.sub(r"</?ul>", r"", s)
+    s = re.sub(r"</li>", r"\n\n", s)
 
     # replace inline math formulas
-    s = re.sub(r'[\\@]f\$(.*?)[\\@]f\$', r':math:`\1`', s, flags=re.DOTALL)
+    s = re.sub(r"[\\@]f\$(.*?)[\\@]f\$", r":math:`\1`", s, flags=re.DOTALL)
     # replace multiline math formulas
-    s = re.sub(r'[\\@]f\[(.*?)[\\@]f\]', r'.. math::\1', s, flags=re.DOTALL)
+    s = re.sub(r"[\\@]f\[(.*?)[\\@]f\]", r".. math::\1", s, flags=re.DOTALL)
 
     # This might be useful in the future. Not using at the moment as
     # even some Python comments use :: notation to refer to stuff
@@ -338,34 +352,36 @@ def process_comment(comment):
     # s = re.sub(r'(?<!std)\b::\b', r'.', s)
 
     # replace words starting with hashtags
-    s = re.sub(r'(?<=\s)#(%s)' % param_group, r'``\1``', s)
+    s = re.sub(r"(?<=\s)#(%s)" % param_group, r"``\1``", s)
     # remove percentage signs before words
-    s = re.sub(r'%(\w)', r'\1', s)
+    s = re.sub(r"%(\w)", r"\1", s)
 
-    s = s.replace('``true``', '``True``')
-    s = s.replace('``false``', '``False``')
+    s = s.replace("``true``", "``True``")
+    s = s.replace("``false``", "``False``")
 
-    return s.rstrip().lstrip('\n')
+    return s.rstrip().lstrip("\n")
 
 
 def extract(filename, node, prefix, output):
-    if not (node.location.file is None
-            or os.path.samefile(d(node.location.file.name), filename)):
+    if not (
+        node.location.file is None
+        or os.path.samefile(d(node.location.file.name), filename)
+    ):
         return 0
     if node.kind in RECURSE_LIST:
         sub_prefix = prefix
         if node.kind not in PREFIX_BLACKLIST:
             if len(sub_prefix) > 0:
-                sub_prefix += '_'
+                sub_prefix += "_"
             sub_prefix += d(node.spelling)
         for i in node.get_children():
             extract(filename, i, sub_prefix, output)
     if node.kind in PRINT_LIST:
-        comment = d(node.raw_comment) if node.raw_comment is not None else ''
+        comment = d(node.raw_comment) if node.raw_comment is not None else ""
         comment = process_comment(comment)
         sub_prefix = prefix
         if len(sub_prefix) > 0:
-            sub_prefix += '_'
+            sub_prefix += "_"
         if len(node.spelling) > 0:
             name = sanitize_name(sub_prefix + d(node.spelling))
             output.append((name, filename, comment))
@@ -383,10 +399,9 @@ class ExtractionThread(Thread):
         global errors_detected
         print('Processing "%s" ..' % self.filename, file=sys.stderr)
         try:
-            index = cindex.Index(cindex.conf.lib.clang_createIndex(
-                False, True))
+            index = cindex.Index(cindex.conf.lib.clang_createIndex(False, True))
             tu = index.parse(self.filename, self.parameters)
-            extract(self.filename, tu.cursor, '', self.output)
+            extract(self.filename, tu.cursor, "", self.output)
         except BaseException:
             errors_detected = True
             raise
@@ -398,27 +413,27 @@ def read_args(args):
     parameters = []
     filenames = []
     if "-x" not in args:
-        parameters.extend(['-x', 'c++'])
+        parameters.extend(["-x", "c++"])
     if not any(it.startswith("-std=") for it in args):
-        parameters.append('-std=c++11')
-    parameters.append('-Wno-pragma-once-outside-header')
+        parameters.append("-std=c++11")
+    parameters.append("-Wno-pragma-once-outside-header")
 
-    if platform.system() == 'Darwin':
-        dev_path = '/Applications/Xcode.app/Contents/Developer/'
-        lib_dir = dev_path + 'Toolchains/XcodeDefault.xctoolchain/usr/lib/'
-        sdk_dir = dev_path + 'Platforms/MacOSX.platform/Developer/SDKs'
-        libclang = lib_dir + 'libclang.dylib'
+    if platform.system() == "Darwin":
+        dev_path = "/Applications/Xcode.app/Contents/Developer/"
+        lib_dir = dev_path + "Toolchains/XcodeDefault.xctoolchain/usr/lib/"
+        sdk_dir = dev_path + "Platforms/MacOSX.platform/Developer/SDKs"
+        libclang = lib_dir + "libclang.dylib"
 
         if os.path.exists(libclang):
             cindex.Config.set_library_path(os.path.dirname(libclang))
 
         if os.path.exists(sdk_dir):
             sysroot_dir = os.path.join(sdk_dir, next(os.walk(sdk_dir))[1][0])
-            parameters.append('-isysroot')
+            parameters.append("-isysroot")
             parameters.append(sysroot_dir)
-    elif platform.system() == 'Windows':
-        if 'LIBCLANG_PATH' in os.environ:
-            library_file = os.environ['LIBCLANG_PATH']
+    elif platform.system() == "Windows":
+        if "LIBCLANG_PATH" in os.environ:
+            library_file = os.environ["LIBCLANG_PATH"]
             if os.path.isfile(library_file):
                 cindex.Config.set_library_file(library_file)
             else:
@@ -427,26 +442,30 @@ def read_args(args):
                     "Set the LIBCLANG_PATH environment variable to provide a path to it."
                 )
         else:
-            library_file = ctypes.util.find_library('libclang.dll')
+            library_file = ctypes.util.find_library("libclang.dll")
             if library_file is not None:
                 cindex.Config.set_library_file(library_file)
-    elif platform.system() == 'Linux':
+    elif platform.system() == "Linux":
         # LLVM switched to a monolithical setup that includes everything under
         # /usr/lib/llvm{version_number}/. We glob for the library and select
         # the highest version
         def folder_version(d):
-            return [int(ver) for ver in re.findall(r'(?<!lib)(?<!\d)\d+', d)]
+            return [int(ver) for ver in re.findall(r"(?<!lib)(?<!\d)\d+", d)]
 
         llvm_dir = max(
-            (path for libdir in ['lib64', 'lib', 'lib32']
-             for path in glob('/usr/%s/llvm-*' % libdir)
-             if os.path.exists(os.path.join(path, 'lib', 'libclang.so.1'))),
+            (
+                path
+                for libdir in ["lib64", "lib", "lib32"]
+                for path in glob("/usr/%s/llvm-*" % libdir)
+                if os.path.exists(os.path.join(path, "lib", "libclang.so.1"))
+            ),
             default=None,
-            key=folder_version)
+            key=folder_version,
+        )
 
         # Ability to override LLVM/libclang paths
-        if 'LLVM_DIR_PATH' in os.environ:
-            llvm_dir = os.environ['LLVM_DIR_PATH']
+        if "LLVM_DIR_PATH" in os.environ:
+            llvm_dir = os.environ["LLVM_DIR_PATH"]
         elif llvm_dir is None:
             raise FileNotFoundError(
                 "Failed to find a LLVM installation providing the file "
@@ -457,61 +476,71 @@ def read_args(args):
                 "the automatic search by specifying the LIBLLVM_DIR_PATH "
                 "(for the LLVM base directory) and/or LIBCLANG_PATH (if "
                 "libclang is located at a nonstandard location) environment "
-                "variables.")
+                "variables."
+            )
 
-        if 'LIBCLANG_PATH' in os.environ:
-            libclang_dir = os.environ['LIBCLANG_PATH']
+        if "LIBCLANG_PATH" in os.environ:
+            libclang_dir = os.environ["LIBCLANG_PATH"]
         else:
             libclang_dir = max(
-                (os.path.join(llvm_dir, libdir, 'libclang.so')
-                 for libdir in ['lib64', 'lib', 'lib32'] if os.path.exists(
-                     os.path.join(llvm_dir, libdir, 'libclang.so'))),
+                (
+                    os.path.join(llvm_dir, libdir, "libclang.so")
+                    for libdir in ["lib64", "lib", "lib32"]
+                    if os.path.exists(os.path.join(llvm_dir, libdir, "libclang.so"))
+                ),
                 default=None,
-                key=folder_version)
+                key=folder_version,
+            )
 
         cindex.Config.set_library_file(libclang_dir)
         cpp_dirs = []
 
-        if '-stdlib=libc++' not in args:
+        if "-stdlib=libc++" not in args:
             cpp_dirs.append(
-                max(glob('/usr/include/c++/*'),
-                    default=None,
-                    key=folder_version))
+                max(glob("/usr/include/c++/*"), default=None, key=folder_version)
+            )
 
             cpp_dirs.append(
-                max(glob(
-                    '/usr/include/%s-linux-gnu/c++/*' % platform.machine()),
+                max(
+                    glob("/usr/include/%s-linux-gnu/c++/*" % platform.machine()),
                     default=None,
-                    key=folder_version))
+                    key=folder_version,
+                )
+            )
         else:
-            cpp_dirs.append(os.path.join(llvm_dir, 'include', 'c++', 'v1'))
+            cpp_dirs.append(os.path.join(llvm_dir, "include", "c++", "v1"))
 
-        if 'CLANG_INCLUDE_DIR' in os.environ:
-            cpp_dirs.append(os.environ['CLANG_INCLUDE_DIR'])
+        if "CLANG_INCLUDE_DIR" in os.environ:
+            cpp_dirs.append(os.environ["CLANG_INCLUDE_DIR"])
         else:
             cpp_dirs.append(
-                max(glob(os.path.join(llvm_dir, 'lib', 'clang', '*',
-                                      'include')),
+                max(
+                    glob(os.path.join(llvm_dir, "lib", "clang", "*", "include")),
                     default=None,
-                    key=folder_version))
+                    key=folder_version,
+                )
+            )
 
-        cpp_dirs.append('/usr/include/%s-linux-gnu' % platform.machine())
-        cpp_dirs.append('/usr/include')
+        cpp_dirs.append("/usr/include/%s-linux-gnu" % platform.machine())
+        cpp_dirs.append("/usr/include")
 
         # Capability to specify additional include directories manually
-        if 'CPP_INCLUDE_DIRS' in os.environ:
-            cpp_dirs.extend([
-                cpp_dir for cpp_dir in os.environ['CPP_INCLUDE_DIRS'].split()
-                if os.path.exists(cpp_dir)
-            ])
+        if "CPP_INCLUDE_DIRS" in os.environ:
+            cpp_dirs.extend(
+                [
+                    cpp_dir
+                    for cpp_dir in os.environ["CPP_INCLUDE_DIRS"].split()
+                    if os.path.exists(cpp_dir)
+                ]
+            )
 
         for cpp_dir in cpp_dirs:
             if cpp_dir is None:
                 continue
-            parameters.extend(['-isystem', cpp_dir])
+            parameters.extend(["-isystem", cpp_dir])
 
     for item in args:
-        if item.startswith('-'):
+        if item.startswith("-"):
             parameters.append(item)
         else:
             filenames.append(item)
@@ -529,7 +558,7 @@ def extract_all(args):
         thr = ExtractionThread(filename, parameters, output)
         thr.start()
 
-    print('Waiting for jobs to finish ..', file=sys.stderr)
+    print("Waiting for jobs to finish ..", file=sys.stderr)
     for _ in range(job_count):
         job_semaphore.acquire()
 
@@ -537,7 +566,8 @@ def extract_all(args):
 
 
 def write_header(comments, out_file=sys.stdout):
-    print('''/*
+    print(
+        """/*
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by pybind11_mkdoc.
  */
@@ -562,8 +592,9 @@ def write_header(comments, out_file=sys.stdout):
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-''',
-          file=out_file)
+""",
+        file=out_file,
+    )
     name_ctr = 1
     name_prev = None
     for name, _, comment in list(sorted(comments, key=lambda x: (x[0], x[1]))):
@@ -573,25 +604,35 @@ def write_header(comments, out_file=sys.stdout):
         else:
             name_prev = name
             name_ctr = 1
-        print('\nstatic const char *%s =%sR"doc(%s)doc";' %
-              (name, '\n' if '\n' in comment else ' ', comment),
-              file=out_file)
+        print(
+            '\nstatic const char *%s =%sR"doc(%s)doc";'
+            % (name, "\n" if "\n" in comment else " ", comment),
+            file=out_file,
+        )
         # For some reason sphinx messes up enum class values if they span more than
         # a single line. So we create another parameter to represent the comment
         # squished into a single line
-        single_line_comment = ' '.join(
-            [i.strip() for i in comment.split('\n') if i.strip() != ""])
-        print('\nstatic const char *%s =%sR"doc(%s)doc";' %
-              (name[:2] + "singleline" + name[2:],
-               '\n' if '\n' in comment else ' ', single_line_comment),
-              file=out_file)
+        single_line_comment = " ".join(
+            [i.strip() for i in comment.split("\n") if i.strip() != ""]
+        )
+        print(
+            '\nstatic const char *%s =%sR"doc(%s)doc";'
+            % (
+                name[:2] + "singleline" + name[2:],
+                "\n" if "\n" in comment else " ",
+                single_line_comment,
+            ),
+            file=out_file,
+        )
 
-    print('''
+    print(
+        """
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
-''',
-          file=out_file)
+""",
+        file=out_file,
+    )
 
 
 def mkdoc(args, width, output=None):
@@ -604,9 +645,8 @@ def mkdoc(args, width, output=None):
 
     if output:
         try:
-            os.makedirs(os.path.dirname(os.path.abspath(output)),
-                        exist_ok=True)
-            with open(output, 'w', encoding="utf-8") as out_file:
+            os.makedirs(os.path.dirname(os.path.abspath(output)), exist_ok=True)
+            with open(output, "w", encoding="utf-8") as out_file:
                 write_header(comments, out_file)
         except:
             # In the event of an error, don't leave a partially-written

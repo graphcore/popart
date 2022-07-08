@@ -29,8 +29,10 @@ def test_bad_model_proto():
     with pytest.raises(popart.popart_exception) as e_info:
         builder = popart.Builder(proto)
 
-    assert (e_info.value.args[0].startswith(
-        'Failed to load a ModelProto from the string '))
-    assert (e_info.value.args[0].endswith(
-        'Check that it is either a valid path to an existing onnx'
-        ' model file, or is a valid onnx ModelProto string.'))
+    assert e_info.value.args[0].startswith(
+        "Failed to load a ModelProto from the string "
+    )
+    assert e_info.value.args[0].endswith(
+        "Check that it is either a valid path to an existing onnx"
+        " model file, or is a valid onnx ModelProto string."
+    )

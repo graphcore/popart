@@ -9,6 +9,7 @@ import pva
 # `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
+
 """
 Model:
         X0             X1    ... Xn  Labels
@@ -62,8 +63,7 @@ def get_compute_io_overlap_percentage(report, runIndex):
             computeIntervals.append([self.cyclesFrom.max, self.cyclesTo.max])
 
         def visitStreamCopyMid(self, _):
-            streamCopyIntervals.append(
-                [self.cyclesFrom.max, self.cyclesTo.max])
+            streamCopyIntervals.append([self.cyclesFrom.max, self.cyclesTo.max])
 
     for step in steps:
         ipu = step.ipus[0]
@@ -84,19 +84,26 @@ def get_compute_io_overlap_percentage(report, runIndex):
         for compute in computeIntervals:
             for stream in streamCopyIntervals:
                 if checkOverlap(compute[0], compute[1], stream[0], stream[1]):
-                    overlap += getOverlap(compute[0], compute[1], stream[0],
-                                          stream[1])
+                    overlap += getOverlap(compute[0], compute[1], stream[0], stream[1])
 
     computeTotal, streamCopyTotal = (
         sum(i[1] - i[0] for i in intervals)
-        for intervals in [computeIntervals, streamCopyIntervals])
+        for intervals in [computeIntervals, streamCopyIntervals]
+    )
 
     # Return percentage overlap
     return max(overlap / streamCopyTotal, overlap / computeTotal)
 
 
-def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
-              exchange_strategy, pipelining):
+def get_model(
+    size,
+    batches_per_step,
+    num_inputs,
+    num_matmuls,
+    tile_set,
+    exchange_strategy,
+    pipelining,
+):
     np.random.seed(num_inputs * num_matmuls)
     builder = popart.Builder()
 
@@ -105,28 +112,30 @@ def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
 
     labels = builder.addInputTensor(
         popart.TensorInfo("INT32", [1, size]),
-        popart.InputSettings(tile_set, exchange_strategy), "label")
+        popart.InputSettings(tile_set, exchange_strategy),
+        "label",
+    )
     s = []
     for i in range(num_inputs):
         x = builder.addInputTensor(
             popart.TensorInfo("FLOAT", [1, size, size]),
-            popart.InputSettings(tile_set, exchange_strategy), f"x{i}")
+            popart.InputSettings(tile_set, exchange_strategy),
+            f"x{i}",
+        )
         inputs += [x]
 
         for j in range(num_matmuls):
-            with builder.virtualGraph(
-                    j if pipelining else 0), builder.pipelineStage(j):
-                weight = np.random.normal(0, 0.05,
-                                          (1, size, size)).astype(np.float32)
+            with builder.virtualGraph(j if pipelining else 0), builder.pipelineStage(j):
+                weight = np.random.normal(0, 0.05, (1, size, size)).astype(np.float32)
                 w = builder.addInitializedInputTensor(weight, f"x{i}w{j}")
                 weights += [w]
 
                 x = builder.aiOnnx.matmul([w, x])
         s += [x]
 
-    with builder.virtualGraph(num_matmuls -
-                              1 if pipelining else 0), builder.pipelineStage(
-                                  num_matmuls - 1):
+    with builder.virtualGraph(
+        num_matmuls - 1 if pipelining else 0
+    ), builder.pipelineStage(num_matmuls - 1):
         sum = builder.aiOnnx.sum(s)
         probs = builder.aiOnnx.softmax([sum])
         loss = builder.aiGraphcore.nllloss([probs, labels])
@@ -134,23 +143,38 @@ def get_model(size, batches_per_step, num_inputs, num_matmuls, tile_set,
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        batches_per_step, {
+        batches_per_step,
+        {
             loss: popart.AnchorReturnType("All", tile_set, exchange_strategy),
             sum: popart.AnchorReturnType("All", tile_set, exchange_strategy),
-        })
+        },
+    )
 
     return proto, inputs, weights, labels, dataFlow, loss, sum
 
 
-def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
-              exchange_strategy, pipelining):
+def run_model(
+    tmpdir,
+    batches_per_step,
+    accum_factor,
+    replicas,
+    tile_set,
+    exchange_strategy,
+    pipelining,
+):
     size = 64
     num_inputs = 4
     num_matmuls = 2 if pipelining else 1
 
     proto, inputs, weights, labels, dataFlow, loss, _ = get_model(
-        size, batches_per_step, num_inputs, num_matmuls, tile_set,
-        exchange_strategy, pipelining)
+        size,
+        batches_per_step,
+        num_inputs,
+        num_matmuls,
+        tile_set,
+        exchange_strategy,
+        pipelining,
+    )
 
     opts = popart.SessionOptions()
 
@@ -191,8 +215,9 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
     pat = popart.Patterns(popart.PatternsLevel.Default)
 
-    with tu.create_test_device(numIpus=replicas * ipus_per_replica,
-                               tilesPerIPU=tu.USE_ALL_TILES) as device:
+    with tu.create_test_device(
+        numIpus=replicas * ipus_per_replica, tilesPerIPU=tu.USE_ALL_TILES
+    ) as device:
         session = popart.TrainingSession(
             fnModel=proto,
             dataFlow=dataFlow,
@@ -205,7 +230,8 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
             #   0 but the virtual graph only covers the following tiles on
             #   that IPU: 0-63
             # The error happens in a call to poplar made by gcl::perIPUTiles.
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -220,21 +246,23 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
         for _ in range(warmup_iterations + calc_iterations):
             datainputs = {
-                input: (np.random.normal(
-                    0, 0.05, (replicas * batches_per_step * accum_factor, 1,
-                              size, size)).astype(np.float32))
+                input: (
+                    np.random.normal(
+                        0,
+                        0.05,
+                        (replicas * batches_per_step * accum_factor, 1, size, size),
+                    ).astype(np.float32)
+                )
                 for input in inputs
             }
             datainputs[labels] = np.random.randint(
-                0, size, (replicas * batches_per_step * accum_factor, 1, size))
+                0, size, (replicas * batches_per_step * accum_factor, 1, size)
+            )
             stepio = popart.PyStepIO(datainputs, anchors)
             session.run(stepio)
 
         session.weightsToHost()
-        weights_data = {
-            w: np.zeros((1, size, size), dtype=np.float32)
-            for w in weights
-        }
+        weights_data = {w: np.zeros((1, size, size), dtype=np.float32) for w in weights}
         weights_read = popart.PyWeightsIO(weights_data)
         session.readWeights(weights_read)
 
@@ -243,8 +271,7 @@ def run_model(tmpdir, batches_per_step, accum_factor, replicas, tile_set,
 
     report = session.getReport()
 
-    overlapPercentage = get_compute_io_overlap_percentage(
-        report, warmup_iterations)
+    overlapPercentage = get_compute_io_overlap_percentage(report, warmup_iterations)
 
     return overlapPercentage, weights_data
 
@@ -257,15 +284,33 @@ def test_overlap_training(tmpdir, pipelining):
     accum_factor = 16
     replicas = 2
 
-    p0, w0 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
-                       popart.TileSet.Compute,
-                       popart.ExchangeStrategy.JustInTime, pipelining)
-    p1, w1 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
-                       popart.TileSet.IO, popart.ExchangeStrategy.JustInTime,
-                       pipelining)
-    p2, w2 = run_model(tmpdir, batches_per_step, accum_factor, replicas,
-                       popart.TileSet.IO,
-                       popart.ExchangeStrategy.OverlapInnerLoop, pipelining)
+    p0, w0 = run_model(
+        tmpdir,
+        batches_per_step,
+        accum_factor,
+        replicas,
+        popart.TileSet.Compute,
+        popart.ExchangeStrategy.JustInTime,
+        pipelining,
+    )
+    p1, w1 = run_model(
+        tmpdir,
+        batches_per_step,
+        accum_factor,
+        replicas,
+        popart.TileSet.IO,
+        popart.ExchangeStrategy.JustInTime,
+        pipelining,
+    )
+    p2, w2 = run_model(
+        tmpdir,
+        batches_per_step,
+        accum_factor,
+        replicas,
+        popart.TileSet.IO,
+        popart.ExchangeStrategy.OverlapInnerLoop,
+        pipelining,
+    )
 
     # Reference values (MK2 C200):
     # p0 0.0

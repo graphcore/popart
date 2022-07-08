@@ -22,7 +22,7 @@ def test_softmax(op_tester):
         b = lsm(a)
         return [b]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_softmax_grad(op_tester):
@@ -36,7 +36,7 @@ def test_softmax_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -47,8 +47,8 @@ def test_softmax_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_softmax_rank1_axis0(op_tester):
@@ -113,7 +113,7 @@ def _test_softmax(op_tester, data, axis):
         o = c.view(*data.shape)
         return [o]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def _test_softmax_grad(op_tester, data, axis):
@@ -131,9 +131,10 @@ def _test_softmax_grad(op_tester, data, axis):
 
         builder.addOutputTensor(o)
         return [
-            o, s,
+            o,
+            s,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -152,13 +153,13 @@ def _test_softmax_grad(op_tester, data, axis):
         softmax_out = sm(reshaped_data)
         reshaped_softmax_out = softmax_out.view(*data.shape)
         mult_softmax_out = reshaped_softmax_out * torch.tensor(
-            one_place, requires_grad=False)
+            one_place, requires_grad=False
+        )
 
         d__o = ref_data.getOutputTensorGrad(0)
         mult_softmax_out.backward(torch.tensor(d__o))
 
         return [mult_softmax_out, reshaped_softmax_out, torch_data.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl", "MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")

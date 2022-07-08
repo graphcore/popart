@@ -6,6 +6,7 @@ import popart
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -33,7 +34,8 @@ def test_pipeline_grad_accl_model1(explicit):
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
         labelArray=labelArray,
-        explicit=False)
+        explicit=False,
+    )
     gradaccl_pipeline_anchors = get_model_anchors_model1(
         doSharding=True,
         doPipelining=True,
@@ -42,9 +44,11 @@ def test_pipeline_grad_accl_model1(explicit):
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
         labelArray=labelArray,
-        explicit=explicit)
-    for (tId1, t1), (tId2, t2) in zip(gradaccl_no_pipeline_anchors.items(),
-                                      gradaccl_pipeline_anchors.items()):
+        explicit=explicit,
+    )
+    for (tId1, t1), (tId2, t2) in zip(
+        gradaccl_no_pipeline_anchors.items(), gradaccl_pipeline_anchors.items()
+    ):
         for i in range(min(np.shape(t1)[0], np.shape(t2)[0])):
             print("gradaccl no pipelining, batch: ", i, tId1, np.sum(t1[i]))
             print("gradaccl pipelining   , batch: ", i, tId2, np.sum(t2[i]))
@@ -68,7 +72,8 @@ def test_pipeline_grad_accl_model2(explicit):
         doTraining=True,
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
-        explicit=False)
+        explicit=False,
+    )
     gradaccl_pipeline_anchors = get_model_anchors_model2(
         doSharding=True,
         doPipelining=True,
@@ -76,9 +81,11 @@ def test_pipeline_grad_accl_model2(explicit):
         doTraining=True,
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor,
-        explicit=explicit)
-    for (tId1, t1), (tId2, t2) in zip(gradaccl_no_pipeline_anchors.items(),
-                                      gradaccl_pipeline_anchors.items()):
+        explicit=explicit,
+    )
+    for (tId1, t1), (tId2, t2) in zip(
+        gradaccl_no_pipeline_anchors.items(), gradaccl_pipeline_anchors.items()
+    ):
         for i in range(min(np.shape(t1)[0], np.shape(t2)[0])):
             print("gradaccl no pipelining, batch: ", i, tId1, np.sum(t1[i]))
             print("gradaccl pipelining   , batch: ", i, tId2, np.sum(t2[i]))
@@ -95,26 +102,31 @@ def test_invalid_grad_accl_size():
     batchesPerStep = 8
 
     with pytest.raises(popart.popart_exception) as e_info:
-        get_model_anchors_model2(doSharding=True,
-                                 doPipelining=True,
-                                 batchesPerStep=batchesPerStep,
-                                 doTraining=True,
-                                 doGradAccl=True,
-                                 gradAcclFactor=gradAcclFactor)
+        get_model_anchors_model2(
+            doSharding=True,
+            doPipelining=True,
+            batchesPerStep=batchesPerStep,
+            doTraining=True,
+            doGradAccl=True,
+            gradAcclFactor=gradAcclFactor,
+        )
     assert e_info.value.args[0].startswith(
-        "For pipelining, depth (gradient accumulation factor)")
+        "For pipelining, depth (gradient accumulation factor)"
+    )
 
 
-def get_model_anchors_model1(doSharding,
-                             doPipelining,
-                             batchesPerStep,
-                             doTraining,
-                             doGradAccl=False,
-                             gradAcclFactor=1,
-                             doDevicex=True,
-                             anchorRestoredTensors=False,
-                             labelArray=None,
-                             explicit=False):
+def get_model_anchors_model1(
+    doSharding,
+    doPipelining,
+    batchesPerStep,
+    doTraining,
+    doGradAccl=False,
+    gradAcclFactor=1,
+    doDevicex=True,
+    anchorRestoredTensors=False,
+    labelArray=None,
+    explicit=False,
+):
     micro_batch_size = batch_size // gradAcclFactor
     builder = popart.Builder()
 
@@ -125,21 +137,22 @@ def get_model_anchors_model1(doSharding,
     with builder.virtualGraph(0):
         for i in range(2):
             w = builder.addInitializedInputTensor(
-                np.ones([hidden_size, hidden_size]).astype(np.float32),
-                f"weight_0_{i}")
+                np.ones([hidden_size, hidden_size]).astype(np.float32), f"weight_0_{i}"
+            )
             x = builder.aiOnnx.matmul([x, w])
     with builder.virtualGraph(1 if doSharding else 0):
         for i in range(2):
             w = builder.addInitializedInputTensor(
-                np.ones([hidden_size, hidden_size]).astype(np.float32),
-                f"weight_1_{i}")
+                np.ones([hidden_size, hidden_size]).astype(np.float32), f"weight_1_{i}"
+            )
             x = builder.aiOnnx.matmul([x, w])
     with builder.virtualGraph(2 if doSharding else 0):
         for i in range(2):
             w = builder.addInitializedInputTensor(
-                np.ones([hidden_size, hidden_size]).astype(np.float32),
-                f"weight_2_{i}")
-            if i == 1: w0 = w
+                np.ones([hidden_size, hidden_size]).astype(np.float32), f"weight_2_{i}"
+            )
+            if i == 1:
+                w0 = w
             x = builder.aiOnnx.matmul([x, w])
         label = builder.addInputTensor("INT32", [micro_batch_size])
         x = builder.aiGraphcore.nllloss([x, label])
@@ -172,19 +185,21 @@ def get_model_anchors_model1(doSharding,
 
     with tu.create_test_device(numIpus=numIPUs) as device:
         if doTraining is True:
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(
-                                                 batchesPerStep, anchor_map),
-                                             loss=output,
-                                             optimizer=popart.ConstSGD(0.01),
-                                             userOptions=opts,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                loss=output,
+                optimizer=popart.ConstSGD(0.01),
+                userOptions=opts,
+                deviceInfo=device,
+            )
         else:
-            session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                              dataFlow=popart.DataFlow(
-                                                  batchesPerStep, anchor_map),
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                userOptions=opts,
+                deviceInfo=device,
+            )
 
         if doDevicex is False:
             return None
@@ -202,8 +217,7 @@ def get_model_anchors_model1(doSharding,
             # Divide up the batches per step batches into gradAcclFactor * batchesPerStep
             # samples.
             outer_dim *= gradAcclFactor
-            labelArray = labelArray.reshape(
-                [gradAcclFactor * batchesPerStep, -1])
+            labelArray = labelArray.reshape([gradAcclFactor * batchesPerStep, -1])
         if outer_dim > 1:
             # Add the gradAcclFactor * batchesPerStep dimension into the input.
             input_shape = [outer_dim] + input_shape
@@ -211,8 +225,10 @@ def get_model_anchors_model1(doSharding,
         stepio = popart.PyStepIO(
             {
                 input_: np.ones(input_shape, np.float32),
-                label: labelArray.astype(np.int32)
-            }, anchors)
+                label: labelArray.astype(np.int32),
+            },
+            anchors,
+        )
 
         session.weightsFromHost()
 
@@ -221,16 +237,18 @@ def get_model_anchors_model1(doSharding,
     return anchors
 
 
-def get_model_anchors_model2(doSharding,
-                             doPipelining,
-                             batchesPerStep,
-                             doTraining,
-                             doGradAccl=False,
-                             gradAcclFactor=1,
-                             doDevicex=True,
-                             anchorRestoredTensors=False,
-                             returnRawInput=False,
-                             explicit=False):
+def get_model_anchors_model2(
+    doSharding,
+    doPipelining,
+    batchesPerStep,
+    doTraining,
+    doGradAccl=False,
+    gradAcclFactor=1,
+    doDevicex=True,
+    anchorRestoredTensors=False,
+    returnRawInput=False,
+    explicit=False,
+):
 
     np.random.seed(1234)
     builder = popart.Builder()
@@ -244,17 +262,14 @@ def get_model_anchors_model2(doSharding,
 
     s0 = builder.aiOnnx.sin([d0], "s0")
     e0 = builder.aiOnnx.exp([s0], "e0")
-    c0 = builder.aiOnnx.conv([e0, w0],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[1, 1],
-                             debugContext="c0")
+    c0 = builder.aiOnnx.conv(
+        [e0, w0], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1], debugContext="c0"
+    )
     r0 = builder.reshape_const(builder.aiOnnx, [c0], [micro_batch_size, 32])
     out = builder.aiOnnx.softmax([r0], axis=1, debugContext="sfm")
 
     label_shape = [micro_batch_size]
-    l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape),
-                                "label")
+    l0 = builder.addInputTensor(popart.TensorInfo("INT32", label_shape), "label")
     nll = builder.aiGraphcore.nllloss([out, l0])
 
     art = popart.AnchorReturnType("All")
@@ -289,19 +304,21 @@ def get_model_anchors_model2(doSharding,
 
     with tu.create_test_device(numIpus=numIPUs) as device:
         if doTraining is True:
-            session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                             dataFlow=popart.DataFlow(
-                                                 batchesPerStep, anchor_map),
-                                             loss=nll,
-                                             optimizer=popart.ConstSGD(0.01),
-                                             userOptions=opts,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                loss=nll,
+                optimizer=popart.ConstSGD(0.01),
+                userOptions=opts,
+                deviceInfo=device,
+            )
         else:
-            session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                              dataFlow=popart.DataFlow(
-                                                  batchesPerStep, anchor_map),
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=builder.getModelProto(),
+                dataFlow=popart.DataFlow(batchesPerStep, anchor_map),
+                userOptions=opts,
+                deviceInfo=device,
+            )
 
         if doDevicex is False:
             return None
@@ -310,8 +327,7 @@ def get_model_anchors_model2(doSharding,
         session.prepareDevice()
 
         classes = np.prod(shape_d0) / (micro_batch_size * batchesPerStep)
-        label = np.random.randint(low=0, high=classes,
-                                  size=shape_l0).astype(np.int32)
+        label = np.random.randint(low=0, high=classes, size=shape_l0).astype(np.int32)
 
         outer_dim = 1
         if batchesPerStep > 1:

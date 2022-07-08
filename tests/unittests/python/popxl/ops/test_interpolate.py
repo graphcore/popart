@@ -15,9 +15,8 @@ class TestInterpolate:
         ir = popxl.Ir()
         g = ir.main_graph
         with ir.main_graph:
-            t = popxl.variable(
-                np.random.rand(batch_size, in_channel, height, width))
-            _ = ops.interpolate(t, scale_factor=(1, 1, 1, 1), mode='nearest')
+            t = popxl.variable(np.random.rand(batch_size, in_channel, height, width))
+            _ = ops.interpolate(t, scale_factor=(1, 1, 1, 1), mode="nearest")
         assert len(g.tensors) == 2
         assert len(g.variables) == 1
         assert contains_op_of_type("Resize", _ir.op.ResizeOp, g)

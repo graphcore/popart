@@ -14,8 +14,6 @@ class TestHistogram:
 
         with g:
             a = popxl.variable(np.ones((1, 2, 3)))
-            _ = ops.histogram(a,
-                              levels=[0.0001, 50000],
-                              absolute_of_input=True)
+            _ = ops.histogram(a, levels=[0.0001, 50000], absolute_of_input=True)
         assert len(g.tensors) == 2
         assert contains_op_of_type("Histogram", _ir.op.HistogramOp, g)

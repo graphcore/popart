@@ -10,7 +10,7 @@ def inference_add_to_variable(np_type):
     shape = popart.TensorInfo(np_type, [2])
 
     i1 = builder.addInputTensor(shape)
-    i2 = builder.addInitializedInputTensor(np.array([2., 4.], dtype=np_type))
+    i2 = builder.addInitializedInputTensor(np.array([2.0, 4.0], dtype=np_type))
     o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
@@ -19,20 +19,20 @@ def inference_add_to_variable(np_type):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         anchors = session.initAnchorArrays()
 
-        inputs = {i1: np.array([1., 3.], dtype=np_type)}
+        inputs = {i1: np.array([1.0, 3.0], dtype=np_type)}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
 
-    assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np_type)))
+    assert np.allclose(anchors[o], np.array([3.0, 7.0], dtype=np_type))
 
 
 def test_add_variable_fp32():

@@ -6,6 +6,7 @@ import json
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import test_util as tu
@@ -22,24 +23,26 @@ def test_full_recompute_pipelining():
     input_shape = [batch_size, hidden_size]
 
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
-        np.float32)
+        np.float32
+    )
 
     input_data = np.random.normal(
-        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
+        0, 0.02, [gradient_accumulation] + input_shape
+    ).astype(np.float32)
 
     def run_test(mode=None, verify=None):
         builder = popart.Builder()
 
         def norm(input_x):
             gamma = builder.addInitializedInputTensor(
-                np.ones(hidden_size, np.float32), "Gamma")
+                np.ones(hidden_size, np.float32), "Gamma"
+            )
             beta = builder.addInitializedInputTensor(
-                np.zeros(hidden_size, np.float32), "Beta")
-            return builder.aiGraphcore.groupnormalization(
-                [input_x, gamma, beta], 1)[0]
+                np.zeros(hidden_size, np.float32), "Beta"
+            )
+            return builder.aiGraphcore.groupnormalization([input_x, gamma, beta], 1)[0]
 
-        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                      "x_in")
+        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape), "x_in")
 
         weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
         weight_2 = builder.addInitializedInputTensor(weight_data, "weight_2")
@@ -69,31 +72,37 @@ def test_full_recompute_pipelining():
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, [
-            o,
-            popart.reservedGradientPrefix() + weight_1,
-            popart.reservedGradientPrefix() + weight_2,
-            popart.reservedGradientPrefix() + weight_3,
-        ])
+        dataFlow = popart.DataFlow(
+            1,
+            [
+                o,
+                popart.reservedGradientPrefix() + weight_1,
+                popart.reservedGradientPrefix() + weight_2,
+                popart.reservedGradientPrefix() + weight_3,
+            ],
+        )
 
         opts = popart.SessionOptions()
         opts.enableOutlining = False
         opts.enablePipelining = True
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = gradient_accumulation
-        opts.optimizerStateTensorLocationSettings.location.storage = popart.TensorStorage.OffChip
+        opts.optimizerStateTensorLocationSettings.location.storage = (
+            popart.TensorStorage.OffChip
+        )
         if mode is not None:
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                    False}) as device:
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=opts,
-                                             loss=l1,
-                                             optimizer=popart.Adam({}),
-                                             deviceInfo=device)
+        with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=opts,
+                loss=l1,
+                optimizer=popart.Adam({}),
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -113,13 +122,12 @@ def test_full_recompute_pipelining():
             return anchors
 
     def verify(session, mid_stash):
-        ''' Verify the the matmul in the main graphs is correct'''
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        """Verify the the matmul in the main graphs is correct"""
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
         stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
         stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
 
-        assert {'x_in', mid_stash} == set(stashedTensors)
+        assert {"x_in", mid_stash} == set(stashedTensors)
 
     n_anchors = run_test()
     p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
@@ -139,16 +147,17 @@ def test_delayed_restore_operations():
     input_shape = [batch_size, hidden_size]
 
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
-        np.float32)
+        np.float32
+    )
 
     input_data = np.random.normal(
-        0, 0.02, [gradient_accumulation] + input_shape).astype(np.float32)
+        0, 0.02, [gradient_accumulation] + input_shape
+    ).astype(np.float32)
 
     def run_test(mode=None, verify=None):
         builder = popart.Builder()
 
-        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                      "x_in")
+        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape), "x_in")
 
         weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
 
@@ -182,29 +191,35 @@ def test_delayed_restore_operations():
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, [
-            o,
-            popart.reservedGradientPrefix() + weight_1,
-        ])
+        dataFlow = popart.DataFlow(
+            1,
+            [
+                o,
+                popart.reservedGradientPrefix() + weight_1,
+            ],
+        )
 
         opts = popart.SessionOptions()
         opts.enableOutlining = False
         opts.enablePipelining = True
         opts.enableGradientAccumulation = True
         opts.accumulationFactor = gradient_accumulation
-        opts.optimizerStateTensorLocationSettings.location.storage = popart.TensorStorage.OffChip
+        opts.optimizerStateTensorLocationSettings.location.storage = (
+            popart.TensorStorage.OffChip
+        )
         if mode is not None:
             opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                    False}) as device:
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=opts,
-                                             loss=l1,
-                                             optimizer=popart.Adam({}),
-                                             deviceInfo=device)
+        with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=opts,
+                loss=l1,
+                optimizer=popart.Adam({}),
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -224,9 +239,8 @@ def test_delayed_restore_operations():
             return anchors
 
     def verify(session):
-        ''' Verify the the matmul in the main graphs is correct'''
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        """Verify the the matmul in the main graphs is correct"""
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
         schedule_string = ""
         for op in ir["maingraph"]:
             if "Add" in op["type"]:
@@ -256,12 +270,12 @@ def test_final_stage_recompute_0():
 
     input_shape = [batch_size, hidden_size]
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
-        np.float32)
+        np.float32
+    )
 
     builder = popart.Builder()
 
-    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                  "x_in")
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape), "x_in")
 
     with builder.virtualGraph(0), builder.pipelineStage(0):
         weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
@@ -287,21 +301,23 @@ def test_final_stage_recompute_0():
     opts.enablePipelining = True
     opts.enableGradientAccumulation = True
     opts.accumulationFactor = gradient_accumulation
-    opts.optimizerStateTensorLocationSettings.location.storage = popart.TensorStorage.OffChip
+    opts.optimizerStateTensorLocationSettings.location.storage = (
+        popart.TensorStorage.OffChip
+    )
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.Adam({}),
-                                         deviceInfo=device)
-        ''' Verify the the matmul in the main graphs is correct'''
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=l1,
+            optimizer=popart.Adam({}),
+            deviceInfo=device,
+        )
+        """ Verify the the matmul in the main graphs is correct"""
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
 
         for op in ir["maingraph"]:
             if x_recomp in map(lambda out: out["name"], op["outputs"]):
@@ -344,22 +360,22 @@ def test_final_stage_recompute_1():
         loss = builder.aiGraphcore.nllloss([sfm, label])
 
     # Checkpoint tensor along one path to the loss
-    builder.recomputeOutputInBackwardPass(label,
-                                          popart.RecomputeType.Checkpoint)
+    builder.recomputeOutputInBackwardPass(label, popart.RecomputeType.Checkpoint)
 
     opts = popart.SessionOptions()
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.enablePipelining = True
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                False}) as device:
-        s = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                   userOptions=opts,
-                                   loss=loss,
-                                   optimizer=popart.ConstSGD(0.1),
-                                   deviceInfo=device,
-                                   dataFlow=popart.DataFlow(3, [loss]))
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
+        s = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            userOptions=opts,
+            loss=loss,
+            optimizer=popart.ConstSGD(0.1),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(3, [loss]),
+        )
         ir = json.loads(s._serializeIr(popart.IrSerializationFormat.JSON))
 
         recomputed_ops = []

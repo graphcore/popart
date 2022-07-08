@@ -20,12 +20,13 @@ def test_replica_bitwise_identical_update():
         builder = popart.Builder()
 
         d0 = builder.addInputTensor(
-            popart.TensorInfo('FLOAT16', input_data.shape), 'data0')
+            popart.TensorInfo("FLOAT16", input_data.shape), "data0"
+        )
 
-        w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+        w0 = builder.addInitializedInputTensor(weight_data, "weight0")
         x = builder.aiOnnx.matmul([d0, w0])
 
-        loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
+        loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext="loss")
 
         return builder.getModelProto(), {d0: input_data}, w0, loss
 
@@ -41,23 +42,26 @@ def test_replica_bitwise_identical_update():
 
         data = {k: np.repeat(v[np.newaxis], 2, 0) for k, v in data.items()}
 
-        with tu.create_test_device(2,
-                                   pattern=popart.SyncPattern.Full) as device:
+        with tu.create_test_device(2, pattern=popart.SyncPattern.Full) as device:
 
             w_updated = popart.reservedUpdatedVarPrefix() + w
 
             dataFlow = popart.DataFlow(
-                1, {
+                1,
+                {
                     loss: popart.AnchorReturnType("ALL"),
-                    w_updated: popart.AnchorReturnType("FINAL")
-                })
+                    w_updated: popart.AnchorReturnType("FINAL"),
+                },
+            )
 
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 

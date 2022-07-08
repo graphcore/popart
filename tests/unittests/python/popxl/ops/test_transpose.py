@@ -9,11 +9,9 @@ from utils import contains_op_of_type
 
 @pytest.mark.parametrize("inplace", [False, True])
 class TestTranspose:
-    def check_contains_transpose(self, g: popxl.Graph,
-                                 inplace: bool = False) -> bool:
+    def check_contains_transpose(self, g: popxl.Graph, inplace: bool = False) -> bool:
         if inplace:
-            return contains_op_of_type("TransposeInplace",
-                                       _ir.op.TransposeInplaceOp, g)
+            return contains_op_of_type("TransposeInplace", _ir.op.TransposeInplaceOp, g)
         return contains_op_of_type("Transpose", _ir.op.TransposeOp, g)
 
     def test_fn(self, inplace):

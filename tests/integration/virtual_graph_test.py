@@ -33,10 +33,9 @@ def test_virtual_graph():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=2) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -71,10 +70,9 @@ def test_virtual_graph_multi_output(container):
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=2) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -108,10 +106,9 @@ def test_virtual_graph2():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=2) as device:
-        s = popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+        s = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         s.prepareDevice()
 
@@ -141,17 +138,15 @@ def test_virtual_graph3():
 
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("All")
-        })
+            popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i2: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i3: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i4: popart.AnchorReturnType("All"),
+        },
+    )
 
     optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
 
@@ -159,12 +154,14 @@ def test_virtual_graph3():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=4) as device:
-        s = popart.TrainingSession(fnModel=proto,
-                                   dataFlow=dataFlow,
-                                   loss=o,
-                                   optimizer=optimizer,
-                                   userOptions=opts,
-                                   deviceInfo=device)
+        s = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=o,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         s.prepareDevice()
 
@@ -208,17 +205,16 @@ def test_virtual_graph4():
 
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             o1: popart.AnchorReturnType("All"),
             o2: popart.AnchorReturnType("All"),
             o3: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("All")
-        })
+            popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i2: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i3: popart.AnchorReturnType("All"),
+        },
+    )
 
     optimizer = popart.ConstSGD(0.01)
 
@@ -226,12 +222,14 @@ def test_virtual_graph4():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device(numIpus=4) as device:
-        s = popart.TrainingSession(fnModel=proto,
-                                   dataFlow=dataFlow,
-                                   loss=loss,
-                                   optimizer=optimizer,
-                                   userOptions=opts,
-                                   deviceInfo=device)
+        s = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         s.prepareDevice()
 
@@ -292,8 +290,7 @@ def test_streaming_optimizer_tensors():
 
         builder = popart.Builder()
 
-        i1 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", input_data.shape[1::]))
+        i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", input_data.shape[1::]))
         w0 = builder.addInitializedInputTensor(weight_data_0)
         w1 = builder.addInitializedInputTensor(weight_data_1)
         w2 = builder.addInitializedInputTensor(weight_data_2)
@@ -333,12 +330,14 @@ def test_streaming_optimizer_tensors():
             numIPUs = 3
 
         with tu.create_test_device(numIpus=numIPUs) as device:
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             loss=o2l1,
-                                             optimizer=optimizer,
-                                             userOptions=opts,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                loss=o2l1,
+                optimizer=optimizer,
+                userOptions=opts,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -355,7 +354,8 @@ def test_streaming_optimizer_tensors():
             result.append(np.copy(anchors[anchorId]))
 
             session.updateOptimizerFromHost(
-                popart.SGD({"defaultLearningRate": (0.5, False)}))
+                popart.SGD({"defaultLearningRate": (0.5, False)})
+            )
 
             session.run(stepio)
             result.append(np.copy(anchors[anchorId]))

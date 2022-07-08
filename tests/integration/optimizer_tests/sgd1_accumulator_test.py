@@ -8,6 +8,7 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -23,24 +24,33 @@ def test_accumulators_names_dont_clash(optType):
 
     builder = popart.Builder()
 
-    weights = ['weight1', 'weight2', 'weight3']
+    weights = ["weight1", "weight2", "weight3"]
 
-    d0 = builder.addInputTensor(popart.TensorInfo('FLOAT', [4, 4]), 'data0')
-    x = builder.aiOnnx.add([
-        d0,
-        builder.addInitializedInputTensor(
-            np.random.rand(4, 4).astype(np.float32), weights[0])
-    ])
-    x = builder.aiOnnx.add([
-        x,
-        builder.addInitializedInputTensor(
-            np.random.rand(4, 4).astype(np.float32), weights[1])
-    ])
-    x = builder.aiOnnx.add([
-        x,
-        builder.addInitializedInputTensor(
-            np.random.rand(4, 4).astype(np.float32), weights[2])
-    ])
+    d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", [4, 4]), "data0")
+    x = builder.aiOnnx.add(
+        [
+            d0,
+            builder.addInitializedInputTensor(
+                np.random.rand(4, 4).astype(np.float32), weights[0]
+            ),
+        ]
+    )
+    x = builder.aiOnnx.add(
+        [
+            x,
+            builder.addInitializedInputTensor(
+                np.random.rand(4, 4).astype(np.float32), weights[1]
+            ),
+        ]
+    )
+    x = builder.aiOnnx.add(
+        [
+            x,
+            builder.addInitializedInputTensor(
+                np.random.rand(4, 4).astype(np.float32), weights[2]
+            ),
+        ]
+    )
 
     l1 = builder.aiGraphcore.l1loss([x], 1.0)
 
@@ -48,25 +58,27 @@ def test_accumulators_names_dont_clash(optType):
 
     dataFlow = popart.DataFlow(1, {})
 
-    sgdAccMm = popart.SGDAccumulatorAndMomentum.Combined if optType == "SGD1" else popart.SGDAccumulatorAndMomentum.Separate
+    sgdAccMm = (
+        popart.SGDAccumulatorAndMomentum.Combined
+        if optType == "SGD1"
+        else popart.SGDAccumulatorAndMomentum.Separate
+    )
 
     opt = popart.SGD(
         {
             "defaultLearningRate": (0.1, True),
             "defaultMomentum": (0.9, True),
-            "defaultDampening": (0, True)
+            "defaultDampening": (0, True),
         },
-        accumulatorAndMomentum=sgdAccMm)
+        accumulatorAndMomentum=sgdAccMm,
+    )
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=l1,
-                                         optimizer=opt,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto, dataFlow=dataFlow, loss=l1, optimizer=opt, deviceInfo=device
+        )
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
 
         ops = ir["maingraph"]
 
@@ -81,7 +93,7 @@ def test_accumulators_names_dont_clash(optType):
             prefixes = [
                 popart.reservedAcclPrefix(),
                 popart.reservedAcclToUpdatePrefix(),
-                popart.reservedAcclFinalOutPrefix()
+                popart.reservedAcclFinalOutPrefix(),
             ]
         else:
             # For SGD2, all accl1s have the same prefix.

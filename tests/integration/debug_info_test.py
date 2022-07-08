@@ -12,22 +12,22 @@ import json
 # bar method takes an argument and auto creates a debug context if not supplied
 def bar(arg, debugContext):
     # Create a debug info for the `unit_test` layer and attach to the debug context
-    di = popart.DebugInfo(debugContext, 'unit_test')
+    di = popart.DebugInfo(debugContext, "unit_test")
     # Add fields to the debug info
-    di.setValue('arg', str(arg))
+    di.setValue("arg", str(arg))
 
 
 # foo method takes an argument and auto creates a debug context if not supplied
 def foo(arg, debugContext):
 
     # Create a debug info for the `unit_test` layer and attach to the debug context
-    di = popart.DebugInfo(debugContext, 'unit_test')
+    di = popart.DebugInfo(debugContext, "unit_test")
     # Add fields to the debug info
-    di.setValue('arg', str(arg))
+    di.setValue("arg", str(arg))
 
     # Call bar
     # propagate the debug info to the method and name it `bar`
-    bar(123, debugContext=popart.DebugContext(di, 'bar'))
+    bar(123, debugContext=popart.DebugContext(di, "bar"))
 
 
 def test_basic(tmpdir):
@@ -50,29 +50,30 @@ def test_basic(tmpdir):
         barContext = data["contexts"][0]
         fooContext = data["contexts"][1]
 
-        assert data["stringTable"][int(fooContext["name"])] == ''
-        assert data["stringTable"][int(barContext["name"])] == 'bar'
+        assert data["stringTable"][int(fooContext["name"])] == ""
+        assert data["stringTable"][int(barContext["name"])] == "bar"
 
         assert barContext["parentId"] == 1
 
-        assert barContext["layer"] == 'unit_test'
-        assert fooContext["layer"] == 'unit_test'
+        assert barContext["layer"] == "unit_test"
+        assert fooContext["layer"] == "unit_test"
 
-        assert barContext["arg"] == '123'
-        assert fooContext["arg"] == '42'
+        assert barContext["arg"] == "123"
+        assert fooContext["arg"] == "42"
 
         # Verify the location inforamation
         barLocation = barContext["location"]
         fooLocation = fooContext["location"]
 
-        assert data["stringTable"][int(
-            fooLocation["fileName"])].endswith('debug_info_test.py')
-        assert data["stringTable"][int(
-            barLocation["fileName"])].endswith('debug_info_test.py')
+        assert data["stringTable"][int(fooLocation["fileName"])].endswith(
+            "debug_info_test.py"
+        )
+        assert data["stringTable"][int(barLocation["fileName"])].endswith(
+            "debug_info_test.py"
+        )
 
-        assert data["stringTable"][int(
-            fooLocation["functionName"])] == 'test_basic'
-        assert data["stringTable"][int(barLocation["functionName"])] == 'foo'
+        assert data["stringTable"][int(fooLocation["functionName"])] == "test_basic"
+        assert data["stringTable"][int(barLocation["functionName"])] == "foo"
 
         assert fooLocation["lineNumber"] == 38
         assert barLocation["lineNumber"] == 30

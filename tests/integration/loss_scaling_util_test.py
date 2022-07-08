@@ -35,7 +35,8 @@ def getModelProto():
         mean = builder.addInitializedInputTensor(bn_data)
         var = builder.addInitializedInputTensor(bn_data)
         bn, _, _, _, _ = builder.aiOnnx.batchnormalization(
-            [r, scale, bias, mean, var], 5, 1e-05, 0.1)
+            [r, scale, bias, mean, var], 5, 1e-05, 0.1
+        )
 
     with builder.virtualGraph(1), builder.pipelineStage(1):
         conv = builder.aiOnnx.conv([bn, t2])
@@ -49,8 +50,7 @@ def getModelProto():
     # values for
     specifics = [scale, bias]
 
-    return loss, builder.getModelProto(
-    ), t0, t_shape, labels, label_shape, specifics
+    return loss, builder.getModelProto(), t0, t_shape, labels, label_shape, specifics
 
 
 def compare_weights(session0, session1, tmpdir):
@@ -76,21 +76,22 @@ def compare_weights(session0, session1, tmpdir):
         print("Comparing ", init_name)
         print(session0_weights[init_name])
         print(session1_weights[init_name])
-        assert np.array_equal(session0_weights[init_name],
-                              session1_weights[init_name])
+        assert np.array_equal(session0_weights[init_name], session1_weights[init_name])
 
 
-def run_automatic_loss_scaling_comparison_test(tmpdir,
-                                               optimizer,
-                                               shard=False,
-                                               pipeline=False,
-                                               replicate=False,
-                                               grad_accumulate=False,
-                                               accumulation_factor=3,
-                                               bps=4,
-                                               update_period=None,
-                                               expected_loss_scale=[],
-                                               toTrackTensors=None):
+def run_automatic_loss_scaling_comparison_test(
+    tmpdir,
+    optimizer,
+    shard=False,
+    pipeline=False,
+    replicate=False,
+    grad_accumulate=False,
+    accumulation_factor=3,
+    bps=4,
+    update_period=None,
+    expected_loss_scale=[],
+    toTrackTensors=None,
+):
     """
     An integration test: verify that the weight updates computed by a session
     with auto loss scaling (ALS) enabled are identical to those with ALS
@@ -130,13 +131,14 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
 
     with tu.create_test_device(num_ipus) as ref_device:
         with tu.create_test_device(num_ipus) as als_device:
-            ref_session = popart.TrainingSession(fnModel=proto,
-                                                 deviceInfo=ref_device,
-                                                 dataFlow=popart.DataFlow(
-                                                     bps, []),
-                                                 loss=loss,
-                                                 optimizer=init_optimizer,
-                                                 userOptions=opts)
+            ref_session = popart.TrainingSession(
+                fnModel=proto,
+                deviceInfo=ref_device,
+                dataFlow=popart.DataFlow(bps, []),
+                loss=loss,
+                optimizer=init_optimizer,
+                userOptions=opts,
+            )
             ref_session.prepareDevice()
             ref_session.weightsFromHost()
             ref_anchors = ref_session.initAnchorArrays()
@@ -146,26 +148,30 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
             opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
             if toTrackTensors is not None:
                 opts.automaticLossScalingSettings.toTrackTensors = toTrackTensors
-                opts.automaticLossScalingSettings.gradientTensorTrackingMethod = popart.GradientTensorTrackingMethod.GradientsOfUserSpecifiedTensors
+                opts.automaticLossScalingSettings.gradientTensorTrackingMethod = (
+                    popart.GradientTensorTrackingMethod.GradientsOfUserSpecifiedTensors
+                )
             if update_period is not None:
                 opts.automaticLossScalingSettings.updatePeriod = update_period
 
             ls_id = "finalLossScale"
 
-            als_session = popart.TrainingSession(fnModel=proto,
-                                                 deviceInfo=als_device,
-                                                 dataFlow=popart.DataFlow(
-                                                     bps, [ls_id]),
-                                                 loss=loss,
-                                                 optimizer=init_optimizer,
-                                                 userOptions=opts)
+            als_session = popart.TrainingSession(
+                fnModel=proto,
+                deviceInfo=als_device,
+                dataFlow=popart.DataFlow(bps, [ls_id]),
+                loss=loss,
+                optimizer=init_optimizer,
+                userOptions=opts,
+            )
             als_session.prepareDevice()
             als_session.weightsFromHost()
             als_anchors = als_session.initAnchorArrays()
 
             t0_data = np.random.rand(step_size, *t_shape).astype(np.float16)
             label_data = np.random.randint(
-                0, label_shape[0], step_size * label_shape[0]).astype(np.int32)
+                0, label_shape[0], step_size * label_shape[0]
+            ).astype(np.int32)
             inputs = {t0: t0_data, label: label_data}
 
             # Run once
@@ -175,8 +181,7 @@ def run_automatic_loss_scaling_comparison_test(tmpdir,
             # Verify that the loss scale has changed from its initial value
             print("Loss Scale:", als_anchors[ls_id].flatten())
             if update_period is not None:
-                assert np.allclose(expected_loss_scale,
-                                   als_anchors[ls_id].flatten())
+                assert np.allclose(expected_loss_scale, als_anchors[ls_id].flatten())
 
             if grad_accumulate:
                 updated_loss_scales = [als_anchors[ls_id].flatten()[-1]][1:-1]
@@ -202,58 +207,70 @@ def getOptimizers():
     optimizers = []
 
     # SGD
-    sgd0 = popart.SGD({
-        "lossScaling": (10.0, False),
-        "defaultMomentum": (0.5, False),
-        "defaultVelocityScaling": (0.5, False),
-        "defaultDampening": (0.5, False),
-        "defaultWeightDecay": (0.5, False)
-    })
-    sgd1 = popart.SGD({
-        "lossScaling": (0.2, False),
-        "defaultMomentum": (0.2, False),
-        "defaultVelocityScaling": (0.2, False),
-        "defaultDampening": (0.2, False),
-        "defaultWeightDecay": (0.2, False)
-    })
+    sgd0 = popart.SGD(
+        {
+            "lossScaling": (10.0, False),
+            "defaultMomentum": (0.5, False),
+            "defaultVelocityScaling": (0.5, False),
+            "defaultDampening": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+        }
+    )
+    sgd1 = popart.SGD(
+        {
+            "lossScaling": (0.2, False),
+            "defaultMomentum": (0.2, False),
+            "defaultVelocityScaling": (0.2, False),
+            "defaultDampening": (0.2, False),
+            "defaultWeightDecay": (0.2, False),
+        }
+    )
     optimizers.append([sgd0, sgd1])
 
     # Adam
-    adam0 = popart.Adam({
-        "lossScaling": (10.0, False),
-        "defaultLearningRate": (0.5, False),
-        "defaultWeightDecay": (0.5, False),
-        "defaultBeta1": (0.5, False),
-        "defaultBeta2": (0.5, False),
-        "defaultEps": (0.5, False)
-    })
-    adam1 = popart.Adam({
-        "lossScaling": (0.2, False),
-        "defaultLearningRate": (0.2, False),
-        "defaultWeightDecay": (0.2, False),
-        "defaultBeta1": (0.2, False),
-        "defaultBeta2": (0.2, False),
-        "defaultEps": (0.2, False)
-    })
+    adam0 = popart.Adam(
+        {
+            "lossScaling": (10.0, False),
+            "defaultLearningRate": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+            "defaultBeta1": (0.5, False),
+            "defaultBeta2": (0.5, False),
+            "defaultEps": (0.5, False),
+        }
+    )
+    adam1 = popart.Adam(
+        {
+            "lossScaling": (0.2, False),
+            "defaultLearningRate": (0.2, False),
+            "defaultWeightDecay": (0.2, False),
+            "defaultBeta1": (0.2, False),
+            "defaultBeta2": (0.2, False),
+            "defaultEps": (0.2, False),
+        }
+    )
     optimizers.append([adam0, adam1])
 
     # Adaptive
-    adaptive0 = popart.Adaptive({
-        "lossScaling": (10.0, False),
-        "defaultLearningRate": (0.5, False),
-        "defaultAlpha": (0.5, False),
-        "defaultMomentum": (0.5, False),
-        "defaultWeightDecay": (0.5, False),
-        "defaultEps": (0.5, False)
-    })
-    adaptive1 = popart.Adaptive({
-        "lossScaling": (0.2, False),
-        "defaultLearningRate": (0.2, False),
-        "defaultAlpha": (0.2, False),
-        "defaultMomentum": (0.2, False),
-        "defaultWeightDecay": (0.2, False),
-        "defaultEps": (0.2, False)
-    })
+    adaptive0 = popart.Adaptive(
+        {
+            "lossScaling": (10.0, False),
+            "defaultLearningRate": (0.5, False),
+            "defaultAlpha": (0.5, False),
+            "defaultMomentum": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+            "defaultEps": (0.5, False),
+        }
+    )
+    adaptive1 = popart.Adaptive(
+        {
+            "lossScaling": (0.2, False),
+            "defaultLearningRate": (0.2, False),
+            "defaultAlpha": (0.2, False),
+            "defaultMomentum": (0.2, False),
+            "defaultWeightDecay": (0.2, False),
+            "defaultEps": (0.2, False),
+        }
+    )
     optimizers.append([adaptive0, adaptive1])
 
     return optimizers

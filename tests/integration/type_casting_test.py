@@ -11,8 +11,8 @@ def test_type_cast_UINT8ToINT32():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.UINT8, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.UINT8, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.UINT8, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.UINT8, [3, 2])
 
     values = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.uint8)
     # We use ConstantOfShape even if it is not followint the onnx
@@ -20,21 +20,23 @@ def test_type_cast_UINT8ToINT32():
     # in the graph to make sure the type conversion is succesful. Constant
     # would not work here becauseit has only been available since opset 12.
     # Constant-9 is not compatible with the default opset-version 11
-    node_def = onnx.helper.make_node('ConstantOfShape',
-                                     inputs=['X'],
-                                     outputs=['Y'],
-                                     value=onnx.helper.make_tensor(
-                                         name='const_tensor',
-                                         data_type=onnx.TensorProto.UINT8,
-                                         dims=values.shape,
-                                         vals=values.flatten().astype(
-                                             np.uint8).tobytes(),
-                                         raw=True))
+    node_def = onnx.helper.make_node(
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.UINT8,
+            dims=values.shape,
+            vals=values.flatten().astype(np.uint8).tobytes(),
+            raw=True,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -72,54 +74,57 @@ def test_type_cast_UINT8ToINT32():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.raw_data)
-            ), "Wrong number of Bytes in casted version."
+    assert len(modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.raw_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.int32_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_UINT16ToINT32():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.UINT16, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.UINT16, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.UINT16, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.UINT16, [3, 2])
 
     values = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.uint16)
-    node_def = onnx.helper.make_node('ConstantOfShape',
-                                     inputs=['X'],
-                                     outputs=['Y'],
-                                     value=onnx.helper.make_tensor(
-                                         name='const_tensor',
-                                         data_type=onnx.TensorProto.UINT16,
-                                         dims=values.shape,
-                                         vals=values.flatten().astype(
-                                             np.uint16).tobytes(),
-                                         raw=True))
+    node_def = onnx.helper.make_node(
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.UINT16,
+            dims=values.shape,
+            vals=values.flatten().astype(np.uint16).tobytes(),
+            raw=True,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -157,54 +162,57 @@ def test_type_cast_UINT16ToINT32():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (2 * len(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.raw_data)
-            ), "Wrong number of Bytes in casted version."
+    assert 2 * len(modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.raw_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.int32_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_INT8ToINT32():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.INT8, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.INT8, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.INT8, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.INT8, [3, 2])
 
     values = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.uint8)
-    node_def = onnx.helper.make_node('ConstantOfShape',
-                                     inputs=['X'],
-                                     outputs=['Y'],
-                                     value=onnx.helper.make_tensor(
-                                         name='const_tensor',
-                                         data_type=onnx.TensorProto.INT8,
-                                         dims=values.shape,
-                                         vals=values.flatten().astype(
-                                             np.int8).tobytes(),
-                                         raw=True))
+    node_def = onnx.helper.make_node(
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.INT8,
+            dims=values.shape,
+            vals=values.flatten().astype(np.int8).tobytes(),
+            raw=True,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -242,54 +250,57 @@ def test_type_cast_INT8ToINT32():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.raw_data)
-            ), "Wrong number of Bytes in casted version."
+    assert len(modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.raw_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.int32_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_INT16ToINT32():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.INT16, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.INT16, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.INT16, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.INT16, [3, 2])
 
     values = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.int16)
-    node_def = onnx.helper.make_node('ConstantOfShape',
-                                     inputs=['X'],
-                                     outputs=['Y'],
-                                     value=onnx.helper.make_tensor(
-                                         name='const_tensor',
-                                         data_type=onnx.TensorProto.INT16,
-                                         dims=values.shape,
-                                         vals=values.flatten().astype(
-                                             np.int16).tobytes(),
-                                         raw=True))
+    node_def = onnx.helper.make_node(
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.INT16,
+            dims=values.shape,
+            vals=values.flatten().astype(np.int16).tobytes(),
+            raw=True,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -327,53 +338,57 @@ def test_type_cast_INT16ToINT32():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (2 * len(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.raw_data)
-            ), "Wrong number of Bytes in casted version."
+    assert 2 * len(modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.raw_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.int32_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_INT64ToINT32():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.INT64, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.INT64, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.INT64, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.INT64, [3, 2])
 
     values = np.array([[1, 2], [3, 4], [5, 6]]).astype(np.int64)
     node_def = onnx.helper.make_node(
-        'ConstantOfShape',
-        inputs=['X'],
-        outputs=['Y'],
-        value=onnx.helper.make_tensor(name='const_tensor',
-                                      data_type=onnx.TensorProto.INT64,
-                                      dims=values.shape,
-                                      vals=values.flatten().astype(np.int64),
-                                      raw=False))
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.INT64,
+            dims=values.shape,
+            vals=values.flatten().astype(np.int64),
+            raw=False,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -411,53 +426,57 @@ def test_type_cast_INT64ToINT32():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right amount of data in it
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.int64_data)
-            ), "Wrong number of Bytes in casted version."
+    assert len(modified_onnx_model.graph.node[0].attribute[0].t.int32_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.int64_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.int32_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.int32_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_DoubleToHalf():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.DOUBLE, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.DOUBLE, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.DOUBLE, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.DOUBLE, [3, 2])
 
     values = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]).astype(np.double)
     node_def = onnx.helper.make_node(
-        'ConstantOfShape',
-        inputs=['X'],
-        outputs=['Y'],
-        value=onnx.helper.make_tensor(name='const_tensor',
-                                      data_type=onnx.TensorProto.DOUBLE,
-                                      dims=values.shape,
-                                      vals=values.flatten().astype(np.double),
-                                      raw=False))
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.DOUBLE,
+            dims=values.shape,
+            vals=values.flatten().astype(np.double),
+            raw=False,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -495,56 +514,62 @@ def test_type_cast_DoubleToHalf():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.raw_data) == 2 *
-            len(onnx_model.graph.node[0].attribute[0].t.double_data)
-            ), "Wrong number of Bytes in casted version."
+    assert len(modified_onnx_model.graph.node[0].attribute[0].t.raw_data) == 2 * len(
+        onnx_model.graph.node[0].attribute[0].t.double_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values (note that even if numpy does some magic there,
     # normal cast from double to half will not be able to preserve correctly some values such as 0.3, hence the high rtol)
-    assert np.allclose(np.frombuffer(
-        modified_onnx_model.graph.node[0].attribute[0].t.raw_data,
-        dtype=np.half),
-                       onnx_model.graph.node[0].attribute[0].t.double_data,
-                       rtol=1e-3), "Data was not conserved by cast"
+    assert np.allclose(
+        np.frombuffer(
+            modified_onnx_model.graph.node[0].attribute[0].t.raw_data, dtype=np.half
+        ),
+        onnx_model.graph.node[0].attribute[0].t.double_data,
+        rtol=1e-3,
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_DoubleToFloat():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.DOUBLE, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.DOUBLE, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.DOUBLE, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.DOUBLE, [3, 2])
 
     values = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]]).astype(np.double)
     node_def = onnx.helper.make_node(
-        'ConstantOfShape',
-        inputs=['X'],
-        outputs=['Y'],
-        value=onnx.helper.make_tensor(name='const_tensor',
-                                      data_type=onnx.TensorProto.DOUBLE,
-                                      dims=values.shape,
-                                      vals=values.flatten().astype(np.double),
-                                      raw=False))
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.DOUBLE,
+            dims=values.shape,
+            vals=values.flatten().astype(np.double),
+            raw=False,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -582,37 +607,38 @@ def test_type_cast_DoubleToFloat():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.float_data) == len(
-            onnx_model.graph.node[0].attribute[0].t.double_data)
-            ), "Wrong number of Bytes in casted version."
+    assert len(modified_onnx_model.graph.node[0].attribute[0].t.float_data) == len(
+        onnx_model.graph.node[0].attribute[0].t.double_data
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.float_data,
-        values.flatten()), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.float_data, values.flatten()
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_BFloatToFloat():
 
     # Build an onnx proto with a single constant node
     # Create output tensors of the type to cast
-    X = helper.make_tensor_value_info('X', TensorProto.BFLOAT16, [3, 2])
-    Y = helper.make_tensor_value_info('Y', TensorProto.BFLOAT16, [3, 2])
+    X = helper.make_tensor_value_info("X", TensorProto.BFLOAT16, [3, 2])
+    Y = helper.make_tensor_value_info("Y", TensorProto.BFLOAT16, [3, 2])
 
     # Define the target values as float32 and cast to bytes
     float_values = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]).astype(np.float32)
@@ -639,20 +665,23 @@ def test_type_cast_BFloatToFloat():
     float_again_bytes = np.array(int16_from_bfloat).tobytes()
     float_again = np.frombuffer(float_again_bytes, dtype=np.float32)
 
-    node_def = onnx.helper.make_node('ConstantOfShape',
-                                     inputs=['X'],
-                                     outputs=['Y'],
-                                     value=onnx.helper.make_tensor(
-                                         name='const_tensor',
-                                         data_type=onnx.TensorProto.BFLOAT16,
-                                         dims=[3, 2],
-                                         vals=bfloat,
-                                         raw=True))
+    node_def = onnx.helper.make_node(
+        "ConstantOfShape",
+        inputs=["X"],
+        outputs=["Y"],
+        value=onnx.helper.make_tensor(
+            name="const_tensor",
+            data_type=onnx.TensorProto.BFLOAT16,
+            dims=[3, 2],
+            vals=bfloat,
+            raw=True,
+        ),
+    )
 
     # Create the graph (GraphProto)
     graph_def = helper.make_graph(
         [node_def],
-        'test-model',
+        "test-model",
         [X],
         [Y],
     )
@@ -690,32 +719,35 @@ def test_type_cast_BFloatToFloat():
     output_type = o.type.tensor_type
 
     # Make sure shapes remain untouched
-    assert (input_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (output_type.HasField("shape")
-            ), "Modified graph output has no shape attribute"
-    assert (input_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (input_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[0].dim_value == 3
-            ), "Dimensions were not conserved by cast"
-    assert (output_type.shape.dim[1].dim_value == 2
-            ), "Dimensions were not conserved by cast"
+    assert input_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert output_type.HasField("shape"), "Modified graph output has no shape attribute"
+    assert (
+        input_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        input_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[0].dim_value == 3
+    ), "Dimensions were not conserved by cast"
+    assert (
+        output_type.shape.dim[1].dim_value == 2
+    ), "Dimensions were not conserved by cast"
 
     # Test whether the new tensor has the right size
-    assert (len(
-        modified_onnx_model.graph.node[0].attribute[0].t.float_data) == 6
-            ), "Wrong number of Bytes in casted version."
+    assert (
+        len(modified_onnx_model.graph.node[0].attribute[0].t.float_data) == 6
+    ), "Wrong number of Bytes in casted version."
 
     # Retrieve the two constant tensors and compare the values
     assert np.allclose(
         modified_onnx_model.graph.node[0].attribute[0].t.float_data,
         float_values,
-        rtol=1e-2), "Data was not conserved by cast"
+        rtol=1e-2,
+    ), "Data was not conserved by cast"
     assert np.allclose(
-        modified_onnx_model.graph.node[0].attribute[0].t.float_data,
-        float_again), "Data was not conserved by cast"
+        modified_onnx_model.graph.node[0].attribute[0].t.float_data, float_again
+    ), "Data was not conserved by cast"
 
 
 def test_type_cast_INT64ToINT32_clip():
@@ -771,9 +803,9 @@ def test_type_cast_INT64ToINT32_clip():
     int32_proto = graph_transformer.getModelProto()
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=int32_proto,
-                                          dataFlow=popart.DataFlow(1, [o]),
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=int32_proto, dataFlow=popart.DataFlow(1, [o]), deviceInfo=device
+        )
         session.prepareDevice()
 
         anchors = session.initAnchorArrays()

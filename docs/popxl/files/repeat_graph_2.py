@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 Demonstrate how num_host_transfers works with host_load and host_store ops inside a repeat op.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -18,22 +18,23 @@ _REPEAT_COUNT = 8
 
 
 class Linear(popxl.Module):
-    def __init__(self, x_h2d_: popxl.HostToDeviceStream,
-                 y_d2h_: popxl.DeviceToHostStream):
+    def __init__(
+        self, x_h2d_: popxl.HostToDeviceStream, y_d2h_: popxl.DeviceToHostStream
+    ):
         self.x_h2d = x_h2d_
         self.y_d2h = y_d2h_
         self.W: popxl.Tensor = None
         self.b: popxl.Tensor = None
 
-    def build(self, x: popxl.Tensor, out_features: int,
-              bias: bool = True) -> Tuple[popxl.Tensor, ...]:
+    def build(
+        self, x: popxl.Tensor, out_features: int, bias: bool = True
+    ) -> Tuple[popxl.Tensor, ...]:
 
         x = ops.host_load(self.x_h2d, "x")
-        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32,
-                                   "W")
+        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = popxl.graph_input((out_features, ), popxl.float32, "b")
+            self.b = popxl.graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
 
         ops.host_store(self.y_d2h, y)
@@ -61,13 +62,9 @@ with main:
     # the outputs of each iteration will be copied to the inputs of the next iteration
     # The outputs of the last iteration serve as the output of the `repeat` op
     # Note the iterations of 8, which we will also use as the num_host_transfers
-    o, = ops.repeat(linear_graph,
-                    _REPEAT_COUNT,
-                    x,
-                    inputs_dict={
-                        linear.W: W,
-                        linear.b: b
-                    })
+    (o,) = ops.repeat(
+        linear_graph, _REPEAT_COUNT, x, inputs_dict={linear.W: W, linear.b: b}
+    )
 
 # The ost_load and host_store ops are both run _REPEAT_COUNT number of times, so set num_host_transfers
 # to _REPEAT_COUNT.

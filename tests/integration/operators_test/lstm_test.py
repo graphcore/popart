@@ -11,6 +11,7 @@ from rnn_helper import LSTM_Helper
 
 # `import test_util` requires adding to sys.path
 import sys
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -27,8 +28,9 @@ def np_zeros(*shape):
 
 
 def test_lstm(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 7
@@ -52,13 +54,14 @@ def test_lstm(op_tester):
 
     with tu.create_test_device() as device:
         op_tester.device = device
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")
 
 
 # Check the conversion from onnx lstm to popart lstm works.
 def test_lstm_popart(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 7
@@ -82,21 +85,23 @@ def test_lstm_popart(op_tester):
 
     with tu.create_test_device() as device:
         op_tester.device = device
-        op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
-                              enableRuntimeAsserts=False)
-        session = op_tester.run(init_builder, reference, 'train')
+        op_tester.setPatterns(
+            ["LSTMOp", "SplitGradOpToConcat"], enableRuntimeAsserts=False
+        )
+        session = op_tester.run(init_builder, reference, "train")
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    graph = ir['maingraph']
+    graph = ir["maingraph"]
 
     # There should be one lstm and it should be the aigraphcore lstm
-    lstms = [op for op in graph if op['type'] == 'LSTM']
+    lstms = [op for op in graph if op["type"] == "LSTM"]
     assert len(lstms) == 1
 
 
 def test_lstm_outlining(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 3
@@ -121,21 +126,22 @@ def test_lstm_outlining(op_tester):
 
     with tu.create_test_device() as device:
         op_tester.device = device
-        op_tester.setPatterns(['LSTMOp', 'SplitGradOpToConcat'],
-                              enableRuntimeAsserts=False)
-        session = op_tester.run(init_builder, reference, 'train')
+        op_tester.setPatterns(
+            ["LSTMOp", "SplitGradOpToConcat"], enableRuntimeAsserts=False
+        )
+        session = op_tester.run(init_builder, reference, "train")
 
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
-    main_graph = ir['maingraph']
+    main_graph = ir["maingraph"]
 
     # There should be no lstms left in the main graph
-    main_graph_lstms = [op for op in main_graph if op['type'] == 'LSTM']
+    main_graph_lstms = [op for op in main_graph if op["type"] == "LSTM"]
     assert len(main_graph_lstms) == 0
 
     # There should be one lstm left in the whole model
     lstms = []
     for graph in ir.values():
-        x = [op for op in graph if op['type'] == 'LSTM']
+        x = [op for op in graph if op["type"] == "LSTM"]
         lstms.extend(x)
     assert len(lstms) == 1
 
@@ -146,19 +152,22 @@ def test_lstm_onnx_vs_popart():
     def run_lstm(lstm_type, inputs):
         def init_builder(builder):
             input_ids = [builder.addInputTensor(i) for i in inputs]
-            if lstm_type == 'onnx':
+            if lstm_type == "onnx":
                 output_ids = builder.aiOnnx.lstm(input_ids, 3, clip=None)
-            elif lstm_type == 'popart':
+            elif lstm_type == "popart":
                 output_ids = builder.aiGraphcore.lstm(input_ids)
                 [Y, Y_c] = output_ids
                 assert builder.getTensorDtypeString(Y) == "float32"
                 assert builder.getTensorDtypeString(Y_c) == "float32"
 
                 assert builder.getTensorShape(Y) == [
-                    inputs[0].shape[0], inputs[0].shape[1], inputs[1].shape[2]
+                    inputs[0].shape[0],
+                    inputs[0].shape[1],
+                    inputs[1].shape[2],
                 ]
                 assert builder.getTensorShape(Y_c) == [
-                    inputs[0].shape[1], inputs[1].shape[2]
+                    inputs[0].shape[1],
+                    inputs[1].shape[2],
                 ]
 
             else:
@@ -177,7 +186,7 @@ def test_lstm_onnx_vs_popart():
         hidden_size = onnx_weights.shape[1] // 4
 
         def transform_chunk(idx):
-            x = onnx_weights[0, idx * hidden_size:(idx + 1) * hidden_size, :]
+            x = onnx_weights[0, idx * hidden_size : (idx + 1) * hidden_size, :]
             x = x.transpose()
             x = np.expand_dims(x, 0)
             return x
@@ -205,28 +214,36 @@ def test_lstm_onnx_vs_popart():
     popart_input_weights = reshape_weight_for_popart(onnx_input_weights)
     popart_output_weights = reshape_weight_for_popart(onnx_output_weights)
 
-    chunks = [
-        onnx_biases[:, i * hidden_size:(i + 1) * hidden_size] for i in range(8)
-    ]
+    chunks = [onnx_biases[:, i * hidden_size : (i + 1) * hidden_size] for i in range(8)]
     popart_biases = np.concatenate([chunks[i] for i in (2, 0, 3, 1)])
     popart_biases += np.concatenate([chunks[i] for i in (6, 4, 7, 5)])
 
     popart_weights = np.concatenate(
-        (popart_input_weights, popart_output_weights), axis=1)
+        (popart_input_weights, popart_output_weights), axis=1
+    )
     popart_initial_state = np.concatenate((initial_h, initial_c))
 
-    onnx_out = run_lstm('onnx', [
-        data, onnx_input_weights, onnx_output_weights, onnx_biases, seq_lens,
-        initial_h, initial_c
-    ])
+    onnx_out = run_lstm(
+        "onnx",
+        [
+            data,
+            onnx_input_weights,
+            onnx_output_weights,
+            onnx_biases,
+            seq_lens,
+            initial_h,
+            initial_c,
+        ],
+    )
     onnx_out = np.squeeze(onnx_out)
     popart_out = run_lstm(
-        'popart', [data, popart_weights, popart_biases, popart_initial_state])
+        "popart", [data, popart_weights, popart_biases, popart_initial_state]
+    )
 
-    print('Onnx output:')
+    print("Onnx output:")
     print(onnx_out)
     print()
-    print('Popart output:')
+    print("Popart output:")
     print(popart_out)
     assert np.array_equal(onnx_out, popart_out)
 
@@ -248,12 +265,13 @@ def test_lstm_onnx_vs_popart_2():
         anchors = [v for v in anchors.values()]
         return anchors[0]
 
-    def run_popart_lstm(data, input_weights, output_weights, biases, initial_h,
-                        initial_c):
+    def run_popart_lstm(
+        data, input_weights, output_weights, biases, initial_h, initial_c
+    ):
         def init_builder(builder):
-            tData = builder.addInputTensor(data, 'data')
-            tIW = builder.addInputTensor(input_weights, 'input_weights')
-            tOW = builder.addInputTensor(output_weights, 'output_weights')
+            tData = builder.addInputTensor(data, "data")
+            tIW = builder.addInputTensor(input_weights, "input_weights")
+            tOW = builder.addInputTensor(output_weights, "output_weights")
 
             def reshape_weights(w):
                 ws = builder.aiOnnx.split([w], 4, 1, [hidden_size] * 4)
@@ -268,16 +286,14 @@ def test_lstm_onnx_vs_popart_2():
 
             tWeights = builder.aiOnnx.concat([tIW, tOW], 1)
 
-            tBiases = builder.addInputTensor(biases, 'biases')
+            tBiases = builder.addInputTensor(biases, "biases")
             tBiases = builder.aiOnnx.split([tBiases], 8, 1, [hidden_size] * 8)
-            tBiases0 = builder.aiOnnx.concat(
-                [tBiases[i] for i in (2, 0, 3, 1)], 0)
-            tBiases1 = builder.aiOnnx.concat(
-                [tBiases[i] for i in (6, 4, 7, 5)], 0)
+            tBiases0 = builder.aiOnnx.concat([tBiases[i] for i in (2, 0, 3, 1)], 0)
+            tBiases1 = builder.aiOnnx.concat([tBiases[i] for i in (6, 4, 7, 5)], 0)
             tBiases = builder.aiOnnx.add([tBiases0, tBiases1])
 
-            tInitH = builder.addInputTensor(initial_h, 'initial_h')
-            tInitC = builder.addInputTensor(initial_c, 'initial_c')
+            tInitH = builder.addInputTensor(initial_h, "initial_h")
+            tInitC = builder.addInputTensor(initial_c, "initial_c")
             tInitState = builder.aiOnnx.concat([tInitH, tInitC], 0)
 
             input_ids = [tData, tWeights, tBiases, tInitState]
@@ -312,18 +328,26 @@ def test_lstm_onnx_vs_popart_2():
     initial_h = np_rand(num_directions, batch_size, hidden_size)
     initial_c = np_rand(num_directions, batch_size, hidden_size)
 
-    onnx_out = run_onnx_lstm([
-        data, onnx_input_weights, onnx_output_weights, onnx_biases, seq_lens,
-        initial_h, initial_c
-    ])
+    onnx_out = run_onnx_lstm(
+        [
+            data,
+            onnx_input_weights,
+            onnx_output_weights,
+            onnx_biases,
+            seq_lens,
+            initial_h,
+            initial_c,
+        ]
+    )
     onnx_out = np.squeeze(onnx_out)
-    popart_out = run_popart_lstm(data, onnx_input_weights, onnx_output_weights,
-                                 onnx_biases, initial_h, initial_c)
+    popart_out = run_popart_lstm(
+        data, onnx_input_weights, onnx_output_weights, onnx_biases, initial_h, initial_c
+    )
 
-    print('Onnx output:')
+    print("Onnx output:")
     print(onnx_out)
     print()
-    print('Popart output:')
+    print("Popart output:")
     print(popart_out)
     assert np.array_equal(onnx_out, popart_out)
 
@@ -331,30 +355,28 @@ def test_lstm_onnx_vs_popart_2():
 # Check the output of the onnx lstm vs the popart lstm during training.
 # Weights are transformed inside popart.
 def test_lstm_training_onnx_vs_popart():
-    data_id = 'data'
-    input_weights_id = 'inputWeights'
-    output_weights_id = 'outputWeights'
-    biases_id = 'biases'
-    init_h_id = 'initH'
-    init_c_id = 'initC'
-    seq_lens_id = 'seqLen'
+    data_id = "data"
+    input_weights_id = "inputWeights"
+    output_weights_id = "outputWeights"
+    biases_id = "biases"
+    init_h_id = "initH"
+    init_c_id = "initC"
+    seq_lens_id = "seqLen"
 
-    def run_onnx_lstm(data, input_weights, output_weights, biases, seq_lens,
-                      initial_h, initial_c):
+    def run_onnx_lstm(
+        data, input_weights, output_weights, biases, seq_lens, initial_h, initial_c
+    ):
         def init_builder(builder):
             tData = builder.addInputTensor(data, data_id)
-            tIW = builder.addInitializedInputTensor(input_weights,
-                                                    input_weights_id)
-            tOW = builder.addInitializedInputTensor(output_weights,
-                                                    output_weights_id)
+            tIW = builder.addInitializedInputTensor(input_weights, input_weights_id)
+            tOW = builder.addInitializedInputTensor(output_weights, output_weights_id)
             tBiases = builder.addInitializedInputTensor(biases, biases_id)
             tSeqLens = builder.addInputTensor(seq_lens, seq_lens_id)
             tInitH = builder.addInputTensor(initial_h, init_h_id)
             tInitC = builder.addInputTensor(initial_c, init_c_id)
             Y, _, _ = builder.aiOnnx.lstm(
-                [tData, tIW, tOW, tBiases, tSeqLens, tInitH, tInitC],
-                3,
-                clip=None)
+                [tData, tIW, tOW, tBiases, tSeqLens, tInitH, tInitC], 3, clip=None
+            )
             out = Y
             loss = builder.aiGraphcore.identityloss([out])
 
@@ -363,24 +385,23 @@ def test_lstm_training_onnx_vs_popart():
                 popart.reservedGradientPrefix() + tData,
                 popart.reservedGradientPrefix() + tIW,
                 popart.reservedGradientPrefix() + tOW,
-                popart.reservedGradientPrefix() + tBiases
+                popart.reservedGradientPrefix() + tBiases,
             ]
 
         session = PopartTestSession()
-        session.mode = 'train'
+        session.mode = "train"
         with tu.create_test_device() as device:
             anchors = session.prepare_and_run(init_builder, device=device)
 
         return anchors
 
-    def run_popart_lstm(data, input_weights, output_weights, biases, initial_h,
-                        initial_c):
+    def run_popart_lstm(
+        data, input_weights, output_weights, biases, initial_h, initial_c
+    ):
         def init_builder(builder):
             tData = builder.addInputTensor(data, data_id)
-            tIW = builder.addInitializedInputTensor(input_weights,
-                                                    input_weights_id)
-            tOW = builder.addInitializedInputTensor(output_weights,
-                                                    output_weights_id)
+            tIW = builder.addInitializedInputTensor(input_weights, input_weights_id)
+            tOW = builder.addInitializedInputTensor(output_weights, output_weights_id)
             tBiases = builder.addInitializedInputTensor(biases, biases_id)
             tInitH = builder.addInputTensor(initial_h, init_h_id)
             tInitC = builder.addInputTensor(initial_c, init_c_id)
@@ -399,10 +420,8 @@ def test_lstm_training_onnx_vs_popart():
             tWeights = builder.aiOnnx.concat([tIW, tOW], 1)
 
             tBiases = builder.aiOnnx.split([tBiases], 8, 1, [hidden_size] * 8)
-            tBiases0 = builder.aiOnnx.concat(
-                [tBiases[i] for i in (2, 0, 3, 1)], 0)
-            tBiases1 = builder.aiOnnx.concat(
-                [tBiases[i] for i in (6, 4, 7, 5)], 0)
+            tBiases0 = builder.aiOnnx.concat([tBiases[i] for i in (2, 0, 3, 1)], 0)
+            tBiases1 = builder.aiOnnx.concat([tBiases[i] for i in (6, 4, 7, 5)], 0)
             tBiases = builder.aiOnnx.add([tBiases0, tBiases1])
 
             tInitState = builder.aiOnnx.concat([tInitH, tInitC], 0)
@@ -423,7 +442,7 @@ def test_lstm_training_onnx_vs_popart():
             ]
 
         session = PopartTestSession()
-        session.mode = 'train'
+        session.mode = "train"
         with tu.create_test_device() as device:
             anchors = session.prepare_and_run(init_builder, device=device)
         return anchors
@@ -444,16 +463,24 @@ def test_lstm_training_onnx_vs_popart():
     initial_h = np_rand(num_directions, batch_size, hidden_size)
     initial_c = np_rand(num_directions, batch_size, hidden_size)
 
-    onnx_out = run_onnx_lstm(data, onnx_input_weights, onnx_output_weights,
-                             onnx_biases, seq_lens, initial_h, initial_c)
-    popart_out = run_popart_lstm(data, onnx_input_weights, onnx_output_weights,
-                                 onnx_biases, initial_h, initial_c)
+    onnx_out = run_onnx_lstm(
+        data,
+        onnx_input_weights,
+        onnx_output_weights,
+        onnx_biases,
+        seq_lens,
+        initial_h,
+        initial_c,
+    )
+    popart_out = run_popart_lstm(
+        data, onnx_input_weights, onnx_output_weights, onnx_biases, initial_h, initial_c
+    )
 
     for k, ov in onnx_out.items():
         if k.startswith(popart.reservedGradientPrefix()):
-            print(f'Checking anchor {k}')
+            print(f"Checking anchor {k}")
 
-            if k == 'model_out':
+            if k == "model_out":
                 ov = np.squeeze(ov)
             pv = popart_out[k]
             assert np.array_equal(ov, pv)
@@ -504,13 +531,14 @@ def test_lstm_torch(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_lstm_torch_grad(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 3
@@ -545,7 +573,7 @@ def test_lstm_torch_grad(op_tester):
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
             popart.reservedGradientPrefix() + i3,
-            popart.reservedGradientPrefix() + Y2
+            popart.reservedGradientPrefix() + Y2,
         ]
 
     def reference(ref_data):
@@ -582,25 +610,24 @@ def test_lstm_torch_grad(op_tester):
 
         return [Y2, a.grad, wig, whg, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
     # relaxing the numerical precision required for this test:
     op_tester.atol = 1e-06
     op_tester.rtol = 1e-03
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_lstm_biases(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 5
     num_directions = 1
 
-    d2 = np.random.rand(num_directions, 4 * hidden_size,
-                        input_size).astype(np.float32)
-    d3 = np.random.rand(num_directions, 4 * hidden_size,
-                        hidden_size).astype(np.float32)
+    d2 = np.random.rand(num_directions, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.random.rand(num_directions, 4 * hidden_size, hidden_size).astype(np.float32)
     d4 = np.random.rand(num_directions, 8 * hidden_size).astype(np.float32)
 
     def init_builder(builder):
@@ -618,11 +645,11 @@ def test_lstm_biases(op_tester):
 
         return [Y, Y_h, Y_c]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_lstm_initial_hc(op_tester):
-    d1 = np.array([[[1., 2., 3.]]]).astype(np.float32)
+    d1 = np.array([[[1.0, 2.0, 3.0]]]).astype(np.float32)
 
     seq_length = d1.shape[0]
     batch_size = d1.shape[1]
@@ -630,18 +657,18 @@ def test_lstm_initial_hc(op_tester):
     hidden_size = 2
     num_directions = 1
 
-    d2 = np.random.rand(num_directions, 4 * hidden_size,
-                        input_size).astype(np.float32)
-    d3 = np.random.rand(num_directions, 4 * hidden_size,
-                        hidden_size).astype(np.float32)
+    d2 = np.random.rand(num_directions, 4 * hidden_size, input_size).astype(np.float32)
+    d3 = np.random.rand(num_directions, 4 * hidden_size, hidden_size).astype(np.float32)
     d4 = np.random.rand(num_directions, 8 * hidden_size).astype(np.float32)
 
     seq_lens = np.asarray([seq_length] * batch_size).astype(np.int32)
 
-    initial_h = np.random.rand(num_directions, batch_size,
-                               hidden_size).astype(np.float32)
-    initial_c = np.random.rand(num_directions, batch_size,
-                               hidden_size).astype(np.float32)
+    initial_h = np.random.rand(num_directions, batch_size, hidden_size).astype(
+        np.float32
+    )
+    initial_c = np.random.rand(num_directions, batch_size, hidden_size).astype(
+        np.float32
+    )
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1, "input_1")
@@ -656,22 +683,20 @@ def test_lstm_initial_hc(op_tester):
         return [Y, Y_h, Y_c]
 
     def reference(_):  # ref_data is an unused argument
-        lstm = LSTM_Helper(X=d1,
-                           W=d2,
-                           R=d3,
-                           B=d4,
-                           initial_h=initial_h,
-                           initial_c=initial_c)
+        lstm = LSTM_Helper(
+            X=d1, W=d2, R=d3, B=d4, initial_h=initial_h, initial_c=initial_c
+        )
         Y, Y_h, Y_c = lstm.step()
 
         return [Y, Y_h, Y_c]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_unsupported_activation(op_tester):
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 7
@@ -684,8 +709,9 @@ def test_unsupported_activation(op_tester):
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
         Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
-        builder.addNodeAttribute("activations", ["Affine", "Affine", "Affine"],
-                                 {Y, Y_h, Y_c})
+        builder.addNodeAttribute(
+            "activations", ["Affine", "Affine", "Affine"], {Y, Y_h, Y_c}
+        )
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
@@ -696,10 +722,10 @@ def test_unsupported_activation(op_tester):
     with tu.create_test_device() as device:
         op_tester.device = device
         with pytest.raises(popart.popart_exception) as e_info:
-            op_tester.run(init_builder, reference, 'infer')
+            op_tester.run(init_builder, reference, "infer")
 
-    assert 'Affine' in e_info.value.args[0]
-    assert 'not supported' in e_info.value.args[0]
+    assert "Affine" in e_info.value.args[0]
+    assert "not supported" in e_info.value.args[0]
 
 
 # This tests that setup behaves in a predictable way for cloning ops.
@@ -707,8 +733,9 @@ def test_unsupported_activation(op_tester):
 # due to LSTMOp::setup on a cloned lstm op, overwriting outputs that
 # were connected to it during the explicit recompute transform.
 def test_lstm_explicit_recompute():
-    d1 = np.array([[[1., 2., 3.], [4., 5., 6.]],
-                   [[7., 8., 9.], [10., 11., 12.]]]).astype(np.float32)
+    d1 = np.array(
+        [[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]]
+    ).astype(np.float32)
 
     input_size = d1.shape[2]
     hidden_size = 7
@@ -738,13 +765,13 @@ def test_lstm_explicit_recompute():
             deviceInfo=device,
             optimizer=popart.ConstSGD(0.1),
             userOptions=opts,
-            loss=loss)
+            loss=loss,
+        )
 
         # Now the test is passing we can add a check to make sure there
         # are 2 lstm ops. This is to check that the lstm is being cloned
         # and we are actually testing what we intended.
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
-        maingraph = ir['maingraph']
-        lstms = [i for i in maingraph if i['type'] == 'LSTM']
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        maingraph = ir["maingraph"]
+        lstms = [i for i in maingraph if i["type"] == "LSTM"]
         assert len(lstms) == 2

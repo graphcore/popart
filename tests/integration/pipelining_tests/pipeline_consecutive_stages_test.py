@@ -6,6 +6,7 @@ import json
 # 'import test_util' requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import test_util as tu
@@ -25,12 +26,12 @@ def test_pipeline_stage_merging():
     input_shape = [batch_size, hidden_size]
 
     weight_data = np.random.normal(0, 0.02, [hidden_size, hidden_size]).astype(
-        np.float32)
+        np.float32
+    )
 
     builder = popart.Builder()
 
-    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
-                                  "x_in")
+    x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape), "x_in")
 
     weight_1 = builder.addInitializedInputTensor(weight_data, "weight_1")
     weight_2 = builder.addInitializedInputTensor(weight_data, "weight_2")
@@ -59,18 +60,18 @@ def test_pipeline_stage_merging():
     opts.autoRecomputation = popart.RecomputationType.Pipeline
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-    with tu.create_test_device(numIpus=2, opts={"compileIPUCode":
-                                                False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=l1,
-                                         optimizer=popart.ConstSGD(1e-9),
-                                         deviceInfo=device)
+    with tu.create_test_device(numIpus=2, opts={"compileIPUCode": False}) as device:
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=l1,
+            optimizer=popart.ConstSGD(1e-9),
+            deviceInfo=device,
+        )
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
         stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
         stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
 
-        assert {'x_in'} == set(stashedTensors)
+        assert {"x_in"} == set(stashedTensors)

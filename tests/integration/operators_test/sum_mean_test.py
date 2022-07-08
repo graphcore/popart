@@ -22,8 +22,8 @@ def test_sum(op_tester):
         out = d1 + d2 + d3
         return [out]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_sum_1_input(op_tester):
@@ -39,7 +39,7 @@ def test_sum_1_input(op_tester):
         return [d1]
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_X_training(op_tester, X="mean"):
@@ -56,12 +56,13 @@ def test_X_training(op_tester, X="mean"):
         i4 = builder.addInputTensor(d4)
         i5 = builder.addInputTensor(d5)
         if X == "mean":
-            o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], "test_%s" % (X, ))
+            o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], "test_%s" % (X,))
         elif X == "sum":
-            o = builder.aiOnnx.sum([i1, i2, i3, i4, i5], "test_%s" % (X, ))
+            o = builder.aiOnnx.sum([i1, i2, i3, i4, i5], "test_%s" % (X,))
         else:
             raise RuntimeError(
-                "Unexpected type X in test_X_training, should be mean or sum")
+                "Unexpected type X in test_X_training, should be mean or sum"
+            )
 
         builder.addOutputTensor(o)
         return [
@@ -71,7 +72,7 @@ def test_X_training(op_tester, X="mean"):
             popart.reservedGradientPrefix() + i3,
             popart.reservedGradientPrefix() + i4,
             popart.reservedGradientPrefix() + i5,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -92,15 +93,16 @@ def test_X_training(op_tester, X="mean"):
             pass
         else:
             raise RuntimeError(
-                "Unexpected type X in test_X_training, should be mean or sum")
+                "Unexpected type X in test_X_training, should be mean or sum"
+            )
 
         d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_mean_training(op_tester):
@@ -134,7 +136,7 @@ def test_mean_training_2(op_tester):
             popart.reservedGradientPrefix() + i3,
             popart.reservedGradientPrefix() + i4,
             popart.reservedGradientPrefix() + i5,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -156,11 +158,8 @@ def test_mean_training_2(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train', {
-        "ai.onnx": 7,
-        "ai.graphcore": 1
-    })
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train", {"ai.onnx": 7, "ai.graphcore": 1})
 
 
 # Test with opset 6 with incorrect inputs i.e. different shapes
@@ -186,7 +185,7 @@ def test_mean_training_3(op_tester):
             popart.reservedGradientPrefix() + i3,
             popart.reservedGradientPrefix() + i4,
             popart.reservedGradientPrefix() + i5,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -208,13 +207,14 @@ def test_mean_training_3(op_tester):
 
         return [out, t1.grad, t2.grad, t3.grad, t4.grad, t5.grad, d__o]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train', {
-            "ai.onnx": 7,
-            "ai.graphcore": 1
-        })
+        op_tester.run(
+            init_builder, reference, "train", {"ai.onnx": 7, "ai.graphcore": 1}
+        )
 
-    assert ("Inputs to ai.onnx.Mean:6 do not all the same type & shape" in
-            e_info.value.args[0])
+    assert (
+        "Inputs to ai.onnx.Mean:6 do not all the same type & shape"
+        in e_info.value.args[0]
+    )

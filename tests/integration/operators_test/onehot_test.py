@@ -8,8 +8,7 @@ def test_onehot_2d_with_axis_testing(op_tester):
     depth = np.array(6).astype(np.int32)
     values = np.array([0, 1]).astype(np.int32)
 
-    output = np.array([[0, 0], [1, 0], [0, 0], [0, 0], [0, 0],
-                       [0, 1]]).astype(np.int32)
+    output = np.array([[0, 0], [1, 0], [0, 0], [0, 0], [0, 0], [0, 1]]).astype(np.int32)
 
     def init_builder(builder):
         print(depth)
@@ -23,8 +22,8 @@ def test_onehot_2d_with_axis_testing(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [output]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_onehot_2d_without_axis_testing(op_tester):
@@ -33,9 +32,11 @@ def test_onehot_2d_without_axis_testing(op_tester):
     values = np.random.rand(2).astype(np.float32)
 
     output = np.array(
-        [[values[0], values[1], values[0], values[0], values[0], values[0]],
-         [values[0], values[0], values[0], values[0], values[0],
-          values[1]]]).astype(np.float32)
+        [
+            [values[0], values[1], values[0], values[0], values[0], values[0]],
+            [values[0], values[0], values[0], values[0], values[0], values[1]],
+        ]
+    ).astype(np.float32)
 
     def init_builder(builder):
         print(depth)
@@ -49,8 +50,8 @@ def test_onehot_2d_without_axis_testing(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [output]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_onehot_2d_with_axis_training(op_tester):
@@ -58,13 +59,20 @@ def test_onehot_2d_with_axis_training(op_tester):
     depth = np.array(6).astype(np.int16)
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
-    output = np.array([[values[0], values[0]], [values[1], values[0]],
-                       [values[0], values[0]], [values[0], values[0]],
-                       [values[0], values[0]], [values[0],
-                                                values[1]]]).astype(np.float32)
+    output = np.array(
+        [
+            [values[0], values[0]],
+            [values[1], values[0]],
+            [values[0], values[0]],
+            [values[0], values[0]],
+            [values[0], values[0]],
+            [values[0], values[1]],
+        ]
+    ).astype(np.float32)
 
-    output_grad = np.array([[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0],
-                            [1.0, 1.0], [1.0, 1.0]]).astype(np.float32)
+    output_grad = np.array(
+        [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]
+    ).astype(np.float32)
 
     values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
@@ -77,15 +85,15 @@ def test_onehot_2d_with_axis_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + o,
-            popart.reservedGradientPrefix() + i3
+            popart.reservedGradientPrefix() + i3,
         ]
 
     def reference(_):  # ref_data is an unused argument
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_onehot_2d_without_axis_training(op_tester):
@@ -94,12 +102,15 @@ def test_onehot_2d_without_axis_training(op_tester):
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
     output = np.array(
-        [[values[0], values[1], values[0], values[0], values[0], values[0]],
-         [values[0], values[0], values[0], values[0], values[0],
-          values[1]]]).astype(np.float32)
+        [
+            [values[0], values[1], values[0], values[0], values[0], values[0]],
+            [values[0], values[0], values[0], values[0], values[0], values[1]],
+        ]
+    ).astype(np.float32)
 
-    output_grad = np.array([[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-                            [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]).astype(np.float32)
+    output_grad = np.array(
+        [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]
+    ).astype(np.float32)
 
     values_grad = np.array([10.0, 2.0]).astype(np.float32)
 
@@ -112,15 +123,15 @@ def test_onehot_2d_without_axis_training(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + o,
-            popart.reservedGradientPrefix() + i3
+            popart.reservedGradientPrefix() + i3,
         ]
 
     def reference(_):  # ref_data is an unused argument
         return [output, output_grad, values_grad]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_onehot_3d_without_axis_testing(op_tester):
@@ -128,8 +139,9 @@ def test_onehot_3d_without_axis_testing(op_tester):
     depth = np.array(4).astype(np.float32)
     values = np.array([0, 1]).astype(np.int32)
 
-    output = np.array([[[0, 1, 0, 0], [0, 0, 1, 0]],
-                       [[0, 0, 1, 0], [0, 1, 0, 0]]]).astype(np.int32)
+    output = np.array(
+        [[[0, 1, 0, 0], [0, 0, 1, 0]], [[0, 0, 1, 0], [0, 1, 0, 0]]]
+    ).astype(np.int32)
 
     def init_builder(builder):
         print(depth)
@@ -143,8 +155,8 @@ def test_onehot_3d_without_axis_testing(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [output]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_onehot_3d_with_axis_testing(op_tester):
@@ -152,8 +164,9 @@ def test_onehot_3d_with_axis_testing(op_tester):
     depth = np.array(4).astype(np.int8)
     values = np.array([0, 1]).astype(np.int32)
 
-    output = np.array([[[0, 0], [1, 0], [0, 1], [0, 0]],
-                       [[0, 0], [0, 1], [1, 0], [0, 0]]]).astype(np.int32)
+    output = np.array(
+        [[[0, 0], [1, 0], [0, 1], [0, 0]], [[0, 0], [0, 1], [1, 0], [0, 0]]]
+    ).astype(np.int32)
 
     def init_builder(builder):
         print(depth)
@@ -167,5 +180,5 @@ def test_onehot_3d_with_axis_testing(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [output]
 
-    op_tester.setPatterns(['OpToIdentity'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["OpToIdentity"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")

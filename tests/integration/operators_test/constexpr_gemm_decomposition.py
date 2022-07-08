@@ -25,8 +25,9 @@ def test_gemm_basic(op_tester):
         const_c = builder.aiOnnx.constant(data_c)
         input_b = builder.addInputTensor(data_b)
 
-        o = builder.aiOnnx.gemm([const_a, input_b, const_c], alpha, beta,
-                                transA, transB)
+        o = builder.aiOnnx.gemm(
+            [const_a, input_b, const_c], alpha, beta, transA, transB
+        )
         builder.addOutputTensor(o)
         return [o]
 
@@ -43,6 +44,5 @@ def test_gemm_basic(op_tester):
         o = alpha * np.dot(a, b) + beta * c
         return [o]
 
-    op_tester.setPatterns(['DecomposeBinaryConstScalar'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["DecomposeBinaryConstScalar"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")

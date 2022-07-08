@@ -14,18 +14,18 @@ def _get_popart_type(dtype: np.dtype) -> str:
         PopART dtype string.
     """
     return {
-        np.uint8: 'UINT8',
-        np.uint16: 'UINT16',
-        np.uint32: 'UINT32',
-        np.uint64: 'UINT64',
-        np.int8: 'INT8',
-        np.int16: 'INT16',
-        np.int32: 'INT32',
-        np.int64: 'INT64',
-        np.float16: 'FLOAT16',
-        np.float32: 'FLOAT',
-        np.float64: 'DOUBLE',
-        np.bool_: 'BOOL'
+        np.uint8: "UINT8",
+        np.uint16: "UINT16",
+        np.uint32: "UINT32",
+        np.uint64: "UINT64",
+        np.int8: "INT8",
+        np.int16: "INT16",
+        np.int32: "INT32",
+        np.int64: "INT64",
+        np.float16: "FLOAT16",
+        np.float32: "FLOAT",
+        np.float64: "DOUBLE",
+        np.bool_: "BOOL",
     }[dtype]
 
 
@@ -57,7 +57,7 @@ class TensorInfo(_TensorInfoCore):
                 a = args[0]
                 return (a.dtype, a.shape)
             else:
-                raise TypeError(f'Can not create TensorInfo with args {args}')
+                raise TypeError(f"Can not create TensorInfo with args {args}")
 
         def sanitize_dtype(dtype: Union[type, np.dtype]) -> str:
             """Convert a ``type`` or ``numpy.dtype`` to a ``str``.

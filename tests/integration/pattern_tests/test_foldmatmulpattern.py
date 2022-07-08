@@ -3,10 +3,12 @@ import numpy as np
 import popart
 import torch
 import json
+
 # `import op_tester` requires adding to sys.path
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent / 'operators_test'))
+
+sys.path.append(str(Path(__file__).resolve().parent.parent / "operators_test"))
 # pylint is disabled as op_tester is used as a fixture
 from conftest import op_tester  # pylint: disable=unused-import
 
@@ -37,10 +39,11 @@ def test_issue(op_tester):
             o = builder.aiOnnx.add([i3, t1])
             builder.addOutputTensor(o)
             return [
-                o, t1,
+                o,
+                t1,
                 popart.reservedGradientPrefix() + o,
                 popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.reservedGradientPrefix() + i2,
             ]
         else:
             builder.addOutputTensor(t1)
@@ -48,7 +51,7 @@ def test_issue(op_tester):
                 t1,
                 popart.reservedGradientPrefix() + t1,
                 popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + i2
+                popart.reservedGradientPrefix() + i2,
             ]
 
     def reference(ref_data):
@@ -73,14 +76,14 @@ def test_issue(op_tester):
 
     op_tester.patterns = popart.Patterns(popart.PatternsLevel.Default)
     op_tester.options.enableOutlining = False
-    session = op_tester.run(init_builder, reference, 'train')
+    session = op_tester.run(init_builder, reference, "train")
 
     # Check the ir
     ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     # There should be no ReduceSum in the ir
-    assert 'ReduceSum' not in [op['type'] for op in ir['maingraph']]
+    assert "ReduceSum" not in [op["type"] for op in ir["maingraph"]]
     # Get the 3 matmuls, 1 in the forward pass and 2 generated in the backward pass
-    matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+    matmuls = [op for op in ir["maingraph"] if op["type"] == "MatMul"]
     assert len(matmuls) == 3
     # Check that the first two dimensions of the matmul (2 and 384) were combined (768).
-    assert matmuls[0]['inputs'][0]['shape'] == '[1 768 1024]'
+    assert matmuls[0]["inputs"][0]["shape"] == "[1 768 1024]"

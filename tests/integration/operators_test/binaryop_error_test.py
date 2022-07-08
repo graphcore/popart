@@ -25,10 +25,9 @@ def test_binaryop_error():
     proto = builder.getModelProto()
 
     with pytest.raises(popart.popart_exception) as e_info:
-        _ = popart.InferenceSession(fnModel=proto,
-                                    deviceInfo=device,
-                                    dataFlow=data_flow)
-    assert ("np broadcasting failed on 'Op" in e_info.value.args[0])
-    assert ("ai.onnx.Add" in e_info.value.args[0])
-    assert (
-        "frames [10, 10] and [10, 5] are not aligned" in e_info.value.args[0])
+        _ = popart.InferenceSession(
+            fnModel=proto, deviceInfo=device, dataFlow=data_flow
+        )
+    assert "np broadcasting failed on 'Op" in e_info.value.args[0]
+    assert "ai.onnx.Add" in e_info.value.args[0]
+    assert "frames [10, 10] and [10, 5] are not aligned" in e_info.value.args[0]

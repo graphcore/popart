@@ -7,6 +7,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(Path(__file__).resolve().parent.parent)
 
 
@@ -23,7 +24,7 @@ def test_mul(op_tester):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -37,9 +38,8 @@ def test_mul(op_tester):
 
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train')
+    op_tester.setPatterns(["PreUniRepl", "MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="train")
 
 
 def test_broadcast_mul(op_tester):
@@ -55,7 +55,7 @@ def test_broadcast_mul(op_tester):
             o,
             popart.reservedGradientPrefix() + i1,
             popart.reservedGradientPrefix() + i2,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -69,15 +69,16 @@ def test_broadcast_mul(op_tester):
 
         return [out, t1.grad, t2.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='train')
+    op_tester.setPatterns(["PreUniRepl", "MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="train")
 
 
-input_infos = (([], np.float16, [], np.float32), ([
-    2, 1
-], np.float16, [], np.float32), ([2, 1], np.float16, [1], np.float32),
-               ([1], np.float32, [2, 2], np.float16))
+input_infos = (
+    ([], np.float16, [], np.float32),
+    ([2, 1], np.float16, [], np.float32),
+    ([2, 1], np.float16, [1], np.float32),
+    ([1], np.float32, [2, 2], np.float16),
+)
 
 
 @pytest.mark.parametrize("in_infos", input_infos)
@@ -120,5 +121,6 @@ def test_fp16_and_nonscalar_fp32_input_mul(op_tester):
 
     with pytest.raises(popart.popart_exception) as e_info:
         op_tester.run(init_builder, reference)
-    assert (e_info.value.args[0].endswith(
-        "incompatible types FLOAT16 and FLOAT (shapes [2 2] and [2 2])"))
+    assert e_info.value.args[0].endswith(
+        "incompatible types FLOAT16 and FLOAT (shapes [2 2] and [2 2])"
+    )

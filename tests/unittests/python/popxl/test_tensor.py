@@ -13,14 +13,17 @@ ctor_map = {Variable: popxl.variable, Constant: popxl.constant}
 
 
 class TestTensor:
-    @pytest.mark.parametrize('t_class', [Variable, Constant])
-    @pytest.mark.parametrize('data', [
-        np.random.rand(1, 2, 3),
-        [[[1, 2, 3], [4, 5, 6]]],
-        (((1, 2, 3), (4, 5, 6)), ),
-    ])
-    @pytest.mark.parametrize('dtype', [popxl.float16, None])
-    @pytest.mark.parametrize('name', ['a', None])
+    @pytest.mark.parametrize("t_class", [Variable, Constant])
+    @pytest.mark.parametrize(
+        "data",
+        [
+            np.random.rand(1, 2, 3),
+            [[[1, 2, 3], [4, 5, 6]]],
+            (((1, 2, 3), (4, 5, 6)),),
+        ],
+    )
+    @pytest.mark.parametrize("dtype", [popxl.float16, None])
+    @pytest.mark.parametrize("name", ["a", None])
     def test_construction0(self, t_class, data, dtype, name):
         """Test construction of tensors that hold n-d data at graph creation."""
         ir = popxl.Ir()
@@ -29,11 +32,11 @@ class TestTensor:
         with main:
             kwargs = {}
             if name is not None:
-                kwargs['name'] = name
+                kwargs["name"] = name
             if dtype is not None:
-                kwargs['dtype'] = dtype
+                kwargs["dtype"] = dtype
 
-            exp_name = f'{name}' if name is not None else 't'
+            exp_name = f"{name}" if name is not None else "t"
 
             def exp_np_dtype_(dtype):
                 if dtype is not None:
@@ -42,7 +45,8 @@ class TestTensor:
                     np_data = np.array(data)
                     if np_data.dtype in downcast_np_dtypes:
                         return popxl.dtypes.dtype.as_dtype(
-                            downcast_np_dtypes[np_data.dtype])
+                            downcast_np_dtypes[np_data.dtype]
+                        )
                     else:
                         return popxl.dtypes.dtype.as_dtype(np_data.dtype)
 
@@ -64,7 +68,7 @@ class TestTensor:
             assert pb_t.hasTensorData()
             hash(t)
 
-    @pytest.mark.parametrize('t_class', [Variable, Constant])
+    @pytest.mark.parametrize("t_class", [Variable, Constant])
     def test_construction1(self, t_class):
         """Test construction of tensors that hold 0-d data at graph creation."""
         ir = popxl.Ir()
@@ -141,9 +145,14 @@ class TestTensor:
 
     def test_len(self):
         with popxl.Ir().main_graph:
-            x = popxl.variable([[
-                1,
-            ], [2.]])
+            x = popxl.variable(
+                [
+                    [
+                        1,
+                    ],
+                    [2.0],
+                ]
+            )
             assert len(x) == 2
 
     def test_len_scalar(self):
@@ -169,10 +178,11 @@ class TestTensor:
             a = popxl.variable([1], name="bob")
             g = ir.create_graph(subgraph1, a)
 
-            assert repr(a) == 'Tensor[bob popxl.dtypes.int32 (1,)]'
-            assert repr(
-                g.inputs[0]
-            ) == 'Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popxl.dtypes.int32 (1,)]'
+            assert repr(a) == "Tensor[bob popxl.dtypes.int32 (1,)]"
+            assert (
+                repr(g.inputs[0])
+                == "Tensor[TestTensor.test_repr.subgraph1_subgraph(0)/a popxl.dtypes.int32 (1,)]"
+            )
 
 
 class TestTensorIpuAndTileSet:
@@ -219,7 +229,7 @@ class TestTensorIpuAndTileSet:
 
         with main:
             a = popxl.variable(1) + 0
-            assert a.tile_set == 'compute'
+            assert a.tile_set == "compute"
 
     def test_ipu_defined_default_with_io_tiles(self):
         ir = popxl.Ir()
@@ -228,7 +238,7 @@ class TestTensorIpuAndTileSet:
         with main:
             with popxl.io_tiles():
                 a = popxl.variable(1) + 0
-            assert a.tile_set == 'io'
+            assert a.tile_set == "io"
 
 
 class TestTensorGetItem:
@@ -248,9 +258,9 @@ class TestTensorGetItem:
         with popxl.Ir().main_graph:
             x = popxl.variable(np.random.rand(10, 10))
             y = x[1:3, 2]
-            assert y.shape == (2, )
+            assert y.shape == (2,)
 
-    @pytest.mark.parametrize('tensorlike', [popxl.variable, np.array, list])
+    @pytest.mark.parametrize("tensorlike", [popxl.variable, np.array, list])
     def test_integer_indexing_tensor(self, tensorlike):
         with popxl.Ir().main_graph:
             indices = [[0, 1], [1, 1]]
@@ -259,7 +269,7 @@ class TestTensorGetItem:
             y = x[indices]
             assert y.shape == (2, 2, 10)
 
-    @pytest.mark.parametrize('tensorlike', [popxl.variable, np.array, list])
+    @pytest.mark.parametrize("tensorlike", [popxl.variable, np.array, list])
     def test_bool_indexing_tensor(self, tensorlike):
         with popxl.Ir().main_graph:
             mask = [[True, False], [True, False], [False, True], [True, True]]
@@ -268,7 +278,7 @@ class TestTensorGetItem:
             y = x[mask]
             assert y.shape == (4, 2)
 
-    @pytest.mark.parametrize('tensorlike', [popxl.variable, np.array, list])
+    @pytest.mark.parametrize("tensorlike", [popxl.variable, np.array, list])
     def test_bool_indexing_tensor_broadcast(self, tensorlike):
         with popxl.Ir().main_graph:
             mask = [[True], [True], [False], [True]]
@@ -277,7 +287,7 @@ class TestTensorGetItem:
             y = x[mask]
             assert y.shape == (4, 2)
 
-    @pytest.mark.parametrize("key", ['a', True, 1.1])
+    @pytest.mark.parametrize("key", ["a", True, 1.1])
     def test_bad_key(self, key):
         with popxl.Ir().main_graph:
             x = popxl.variable(np.arange(2))

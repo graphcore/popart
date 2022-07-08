@@ -22,5 +22,4 @@ class TestDynamicSlice:
 
         assert c.shape == (sizes[0], t.shape[1], sizes[1])
         assert len(g.tensors) == 3
-        assert contains_op_of_type("DynamicSlice",
-                                   _ir.op.dynamic.DynamicSliceOp, g)
+        assert contains_op_of_type("DynamicSlice", _ir.op.dynamic.DynamicSliceOp, g)

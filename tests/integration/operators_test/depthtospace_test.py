@@ -11,9 +11,7 @@ def test_depthtospace(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset11.depthtospace([i1],
-                                               blocksize=blocks,
-                                               mode="CRD")
+        o = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocks, mode="CRD")
         builder.addOutputTensor(o)
         return [o]
 
@@ -21,16 +19,29 @@ def test_depthtospace(op_tester):
         tx = torch.tensor(d1)
         d_shape = tx.size()
         txr = torch.reshape(
-            tx, (d_shape[0], d_shape[1] //
-                 (blocks * blocks), blocks, blocks, d_shape[2], d_shape[3]))
+            tx,
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                blocks,
+                blocks,
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 1, 4, 2, 5, 3)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_depthtospace1(op_tester):
@@ -40,25 +51,37 @@ def test_depthtospace1(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset11.depthtospace([i1],
-                                               blocksize=blocks,
-                                               mode="DCR")
+        o = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocks, mode="DCR")
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
-                                 (blocks * blocks), d_shape[2], d_shape[3]))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                blocks,
+                blocks,
+                d_shape[1] // (blocks * blocks),
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 3, 4, 1, 5, 2)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_depthtospace_opset1(op_tester):
@@ -76,16 +99,30 @@ def test_depthtospace_opset1(op_tester):
     def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
-                                 (blocks * blocks), d_shape[2], d_shape[3]))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                blocks,
+                blocks,
+                d_shape[1] // (blocks * blocks),
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 3, 4, 1, 5, 2)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_depthtospace_custom_op(op_tester):
@@ -95,25 +132,37 @@ def test_depthtospace_custom_op(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiGraphcore.depthtospace([i1],
-                                             blocksize=blocks,
-                                             mode="DCR")
+        o = builder.aiGraphcore.depthtospace([i1], blocksize=blocks, mode="DCR")
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
-                                 (blocks * blocks), d_shape[2], d_shape[3]))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                blocks,
+                blocks,
+                d_shape[1] // (blocks * blocks),
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 3, 4, 1, 5, 2)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_depthtospace_grad0(op_tester):
@@ -122,9 +171,7 @@ def test_depthtospace_grad0(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset11.depthtospace([i1],
-                                               blocksize=blocks,
-                                               mode="CRD")
+        o = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocks, mode="CRD")
         builder.addOutputTensor(o)
         return [
             o,
@@ -136,18 +183,31 @@ def test_depthtospace_grad0(op_tester):
         tx = torch.tensor(d1, requires_grad=True)
         d_shape = tx.size()
         txr = torch.reshape(
-            tx, (d_shape[0], d_shape[1] //
-                 (blocks * blocks), blocks, blocks, d_shape[2], d_shape[3]))
+            tx,
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                blocks,
+                blocks,
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 1, 4, 2, 5, 3)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_depthtospace_grad1(op_tester):
@@ -156,9 +216,7 @@ def test_depthtospace_grad1(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnxOpset11.depthtospace([i1],
-                                               blocksize=blocks,
-                                               mode="DCR")
+        o = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocks, mode="DCR")
         builder.addOutputTensor(o)
         return [
             o,
@@ -169,18 +227,32 @@ def test_depthtospace_grad1(op_tester):
     def reference(ref_data):
         tx = torch.tensor(d1, requires_grad=True)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], blocks, blocks, d_shape[1] //
-                                 (blocks * blocks), d_shape[2], d_shape[3]))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                blocks,
+                blocks,
+                d_shape[1] // (blocks * blocks),
+                d_shape[2],
+                d_shape[3],
+            ),
+        )
         txrp = txr.permute(0, 3, 4, 1, 5, 2)
         out = torch.reshape(
             txrp,
-            (d_shape[0], d_shape[1] //
-             (blocks * blocks), d_shape[2] * blocks, d_shape[3] * blocks))
+            (
+                d_shape[0],
+                d_shape[1] // (blocks * blocks),
+                d_shape[2] * blocks,
+                d_shape[3] * blocks,
+            ),
+        )
         d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_spacetodepth0(op_tester):
@@ -191,9 +263,7 @@ def test_spacetodepth0(op_tester):
     # SpaceToDepth is the reverse transformation of DepthToSpace.
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o1 = builder.aiOnnxOpset11.depthtospace([i1],
-                                                blocksize=blocks,
-                                                mode="DCR")
+        o1 = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocks, mode="DCR")
         o2 = builder.aiOnnx.spacetodepth([o1], blocksize=blocks)
         builder.addOutputTensor(o2)
         return [o2]
@@ -201,7 +271,7 @@ def test_spacetodepth0(op_tester):
     def reference(_):  # ref_data is an unused argument
         return [d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_spacetodepth1(op_tester):
@@ -218,14 +288,30 @@ def test_spacetodepth1(op_tester):
     def reference(_):  # ref_data is an unused argument
         tx = torch.tensor(d1)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], d_shape[1], d_shape[2] // blocks,
-                                 blocks, d_shape[3] // blocks, blocks))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                d_shape[1],
+                d_shape[2] // blocks,
+                blocks,
+                d_shape[3] // blocks,
+                blocks,
+            ),
+        )
         txrp = txr.permute(0, 3, 5, 1, 2, 4)
-        out = torch.reshape(txrp, (d_shape[0], d_shape[1] * blocks * blocks,
-                                   d_shape[2] // blocks, d_shape[3] // blocks))
+        out = torch.reshape(
+            txrp,
+            (
+                d_shape[0],
+                d_shape[1] * blocks * blocks,
+                d_shape[2] // blocks,
+                d_shape[3] // blocks,
+            ),
+        )
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_spacetodepth_grad1(op_tester):
@@ -245,16 +331,32 @@ def test_spacetodepth_grad1(op_tester):
     def reference(ref_data):
         tx = torch.tensor(d1, requires_grad=True)
         d_shape = tx.size()
-        txr = torch.reshape(tx, (d_shape[0], d_shape[1], d_shape[2] // blocks,
-                                 blocks, d_shape[3] // blocks, blocks))
+        txr = torch.reshape(
+            tx,
+            (
+                d_shape[0],
+                d_shape[1],
+                d_shape[2] // blocks,
+                blocks,
+                d_shape[3] // blocks,
+                blocks,
+            ),
+        )
         txrp = txr.permute(0, 3, 5, 1, 2, 4)
-        out = torch.reshape(txrp, (d_shape[0], d_shape[1] * blocks * blocks,
-                                   d_shape[2] // blocks, d_shape[3] // blocks))
+        out = torch.reshape(
+            txrp,
+            (
+                d_shape[0],
+                d_shape[1] * blocks * blocks,
+                d_shape[2] // blocks,
+                d_shape[3] // blocks,
+            ),
+        )
         d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_pixelshuffle0(op_tester):
@@ -270,9 +372,7 @@ def test_pixelshuffle0(op_tester):
 
         def init_builder(builder):
             i1 = builder.addInputTensor(di)
-            o = builder.aiOnnxOpset11.depthtospace([i1],
-                                                   blocksize=blocki,
-                                                   mode="CRD")
+            o = builder.aiOnnxOpset11.depthtospace([i1], blocksize=blocki, mode="CRD")
             builder.addOutputTensor(o)
             return [o]
 
@@ -282,7 +382,7 @@ def test_pixelshuffle0(op_tester):
             out = pixel_shuffle(tx)
             return [out]
 
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")
 
 
 def test_pixelshuffle_custom(op_tester):
@@ -298,9 +398,9 @@ def test_pixelshuffle_custom(op_tester):
 
         def init_builder(builder):
             i1 = builder.addInputTensor(di)
-            o = builder.aiGraphcoreOpset1.depthtospace([i1],
-                                                       blocksize=blocki,
-                                                       mode="CRD")
+            o = builder.aiGraphcoreOpset1.depthtospace(
+                [i1], blocksize=blocki, mode="CRD"
+            )
             builder.addOutputTensor(o)
             return [o]
 
@@ -310,4 +410,4 @@ def test_pixelshuffle_custom(op_tester):
             out = pixel_shuffle(tx)
             return [out]
 
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder, reference, "infer")

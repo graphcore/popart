@@ -25,34 +25,36 @@ def test_basic(tmpdir):
         ibias1 = builder.addInitializedInputTensor(bias_data[1], "bias1")
 
         # Text both versions of the api
-        c1 = builder.aiOnnx.conv([i1, i2, ibias0],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1],
-                                 debugContext="conv1")
-        o = builder.aiOnnx.conv([c1, i2, ibias1],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1],
-                                debugContext="conv2")
+        c1 = builder.aiOnnx.conv(
+            [i1, i2, ibias0],
+            dilations=[1, 1],
+            pads=[1, 1, 1, 1],
+            strides=[1, 1],
+            debugContext="conv1",
+        )
+        o = builder.aiOnnx.conv(
+            [c1, i2, ibias1],
+            dilations=[1, 1],
+            pads=[1, 1, 1, 1],
+            strides=[1, 1],
+            debugContext="conv2",
+        )
         builder.addOutputTensor(o)
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {
-            c1: popart.AnchorReturnType("All"),
-            o: popart.AnchorReturnType("All")
-        })
+        dataFlow = popart.DataFlow(
+            1, {c1: popart.AnchorReturnType("All"), o: popart.AnchorReturnType("All")}
+        )
 
         opts = popart.SessionOptions()
         opts.enableOutlining = enableOutlining
         opts.enableOutliningCopyCostPruning = False
 
         with tu.create_test_device() as device:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+            )
 
             session.prepareDevice()
 
@@ -74,7 +76,7 @@ def test_basic(tmpdir):
         print(data)
 
         # Expect more that 40 contexts in this example. Exact value may change over time
-        assert (len(data["contexts"]) > 40)
+        assert len(data["contexts"]) > 40
 
         # What else makes sense to test without making this test brittle.
         # Verify there are contexts appear for each of the popart api calls above
@@ -94,7 +96,7 @@ def test_basic(tmpdir):
             elif name == "conv2":
                 conv2Found = True
 
-        assert (dataFound)
-        assert (filterFound)
-        assert (conv1Found)
-        assert (conv2Found)
+        assert dataFound
+        assert filterFound
+        assert conv1Found
+        assert conv2Found

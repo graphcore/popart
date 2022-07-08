@@ -18,11 +18,8 @@ class Module:
     corresponding parent tensor you wish to pass.
     """
 
-    def __call__(self, *args,
-                 **kwargs) -> Union[None, 'Tensor', Iterable['Tensor']]:
+    def __call__(self, *args, **kwargs) -> Union[None, "Tensor", Iterable["Tensor"]]:
         return self.build(*args, **kwargs)
 
-    def build(self, *args,
-              **kwargs) -> Union[None, 'Tensor', Iterable['Tensor']]:
-        raise NotImplementedError(
-            "Your popxl.Module must override `build` method")
+    def build(self, *args, **kwargs) -> Union[None, "Tensor", Iterable["Tensor"]]:
+        raise NotImplementedError("Your popxl.Module must override `build` method")

@@ -25,10 +25,11 @@ def exp(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('exp')
+    settings = ctx._get_op_settings("exp")
     opid = _ir.OperatorIdentifier("ai.onnx", "Exp", 6, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ExpOp(
-        {0: t.id}, {0: g._create_tensor_id("exp_out")}, opid, settings)
+        {0: t.id}, {0: g._create_tensor_id("exp_out")}, opid, settings
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
@@ -53,8 +54,9 @@ def exp_(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('exp_inplace')
+    settings = ctx._get_op_settings("exp_inplace")
     op = pb_g.createConnectedOp_ExpInplaceOp(
-        {0: t.id}, {0: g._create_tensor_id("exp_inplace_out")}, settings)
+        {0: t.id}, {0: g._create_tensor_id("exp_inplace_out")}, settings
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

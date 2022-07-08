@@ -24,10 +24,9 @@ def test_no_virtual_graph():
     opts = popart.SessionOptions()
 
     with tu.create_test_device() as device:
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=device)
+        popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
 
 def test_all_virtual_graph():
@@ -55,10 +54,9 @@ def test_all_virtual_graph():
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     with tu.create_test_device() as device:
-        popart.InferenceSession(fnModel=proto,
-                                dataFlow=dataFlow,
-                                userOptions=opts,
-                                deviceInfo=device)
+        popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
 
 def test_mixed_virtual_graph():
@@ -86,12 +84,11 @@ def test_mixed_virtual_graph():
 
     with tu.create_test_device() as device:
         with pytest.raises(popart.popart_exception) as e_info:
-            popart.InferenceSession(fnModel=proto,
-                                    dataFlow=dataFlow,
-                                    userOptions=opts,
-                                    deviceInfo=device)
+            popart.InferenceSession(
+                fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+            )
 
-        assert (e_info.value.args[0].startswith("Either all"))
+        assert e_info.value.args[0].startswith("Either all")
 
 
 #         ("Op(ai.onnx.Add:7, outputs=[{}]) has virtual graph attribute but "

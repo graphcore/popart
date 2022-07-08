@@ -7,13 +7,13 @@ import itertools
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
 def test_enum_specfic_devices():
-    """Test that enumerating specific, per type and count works.
-    """
+    """Test that enumerating specific, per type and count works."""
     ipu_counts = [1, 2, 4, 8, 16]
     ipu_types = [popart.DeviceType.IpuModel, popart.DeviceType.Cpu]
     if tu.ipu_available():
@@ -21,7 +21,8 @@ def test_enum_specfic_devices():
     deviceManager = popart.DeviceManager()
     for count, type_ in itertools.product(ipu_counts, ipu_types):
         devices = deviceManager.enumerateDevices(
-            pattern=popart.SyncPattern.Full, numIpus=count, deviceType=type_)
+            pattern=popart.SyncPattern.Full, numIpus=count, deviceType=type_
+        )
 
         for device in devices:
             assert device.numIpus == count
@@ -30,13 +31,13 @@ def test_enum_specfic_devices():
 
 @tu.requires_ipu
 def test_aquire_device_by_id_0():
-    """Test that aquiring by id works.
-    """
+    """Test that aquiring by id works."""
     deviceManager = popart.DeviceManager()
     ipu_count = len(deviceManager.enumerateDevices(numIpus=1))
     for id_ in range(ipu_count):
         device = deviceManager.acquireDeviceById(
-            id=id_, pattern=popart.SyncPattern.Full)
+            id=id_, pattern=popart.SyncPattern.Full
+        )
         # We can't be sure something else isn't using the IPUs...
         if device is not None:
             assert device.id == id_
@@ -52,8 +53,8 @@ def test_aquire_device_by_id_1():
     deviceManager = popart.DeviceManager()
     invalidId = 999
     with pytest.raises(
-            popart.poplar_exception,
-            match="No such device set id: '" + str(invalidId) + "'"):
+        popart.poplar_exception, match="No such device set id: '" + str(invalidId) + "'"
+    ):
         deviceManager.acquireDeviceById(invalidId)
 
 
@@ -66,8 +67,9 @@ def test_aquire_device_by_id_2():
     deviceManager = popart.DeviceManager()
     deviceId = 0
     with deviceManager.acquireDeviceById(deviceId):
-        with pytest.raises(popart.popart_exception,
-                           match="Failed to acquire device with id '0'"):
+        with pytest.raises(
+            popart.popart_exception, match="Failed to acquire device with id '0'"
+        ):
             deviceManager.acquireDeviceById(deviceId)
 
 
@@ -101,9 +103,8 @@ def test_default_connection_type_1():
     deviceManager = popart.DeviceManager()
     ipus = 256  # More IPUs than are available
     with pytest.raises(
-            popart.popart_exception,
-            match=
-            "Failed to acquire device with 256 IPUs. Ensure that there are sufficient IPUs available"
+        popart.popart_exception,
+        match="Failed to acquire device with 256 IPUs. Ensure that there are sufficient IPUs available",
     ):
         deviceManager.acquireAvailableDevice(ipus)
 
@@ -118,9 +119,8 @@ def test_default_connection_type_2():
     availableIpus = len(deviceManager.enumerateDevices())
     with deviceManager.acquireAvailableDevice(availableIpus):
         with pytest.raises(
-                popart.popart_exception,
-                match=
-                f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available"
+            popart.popart_exception,
+            match=f"Failed to acquire device with {1} IPUs. Ensure that there are sufficient IPUs available",
         ):
             deviceManager.acquireAvailableDevice(1)
 
@@ -129,7 +129,8 @@ def test_default_connection_type_2():
 def test_on_demand_connection_type():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(
-        1, connectionType=popart.DeviceConnectionType.OnDemand)
+        1, connectionType=popart.DeviceConnectionType.OnDemand
+    )
     assert device.connectionType == popart.DeviceConnectionType.OnDemand
 
 
@@ -138,7 +139,8 @@ def test_attached_state():
     deviceManager = popart.DeviceManager()
     deviceManager.setOnDemandAttachTimeout(1)
     device = deviceManager.acquireAvailableDevice(
-        1, connectionType=popart.DeviceConnectionType.OnDemand)
+        1, connectionType=popart.DeviceConnectionType.OnDemand
+    )
     assert not device.isAttached
     device.attach()
     assert device.isAttached
@@ -153,10 +155,10 @@ def test_attached_state():
 @tu.requires_ipu_model
 def test_set_and_get_ipu_model_version():
     dm = popart.DeviceManager()
-    device = dm.createIpuModelDevice({'ipuVersion': 'ipu1'})
+    device = dm.createIpuModelDevice({"ipuVersion": "ipu1"})
     assert device.version == "ipu1"
 
-    device = dm.createIpuModelDevice({'ipuVersion': 'ipu2'})
+    device = dm.createIpuModelDevice({"ipuVersion": "ipu2"})
     assert device.version == "ipu2"
 
 
@@ -192,27 +194,25 @@ def test_prepareDevice_inference(loadEngine, capfd):
         opts = popart.SessionOptions()
 
         # Create a session to compile and execute the graph
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         def assertLogContains(expectedCompilation, expectedEngineLoad):
             _, stderr = capfd.readouterr()
             graphCompiled = False
             engineLoaded = False
             for line in stderr.splitlines():
-                if 'Graph compiled' in line:
+                if "Graph compiled" in line:
                     graphCompiled = True
-                elif 'Engine loaded' in line:
+                elif "Engine loaded" in line:
                     engineLoaded = True
 
             assert expectedCompilation == graphCompiled
             assert engineLoaded == expectedEngineLoad
 
-        popart.getLogger().setLevel('INFO')
-        with pytest.raises(popart.popart_exception,
-                           match="no compiled engine"):
+        popart.getLogger().setLevel("INFO")
+        with pytest.raises(popart.popart_exception, match="no compiled engine"):
             session.loadEngineAndConnectStreams()
 
         # Compile graph
@@ -222,8 +222,7 @@ def test_prepareDevice_inference(loadEngine, capfd):
             loadEngine = True
         else:
             session.prepareDevice(loadEngine)
-        assertLogContains(expectedCompilation=True,
-                          expectedEngineLoad=loadEngine)
+        assertLogContains(expectedCompilation=True, expectedEngineLoad=loadEngine)
 
         # Create buffers to receive results from the execution
         anchors = session.initAnchorArrays()
@@ -235,17 +234,16 @@ def test_prepareDevice_inference(loadEngine, capfd):
 
         stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
         session.run(stepio)
-        assertLogContains(expectedCompilation=False,
-                          expectedEngineLoad=not loadEngine)
+        assertLogContains(expectedCompilation=False, expectedEngineLoad=not loadEngine)
 
     assert np.allclose(anchors[o], data_a + data_b)
 
 
 @pytest.mark.parametrize("loadEngine", {True, False, None})
 def test_prepareDevice_training(loadEngine, capfd):
-    filt_data = np.array([1., 2., 1., 2.], dtype=np.float32)
+    filt_data = np.array([1.0, 2.0, 1.0, 2.0], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])
-    input_data = np.array([1., 2., 3., 4.], dtype=np.float32)
+    input_data = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     input_data = np.reshape(input_data, [1, 1, 2, 2])
 
     builder = popart.Builder()
@@ -255,14 +253,11 @@ def test_prepareDevice_training(loadEngine, capfd):
 
     i2 = builder.addInitializedInputTensor(filt_data, "filter")
 
-    c1 = builder.aiOnnx.conv([i1, i2],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[2, 2])
+    c1 = builder.aiOnnx.conv(
+        [i1, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[2, 2]
+    )
 
-    l1 = builder.aiGraphcore.l1loss([c1],
-                                    0.1,
-                                    reduction=popart.ReductionType.Sum)
+    l1 = builder.aiGraphcore.l1loss([c1], 0.1, reduction=popart.ReductionType.Sum)
 
     proto = builder.getModelProto()
 
@@ -273,27 +268,29 @@ def test_prepareDevice_training(loadEngine, capfd):
     opts.enableOutliningCopyCostPruning = False
 
     with tu.create_test_device() as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=l1,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            optimizer=popart.ConstSGD(0.1),
+            loss=l1,
+            deviceInfo=device,
+        )
 
         def assertLogContains(expectedCompilation, expectedEngineLoad):
             _, stderr = capfd.readouterr()
             graphCompiled = False
             engineLoaded = False
             for line in stderr.splitlines():
-                if 'Graph compiled' in line:
+                if "Graph compiled" in line:
                     graphCompiled = True
-                elif 'Engine loaded' in line:
+                elif "Engine loaded" in line:
                     engineLoaded = True
 
             assert expectedCompilation == graphCompiled
             assert engineLoaded == expectedEngineLoad
 
-        popart.getLogger().setLevel('INFO')
+        popart.getLogger().setLevel("INFO")
         # Compile graph
         if loadEngine is None:
             session.prepareDevice()
@@ -301,8 +298,7 @@ def test_prepareDevice_training(loadEngine, capfd):
             loadEngine = True
         else:
             session.prepareDevice(loadEngine)
-        assertLogContains(expectedCompilation=True,
-                          expectedEngineLoad=loadEngine)
+        assertLogContains(expectedCompilation=True, expectedEngineLoad=loadEngine)
 
         session.weightsFromHost()
 
@@ -313,13 +309,12 @@ def test_prepareDevice_training(loadEngine, capfd):
 
         session.run(stepio)
 
-    assertLogContains(expectedCompilation=False,
-                      expectedEngineLoad=not loadEngine)
+    assertLogContains(expectedCompilation=False, expectedEngineLoad=not loadEngine)
 
 
 def test_create_sim_device():
     dm = popart.DeviceManager()
-    device = dm.createSimDevice({'numIPUs': 2, 'tilesPerIPU': 8})
+    device = dm.createSimDevice({"numIPUs": 2, "tilesPerIPU": 8})
     assert device.numIpus == 2
     assert device.tilesPerIPU == 8
 

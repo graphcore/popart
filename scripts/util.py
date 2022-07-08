@@ -27,10 +27,12 @@ def bor(*args: int) -> int:
     return list(accumulate(args, operator.or_))[-1]
 
 
-def bash(args: Tuple[str, ...],
-         cwd: str = '.',
-         log: bool = True,
-         ignore_return_code: bool = False) -> str:
+def bash(
+    args: Tuple[str, ...],
+    cwd: str = ".",
+    log: bool = True,
+    ignore_return_code: bool = False,
+) -> str:
     """
     Run a bash subprocess.
 
@@ -51,15 +53,14 @@ def bash(args: Tuple[str, ...],
     Returns
         str: the collected stdout of the subprocess.
     """
-    process = subprocess.Popen(args,
-                               cwd=cwd,
-                               stdout=subprocess.PIPE,
-                               universal_newlines=True)
-    result = ''
+    process = subprocess.Popen(
+        args, cwd=cwd, stdout=subprocess.PIPE, universal_newlines=True
+    )
+    result = ""
     for stdout_line in iter(process.stdout.readline, ""):
         result += stdout_line
         if log:
-            print(stdout_line, end='')
+            print(stdout_line, end="")
     process.stdout.close()
     return_code = process.wait()
     if not ignore_return_code and return_code != 0:

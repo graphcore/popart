@@ -29,9 +29,9 @@ def arange(shape):
 # an up to date version of torch.
 def interpolate(data, scale_factor):
     if version.parse(torch.__version__) >= version.parse("1.5.0"):
-        return F.interpolate(data,
-                             scale_factor=scale_factor,
-                             recompute_scale_factor=False)
+        return F.interpolate(
+            data, scale_factor=scale_factor, recompute_scale_factor=False
+        )
     else:
         if isinstance(scale_factor, numbers.Number):
             scale_factor = [scale_factor]
@@ -51,8 +51,7 @@ def interpolate(data, scale_factor):
 
         for i in range(len(out_shape)):
             if data.shape[i] != out_shape[i]:
-                result = resize_nearest(result, i, out_shape[i],
-                                        scale_factor[i])
+                result = resize_nearest(result, i, out_shape[i], scale_factor[i])
 
         return result
 
@@ -64,7 +63,8 @@ def interpolate(data, scale_factor):
         ([2, 2], [2.0, 3.0]),
         # downsample
         ([2, 4], [0.5, 0.5]),
-    ])
+    ],
+)
 def test_resize_10(op_tester, data_shape, scales):
 
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
@@ -79,25 +79,28 @@ def test_resize_10(op_tester, data_shape, scales):
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        o = onnx_resize.interpolate_nd(data,
-                                       onnx_resize.nearest_coeffs,
-                                       scale_factors=scales)
+        o = onnx_resize.interpolate_nd(
+            data, onnx_resize.nearest_coeffs, scale_factors=scales
+        )
         return [o.astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
-@pytest.mark.parametrize("scale_factor", [
-    (2),
-    (3),
-    (0.5),
-    (0.25),
-])
+@pytest.mark.parametrize(
+    "scale_factor",
+    [
+        (2),
+        (3),
+        (0.5),
+        (0.25),
+    ],
+)
 def test_resize_nearest_grad_1d(op_tester, scale_factor):
     data = np.array([[[1, 2, 3, 4]]], dtype=np.float32)
 
     # This is to weight the gradient
-    x_data = [2**i for i in range(int(4 * scale_factor))]
+    x_data = [2 ** i for i in range(int(4 * scale_factor))]
     x_data = np.array([[x_data]], dtype=np.float32)
 
     scales = np.array([1.0, 1.0, float(scale_factor)], dtype=np.float32)
@@ -123,36 +126,45 @@ def test_resize_nearest_grad_1d(op_tester, scale_factor):
 
         d__o = ref_data.getOutputTensorGrad(0)
         o.backward(torch.tensor(d__o))
-        print('-' * 60)
+        print("-" * 60)
         print(d__o)
         print(b.grad)
         print(a.grad)
-        print('-' * 60)
+        print("-" * 60)
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
-@pytest.mark.parametrize("factor1, factor2", [
-    (2, 3),
-    (0.5, 0.25),
-    (2, 0.5),
-])
+@pytest.mark.parametrize(
+    "factor1, factor2",
+    [
+        (2, 3),
+        (0.5, 0.25),
+        (2, 0.5),
+    ],
+)
 def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
 
-    data = np.array([[[
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-    ]]], dtype=np.float32)
+    data = np.array(
+        [
+            [
+                [
+                    [1, 2, 3, 4],
+                    [5, 6, 7, 8],
+                ]
+            ]
+        ],
+        dtype=np.float32,
+    )
 
-    x_data = [2**i for i in range(int(2 * factor1) * int(4 * factor2))]
+    x_data = [2 ** i for i in range(int(2 * factor1) * int(4 * factor2))]
     x_data = np.reshape(
-        np.array([x_data], dtype=np.float32),
-        [1, 1, int(2 * factor1), int(4 * factor2)])
+        np.array([x_data], dtype=np.float32), [1, 1, int(2 * factor1), int(4 * factor2)]
+    )
 
-    scales = np.array(
-        [1.0, 1.0, float(factor1), float(factor2)], dtype=np.float32)
+    scales = np.array([1.0, 1.0, float(factor1), float(factor2)], dtype=np.float32)
 
     def init_builder(builder):
         d = builder.addInputTensor(data)
@@ -175,15 +187,15 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
 
         d__o = ref_data.getOutputTensorGrad(0)
         o.backward(torch.tensor(d__o))
-        print('-' * 60)
+        print("-" * 60)
         print(d__o)
         print(b.grad)
         print(a.grad)
-        print('-' * 60)
+        print("-" * 60)
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 @tu.requires_ipu_model
@@ -195,7 +207,8 @@ def test_resize_nearest_grad_2d(op_tester, factor1, factor2):
         # downsample
         ([2, 8], [1.0, 3 / 8]),
         ([5, 3], [0.3, 0.5]),
-    ])
+    ],
+)
 def test_nearest_grad(op_tester, data_shape, scales):
     data = np.random.rand(1, 1, *data_shape).astype(np.float32)
 
@@ -228,8 +241,8 @@ def test_nearest_grad(op_tester, data_shape, scales):
         o.backward(torch.tensor(d__o))
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['MulArgGradOp'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 @pytest.mark.parametrize(
@@ -243,16 +256,20 @@ def test_nearest_grad(op_tester, data_shape, scales):
         # downsample
         ([2, 8], [1.0, 3 / 8]),
         ([5, 3], [0.3, 0.5]),
-    ])
+    ],
+)
 @pytest.mark.parametrize(
     "nearest_mode",
-    ['round_prefer_floor', 'round_prefer_ceil', 'floor', 'ceil', 'pytorch'])
+    ["round_prefer_floor", "round_prefer_ceil", "floor", "ceil", "pytorch"],
+)
 @pytest.mark.parametrize(
     "coordinate_transformation_mode",
-    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"])
-def test_resize_11(op_tester, data_shape, scales, nearest_mode,
-                   coordinate_transformation_mode):
-    if nearest_mode == 'pytorch':
+    ["half_pixel", "pytorch_half_pixel", "asymmetric", "align_corners"],
+)
+def test_resize_11(
+    op_tester, data_shape, scales, nearest_mode, coordinate_transformation_mode
+):
+    if nearest_mode == "pytorch":
         data_shape = [1, 1] + data_shape
         scales = [1.0, 1.0] + scales
 
@@ -273,12 +290,13 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode,
         o = builder.aiOnnxOpset11.resize(
             [d, r, s],
             nearest_mode=nearest_mode,
-            coordinate_transformation_mode=coordinate_transformation_mode)
+            coordinate_transformation_mode=coordinate_transformation_mode,
+        )
         builder.addOutputTensor(o)
         return [o]
 
     def reference(_):  # ref_data is an unused argument
-        if nearest_mode == 'pytorch':
+        if nearest_mode == "pytorch":
             x = torch.tensor(data)
             s = [i for i in scales[2:]]
             o = interpolate(x, s)
@@ -292,10 +310,11 @@ def test_resize_11(op_tester, data_shape, scales, nearest_mode,
                 data,
                 coeffs,
                 scale_factors=scales,
-                coordinate_transformation_mode=coordinate_transformation_mode)
+                coordinate_transformation_mode=coordinate_transformation_mode,
+            )
             return [o.astype(data.dtype)]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_resize_11_debug():
@@ -311,25 +330,25 @@ def test_resize_11_debug():
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
-    print(f'Proto: {proto}')
+    print(f"Proto: {proto}")
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
 
     with tu.create_test_device() as device:
-        print('Creating session')
+        print("Creating session")
         sess = popart.InferenceSession(proto, dataFlow, device)
 
-        print('Initializing anchor arrays')
+        print("Initializing anchor arrays")
         anchors = sess.initAnchorArrays()
 
-        print('Preparinng device')
+        print("Preparinng device")
         sess.prepareDevice()
 
-        print('Creating stepio')
+        print("Creating stepio")
         inputs = {d: data}
         stepio = popart.PyStepIO(inputs, anchors)
 
-        print('Running model')
+        print("Running model")
         sess.run(stepio)
 
-        print('Fin')
+        print("Fin")

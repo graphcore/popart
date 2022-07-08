@@ -19,32 +19,28 @@ def test_basic():
         ibias0 = builder.addInitializedInputTensor(bias_data[0], "bias0")
         ibias1 = builder.addInitializedInputTensor(bias_data[1], "bias1")
 
-        c1 = builder.aiOnnx.conv([i1, i2, ibias0],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1])
-        o = builder.aiOnnx.conv([c1, i2, ibias1],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1])
+        c1 = builder.aiOnnx.conv(
+            [i1, i2, ibias0], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
+        o = builder.aiOnnx.conv(
+            [c1, i2, ibias1], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
         builder.addOutputTensor(o)
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(1, {
-            c1: popart.AnchorReturnType("All"),
-            o: popart.AnchorReturnType("All")
-        })
+        dataFlow = popart.DataFlow(
+            1, {c1: popart.AnchorReturnType("All"), o: popart.AnchorReturnType("All")}
+        )
 
         opts = popart.SessionOptions()
         opts.enableOutlining = enableOutlining
         opts.enableOutliningCopyCostPruning = False
 
         with tu.create_test_device() as device:
-            session = popart.InferenceSession(fnModel=proto,
-                                              dataFlow=dataFlow,
-                                              userOptions=opts,
-                                              deviceInfo=device)
+            session = popart.InferenceSession(
+                fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+            )
 
             session.prepareDevice()
 

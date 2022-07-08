@@ -27,6 +27,6 @@ def test_matmul_mismatched_inputs(op_tester):
         op_tester.run(init_builder, reference)
 
     assert (
-        e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) contracting dimensions unequal: lhs 'input' [3 4], rhs 'input/1' [3 4]"
+        e_info.value.args[0]
+        == "Op(ai.onnx.MatMul:9, inputs=[input, input/1], outputs=[MatMul:0]) contracting dimensions unequal: lhs 'input' [3 4], rhs 'input/1' [3 4]"
     )

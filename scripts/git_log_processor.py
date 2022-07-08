@@ -10,9 +10,11 @@ import subprocess
 endHsh = "325ef440b0750426b775cbc237808496e9b4f91a"
 
 # call git log, create a giant string from it
-output = subprocess.Popen(
-    ["git", "log"], stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT).communicate()[0].decode('utf-8')
+output = (
+    subprocess.Popen(["git", "log"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    .communicate()[0]
+    .decode("utf-8")
+)
 
 # split the giant string into a list, one list element per commit
 commits = output.split("\n\ncommit")
@@ -39,7 +41,7 @@ for commit in commits:
     summaryStrings = []
     while stillSummary and counter < len(rest):
         l = rest[counter].strip()
-        if ("Summary:" in l or "Test Plan" in l or "Reviewers" in l):
+        if "Summary:" in l or "Test Plan" in l or "Reviewers" in l:
             stillSummary = False
         elif l:
             summaryStrings.append(l)

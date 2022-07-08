@@ -11,7 +11,7 @@ class TestTopK:
         ir = popxl.Ir()
         g = ir.main_graph
         with ir.main_graph:
-            t = popxl.variable(np.random.rand(2, 10).astype('float32'))
+            t = popxl.variable(np.random.rand(2, 10).astype("float32"))
             k = 2
             axis = 1
             largest = True

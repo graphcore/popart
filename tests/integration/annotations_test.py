@@ -15,8 +15,7 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
 
     x = ip
     for i in range(3):
-        w = builder.addInitializedInputTensor(
-            np.ones([dsize, dsize], np.float32))
+        w = builder.addInitializedInputTensor(np.ones([dsize, dsize], np.float32))
         x = builder.aiOnnx.matmul([x, w])
 
         if executionphases_enabled:
@@ -50,10 +49,10 @@ def _get_ir(executionphases_enabled, virtualgraph_enabled, pipeline_enabled):
             loss=out,
             patterns=popart.Patterns(popart.PatternsLevel.All),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
     return ir
 
 
@@ -62,24 +61,24 @@ def _compare_irs(ir1, ir2):
     assert len(ir1) == 1
     assert len(ir2) == 1
 
-    g1 = ir1['maingraph']
-    g2 = ir2['maingraph']
+    g1 = ir1["maingraph"]
+    g2 = ir2["maingraph"]
 
     # graphs should have the same number of ops
     assert len(g1) == len(g2)
 
     def get_op_comparison_string(op):
-        name = op['name']
-        op_type = op['type']
+        name = op["name"]
+        op_type = op["type"]
         if name:
-            return f'{name}:{op_type}'
+            return f"{name}:{op_type}"
         else:
-            return f'{op_type}'
+            return f"{op_type}"
 
     for op1, op2 in zip(g1, g2):
         op1 = get_op_comparison_string(op1)
         op2 = get_op_comparison_string(op2)
-        print(f'{op1:<60} | {op2:<60} | {op1 == op2}')
+        print(f"{op1:<60} | {op2:<60} | {op1 == op2}")
         assert op1 == op2
 
 

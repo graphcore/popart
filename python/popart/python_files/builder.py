@@ -7,7 +7,7 @@ import popart
 from popart_core import _BuilderCore
 
 
-class Opset():
+class Opset:
     """Minimal base class for the opsets.
 
     Arguments:
@@ -20,7 +20,7 @@ class Opset():
         self.version = version
 
 
-class Builder():
+class Builder:
     """
     A wrapper around the ``Builder`` C++ class.
 
@@ -35,10 +35,12 @@ class Builder():
             builder using an existing ``buildercore`` object. Default: ``None``.
     """
 
-    def __init__(self,
-                 modelProtoOrFilename: Union[str, bytes] = None,
-                 opsets: Dict[str, int] = None,
-                 builderCore: _BuilderCore = None) -> None:
+    def __init__(
+        self,
+        modelProtoOrFilename: Union[str, bytes] = None,
+        opsets: Dict[str, int] = None,
+        builderCore: _BuilderCore = None,
+    ) -> None:
         if builderCore is None:
             if modelProtoOrFilename is None:
                 self._impl = _BuilderCore()
@@ -56,16 +58,15 @@ class Builder():
                 # See T12084 and T21330
                 return {
                     "ai.onnx": popart.defaultAiOnnxOpset,
-                    "ai.graphcore": popart.defaultAiGraphcoreOpset
+                    "ai.graphcore": popart.defaultAiGraphcoreOpset,
                 }[name]
 
         self.aiGraphcore = AiGraphcore(self, getOpset("ai.graphcore"))
-        self.aiGraphcoreOpset1 = AiGraphcoreOpset1(self,
-                                                   getOpset("ai.graphcore"))
+        self.aiGraphcoreOpset1 = AiGraphcoreOpset1(self, getOpset("ai.graphcore"))
         self.aiOnnxOpsetVersion(getOpset("ai.onnx"))
 
         if opsets:
-            self._selectOnnxVersion(opsets['ai.onnx'])
+            self._selectOnnxVersion(opsets["ai.onnx"])
         else:
             self._chosenOnnxVersion = None
 
@@ -74,10 +75,10 @@ class Builder():
     # `self._onnxOpset` that dont match `version` to None.
     def _selectOnnxVersion(self, version):
         self._chosenOnnxVersion = version
-        self._onnxOpsets['aiOnnx'] = self._onnxOpsets[f'aiOnnxOpset{version}']
+        self._onnxOpsets["aiOnnx"] = self._onnxOpsets[f"aiOnnxOpset{version}"]
 
         for key in self._onnxOpsets.keys():
-            if key not in ('aiOnnx', f'aiOnnxOpset{version}'):
+            if key not in ("aiOnnx", f"aiOnnxOpset{version}"):
                 self._onnxOpsets[key] = None
 
     def aiOnnxOpsetVersion(self, version: int) -> None:
@@ -87,24 +88,29 @@ class Builder():
 
             # Populate self._onnxOpsets with the AiOnnx{version} classes.
             for key, value in globals().items():
-                match = re.match(r'AiOnnx(\d+)', key)
+                match = re.match(r"AiOnnx(\d+)", key)
                 if match is not None:
                     version = match.group(1)
-                    self._onnxOpsets[f'aiOnnxOpset{version}'] = value(
-                        self, version)
+                    self._onnxOpsets[f"aiOnnxOpset{version}"] = value(self, version)
 
-            self._onnxOpsets['aiOnnx'] = self._onnxOpsets[
-                f'aiOnnxOpset{version}']
+            self._onnxOpsets["aiOnnx"] = self._onnxOpsets[f"aiOnnxOpset{version}"]
 
         else:
             raise ValueError(
-                f"Unsupported or unrecognized ai.Onnx version: {self.version}")
+                f"Unsupported or unrecognized ai.Onnx version: {self.version}"
+            )
 
     def __getattr__(
-            self, name: str
-    ) -> Union[popart.AiGraphcoreOpset1, popart.AiOnnxOpset6, popart.
-               AiOnnxOpset7, popart.AiOnnxOpset8, popart.AiOnnxOpset9, popart.
-               AiOnnxOpset10, popart.AiOnnxOpset11]:
+        self, name: str
+    ) -> Union[
+        popart.AiGraphcoreOpset1,
+        popart.AiOnnxOpset6,
+        popart.AiOnnxOpset7,
+        popart.AiOnnxOpset8,
+        popart.AiOnnxOpset9,
+        popart.AiOnnxOpset10,
+        popart.AiOnnxOpset11,
+    ]:
         """Reroute all attribute requests to the underlying ``_BuilderCore`` object.
 
         Args:
@@ -116,14 +122,14 @@ class Builder():
         Returns:
             Return value from the ``builder._impl.attr`` call.
         """
-        if name.startswith('aiOnnx'):
+        if name.startswith("aiOnnx"):
             # If the onnx version was not chosen in the constructor,
             # then it will be chosen by the first opset selected.
             if not self._chosenOnnxVersion:
-                if name == 'aiOnnx':
+                if name == "aiOnnx":
                     version = popart.defaultAiOnnxOpset
                 else:
-                    version = name[len('aiOnnxOpset'):]
+                    version = name[len("aiOnnxOpset") :]
                     version = int(version)
                 self._selectOnnxVersion(version)
 
@@ -138,11 +144,13 @@ class Builder():
 
         return getattr(self._impl, name)
 
-    def reshape_const(self,
-                      aiOnnx: Opset,
-                      args: List[str],
-                      shape: Iterable[int],
-                      debugContext: str = "") -> List[int]:
+    def reshape_const(
+        self,
+        aiOnnx: Opset,
+        args: List[str],
+        shape: Iterable[int],
+        debugContext: str = "",
+    ) -> List[int]:
         """Const version of the reshape op.
 
         Arguments:
@@ -158,10 +166,11 @@ class Builder():
         """
 
         newShape = aiOnnx.constant(
-            np.array(shape).astype(np.int64), debugContext + "_const")
+            np.array(shape).astype(np.int64), debugContext + "_const"
+        )
         return aiOnnx.reshape([args[0], newShape], debugContext)
 
-    def createSubgraphBuilder(self) -> 'Builder':
+    def createSubgraphBuilder(self) -> "Builder":
         """Create a child builder to add ops to a subgraph using a call operation.
 
         Returns:
@@ -204,12 +213,14 @@ class AiOnnx(Opset):
     def __str__(self):
         return f"AiOnnx{self.version}"
 
-    def logical_if(self,
-                   args: List[str],
-                   num_outputs: int,
-                   else_branch: Builder,
-                   then_branch: Builder,
-                   name: str = "") -> List[str]:
+    def logical_if(
+        self,
+        args: List[str],
+        num_outputs: int,
+        else_branch: Builder,
+        then_branch: Builder,
+        name: str = "",
+    ) -> List[str]:
         """If conditional operation.
 
         Arguments:
@@ -229,14 +240,13 @@ class AiOnnx(Opset):
         Returns:
             Output tensor ids.
         """
-        return self.aiOnnx.logical_if(args, num_outputs, else_branch._impl,
-                                      then_branch._impl, name)
+        return self.aiOnnx.logical_if(
+            args, num_outputs, else_branch._impl, then_branch._impl, name
+        )
 
-    def loop(self,
-             args: List[str],
-             num_outputs: int,
-             body: Builder,
-             debugContext: str = "") -> List[str]:
+    def loop(
+        self, args: List[str], num_outputs: int, body: Builder, debugContext: str = ""
+    ) -> List[str]:
         """Construct a generic Looping op.
 
         Arguments:
@@ -254,8 +264,7 @@ class AiOnnx(Opset):
 
 
 class AiOnnx6(AiOnnx):
-    """Minimal builder interface for ai.onnx version 6.
-    """
+    """Minimal builder interface for ai.onnx version 6."""
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx6, self).__init__(builder, version)
@@ -263,8 +272,7 @@ class AiOnnx6(AiOnnx):
 
 
 class AiOnnx7(AiOnnx6):
-    """Minimal builder interface for ai.onnx version 7.
-    """
+    """Minimal builder interface for ai.onnx version 7."""
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx7, self).__init__(builder, version)
@@ -272,20 +280,21 @@ class AiOnnx7(AiOnnx6):
 
 
 class AiOnnx8(AiOnnx7):
-    """Minimal builder interface for ai.onnx version 8.
-    """
+    """Minimal builder interface for ai.onnx version 8."""
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx8, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset8
 
-    def scan(self,
-             args: List[str],
-             num_outputs: int,
-             body: Builder,
-             num_scan_inputs: int,
-             directions: List[int] = [],
-             debugContext: str = "") -> List[str]:
+    def scan(
+        self,
+        args: List[str],
+        num_outputs: int,
+        body: Builder,
+        num_scan_inputs: int,
+        directions: List[int] = [],
+        debugContext: str = "",
+    ) -> List[str]:
         """Scan-8 specific construct op.
 
         Arguments:
@@ -304,28 +313,30 @@ class AiOnnx8(AiOnnx7):
         Returns:
             Output tensor ids.
         """
-        return self.aiOnnx.scan(args, num_outputs, body._impl, num_scan_inputs,
-                                directions, debugContext)
+        return self.aiOnnx.scan(
+            args, num_outputs, body._impl, num_scan_inputs, directions, debugContext
+        )
 
 
 class AiOnnx9(AiOnnx8):
-    """Minimal builder interface for ai.onnx version 9.
-    """
+    """Minimal builder interface for ai.onnx version 9."""
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx9, self).__init__(builder, version)
         self.aiOnnx = self._builder._impl.aiOnnxOpset9
 
-    def scan(self,
-             args: List[str],
-             num_outputs: int,
-             body: Builder,
-             num_scan_inputs: int,
-             scan_input_axes: List[int] = [],
-             scan_input_directions: List[int] = [],
-             scan_output_axes: List[int] = [],
-             scan_output_directions: List[int] = [],
-             debugContext: str = "") -> List[str]:
+    def scan(
+        self,
+        args: List[str],
+        num_outputs: int,
+        body: Builder,
+        num_scan_inputs: int,
+        scan_input_axes: List[int] = [],
+        scan_input_directions: List[int] = [],
+        scan_output_axes: List[int] = [],
+        scan_output_directions: List[int] = [],
+        debugContext: str = "",
+    ) -> List[str]:
         """Construct a generic scan op.
 
         Arguments:
@@ -357,10 +368,17 @@ class AiOnnx9(AiOnnx8):
         Returns:
             Output tensor ids.
         """
-        return self.aiOnnx.scan(args, num_outputs, body._impl, num_scan_inputs,
-                                scan_input_axes, scan_input_directions,
-                                scan_output_axes, scan_output_directions,
-                                debugContext)
+        return self.aiOnnx.scan(
+            args,
+            num_outputs,
+            body._impl,
+            num_scan_inputs,
+            scan_input_axes,
+            scan_input_directions,
+            scan_output_axes,
+            scan_output_directions,
+            debugContext,
+        )
 
 
 class AiOnnx10(AiOnnx9):
@@ -376,8 +394,7 @@ class AiOnnx10(AiOnnx9):
 
 
 class AiOnnx11(AiOnnx10):
-    """Minimal builder interface for ai.onnx version 11.
-    """
+    """Minimal builder interface for ai.onnx version 11."""
 
     def __init__(self, builder: Builder, version: int) -> None:
         super(AiOnnx11, self).__init__(builder, version)
@@ -420,11 +437,9 @@ class AiGraphcore(Opset):
                 f"Unsupported or unrecognized ai.graphcore version: {self.version}"
             )
 
-    def call(self,
-             args: List[int],
-             num_outputs: int,
-             callee: Builder,
-             debugName: str = "") -> List[str]:
+    def call(
+        self, args: List[int], num_outputs: int, callee: Builder, debugName: str = ""
+    ) -> List[str]:
         """Add a call operation to the model.
 
         This is a poplar extension, to expose manual code re-use to
@@ -441,19 +456,25 @@ class AiGraphcore(Opset):
         Returns:
             Output tensor ids.
         """
-        return self.aiGraphcore.call(args, num_outputs, callee._impl,
-                                     debugName)
+        return self.aiGraphcore.call(args, num_outputs, callee._impl, debugName)
 
-    def packedDataBlock(self,
-                        args: List[str],
-                        maxSequenceLengths: List[int],
-                        resultSize: int,
-                        callbackBatchSize: int,
-                        callback: Builder,
-                        debugName: str = "") -> str:
-        return self.aiGraphcore.packedDataBlock(args, maxSequenceLengths,
-                                                resultSize, callbackBatchSize,
-                                                callback._impl, debugName)
+    def packedDataBlock(
+        self,
+        args: List[str],
+        maxSequenceLengths: List[int],
+        resultSize: int,
+        callbackBatchSize: int,
+        callback: Builder,
+        debugName: str = "",
+    ) -> str:
+        return self.aiGraphcore.packedDataBlock(
+            args,
+            maxSequenceLengths,
+            resultSize,
+            callbackBatchSize,
+            callback._impl,
+            debugName,
+        )
 
     def __getattr__(self, name: str) -> Any:
         """Reroute all attribute requests to the underlying ``_BuilderCore`` object.

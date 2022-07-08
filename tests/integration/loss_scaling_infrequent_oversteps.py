@@ -7,8 +7,7 @@ import test_util as tu
 from loss_scaling_util_test import getModelProto
 
 
-def run_automatic_loss_scaling_infrequent_oversteps_test(
-        tmpdir, update_period=1):
+def run_automatic_loss_scaling_infrequent_oversteps_test(tmpdir, update_period=1):
     """
     An integration test:
     We construct two sessions with an updatePeriod > 1.
@@ -26,13 +25,15 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
     opts.automaticLossScalingSettings.thresholdUpperCountProportion = 0.2
     opts.automaticLossScalingSettings.updatePeriod = update_period
 
-    init_optimizer = popart.SGD({
-        "lossScaling": (10.0, False),
-        "defaultMomentum": (0.5, False),
-        "defaultVelocityScaling": (0.5, False),
-        "defaultDampening": (0.5, False),
-        "defaultWeightDecay": (0.5, False)
-    })
+    init_optimizer = popart.SGD(
+        {
+            "lossScaling": (10.0, False),
+            "defaultMomentum": (0.5, False),
+            "defaultVelocityScaling": (0.5, False),
+            "defaultDampening": (0.5, False),
+            "defaultWeightDecay": (0.5, False),
+        }
+    )
 
     num_ipus = 1
 
@@ -44,12 +45,14 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
             fnProto = modelPath
 
         b_bps = 1
-        b_session = popart.TrainingSession(fnModel=fnProto,
-                                           deviceInfo=device,
-                                           dataFlow=popart.DataFlow(b_bps, {}),
-                                           loss=loss,
-                                           optimizer=init_optimizer,
-                                           userOptions=opts)
+        b_session = popart.TrainingSession(
+            fnModel=fnProto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(b_bps, {}),
+            loss=loss,
+            optimizer=init_optimizer,
+            userOptions=opts,
+        )
         b_session.prepareDevice()
         b_session.weightsFromHost()
         b_anchors = b_session.initAnchorArrays()
@@ -59,12 +62,14 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
     with tu.create_test_device(num_ipus) as device:
         K = 1
         a_bps = K * update_period
-        a_session = popart.TrainingSession(fnModel=proto,
-                                           deviceInfo=device,
-                                           dataFlow=popart.DataFlow(a_bps, {}),
-                                           loss=loss,
-                                           optimizer=init_optimizer,
-                                           userOptions=opts)
+        a_session = popart.TrainingSession(
+            fnModel=proto,
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(a_bps, {}),
+            loss=loss,
+            optimizer=init_optimizer,
+            userOptions=opts,
+        )
         a_session.prepareDevice()
         a_session.weightsFromHost()
         a_anchors = a_session.initAnchorArrays()
@@ -72,17 +77,19 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
         # Data
         a_data = np.random.rand(a_bps, *t_shape).astype(np.float16)
         a_label_data = np.random.randint(
-            0, label_shape[0], a_bps * label_shape[0]).astype(np.int32)
+            0, label_shape[0], a_bps * label_shape[0]
+        ).astype(np.int32)
         inputs = {t0: a_data, label: a_label_data}
         b_inputs = []
         for i in range(int(K * update_period)):
-            b_inputs.append({
-                t0:
-                a_data[i],
-                label:
-                a_label_data[i * label_shape[0]:i * label_shape[0] +
-                             label_shape[0]]
-            })
+            b_inputs.append(
+                {
+                    t0: a_data[i],
+                    label: a_label_data[
+                        i * label_shape[0] : i * label_shape[0] + label_shape[0]
+                    ],
+                }
+            )
 
         # Run and test.
         a_session.run(popart.PyStepIO(inputs, a_anchors))
@@ -117,5 +124,4 @@ def run_automatic_loss_scaling_infrequent_oversteps_test(
 
 
 def test_auto_loss_scaling_identical_weight_updates_update_period(tmpdir):
-    run_automatic_loss_scaling_infrequent_oversteps_test(tmpdir,
-                                                         update_period=4)
+    run_automatic_loss_scaling_infrequent_oversteps_test(tmpdir, update_period=4)

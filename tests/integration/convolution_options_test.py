@@ -9,10 +9,7 @@ import test_util as tu
 
 
 # Standard conv and relu with setAvailableMemoryProportion setting
-def conv_avail_memory(capfd,
-                      monkeypatch,
-                      apply_to_conv=True,
-                      avail_mem_prop=0.9):
+def conv_avail_memory(capfd, monkeypatch, apply_to_conv=True, avail_mem_prop=0.9):
     monkeypatch.setenv("POPLIBS_LOG_LEVEL", "DEBUG")
 
     builder = popart.Builder()
@@ -23,10 +20,9 @@ def conv_avail_memory(capfd,
     weight_data = np.ones(weight_shape.shape(), np.float32)
     input_ = builder.addInputTensor(input_shape)
     weights = builder.addInitializedInputTensor(weight_data)
-    act = builder.aiOnnx.conv([input_, weights],
-                              dilations=[1, 1],
-                              pads=[1, 1, 1, 1],
-                              strides=[1, 1])
+    act = builder.aiOnnx.conv(
+        [input_, weights], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     o = builder.aiOnnx.relu([act])
     loss = builder.aiGraphcore.identityloss([o])
 
@@ -42,14 +38,16 @@ def conv_avail_memory(capfd,
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input_,
-        popart.reservedGradientPrefix() + weights
+        popart.reservedGradientPrefix() + weights,
     ]
     training_dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
-            anchor_names[2]: popart.AnchorReturnType("All")
-        })
+            anchor_names[2]: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
@@ -59,8 +57,7 @@ def conv_avail_memory(capfd,
         device.attach()
 
         # Prepare the input data
-        input_data = np.random.random_sample(input_shape.shape()).astype(
-            np.float32)
+        input_data = np.random.random_sample(input_shape.shape()).astype(np.float32)
 
         # Prepare the Training session
         training_session = popart.TrainingSession(
@@ -69,7 +66,8 @@ def conv_avail_memory(capfd,
             loss=loss,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         # Compile the training graph
         training_session.prepareDevice()
@@ -80,8 +78,7 @@ def conv_avail_memory(capfd,
         training_anchors = training_session.initAnchorArrays()
         training_inputs = {input_: input_data}
 
-        training_session.run(popart.PyStepIO(training_inputs,
-                                             training_anchors))
+        training_session.run(popart.PyStepIO(training_inputs, training_anchors))
 
     captured = capfd.readouterr()
     monkeypatch.delenv("POPLIBS_LOG_LEVEL", raising=False)
@@ -90,10 +87,7 @@ def conv_avail_memory(capfd,
 
 
 # Standard matmul and relu with setAvailableMemoryProportion setting
-def matmul_avail_memory(capfd,
-                        monkeypatch,
-                        apply_to_conv=True,
-                        avail_mem_prop=0.9):
+def matmul_avail_memory(capfd, monkeypatch, apply_to_conv=True, avail_mem_prop=0.9):
     monkeypatch.setenv("POPLIBS_LOG_LEVEL", "DEBUG")
 
     builder = popart.Builder()
@@ -120,14 +114,16 @@ def matmul_avail_memory(capfd,
     anchor_names = [
         o,
         popart.reservedGradientPrefix() + input_,
-        popart.reservedGradientPrefix() + weights
+        popart.reservedGradientPrefix() + weights,
     ]
     training_dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
-            anchor_names[2]: popart.AnchorReturnType("All")
-        })
+            anchor_names[2]: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.constantWeights = False  # Allow the weights to be updated
@@ -137,8 +133,7 @@ def matmul_avail_memory(capfd,
         device.attach()
 
         # Prepare the input data
-        input_data = np.random.random_sample(input_shape.shape()).astype(
-            np.float32)
+        input_data = np.random.random_sample(input_shape.shape()).astype(np.float32)
 
         # Prepare the Training session
         training_session = popart.TrainingSession(
@@ -147,7 +142,8 @@ def matmul_avail_memory(capfd,
             loss=loss,
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         # Compile the training graph
         training_session.prepareDevice()
@@ -158,8 +154,7 @@ def matmul_avail_memory(capfd,
         training_anchors = training_session.initAnchorArrays()
         training_inputs = {input_: input_data}
 
-        training_session.run(popart.PyStepIO(training_inputs,
-                                             training_anchors))
+        training_session.run(popart.PyStepIO(training_inputs, training_anchors))
 
         captured = capfd.readouterr()
         monkeypatch.delenv("POPLIBS_LOG_LEVEL", raising=False)
@@ -196,8 +191,7 @@ def test_conv_avail_memory_error(capfd, monkeypatch):
     with pytest.raises(popart.popart_exception) as e_info:
         conv_avail_memory(capfd, monkeypatch, True, avail_mem_prop)
 
-    assert (e_info.value.args[0].startswith(
-        "availableMemoryProportion must be in (0,1]"))
+    assert e_info.value.args[0].startswith("availableMemoryProportion must be in (0,1]")
 
 
 # Test that poplar gets our instruction to set the available memory proportion.

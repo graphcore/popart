@@ -20,7 +20,7 @@ def test_reshape(op_tester):
         out = np.reshape(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_neg_one(op_tester):
@@ -38,7 +38,7 @@ def test_reshape_neg_one(op_tester):
         out = np.reshape(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_neg_one_error(op_tester):
@@ -53,10 +53,11 @@ def test_reshape_neg_one_error(op_tester):
         return [o]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, None, 'infer')
+        op_tester.run(init_builder, None, "infer")
 
-    assert ('shape input to ReshapeOp can only use -1 to '
-            'specify one unknown dimension') in str(e_info.value)
+    assert (
+        "shape input to ReshapeOp can only use -1 to " "specify one unknown dimension"
+    ) in str(e_info.value)
 
 
 def test_reshape_zeros(op_tester):
@@ -78,7 +79,7 @@ def test_reshape_zeros(op_tester):
         out = np.reshape(d1, s)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_neg_one_and_zeros(op_tester):
@@ -100,7 +101,7 @@ def test_reshape_neg_one_and_zeros(op_tester):
         out = np.reshape(d1, s)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_neg_one_and_zeros_grad(op_tester):
@@ -115,7 +116,7 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -133,8 +134,8 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
 
         return [o, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "train")
 
 
 def test_reshape_graphcore(op_tester):
@@ -152,7 +153,7 @@ def test_reshape_graphcore(op_tester):
         out = np.reshape(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_neg_graphcore(op_tester):
@@ -170,7 +171,7 @@ def test_reshape_neg_graphcore(op_tester):
         out = np.reshape(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_zero_graphcore(op_tester):
@@ -187,7 +188,7 @@ def test_reshape_zero_graphcore(op_tester):
         out = np.reshape(d1, [6, 4])
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def test_reshape_graphcore_grad(op_tester):
@@ -212,4 +213,4 @@ def test_reshape_graphcore_grad(op_tester):
         out.backward(torch.tensor(d__o))
         return [out, tx.grad, None]
 
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

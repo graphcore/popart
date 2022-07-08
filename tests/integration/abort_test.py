@@ -20,10 +20,9 @@ def test_abort_unconditional():
     opts = popart.SessionOptions()
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -33,7 +32,7 @@ def test_abort_unconditional():
         stepio = popart.PyStepIO(inputs, anchors)
         with pytest.raises(popart.poplar_runtime_error) as e_info:
             session.run(stepio)
-            assert (e_info.value.args[0].startswith("Abort Program"))
+            assert e_info.value.args[0].startswith("Abort Program")
 
 
 @tu.requires_ipu
@@ -51,10 +50,9 @@ def test_abort_conditional():
     opts = popart.SessionOptions()
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -81,10 +79,9 @@ def test_abort_conditional_exception():
     opts = popart.SessionOptions()
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 

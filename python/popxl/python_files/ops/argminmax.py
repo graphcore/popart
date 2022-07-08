@@ -7,8 +7,9 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def argmax(t: Tensor, dim: Optional[int] = 0,
-           keepdim: Optional[bool] = False) -> Tensor:
+def argmax(
+    t: Tensor, dim: Optional[int] = 0, keepdim: Optional[bool] = False
+) -> Tensor:
     """
     Compute the argmax of a tensor.
 
@@ -39,21 +40,28 @@ def argmax(t: Tensor, dim: Optional[int] = 0,
     check_in_graph(g, t=t)
     check_tensor_ipu_and_tile_set(t=t)
 
-    settings = ctx._get_op_settings('argmax')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ArgMax", 11, _ir.NumInputs(1, 1),
-                                  1)
-    op = pb_g.createConnectedOp_ArgMaxOp({
-        0: t.id,
-    }, {
-        0: g._create_tensor_id("argmax_out"),
-    }, opid, dim, int(keepdim), settings)
+    settings = ctx._get_op_settings("argmax")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ArgMax", 11, _ir.NumInputs(1, 1), 1)
+    op = pb_g.createConnectedOp_ArgMaxOp(
+        {
+            0: t.id,
+        },
+        {
+            0: g._create_tensor_id("argmax_out"),
+        },
+        opid,
+        dim,
+        int(keepdim),
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def argmin(t: Tensor, dim: Optional[int] = 0,
-           keepdim: Optional[bool] = False) -> Tensor:
+def argmin(
+    t: Tensor, dim: Optional[int] = 0, keepdim: Optional[bool] = False
+) -> Tensor:
     """
     Compute the argmin of a tensor.
 
@@ -84,13 +92,19 @@ def argmin(t: Tensor, dim: Optional[int] = 0,
     check_in_graph(g, t=t)
     check_tensor_ipu_and_tile_set(t=t)
 
-    settings = ctx._get_op_settings('argmin')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ArgMin", 11, _ir.NumInputs(1, 1),
-                                  1)
-    op = pb_g.createConnectedOp_ArgMinOp({
-        0: t.id,
-    }, {
-        0: g._create_tensor_id("argmin_out"),
-    }, opid, dim, int(keepdim), settings)
+    settings = ctx._get_op_settings("argmin")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ArgMin", 11, _ir.NumInputs(1, 1), 1)
+    op = pb_g.createConnectedOp_ArgMinOp(
+        {
+            0: t.id,
+        },
+        {
+            0: g._create_tensor_id("argmin_out"),
+        },
+        opid,
+        dim,
+        int(keepdim),
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

@@ -16,8 +16,7 @@ class TestMaxPool:
         ir = popxl.Ir()
         g = ir.main_graph
         with ir.main_graph:
-            t = popxl.variable(
-                np.random.rand(batch_size, in_channel, height, width))
+            t = popxl.variable(np.random.rand(batch_size, in_channel, height, width))
             _ = ops.max_pool(t, kernel)
         assert len(g.tensors) == 2
         assert len(g.variables) == 1

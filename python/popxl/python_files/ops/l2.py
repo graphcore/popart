@@ -7,9 +7,9 @@ from typing import Optional, Iterable, Union
 
 
 @op_debug_context
-def l2(t: Tensor,
-       axis: Optional[Union[int, Iterable[int]]] = None,
-       keepdims: bool = False) -> Tensor:
+def l2(
+    t: Tensor, axis: Optional[Union[int, Iterable[int]]] = None, keepdims: bool = False
+) -> Tensor:
     """
     Compute the square root of the sum of the squares of the elements in a tensor (L2 norm) along specified axes.
 
@@ -38,9 +38,8 @@ def l2(t: Tensor,
 
     axis = convert_optional_int64_list(axis)
 
-    settings = ctx._get_op_settings('ReduceL2')
-    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceL2", 1, _ir.NumInputs(
-        1, 1), 1)
+    settings = ctx._get_op_settings("ReduceL2")
+    opid = _ir.OperatorIdentifier("ai.onnx", "ReduceL2", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_ReduceL2Op(
         {
             0: t.id,

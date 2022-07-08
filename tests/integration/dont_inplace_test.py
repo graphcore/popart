@@ -1,5 +1,6 @@
 # Copyright (c) 2020 Graphcore Ltd. All rights reserved.
 import numpy as np
+
 # pylint is disabled as op_tester is used as a fixture
 from operators_test.conftest import op_tester  # pylint: disable=unused-import
 
@@ -7,28 +8,28 @@ from operators_test.conftest import op_tester  # pylint: disable=unused-import
 def test_dont_inplace_output_consumers(op_tester):
     """
 
-    Check that an Op, in a sugbraph, with an input which is a graph output,
-    is not inplace. Example below : the Op with * cannot be inplaced.
+       Check that an Op, in a sugbraph, with an input which is a graph output,
+       is not inplace. Example below : the Op with * cannot be inplaced.
 
-    Input = [1,1]
-      |
- ------------
- |  scale-2 |
- |    |     |
- |  scale-2 |
- |    |     |
- |  scale-2-|-------- add --- final output is [72, 72]
- |    |     |       /                        ([8, 8]  + [64, 64])
- | *scale-2 |      /
- |    |     |     /
- |  scale-2 |    /
- |    |     |   /
- |  scale-2-|--/
- |          |
- ------------
+       Input = [1,1]
+         |
+    ------------
+    |  scale-2 |
+    |    |     |
+    |  scale-2 |
+    |    |     |
+    |  scale-2-|-------- add --- final output is [72, 72]
+    |    |     |       /                        ([8, 8]  + [64, 64])
+    | *scale-2 |      /
+    |    |     |     /
+    |  scale-2 |    /
+    |    |     |   /
+    |  scale-2-|--/
+    |          |
+    ------------
 
     """
-    d0 = np.asarray([1., 1.]).astype(np.float32)
+    d0 = np.asarray([1.0, 1.0]).astype(np.float32)
 
     def get_init_builder():
         def init_builder(builder):
@@ -42,7 +43,7 @@ def test_dont_inplace_output_consumers(op_tester):
             i5 = subgraph_builder.aiGraphcore.scale([i4], 2.0, "hoop5")
             i6 = subgraph_builder.aiGraphcore.scale([i5], 2.0, "hoop5")
             subgraph_builder.addOutputTensor(i3)  # 8
-            subgraph_builder.addOutputTensor(i6)  #64
+            subgraph_builder.addOutputTensor(i6)  # 64
             outs = builder.aiGraphcore.call([i0], 2, subgraph_builder)
             summation = builder.aiOnnx.add([outs[0], outs[1]])
             builder.addOutputTensor(summation)
@@ -51,10 +52,10 @@ def test_dont_inplace_output_consumers(op_tester):
         return init_builder
 
     def reference(_):  # ref_data is an unused argument
-        return [np.array([72., 72.]).astype(np.float32)]
+        return [np.array([72.0, 72.0]).astype(np.float32)]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(get_init_builder(), reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(get_init_builder(), reference, "infer")
 
 
 def test_dont_inplace_when_aliased_inputs(op_tester):
@@ -76,5 +77,5 @@ def test_dont_inplace_when_aliased_inputs(op_tester):
         sliced = np.concatenate([data, data], axis=0)[4:9]
         return [data + sliced]
 
-    op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")

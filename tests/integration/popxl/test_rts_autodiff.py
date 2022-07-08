@@ -11,6 +11,7 @@ import popxl.ops as ops
 from popxl.remote_buffer import RemoteBuffer
 from popxl.tensor import Tensor
 from popxl.transforms.autodiff import ExpectedConnection, ExpectedConnectionType
+
 # `import test_util` requires adding to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 import test_util as tu
@@ -25,8 +26,7 @@ REMOTE_BUFFER_IDX = 0
 BATCH_SIZE = NUM_LOCAL_REPLICAS * ACCL_FACTOR
 
 np.random.seed(0)
-weight_data = np.random.rand(NUM_LOCAL_REPLICAS,
-                             HIDDEN_SIZE).astype(np.float32)
+weight_data = np.random.rand(NUM_LOCAL_REPLICAS, HIDDEN_SIZE).astype(np.float32)
 
 input_data = []
 label_data = []
@@ -40,7 +40,7 @@ input_data: np.ndarray = np.concatenate(input_data)
 label_data: np.ndarray = np.concatenate(label_data).astype(np.uint32)
 
 
-class TestTensorLocation():
+class TestTensorLocation:
     class Linear(popxl.Module):
         def __init__(self):
             self.W: Tensor = None
@@ -59,38 +59,34 @@ class TestTensorLocation():
         ir.replication_factor = NUM_LOCAL_REPLICAS
         ### Forward pass ###
         with main:
-            d0_h2d = popxl.h2d_stream((COMP_BATCH, HIDDEN_SIZE),
-                                      popxl.float32,
-                                      name="d0_stream")
+            d0_h2d = popxl.h2d_stream(
+                (COMP_BATCH, HIDDEN_SIZE), popxl.float32, name="d0_stream"
+            )
             d0 = ops.host_load(d0_h2d, "d")
 
-            data[d0_h2d] = input_data.reshape(
-                (BATCH_SIZE, COMP_BATCH, HIDDEN_SIZE))
-            l0_h2d = popxl.h2d_stream((COMP_BATCH, ),
-                                      popxl.uint32,
-                                      name="l0_stream")
+            data[d0_h2d] = input_data.reshape((BATCH_SIZE, COMP_BATCH, HIDDEN_SIZE))
+            l0_h2d = popxl.h2d_stream((COMP_BATCH,), popxl.uint32, name="l0_stream")
             l0 = ops.host_load(l0_h2d, "d")
-            data[l0_h2d] = label_data.reshape((
-                BATCH_SIZE,
-                COMP_BATCH,
-            ))
+            data[l0_h2d] = label_data.reshape(
+                (
+                    BATCH_SIZE,
+                    COMP_BATCH,
+                )
+            )
 
-            var_shard_shape: Tuple[int, ...] = (weight_data.size //
-                                                NUM_LOCAL_REPLICAS, )
-            remote_buffer = RemoteBuffer(var_shard_shape,
-                                         dtypes.float32,
-                                         entries=NUM_LOCAL_REPLICAS)
-            w = popxl.remote_replica_sharded_variable(weight_data,
-                                                      remote_buffer, 0)
+            var_shard_shape: Tuple[int, ...] = (weight_data.size // NUM_LOCAL_REPLICAS,)
+            remote_buffer = RemoteBuffer(
+                var_shard_shape, dtypes.float32, entries=NUM_LOCAL_REPLICAS
+            )
+            w = popxl.remote_replica_sharded_variable(weight_data, remote_buffer, 0)
             loaded_w = ops.remote_load(remote_buffer, 0)
-            full_w = ops.collectives.replicated_all_gather(loaded_w).reshape_(
-                (4, 4))
+            full_w = ops.collectives.replicated_all_gather(loaded_w).reshape_((4, 4))
 
             fwd = self.Linear()
             fwd_graph = ir.create_graph(fwd, d0)
-            fwd_call_info = ops.call_with_info(fwd_graph,
-                                               d0,
-                                               inputs_dict={fwd.W: full_w})
+            fwd_call_info = ops.call_with_info(
+                fwd_graph, d0, inputs_dict={fwd.W: full_w}
+            )
 
             y = fwd_call_info.outputs[0]
 
@@ -107,7 +103,8 @@ class TestTensorLocation():
         with main:
             tensors_required_for_bwd = bwd_info.inputs_dict(fwd_call_info)
             bwd_call_info = ops.call_with_info(
-                bwd_graph, dx, inputs_dict=tensors_required_for_bwd)
+                bwd_graph, dx, inputs_dict=tensors_required_for_bwd
+            )
 
         expected_outputs = bwd_info.expected_outputs
         w0_grad: Tensor = None
@@ -116,7 +113,8 @@ class TestTensorLocation():
         sg_w0 = fwd_call_info.parent_to_graph(full_w)
 
         def get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                ec: ExpectedConnection) -> Tensor:
+            ec: ExpectedConnection,
+        ) -> Tensor:
             # If (t, FwdGrad) appears at index i in expected_outputs, it is
             # guaranteed that t' (the grad of t) appears at output index i in the
             # grad graph.
@@ -133,19 +131,18 @@ class TestTensorLocation():
             sg_fwd_tensor = ec.fwd_tensor
 
             if sg_fwd_tensor == sg_d0:
-                _ = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                    ec)
+                _ = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(ec)
             elif sg_fwd_tensor == sg_w0:
-                w0_grad = get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(
-                    ec)
+                w0_grad = (
+                    get_grad_tensor_in_main_graph_from_fwdgrad_expected_connection(ec)
+                )
 
         ### Weight update ###
         # Note the popxl.in_sequence() : forces ops in the correct order.
         with main, popxl.in_sequence():
             grad_shard: Tensor = ops.collectives.replicated_reduce_scatter(
-                w0_grad,
-                op='add',
-                configure_output_for_replicated_tensor_sharding=True)
+                w0_grad, op="add", configure_output_for_replicated_tensor_sharding=True
+            )
             ops.var_updates.accumulate_(loaded_w, grad_shard)
             ops.remote_store(remote_buffer, 0, loaded_w)
 
@@ -155,8 +152,7 @@ class TestTensorLocation():
 
             grad = ops.collectives.replicated_all_gather(grad_shard)
 
-            w_d2h = popxl.d2h_stream(loaded_gathered_w.shape,
-                                     loaded_gathered_w.dtype)
+            w_d2h = popxl.d2h_stream(loaded_gathered_w.shape, loaded_gathered_w.dtype)
             ops.host_store(w_d2h, loaded_gathered_w)
 
             grad_d2h = popxl.d2h_stream(grad.shape, grad.dtype)
@@ -172,11 +168,9 @@ class TestTensorLocation():
         # Check the weight has updated. So w = weight_data + w'
         np.testing.assert_allclose(np_loaded_gathered_w, weight_data + np_grad)
         # w now has been updated as we have synced remote buffers with device.
-        np.testing.assert_allclose(session.get_tensor_data(w),
-                                   np_loaded_gathered_w[0])
+        np.testing.assert_allclose(session.get_tensor_data(w), np_loaded_gathered_w[0])
 
-    def run(self, ir: popxl.Ir,
-            data: Mapping[popxl.HostToDeviceStream, np.ndarray]):
+    def run(self, ir: popxl.Ir, data: Mapping[popxl.HostToDeviceStream, np.ndarray]):
 
         ir.num_host_transfers = 1
         ir.replication_factor = NUM_LOCAL_REPLICAS

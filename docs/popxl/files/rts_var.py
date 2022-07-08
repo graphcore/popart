@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 The example shows how to use an RTS variable.
-'''
+"""
 
 import numpy as np
 

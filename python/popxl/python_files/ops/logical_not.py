@@ -29,7 +29,7 @@ def logical_not(t: Tensor) -> Tensor:
 
     t = cast_if_needed(t, dtypes.bool)
 
-    settings = ctx._get_op_settings('not')
+    settings = ctx._get_op_settings("not")
     opid = _ir.OperatorIdentifier("ai.onnx", "Not", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_NotOp(
         {0: t.id},

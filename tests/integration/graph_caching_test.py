@@ -18,38 +18,41 @@ def test_convolution_cached_by_default():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.aiOnnx.conv([i1, i2],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[1, 1])
-    o = builder.aiOnnx.conv([c1, i2],
-                            dilations=[1, 1],
-                            pads=[1, 1, 1, 1],
-                            strides=[1, 1])
+    c1 = builder.aiOnnx.conv(
+        [i1, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
+    o = builder.aiOnnx.conv(
+        [c1, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     loss = builder.aiGraphcore.identityloss([o])
 
     proto = builder.getModelProto()
 
     anchor_names = [
         popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2
+        popart.reservedGradientPrefix() + i2,
     ]
-    dataFlow = \
-        popart.DataFlow(1,
-                         {anchor_names[0] : popart.AnchorReturnType("All"),
-                          anchor_names[1] : popart.AnchorReturnType("All")})
+    dataFlow = popart.DataFlow(
+        1,
+        {
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+        },
+    )
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -68,12 +71,14 @@ def test_convolution_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^.+/convolution/Conv_3x3/Convolve$', computeSets)
+        r"^.+/convolution/Conv_3x3/Convolve$", computeSets
+    )
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^.+/weightDeltas/Conv_4x4/Convolve$', computeSets)
+        r"^.+/weightDeltas/Conv_4x4/Convolve$", computeSets
+    )
     # There should be only one convolution of each type
-    assert (num_3x3_convolutions == 1)
-    assert (num_4x4_convolutions == 1)
+    assert num_3x3_convolutions == 1
+    assert num_4x4_convolutions == 1
 
 
 @tu.requires_ipu_model
@@ -90,30 +95,30 @@ def test_convolution_disable_all():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.aiOnnx.conv([i1, i2],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[1, 1])
-    c2 = builder.aiOnnx.conv([c1, i2],
-                             dilations=[1, 1],
-                             pads=[1, 1, 1, 1],
-                             strides=[1, 1])
-    o = builder.aiOnnx.conv([c2, i2],
-                            dilations=[1, 1],
-                            pads=[1, 1, 1, 1],
-                            strides=[1, 1])
+    c1 = builder.aiOnnx.conv(
+        [i1, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
+    c2 = builder.aiOnnx.conv(
+        [c1, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
+    o = builder.aiOnnx.conv(
+        [c2, i2], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+    )
     loss = builder.aiGraphcore.l1loss([o], 0.1)
 
     proto = builder.getModelProto()
 
     anchor_names = [
         popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2
+        popart.reservedGradientPrefix() + i2,
     ]
-    dataFlow = \
-        popart.DataFlow(1,
-                         {anchor_names[0] : popart.AnchorReturnType("All"),
-                          anchor_names[1] : popart.AnchorReturnType("All")})
+    dataFlow = popart.DataFlow(
+        1,
+        {
+            anchor_names[0]: popart.AnchorReturnType("All"),
+            anchor_names[1]: popart.AnchorReturnType("All"),
+        },
+    )
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
@@ -121,12 +126,14 @@ def test_convolution_disable_all():
     opts.enableOutlining = False
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -146,13 +153,15 @@ def test_convolution_disable_all():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^.+/convolution/Conv_3x3/Convolve$', computeSets)
+        r"^.+/convolution/Conv_3x3/Convolve$", computeSets
+    )
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^.+/weightDeltas/Conv_4x4/Convolve$', computeSets)
+        r"^.+/weightDeltas/Conv_4x4/Convolve$", computeSets
+    )
     # Two 3x3 convolutions (bwd + fwd) for each convolution
-    assert (num_3x3_convolutions == 6)
+    assert num_3x3_convolutions == 6
     # Updates
-    assert (num_4x4_convolutions == 3)
+    assert num_4x4_convolutions == 3
 
 
 @tu.requires_ipu_model
@@ -194,10 +203,9 @@ def test_matmul_infer_cached_by_default():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -209,12 +217,7 @@ def test_matmul_infer_cached_by_default():
         matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -224,9 +227,10 @@ def test_matmul_infer_cached_by_default():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only one matmul
-    assert (num_matmuls == 1)
+    assert num_matmuls == 1
 
 
 @tu.requires_ipu_model
@@ -269,27 +273,31 @@ def test_matmul_train_cached_by_default():
         popart.reservedGradientPrefix() + i1,
         popart.reservedGradientPrefix() + i2,
         popart.reservedGradientPrefix() + i3,
-        popart.reservedGradientPrefix() + i4
+        popart.reservedGradientPrefix() + i4,
     ]
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
             anchor_names[2]: popart.AnchorReturnType("All"),
-            anchor_names[3]: popart.AnchorReturnType("All")
-        })
+            anchor_names[3]: popart.AnchorReturnType("All"),
+        },
+    )
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -300,12 +308,7 @@ def test_matmul_train_cached_by_default():
         matmul2_lhs = np.ones(matmul2_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul2_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -316,9 +319,10 @@ def test_matmul_train_cached_by_default():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only three matmul
-    assert (num_matmuls == 3)
+    assert num_matmuls == 3
 
 
 @tu.requires_ipu_model
@@ -357,29 +361,33 @@ def test_gemm_train_cached_by_default():
         popart.reservedGradientPrefix() + i3,
         popart.reservedGradientPrefix() + i4,
         popart.reservedGradientPrefix() + i5,
-        popart.reservedGradientPrefix() + i6
+        popart.reservedGradientPrefix() + i6,
     ]
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             anchor_names[0]: popart.AnchorReturnType("All"),
             anchor_names[1]: popart.AnchorReturnType("All"),
             anchor_names[2]: popart.AnchorReturnType("All"),
             anchor_names[3]: popart.AnchorReturnType("All"),
             anchor_names[4]: popart.AnchorReturnType("All"),
-            anchor_names[5]: popart.AnchorReturnType("All")
-        })
+            anchor_names[5]: popart.AnchorReturnType("All"),
+        },
+    )
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -399,7 +407,7 @@ def test_gemm_train_cached_by_default():
             i3: gemm1_C,
             i4: gemm2_A,
             i5: gemm2_B,
-            i6: gemm2_C
+            i6: gemm2_C,
         }
         stepio = popart.PyStepIO(inputs, anchors)
 
@@ -411,9 +419,10 @@ def test_gemm_train_cached_by_default():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only three matmul
-    assert (num_matmuls == 3)
+    assert num_matmuls == 3
 
 
 @tu.requires_ipu_model
@@ -455,10 +464,9 @@ def test_outlining_bca1():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -470,12 +478,7 @@ def test_outlining_bca1():
         matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -485,9 +488,10 @@ def test_outlining_bca1():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only one matmul
-    assert (num_matmuls == 1)
+    assert num_matmuls == 1
 
 
 @tu.requires_ipu_model
@@ -535,10 +539,9 @@ def test_outlining_bca2():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -550,12 +553,7 @@ def test_outlining_bca2():
         matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -565,9 +563,10 @@ def test_outlining_bca2():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only one matmul
-    assert (num_matmuls == 1)
+    assert num_matmuls == 1
 
 
 @tu.requires_ipu_model
@@ -604,17 +603,15 @@ def test_outlining_bca3():
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("All")
-        })
+            popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i2: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i3: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i4: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -622,12 +619,14 @@ def test_outlining_bca3():
     optimizer = popart.ConstSGD(0.01)
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         userOptions=opts,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            loss=loss,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -639,12 +638,7 @@ def test_outlining_bca3():
         matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -656,9 +650,10 @@ def test_outlining_bca3():
     print("======================================")
     print(computeSets)
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only 3 matmuls (fwd, bwd_lhs, bwd_rhs)
-    assert (num_matmuls == 3)
+    assert num_matmuls == 3
 
 
 @tu.requires_ipu_model
@@ -695,17 +690,15 @@ def test_outlining_bca4():
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        1, {
+        1,
+        {
             o: popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i1:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i2:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i3:
-            popart.AnchorReturnType("All"),
-            popart.reservedGradientPrefix() + i4:
-            popart.AnchorReturnType("All")
-        })
+            popart.reservedGradientPrefix() + i1: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i2: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i3: popart.AnchorReturnType("All"),
+            popart.reservedGradientPrefix() + i4: popart.AnchorReturnType("All"),
+        },
+    )
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -722,7 +715,8 @@ def test_outlining_bca4():
             userOptions=opts,
             # Enable the matmul patterns
             patterns=popart.Patterns(popart.PatternsLevel.All),
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         anchors = session.initAnchorArrays()
 
@@ -734,12 +728,7 @@ def test_outlining_bca4():
         matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
         matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
 
-        inputs = {
-            i1: matmul1_lhs,
-            i2: matmul1_rhs,
-            i3: matmul2_lhs,
-            i4: matmul2_rhs
-        }
+        inputs = {i1: matmul1_lhs, i2: matmul1_rhs, i3: matmul2_lhs, i4: matmul2_rhs}
         stepio = popart.PyStepIO(inputs, anchors)
 
         session.run(stepio)
@@ -749,6 +738,7 @@ def test_outlining_bca4():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r"^.+/matmulGrouped/Conv_1/Convolve$", computeSets
+    )
     # There should be only one matmul
-    assert (num_matmuls == 1)
+    assert num_matmuls == 1

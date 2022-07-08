@@ -49,4 +49,4 @@ def test_constexpr_transpose_2D(op_tester):
     # for the fp16 cases
     op_tester.rtol = 1e-02
     op_tester.atol = 1e-04
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

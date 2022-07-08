@@ -28,5 +28,5 @@ def test_slice_basic(op_tester):
             result = np.expand_dims(result, axis=axis)
         return [result]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, "infer")

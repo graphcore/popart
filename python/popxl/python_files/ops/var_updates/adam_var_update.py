@@ -10,12 +10,13 @@ from .utils import handle_optimizer_value
 
 @op_debug_context
 def adam_var_update(
-        t: Tensor,
-        x: Tensor,
-        r1: Tensor,
-        r2: Tensor,
-        learning_rate: Optional[Union[float, Tensor]] = None,
-        max_weight_norm: Optional[Union[float, Tensor]] = None) -> Tensor:
+    t: Tensor,
+    x: Tensor,
+    r1: Tensor,
+    r2: Tensor,
+    learning_rate: Optional[Union[float, Tensor]] = None,
+    max_weight_norm: Optional[Union[float, Tensor]] = None,
+) -> Tensor:
     """
      Calculate the updated weight tensor for Adam/LAMB.
 
@@ -66,7 +67,7 @@ def adam_var_update(
 
     check_in_graph(g, t=t, x=x, r1=r1, r2=r2)
 
-    settings = ctx._get_op_settings('adam_var_update')
+    settings = ctx._get_op_settings("adam_var_update")
 
     ins = {0: t.id, 1: x.id, 2: r1.id, 3: r2.id}
 

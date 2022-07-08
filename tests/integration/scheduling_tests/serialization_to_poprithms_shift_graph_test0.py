@@ -3,6 +3,7 @@ import popart
 import os
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -26,12 +27,11 @@ def test_add_serialization(tmpdir):
     opts.serializedPoprithmsShiftGraphsDir = str(tmpdir)
 
     with tu.create_test_device() as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
 
         session.prepareDevice()
 
         jsons = [os.path.join(tmpdir, x) for x in os.listdir(tmpdir)]
-        assert (len(jsons) > 0)
+        assert len(jsons) > 0

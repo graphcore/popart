@@ -17,8 +17,7 @@ def square_fn(x: popxl.Tensor):
 @pytest.mark.parametrize("test_fn", [id_fn, square_fn])
 class TestRemoteCodeLoad:
     def test_remote_code_load_fn(self, test_fn) -> None:
-        """Test that the graph contains the correct op.
-        """
+        """Test that the graph contains the correct op."""
         ir = popxl.Ir()
         g = ir.main_graph
 
@@ -28,12 +27,12 @@ class TestRemoteCodeLoad:
             ops.remote_code_load(id_graph, "executable")
             ops.call(id_graph, a)
 
-        assert contains_op_of_type("RemoteCodeLoad",
-                                   _ir.op.exchange.RemoteCodeLoadOp, g)
+        assert contains_op_of_type(
+            "RemoteCodeLoad", _ir.op.exchange.RemoteCodeLoadOp, g
+        )
 
     def test_call_same_graph(self, test_fn) -> None:
-        """Test that you cannot load the code for the same graph you are in the context for.
-        """
+        """Test that you cannot load the code for the same graph you are in the context for."""
         ir = popxl.Ir()
         g = ir.main_graph
 
@@ -43,4 +42,5 @@ class TestRemoteCodeLoad:
             with pytest.raises(ValueError) as e_info:
                 ops.remote_code_load(g, "executable")  # same as parent graph.
             assert e_info.value.args[0].startswith(
-                f"The {ops.remote_code_load.__name__} op cannot load the code")
+                f"The {ops.remote_code_load.__name__} op cannot load the code"
+            )

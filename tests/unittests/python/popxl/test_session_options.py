@@ -10,4 +10,4 @@ def test_cache_env(monkeypatch):
     opts = ir._pb_ir.getSessionOptions()
 
     assert opts.enableEngineCaching
-    assert opts.cachePath == 'PATH_TO_CACHE'
+    assert opts.cachePath == "PATH_TO_CACHE"

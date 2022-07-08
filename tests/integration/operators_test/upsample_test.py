@@ -15,9 +15,9 @@ import numbers
 # an up to date version of torch.
 def interpolate(data, scale_factor):
     if version.parse(torch.__version__) >= version.parse("1.5.0"):
-        return F.interpolate(data,
-                             scale_factor=scale_factor,
-                             recompute_scale_factor=False)
+        return F.interpolate(
+            data, scale_factor=scale_factor, recompute_scale_factor=False
+        )
     else:
         if isinstance(scale_factor, numbers.Number):
             scale_factor = [scale_factor]
@@ -37,8 +37,7 @@ def interpolate(data, scale_factor):
 
         for i in range(len(out_shape)):
             if data.shape[i] != out_shape[i]:
-                result = resize_nearest(result, i, out_shape[i],
-                                        scale_factor[i])
+                result = resize_nearest(result, i, out_shape[i], scale_factor[i])
 
         return result
 
@@ -77,15 +76,12 @@ def test_upsample_grad(op_tester):
             o.backward(torch.tensor(d__o))
             return [o, a.grad, None]
 
-        op_tester.setPatterns(['MulArgGradOp', 'UpsampleToResize'],
-                              enableRuntimeAsserts=False)
-        op_tester.run(init_builder,
-                      reference,
-                      'train',
-                      opsets={
-                          "ai.onnx": 9,
-                          "ai.graphcore": 1
-                      })
+        op_tester.setPatterns(
+            ["MulArgGradOp", "UpsampleToResize"], enableRuntimeAsserts=False
+        )
+        op_tester.run(
+            init_builder, reference, "train", opsets={"ai.onnx": 9, "ai.graphcore": 1}
+        )
 
     run_test([2, 2], [2.0, 3.0])
     run_test([2, 2], [2.5, 2.5])

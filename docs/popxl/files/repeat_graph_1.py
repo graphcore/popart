@@ -1,9 +1,9 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 Demonstrate how to call the same subgraph with repeat op and `inputs_dict`.
 
 The argument `inputs_dict` connects the inputs of the subgraph with the caller graph.
-'''
+"""
 
 import numpy as np
 import popxl
@@ -21,13 +21,13 @@ class Linear(popxl.Module):
         self.W: popxl.Tensor = None
         self.b: popxl.Tensor = None
 
-    def build(self, x: popxl.Tensor, out_features: int,
-              bias: bool = True) -> Tuple[popxl.Tensor, ...]:
-        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32,
-                                   "W")
+    def build(
+        self, x: popxl.Tensor, out_features: int, bias: bool = True
+    ) -> Tuple[popxl.Tensor, ...]:
+        self.W = popxl.graph_input((x.shape[-1], out_features), popxl.float32, "W")
         y = x @ self.W
         if bias:
-            self.b = popxl.graph_input((out_features, ), popxl.float32, "b")
+            self.b = popxl.graph_input((out_features,), popxl.float32, "b")
             y = y + self.b
         return y
 
@@ -46,7 +46,7 @@ with main:
     # the x, W, b will be copied to the input of the `linear_graph` before the first iteration
     # the outputs of each iteration will be copied to the inputs of the next iteration
     # The outputs of the last iteration serve as the output of the `repeat` op
-    o, = ops.repeat(linear_graph, 2, x, inputs_dict={linear.W: W, linear.b: b})
+    (o,) = ops.repeat(linear_graph, 2, x, inputs_dict={linear.W: W, linear.b: b})
     # Op end
     # host store
     o_d2h = popxl.d2h_stream(o.shape, o.dtype, name="output_stream")

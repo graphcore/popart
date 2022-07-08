@@ -59,17 +59,13 @@ class TestCall:
                 _ = ops.call(add_weight_graph0, x0)
 
             # First call site
-            _ = ops.call(add_weight_graph0,
-                         x0,
-                         inputs_dict={add_weight0.w: w0})
+            _ = ops.call(add_weight_graph0, x0, inputs_dict={add_weight0.w: w0})
 
             # Second call site of same graph
             w1 = popxl.variable(1)
             x1 = popxl.variable(1)
 
-            _ = ops.call(add_weight_graph0,
-                         x1,
-                         inputs_dict={add_weight0.w: w1})
+            _ = ops.call(add_weight_graph0, x1, inputs_dict={add_weight0.w: w1})
 
             # Second graph from new instance of module.
             # ir.create_graph should be able to create a new unique Graph name.
@@ -77,9 +73,7 @@ class TestCall:
             add_weight_graph1 = ir.create_graph(add_weight1, x0)
 
             # Call second graph. Reuse x0 and w1 as inputs.
-            _ = ops.call(add_weight_graph1,
-                         x0,
-                         inputs_dict={add_weight1.w: w1})
+            _ = ops.call(add_weight_graph1, x0, inputs_dict={add_weight1.w: w1})
 
             # Third graph that reuses module add_weight1.
             # This calls `build` again, and thus simply overwrites add_weight1.w
@@ -90,9 +84,7 @@ class TestCall:
             assert old_w1_id != add_weight1.w.id
 
             # Call third graph. Reuse x1 and w0 as inputs.
-            _ = ops.call(add_weight_graph2,
-                         x1,
-                         inputs_dict={add_weight1.w: w0})
+            _ = ops.call(add_weight_graph2, x1, inputs_dict={add_weight1.w: w0})
 
         # Test main graph
         # 4 vars + y0 + y1 + y2 + y3
@@ -111,13 +103,10 @@ class TestCall:
         def test_subgraph(add_weight_subgraph: popxl.Graph):
             assert len(add_weight_subgraph.tensors) == 3
             assert len(add_weight_subgraph.variables) == 0
-            assert contains_op_of_type("Add", _ir.op.AddOp,
-                                       add_weight_subgraph)
+            assert contains_op_of_type("Add", _ir.op.AddOp, add_weight_subgraph)
             # Rudimentarily test subgraph has only expected ops with negative tests
-            assert not contains_op_of_type("Call", _ir.op.CallOp,
-                                           add_weight_subgraph)
-            assert not contains_op_of_type("Mul", _ir.op.MulOp,
-                                           add_weight_subgraph)
+            assert not contains_op_of_type("Call", _ir.op.CallOp, add_weight_subgraph)
+            assert not contains_op_of_type("Mul", _ir.op.MulOp, add_weight_subgraph)
 
         test_subgraph(add_weight_graph0)
         test_subgraph(add_weight_graph1)
@@ -195,7 +184,7 @@ class TestCall:
 
             g = ir.create_graph(identity_, a.spec)
 
-            x, = ops.call(g, 1)
+            (x,) = ops.call(g, 1)
 
         assert len(g.inputs) == 1
         assert len(g.outputs) == 1
@@ -213,7 +202,7 @@ class TestCall:
 
             g = ir.create_graph(identity_, a.spec)
 
-            x, = ops.call(g, inputs_dict={g.inputs[0]: 1})
+            (x,) = ops.call(g, inputs_dict={g.inputs[0]: 1})
 
         assert len(g.inputs) == 1
         assert len(g.outputs) == 1
@@ -247,7 +236,7 @@ class TestCall:
             g = ir.create_graph(identity_, a)
 
             with pytest.raises(TypeError):
-                ops.call(g, 'a')
+                ops.call(g, "a")
 
             with pytest.raises(TypeError):
                 ops.call(g, None)

@@ -46,8 +46,7 @@ def render_template(template_path: Path, **kwargs) -> Text:
     return template.render(**kwargs)
 
 
-def create_rendered_files(metadata: Dict, template_path: Path,
-                          out_dir: Path) -> None:
+def create_rendered_files(metadata: Dict, template_path: Path, out_dir: Path) -> None:
     """Create the generated files using the rendered templates.
 
     Will create a hpp and cpp file for each associated popart op header.
@@ -59,39 +58,41 @@ def create_rendered_files(metadata: Dict, template_path: Path,
     """
     proj_root = get_project_source_dir()
 
-    filename = metadata['filename']
-    op_header = os.path.relpath(filename, proj_root / 'willow/include')
-    related_header = op_header.replace('popart/', 'bindings/')
-    related_header = related_header.replace('.hpp', '.gen.hpp')
-    namespaces = metadata['namespaces']
-    fun_name = 'bind' + op_header.split('/')[-1].replace('.hpp',
-                                                         '').capitalize()
-    ops = metadata['ops']
+    filename = metadata["filename"]
+    op_header = os.path.relpath(filename, proj_root / "willow/include")
+    related_header = op_header.replace("popart/", "bindings/")
+    related_header = related_header.replace(".hpp", ".gen.hpp")
+    namespaces = metadata["namespaces"]
+    fun_name = "bind" + op_header.split("/")[-1].replace(".hpp", "").capitalize()
+    ops = metadata["ops"]
 
-    out = render_template(template_path,
-                          op_header=op_header,
-                          related_header=related_header,
-                          namespaces=namespaces,
-                          fun_name=fun_name,
-                          ops=ops)
+    out = render_template(
+        template_path,
+        op_header=op_header,
+        related_header=related_header,
+        namespaces=namespaces,
+        fun_name=fun_name,
+        ops=ops,
+    )
 
     filedir = out_dir / Path(*namespaces[1:])
-    filepath = filedir / op_header.split('/')[-1].replace('.hpp', '.gen.cpp')
+    filepath = filedir / op_header.split("/")[-1].replace(".hpp", ".gen.cpp")
     Path(filedir).mkdir(parents=True, exist_ok=True)
 
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
-    out = render_template(Path(str(template_path).replace('.cpp', '.hpp')),
-                          namespaces=namespaces,
-                          fun_name=fun_name)
-    filepath = Path(str(filepath).replace('.cpp', '.hpp'))
+    out = render_template(
+        Path(str(template_path).replace(".cpp", ".hpp")),
+        namespaces=namespaces,
+        fun_name=fun_name,
+    )
+    filepath = Path(str(filepath).replace(".cpp", ".hpp"))
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
 
-def create__all_file(metadatas: tuple, template_path: Path,
-                     out_dir: Path) -> None:
+def create__all_file(metadatas: tuple, template_path: Path, out_dir: Path) -> None:
     """Create the _all.cpp.gen file that runs all the binding functions.
 
     Args:
@@ -104,30 +105,27 @@ def create__all_file(metadatas: tuple, template_path: Path,
     fun_names = []
 
     for data in metadatas:
-        filename = data['filename']
-        namespaces = data['namespaces']
+        filename = data["filename"]
+        namespaces = data["namespaces"]
 
-        include = os.path.relpath(filename,
-                                  proj_root / 'willow/include/popart')
+        include = os.path.relpath(filename, proj_root / "willow/include/popart")
 
-        fun_name = '::'.join(namespaces[1:])
-        fun_name += '::' if len(fun_name) else ''
-        fun_name += 'bind'
-        fun_name += include.split('/')[-1].replace('.hpp', '').capitalize()
+        fun_name = "::".join(namespaces[1:])
+        fun_name += "::" if len(fun_name) else ""
+        fun_name += "bind"
+        fun_name += include.split("/")[-1].replace(".hpp", "").capitalize()
 
-        include = 'bindings/' + include
-        include = include.replace('.hpp', '.gen.hpp')
+        include = "bindings/" + include
+        include = include.replace(".hpp", ".gen.hpp")
 
         includes.append(include)
         fun_names.append(fun_name)
 
     filedir = out_dir
-    filepath = filedir / '_all.gen.cpp'
+    filepath = filedir / "_all.gen.cpp"
     Path(filedir).mkdir(parents=True, exist_ok=True)
 
-    out = render_template(template_path,
-                          includes=includes,
-                          fun_names=fun_names)
+    out = render_template(template_path, includes=includes, fun_names=fun_names)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(out)
 
@@ -141,7 +139,7 @@ def create_graph_file(metadatas: tuple, template_path: Path, out_dir: Path):
         out_dir (Path): Directory to save to.
     """
     filedir = out_dir
-    filepath = filedir / '../graph.gen.cpp'
+    filepath = filedir / "../graph.gen.cpp"
     Path(filedir).mkdir(parents=True, exist_ok=True)
 
     out = render_template(template_path, metadatas=metadatas)
@@ -158,45 +156,42 @@ def main(json_path: Path, out: Path, jobs: int) -> None:
         jobs (int): How many processes to use.
     """
     proj_root = get_project_source_dir()
-    template_path = (proj_root /
-                     'python/popart._internal.ir/templates/op/_op.cpp.j2')
+    template_path = proj_root / "python/popart._internal.ir/templates/op/_op.cpp.j2"
 
-    with open(json_path, 'r', encoding='utf-8') as f:
+    with open(json_path, "r", encoding="utf-8") as f:
         metadatas = json.load(f)
 
     with Pool(jobs) as p:
         args = [(metadata, template_path, out) for metadata in metadatas]
         p.starmap(create_rendered_files, args)
 
-    template_path = (proj_root /
-                     'python/popart._internal.ir/templates/op/_all.cpp.j2')
+    template_path = proj_root / "python/popart._internal.ir/templates/op/_all.cpp.j2"
     create__all_file(metadatas, template_path, out)
 
-    template_path = (proj_root /
-                     'python/popart._internal.ir/templates/graph.cpp.j2')
+    template_path = proj_root / "python/popart._internal.ir/templates/graph.cpp.j2"
     create_graph_file(metadatas, template_path, out)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--json_path',
+        "--json_path",
         type=str,
         required=True,
-        help='Path to the op metadata file generated by `gen_op_metadata.py`.',
+        help="Path to the op metadata file generated by `gen_op_metadata.py`.",
     )
     parser.add_argument(
-        '--out',
+        "--out",
         type=str,
         required=True,
-        help='Path to the dir in which bindings will be written.',
+        help="Path to the dir in which bindings will be written.",
     )
     parser.add_argument(
-        '--jobs',
+        "--jobs",
         type=int,
         required=False,
         default=16,
-        help='Number of jobs to use when multiprocessing hpp bindings.',
+        help="Number of jobs to use when multiprocessing hpp bindings.",
     )
     args_ = parser.parse_args()
 

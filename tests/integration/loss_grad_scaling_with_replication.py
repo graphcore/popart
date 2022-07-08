@@ -43,13 +43,14 @@ def test_loss_grad_scaling_with_replication():
         opts.accumulationAndReplicationReductionType = reduction
 
         with tu.create_test_device(repl_factor) as device:
-            session = popart.TrainingSession(fnModel=proto,
-                                             deviceInfo=device,
-                                             dataFlow=popart.DataFlow(
-                                                 1, [anchor_id]),
-                                             loss=loss_id,
-                                             optimizer=popart.ConstSGD(0.1),
-                                             userOptions=opts)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                deviceInfo=device,
+                dataFlow=popart.DataFlow(1, [anchor_id]),
+                loss=loss_id,
+                optimizer=popart.ConstSGD(0.1),
+                userOptions=opts,
+            )
 
             session.prepareDevice()
             anchors = session.initAnchorArrays()
@@ -64,5 +65,4 @@ def test_loss_grad_scaling_with_replication():
 
 optimizers = []
 optimizers.append(popart.ConstSGD(0.1))  # const loss scaling
-optimizers.append(popart.SGD({"lossScaling":
-                              (2.5, False)}))  # variable loss scaling
+optimizers.append(popart.SGD({"lossScaling": (2.5, False)}))  # variable loss scaling

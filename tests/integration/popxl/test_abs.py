@@ -7,7 +7,7 @@ import torch
 
 class TestAbs:
     def test_abs(self):
-        input_data = np.full((10, 20), -1.5).astype('float32')
+        input_data = np.full((10, 20), -1.5).astype("float32")
         ir = popxl.Ir()
         main = ir.main_graph
 
@@ -27,5 +27,6 @@ class TestAbs:
         torch_outputs = torch_t.abs()
 
         # compare the result between PopXL and torch
-        np.testing.assert_equal(torch_outputs.detach().numpy(),
-                                list(outputs.values())[0])
+        np.testing.assert_equal(
+            torch_outputs.detach().numpy(), list(outputs.values())[0]
+        )

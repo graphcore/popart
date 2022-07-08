@@ -7,6 +7,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -21,8 +22,13 @@ def identity(builder, x, _):
 
 @pytest.mark.parametrize(
     "a, b, target",
-    [[reshape, reshape, "Reshape"], [identity, identity, "Identity"],
-     [reshape, identity, "Reshape"], [identity, reshape, "Reshape"]])
+    [
+        [reshape, reshape, "Reshape"],
+        [identity, identity, "Identity"],
+        [reshape, identity, "Reshape"],
+        [identity, reshape, "Reshape"],
+    ],
+)
 def test_view_simplify(a, b, target):
     d1 = np.random.randn(10, 20).astype(np.float32)
 
@@ -39,9 +45,11 @@ def test_view_simplify(a, b, target):
     opts.outlineThreshold = 100000
 
     with tu.create_test_device() as device:
-        sess = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                       deviceInfo=device,
-                                       dataFlow=popart.DataFlow(1, [o]))
+        sess = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            deviceInfo=device,
+            dataFlow=popart.DataFlow(1, [o]),
+        )
         sess.prepareDevice()
 
         anchors = sess.initAnchorArrays()

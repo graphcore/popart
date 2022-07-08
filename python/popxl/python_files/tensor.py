@@ -9,7 +9,13 @@ import numpy as np
 
 import popart._internal.ir as _ir
 from popxl import dtypes
-from popxl.context import gcg, gmg, debug_context_frame_offset, _execution_context, get_main_graph
+from popxl.context import (
+    gcg,
+    gmg,
+    debug_context_frame_offset,
+    _execution_context,
+    get_main_graph,
+)
 from popxl.typing_ import NewAliasAnnotation
 from popxl.errors import UndefinedValue
 from popxl.utils import to_numpy
@@ -29,6 +35,7 @@ host_tensor_types = tuple([np.ndarray, Iterable])
 
 try:
     import torch
+
     HostTensor = Union[HostTensor, torch.Tensor]
     host_tensor_types = tuple([*host_tensor_types, torch.Tensor])
 except ModuleNotFoundError:
@@ -37,21 +44,23 @@ except ModuleNotFoundError:
 HostScalarTensor = Union[ScalarType, HostTensor]
 """Container and scalar types that can be coerced into a Tensor"""
 
-TensorLike = Union['Tensor', HostScalarTensor]
+TensorLike = Union["Tensor", HostScalarTensor]
 """Tensors and types that can be coerced into a Tensor"""
 
 TILE_SET_MAP = {
-    _ir.TileSet.Compute: 'compute',
-    _ir.TileSet.IO: 'io',
-    _ir.TileSet.Undefined: 'undefined',
+    _ir.TileSet.Compute: "compute",
+    _ir.TileSet.IO: "io",
+    _ir.TileSet.Undefined: "undefined",
 }
 
 
 class TensorSpec(Mapping):
-    def __init__(self,
-                 shape: Tuple[int, ...],
-                 dtype: dtypes.dtype,
-                 meta_shape: Tuple[int, ...] = ()):
+    def __init__(
+        self,
+        shape: Tuple[int, ...],
+        dtype: dtypes.dtype,
+        meta_shape: Tuple[int, ...] = (),
+    ):
         """
         Construct a description of a tensor.
 
@@ -69,11 +78,7 @@ class TensorSpec(Mapping):
         self.meta_shape = meta_shape
 
     def to_dict(self):
-        return {
-            'shape': self.shape,
-            'dtype': self.dtype,
-            'meta_shape': self.meta_shape
-        }
+        return {"shape": self.shape, "dtype": self.dtype, "meta_shape": self.meta_shape}
 
     def to_tuple(self):
         return self.shape, self.dtype, self.meta_shape
@@ -101,10 +106,9 @@ class Tensor:
         raise RuntimeError("popxl.Tensor cannot be constructed directly.")
 
     # Dictionary to track Tensor subclasses
-    _tensor_types: Dict[str, 'Type[Tensor]'] = {}
+    _tensor_types: Dict[str, "Type[Tensor]"] = {}
 
-    def __init_subclass__(cls, tensor_type: Optional[str] = None,
-                          **kwargs) -> None:
+    def __init_subclass__(cls, tensor_type: Optional[str] = None, **kwargs) -> None:
         """
         Construct a subclass.
 
@@ -118,9 +122,10 @@ class Tensor:
             Tensor._tensor_types[tensor_type] = cls
 
     @classmethod
-    def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> 'Tensor':
-        specifc_cls = cls._tensor_types.get(pb_tensor.tensor_type(),
-                                            None)  # type: ignore
+    def _from_pb_tensor(cls, pb_tensor: _ir.Tensor) -> "Tensor":
+        specifc_cls = cls._tensor_types.get(
+            pb_tensor.tensor_type(), None
+        )  # type: ignore
         if specifc_cls is not None and cls != specifc_cls:
             return specifc_cls._from_pb_tensor(pb_tensor)
 
@@ -199,13 +204,13 @@ class Tensor:
 
     @property
     @debug_context_frame_offset(2)
-    def T(self) -> 'Tensor':
+    def T(self) -> "Tensor":
         """Return the tensor transposed with reversed axes."""
         return self.transpose()
 
     @property
     @debug_context_frame_offset(2)
-    def T_(self) -> 'Tensor':
+    def T_(self) -> "Tensor":
         """Return the tensor transposed with reversed axes in-place."""
         return self.transpose_()
 
@@ -217,8 +222,9 @@ class Tensor:
         Raises:
             UndefinedValue: If the IPU is undefined.
         """
-        ipu, _ = self._get_ipu_and_tile_set(raise_on_undefined_tile_set=False,
-                                            raise_on_undefined_ipu=True)
+        ipu, _ = self._get_ipu_and_tile_set(
+            raise_on_undefined_tile_set=False, raise_on_undefined_ipu=True
+        )
         return ipu
 
     @property
@@ -230,13 +236,15 @@ class Tensor:
             UndefinedValue: If the tile set is undefined.
         """
         _, tile_set = self._get_ipu_and_tile_set(
-            raise_on_undefined_tile_set=True, raise_on_undefined_ipu=False)
+            raise_on_undefined_tile_set=True, raise_on_undefined_ipu=False
+        )
         return tile_set
 
     @property
-    def ir(self) -> 'Ir':
+    def ir(self) -> "Ir":
         """Return the `Ir` that the tensor is a member of."""
         from popxl import Ir
+
         return Ir._from_pb(self._pb_tensor.getIr())
 
     @property
@@ -253,8 +261,7 @@ class Tensor:
 
     ## Methods
     @debug_context_frame_offset(1)
-    def transpose(self,
-                  permutation: Optional[Iterable[int]] = None) -> 'Tensor':
+    def transpose(self, permutation: Optional[Iterable[int]] = None) -> "Tensor":
         """
         Permute the axes of a tensor.
 
@@ -268,11 +275,11 @@ class Tensor:
                 The transposed tensor.
         """
         import popxl.ops as ops
+
         return ops.transpose(self, permutation)
 
     @debug_context_frame_offset(1)
-    def transpose_(self,
-                   permutation: Optional[Iterable[int]] = None) -> 'Tensor':
+    def transpose_(self, permutation: Optional[Iterable[int]] = None) -> "Tensor":
         """
         Permute the axes of a tensor in place.
 
@@ -291,47 +298,53 @@ class Tensor:
                 The transposed tensor.
         """
         import popxl.ops as ops
+
         return ops.transpose_(self, permutation)
 
     @debug_context_frame_offset(1)
-    def reshape(self, shape: Iterable[int]) -> 'Tensor':
+    def reshape(self, shape: Iterable[int]) -> "Tensor":
         """Return `ops.reshape(self, shape)`."""
         import popxl.ops as ops
+
         return ops.reshape(self, shape)
 
     @debug_context_frame_offset(1)
-    def reshape_(self, shape: Iterable[int]) -> 'Tensor':
+    def reshape_(self, shape: Iterable[int]) -> "Tensor":
         """Return ops.reshape_(self, shape) inplace."""
         import popxl.ops as ops
+
         return ops.reshape_(self, shape)
 
     @debug_context_frame_offset(1)
-    def flatten(self) -> 'Tensor':
+    def flatten(self) -> "Tensor":
         """Return ops.flatten(self)."""
         import popxl.ops as ops
+
         return ops.flatten(self)
 
     @debug_context_frame_offset(1)
-    def flatten_(self) -> 'Tensor':
+    def flatten_(self) -> "Tensor":
         """Return ops.flatten_(self) inplace."""
         import popxl.ops as ops
+
         return ops.flatten_(self)
 
     @debug_context_frame_offset(1)
-    def detach(self) -> 'Tensor':
+    def detach(self) -> "Tensor":
         """Return the detached tensor."""
         import popxl.ops as ops
+
         return ops.detach(self)
 
     @debug_context_frame_offset(1)
-    def detach_(self) -> 'Tensor':
+    def detach_(self) -> "Tensor":
         """Return this tensor detached inplace."""
         import popxl.ops as ops
+
         return ops.detach_(self)
 
     @debug_context_frame_offset(1)
-    def copy_to_ipu(self, destination: int,
-                    source: Optional[int] = None) -> 'Tensor':
+    def copy_to_ipu(self, destination: int, source: Optional[int] = None) -> "Tensor":
         """
         Copy a tensor to an IPU.
 
@@ -344,13 +357,14 @@ class Tensor:
                 If the tensor does not have a producer a source **must** be provided.
         """
         import popxl.ops as ops
+
         return ops.ipu_copy(self, destination, source)
 
     ## Private functions
     def _get_ipu_and_tile_set(
-            self,
-            raise_on_undefined_tile_set: bool = True,
-            raise_on_undefined_ipu: bool = True,
+        self,
+        raise_on_undefined_tile_set: bool = True,
+        raise_on_undefined_ipu: bool = True,
     ) -> Tuple[int, Literal["compute", "io", "undefined"]]:
         """
         Determine the IPU and tile set of the tensor.
@@ -360,18 +374,18 @@ class Tensor:
         """
         ipu, tile_set = self._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
         tile_set = TILE_SET_MAP[tile_set]
-        if raise_on_undefined_tile_set and tile_set == 'undefined':
+        if raise_on_undefined_tile_set and tile_set == "undefined":
             raise UndefinedValue("Tensor's tile set is undefined.")
         if raise_on_undefined_ipu and ipu == -1:
             raise UndefinedValue("Tensor's IPU is undefined.")
         return ipu, tile_set
 
     def _ensure_tensor(
-            self,
-            value: TensorLike,
-            dtype: Optional[dtypes.dtype] = None,
-            raise_on_empty=True,
-    ) -> 'Tensor':
+        self,
+        value: TensorLike,
+        dtype: Optional[dtypes.dtype] = None,
+        raise_on_empty=True,
+    ) -> "Tensor":
         """
         Ensure that all operands are of type `Tensor`.
 
@@ -394,7 +408,8 @@ class Tensor:
                 raise ValueError(
                     "The value has 0 elements - this is most likely a mistake. "
                     "If not, initialise the tensor explicitly before using in an operation. For example: `popxl.variable([])`. "
-                    f"Type: {type(value)}. Value: {value}")
+                    f"Type: {type(value)}. Value: {value}"
+                )
             return t
 
     ## Dunders
@@ -407,8 +422,7 @@ class Tensor:
 
     def __eq__(self, other: Any) -> bool:
         """Return the Tensor equality, based on Tensor and Ir `id`."""
-        return isinstance(
-            other, Tensor) and self.id == other.id and self.ir == other.ir
+        return isinstance(other, Tensor) and self.id == other.id and self.ir == other.ir
 
     def __len__(self) -> int:
         """Return the size of the 0th axis or raises a UndefinedValue."""
@@ -418,125 +432,146 @@ class Tensor:
             raise ValueError("Tensor is a scalar and doesn't have a length.")
 
     @debug_context_frame_offset(1)
-    def __add__(self, other: TensorLike) -> 'Tensor':
+    def __add__(self, other: TensorLike) -> "Tensor":
         """Return `ops.add(self, other)`."""
         import popxl.ops as ops
+
         return ops.add(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __radd__(self, other: TensorLike) -> 'Tensor':
+    def __radd__(self, other: TensorLike) -> "Tensor":
         """Return `ops.add(other, self)`."""
         import popxl.ops as ops
+
         return ops.add(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __iadd__(self, other: TensorLike) -> 'Tensor':
+    def __iadd__(self, other: TensorLike) -> "Tensor":
         """Return the result of +=.
 
         Uses ops.add_ to add 'other' inplace on this tensor (on the left hand side, i.e on to this tensor).
         """
         import popxl.ops as ops
+
         ops.add_(self, self._ensure_tensor(other))
         return self
 
     @debug_context_frame_offset(1)
-    def __sub__(self, other: TensorLike) -> 'Tensor':
+    def __sub__(self, other: TensorLike) -> "Tensor":
         """Return `ops.sub(self, other)`."""
         import popxl.ops as ops
+
         return ops.sub(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rsub__(self, other: TensorLike) -> 'Tensor':
+    def __rsub__(self, other: TensorLike) -> "Tensor":
         """Return `ops.sub(other, self)`."""
         import popxl.ops as ops
+
         return ops.sub(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __mul__(self, other: TensorLike) -> 'Tensor':
+    def __mul__(self, other: TensorLike) -> "Tensor":
         """Return `ops.mul(self, other)`."""
         import popxl.ops as ops
+
         return ops.mul(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rmul__(self, other: TensorLike) -> 'Tensor':
+    def __rmul__(self, other: TensorLike) -> "Tensor":
         """Return `ops.mul(other, self)`."""
         import popxl.ops as ops
+
         return ops.mul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __truediv__(self, other: TensorLike) -> 'Tensor':
+    def __truediv__(self, other: TensorLike) -> "Tensor":
         """Return `ops.div(self, other)`."""
         import popxl.ops as ops
+
         return ops.div(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rtruediv__(self, other: TensorLike) -> 'Tensor':
+    def __rtruediv__(self, other: TensorLike) -> "Tensor":
         """Return `ops.div(other, self)`."""
         import popxl.ops as ops
+
         return ops.div(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __mod__(self, other: TensorLike) -> 'Tensor':
+    def __mod__(self, other: TensorLike) -> "Tensor":
         """Return `ops.fmod(self, other)`."""
         import popxl.ops as ops
+
         return ops.fmod(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rmod__(self, other: TensorLike) -> 'Tensor':
+    def __rmod__(self, other: TensorLike) -> "Tensor":
         """Return `ops.fmod(other, self)`."""
         import popxl.ops as ops
+
         return ops.fmod(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __neg__(self) -> 'Tensor':
+    def __neg__(self) -> "Tensor":
         """Return `ops.negate(self)`."""
         import popxl.ops as ops
+
         return ops.negate(self)
 
     @debug_context_frame_offset(1)
-    def __matmul__(self, other: TensorLike) -> 'Tensor':
+    def __matmul__(self, other: TensorLike) -> "Tensor":
         """Return `ops.matmul(self, other)`."""
         import popxl.ops as ops
+
         return ops.matmul(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rmatmul__(self, other: TensorLike) -> 'Tensor':
+    def __rmatmul__(self, other: TensorLike) -> "Tensor":
         """Return `ops.matmul(other, self)`."""
         import popxl.ops as ops
+
         return ops.matmul(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __and__(self, other: TensorLike) -> 'Tensor':
+    def __and__(self, other: TensorLike) -> "Tensor":
         """Return `ops.logical_and(self, other)`."""
         import popxl.ops as ops
+
         return ops.logical_and(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __rand__(self, other: TensorLike) -> 'Tensor':
+    def __rand__(self, other: TensorLike) -> "Tensor":
         """Return `ops.logical_and(other, self)`."""
         import popxl.ops as ops
+
         return ops.logical_and(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __or__(self, other: TensorLike) -> 'Tensor':
+    def __or__(self, other: TensorLike) -> "Tensor":
         """Return `ops.logical_or(self, other)`."""
         import popxl.ops as ops
+
         return ops.logical_or(self, self._ensure_tensor(other))
 
     @debug_context_frame_offset(1)
-    def __ror__(self, other: TensorLike) -> 'Tensor':
+    def __ror__(self, other: TensorLike) -> "Tensor":
         """Return `ops.logical_or(other, self)`."""
         import popxl.ops as ops
+
         return ops.logical_or(self._ensure_tensor(other), self)
 
     @debug_context_frame_offset(1)
-    def __invert__(self) -> 'Tensor':
+    def __invert__(self) -> "Tensor":
         """Return `ops.logical_not(self)`."""
         import popxl.ops as ops
+
         return ops.logical_not(self)
 
-    def __getitem__(self, key: Union[int, slice, Tuple[Union[int, slice], ...],
-                                     'Tensor', HostTensor]) -> 'Tensor':
+    def __getitem__(
+        self,
+        key: Union[int, slice, Tuple[Union[int, slice], ...], "Tensor", HostTensor],
+    ) -> "Tensor":
         """
         Support for slicing, integer and boolean indexing.
 
@@ -560,24 +595,26 @@ class Tensor:
         .. code-block:: python
 
             # Slicing
-            x[0]        # Select all elements where i==0 for axis 0. The output will not include the 0th axis (squeezed)
-            x[0,1]      # Select all elements where i==0, j==1 for axis 0 and 1
-            x[0:2]      # Slice axis 0 between index 0 and 2
-            x[:2,3:]    # Slice axis 0 upto 2 and axis 1 from index 3
-            x[:,::-1]   # Select all elements for axis 0 and reverse axis 1
+            x[
+                0
+            ]  # Select all elements where i==0 for axis 0. The output will not include the 0th axis (squeezed)
+            x[0, 1]  # Select all elements where i==0, j==1 for axis 0 and 1
+            x[0:2]  # Slice axis 0 between index 0 and 2
+            x[:2, 3:]  # Slice axis 0 upto 2 and axis 1 from index 3
+            x[:, ::-1]  # Select all elements for axis 0 and reverse axis 1
 
             # Integer indexing
             indices = popxl.variable([0, 2], dtype=popxl.int32)
-            x[indices] == Tensor([x[0], x[2]]) # Select elements [0, 2] from `x`
+            x[indices] == Tensor([x[0], x[2]])  # Select elements [0, 2] from `x`
 
             # Boolean indexing
             x.shape == (3, 1)
             mask = popxl.variable([True, False, True], dtype=popxl.bool)
-            x[mask] == Tensor([x[0], 0, x[1]]) # Keep elements 0 and 2. Zero element 1.
+            x[mask] == Tensor([x[0], 0, x[1]])  # Keep elements 0 and 2. Zero element 1.
 
             x.shape == (3, 2)
             mask = popxl.variable([True, False, True], dtype=popxl.bool)
-            x[mask] == Tensor([x[0], 0, x[1]]) # Broadcast mask: zero row 1
+            x[mask] == Tensor([x[0], 0, x[1]])  # Broadcast mask: zero row 1
 
         """
 
@@ -586,11 +623,11 @@ class Tensor:
         if isinstance(key, (bool, str)):
             pass  # will raise error at end of function
 
-        elif (isinstance(key, (slice, int))
-              or (isinstance(key, tuple)
-                  and all(isinstance(e, (slice, int)) for e in key))):
+        elif isinstance(key, (slice, int)) or (
+            isinstance(key, tuple) and all(isinstance(e, (slice, int)) for e in key)
+        ):
             # Basic slicing (integer or slices)
-            key = (key, ) if isinstance(key, (slice, int)) else key
+            key = (key,) if isinstance(key, (slice, int)) else key
 
             start = []
             stop = []
@@ -617,8 +654,7 @@ class Tensor:
             return out
 
         # Don't capture scalars
-        elif isinstance(key, Tensor) or isinstance(key,
-                                                   tuple(host_tensor_types)):
+        elif isinstance(key, Tensor) or isinstance(key, tuple(host_tensor_types)):
             if not isinstance(key, Tensor):
                 key = constant(key)
 
@@ -632,7 +668,8 @@ class Tensor:
 
         raise TypeError(
             "Only integers, slices (`:`), integer tensors and boolean tensors are valid indices. "
-            f"Not a valid Type: {type(key)}. Value: {key}.")
+            f"Not a valid Type: {type(key)}. Value: {key}."
+        )
 
     # Prevents fallback of __iter__ and __contains__ to __getitem__
     # which can produce unhelpful errors
@@ -656,13 +693,14 @@ class Variable(Tensor, tensor_type="Variable"):
         self._replica_grouping: Union[None, ReplicaGrouping] = None
 
     @debug_context_frame_offset(1)
-    def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
+    def copy_to_ipu(self, dst: int, src: int) -> "Tensor":
         """
         Return ``ops.ipu_copy(self, dst, src)``.
 
         Must provide a src value.
         """
         import popxl.ops as ops
+
         return ops.ipu_copy(self, dst, src)
 
     @property
@@ -691,11 +729,16 @@ class Variable(Tensor, tensor_type="Variable"):
             Literal["one_per_group", "all_replicas"]: The string representing the retieval_mode.
         """
         import popart
-        if self._pb_tensor.getVariableSettings().getRetrievalMode(
-        ) == popart.VariableRetrievalMode.OnePerGroup:
+
+        if (
+            self._pb_tensor.getVariableSettings().getRetrievalMode()
+            == popart.VariableRetrievalMode.OnePerGroup
+        ):
             return "one_per_group"
-        elif self._pb_tensor.getVariableSettings().getRetrievalMode(
-        ) == popart.VariableRetrievalMode.AllReplicas:
+        elif (
+            self._pb_tensor.getVariableSettings().getRetrievalMode()
+            == popart.VariableRetrievalMode.AllReplicas
+        ):
             return "all_replicas"
         else:
             raise ValueError(
@@ -711,8 +754,11 @@ class Variable(Tensor, tensor_type="Variable"):
         dimension safely (ie. checks if the outer dimension matches an expected
         outer dimension).
         """
-        return tuple(self._pb_tensor.getVariableSettings().shapeOnReplica(
-            self.shape_on_host, self.ir.replication_factor, self.name))
+        return tuple(
+            self._pb_tensor.getVariableSettings().shapeOnReplica(
+                self.shape_on_host, self.ir.replication_factor, self.name
+            )
+        )
 
     @property
     def shape_on_host(self):
@@ -723,8 +769,11 @@ class Variable(Tensor, tensor_type="Variable"):
         dimension safely (ie. checks if the outer dimension matches an expected
         outer dimension).
         """
-        return tuple(self._pb_tensor.getVariableSettings().shapeOnHost(
-            self.shape, self.ir.replication_factor))
+        return tuple(
+            self._pb_tensor.getVariableSettings().shapeOnHost(
+                self.shape, self.ir.replication_factor
+            )
+        )
 
 
 class Constant(Tensor, tensor_type="Const"):
@@ -734,23 +783,25 @@ class Constant(Tensor, tensor_type="Const"):
     """
 
     @debug_context_frame_offset(1)
-    def copy_to_ipu(self, dst: int, src: int) -> 'Tensor':
+    def copy_to_ipu(self, dst: int, src: int) -> "Tensor":
         """
         Return ``ops.ipu_copy(self, dst, src)``.
 
         Must provide a src value.
         """
         import popxl.ops as ops
+
         return ops.ipu_copy(self, dst, src)
 
 
-def variable(data: HostScalarTensor,
-             dtype: Optional[dtypes.dtype] = None,
-             name: Optional[str] = None,
-             downcast: bool = True,
-             replica_grouping: Optional[ReplicaGrouping] = None,
-             retrieval_mode: Optional[
-                 Literal["one_per_group", "all_replicas"]] = None) -> Variable:
+def variable(
+    data: HostScalarTensor,
+    dtype: Optional[dtypes.dtype] = None,
+    name: Optional[str] = None,
+    downcast: bool = True,
+    replica_grouping: Optional[ReplicaGrouping] = None,
+    retrieval_mode: Optional[Literal["one_per_group", "all_replicas"]] = None,
+) -> Variable:
     """
     Create a variable tensor that is initialised with data during graph creation.
 
@@ -762,6 +813,7 @@ def variable(data: HostScalarTensor,
     .. code-block:: python
 
         import popxl
+
         with popxl.Ir().main_graph:
             a = popxl.variable(0)
 
@@ -808,7 +860,8 @@ def variable(data: HostScalarTensor,
             "It can only be initialised within the main graph. "
             "Please create a graph input for this variable (`popxl.graph_input`) "
             "or use a constant tensor (`popxl.constant`). "
-            "See popxl user guide for more details.")
+            "See popxl user guide for more details."
+        )
 
     np_data = to_numpy(data, dtype, downcast)
     popxl_dt = dtypes.dtype.as_dtype(np_data)
@@ -818,22 +871,24 @@ def variable(data: HostScalarTensor,
 
     if replica_grouping is None:
         replica_grouping = g.ir.replica_grouping()
-    pb_g.addVarInit(pb_id, info, np_data,
-                    replica_grouping._to_variable_settings(retrieval_mode))
+    pb_g.addVarInit(
+        pb_id, info, np_data, replica_grouping._to_variable_settings(retrieval_mode)
+    )
 
     return Variable._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
 def remote_variable(
-        data: HostScalarTensor,
-        remote_buffer: "RemoteBuffer",
-        offset: int = 0,
-        dtype: Optional[dtypes.dtype] = None,
-        name: Optional[str] = None,
-        downcast: bool = True,
-        replica_grouping: Optional[ReplicaGrouping] = None,
-        retrieval_mode: Optional[
-            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+    data: HostScalarTensor,
+    remote_buffer: "RemoteBuffer",
+    offset: int = 0,
+    dtype: Optional[dtypes.dtype] = None,
+    name: Optional[str] = None,
+    downcast: bool = True,
+    replica_grouping: Optional[ReplicaGrouping] = None,
+    retrieval_mode: Optional[
+        Literal["one_per_group", "all_replicas"]
+    ] = "one_per_group",
 ) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
 
@@ -877,26 +932,27 @@ def remote_variable(
         Variable: The remote variable.
     """
 
-    var = variable(data, dtype, name, downcast, replica_grouping,
-                   retrieval_mode)
+    var = variable(data, dtype, name, downcast, replica_grouping, retrieval_mode)
 
     var._pb_tensor.setTensorLocationInfo(
-        _ir.TensorLocation(_ir.TensorStorage.OffChip,
-                           _ir.ReplicatedTensorSharding.Off),
-        remote_buffer.remote_buffer_id, offset)
+        _ir.TensorLocation(_ir.TensorStorage.OffChip, _ir.ReplicatedTensorSharding.Off),
+        remote_buffer.remote_buffer_id,
+        offset,
+    )
     return var
 
 
 def remote_replica_sharded_variable(
-        data: HostScalarTensor,
-        remote_buffer: "RemoteBuffer",
-        offset: int = 0,
-        dtype: Optional[dtypes.dtype] = None,
-        name: Optional[str] = None,
-        downcast: bool = True,
-        replica_grouping: Optional[ReplicaGrouping] = None,
-        retrieval_mode: Optional[
-            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+    data: HostScalarTensor,
+    remote_buffer: "RemoteBuffer",
+    offset: int = 0,
+    dtype: Optional[dtypes.dtype] = None,
+    name: Optional[str] = None,
+    downcast: bool = True,
+    replica_grouping: Optional[ReplicaGrouping] = None,
+    retrieval_mode: Optional[
+        Literal["one_per_group", "all_replicas"]
+    ] = "one_per_group",
 ) -> Variable:
     """Create a variable Tensor that is stored in remote memory.
        The variable is scattered in equal shards across replicas (replicated tensor sharding (RTS)
@@ -970,24 +1026,36 @@ def remote_replica_sharded_variable(
             f"The buffer's meta_shape has already been set to: {remote_buffer.meta_shape}."
         )
 
-    var = remote_variable(data, remote_buffer, offset, dtype, name, downcast,
-                          replica_grouping, retrieval_mode)
+    var = remote_variable(
+        data,
+        remote_buffer,
+        offset,
+        dtype,
+        name,
+        downcast,
+        replica_grouping,
+        retrieval_mode,
+    )
 
     # Note: shardingDomain is not required to be set.
     # It is only used by the StreamingMemoryOpInserter transform.
-    tensor_location = _ir.TensorLocation(_ir.TensorStorage.OffChip,
-                                         _ir.ReplicatedTensorSharding.On)
+    tensor_location = _ir.TensorLocation(
+        _ir.TensorStorage.OffChip, _ir.ReplicatedTensorSharding.On
+    )
 
     var._pb_tensor.setTensorLocationInfo(
-        tensor_location, remote_buffer.remote_buffer_id, offset)
+        tensor_location, remote_buffer.remote_buffer_id, offset
+    )
     return var
 
 
-def replica_sharded_buffer(shape: Tuple[int, ...],
-                           dtype: dtypes.dtype,
-                           replica_grouping: Optional[ReplicaGrouping] = None,
-                           shard_grouping: Optional[ReplicaGrouping] = None,
-                           entries: int = 1):
+def replica_sharded_buffer(
+    shape: Tuple[int, ...],
+    dtype: dtypes.dtype,
+    replica_grouping: Optional[ReplicaGrouping] = None,
+    shard_grouping: Optional[ReplicaGrouping] = None,
+    entries: int = 1,
+):
     """Create a RemoteBuffer for use with replicated tensor sharded variables.
 
     Args:
@@ -1039,7 +1107,7 @@ def replica_sharded_buffer(shape: Tuple[int, ...],
 
     # ceiling division
     shard_size = -(data_size // -shards)
-    shard_shape = (shard_size, )
+    shard_shape = (shard_size,)
 
     buffer = remote_buffer(shard_shape, dtype, entries)
 
@@ -1053,14 +1121,15 @@ def replica_sharded_buffer(shape: Tuple[int, ...],
 
 
 def replica_sharded_variable(
-        data: HostScalarTensor,
-        dtype: Optional[dtypes.dtype] = None,
-        name: Optional[str] = None,
-        downcast: bool = True,
-        replica_grouping: Optional[ReplicaGrouping] = None,
-        shard_grouping: Optional[ReplicaGrouping] = None,
-        retrieval_mode: Optional[
-            Literal["one_per_group", "all_replicas"]] = "one_per_group"
+    data: HostScalarTensor,
+    dtype: Optional[dtypes.dtype] = None,
+    name: Optional[str] = None,
+    downcast: bool = True,
+    replica_grouping: Optional[ReplicaGrouping] = None,
+    shard_grouping: Optional[ReplicaGrouping] = None,
+    retrieval_mode: Optional[
+        Literal["one_per_group", "all_replicas"]
+    ] = "one_per_group",
 ) -> Tuple[Variable, Tensor]:
     """
     Scatter a tensor in equal shards across replicas (data parallelism) of the same model/graph.
@@ -1108,13 +1177,14 @@ def replica_sharded_variable(
     import popxl.ops as ops
 
     _dtype = dtype or dtypes.dtype.as_dtype(dtype)
-    buffer = replica_sharded_buffer(data.shape, _dtype, replica_grouping,
-                                    shard_grouping)
+    buffer = replica_sharded_buffer(
+        data.shape, _dtype, replica_grouping, shard_grouping
+    )
 
     # Create a remote RTS variable
-    var = remote_replica_sharded_variable(data, buffer, 0, dtype, name,
-                                          downcast, replica_grouping,
-                                          retrieval_mode)
+    var = remote_replica_sharded_variable(
+        data, buffer, 0, dtype, name, downcast, replica_grouping, retrieval_mode
+    )
 
     # Load/Store the variable in the WeightsFromHost/WeightsToHost programs.
     with get_main_graph():
@@ -1128,10 +1198,10 @@ def replica_sharded_variable(
 
 
 def constant(
-        data: HostScalarTensor,
-        dtype: Optional[dtypes.dtype] = None,
-        name: Optional[str] = None,
-        downcast: bool = True,
+    data: HostScalarTensor,
+    dtype: Optional[dtypes.dtype] = None,
+    name: Optional[str] = None,
+    downcast: bool = True,
 ) -> Constant:
     """
     Return a constant tensor.
@@ -1148,6 +1218,7 @@ def constant(
     .. code-block:: python
 
         import popxl
+
         ir = popxl.Ir()
         with ir.main_graph:
             a = popxl.constant(0)
@@ -1177,11 +1248,13 @@ def constant(
     return Constant._from_pb_tensor(pb_g.getTensor(pb_id))
 
 
-def graph_input(shape: Iterable[int],
-                dtype: dtypes.dtype,
-                name: Optional[str] = None,
-                by_ref: bool = False,
-                meta_shape: Optional[Iterable[int]] = None) -> Tensor:
+def graph_input(
+    shape: Iterable[int],
+    dtype: dtypes.dtype,
+    name: Optional[str] = None,
+    by_ref: bool = False,
+    meta_shape: Optional[Iterable[int]] = None,
+) -> Tensor:
     """
     Create a new input tensor to the current graph.
 
@@ -1195,16 +1268,18 @@ def graph_input(shape: Iterable[int],
 
         import popxl
 
+
         def add_w(x):
             w = popxl.graph_input(x.shape, x.dtype, "w")
             return w + x
+
 
         ir = popxl.Ir()
         with ir.main_graph:
             w = popxl.variable(1)
             x = popxl.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
-            y, = ops.call(add_w_graph, x, w)
+            (y,) = ops.call(add_w_graph, x, w)
 
     Args:
         shape (Iterable[int]):
@@ -1227,8 +1302,7 @@ def graph_input(shape: Iterable[int],
 
     pb_id = g._create_tensor_id(name)
     if meta_shape:
-        pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape),
-                                 list(meta_shape))
+        pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape), list(meta_shape))
     else:
         pb_info = _ir.TensorInfo(dtype._pb_dtype, list(shape))
 
@@ -1256,17 +1330,19 @@ def graph_output(t: Tensor) -> None:
 
         import popxl
 
+
         def add_w(x):
             w = popxl.graph_input(x.shape, x.dtype, "w")
             y = w + x
             popxl.graph_output(y)
+
 
         ir = popxl.Ir()
         with ir.main_graph:
             w = popxl.variable(1)
             x = popxl.variable(3)
             add_w_graph = ir.create_graph(add_w, x, w)
-            y, = ops.call(add_w_graph, x, w)
+            (y,) = ops.call(add_w_graph, x, w)
 
     Args:
         t (Tensor):

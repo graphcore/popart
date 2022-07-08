@@ -7,6 +7,7 @@ import json
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -25,17 +26,15 @@ def grad(dY, X):
 
 def run_and_test_value(op_tester, inplace, init_builder, reference, mode):
     if inplace:
-        op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-    session = op_tester.run(init_builder, reference, mode, {
-        "ai.onnx": 8,
-        "ai.graphcore": 1
-    })
+        op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+    session = op_tester.run(
+        init_builder, reference, mode, {"ai.onnx": 8, "ai.graphcore": 1}
+    )
     if inplace:
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
-        graph = ir['maingraph']
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+        graph = ir["maingraph"]
 
-        inplace = [op for op in graph if op['type'] == 'ExpandInplace']
+        inplace = [op for op in graph if op["type"] == "ExpandInplace"]
         assert len(inplace) == 1
 
 
@@ -56,7 +55,7 @@ def expand(op_tester, inplace, int_type):
             return [
                 o,
                 popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.reservedGradientPrefix() + i1,
             ]
 
     def reference(ref_data):
@@ -67,10 +66,12 @@ def expand(op_tester, inplace, int_type):
         dX = grad(dY, d1)
         return [expanded, dY, dX]
 
-    if inplace:  #grad is tested only as part of non invariant version to avoid duplication
-        mode = 'infer'
+    if (
+        inplace
+    ):  # grad is tested only as part of non invariant version to avoid duplication
+        mode = "infer"
     else:
-        mode = 'train'
+        mode = "train"
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
@@ -98,7 +99,7 @@ def expand_unwind(op_tester, inplace, int_type):
         m = expanded.dot(d3)
         return [m]
 
-    run_and_test_value(op_tester, inplace, init_builder, reference, 'infer')
+    run_and_test_value(op_tester, inplace, init_builder, reference, "infer")
 
 
 def expand_scalar(op_tester, inplace, int_type):
@@ -118,7 +119,7 @@ def expand_scalar(op_tester, inplace, int_type):
             return [
                 o,
                 popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.reservedGradientPrefix() + i1,
             ]
 
     def reference(ref_data):
@@ -129,10 +130,12 @@ def expand_scalar(op_tester, inplace, int_type):
         dX = grad(dY, d1)
         return [expanded, dY, dX]
 
-    if inplace:  #grad is tested only as part of non invariant version to avoid duplication
-        mode = 'infer'
+    if (
+        inplace
+    ):  # grad is tested only as part of non invariant version to avoid duplication
+        mode = "infer"
     else:
-        mode = 'train'
+        mode = "train"
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
@@ -153,7 +156,7 @@ def expand_smaller_output(op_tester, inplace, int_type):
             return [
                 o,
                 popart.reservedGradientPrefix() + o,
-                popart.reservedGradientPrefix() + i1
+                popart.reservedGradientPrefix() + i1,
             ]
 
     def reference(ref_data):
@@ -164,10 +167,12 @@ def expand_smaller_output(op_tester, inplace, int_type):
         dX = grad(dY, d1)
         return [expanded, dY, dX]
 
-    if inplace:  #grad is tested only as part of non invariant version to avoid duplication
-        mode = 'infer'
+    if (
+        inplace
+    ):  # grad is tested only as part of non invariant version to avoid duplication
+        mode = "infer"
     else:
-        mode = 'train'
+        mode = "train"
     run_and_test_value(op_tester, inplace, init_builder, reference, mode)
 
 
@@ -187,23 +192,22 @@ def expand_non_one_smaller_output(op_tester, inplace, int_type):
         return [
             o_identity,
             popart.reservedGradientPrefix() + o,
-            popart.reservedGradientPrefix() + i1
+            popart.reservedGradientPrefix() + i1,
         ]
 
     with pytest.raises(popart.popart_exception) as e_info:
         if inplace:
-            op_tester.setPatterns(['InPlace'], enableRuntimeAsserts=False)
-        session = op_tester.run(init_builder, None, 'infer')
+            op_tester.setPatterns(["InPlace"], enableRuntimeAsserts=False)
+        session = op_tester.run(init_builder, None, "infer")
         if inplace:
-            ir = json.loads(
-                session._serializeIr(popart.IrSerializationFormat.JSON))
-            graph = ir['maingraph']
+            ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
+            graph = ir["maingraph"]
 
-            inplace = [op for op in graph if op['type'] == 'ExpandInplace']
+            inplace = [op for op in graph if op["type"] == "ExpandInplace"]
             assert len(inplace) == 1
 
     assert (
-        'corresponding dimensions must have the same value or one of them must be 1'
+        "corresponding dimensions must have the same value or one of them must be 1"
     ) in str(e_info.value)
 
 
@@ -297,17 +301,18 @@ def test_expand_mul(int_type):
             o,
             popart.reservedGradientPrefix() + o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + w_in
+            popart.reservedGradientPrefix() + w_in,
         ]
 
         opts = popart.SessionOptions()
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(
-                                             1, anchor_returns),
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         loss=loss,
-                                         userOptions=opts)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(1, anchor_returns),
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(0.1),
+            loss=loss,
+            userOptions=opts,
+        )
 
         anchors = session.initAnchorArrays()
         inputs = {i1: in_}

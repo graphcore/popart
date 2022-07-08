@@ -23,7 +23,12 @@ import leaky_relu_op_impl
 
 
 @op_debug_context
-def leaky_relu(x: Tensor, alpha: Optional[float] = 0.01, **kwargs) -> Tensor:  # pylint: disable=unused-argument
+def leaky_relu(
+    # pylint: disable=unused-argument
+    x: Tensor,
+    alpha: Optional[float] = 0.01,
+    **kwargs
+) -> Tensor:
     """Compute the leaky relu operator element-wise on the input tensor.
 
     See https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html

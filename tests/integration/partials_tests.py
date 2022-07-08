@@ -16,24 +16,24 @@ def test_per_op_partials():
     output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(batch_size, input_channels, data_size,
-                           data_size).astype(np.float16)
-    kernel = np.random.rand(output_channels, input_channels, kernel_size,
-                            kernel_size).astype(np.float16)
-    partials_type = ['', '']
+    datas = np.random.rand(batch_size, input_channels, data_size, data_size).astype(
+        np.float16
+    )
+    kernel = np.random.rand(
+        output_channels, input_channels, kernel_size, kernel_size
+    ).astype(np.float16)
+    partials_type = ["", ""]
 
     def init_builder0(builder):
-        d1 = builder.addInputTensor(datas, 'data_in')
+        d1 = builder.addInputTensor(datas, "data_in")
         k = builder.addInputTensor(kernel)
 
-        c1 = builder.aiOnnx.conv([d1, k],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1])
-        c2 = builder.aiOnnx.conv([d1, k],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1])
+        c1 = builder.aiOnnx.conv(
+            [d1, k], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
+        c2 = builder.aiOnnx.conv(
+            [d1, k], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
 
         builder.setPartialsType(c1, partials_type[0])
         builder.setPartialsType(c2, partials_type[1])
@@ -44,15 +44,16 @@ def test_per_op_partials():
         return [o]
 
     def init_builder1(builder):
-        d1 = builder.addInputTensor(datas, 'data_in')
+        d1 = builder.addInputTensor(datas, "data_in")
         k = builder.addInputTensor(kernel)
 
-        [c1, c2] = builder.aiGraphcore.multiconv([[d1, k], [d1, k]],
-                                                 dilations=[[1, 1], [1, 1]],
-                                                 pads=[[1, 1, 1, 1],
-                                                       [1, 1, 1, 1]],
-                                                 strides=[[1, 1], [1, 1]],
-                                                 partialsTypes=partials_type)
+        [c1, c2] = builder.aiGraphcore.multiconv(
+            [[d1, k], [d1, k]],
+            dilations=[[1, 1], [1, 1]],
+            pads=[[1, 1, 1, 1], [1, 1, 1, 1]],
+            strides=[[1, 1], [1, 1]],
+            partialsTypes=partials_type,
+        )
         o = builder.aiOnnx.add([c1, c2])
 
         builder.addOutputTensor(o)
@@ -61,34 +62,34 @@ def test_per_op_partials():
     session = PopartTestSession()
 
     # check both convs are using half partials
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'HALF'
+    partials_type[0] = "HALF"
+    partials_type[1] = "HALF"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
-        _check_for_conv_partials(session, ['half'], ['float'])
+        _check_for_conv_partials(session, ["half"], ["float"])
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder1, device=device)
-        _check_for_conv_partials(session, ['half'], ['float'])
+        _check_for_conv_partials(session, ["half"], ["float"])
 
     # check both convs are using float partials
-    partials_type[0] = 'FLOAT'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "FLOAT"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
-        _check_for_conv_partials(session, ['float'], ['half'])
+        _check_for_conv_partials(session, ["float"], ["half"])
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder1, device=device)
-        _check_for_conv_partials(session, ['float'], ['half'])
+        _check_for_conv_partials(session, ["float"], ["half"])
 
     # check both float and half partials are used
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "HALF"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
-        _check_for_conv_partials(session, ['half', 'float'], [])
+        _check_for_conv_partials(session, ["half", "float"], [])
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder1, device=device)
-        _check_for_conv_partials(session, ['half', 'float'], [])
+        _check_for_conv_partials(session, ["half", "float"], [])
 
 
 @tu.requires_ipu_model
@@ -101,24 +102,24 @@ def test_per_op_partials_train():
     output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(batch_size, input_channels, data_size,
-                           data_size).astype(np.float16)
-    kernel = np.random.rand(output_channels, input_channels, kernel_size,
-                            kernel_size).astype(np.float16)
-    partials_type = ['', '']
+    datas = np.random.rand(batch_size, input_channels, data_size, data_size).astype(
+        np.float16
+    )
+    kernel = np.random.rand(
+        output_channels, input_channels, kernel_size, kernel_size
+    ).astype(np.float16)
+    partials_type = ["", ""]
 
     def init_builder(builder):
-        d1 = builder.addInputTensor(datas, 'data_in')
+        d1 = builder.addInputTensor(datas, "data_in")
         k = builder.addInputTensor(kernel)
 
-        c1 = builder.aiOnnx.conv([d1, k],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1])
-        c2 = builder.aiOnnx.conv([d1, k],
-                                 dilations=[1, 1],
-                                 pads=[1, 1, 1, 1],
-                                 strides=[1, 1])
+        c1 = builder.aiOnnx.conv(
+            [d1, k], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
+        c2 = builder.aiOnnx.conv(
+            [d1, k], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
 
         builder.setPartialsType(c1, partials_type[0])
         builder.setPartialsType(c2, partials_type[1])
@@ -130,32 +131,32 @@ def test_per_op_partials_train():
         return [
             loss,
             popart.reservedGradientPrefix() + d1,
-            popart.reservedGradientPrefix() + k
+            popart.reservedGradientPrefix() + k,
         ]
 
     session = PopartTestSession()
-    session.mode = 'train'
+    session.mode = "train"
 
     # check both convs are using half partials
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'HALF'
+    partials_type[0] = "HALF"
+    partials_type[1] = "HALF"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_conv_partials(session, ['half'], ['float'])
+        _check_for_conv_partials(session, ["half"], ["float"])
 
     # check both convs are using float partials
-    partials_type[0] = 'FLOAT'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "FLOAT"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_conv_partials(session, ['float'], ['half'])
+        _check_for_conv_partials(session, ["float"], ["half"])
 
     # check both float and half partials are used
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "HALF"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_conv_partials(session, ['half', 'float'], [])
+        _check_for_conv_partials(session, ["half", "float"], [])
 
 
 @tu.requires_ipu_model
@@ -168,25 +169,26 @@ def test_global_partials():
     output_channels = 3
     data_size = 4
     kernel_size = 3
-    datas = np.random.rand(batch_size, input_channels, data_size,
-                           data_size).astype(np.float16)
-    kernel = np.random.rand(output_channels, input_channels, kernel_size,
-                            kernel_size).astype(np.float16)
+    datas = np.random.rand(batch_size, input_channels, data_size, data_size).astype(
+        np.float16
+    )
+    kernel = np.random.rand(
+        output_channels, input_channels, kernel_size, kernel_size
+    ).astype(np.float16)
 
     def init_builder0(builder):
-        d1 = builder.addInputTensor(datas, 'data_in')
+        d1 = builder.addInputTensor(datas, "data_in")
         k = builder.addInputTensor(kernel)
 
-        o = builder.aiOnnx.conv([d1, k],
-                                dilations=[1, 1],
-                                pads=[1, 1, 1, 1],
-                                strides=[1, 1])
+        o = builder.aiOnnx.conv(
+            [d1, k], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
 
         builder.addOutputTensor(o)
         return [o]
 
     def init_builder1(builder):
-        d1 = builder.addInputTensor(datas, 'data_in')
+        d1 = builder.addInputTensor(datas, "data_in")
         k = builder.addInputTensor(kernel)
 
         [o] = builder.aiGraphcore.multiconv([[d1, k]], pads=[[1, 1, 1, 1]])
@@ -197,22 +199,22 @@ def test_global_partials():
     session = PopartTestSession()
 
     # check convs are using half partials
-    session.options.convolutionOptions = {'partialsType': 'half'}
+    session.options.convolutionOptions = {"partialsType": "half"}
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
-        _check_for_conv_partials(session, ['half'], ['float'])
+        _check_for_conv_partials(session, ["half"], ["float"])
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder1, device=device)
-        _check_for_conv_partials(session, ['half'], ['float'])
+        _check_for_conv_partials(session, ["half"], ["float"])
 
     # check convs are using float partials
-    session.options.convolutionOptions = {'partialsType': 'float'}
+    session.options.convolutionOptions = {"partialsType": "float"}
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder0, device=device)
-        _check_for_conv_partials(session, ['float'], ['half'])
+        _check_for_conv_partials(session, ["float"], ["half"])
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder1, device=device)
-        _check_for_conv_partials(session, ['float'], ['half'])
+        _check_for_conv_partials(session, ["float"], ["half"])
 
 
 # check the summary report to see which conv partials are being used
@@ -223,28 +225,28 @@ def _check_for_conv_partials(sess, includes, excludes):
     # get to the memory usage section
     for i in range(len(sr)):
         line = sr[i]
-        if line.startswith('Memory Usage:'):
+        if line.startswith("Memory Usage:"):
             sr = sr[i:]
             break
 
     # get to the vertex data
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line.startswith('Vertex Data ('):
+        if line.startswith("Vertex Data ("):
             sr = sr[i:]
             break
 
     # get to the by type
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line.startswith('By Type:'):
-            sr = sr[i + 1:]
+        if line.startswith("By Type:"):
+            sr = sr[i + 1 :]
             break
 
     # get this whole of this section
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line == '':
+        if line == "":
             sr = sr[:i]
             break
 
@@ -253,8 +255,8 @@ def _check_for_conv_partials(sess, includes, excludes):
         # It is difficult to know which option the convolution planner will choose,
         # so we check for any.
         r = re.compile(f"poplin::ConvPartial.*<half,{item}.*")
-        assert (len(list(filter(r.match, types))) != 0)
+        assert len(list(filter(r.match, types))) != 0
 
     for item in excludes:
         r = re.compile(f"poplin::ConvPartial.*<half,{item}.*")
-        assert (len(list(filter(r.match, types))) == 0)
+        assert len(list(filter(r.match, types))) == 0

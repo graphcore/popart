@@ -12,28 +12,31 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from scripts.lint.config import LinterConfig, load_linter_configs
 from scripts.util import get_project_source_dir
 
-LinterMessage = namedtuple(typename='LinterMessage',
-                           field_names=['linter', 'message'])
+LinterMessage = namedtuple(typename="LinterMessage", field_names=["linter", "message"])
 
 
 class LinterOutput:
-    def __init__(self,
-                 status_ok: bool,
-                 messages: List[LinterMessage],
-                 original: str = '',
-                 replacement: str = '') -> None:
+    def __init__(
+        self,
+        status_ok: bool,
+        messages: List[LinterMessage],
+        original: str = "",
+        replacement: str = "",
+    ) -> None:
         self.status_ok = status_ok
         self.original = original
         self.replacement = replacement
         self.messages: List[LinterMessage] = messages
 
     def json(self):
-        return json.dumps({
-            "status_ok": self.status_ok,
-            "original": self.original,
-            "replacement": self.replacement,
-            "messages": [msg._asdict() for msg in self.messages]
-        })
+        return json.dumps(
+            {
+                "status_ok": self.status_ok,
+                "original": self.original,
+                "replacement": self.replacement,
+                "messages": [msg._asdict() for msg in self.messages],
+            }
+        )
 
 
 def lint(file_to_lint: str, linter_config_file: str):
@@ -48,27 +51,34 @@ def create_linter_configs(config_file: str) -> List[LinterConfig]:
     configs = load_linter_configs(config_file)
 
     config_objects = []
-    for linter_name, config_dict in configs['linters'].items():
-        if 'class' not in config_dict:
+    for linter_name, config_dict in configs["linters"].items():
+        if "class" not in config_dict:
             raise KeyError(
                 f"Config for linter {linter_name} is missing the required 'class' field."
             )
 
-        config_file = config_dict.get('config_file')
-        path_to_config = '' if not config_file else str(
-            get_project_source_dir().joinpath(config_file))
+        config_file = config_dict.get("config_file")
+        path_to_config = (
+            ""
+            if not config_file
+            else str(get_project_source_dir().joinpath(config_file))
+        )
         config_objects.append(
-            LinterConfig(name=linter_name,
-                         class_=config_dict['class'],
-                         version=config_dict.get('version'),
-                         include=config_dict.get('include'),
-                         exclude=config_dict.get('exclude'),
-                         config_file=path_to_config))
+            LinterConfig(
+                name=linter_name,
+                class_=config_dict["class"],
+                version=config_dict.get("version"),
+                include=config_dict.get("include"),
+                exclude=config_dict.get("exclude"),
+                config_file=path_to_config,
+            )
+        )
     return config_objects
 
 
 def create_linters_and_check_for_errors(
-        configs: List[LinterConfig]) -> Tuple[list, List[LinterMessage]]:
+    configs: List[LinterConfig],
+) -> Tuple[list, List[LinterMessage]]:
     error_msgs = []
     linters = []
     for config in configs:
@@ -87,14 +97,16 @@ def _error_message_if_linter_invalid(linter, config) -> str:
         error_msg = LinterMessage(
             linter.name,
             f"Linter {linter.name} is not available or installed. "
-            f"Install using: {linter.install_instructions(config.version)}")
-    elif config.version and linter.get_version() and not _correct_version(
-            linter, config):
+            f"Install using: {linter.install_instructions(config.version)}",
+        )
+    elif (
+        config.version and linter.get_version() and not _correct_version(linter, config)
+    ):
         error_msg = LinterMessage(
             linter.name,
             f"Version requirement not satisfied for linter {linter.name}. "
             f"Version required: {config.version}. "
-            f"You have: {('.'.join(str(i) for i in linter.get_version())) if linter.get_version() is not None else None}"
+            f"You have: {('.'.join(str(i) for i in linter.get_version())) if linter.get_version() is not None else None}",
         )
 
     return error_msg
@@ -102,7 +114,8 @@ def _error_message_if_linter_invalid(linter, config) -> str:
 
 def _correct_version(linter, config: LinterConfig) -> bool:
     required_version = tuple(
-        int(i) if i.isnumeric() else i for i in config.version.split('.'))
+        int(i) if i.isnumeric() else i for i in config.version.split(".")
+    )
     available_version = linter.get_version()
     return available_version == required_version
 
@@ -115,7 +128,7 @@ def linter_from_config(linter_config: LinterConfig):
 
 def import_from_string(module_path: str):
     try:
-        module_path, class_name = module_path.rsplit('.', 1)
+        module_path, class_name = module_path.rsplit(".", 1)
     except ValueError as err:
         raise ImportError(
             f"{module_path} doesn't look like a valid linter module path"
@@ -132,7 +145,7 @@ def import_from_string(module_path: str):
 
 
 def run_linters(file_to_lint, linters) -> LinterOutput:
-    with open(file_to_lint, 'r', encoding='utf-8') as fp:
+    with open(file_to_lint, "r", encoding="utf-8") as fp:
         original = fp.read()
 
     linter_messages = []
@@ -141,16 +154,18 @@ def run_linters(file_to_lint, linters) -> LinterOutput:
         after = linter.apply(file_to_lint, file_contents)
         if file_contents != after:
             linter_messages.append(
-                LinterMessage(linter.name, linter.get_linter_message()))
+                LinterMessage(linter.name, linter.get_linter_message())
+            )
             file_contents = after
-    return LinterOutput(status_ok=True,
-                        original=original,
-                        replacement=file_contents,
-                        messages=linter_messages)
+    return LinterOutput(
+        status_ok=True,
+        original=original,
+        replacement=file_contents,
+        messages=linter_messages,
+    )
 
 
 if __name__ == "__main__":
-    config_file = Path(__file__).resolve().parent.joinpath(
-        "lint/linter_config.json")
+    config_file = Path(__file__).resolve().parent.joinpath("lint/linter_config.json")
     output = lint(file_to_lint=sys.argv[1], linter_config_file=config_file)
     print(output.json())

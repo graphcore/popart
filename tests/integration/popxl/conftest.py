@@ -9,7 +9,7 @@ SEED = 0
 @pytest.fixture(autouse=True)
 def random_seed():
     """Set the random seed for all tests in this directory. autouse=True will
-        use this fixture in every test.
+    use this fixture in every test.
     """
     print(f"Setting numpy seed to {SEED}")
     np.random.seed(SEED)

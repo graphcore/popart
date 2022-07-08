@@ -80,8 +80,7 @@ class TestAccumulate:
             if not constant_:
                 f = popxl.variable(f)
             _ = ops.var_updates.accumulator_scale_(a, f)
-        assert contains_op_of_type("AccumulatorScale",
-                                   _ir.op.AccumulatorScaleOp, g)
+        assert contains_op_of_type("AccumulatorScale", _ir.op.AccumulatorScaleOp, g)
         op = g._pb_graph.getOps()[0]
         assert op.getFactor().val() == (0.125 if constant_ else 0.0)
 
@@ -92,8 +91,7 @@ class TestAccumulate:
         with g:
             a = popxl.variable(1)
             _ = ops.var_updates.accumulator_zero_(a)
-        assert contains_op_of_type("AccumulatorScale",
-                                   _ir.op.AccumulatorScaleOp, g)
+        assert contains_op_of_type("AccumulatorScale", _ir.op.AccumulatorScaleOp, g)
 
     def test_sparse_accumulate(self):
         ir = popxl.Ir()
@@ -105,8 +103,9 @@ class TestAccumulate:
             c = popxl.constant([2])
             axis = 1
             _ = ops.var_updates.sparse_accumulate_(a, b, c, axis)
-        assert contains_op_of_type("PopartSparseAccumulate",
-                                   _ir.op.SparseAccumulateOp, g)
+        assert contains_op_of_type(
+            "PopartSparseAccumulate", _ir.op.SparseAccumulateOp, g
+        )
         op = g._pb_graph.getOps()[0]
         assert op.getAxis() == axis
 
@@ -126,8 +125,9 @@ class TestAccumulate:
             axis = 1
             _ = ops.var_updates.sparse_accumulate_(a, b, c, axis, f, W)
 
-        assert contains_op_of_type("PopartSparseAccumulate",
-                                   _ir.op.SparseAccumulateOp, g)
+        assert contains_op_of_type(
+            "PopartSparseAccumulate", _ir.op.SparseAccumulateOp, g
+        )
         op = g._pb_graph.getOps()[0]
         assert op.getFactor().val() == (0.125 if constant_ else 0.0)
         assert op.getAxis() == axis

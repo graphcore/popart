@@ -9,6 +9,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
+
 # pylint is disabled as op_tester is used as a fixture
 from operators_test.conftest import op_tester  # pylint: disable=unused-import
 
@@ -33,10 +34,12 @@ def test_weight_update(op_tester):
 
         return [
             o,
-            popart.reservedGradientPrefix() + i2, i2, i3,
+            popart.reservedGradientPrefix() + i2,
+            i2,
+            i3,
             "scaledLearningRate0___default___FLOAT",
             "weightDecayScaleFactor0___default___FLOAT",
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -44,10 +47,8 @@ def test_weight_update(op_tester):
             def __init__(self):
                 super(Module, self).__init__()
 
-                self.B = torch.nn.Parameter(torch.tensor(B),
-                                            requires_grad=True)
-                self.C = torch.nn.Parameter(torch.tensor(C),
-                                            requires_grad=True)
+                self.B = torch.nn.Parameter(torch.tensor(B), requires_grad=True)
+                self.C = torch.nn.Parameter(torch.tensor(C), requires_grad=True)
                 self.matmul = torch.matmul
 
             def forward(self, inputs):
@@ -66,21 +67,26 @@ def test_weight_update(op_tester):
         optimizer.step()
 
         return [
-            o, module.B.grad, module.B.data, module.C.data,
+            o,
+            module.B.grad,
+            module.B.data,
+            module.C.data,
             np.float32(0.01),
-            np.float32(1.0), None
+            np.float32(1.0),
+            None,
         ]
 
     op_tester.numIPUs = 1
-    op_tester.setPatterns([
-        'MulArgGradOp', 'DecomposeBinaryConstScalar', 'PreUniRepl',
-        'MatMulRhsGradOp'
-    ],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder,
-                  reference,
-                  'train',
-                  optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
+    op_tester.setPatterns(
+        ["MulArgGradOp", "DecomposeBinaryConstScalar", "PreUniRepl", "MatMulRhsGradOp"],
+        enableRuntimeAsserts=False,
+    )
+    op_tester.run(
+        init_builder,
+        reference,
+        "train",
+        optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}),
+    )
 
 
 replicationFactor = 4
@@ -107,10 +113,12 @@ def test_weight_update_replicated(op_tester):
 
         return [
             o,
-            popart.reservedGradientPrefix() + i2, i2,
-            popart.reservedGradientPrefix() + i3, i3,
+            popart.reservedGradientPrefix() + i2,
+            i2,
+            popart.reservedGradientPrefix() + i3,
+            i3,
             "scaledLearningRate0___default___FLOAT",
-            "weightDecayScaleFactor0___default___FLOAT"
+            "weightDecayScaleFactor0___default___FLOAT",
         ]
 
     def reference(_):  # ref_data is an unused argument
@@ -136,10 +144,9 @@ def test_weight_update_replicated(op_tester):
 
         module.train()
 
-        optimizer = torch.optim.SGD(module.parameters(),
-                                    lr=0.01,
-                                    weight_decay=0.0,
-                                    momentum=0.0)
+        optimizer = torch.optim.SGD(
+            module.parameters(), lr=0.01, weight_decay=0.0, momentum=0.0
+        )
 
         a = torch.tensor(A, requires_grad=True)
 
@@ -151,7 +158,7 @@ def test_weight_update_replicated(op_tester):
         for n in range(replicationFactor):
             # adding n as offset, as op_tester expects
             o = module([a + n])
-            outputs = outputs + (o, )
+            outputs = outputs + (o,)
             loss = torch.nn.L1Loss(reduction="sum")
             target = torch.zeros(o.size())
             output = loss(o, target)
@@ -164,27 +171,31 @@ def test_weight_update_replicated(op_tester):
         outputs = tuple(map(lambda x: torch.unsqueeze(x, 0), outputs))
 
         return [
-            torch.cat(outputs), module.b.grad, module.B.data, module.c.grad,
+            torch.cat(outputs),
+            module.b.grad,
+            module.B.data,
+            module.c.grad,
             module.C.data,
             np.array([0.01, 0.01, 0.01, 0.01], np.float32),
-            np.array([1, 1, 1, 1], np.float32)
+            np.array([1, 1, 1, 1], np.float32),
         ]
 
     op_tester.lossReduction = popart.ReductionType.Sum
-    op_tester.setPatterns([
-        'DecomposeBinaryConstScalar', 'PreUniRepl', 'MatMulRhsGradOp',
-        'MulArgGradOp'
-    ],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(
+        ["DecomposeBinaryConstScalar", "PreUniRepl", "MatMulRhsGradOp", "MulArgGradOp"],
+        enableRuntimeAsserts=False,
+    )
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
     # Cant do opxModifyChecking wich replicated graphs.
     op_tester.options.opxModifyChecking = False
     op_tester.numIPUs = replicationFactor
-    op_tester.run(init_builder,
-                  reference,
-                  'train',
-                  optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
+    op_tester.run(
+        init_builder,
+        reference,
+        "train",
+        optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}),
+    )
 
 
 @tu.requires_ipu
@@ -233,24 +244,31 @@ def test_replication_infer(op_tester):
         # Run the pytorch module multiple times to simulate the same
         # behaviour as popart. The offsets (with corresponding offsets
         # in op_tester) ensure that the samples are distinct between replicas
-        o1 = module([a + 0.])
-        o2 = module([a + 1.])
-        o3 = module([a + 2.])
-        o4 = module([a + 3.])
+        o1 = module([a + 0.0])
+        o2 = module([a + 1.0])
+        o3 = module([a + 2.0])
+        o4 = module([a + 3.0])
 
         return [
-            torch.cat((torch.unsqueeze(o1, 0), torch.unsqueeze(
-                o2, 0), torch.unsqueeze(o3, 0), torch.unsqueeze(o4, 0)))
+            torch.cat(
+                (
+                    torch.unsqueeze(o1, 0),
+                    torch.unsqueeze(o2, 0),
+                    torch.unsqueeze(o3, 0),
+                    torch.unsqueeze(o4, 0),
+                )
+            )
         ]
 
-    op_tester.setPatterns(['DecomposeBinaryConstScalar', 'PreUniRepl'],
-                          enableRuntimeAsserts=False)
+    op_tester.setPatterns(
+        ["DecomposeBinaryConstScalar", "PreUniRepl"], enableRuntimeAsserts=False
+    )
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
     op_tester.numIPUs = replicationFactor
     # Cant do opxModifyChecking wich replicated graphs.
     op_tester.options.opxModifyChecking = False
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 @tu.requires_ipu
@@ -270,8 +288,7 @@ def test_identity_loss_grad_replication():
         t1 = builder.addInputTensor("FLOAT", [4, 1])
 
         t2 = builder.aiOnnx.matmul([t0, t1])
-        t3 = builder.aiGraphcore.identityloss(
-            [t2], reduction=popart.ReductionType.Mean)
+        t3 = builder.aiGraphcore.identityloss([t2], reduction=popart.ReductionType.Mean)
 
         opts = popart.SessionOptions()
         opts.enableReplicatedGraphs = True
@@ -284,12 +301,12 @@ def test_identity_loss_grad_replication():
             session = popart.TrainingSession(
                 fnModel=builder.getModelProto(),
                 deviceInfo=device,
-                dataFlow=popart.DataFlow(
-                    1, [t3, popart.reservedGradientPrefix() + t0]),
+                dataFlow=popart.DataFlow(1, [t3, popart.reservedGradientPrefix() + t0]),
                 loss=t3,
                 optimizer=popart.ConstSGD(0.1),
                 userOptions=opts,
-                patterns=patterns)
+                patterns=patterns,
+            )
 
             anchors = session.initAnchorArrays()
             session.prepareDevice()

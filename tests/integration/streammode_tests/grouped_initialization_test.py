@@ -8,6 +8,7 @@ import os
 
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -25,10 +26,10 @@ TEMPFILE = "temporary_file"
 
 def check_device(device, repl_config):
     if device is None:
-        ipus = (int(repl_config["ipus"]) * int(repl_config["repl"]))
+        ipus = int(repl_config["ipus"]) * int(repl_config["repl"])
         fail_ceiling = 4
 
-        if (ipus > fail_ceiling):
+        if ipus > fail_ceiling:
             pytest.skip(
                 f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
                 "As the requirement of this test was higher than {fail_ceiling} ipus it fails silently."
@@ -41,17 +42,22 @@ def check_device(device, repl_config):
 
 
 def getOffChipLocation(commGroup, RTS=False):
-    rts = popart.ReplicatedTensorSharding.On \
-          if RTS else \
-          popart.ReplicatedTensorSharding.Off
+    rts = (
+        popart.ReplicatedTensorSharding.On
+        if RTS
+        else popart.ReplicatedTensorSharding.Off
+    )
     return popart.TensorLocationSettings(
-        location=popart.TensorLocation(storage=popart.TensorStorage.OffChip,
-                                       loadTileSet=popart.TileSet.Compute,
-                                       storageTileSet=popart.TileSet.Compute,
-                                       replicatedTensorSharding=rts,
-                                       shardingDomain=commGroup),
+        location=popart.TensorLocation(
+            storage=popart.TensorStorage.OffChip,
+            loadTileSet=popart.TileSet.Compute,
+            storageTileSet=popart.TileSet.Compute,
+            replicatedTensorSharding=rts,
+            shardingDomain=commGroup,
+        ),
         minElementsForOffChip=0,
-        minElementsForReplicatedTensorSharding=2)
+        minElementsForReplicatedTensorSharding=2,
+    )
 
 
 KEY_PARSE = {
@@ -59,30 +65,34 @@ KEY_PARSE = {
         "All": popart.CommGroupType.All,
         "Consecutive": popart.CommGroupType.Consecutive,
         "Orthogonal": popart.CommGroupType.Orthogonal,
-        "None": popart.CommGroupType.Ungrouped
+        "None": popart.CommGroupType.Ungrouped,
     },
     "retrieval": {
         "OnePerGroup": popart.VariableRetrievalMode.OnePerGroup,
         "AllReduce": popart.VariableRetrievalMode.AllReduceReplicas,
-        "AllReplicas": popart.VariableRetrievalMode.AllReplicas
-    }
+        "AllReplicas": popart.VariableRetrievalMode.AllReplicas,
+    },
 }
 
 
 def is_default_settings(var_set: popart.VariableSettings):
-    return (var_set.getSharedVariableDomain().type == popart.CommGroupType.All) and \
-           (var_set.getSharedVariableDomain().replicaGroupSize == 0) and \
-           (var_set.getRetrievalMode() == popart.VariableRetrievalMode.OnePerGroup)
+    return (
+        (var_set.getSharedVariableDomain().type == popart.CommGroupType.All)
+        and (var_set.getSharedVariableDomain().replicaGroupSize == 0)
+        and (var_set.getRetrievalMode() == popart.VariableRetrievalMode.OnePerGroup)
+    )
 
 
 def get_variable_settings(repl_config):
     vs = popart.VariableSettings(
         popart.CommGroup(
             KEY_PARSE["commType"][
-                repl_config["commType"]],  # How the groups are configured
-            int(repl_config["commSize"])),  # Size of groups
-        KEY_PARSE["retrieval"][
-            repl_config["retrieval"]])  # How much and what to retrieve
+                repl_config["commType"]
+            ],  # How the groups are configured
+            int(repl_config["commSize"]),
+        ),  # Size of groups
+        KEY_PARSE["retrieval"][repl_config["retrieval"]],
+    )  # How much and what to retrieve
     return vs
 
 
@@ -91,11 +101,12 @@ def get_group_idxs(config, var_set, returned):
         return [[i for i in range(int(config["repl"]))]]
 
     group_size = var_set.getSharedVariableDomain().replicaGroupSize
-    groups = int (returned if (group_size is 0) else \
-                  int(config["repl"]) / group_size)
-    group_inc = 1 if var_set.getSharedVariableDomain().type \
-                     != popart.CommGroupType.Orthogonal \
-                  else group_size
+    groups = int(returned if (group_size is 0) else int(config["repl"]) / group_size)
+    group_inc = (
+        1
+        if var_set.getSharedVariableDomain().type != popart.CommGroupType.Orthogonal
+        else group_size
+    )
     group_idxs = []
     for group in range(groups):
         domain = []
@@ -122,12 +133,12 @@ def user_options(repl_config, location):
     opts.replicatedGraphCount = int(repl_config["repl"])
     opts.enableReplicatedGraphs = int(repl_config["repl"]) != 1
 
-    cg = popart.CommGroup(KEY_PARSE["commType"][repl_config["commType"]],
-                          int(repl_config["commSize"]))
+    cg = popart.CommGroup(
+        KEY_PARSE["commType"][repl_config["commType"]], int(repl_config["commSize"])
+    )
 
-    if (location["remote"]):
-        opts.weightTensorLocationSettings = getOffChipLocation(
-            cg, location["RTS"])
+    if location["remote"]:
+        opts.weightTensorLocationSettings = getOffChipLocation(cg, location["RTS"])
 
     ipus = int(repl_config["ipus"]) * int(repl_config["repl"])
 
@@ -145,15 +156,17 @@ Simple Model
 """
 
 
-def get_model(repl_config: Dict,
-              builder,
-              groups,
-              var_settings,
-              location,
-              session_type: str,
-              initialize=True,
-              opts=None,
-              device=None):
+def get_model(
+    repl_config: Dict,
+    builder,
+    groups,
+    var_settings,
+    location,
+    session_type: str,
+    initialize=True,
+    opts=None,
+    device=None,
+):
     batches_per_step = BATCHES_PER_STEP if session_type == "training" else 1
     input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
 
@@ -163,8 +176,9 @@ def get_model(repl_config: Dict,
         arrays_two = get_weights_array(input_shape, groups)
         arrays_two_init = get_weights_array(input_shape, groups)
     else:
-        re_input_shape = [len(groups)].extend(input_shape).\
-                          reshape([-1].extend(input_shape))
+        re_input_shape = (
+            [len(groups)].extend(input_shape).reshape([-1].extend(input_shape))
+        )
         arrays_one = np.zeros(input_shape)
         arrays_two = np.zeros(re_input_shape)
         arrays_two_init = np.zeros(re_input_shape)
@@ -189,12 +203,13 @@ def get_model(repl_config: Dict,
     #
     a = builder.aiOnnx.matmul([ip, weights_one])
     b = builder.aiOnnx.matmul([a, weights_two])
-    o = builder.reshape_const(builder.aiOnnx, [b],
-                              [O_DIM, CHANNELS * DATA_LEN * DATA_LEN])
+    o = builder.reshape_const(
+        builder.aiOnnx, [b], [O_DIM, CHANNELS * DATA_LEN * DATA_LEN]
+    )
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
 
-    if (session_type == "training"):
+    if session_type == "training":
         lb = builder.addInputTensor(lbl_shape, "label_input_456")
         nll = builder.aiGraphcore.nllloss([o, lb])
     else:
@@ -204,17 +219,17 @@ def get_model(repl_config: Dict,
     data_flow = popart.DataFlow(batches_per_step, {o: art})
 
     #
-    if (location["remote"] and location["RTS"]
-            and int(repl_config["c.idx"]) > 1):
-        loc = getOffChipLocation(popart.CommGroup(popart.CommGroupType.All, 0),
-                                 location["RTS"]).location
+    if location["remote"] and location["RTS"] and int(repl_config["c.idx"]) > 1:
+        loc = getOffChipLocation(
+            popart.CommGroup(popart.CommGroupType.All, 0), location["RTS"]
+        ).location
         opts.tensorLocationSettingsOverride[weights_one] = loc
 
     if device is None:
-        ipus = (int(repl_config["ipus"]) * int(repl_config["repl"]))
+        ipus = int(repl_config["ipus"]) * int(repl_config["repl"])
         fail_ceiling = 4
 
-        if (ipus > fail_ceiling):
+        if ipus > fail_ceiling:
             pytest.skip(
                 f"Test needs to run on {ipus} IPU(s), but sufficient IPU(s) were not available. "
                 "As the requirement of this test was higher than {fail_ceiling} ipus it fails silently."
@@ -232,12 +247,15 @@ def get_model(repl_config: Dict,
             userOptions=opts,
             loss=nll,
             deviceInfo=device,
-            optimizer=popart.ConstSGD(LEARNING_RATE))
+            optimizer=popart.ConstSGD(LEARNING_RATE),
+        )
     elif session_type == "inference":
-        session = popart.InferenceSession(fnModel=builder.getModelProto(),
-                                          dataFlow=data_flow,
-                                          userOptions=opts,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            userOptions=opts,
+            deviceInfo=device,
+        )
     else:
         pytest.fail("Unsupported session type: ", session_type)
 
@@ -268,14 +286,15 @@ def verify(config, var_set, weights, groups):
         for g, group in enumerate(groups):
             for g2, group2 in enumerate(groups):
                 if g < g2:
-                    if var_set.getRetrievalMode(
-                    ) == popart.VariableRetrievalMode.AllReplicas:
-                        assert not np.allclose(weights[group[0]],
-                                               weights[group2[0]])
+                    if (
+                        var_set.getRetrievalMode()
+                        == popart.VariableRetrievalMode.AllReplicas
+                    ):
+                        assert not np.allclose(weights[group[0]], weights[group2[0]])
                     else:
                         assert not np.allclose(weights[g], weights[g2])
         # Make sure members of the same group have the same value
-        if (config["retrieval"] == "AllReplicas"):
+        if config["retrieval"] == "AllReplicas":
             for g, group in enumerate(groups):
                 for br in range(1, len(group)):
                     assert np.allclose(weights[group[0]], weights[group[br]])
@@ -285,128 +304,120 @@ def verify(config, var_set, weights, groups):
 configs = [
     ## Configs that test standard cases
     {  # Default simple configuration
-        "c.idx": '0',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '1',  # Replication Factor
+        "c.idx": "0",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "1",  # Replication Factor
         "commType": "All",
-        "commSize": '0',
+        "commSize": "0",
         "retrieval": "OnePerGroup",
-        "locations": ["On-Chip", "OffChip"]
+        "locations": ["On-Chip", "OffChip"],
     },
     {  # Multiple replicas in one group, returning one
-        "c.idx": '1',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '2',  # Replication Factor
+        "c.idx": "1",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "2",  # Replication Factor
         "commType": "All",
-        "commSize": '0',
+        "commSize": "0",
         "retrieval": "OnePerGroup",
-        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"],
     },
     ## New variant returns
     {  # Grouped replicas returning all
-        "c.idx": '2',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '2',  # Replication Factor
+        "c.idx": "2",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "2",  # Replication Factor
         "commType": "All",
-        "commSize": '0',
+        "commSize": "0",
         "retrieval": "AllReplicas",
-        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"],
     },
     {  # Two ungrouped replicas, returning one each.
-        "c.idx": '3',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '2',  # Replication Factor
+        "c.idx": "3",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "2",  # Replication Factor
         "commType": "None",
-        "commSize": '0',
+        "commSize": "0",
         "retrieval": "OnePerGroup",
-        "locations": ["On-Chip", "OffChip"]
+        "locations": ["On-Chip", "OffChip"],
     },
     {  # Four replicas devided in two groups
-        "c.idx": '4',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '4',  # Replication Factor
+        "c.idx": "4",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "4",  # Replication Factor
         "commType": "Consecutive",
-        "commSize": '2',
+        "commSize": "2",
         "retrieval": "OnePerGroup",
-        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"],
     },
     {  # Four replicas devided in two groups
-        "c.idx": '5',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '4',  # Replication Factor
+        "c.idx": "5",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "4",  # Replication Factor
         "commType": "Orthogonal",
-        "commSize": '2',
+        "commSize": "2",
         "retrieval": "OnePerGroup",
         "locations": ["On-Chip", "OffChip"]
         # would fail on RTS
     },
     {  # Four replicas devided in two groups
-        "c.idx": '6',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '4',  # Replication Factor
+        "c.idx": "6",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "4",  # Replication Factor
         "commType": "Consecutive",
-        "commSize": '2',
+        "commSize": "2",
         "retrieval": "AllReplicas",
-        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"],
     },
     {  # Four replicas devided in two groups
-        "c.idx": '7',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '4',  # Replication Factor
+        "c.idx": "7",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "4",  # Replication Factor
         "commType": "Orthogonal",
-        "commSize": '2',
+        "commSize": "2",
         "retrieval": "AllReplicas",
         "locations": ["On-Chip", "OffChip"]
         # would fail on RTS
     },
     {  # Cons 1
-        "c.idx": '8',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '2',  # Replication Factor
+        "c.idx": "8",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "2",  # Replication Factor
         "commType": "Consecutive",
-        "commSize": '1',
+        "commSize": "1",
         "retrieval": "OnePerGroup",
-        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"]
+        "locations": ["On-Chip", "OffChip", "OffChip-Sharded"],
     },
     {  # test to verify replica-id is calculated correctly in Devicex.cpp
-        "c.idx": '9',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '16',  # Replication Factor
+        "c.idx": "9",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "16",  # Replication Factor
         "commType": "Orthogonal",
-        "commSize": '4',
+        "commSize": "4",
         "retrieval": "AllReplicas",
-        "locations": ["On-Chip"]
+        "locations": ["On-Chip"],
     },
     {  # test to verify all-replicas work with group-size 2
-        "c.idx": '10',  # Debug Config ID
-        "ipus": '1',  # Number of IPUs to run on
-        "repl": '4',  # Replication Factor
+        "c.idx": "10",  # Debug Config ID
+        "ipus": "1",  # Number of IPUs to run on
+        "repl": "4",  # Replication Factor
         "commType": "Consecutive",
-        "commSize": '2',
+        "commSize": "2",
         "retrieval": "AllReplicas",
-        "locations": ["On-Chip"]
-    }
+        "locations": ["On-Chip"],
+    },
 ]
 session_types = ["training", "inference"]
 
-remote_config = [{
-    "desc": "On-Chip",
-    "remote": False,
-    "RTS": False
-}, {
-    "desc": "OffChip",
-    "remote": True,
-    "RTS": False
-}, {
-    "desc": "OffChip-Sharded",
-    "remote": True,
-    "RTS": True
-}]
+remote_config = [
+    {"desc": "On-Chip", "remote": False, "RTS": False},
+    {"desc": "OffChip", "remote": True, "RTS": False},
+    {"desc": "OffChip-Sharded", "remote": True, "RTS": True},
+]
 
 run_config = []  # debug tool, run custom set
 skp_config = []  # debug tool, add to skip
 
-if (len(run_config) == 0):
+if len(run_config) == 0:
     run_config = range(len(configs))
 
 
@@ -420,24 +431,26 @@ def test_grouped_initialization(config, location, session_type):
     groups = [] if returned == 1 else get_group_idxs(config, var_set, returned)
 
     # skip if unimplemented
-    if (config["c.idx"] == configs[0]["c.idx"]):
+    if config["c.idx"] == configs[0]["c.idx"]:
         print()
     # skip if unimplemented
-    if (int(config["c.idx"]) not in run_config
-            or int(config["c.idx"]) in skp_config):
+    if int(config["c.idx"]) not in run_config or int(config["c.idx"]) in skp_config:
         pytest.skip()
     # skip if we are using too many ipus
-    if (IPU_MAX < int(config["repl"]) * int(config["ipus"])):
+    if IPU_MAX < int(config["repl"]) * int(config["ipus"]):
         pytest.skip("The test requires more IPU's than recommended.")
-    #skip if the config is not supported on the location
-    if (location["desc"] not in config["locations"]):
+    # skip if the config is not supported on the location
+    if location["desc"] not in config["locations"]:
         pytest.skip(
-            "This config is not supported with the given location/RTS:" +
-            location["desc"])
-    if (session_type == "inference" and var_set.numReplicasReturningVariable(
-            int(config["repl"])) == 1):
+            "This config is not supported with the given location/RTS:"
+            + location["desc"]
+        )
+    if (
+        session_type == "inference"
+        and var_set.numReplicasReturningVariable(int(config["repl"])) == 1
+    ):
         pytest.skip()
-    if (session_type == "inference" and location["RTS"]):
+    if session_type == "inference" and location["RTS"]:
         pytest.skip()
 
     # Get and run session
@@ -454,20 +467,22 @@ def test_grouped_initialization(config, location, session_type):
             location,
             session_type,
             device=device,
-            opts=opts)
+            opts=opts,
+        )
 
-        #input, label, control-variable, test-tensor
+        # input, label, control-variable, test-tensor
         ip, lb, w1, w2 = tensors
         arrays_one, arrays_two = arrays
         buffer_one = np.zeros(arrays_one.shape).astype(np.float32)
         buffer_two = np.zeros(arrays_two.shape).astype(np.float32)
 
-        if (config["retrieval"] == "AllReplicas"):
+        if config["retrieval"] == "AllReplicas":
             shape = buffer_one.shape
             reshape = buffer_two.shape
-            buffer_two = np.repeat(buffer_two.reshape((1, ) + reshape),
-                                   len(groups[0]), 0)
-            reshape = (len(groups) * len(groups[0]), ) + shape
+            buffer_two = np.repeat(
+                buffer_two.reshape((1,) + reshape), len(groups[0]), 0
+            )
+            reshape = (len(groups) * len(groups[0]),) + shape
             buffer_two = buffer_two.reshape(reshape)
 
         weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
@@ -485,12 +500,12 @@ def test_grouped_initialization(config, location, session_type):
         if session_type == "training":
             assert np.allclose(arrays_one, buffer_one)
 
-        if (config["retrieval"] != "AllReplicas"):
+        if config["retrieval"] != "AllReplicas":
             sample = range(0, buffer_two.shape[0])
             assert np.allclose(arrays_two, buffer_two[sample])
         else:
             sample = range(0, buffer_two.shape[0], len(groups[0]))
-            if (config["commType"] == "Orthogonal"):
+            if config["commType"] == "Orthogonal":
                 sample = range(0, len(groups[0]))
             arr_flat = arrays_two.flatten()
             buf_flat = buffer_two[sample].flatten()
@@ -513,11 +528,10 @@ def test_grouped_initialization(config, location, session_type):
 
         for step in range(3):
             in_array = np.random.random_sample(input_shape).astype(np.float32)
-            if (session_type == "training"):
-                label_array = np.random.randint(low=0,
-                                                high=20,
-                                                size=label_shape).astype(
-                                                    np.int32)
+            if session_type == "training":
+                label_array = np.random.randint(
+                    low=0, high=20, size=label_shape
+                ).astype(np.int32)
                 io = {ip: in_array, lb: label_array}
             else:
                 io = {ip: in_array}
@@ -530,7 +544,7 @@ def test_grouped_initialization(config, location, session_type):
             session.readWeights(weightsIo)
 
             # Only verify this the first time, should be redundant later
-            if (step == 0 and session_type == "training"):
+            if step == 0 and session_type == "training":
                 # checks that the weights change
                 assert not np.allclose(arrays_two, buffer_two[sample])
 
@@ -557,23 +571,24 @@ def test_onnx_checkpointing(config):
 
         var_set = get_variable_settings(config)
         returned = var_set.numReplicasReturningVariable(int(config["repl"]))
-        groups = [] if returned == 1 else get_group_idxs(
-            config, var_set, returned)
+        groups = [] if returned == 1 else get_group_idxs(config, var_set, returned)
 
         builder = popart.Builder()
         builder.embedReplicationFactor(int(config["repl"]))
         opts, deviceContext = user_options(config, location)
         check_device(deviceContext, config)
         with deviceContext as device:
-            session, tensors, arrays, _, _ = get_model(config,
-                                                       builder,
-                                                       groups,
-                                                       var_set,
-                                                       location,
-                                                       "training",
-                                                       initialize=True,
-                                                       device=device,
-                                                       opts=opts)
+            session, tensors, arrays, _, _ = get_model(
+                config,
+                builder,
+                groups,
+                var_set,
+                location,
+                "training",
+                initialize=True,
+                device=device,
+                opts=opts,
+            )
 
             _, _, w1, w2 = tensors
             array_one, array_two = arrays
@@ -582,11 +597,12 @@ def test_onnx_checkpointing(config):
 
             buffer_one = np.ones(array_one.shape).astype(np.float32)
             buffer_two = np.ones(array_two.shape).astype(np.float32)
-            if (config["retrieval"] == "AllReplicas"):
+            if config["retrieval"] == "AllReplicas":
                 old_shape = buffer_two.shape
-                buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
-                                       returned, 0)
-                reshape = (returned, ) + old_shape
+                buffer_two = np.repeat(
+                    buffer_two.reshape((1,) + old_shape), returned, 0
+                )
+                reshape = (returned,) + old_shape
                 buffer_two = buffer_two.reshape(reshape)
             weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
 
@@ -611,15 +627,17 @@ def test_onnx_checkpointing(config):
         opts, deviceContext = user_options(config, location)
         check_device(deviceContext, config)
         with deviceContext as device:
-            session, tensors, _, _, _ = get_model(config,
-                                                  builder,
-                                                  groups,
-                                                  var_set,
-                                                  location,
-                                                  "training",
-                                                  initialize=True,
-                                                  device=device,
-                                                  opts=opts)
+            session, tensors, _, _, _ = get_model(
+                config,
+                builder,
+                groups,
+                var_set,
+                location,
+                "training",
+                initialize=True,
+                device=device,
+                opts=opts,
+            )
 
             _, _, w1, w2 = tensors
             session.resetHostWeights(tmpfile, True)
@@ -627,11 +645,12 @@ def test_onnx_checkpointing(config):
 
             buffer_one = np.ones(array_one.shape).astype(np.float32)
             buffer_two = np.ones(array_two.shape).astype(np.float32)
-            if (config["retrieval"] == "AllReplicas"):
+            if config["retrieval"] == "AllReplicas":
                 old_shape = buffer_two.shape
-                buffer_two = np.repeat(buffer_two.reshape((1, ) + old_shape),
-                                       returned, 0)
-                reshape = (returned, ) + old_shape
+                buffer_two = np.repeat(
+                    buffer_two.reshape((1,) + old_shape), returned, 0
+                )
+                reshape = (returned,) + old_shape
                 buffer_two = buffer_two.reshape(reshape)
             weightsIo = popart.PyWeightsIO({w1: buffer_one, w2: buffer_two})
 
@@ -645,10 +664,9 @@ def test_onnx_checkpointing(config):
 DATA_SIZE = 5
 
 
-def instance(repl: int,
-             vs: popart.VariableSettings,
-             location=None,
-             length: int = 5) -> np.ndarray:
+def instance(
+    repl: int, vs: popart.VariableSettings, location=None, length: int = 5
+) -> np.ndarray:
     with tu.create_test_device(numIpus=repl) as device:
         shape = [O_DIM, CHANNELS, DATA_SIZE, DATA_SIZE]
 
@@ -671,8 +689,8 @@ def instance(repl: int,
         # graph body
         mul_tensor = builder.aiOnnx.matmul([input_tensor, weight_tensor])
         rsh_tensor = builder.reshape_const(
-            builder.aiOnnx, [mul_tensor],
-            [O_DIM, CHANNELS * DATA_SIZE * DATA_SIZE])
+            builder.aiOnnx, [mul_tensor], [O_DIM, CHANNELS * DATA_SIZE * DATA_SIZE]
+        )
         relu_tensor = builder.aiOnnx.relu([rsh_tensor])
         out_tensor = builder.aiOnnx.softmax([relu_tensor])
         loss = builder.aiGraphcore.nllloss([out_tensor, label_tensor])
@@ -686,7 +704,7 @@ def instance(repl: int,
         options.replicatedGraphCount = repl
         options.enableReplicatedGraphs = True
         options.enableOutlining = False
-        if (location is not None):
+        if location is not None:
             options.weightTensorLocationSettings = location
 
         # weightIO
@@ -694,12 +712,14 @@ def instance(repl: int,
         weightsIo = popart.PyWeightsIO({weight_tensor: buffer})
 
         # ready session
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=data_flow,
-                                         userOptions=options,
-                                         loss=loss,
-                                         deviceInfo=device,
-                                         optimizer=popart.ConstSGD(1e-3))
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=data_flow,
+            userOptions=options,
+            loss=loss,
+            deviceInfo=device,
+            optimizer=popart.ConstSGD(1e-3),
+        )
         session.prepareDevice()
 
         session.weightsFromHost()
@@ -714,10 +734,10 @@ def instance(repl: int,
 
         # run
         for _ in range(length):
-            input = np.random.random_sample(prefix_shape + shape).astype(
-                np.float32)
-            label = np.random.randint(low=0, high=20,size=prefix_shape + label_shape).astype(\
-                                                                            np.int32)
+            input = np.random.random_sample(prefix_shape + shape).astype(np.float32)
+            label = np.random.randint(
+                low=0, high=20, size=prefix_shape + label_shape
+            ).astype(np.int32)
 
             input = np.arange(np.prod(shape)).astype(np.float32)
             for i in range(len(prefix_shape), 0, -1):
@@ -726,10 +746,9 @@ def instance(repl: int,
             input = input.reshape(prefix_shape + shape)
             label = np.arange(label.size).reshape(label.shape).astype(np.int32)
 
-            io = popart.PyStepIO(\
-                    { input_tensor: input,    \
-                      label_tensor: label },  \
-                    session.initAnchorArrays())
+            io = popart.PyStepIO(
+                {input_tensor: input, label_tensor: label}, session.initAnchorArrays()
+            )
             session.run(io)
 
         session.weightsToHost()
@@ -747,12 +766,12 @@ def test_locations():
 
     local = instance(replication_factor, variable_setting)
 
-    remote = instance(replication_factor, variable_setting,
-                      getOffChipLocation(group))
+    remote = instance(replication_factor, variable_setting, getOffChipLocation(group))
 
     assert np.allclose(local, remote)
 
-    shard = instance(replication_factor, variable_setting,
-                     getOffChipLocation(group, True))
+    shard = instance(
+        replication_factor, variable_setting, getOffChipLocation(group, True)
+    )
 
     assert np.allclose(local, shard)

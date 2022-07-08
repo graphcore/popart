@@ -5,6 +5,7 @@ import numpy as np
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -72,13 +73,13 @@ def test_grad_tensor_consumed_by_multiple_pipeline_stages_recompute():
             opts.autoRecomputation = popart.RecomputationType.Pipeline
 
         session = popart.TrainingSession(
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(
-                {"numIPUs": "2"}),
+            deviceInfo=popart.DeviceManager().createIpuModelDevice({"numIPUs": "2"}),
             dataFlow=popart.DataFlow(test_bps, [loss]),
             fnModel=builder.getModelProto(),
             loss=loss,
             optimizer=popart.ConstSGD(0.1),
-            userOptions=opts)
+            userOptions=opts,
+        )
 
         session.prepareDevice()
         session.weightsFromHost()

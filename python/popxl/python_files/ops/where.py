@@ -37,9 +37,8 @@ def where(condition: Tensor, lhs: Tensor, rhs: Tensor) -> Tensor:
 
     condition = cast_if_needed(condition, dtypes.bool)
 
-    settings = ctx._get_op_settings('where')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Where", 9, _ir.NumInputs(3, 3),
-                                  1)
+    settings = ctx._get_op_settings("where")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Where", 9, _ir.NumInputs(3, 3), 1)
     op = pb_g.createConnectedOp_WhereOp(
         {
             0: condition.id,

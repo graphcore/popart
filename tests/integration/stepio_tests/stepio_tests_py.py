@@ -6,6 +6,7 @@ import time
 # importing test_session and test_util requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -26,16 +27,18 @@ def test_stepio_bufferinput_ipu():
     batches_per_step = 2
 
     dataFlow = popart.DataFlow(
-        batches_per_step, {
+        batches_per_step,
+        {
             i1: popart.AnchorReturnType("All"),
             i2: popart.AnchorReturnType("All"),
-            o: popart.AnchorReturnType("All")
-        })
+            o: popart.AnchorReturnType("All"),
+        },
+    )
 
     with tu.create_test_device(1) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -66,16 +69,18 @@ def test_stepio_callbackinput_ipu():
     batches_per_step = 2
 
     dataFlow = popart.DataFlow(
-        batches_per_step, {
+        batches_per_step,
+        {
             i1: popart.AnchorReturnType("All"),
             i2: popart.AnchorReturnType("All"),
-            o: popart.AnchorReturnType("All")
-        })
+            o: popart.AnchorReturnType("All"),
+        },
+    )
 
     with tu.create_test_device(1) as device:
-        session = popart.InferenceSession(fnModel=proto,
-                                          dataFlow=dataFlow,
-                                          deviceInfo=device)
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, deviceInfo=device
+        )
 
         session.prepareDevice()
 
@@ -106,13 +111,13 @@ def test_stepio_callbackinput_ipu():
 
             if id == i1:
                 print("input_callback ", id, len(t), i1_c)
-                if (i1_c < len(t)):
+                if i1_c < len(t):
                     result = t[i1_c]
                     i1_c = i1_c + 1
 
             if id == i2:
                 print("input_callback ", id, len(t), i2_c)
-                if (i2_c < len(t)):
+                if i2_c < len(t):
                     result = t[i2_c]
                     i2_c = i2_c + 1
 
@@ -153,14 +158,17 @@ def test_stepio_callbackinput_ipu():
             print("output_complete_callback ", id)
 
         stepio = popart.PyStepIOCallback(
-            input_callback, input_complete_callback, output_callback,
-            output_complete_callback)
+            input_callback,
+            input_complete_callback,
+            output_callback,
+            output_complete_callback,
+        )
 
         session.run(stepio)
 
         # confirm that writing device-to-host of a Stream Tensor returns correctly (unchanged)
-        assert (np.allclose(anchors[i1], i1_data))
-        assert (np.allclose(anchors[i2], i2_data))
+        assert np.allclose(anchors[i1], i1_data)
+        assert np.allclose(anchors[i2], i2_data)
 
         expected_result = i1_data + i2_data
-        assert (np.allclose(anchors[o], expected_result))
+        assert np.allclose(anchors[o], expected_result)

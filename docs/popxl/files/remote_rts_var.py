@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-'''
+"""
 The example shows how to use a remote RTS variable.
-'''
+"""
 
 import numpy as np
 
@@ -17,7 +17,7 @@ ir.num_host_transfers = 1
 with ir.main_graph, popxl.in_sequence():
     # Create an RTS variable remote_x with buffer
     x = np.array([1, 2]).astype(np.int32)
-    buffer = popxl.remote_buffer((x.size // 2, ), dtypes.int32, 1)
+    buffer = popxl.remote_buffer((x.size // 2,), dtypes.int32, 1)
     remote_x = popxl.remote_replica_sharded_variable(x, buffer, 0)
     # Load remote_x to loaded_x
     loaded_x = ops.remote_load(buffer, 0)

@@ -21,161 +21,115 @@ class TestPythonDocExamples(ExamplesTester):
     def test_documentation_popxl_addition(self):
         """Test the popxl simple addition example"""
         filename = "simple_addition.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_addition_variable(self):
         """Test the popxl simple addition example"""
         filename = "tensor_addition.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_basic_subgraph(self):
         """Test the popxl basic subgraph example"""
         filename = "basic_graph.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_create_multi_subgraph(self):
         """Test the popxl create multiple subgraph example"""
         filename = "create_multi_graphs_from_same_func.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_multi_callsites_graph_input(self):
         """Test the popxl create multiple callsites for a subgraph input example"""
         filename = "multi_call_graph_input.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_code_loading(self):
         """Test the code loading example"""
         filename = "code_loading.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_nested_code_loading(self):
         """Test the nested code loading example"""
         filename = "code_loading_nested.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_nested_session_contexts(self):
         """Test the nested Session contexts example"""
         filename = "nested_session_contexts.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_call_with_info(self):
         """Test the popxl call_with_info example"""
         filename = "call_with_info.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_repeat_0(self):
         """Test the popxl basic repeat example"""
         filename = "repeat_graph_0.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_repeat_1(self):
         """Test the popxl subgraph in parent in repeat example"""
         filename = "repeat_graph_1.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_repeat_2(self):
         """Test the popxl subgraph in parent in repeat example"""
         filename = "repeat_graph_2.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_get_set_tensors(self):
         """Test the popxl getting / setting tensor data example"""
         filename = "tensor_get_write.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_adv_get_write(self):
         """Test the popxl advanced getting / writing tensor data example that
         shows exactly when device-host transfers occur"""
         filename = "tensor_get_write_adv.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_autodiff(self):
         """Test the popxl autodiff op"""
         filename = "autodiff.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_in_sequence(self):
         """Test the popxl in sequence context manager"""
         filename = "in_sequence.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_remote_var(self):
         """Test the popxl remote variable"""
         filename = "remote_variable.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_remote_rts_var(self):
         """Test the popxl remote rts variable"""
         filename = "remote_rts_var.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_rts_var(self):
         """Test the popxl rts variable"""
         filename = "rts_var.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_mnist(self):
         """Test the popxl basic mnist example"""
         filename = "mnist.py"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_mnist_replication_train(self):
         """Test the popxl mnist with replication example"""
         filename = "mnist_rts.py --replication-factor 2"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_mnist_rts_train(self):
         """Test the popxl mnist with RTS example"""
         filename = "mnist_rts.py --replication-factor 2 --rts"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
     def test_documentation_popxl_mnist_rts_train_test(self):
         """Test the popxl mnist with RTS example"""
         filename = "mnist_rts.py --replication-factor 2 --rts --test"
-        self.run_python(filename,
-                        file_dir=working_dir,
-                        working_dir=working_dir)
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)

@@ -20,13 +20,9 @@ def test_tile(op_tester):
         out = np.tile(d1, d2)
         return [out]
 
-    op_tester.run(init_builder,
-                  reference,
-                  'infer',
-                  opsets={
-                      "ai.onnx": 10,
-                      "ai.graphcore": 1
-                  })
+    op_tester.run(
+        init_builder, reference, "infer", opsets={"ai.onnx": 10, "ai.graphcore": 1}
+    )
 
 
 def test_tile_variable_repeats(op_tester):
@@ -45,8 +41,8 @@ def test_tile_variable_repeats(op_tester):
         return [out]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
-    assert (e_info.value.args[0].endswith("must be of type Constant"))
+        op_tester.run(init_builder, reference, "infer")
+    assert e_info.value.args[0].endswith("must be of type Constant")
 
 
 def test_tile_invalid_repeat_vals(op_tester):
@@ -65,15 +61,13 @@ def test_tile_invalid_repeat_vals(op_tester):
         return [out]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder,
-                      reference,
-                      'infer',
-                      opsets={
-                          "ai.onnx": 10,
-                          "ai.graphcore": 1
-                      })
-    assert (e_info.value.args[0].find(
-        "Values must be non-negative in each shape dimension") != -1)
+        op_tester.run(
+            init_builder, reference, "infer", opsets={"ai.onnx": 10, "ai.graphcore": 1}
+        )
+    assert (
+        e_info.value.args[0].find("Values must be non-negative in each shape dimension")
+        != -1
+    )
 
 
 def test_tile_invalid_repeats_size(op_tester):
@@ -92,15 +86,12 @@ def test_tile_invalid_repeats_size(op_tester):
         return [out]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder,
-                      reference,
-                      'infer',
-                      opsets={
-                          "ai.onnx": 10,
-                          "ai.graphcore": 1
-                      })
-    assert (e_info.value.args[0].endswith(
-        "should have one element for each dimension of the data tensor"))
+        op_tester.run(
+            init_builder, reference, "infer", opsets={"ai.onnx": 10, "ai.graphcore": 1}
+        )
+    assert e_info.value.args[0].endswith(
+        "should have one element for each dimension of the data tensor"
+    )
 
 
 def test_tile_grad(op_tester):
@@ -115,7 +106,7 @@ def test_tile_grad(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -125,11 +116,7 @@ def test_tile_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
-    op_tester.run(init_builder,
-                  reference,
-                  'train',
-                  opsets={
-                      "ai.onnx": 10,
-                      "ai.graphcore": 1
-                  })
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
+    op_tester.run(
+        init_builder, reference, "train", opsets={"ai.onnx": 10, "ai.graphcore": 1}
+    )

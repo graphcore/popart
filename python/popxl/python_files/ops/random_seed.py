@@ -1,7 +1,11 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 from typing import Tuple
 import popart._internal.ir as _ir
-from popxl.context import debug_context_frame_offset, get_current_context, op_debug_context
+from popxl.context import (
+    debug_context_frame_offset,
+    get_current_context,
+    op_debug_context,
+)
 from popxl.tensor import Tensor, constant
 from popxl.dtypes import uint32
 from .utils import check_in_graph, check_tensor_ipu_and_tile_set
@@ -28,18 +32,17 @@ def create_random_seed(seed: Tensor, modifier: Tensor) -> Tensor:
     check_in_graph(g, seed=seed, modifier=modifier)
     check_tensor_ipu_and_tile_set(seed=seed, modifier=modifier)
 
-    if seed.shape != (2, ) or seed.dtype != uint32:
+    if seed.shape != (2,) or seed.dtype != uint32:
         raise ValueError(
-            f"seed Tensor must be shape=(2,) dtype=uint32. Provided {seed}")
+            f"seed Tensor must be shape=(2,) dtype=uint32. Provided {seed}"
+        )
 
-    settings = ctx._get_op_settings('modify_seed')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ModifyRandomSeed", 1,
-                                  _ir.NumInputs(2, 2), 1)
+    settings = ctx._get_op_settings("modify_seed")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ModifyRandomSeed", 1, _ir.NumInputs(2, 2), 1
+    )
     op = pb_g.createConnectedOp_ModifyRandomSeedOp(
-        {
-            0: seed.id,
-            1: modifier.id
-        },
+        {0: seed.id, 1: modifier.id},
         {
             0: g._create_tensor_id("modified_seed"),
         },
@@ -72,5 +75,4 @@ def split_random_seed(seed: Tensor, n: int = 2) -> Tuple[Tensor, ...]:
     Returns:
         Tuple[Tensor, ...]: New random seeds.
     """
-    return tuple(
-        create_random_seed(seed, constant(i, uint32)) for i in range(n))
+    return tuple(create_random_seed(seed, constant(i, uint32)) for i in range(n))

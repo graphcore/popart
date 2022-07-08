@@ -8,8 +8,16 @@ RANK = len(SHAPE)
 # keep this in alphabetical order
 # contains the different suffixes of ReduceOps for each opset
 ONNX_OPS = [
-    "l1", "l2", "logsum", "logsumexp", "max", "mean", "min", "prod", "sum",
-    "sumsquare"
+    "l1",
+    "l2",
+    "logsum",
+    "logsumexp",
+    "max",
+    "mean",
+    "min",
+    "prod",
+    "sum",
+    "sumsquare",
 ]
 GRAPHCORE_OPS = ["median"]
 INVALID_AXES = [-RANK - 1, RANK]
@@ -35,11 +43,12 @@ def check_op_with_invalid_axes(opset, reduceOp, axis):
         dataFlow = popart.DataFlow(1, anchors)
         device = popart.DeviceManager().createCpuDevice()
 
-        _ = popart.InferenceSession(proto, dataFlow,
-                                    device)  # this should throw an error
-    assert (e_info.value.args[0] == (
-        "Axis {} is out of acceptable range [{}, {}]").format(
-            axis, -RANK, RANK - 1))
+        _ = popart.InferenceSession(
+            proto, dataFlow, device
+        )  # this should throw an error
+    assert e_info.value.args[0] == (
+        "Axis {} is out of acceptable range [{}, {}]"
+    ).format(axis, -RANK, RANK - 1)
 
 
 @pytest.mark.parametrize("axis", INVALID_AXES)

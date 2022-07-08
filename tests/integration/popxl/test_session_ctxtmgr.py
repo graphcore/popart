@@ -26,13 +26,16 @@ def test_session_runtime_fns_guard_attached_behaviour():
     session: popxl.Session = mk_session_with_test_device(ir)
 
     require_attach_runtime_fns = [
-        lambda s: s.run(), lambda s: s.run_with_outputs({}, {}), lambda s: s.
-        weights_from_host(), lambda s: s.weights_to_host()
+        lambda s: s.run(),
+        lambda s: s.run_with_outputs({}, {}),
+        lambda s: s.weights_from_host(),
+        lambda s: s.weights_to_host(),
     ]
     can_be_detached_runtime_fns = [
-        lambda s: s.write_variable_data(w, w_data), lambda s: s.
-        write_variables_data({w: w_data}), lambda s: s.get_tensor_data(
-            w), lambda s: s.get_tensors_data([w])
+        lambda s: s.write_variable_data(w, w_data),
+        lambda s: s.write_variables_data({w: w_data}),
+        lambda s: s.get_tensor_data(w),
+        lambda s: s.get_tensors_data([w]),
     ]
 
     def assert_all_fns_throw(fns, should_throw: bool):

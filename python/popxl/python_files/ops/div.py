@@ -30,13 +30,10 @@ def div(lhs: Tensor, rhs: Tensor) -> Tensor:
     check_in_graph(g, lhs=lhs, rhs=rhs)
     check_tensor_ipu_and_tile_set(lhs=lhs, rhs=rhs)
 
-    settings = ctx._get_op_settings('div')
+    settings = ctx._get_op_settings("div")
     opid = _ir.OperatorIdentifier("ai.onnx", "Div", 7, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_DivOp(
-        {
-            0: lhs.id,
-            1: rhs.id
-        },
+        {0: lhs.id, 1: rhs.id},
         {
             0: g._create_tensor_id("div_out"),
         },

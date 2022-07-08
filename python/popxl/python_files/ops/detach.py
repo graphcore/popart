@@ -26,9 +26,8 @@ def detach(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('detach')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Detach", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("detach")
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Detach", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_DetachOp(
         {0: t.id},
         {0: g._create_tensor_id("detach_out")},
@@ -62,7 +61,7 @@ def detach_(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('detach_inplace')
+    settings = ctx._get_op_settings("detach_inplace")
     op = pb_g.createConnectedOp_DetachInplaceOp(
         {0: t.id},
         {0: g._create_tensor_id("detach_out")},

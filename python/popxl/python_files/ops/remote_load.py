@@ -11,9 +11,9 @@ from .init import init
 
 
 @op_debug_context
-def remote_load(remote_buffer: RemoteBuffer,
-                offset: Union[int, Tensor],
-                name: Optional[str] = None) -> Tensor:
+def remote_load(
+    remote_buffer: RemoteBuffer, offset: Union[int, Tensor], name: Optional[str] = None
+) -> Tensor:
     """
     Load a tensor from Streaming Memory.
 
@@ -62,7 +62,7 @@ def remote_load(remote_buffer: RemoteBuffer,
     if name is None:
         name = f"id_{remote_buffer_id}_offset_{offset.name}"
 
-    remote_load_tensor = init(shape, dtype, name + '_remote_load', 'undef')
+    remote_load_tensor = init(shape, dtype, name + "_remote_load", "undef")
 
     check_in_graph(g, remote_load_tensor=remote_load_tensor, offset=offset)
 
@@ -72,23 +72,26 @@ def remote_load(remote_buffer: RemoteBuffer,
 
     remote_buffer.validate_tensor_matches_buffer(remote_load_tensor)
 
-    settings = ctx._get_op_settings('remote_load')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteLoad", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("remote_load")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "RemoteLoad", 1, _ir.NumInputs(1, 2), 1
+    )
 
     op = pb_g.createConnectedOp_RemoteLoadOp(
-        {
-            0: remote_load_tensor.id,
-            1: offset.id
-        }, {0: g._create_tensor_id(name + "_remote_loaded")}, opid, settings,
-        remote_buffer.remote_buffer_id)
+        {0: remote_load_tensor.id, 1: offset.id},
+        {0: g._create_tensor_id(name + "_remote_loaded")},
+        opid,
+        settings,
+        remote_buffer.remote_buffer_id,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
 @op_debug_context
-def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
-                 t: Tensor) -> Tensor:
+def remote_load_(
+    remote_buffer: RemoteBuffer, offset: Union[int, Tensor], t: Tensor
+) -> Tensor:
     """
     Load from Streaming Memory into a specified tensor.
 
@@ -133,16 +136,18 @@ def remote_load_(remote_buffer: RemoteBuffer, offset: Union[int, Tensor],
 
     remote_buffer.validate_tensor_matches_buffer(t)
 
-    settings = ctx._get_op_settings('remote_load_inplace')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteLoadInplace", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("remote_load_inplace")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "RemoteLoadInplace", 1, _ir.NumInputs(1, 2), 1
+    )
 
     op = pb_g.createConnectedOp_RemoteLoadInplaceOp(
-        {
-            0: t.id,
-            1: offset.id
-        }, {0: g._create_tensor_id("remote_load_inplace_out")}, opid, settings,
-        remote_buffer.remote_buffer_id)
+        {0: t.id, 1: offset.id},
+        {0: g._create_tensor_id("remote_load_inplace_out")},
+        opid,
+        settings,
+        remote_buffer.remote_buffer_id,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 

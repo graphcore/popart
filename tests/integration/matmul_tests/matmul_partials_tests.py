@@ -6,6 +6,7 @@ import popart
 # Add parent dir (tests/popart) to path.
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 import test_util as tu
@@ -21,15 +22,15 @@ def test_per_op_partials():
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
     data3 = np.random.rand(data_size, data_size).astype(np.float16)
-    partials_type = ['', '']
+    partials_type = ["", ""]
 
     def init_builder(builder):
-        t1 = builder.addInputTensor(data1, 'data_in_1')
-        t2 = builder.addInputTensor(data2, 'data_in_2')
-        t3 = builder.addInputTensor(data3, 'data_in_3')
+        t1 = builder.addInputTensor(data1, "data_in_1")
+        t2 = builder.addInputTensor(data2, "data_in_2")
+        t3 = builder.addInputTensor(data3, "data_in_3")
 
-        m1 = builder.aiOnnx.matmul([t1, t2], 'mul_1')
-        m2 = builder.aiOnnx.matmul([m1, t3], 'mul_2')
+        m1 = builder.aiOnnx.matmul([t1, t2], "mul_1")
+        m2 = builder.aiOnnx.matmul([m1, t3], "mul_2")
 
         builder.setPartialsType(m1, partials_type[0])
         builder.setPartialsType(m2, partials_type[1])
@@ -42,25 +43,25 @@ def test_per_op_partials():
     session = PopartTestSession()
 
     # check both convs are using half partials
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'HALF'
+    partials_type[0] = "HALF"
+    partials_type[1] = "HALF"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['half'], ['float'])
+        _check_for_matmul_partials(session, ["half"], ["float"])
 
     # check both convs are using float partials
-    partials_type[0] = 'FLOAT'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "FLOAT"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['float'], ['half'])
+        _check_for_matmul_partials(session, ["float"], ["half"])
 
     # check both float and half partials are used
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "HALF"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['half', 'float'], [])
+        _check_for_matmul_partials(session, ["half", "float"], [])
 
 
 @tu.requires_ipu_model
@@ -72,15 +73,15 @@ def test_per_op_partials_train():
     data1 = np.random.rand(data_size, data_size).astype(np.float16)
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
     data3 = np.random.rand(data_size, data_size).astype(np.float16)
-    partials_type = ['', '']
+    partials_type = ["", ""]
 
     def init_builder(builder):
-        t1 = builder.addInputTensor(data1, 'data_in_1')
-        t2 = builder.addInputTensor(data2, 'data_in_2')
-        t3 = builder.addInputTensor(data3, 'data_in_3')
+        t1 = builder.addInputTensor(data1, "data_in_1")
+        t2 = builder.addInputTensor(data2, "data_in_2")
+        t3 = builder.addInputTensor(data3, "data_in_3")
 
-        m1 = builder.aiOnnx.matmul([t1, t2], 'mul_1')
-        m2 = builder.aiOnnx.matmul([m1, t3], 'mul_2')
+        m1 = builder.aiOnnx.matmul([t1, t2], "mul_1")
+        m2 = builder.aiOnnx.matmul([m1, t3], "mul_2")
 
         builder.setPartialsType(m1, partials_type[0])
         builder.setPartialsType(m2, partials_type[1])
@@ -94,32 +95,32 @@ def test_per_op_partials_train():
             loss,
             popart.reservedGradientPrefix() + t1,
             popart.reservedGradientPrefix() + t2,
-            popart.reservedGradientPrefix() + t3
+            popart.reservedGradientPrefix() + t3,
         ]
 
     session = PopartTestSession()
-    session.mode = 'train'
+    session.mode = "train"
 
     # check both convs are using half partials
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'HALF'
+    partials_type[0] = "HALF"
+    partials_type[1] = "HALF"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['half'], ['float'])
+        _check_for_matmul_partials(session, ["half"], ["float"])
 
     # check both convs are using float partials
-    partials_type[0] = 'FLOAT'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "FLOAT"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['float'], ['half'])
+        _check_for_matmul_partials(session, ["float"], ["half"])
 
     # check both float and half partials are used
-    partials_type[0] = 'HALF'
-    partials_type[1] = 'FLOAT'
+    partials_type[0] = "HALF"
+    partials_type[1] = "FLOAT"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['half', 'float'], [])
+        _check_for_matmul_partials(session, ["half", "float"], [])
 
 
 @tu.requires_ipu_model
@@ -132,10 +133,10 @@ def test_global_partials():
     data2 = np.random.rand(data_size, data_size).astype(np.float16)
 
     def init_builder(builder):
-        t1 = builder.addInputTensor(data1, 'data_in_1')
-        t2 = builder.addInputTensor(data2, 'data_in_2')
+        t1 = builder.addInputTensor(data1, "data_in_1")
+        t2 = builder.addInputTensor(data2, "data_in_2")
 
-        o = builder.aiOnnx.matmul([t1, t2], 'mul_1')
+        o = builder.aiOnnx.matmul([t1, t2], "mul_1")
 
         builder.addOutputTensor(o)
         return [o]
@@ -146,13 +147,13 @@ def test_global_partials():
     session.options.partialsTypeMatMuls = "half"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['half'], ['float'])
+        _check_for_matmul_partials(session, ["half"], ["float"])
 
     # check convs are using float partials
     session.options.partialsTypeMatMuls = "float"
     with tu.create_test_device() as device:
         session.prepare_and_run(init_builder, device=device)
-        _check_for_matmul_partials(session, ['float'], ['half'])
+        _check_for_matmul_partials(session, ["float"], ["half"])
 
 
 # check the summary report to see which conv partials are being used
@@ -164,28 +165,28 @@ def _check_for_matmul_partials(sess, includes, excludes):
     # get to the memory usage section
     for i in range(len(sr)):
         line = sr[i]
-        if line.startswith('Memory Usage:'):
+        if line.startswith("Memory Usage:"):
             sr = sr[i:]
             break
 
     # get to the vertex data
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line.startswith('Vertex Data ('):
+        if line.startswith("Vertex Data ("):
             sr = sr[i:]
             break
 
     # get to the by type
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line.startswith('By Type:'):
-            sr = sr[i + 1:]
+        if line.startswith("By Type:"):
+            sr = sr[i + 1 :]
             break
 
     # get this whole of this section
     for i in range(len(sr)):
         line = sr[i].strip()
-        if line == '':
+        if line == "":
             sr = sr[:i]
             break
 
@@ -195,8 +196,8 @@ def _check_for_matmul_partials(sess, includes, excludes):
         # so we check for any.
         # MatMuls are decomposed by Poplar into 1x1 convolutions.
         r = re.compile(f"poplin::ConvPartial1x1Out.*<half,{item}.*")
-        assert (len(list(filter(r.match, types))) != 0)
+        assert len(list(filter(r.match, types))) != 0
 
     for item in excludes:
         r = re.compile(f"poplin::ConvPartial1x1Out.*<half,{item}.*")
-        assert (len(list(filter(r.match, types))) == 0)
+        assert len(list(filter(r.match, types))) == 0

@@ -1,7 +1,7 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-'''
+"""
 The intention of this example is to show a simple example of addition using popxl.
-'''
+"""
 
 import numpy as np
 import popxl

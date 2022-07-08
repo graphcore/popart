@@ -7,8 +7,7 @@ from .utils import check_in_graph
 
 
 @op_debug_context
-def transpose(t: Tensor,
-              permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
+def transpose(t: Tensor, permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
     Permute the axes of a tensor.
 
@@ -31,9 +30,8 @@ def transpose(t: Tensor,
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('transpose')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Transpose", 1, _ir.NumInputs(
-        1, 1), 1)
+    settings = ctx._get_op_settings("transpose")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Transpose", 1, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_TransposeOp(
         {0: t.id},
         {0: g._create_tensor_id(f"{t.name}_T")},
@@ -46,8 +44,7 @@ def transpose(t: Tensor,
 
 
 @op_debug_context
-def transpose_(t: Tensor,
-               permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
+def transpose_(t: Tensor, permutation: Optional[Tuple[int, ...]] = None) -> Tensor:
     """
     Permute the axes of a tensor in place.
 
@@ -75,9 +72,10 @@ def transpose_(t: Tensor,
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('transpose_inplace')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "TransposeInplace", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    settings = ctx._get_op_settings("transpose_inplace")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "TransposeInplace", 1, _ir.NumInputs(1, 1), 1
+    )
     op = pb_g.createConnectedOp_TransposeInplaceOp(
         {0: t.id},
         {0: g._create_tensor_id(f"{t.name}_T")},
@@ -90,7 +88,8 @@ def transpose_(t: Tensor,
 
 
 def _handle_permutation(
-        t: Tensor, permutation: Optional[Tuple[int, ...]]) -> Tuple[int, ...]:
+    t: Tensor, permutation: Optional[Tuple[int, ...]]
+) -> Tuple[int, ...]:
     """Check if the values of a permutation is valid for a tensor.
 
     The default is to use the reversed dimensions as a permutation (if no permutation is specified).
@@ -112,6 +111,7 @@ def _handle_permutation(
     if any(map(lambda dim: dim >= t.rank, permutation)):
         raise ValueError(
             f"Values in permutation must be less than the tensor's rank {t.rank}. "
-            f"Found {tuple(filter(lambda dim: dim >= t.rank, permutation))}")
+            f"Found {tuple(filter(lambda dim: dim >= t.rank, permutation))}"
+        )
 
     return permutation

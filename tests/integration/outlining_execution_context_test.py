@@ -7,12 +7,13 @@ import json
 import onnx
 from onnx import numpy_helper
 import tempfile
+
 # pva is needed for allclose to return True
 import pva  # pylint: disable=unused-import
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize('pipeline', [True, False])
+@pytest.mark.parametrize("pipeline", [True, False])
 def test_outlining_accumulation_context(pipeline, tmpdir):
     def model():
         np.random.seed(1984)
@@ -21,26 +22,25 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
         builder = popart.Builder()
 
-        d0 = builder.addInputTensor(popart.TensorInfo('FLOAT', (2, 200)),
-                                    'data0')
+        d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", (2, 200)), "data0")
         x = d0
 
         for i in [0, 1]:
             with builder.virtualGraph(i):
-                w0 = builder.addInitializedInputTensor(weight_data, 'weight0')
+                w0 = builder.addInitializedInputTensor(weight_data, "weight0")
                 x = builder.aiOnnx.matmul([x, w0])
 
-                w1 = builder.addInitializedInputTensor(weight_data, 'weight1')
+                w1 = builder.addInitializedInputTensor(weight_data, "weight1")
                 x = builder.aiOnnx.matmul([x, w1])
 
-                w2 = builder.addInitializedInputTensor(weight_data, 'weight2')
+                w2 = builder.addInitializedInputTensor(weight_data, "weight2")
                 x = builder.aiOnnx.matmul([x, w2])
 
-                w3 = builder.addInitializedInputTensor(weight_data, 'weight3')
+                w3 = builder.addInitializedInputTensor(weight_data, "weight3")
                 x = builder.aiOnnx.matmul([x, w3])
 
         with builder.virtualGraph(i):
-            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext='loss')
+            loss = builder.aiGraphcore.l1loss([x], 0.1, debugContext="loss")
 
         return builder.getModelProto(), {d0: input_data}, x, loss
 
@@ -50,9 +50,11 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
         options = popart.SessionOptions()
         patterns = popart.Patterns()
 
-        optimizer = popart.SGD({
-            "defaultLearningRate": (0.1, True),
-        })
+        optimizer = popart.SGD(
+            {
+                "defaultLearningRate": (0.1, True),
+            }
+        )
 
         options.enableOutlining = outlining
         options.outlineThreshold = 10.0
@@ -73,13 +75,15 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
             dataFlow = popart.DataFlow(1, {x: popart.AnchorReturnType("ALL")})
 
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=options,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=patterns,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=options,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=patterns,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -97,10 +101,9 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
 
         report = session.getReport()
 
-        total_memory = np.sum([
-            tile.memory.total.excludingGaps
-            for tile in report.compilation.tiles
-        ])
+        total_memory = np.sum(
+            [tile.memory.total.excludingGaps for tile in report.compilation.tiles]
+        )
 
         return session, anchors[x], post_proto, total_memory
 
@@ -114,8 +117,10 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
     # Check ReplicatedAllReduce is in a subgraph
     has_replicated_all_reduce = map(
         lambda graph: next(
-            filter(lambda op: "ReplicatedAllReduce" in op["type"], graph),
-            False), subgraphs)
+            filter(lambda op: "ReplicatedAllReduce" in op["type"], graph), False
+        ),
+        subgraphs,
+    )
     assert any(has_replicated_all_reduce)
 
     assert np.allclose(outputs_1, outputs_2)
@@ -129,4 +134,4 @@ def test_outlining_accumulation_context(pipeline, tmpdir):
         assert np.allclose(gt, val)
 
     # This is not true anymore because of GCL changes. See T38369 and T38493.
-    #assert total_memory_1 > total_memory_2
+    # assert total_memory_1 > total_memory_2

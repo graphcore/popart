@@ -5,6 +5,7 @@ import tempfile
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -28,12 +29,14 @@ def test_basic(monkeypatch):
             opts.logDir = tmpdir
 
             with tu.create_test_device() as device:
-                _ = popart.InferenceSession(fnModel=proto,
-                                            dataFlow=dataFlow,
-                                            userOptions=opts,
-                                            deviceInfo=device)
+                _ = popart.InferenceSession(
+                    fnModel=proto,
+                    dataFlow=dataFlow,
+                    userOptions=opts,
+                    deviceInfo=device,
+                )
 
-                dotFiles = list(Path(tmpdir).glob('*.dot'))
+                dotFiles = list(Path(tmpdir).glob("*.dot"))
                 assert len(dotFiles) == expected_dot_file_count
 
     monkeypatch.setenv("POPART_DOT_CHECKS", "")

@@ -9,11 +9,13 @@ from .utils import check_in_graph, convert_optional_float, check_tensor_ipu_and_
 
 
 @op_debug_context
-def matmul(lhs: Tensor,
-           rhs: Tensor,
-           available_memory_proportion: Optional[float] = None,
-           output_type: Optional[dtypes.dtype] = None,
-           partials_type: Optional[dtypes.dtype] = None) -> Tensor:
+def matmul(
+    lhs: Tensor,
+    rhs: Tensor,
+    available_memory_proportion: Optional[float] = None,
+    output_type: Optional[dtypes.dtype] = None,
+    partials_type: Optional[dtypes.dtype] = None,
+) -> Tensor:
     """Perform matrix multiplication of two tensors.
 
     Follows NumPy matrix multiplication rules for N-D tensors, see
@@ -45,27 +47,26 @@ def matmul(lhs: Tensor,
     check_in_graph(g, lhs=lhs, rhs=rhs)
     check_tensor_ipu_and_tile_set(lhs=lhs, rhs=rhs)
 
-    settings = ctx._get_op_settings('matmul')
-    opid = _ir.OperatorIdentifier("ai.onnx", "MatMul", 9, _ir.NumInputs(2, 2),
-                                  1)
+    settings = ctx._get_op_settings("matmul")
+    opid = _ir.OperatorIdentifier("ai.onnx", "MatMul", 9, _ir.NumInputs(2, 2), 1)
 
     if partials_type is None:
         partials_type = _convert_partials_type_from_str(
-            g.ir._pb_ir.getSessionOptions().partialsTypeMatMuls)
+            g.ir._pb_ir.getSessionOptions().partialsTypeMatMuls
+        )
     else:
         partials_type = _convert_partials_type_from_dtype(partials_type)
 
     # These two args can be none, in which case we want to send a no-opt optional.
-    out_dtype = _ir.OptionalDataType(
-        output_type._pb_dtype) if output_type else _ir.OptionalDataType()
-    optional_memory_proportion = convert_optional_float(
-        available_memory_proportion)
+    out_dtype = (
+        _ir.OptionalDataType(output_type._pb_dtype)
+        if output_type
+        else _ir.OptionalDataType()
+    )
+    optional_memory_proportion = convert_optional_float(available_memory_proportion)
 
     op = pb_g.createConnectedOp_MatMulOp(
-        {
-            0: lhs.id,
-            1: rhs.id
-        },
+        {0: lhs.id, 1: rhs.id},
         {
             0: g._create_tensor_id("matmul_out"),
         },
@@ -76,13 +77,13 @@ def matmul(lhs: Tensor,
         # which is not exposed in PopXL
         _ir.op.SerialiseSettings(),
         out_dtype,
-        partials_type)
+        partials_type,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))
 
 
-def _convert_partials_type_from_dtype(
-        type_: dtypes.dtype) -> _ir.op.MatMulPartialsType:
+def _convert_partials_type_from_dtype(type_: dtypes.dtype) -> _ir.op.MatMulPartialsType:
     """Convert the dtype to an _internal.ir partials type.
 
     Args:
@@ -99,12 +100,10 @@ def _convert_partials_type_from_dtype(
     elif type_ == dtypes.float32:
         return _ir.op.MatMulPartialsType.FLOAT
     else:
-        raise ValueError(
-            f"dtype {type_} is not valid, must be float16 or float32")
+        raise ValueError(f"dtype {type_} is not valid, must be float16 or float32")
 
 
-def _convert_partials_type_from_str(
-        partials_type: str) -> _ir.op.MatMulPartialsType:
+def _convert_partials_type_from_str(partials_type: str) -> _ir.op.MatMulPartialsType:
     """Convert SessionOption partialsTypeMatMuls to an _internal.ir partials type.
 
         Empty string defaults to `FLOAT`.
@@ -124,5 +123,4 @@ def _convert_partials_type_from_str(
     elif partials_type == "half":
         return _ir.op.MatMulPartialsType.HALF
     else:
-        raise ValueError(
-            f"str {partials_type} is not valid, must be 'float' or 'half'")
+        raise ValueError(f"str {partials_type} is not valid, must be 'float' or 'half'")

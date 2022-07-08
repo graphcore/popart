@@ -28,14 +28,10 @@ def fmod(lhs: Tensor, rhs: Tensor) -> Tensor:
     check_in_graph(g, lhs=lhs, rhs=rhs)
     check_tensor_ipu_and_tile_set(lhs=lhs, rhs=rhs)
 
-    settings = ctx._get_op_settings('fmod')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "Fmod", 1, _ir.NumInputs(
-        2, 2), 1)
+    settings = ctx._get_op_settings("fmod")
+    opid = _ir.OperatorIdentifier("ai.graphcore", "Fmod", 1, _ir.NumInputs(2, 2), 1)
     op = pb_g.createConnectedOp_FmodOp(
-        {
-            0: lhs.id,
-            1: rhs.id
-        },
+        {0: lhs.id, 1: rhs.id},
         {
             0: g._create_tensor_id("fmod_out"),
         },

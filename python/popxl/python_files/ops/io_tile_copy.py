@@ -23,7 +23,7 @@ def io_tile_copy(t: Tensor) -> Tensor:
 
     check_in_graph(g, t=t)
 
-    settings = ctx._get_op_settings('iotilecopy')
+    settings = ctx._get_op_settings("iotilecopy")
 
     # Use internal method to infer the input tensor's tileSet
     vgid, tile_set = t._pb_tensor.getVirtualGraphIdAndTileSetUnsafe()
@@ -32,10 +32,13 @@ def io_tile_copy(t: Tensor) -> Tensor:
     if tile_set != _ir.TileSet.Undefined:
         # TileSet should match the destination
         # so it should be the opposite of the source `t`.
-        settings.tileSet = _ir.TileSet.IO if tile_set == _ir.TileSet.Compute else _ir.TileSet.Compute
+        settings.tileSet = (
+            _ir.TileSet.IO if tile_set == _ir.TileSet.Compute else _ir.TileSet.Compute
+        )
 
-    opid = _ir.OperatorIdentifier("ai.graphcore", "IoTileCopy", 1,
-                                  _ir.NumInputs(1, 1), 1)
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "IoTileCopy", 1, _ir.NumInputs(1, 1), 1
+    )
     op = pb_g.createConnectedOp_IoTileCopyOp(
         {
             0: t.id,

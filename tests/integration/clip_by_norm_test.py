@@ -9,17 +9,17 @@ import json
 
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent / 'optimizer_tests'))
+
+sys.path.append(str(Path(__file__).resolve().parent / "optimizer_tests"))
 import torch_lamb
 
-allOptimizerTypes = ['sgd', 'adam', 'lamb', 'lambnobias']
+allOptimizerTypes = ["sgd", "adam", "lamb", "lambnobias"]
 
 
 def _get_popart_optimizer(optType, clipNormSettings):
-    if optType == 'sgd':
-        return popart.SGD({"defaultLearningRate": (0.1, True)},
-                          clipNormSettings)
-    elif optType == 'adam':
+    if optType == "sgd":
+        return popart.SGD({"defaultLearningRate": (0.1, True)}, clipNormSettings)
+    elif optType == "adam":
         return popart.Adam(
             {
                 "defaultLearningRate": (0.1, False),
@@ -29,8 +29,9 @@ def _get_popart_optimizer(optType, clipNormSettings):
             },
             weight_decay_mode=popart.WeightDecayMode.L2Regularization,
             mode=popart.AdamMode.Adam,
-            clip_norm_settings=clipNormSettings)
-    elif optType == 'lamb':
+            clip_norm_settings=clipNormSettings,
+        )
+    elif optType == "lamb":
         return popart.Adam(
             {
                 "defaultLearningRate": (0.01, False),
@@ -42,8 +43,9 @@ def _get_popart_optimizer(optType, clipNormSettings):
             },
             weight_decay_mode=popart.WeightDecayMode.Decay,
             mode=popart.AdamMode.Lamb,
-            clip_norm_settings=clipNormSettings)
-    elif optType == 'lambnobias':
+            clip_norm_settings=clipNormSettings,
+        )
+    elif optType == "lambnobias":
         return popart.Adam(
             {
                 "defaultLearningRate": (0.01, False),
@@ -56,33 +58,32 @@ def _get_popart_optimizer(optType, clipNormSettings):
             scaled_optimizer_state=False,
             weight_decay_mode=popart.WeightDecayMode.Decay,
             mode=popart.AdamMode.LambNoBias,
-            clip_norm_settings=clipNormSettings)
+            clip_norm_settings=clipNormSettings,
+        )
     else:
         raise Exception(f"Unrecognized optimizer type: '{optType}'")
 
 
 def _get_torch_optimizer(optType, net):
-    if optType == 'sgd':
+    if optType == "sgd":
         return torch.optim.SGD(net.parameters(), lr=0.1)
-    elif optType == 'adam':
-        return torch.optim.Adam(net.parameters(),
-                                lr=0.1,
-                                betas=(0.9, 0.999),
-                                eps=1e-6,
-                                weight_decay=0.1)
-    elif optType == 'lamb':
-        return torch_lamb.Lamb(net.parameters(),
-                               lr=0.01,
-                               betas=(0.9, 0.999),
-                               eps=1e-6,
-                               weight_decay=0.1)
-    elif optType == 'lambnobias':
-        return torch_lamb.Lamb(net.parameters(),
-                               lr=0.01,
-                               betas=(0.9, 0.999),
-                               eps=1e-6,
-                               weight_decay=0.1,
-                               biasCorrection=False)
+    elif optType == "adam":
+        return torch.optim.Adam(
+            net.parameters(), lr=0.1, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.1
+        )
+    elif optType == "lamb":
+        return torch_lamb.Lamb(
+            net.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.1
+        )
+    elif optType == "lambnobias":
+        return torch_lamb.Lamb(
+            net.parameters(),
+            lr=0.01,
+            betas=(0.9, 0.999),
+            eps=1e-6,
+            weight_decay=0.1,
+            biasCorrection=False,
+        )
     else:
         raise Exception(f"Unrecognized optimizer type: '{optType}'")
 
@@ -93,21 +94,22 @@ def _get_torch_optimizer(optType, net):
 # `clipInfo` describes the gradient clipping groups.
 # The format of `clipInfo` is:
 #     List(Tuple(List(TensorId), MaxNorm)))
-def _run_popart_test_model(data,
-                           weights,
-                           clipInfo,
-                           pipelineGroups=None,
-                           accumulationFactor=None,
-                           optimizerType=None,
-                           enablePipelining=False):
+def _run_popart_test_model(
+    data,
+    weights,
+    clipInfo,
+    pipelineGroups=None,
+    accumulationFactor=None,
+    optimizerType=None,
+    enablePipelining=False,
+):
     # make sure the weights are not accidently modified in this function
     weights = [np.copy(i) for i in weights]
     bld = popart.Builder()
     d0 = bld.addInputTensor(popart.TensorInfo(data))
     # consistently name the weights so we can refer to them later
     weightIds = [
-        bld.addInitializedInputTensor(w, f'weight{i}')
-        for i, w in enumerate(weights)
+        bld.addInitializedInputTensor(w, f"weight{i}") for i, w in enumerate(weights)
     ]
 
     # Get a pipeline stage for each weight
@@ -120,10 +122,9 @@ def _run_popart_test_model(data,
 
     x = d0
     for i, weightId in enumerate(weightIds):
-        x = bld.aiOnnxOpset9.conv([x, weightId],
-                                  dilations=[1, 1],
-                                  pads=[1, 1, 1, 1],
-                                  strides=[1, 1])
+        x = bld.aiOnnxOpset9.conv(
+            [x, weightId], dilations=[1, 1], pads=[1, 1, 1, 1], strides=[1, 1]
+        )
         if pipelineGroups:
             bld.pipelineStage(x, pipelineStages[i])
             bld.virtualGraph(x, pipelineStages[i])
@@ -137,14 +138,14 @@ def _run_popart_test_model(data,
 
     proto = bld.getModelProto()
 
-    dataFlow = popart.DataFlow(1, {
-        x: popart.AnchorReturnType("All"),
-        out: popart.AnchorReturnType("All")
-    })
+    dataFlow = popart.DataFlow(
+        1, {x: popart.AnchorReturnType("All"), out: popart.AnchorReturnType("All")}
+    )
 
     if pipelineGroups:
         device = popart.DeviceManager().createIpuModelDevice(
-            {"numIPUs": maxPipelineStage + 1})
+            {"numIPUs": maxPipelineStage + 1}
+        )
     else:
         device = popart.DeviceManager().createIpuModelDevice({"numIPUs": 1})
 
@@ -152,23 +153,28 @@ def _run_popart_test_model(data,
     for weightIndices, maxNorm in clipInfo:
         clipNormSettings.append(
             popart.ClipNormSettings.clipWeights(
-                [weightIds[i] for i in weightIndices], maxNorm))
+                [weightIds[i] for i in weightIndices], maxNorm
+            )
+        )
     opts = popart.SessionOptions()
     opts.enableOutlining = False
     if pipelineGroups:
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.accumulationFactor = accumulationFactor
         opts.enableGradientAccumulation = True
-        opts.accumulateOuterFragmentSettings.schedule = popart.AccumulateOuterFragmentSchedule.OverlapMemoryOptimized
+        opts.accumulateOuterFragmentSettings.schedule = (
+            popart.AccumulateOuterFragmentSchedule.OverlapMemoryOptimized
+        )
         opts.enablePipelining = enablePipelining
 
-    sess = popart.TrainingSession(proto,
-                                  dataFlow=dataFlow,
-                                  loss=out,
-                                  optimizer=_get_popart_optimizer(
-                                      optimizerType, clipNormSettings),
-                                  deviceInfo=device,
-                                  userOptions=opts)
+    sess = popart.TrainingSession(
+        proto,
+        dataFlow=dataFlow,
+        loss=out,
+        optimizer=_get_popart_optimizer(optimizerType, clipNormSettings),
+        deviceInfo=device,
+        userOptions=opts,
+    )
 
     sess.prepareDevice()
 
@@ -200,11 +206,9 @@ def _run_popart_test_model(data,
 # `clipInfo` describes the gradient clipping groups.
 # The format of `clipInfo` is:
 #     List(Tuple(List(TensorId), MaxNorm)))
-def _run_torch_test_model(data,
-                          weights,
-                          clipInfo,
-                          accumulationFactor=None,
-                          optimizerType=None):
+def _run_torch_test_model(
+    data, weights, clipInfo, accumulationFactor=None, optimizerType=None
+):
     data = torch.tensor(data)
     weights = [torch.tensor(np.copy(i)) for i in weights]
 
@@ -213,7 +217,7 @@ def _run_torch_test_model(data,
             super(Net, self).__init__()
             self.convs = []
             for i in range(len(weights)):
-                name = f'conv{i}'
+                name = f"conv{i}"
                 conv = nn.Conv2d(1, 1, 2, padding=1)
                 # Setting convs as a parameter so
                 # `net.parameters()` will return the conv
@@ -246,7 +250,8 @@ def _run_torch_test_model(data,
 
     for weightIndices, maxNorm in clipInfo:
         torch.nn.utils.clip_grad_norm_(
-            [net.convs[i].weight for i in weightIndices], maxNorm)
+            [net.convs[i].weight for i in weightIndices], maxNorm
+        )
 
     optimizer.step()
 
@@ -254,8 +259,7 @@ def _run_torch_test_model(data,
     result = result.detach().numpy()
 
     resultWeights = {
-        f'weight{index}': weight
-        for index, weight in enumerate(resultWeights)
+        f"weight{index}": weight for index, weight in enumerate(resultWeights)
     }
 
     return result, resultWeights
@@ -268,23 +272,25 @@ def test_basic(optimizerType):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(2)]
-    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f"weight{i}": np.copy(w) for i, w in enumerate(weights)}
 
     popartResult, popartWeights = _run_popart_test_model(
-        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType)
+        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType
+    )
     torchResult, torchWeights = _run_torch_test_model(
-        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType)
+        data, weights, [([0, 1], clipNorm)], optimizerType=optimizerType
+    )
 
     assert popartResult.shape == torchResult.shape
     assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
-        x = x.replace('\n', '')
-        print(f'  {x}')
+        x = x.replace("\n", "")
+        print(f"  {x}")
 
     for key in popartWeights.keys():
-        print(f'{key}:')
+        print(f"{key}:")
         print_tensor(initialWeights[key])
         print_tensor(popartWeights[key])
         print_tensor(torchWeights[key])
@@ -302,28 +308,30 @@ def test_two_groups(optimizerType):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f"weight{i}": np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1], norm1), ([2, 3], norm2)]
 
     popartResult, popartWeights = _run_popart_test_model(
-        data, weights, clipGroups, optimizerType=optimizerType)
+        data, weights, clipGroups, optimizerType=optimizerType
+    )
     torchResult, torchWeights = _run_torch_test_model(
-        data, weights, clipGroups, optimizerType=optimizerType)
+        data, weights, clipGroups, optimizerType=optimizerType
+    )
 
     assert popartResult.shape == torchResult.shape
     assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
-        x = x.replace('\n', '')
-        print(f'  {x}')
+        x = x.replace("\n", "")
+        print(f"  {x}")
 
     for key in popartWeights.keys():
         if np.allclose(popartWeights[key], torchWeights[key]):
-            print(f'{key}:')
+            print(f"{key}:")
         else:
-            print(f'{key}: FAIL')
+            print(f"{key}: FAIL")
         print_tensor(initialWeights[key])
         print_tensor(popartWeights[key])
         print_tensor(torchWeights[key])
@@ -342,7 +350,7 @@ def test_pipelined(optimizerType, enablePipelining):
 
     data = np.random.rand(1, 1, 8, 8).astype(np.float32)
     weights = [np.random.rand(1, 1, 2, 2).astype(np.float32) for _ in range(4)]
-    initialWeights = {f'weight{i}': np.copy(w) for i, w in enumerate(weights)}
+    initialWeights = {f"weight{i}": np.copy(w) for i, w in enumerate(weights)}
 
     clipGroups = [([0, 1, 2, 3], norm1)]
     pipelineGroups = ((0, 1), (2, 3))
@@ -354,25 +362,23 @@ def test_pipelined(optimizerType, enablePipelining):
         pipelineGroups,
         accumulationFactor=3,
         optimizerType=optimizerType,
-        enablePipelining=enablePipelining)
+        enablePipelining=enablePipelining,
+    )
     popartResult = popartResult[1]
     torchResult, torchWeights = _run_torch_test_model(
-        data,
-        weights,
-        clipGroups,
-        accumulationFactor=3,
-        optimizerType=optimizerType)
+        data, weights, clipGroups, accumulationFactor=3, optimizerType=optimizerType
+    )
 
     assert popartResult.shape == torchResult.shape
     assert np.allclose(popartResult, torchResult)
 
     def print_tensor(x):
         x = str(x)
-        x = x.replace('\n', '')
-        print(f'  {x}')
+        x = x.replace("\n", "")
+        print(f"  {x}")
 
     for key in popartWeights.keys():
-        print(f'{key}:')
+        print(f"{key}:")
         print_tensor(initialWeights[key])
         print_tensor(popartWeights[key])
         print_tensor(torchWeights[key])
@@ -390,8 +396,8 @@ def test_serialized_matmul(optimizerType):
 
         lhs_shape = [input_channels, reducing_dim]
         rhs_shape = [reducing_dim, output_channels]
-        lhs_data = np.ones((*lhs_shape, ), dtype=np.float32)
-        rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+        lhs_data = np.ones((*lhs_shape,), dtype=np.float32)
+        rhs_data = np.ones((*rhs_shape,), dtype=np.float32)
 
         builder = popart.Builder()
 
@@ -400,22 +406,20 @@ def test_serialized_matmul(optimizerType):
 
         o = builder.aiOnnx.matmul([lhs, rhs])
 
-        builder.setSerializeMatMul({o}, serialization_mode,
-                                   serialization_factor)
+        builder.setSerializeMatMul({o}, serialization_mode, serialization_factor)
 
         loss = builder.aiGraphcore.l1loss([o], 0.1)
 
         proto = builder.getModelProto()
 
         dataFlow = popart.DataFlow(
-            1, {
-                o:
-                popart.AnchorReturnType("All"),
-                rhs:
-                popart.AnchorReturnType("Final"),
-                popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("All"),
-            })
+            1,
+            {
+                o: popart.AnchorReturnType("All"),
+                rhs: popart.AnchorReturnType("Final"),
+                popart.reservedGradientPrefix() + lhs: popart.AnchorReturnType("All"),
+            },
+        )
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
@@ -429,20 +433,24 @@ def test_serialized_matmul(optimizerType):
         opts.enableGradientAccumulation = True
 
         pat = popart.Patterns(
-            ['MatMulOp', 'MatMulRhsGradOp', 'MatMulLhsGradOp', 'OpToIdentity'])
+            ["MatMulOp", "MatMulRhsGradOp", "MatMulLhsGradOp", "OpToIdentity"]
+        )
         pat.enableRuntimeAsserts(False)
 
         optimizer = _get_popart_optimizer(
-            optimizerType, [popart.ClipNormSettings([lhs, rhs], 0.01)])
+            optimizerType, [popart.ClipNormSettings([lhs, rhs], 0.01)]
+        )
 
         with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-            session = popart.TrainingSession(fnModel=proto,
-                                             dataFlow=dataFlow,
-                                             userOptions=opts,
-                                             loss=loss,
-                                             optimizer=optimizer,
-                                             patterns=pat,
-                                             deviceInfo=device)
+            session = popart.TrainingSession(
+                fnModel=proto,
+                dataFlow=dataFlow,
+                userOptions=opts,
+                loss=loss,
+                optimizer=optimizer,
+                patterns=pat,
+                deviceInfo=device,
+            )
 
             session.prepareDevice()
 
@@ -455,12 +463,12 @@ def test_serialized_matmul(optimizerType):
 
             session.run(stepio)
             session.weightsToHost()
-            print(f'weights should be called {lhs} and {rhs}')
+            print(f"weights should be called {lhs} and {rhs}")
 
         return anchors
 
-    r1 = run_test('none', 0)
-    r2 = run_test('output_channels', 2)
+    r1 = run_test("none", 0)
+    r2 = run_test("output_channels", 2)
 
     print(r1)
     print(r2)
@@ -476,8 +484,8 @@ def test_clipping_all_weights(optimizerType):
 
     a_shape = [input_channels]
     b_shape = [input_channels]
-    a_data = np.ones((*a_shape, ), dtype=np.float32)
-    b_data = np.ones((*b_shape, ), dtype=np.float32)
+    a_data = np.ones((*a_shape,), dtype=np.float32)
+    b_data = np.ones((*b_shape,), dtype=np.float32)
     X_data = np.random.rand(*b_shape).astype(np.float32)
     target_data = np.random.rand(*b_shape).astype(np.float32)
 
@@ -494,7 +502,8 @@ def test_clipping_all_weights(optimizerType):
     sub = builder.aiOnnx.sub([target, out])
     square = builder.aiOnnx.mul([sub, sub])
     loss = builder.aiGraphcore.identityloss(
-        [square], reduction=popart.ReductionType.Mean)
+        [square], reduction=popart.ReductionType.Mean
+    )
 
     builder.addOutputTensor(out)
     builder.addOutputTensor(loss)
@@ -502,31 +511,32 @@ def test_clipping_all_weights(optimizerType):
     proto = builder.getModelProto()
 
     dataFlow = popart.DataFlow(
-        1, {
-            out: popart.AnchorReturnType("Final"),
-            loss: popart.AnchorReturnType("Final")
-        })
+        1,
+        {out: popart.AnchorReturnType("Final"), loss: popart.AnchorReturnType("Final")},
+    )
 
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     optimizer = _get_popart_optimizer(
-        optimizerType, [popart.ClipNormSettings.clipAllWeights(0.1)])
+        optimizerType, [popart.ClipNormSettings.clipAllWeights(0.1)]
+    )
 
     with tu.create_test_device(opts={"compileIPUCode": False}) as device:
-        session = popart.TrainingSession(fnModel=proto,
-                                         dataFlow=dataFlow,
-                                         userOptions=opts,
-                                         loss=loss,
-                                         optimizer=optimizer,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFlow=dataFlow,
+            userOptions=opts,
+            loss=loss,
+            optimizer=optimizer,
+            deviceInfo=device,
+        )
 
-        ir = json.loads(session._serializeIr(
-            popart.IrSerializationFormat.JSON))
+        ir = json.loads(session._serializeIr(popart.IrSerializationFormat.JSON))
 
         # There should be two ReduceSumSquare ops in the graph if gradient clipping
         # was applied to all the weights.
         reduceSumSquareOps = [
-            op for op in ir['maingraph'] if op['type'] == 'ReduceSumSquare'
+            op for op in ir["maingraph"] if op["type"] == "ReduceSumSquare"
         ]
-        assert (len(reduceSumSquareOps) == 2)
+        assert len(reduceSumSquareOps) == 2

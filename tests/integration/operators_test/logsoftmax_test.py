@@ -37,8 +37,7 @@ def test_logsoftmax_negative_axis(op_tester):
 
 
 def test_logsoftmax_large_number(op_tester):
-    x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]],
-                 dtype=np.float32)
+    x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]], dtype=np.float32)
     _test_logsoftmax(op_tester, x)
 
 
@@ -57,8 +56,7 @@ def test_logsoftmax_grad(op_tester, inplace):
 
 
 def test_logsoftmax_grad_large_number(op_tester):
-    x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]],
-                 dtype=np.float32)
+    x = np.array([[0, 1, 2, 3], [10000, 10001, 10002, 10003]], dtype=np.float32)
     _test_logsoftmax_grad(op_tester, x)
 
 
@@ -81,7 +79,7 @@ def _test_logsoftmax(op_tester, data, axis=1, inplace=True):
 
     op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.inplacing = inplace
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")
 
 
 def _test_logsoftmax_grad(op_tester, data, axis=1, inplace=True):
@@ -92,7 +90,7 @@ def _test_logsoftmax_grad(op_tester, data, axis=1, inplace=True):
         return [
             o,
             popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + o
+            popart.reservedGradientPrefix() + o,
         ]
 
     def reference(ref_data):
@@ -107,4 +105,4 @@ def _test_logsoftmax_grad(op_tester, data, axis=1, inplace=True):
     op_tester.rtol *= 10
     op_tester.setPatterns([], enableRuntimeAsserts=False)
     op_tester.inplacing = inplace
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

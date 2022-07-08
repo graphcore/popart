@@ -7,8 +7,9 @@ from .utils import check_in_graph, check_tensor_ipu_and_tile_set
 
 
 @op_debug_context
-def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
-                  no_overlap: bool) -> Tensor:
+def dynamic_slice(
+    t: Tensor, index: Tensor, axes: List[int], sizes: List[int], no_overlap: bool
+) -> Tensor:
     """
     Return a cloned slice of the input tensor.
 
@@ -60,14 +61,18 @@ def dynamic_slice(t: Tensor, index: Tensor, axes: List[int], sizes: List[int],
     check_in_graph(g, t=t, index=index)
     check_tensor_ipu_and_tile_set(t=t, index=index)
 
-    settings = ctx._get_op_settings('dynamicslice')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "DynamicSlice", 1,
-                                  _ir.NumInputs(2, 2), 1)
+    settings = ctx._get_op_settings("dynamicslice")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "DynamicSlice", 1, _ir.NumInputs(2, 2), 1
+    )
     op = pb_g.createConnectedOp_DynamicSliceOp(
-        {
-            0: t.id,
-            1: index.id
-        }, {0: g._create_tensor_id("dynamic_slice_out")}, opid, axes, sizes,
-        no_overlap, settings)
+        {0: t.id, 1: index.id},
+        {0: g._create_tensor_id("dynamic_slice_out")},
+        opid,
+        axes,
+        sizes,
+        no_overlap,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

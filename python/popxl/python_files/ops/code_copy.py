@@ -8,9 +8,9 @@ from typing_extensions import Literal
 
 CODE_LOCATION = Literal["executable", "compute_buffer", "io_buffer"]
 TO_IR_ENUM_MAP: Dict[CODE_LOCATION, _ir.CodeLocation] = {
-    'io_buffer': _ir.CodeLocation.Buffer,
-    'compute_buffer': _ir.CodeLocation.Buffer,
-    'executable': _ir.CodeLocation.ExecutableMemory
+    "io_buffer": _ir.CodeLocation.Buffer,
+    "compute_buffer": _ir.CodeLocation.Buffer,
+    "executable": _ir.CodeLocation.ExecutableMemory,
 }
 
 
@@ -69,17 +69,19 @@ def remote_code_load(graph: Graph, destination: CODE_LOCATION) -> None:
         raise ValueError(
             f"The remote_code_load op cannot load the code for the graph it resides in ({g.id})."
         )
-    settings = ctx._get_op_settings('remote_code_load')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "RemoteCodeLoad", 1,
-                                  _ir.NumInputs(0, 0), 0)
-    if destination == 'executable':
+    settings = ctx._get_op_settings("remote_code_load")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "RemoteCodeLoad", 1, _ir.NumInputs(0, 0), 0
+    )
+    if destination == "executable":
         _ = pb_g.createConnectedOp_RemoteCodeLoadOp(
             {},
             {},
             opid=opid,
             graphid=graph._pb_graph.id,  # Note: this is not the parent graph.
             destinationType=_to_code_location_enum(destination),
-            settings=settings)
+            settings=settings,
+        )
     else:
         raise NotImplementedError(
             f"destination == '{destination}' for remote_code_load op, graph {graph.id} not supported."
@@ -87,8 +89,7 @@ def remote_code_load(graph: Graph, destination: CODE_LOCATION) -> None:
 
 
 @op_debug_context
-def code_copy(graph: Graph, source: CODE_LOCATION,
-              destination: CODE_LOCATION) -> None:
+def code_copy(graph: Graph, source: CODE_LOCATION, destination: CODE_LOCATION) -> None:
     """Copy the provided graph's code internally, from `destination` to `source` on the chip.
 
     Args:

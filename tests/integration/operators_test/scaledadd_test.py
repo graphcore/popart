@@ -5,6 +5,7 @@ import torch
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(Path(__file__).resolve().parent.parent)
 
 
@@ -25,9 +26,8 @@ def test_scaledadd_constant(op_tester):
         out = 0.5 * t1 + 0.8 * t2
         return [out]
 
-    op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["PreUniRepl", "MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")
 
 
 def test_scaledadd_tensor(op_tester):
@@ -53,6 +53,5 @@ def test_scaledadd_tensor(op_tester):
         out = t3 * t1 + t4 * t2
         return [out]
 
-    op_tester.setPatterns(['PreUniRepl', 'MulArgGradOp'],
-                          enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, step_type='infer')
+    op_tester.setPatterns(["PreUniRepl", "MulArgGradOp"], enableRuntimeAsserts=False)
+    op_tester.run(init_builder, reference, step_type="infer")

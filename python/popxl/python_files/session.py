@@ -12,7 +12,13 @@ from popxl.streams import DeviceToHostStream, HostToDeviceStream
 from popxl.tensor import Constant, HostScalarTensor, Variable
 from typing_extensions import Literal
 
-from popxl.utils import _acquire_hw_device_with_timeout, _to_device_info, _offline_device_from_str, _popxl_to_numpy, to_numpy
+from popxl.utils import (
+    _acquire_hw_device_with_timeout,
+    _to_device_info,
+    _offline_device_from_str,
+    _popxl_to_numpy,
+    to_numpy,
+)
 from popxl.tensor import Tensor
 
 d2hStreamBufferMaps = Mapping[DeviceToHostStream, np.ndarray]
@@ -22,9 +28,9 @@ StreamBufferMaps = Union[h2dStreamBufferMaps, d2hStreamBufferMaps]
 
 class Session:
     def __init__(
-            self,
-            ir: Ir,
-            device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu",
+        self,
+        ir: Ir,
+        device_desc: Literal["ipu_hw", "ipu_model", "cpu"] = "cpu",
     ) -> None:
         """
         Construct a session object.
@@ -55,12 +61,12 @@ class Session:
 
         # NOTE: Harmlessly re-sets batchesPerStep (ir.num_host_transfers setter
         # would already have done it earlier).
-        dataFlow = popart.DataFlow(batchesPerStep=ir.num_host_transfers,
-                                   anchorTensors={
-                                       d2h.tensor_id:
-                                       popart.AnchorReturnType("All")
-                                       for d2h in d2hs
-                                   })
+        dataFlow = popart.DataFlow(
+            batchesPerStep=ir.num_host_transfers,
+            anchorTensors={
+                d2h.tensor_id: popart.AnchorReturnType("All") for d2h in d2hs
+            },
+        )
         self._ir.setDataFlow(dataFlow)
 
         # No caching code here, done in createFromIr
@@ -76,8 +82,7 @@ class Session:
 
         self._ir.updateVertices()
 
-        self._ir.setPatterns(
-            _ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal))
+        self._ir.setPatterns(_ir.patterns.Patterns(_ir.patterns.PatternsLevel.Minimal))
         for g in self._ir.getAllGraphs():
             self._ir.applyPreAliasPatterns(g)
         self._ir.updateVertices()
@@ -90,11 +95,14 @@ class Session:
         elif "POPXL_OFFLINE_DEVICE" in os.environ:
             self._device = _offline_device_from_str(
                 device_type=os.environ["POPXL_OFFLINE_DEVICE"],
-                num_ipus=self._get_ipu_count())
+                num_ipus=self._get_ipu_count(),
+            )
         else:
-            self._device = _to_device_info(device_type=device_desc,
-                                           num_ipus=self._get_ipu_count(),
-                                           use_popdist=self.ir_._use_popdist)
+            self._device = _to_device_info(
+                device_type=device_desc,
+                num_ipus=self._get_ipu_count(),
+                use_popdist=self.ir_._use_popdist,
+            )
 
         # Initialise stack of "was attached" states when entering the Session
         # context
@@ -104,7 +112,8 @@ class Session:
         # and training (via the autodiff transform). We use the  popart.InferenceSession class to
         # avoid any automatic autodiff-like transformations we want to do manually in popxl.
         self._pb_session = popart.InferenceSession.fromIr(
-            ir=self._ir, deviceInfo=self._device)
+            ir=self._ir, deviceInfo=self._device
+        )
 
         self._pb_session.prepareDevice(loadEngine=False)
 
@@ -117,14 +126,14 @@ class Session:
     def _assert_attached_before_runtime(self):
         if not self.is_attached:
             raise ValueError(
-                'Must be attached to device before calling a runtime function. Put the call inside a `Session` context, for example `with session: session.run()`.'
+                "Must be attached to device before calling a runtime function. Put the call inside a `Session` context, for example `with session: session.run()`."
             )
 
     def run_with_outputs(
-            self,
-            inputs: Optional[h2dStreamBufferMaps] = None,
-            outputs: Optional[d2hStreamBufferMaps] = None,
-            downcast_inputs: bool = True,
+        self,
+        inputs: Optional[h2dStreamBufferMaps] = None,
+        outputs: Optional[d2hStreamBufferMaps] = None,
+        downcast_inputs: bool = True,
     ) -> None:
         """Run this session with the provided inputs and outputs.
 
@@ -146,21 +155,18 @@ class Session:
         outputs = outputs or {}
 
         inputs_np: Dict[Tensor, np.ndarray] = {
-            h2d: to_numpy(arr, downcast=downcast_inputs)
-            for h2d, arr in inputs.items()
+            h2d: to_numpy(arr, downcast=downcast_inputs) for h2d, arr in inputs.items()
         }
 
         self._validate_run_inputs(inputs_np)
         self._validate_run_outputs(outputs)
 
         stepio_inputs: Dict[str, np.ndarray] = {
-            h2d.tensor_id: arr
-            for h2d, arr in inputs_np.items()
+            h2d.tensor_id: arr for h2d, arr in inputs_np.items()
         }
 
         stepio_outputs: Dict[str, np.ndarray] = {
-            d2h.tensor_id: arr
-            for d2h, arr in outputs.items()
+            d2h.tensor_id: arr for d2h, arr in outputs.items()
         }
 
         stepio = popart.PyStepIO(stepio_inputs, stepio_outputs)
@@ -174,9 +180,9 @@ class Session:
         self._pb_session.markHostWeightsOutOfSync()
 
     def run(
-            self,
-            inputs: Optional[h2dStreamBufferMaps] = None,
-            downcast_inputs: bool = True,
+        self,
+        inputs: Optional[h2dStreamBufferMaps] = None,
+        downcast_inputs: bool = True,
     ) -> d2hStreamBufferMaps:
         """Run :func:`~popxl.Session.run_with_outputs` but create the expected outputs and return them.
 
@@ -254,8 +260,9 @@ class Session:
 
         return self.get_tensors_data([tensor])[tensor]
 
-    def get_tensors_data(self, tensors: Iterable[Union[Variable, Constant]]
-                         ) -> Dict[Union[Constant, Variable], np.ndarray]:
+    def get_tensors_data(
+        self, tensors: Iterable[Union[Variable, Constant]]
+    ) -> Dict[Union[Constant, Variable], np.ndarray]:
         """Call `get_tensor_data` for multiple tensors.
 
         This will only sync the host and device buffers once.
@@ -278,7 +285,8 @@ class Session:
             if not isinstance(obj, (Constant, Variable)):
                 raise TypeError(
                     f"{obj} is not of type Constant or Variable. get_tensor_data is not"
-                    "supported for this type.")
+                    "supported for this type."
+                )
             if isinstance(obj, Variable):
                 any_variable = True
 
@@ -292,16 +300,21 @@ class Session:
         #      return the current host weights.
         #   3) The host weights are already in sync. There is no need to fetch
         #      the weights again.
-        if any_variable and self.is_attached and not self._pb_session.areHostWeightsInSync(
+        if (
+            any_variable
+            and self.is_attached
+            and not self._pb_session.areHostWeightsInSync()
         ):
             self.weights_to_host()
 
         return_tensors: Dict[Union[Constant, Variable], np.ndarray] = {}
 
         for tensor in tensors:
-            if isinstance(tensor, Variable) and (
-                    tensor.retrieval_mode == "all_replicas") and (
-                        tensor.replica_grouping.group_size > 1):
+            if (
+                isinstance(tensor, Variable)
+                and (tensor.retrieval_mode == "all_replicas")
+                and (tensor.replica_grouping.group_size > 1)
+            ):
                 # If using all replicas retrieval mode, we must use weightsIo to copy
                 # every replica's weights.
                 shape = list(tensor.shape_on_host)
@@ -343,8 +356,7 @@ class Session:
 
         self.write_variables_data({tensor: data})
 
-    def write_variables_data(self,
-                             tensors: Dict[Variable, np.ndarray]) -> None:
+    def write_variables_data(self, tensors: Dict[Variable, np.ndarray]) -> None:
         """Call ``write_variable_data`` for multiple tensors in one go.
 
         Like ``write_variable_data``, the ``weights_from_host`` will only occur
@@ -371,28 +383,35 @@ class Session:
         """
 
         import numbers
+
         for tensor, data in tensors.items():
             if not isinstance(tensor, Variable):
                 raise TypeError(
                     f"Tensor {tensor.id} is not of type Variable. write_variable_data is not"
-                    "supported for this type.")
+                    "supported for this type."
+                )
 
             if isinstance(data, numbers.Number):
                 data = np.array(data).astype(tensor.dtype.as_numpy())
             if data.dtype != tensor.dtype.as_numpy():
                 raise TypeError(
                     f"The dtype of the input array {data.dtype} must match the equivalent "
-                    f"type of the tensor {tensor.id} : {tensor.dtype}")
+                    f"type of the tensor {tensor.id} : {tensor.dtype}"
+                )
             elif data.shape != tensor.shape_on_host:
                 raise ValueError(
                     f"The shape of the input array {data.shape} must match the "
-                    f"shape of the tensor {tensor.id} : {tensor.shape}")
-            elif isinstance(tensor, Variable) and (
-                    tensor.retrieval_mode == "all_replicas") and (
-                        tensor.replica_grouping.group_size > 1):
+                    f"shape of the tensor {tensor.id} : {tensor.shape}"
+                )
+            elif (
+                isinstance(tensor, Variable)
+                and (tensor.retrieval_mode == "all_replicas")
+                and (tensor.replica_grouping.group_size > 1)
+            ):
                 raise NotImplementedError(
-                    f"Copying to tensor {tensor.id} with \"all_replicas\" "
-                    "retreval mode is not yet supported.")
+                    f'Copying to tensor {tensor.id} with "all_replicas" '
+                    "retreval mode is not yet supported."
+                )
 
             tensor._pb_tensor.writeTensorData(data, self._pb_session)
 
@@ -470,8 +489,9 @@ class Session:
         outputs = {}
 
         for s in self._expected_outputs():
-            outputs[s] = np.empty(self._full_input_shape(s.shape),
-                                  dtype=s.dtype.as_numpy())
+            outputs[s] = np.empty(
+                self._full_input_shape(s.shape), dtype=s.dtype.as_numpy()
+            )
 
         return outputs
 
@@ -515,7 +535,7 @@ class Session:
             yield
             stack.pop_all()
 
-    def __enter__(self) -> 'Session':
+    def __enter__(self) -> "Session":
         """
         Enter the context of this ``Session``.
 
@@ -532,8 +552,7 @@ class Session:
         if self._device.type == popart.DeviceType.OfflineIpu:
             # Store the offline device to be used on context exit
             self._was_attached_stack.append(self._device)
-            self._set_device(
-                _acquire_hw_device_with_timeout(self._device.numIpus))
+            self._set_device(_acquire_hw_device_with_timeout(self._device.numIpus))
         else:
             self._was_attached_stack.append(self.is_attached)
             # This is needed for when device has been provided by the user.
@@ -571,7 +590,8 @@ class Session:
         was_attached_or_device = self._was_attached_stack.pop()
 
         should_teardown = not was_attached_or_device or isinstance(
-            was_attached_or_device, popart.DeviceInfo)
+            was_attached_or_device, popart.DeviceInfo
+        )
         if should_teardown:
             if exc_type is None:
                 self.weights_to_host()
@@ -589,12 +609,16 @@ class Session:
 
     # Private methods
     def _get_ipus_per_replica(self) -> int:
-        ir_ipus = set(ipu for g in self._ir.getAllGraphs()
-                      for ipu in g.getAllVirtualGraphIds(True))
+        ir_ipus = set(
+            ipu
+            for g in self._ir.getAllGraphs()
+            for ipu in g.getAllVirtualGraphIds(True)
+        )
         if not ir_ipus:
             raise RuntimeError(
                 f"The Ir {self.ir.id} has no graphs. The graphs may have all been optimised to"
-                "nothing, try adding more operations to your graphs.")
+                "nothing, try adding more operations to your graphs."
+            )
         return max(ir_ipus) + 1
 
     def _get_ipu_count(self) -> int:
@@ -610,7 +634,7 @@ class Session:
         """
         num_ipus = self._get_ipus_per_replica()
         num_ipus *= self.ir.instance_replication_factor
-        return 2**math.ceil(math.log2(num_ipus))
+        return 2 ** math.ceil(math.log2(num_ipus))
 
     def _expected_outputs(self) -> List[DeviceToHostStream]:
         """Return the list of expected outputs from this session.
@@ -639,8 +663,9 @@ class Session:
         """
         return self._extra_input_dims + shape
 
-    def _validate_run_io_streams(self, stream_buffer_map: StreamBufferMaps,
-                                 expected_streams: StreamBufferMaps) -> None:
+    def _validate_run_io_streams(
+        self, stream_buffer_map: StreamBufferMaps, expected_streams: StreamBufferMaps
+    ) -> None:
         """Validate that the from / to device streams are present and valid.
 
         Checks there are no missing or unexpected streams, then checks the shape of each is correct.
@@ -660,24 +685,25 @@ class Session:
         stream_type_str = ""
 
         for s in set_streams:
-            stream_type_str = "input" if isinstance(
-                s, HostToDeviceStream) else "output"
+            stream_type_str = "input" if isinstance(s, HostToDeviceStream) else "output"
             break
 
         if set_streams != set_expected_streams:
 
             unexpected = {str(s) for s in set_streams - set_expected_streams}
             missing = {str(s) for s in set_expected_streams - set_streams}
-            raise ValueError(f"Unexpected/Missing {stream_type_str}.\n  "
-                             f"Unexpected: {unexpected}\n  Missing: {missing}")
+            raise ValueError(
+                f"Unexpected/Missing {stream_type_str}.\n  "
+                f"Unexpected: {unexpected}\n  Missing: {missing}"
+            )
 
         # 2: Validate arrays have correct shape for streams.
         for s, arr in stream_buffer_map.items():
             self._verify_io_shape(s, arr)
 
-    def _verify_io_shape(self,
-                         s: Union[DeviceToHostStream, HostToDeviceStream],
-                         arr: np.ndarray) -> None:
+    def _verify_io_shape(
+        self, s: Union[DeviceToHostStream, HostToDeviceStream], arr: np.ndarray
+    ) -> None:
         """Verify the array shape is as expected for a DeviceToHostStream or HostToDeviceStream.
 
         Args:
@@ -689,8 +715,7 @@ class Session:
             ValueError: If the replication dimension of the array != replication_factor
             ValueError: If the remaining dimensions are not equal to the stream shape.
         """
-        stream_type_str = "input" if isinstance(
-            s, HostToDeviceStream) else "output"
+        stream_type_str = "input" if isinstance(s, HostToDeviceStream) else "output"
         full_shape = self._full_input_shape(s.shape)
         # Data is always split for num_host_transfers at index 0 (if enabled).
         # Index at which the data is split for replication.
@@ -721,7 +746,8 @@ class Session:
             raise ValueError(
                 f"Shape mismatch for {stream_type_str} stream {s.tensor_id}:\n"
                 f"Stream shape = {s.shape}, therefore expected full global batch shape "
-                f"{full_shape}. Got array shape = {arr.shape}")
+                f"{full_shape}. Got array shape = {arr.shape}"
+            )
 
     def _validate_run_inputs(self, inputs: h2dStreamBufferMaps) -> None:
         """Run :func:`~popxl.Session._validate_run_io_streams` for each of the given inputs vs.
@@ -762,7 +788,7 @@ class Session:
         """
         _extra_input_dims: Tuple[int, ...] = tuple()
         if self.ir.num_host_transfers > 1:
-            _extra_input_dims += (self.ir.num_host_transfers, )
+            _extra_input_dims += (self.ir.num_host_transfers,)
         if self.ir.instance_replication_factor > 1:
-            _extra_input_dims += (self.ir.instance_replication_factor, )
+            _extra_input_dims += (self.ir.instance_replication_factor,)
         return _extra_input_dims

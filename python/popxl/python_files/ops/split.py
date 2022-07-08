@@ -7,8 +7,7 @@ from .utils import check_in_graph, handle_negative_axis
 
 
 @op_debug_context
-def split(t: Tensor, splits: Union[int, List[int]],
-          axis: int = 0) -> List[Tensor]:
+def split(t: Tensor, splits: Union[int, List[int]], axis: int = 0) -> List[Tensor]:
     """Split a tensor along an axis into a list of tensors.
 
     See also `PyTorch Tensor.split <https://pytorch.org/docs/stable/generated/torch.Tensor.split.html>`__, `NumPy split <https://numpy.org/doc/stable/reference/generated/numpy.split.html>`__, `ONNX Split <https://github.com/onnx/onnx/blob/main/docs/Operators.md#Split>`__.
@@ -43,13 +42,11 @@ def split(t: Tensor, splits: Union[int, List[int]],
         splits = [axis_len // splits] * splits
 
     outputs_t = {
-        i: g._create_tensor_id(f"{t.name}_split_{i}")
-        for i in range(len(splits))
+        i: g._create_tensor_id(f"{t.name}_split_{i}") for i in range(len(splits))
     }
 
-    settings = ctx._get_op_settings('split')
-    opid = _ir.OperatorIdentifier("ai.onnx", "Split", 2, _ir.NumInputs(1, 1),
-                                  1)
+    settings = ctx._get_op_settings("split")
+    opid = _ir.OperatorIdentifier("ai.onnx", "Split", 2, _ir.NumInputs(1, 1), 1)
     op = pb_g.createConnectedOp_SplitOp(
         {0: t.id},
         outputs_t,
@@ -59,8 +56,6 @@ def split(t: Tensor, splits: Union[int, List[int]],
         settings=settings,
     )
 
-    output = [
-        Tensor._from_pb_tensor(op.outTensor(i)) for i in range(len(splits))
-    ]
+    output = [Tensor._from_pb_tensor(op.outTensor(i)) for i in range(len(splits))]
 
     return output

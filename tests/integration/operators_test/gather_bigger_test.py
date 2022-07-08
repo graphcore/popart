@@ -18,8 +18,8 @@ def test_gather_bigger(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out]
 
-    op_tester.setPatterns(['PreUniRepl'], enableRuntimeAsserts=False)
+    op_tester.setPatterns(["PreUniRepl"], enableRuntimeAsserts=False)
     # Opx alias/modify testing takes too long on large gathers
     op_tester.options.opxAliasChecking = False
     op_tester.options.opxModifyChecking = False
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder, reference, "infer")

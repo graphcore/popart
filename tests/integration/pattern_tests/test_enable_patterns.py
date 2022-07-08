@@ -9,7 +9,7 @@ def test_enable_pattern():
     pattern = "PadSum"
     enabled = patterns.isPatternEnabled(pattern)
     patterns.enablePattern(pattern, not enabled)
-    assert (not enabled == patterns.isPatternEnabled(pattern))
+    assert not enabled == patterns.isPatternEnabled(pattern)
 
 
 def test_enable_inplace():

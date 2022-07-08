@@ -95,30 +95,32 @@ output_types = {
     "all": "--txt",
     "concise": "--json-summary",
     "json": "--json-summary",
-    "html":
-    "--html-self-contained --html-details {output_dir}/.coverage/coverage.html",
+    "html": "--html-self-contained --html-details {output_dir}/.coverage/coverage.html",
     "csv": "--csv -o {output_dir}/.coverage/coverage.csv",
-    "cobertura": "--xml -o {output_dir}/.coverage/coverage.xml"
+    "cobertura": "--xml -o {output_dir}/.coverage/coverage.xml",
 }
 
 
 class GCovrRunnerParser:
-    def __init__(self, output: str, workspace_dir: PosixPath,
-                 build_dir: PosixPath) -> None:
+    def __init__(
+        self, output: str, workspace_dir: PosixPath, build_dir: PosixPath
+    ) -> None:
         if output not in output_types:
             raise AssertionError(
-                f"Invalid output type {output}. Must be one of {output_types}")
+                f"Invalid output type {output}. Must be one of {output_types}"
+            )
         self.output = output
         self.workspace_dir = workspace_dir
         self.build_dir = build_dir
         self._excluded_paths = set()
         self._excluded_paths = self._filter_build_directories(
-            lambda f: os.path.isfile(f) and '.gcno' in f)
+            lambda f: os.path.isfile(f) and ".gcno" in f
+        )
         self._filter = []
         self._output_path = workspace_dir
 
     def _filter_build_directories(self, function: Callable[[str], bool]):
-        """"Create a list of directories to exclude from the gcovr search.
+        """ "Create a list of directories to exclude from the gcovr search.
         A given directory is excluded if it does not contain any coverage
         files and all its child directories are already excluded.
 
@@ -134,8 +136,7 @@ class GCovrRunnerParser:
             dirs = [os.path.join(dirname, d) for d in dirs]
             files = [os.path.join(dirname, f) for f in files]
             dir_satisfies_filter = any(function(i) for i in (files + dirs))
-            if not dir_satisfies_filter and all(d in exclude_dirs
-                                                for d in dirs):
+            if not dir_satisfies_filter and all(d in exclude_dirs for d in dirs):
                 for d in dirs:
                     exclude_dirs.discard(d)
                 exclude_dirs.add(dirname)
@@ -146,13 +147,14 @@ class GCovrRunnerParser:
         # not contain coverage files we will end up mistakenly excluding the latter,
         # which might contain the files we want to find.
         # Prepending ^ and appending $ prevents this from happening.
-        exclude_dirs = {f'^{d}$' for d in exclude_dirs}
+        exclude_dirs = {f"^{d}$" for d in exclude_dirs}
         return exclude_dirs
 
     def set_output_path(self, path: PosixPath) -> None:
         if not (path.exists() and path.is_dir()):
             raise RuntimeError(
-                f"Output path {path} does not exist or is not a directory.")
+                f"Output path {path} does not exist or is not a directory."
+            )
         self._output_path = path
 
     def create_report(self, args: list = []) -> str:
@@ -167,7 +169,7 @@ class GCovrRunnerParser:
     def _run_gcovr(self, args=[]) -> str:
         src_files_dir = str(self.workspace_dir)
         build_dir = str(build_files_dir(self.build_dir))
-        command = ['-r', src_files_dir, build_dir, '-j16']
+        command = ["-r", src_files_dir, build_dir, "-j16"]
 
         flag = output_types[self.output]
         if self.output in {"html", "csv", "cobertura"}:
@@ -182,10 +184,10 @@ class GCovrRunnerParser:
         if self._filter:
             command += self._filter
         # Exclude system library code and headers just in case
-        command += ['--exclude-directories', '/usr/include/.*']
+        command += ["--exclude-directories", "/usr/include/.*"]
 
         for e in self._excluded_paths:
-            command.append('--exclude-directories')
+            command.append("--exclude-directories")
             command.append(e)
         output_buffer = io.StringIO()
         with redirect_stdout(output_buffer):
@@ -196,8 +198,10 @@ class GCovrRunnerParser:
     def _parse_gcovr_output(self, coverage: str) -> None:
         if self.output == "concise":
             cov = json.loads(coverage)
-            report_str = (f"Line coverage: {cov['line_percent']}%\n"
-                          f"Branch coverage: {cov['branch_percent']}%")
+            report_str = (
+                f"Line coverage: {cov['line_percent']}%\n"
+                f"Branch coverage: {cov['branch_percent']}%"
+            )
             return report_str
         return coverage
 
@@ -205,8 +209,8 @@ class GCovrRunnerParser:
         if filter_regex:
             filter_regex = filter_regex.strip()
             self._excluded_paths = self._excluded_paths.union(
-                self._filter_build_directories(lambda f: re.search(
-                    filter_regex, f)))
+                self._filter_build_directories(lambda f: re.search(filter_regex, f))
+            )
             self._filter = ["-f", filter_regex]
 
 
@@ -237,11 +241,13 @@ def get_build_dir(path: Optional[str] = None):
         build_dir = Path(path).resolve()
     else:
         try:
-            build_dir = Path(os.environ['CBT_BUILDTREE'])
+            build_dir = Path(os.environ["CBT_BUILDTREE"])
         except KeyError:
-            print('Could not infer build directory from the CBT_BUILDTREE '
-                  'environment variable.\n Either activate the build tree '
-                  'or specify the build directory using the -d flag.')
+            print(
+                "Could not infer build directory from the CBT_BUILDTREE "
+                "environment variable.\n Either activate the build tree "
+                "or specify the build directory using the -d flag."
+            )
             sys.exit(1)
     return build_dir
 
@@ -256,29 +262,32 @@ def main(args=None):
         "--directory",
         help=(
             "Optionally specify the build directory, otherwise it is inferred "
-            "from the CBT_BUILDTREE environment variable."))
+            "from the CBT_BUILDTREE environment variable."
+        ),
+    )
     parser.add_argument(
         "-c",
         "--clean",
         action="store_true",
         help=(
             "Cleans the previous coverage output by removing all .gcda files "
-            "from the build CMakeFiles."))
+            "from the build CMakeFiles."
+        ),
+    )
     parser.add_argument(
         "-p",
         "--format",
         choices=output_types.keys(),
         default="all",
-        help=
-        f"Specify the output format. May be one of {set(output_types.keys())}")
+        help=f"Specify the output format. May be one of {set(output_types.keys())}",
+    )
     parser.add_argument(
         "-o",
         "--output",
         default=workspace_dir,
-        metavar='output-path',
+        metavar="output-path",
         type=Path,
-        help=
-        "Optionally specify the destination of coverage report files. Defaults to the popart/ directory."
+        help="Optionally specify the destination of coverage report files. Defaults to the popart/ directory.",
     )
 
     subparsers = parser.add_subparsers(dest="command")
@@ -287,8 +296,7 @@ def main(args=None):
         "-f",
         "--filter",
         metavar="gcovr-regexp",
-        help=
-        "Run gcovr and view coverage only for the files which match gcovr-regexp."
+        help="Run gcovr and view coverage only for the files which match gcovr-regexp.",
     )
     gcov_subparser.add_argument(
         "-e",
@@ -297,7 +305,9 @@ def main(args=None):
         help=(
             "Run gcovr using gcovr-specific flags given as a quote-enclosed "
             "string in 'gcovr-args'. Note that this option overrides any arguments "
-            "that would be invoked from the -p/--format option."))
+            "that would be invoked from the -p/--format option."
+        ),
+    )
 
     test_subparser = subparsers.add_parser("test")
     test_subparser.add_argument(
@@ -307,7 +317,9 @@ def main(args=None):
         default="",
         help=(
             "A Ctest -R regular expression argument against which PopART tests are "
-            "matched. Only tests matching this filter are ran."))
+            "matched. Only tests matching this filter are ran."
+        ),
+    )
     test_subparser.add_argument(
         "-f",
         "--filter",
@@ -315,7 +327,9 @@ def main(args=None):
         default="",
         help=(
             "Regular expression specifying which files to display coverage data for. "
-            "Only files matching the expression are displayed.", ))
+            "Only files matching the expression are displayed.",
+        ),
+    )
     args = parser.parse_args(args)
     build_dir = get_build_dir(args.directory)
 

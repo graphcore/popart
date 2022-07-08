@@ -25,10 +25,9 @@ def test_dynamiczero_training(op_tester):
         out = tensor
         for i, slicex, slicey in [[0, 1, 2], [1, 2, 0]]:
             index = builder.addInputTensor(
-                np.asarray([slicex * sizes[0], slicey * sizes[1]], np.uint32))
-            out = builder.aiGraphcore.dynamiczero([out, index],
-                                                  axes=axes,
-                                                  sizes=sizes)
+                np.asarray([slicex * sizes[0], slicey * sizes[1]], np.uint32)
+            )
+            out = builder.aiGraphcore.dynamiczero([out, index], axes=axes, sizes=sizes)
 
             # Check shape inference has worked.
             assert builder.getTensorShape(out) == list(data.shape)
@@ -37,9 +36,7 @@ def test_dynamiczero_training(op_tester):
                 out = builder.aiOnnx.add([out, inject_tensor])
         result.append(out)
 
-        sum = builder.aiOnnx.reducesum([out],
-                                       axes=[0, 1, 2, 3],
-                                       keepdims=False)
+        sum = builder.aiOnnx.reducesum([out], axes=[0, 1, 2, 3], keepdims=False)
         sum = builder.aiOnnx.unsqueeze([sum], axes=[0])
 
         builder.addOutputTensor(sum)
@@ -71,9 +68,8 @@ def test_dynamiczero_training(op_tester):
         d__o = ref_data.getOutputTensorGrad(0)
         sum.backward(torch.tensor(d__o))
 
-        result = [sum,
-                  torch.tensor(d__o), tensor.grad, inject_tensor.grad] + result
+        result = [sum, torch.tensor(d__o), tensor.grad, inject_tensor.grad] + result
         return result
 
     op_tester.setPatterns(popart.PatternsLevel.All, enableRuntimeAsserts=False)
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, "train")

@@ -13,6 +13,7 @@ LEARNING_RATE = 1.0
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -59,13 +60,14 @@ def test_tensor_replication():
         "ReplicationFactor": 2,
         # Accl factor must divide batch size
         "AccumulationFactor": 4,
-        "Pipelining": False,  #True
-        "ReturnType": "ALL"
+        "Pipelining": False,  # True
+        "ReturnType": "ALL",
     }
     label_array = np.ones([BATCH_SIZE]).astype(np.int32)
 
-    micro_batch_size = BATCH_SIZE // (anchorDict["AccumulationFactor"] *
-                                      anchorDict["ReplicationFactor"])
+    micro_batch_size = BATCH_SIZE // (
+        anchorDict["AccumulationFactor"] * anchorDict["ReplicationFactor"]
+    )
 
     builder = popart.Builder()
     input_shape = [micro_batch_size, CHANNELS, DATA_LEN, DATA_LEN]
@@ -73,7 +75,8 @@ def test_tensor_replication():
     data_shape = popart.TensorInfo("FLOAT", input_shape)
     lbl_shape = popart.TensorInfo("INT32", [micro_batch_size])
     w = builder.addInitializedInputTensor(
-        np.random.random_sample(input_shape).astype(np.float32))
+        np.random.random_sample(input_shape).astype(np.float32)
+    )
 
     settings = popart.InputSettings(popart.ReplicatedStreamMode.Broadcast)
 
@@ -82,8 +85,8 @@ def test_tensor_replication():
 
     a = builder.aiOnnx.matmul([ip, w])
     o = builder.reshape_const(
-        builder.aiOnnx, [a],
-        [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN])
+        builder.aiOnnx, [a], [micro_batch_size, CHANNELS * DATA_LEN * DATA_LEN]
+    )
     o = builder.aiOnnx.relu([o])
     o = builder.aiOnnx.softmax([o])
     nll = builder.aiGraphcore.nllloss([o, lb])
@@ -91,14 +94,9 @@ def test_tensor_replication():
     GRAD = popart.reservedGradientPrefix() + w
     ACCL = popart.reservedAccumPrefix() + w
     art = popart.AnchorReturnType("All")
-    data_flow = popart.DataFlow(BATCHES_PER_STEP, {
-        o: art,
-        a: art,
-        ip: art,
-        w: art,
-        GRAD: art,
-        ACCL: art
-    })
+    data_flow = popart.DataFlow(
+        BATCHES_PER_STEP, {o: art, a: art, ip: art, w: art, GRAD: art, ACCL: art}
+    )
 
     opts, device = return_options(anchorDict)
     with device as device:
@@ -111,24 +109,23 @@ def test_tensor_replication():
             loss=nll,
             optimizer=popart.ConstSGD(LEARNING_RATE),
             userOptions=opts,
-            deviceInfo=device)
+            deviceInfo=device,
+        )
 
         session.prepareDevice()
 
-        if anchorDict[
-                "ReplicationFactor"] > 1 and settings.replicatedStreamMode(
-                ) != popart.ReplicatedStreamMode.Broadcast:
+        if (
+            anchorDict["ReplicationFactor"] > 1
+            and settings.replicatedStreamMode() != popart.ReplicatedStreamMode.Broadcast
+        ):
             input_shape = [anchorDict["ReplicationFactor"]] + input_shape
-            label_array = label_array.reshape(
-                [anchorDict["ReplicationFactor"], -1])
+            label_array = label_array.reshape([anchorDict["ReplicationFactor"], -1])
         if anchorDict["AccumulationFactor"] > 1:
             input_shape = [anchorDict["AccumulationFactor"]] + input_shape
-            label_array = label_array.reshape(
-                [anchorDict["AccumulationFactor"], -1])
+            label_array = label_array.reshape([anchorDict["AccumulationFactor"], -1])
         if BATCHES_PER_STEP > 1:
             input_shape = [BATCHES_PER_STEP] + input_shape
-            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP,
-                                    0)
+            label_array = np.repeat(label_array[np.newaxis], BATCHES_PER_STEP, 0)
 
         anchors = session.initAnchorArrays()
         in_array = np.random.random_sample(input_shape).astype(np.float32)
@@ -138,7 +135,7 @@ def test_tensor_replication():
 
         session.run(stepio)
 
-        #Compare the inputs
+        # Compare the inputs
         for batch in range(anchors[ip].shape[0]):
             in_0 = anchors[ip][batch, -1, 0, :, :, :, :]
             in_1 = anchors[ip][batch, -1, 1, :, :, :, :]

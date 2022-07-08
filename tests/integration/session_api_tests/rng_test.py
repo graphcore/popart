@@ -6,6 +6,7 @@ import pytest
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
@@ -66,12 +67,14 @@ def test_rng_set_and_get(enableReplicatedGraphs):
         # Training session
         bps = 5
         tr_opt = popart.SGD({"defaultMomentum": (0.01, True)})
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFlow=popart.DataFlow(bps, [out]),
-                                         loss=loss,
-                                         optimizer=tr_opt,
-                                         deviceInfo=device,
-                                         userOptions=options)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFlow=popart.DataFlow(bps, [out]),
+            loss=loss,
+            optimizer=tr_opt,
+            deviceInfo=device,
+            userOptions=options,
+        )
         session.prepareDevice()
         anchors = session.initAnchorArrays()
 
@@ -83,18 +86,18 @@ def test_rng_set_and_get(enableReplicatedGraphs):
             fnModel=builder.getModelProto(),
             dataFlow=popart.DataFlow(bps, [out]),
             deviceInfo=device,
-            userOptions=options)
+            userOptions=options,
+        )
         interfering_session.prepareDevice()
         inf_anchors = interfering_session.initAnchorArrays()
 
         # Input data
-        data_a = np.random.rand(numOfRuns * numOfReplicas, 100,
-                                100).astype(np.float16)
+        data_a = np.random.rand(numOfRuns * numOfReplicas, 100, 100).astype(np.float16)
 
         def run_session(session):
             stepio = popart.PyStepIO({i0: data_a}, anchors)
             session.run(stepio)
-            return session.getRNGState(), anchors['MatMul:0'].tolist()
+            return session.getRNGState(), anchors["MatMul:0"].tolist()
 
         def run_interference(interfering_session):
             interfering_session.weightsFromHost()
@@ -128,7 +131,7 @@ def test_rng_set_and_get(enableReplicatedGraphs):
         rng2, output3 = run_session(session)
 
         assert pre1 == pre2 == pre3
-        assert (output3 != output1)
+        assert output3 != output1
 
         # Small tests about the seed
         init_rng = session.getRNGState()
@@ -137,15 +140,16 @@ def test_rng_set_and_get(enableReplicatedGraphs):
         new_rng = [k for k in range(len(init_rng))]
         session.setRNGState(new_rng)
         rng1 = session.getRNGState()
-        assert (rng1 == new_rng)
+        assert rng1 == new_rng
 
         session.setRNGState(init_rng)
         rng2 = session.getRNGState()
-        assert (rng2 == init_rng)
+        assert rng2 == init_rng
 
         # check that an RNGState of the wrong size raises an exception
         init_rng.append(0)
         with pytest.raises(popart.popart_exception) as e_info:
             session.setRNGState(init_rng)
         assert e_info.value.args[0].startswith(
-            "Devicex::setRngStateValue received rngState of size")
+            "Devicex::setRngStateValue received rngState of size"
+        )

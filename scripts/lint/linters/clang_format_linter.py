@@ -35,14 +35,17 @@ class ClangFormatLinter(ILinter):
             version_str = bash(["clang-format", "--version"], log=False)
             m = re.search(
                 r"version (?P<version>\d+\.\d+\.\d+) \([\w\/:.-]+ (?P<hash>[a-z0-9]+)\)$",
-                version_str.strip())
+                version_str.strip(),
+            )
             if m:
-                version = (*(int(i) for i in m.group('version').split('.')),
-                           m.group('hash'))
+                version = (
+                    *(int(i) for i in m.group("version").split(".")),
+                    m.group("hash"),
+                )
                 return version
 
     def is_available(self):
         return shutil.which("clang-format") is not None
 
-    def install_instructions(self, required_version=''):
+    def install_instructions(self, required_version=""):
         return f"pip install clang-format=={required_version}"

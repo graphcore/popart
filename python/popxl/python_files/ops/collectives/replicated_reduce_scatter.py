@@ -9,10 +9,10 @@ from popxl.ops.utils import check_in_graph
 
 
 def replicated_reduce_scatter(
-        t: Tensor,
-        op: CollectiveOps = 'add',
-        group: Optional[ReplicaGrouping] = None,
-        configure_output_for_replicated_tensor_sharding: bool = False
+    t: Tensor,
+    op: CollectiveOps = "add",
+    group: Optional[ReplicaGrouping] = None,
+    configure_output_for_replicated_tensor_sharding: bool = False,
 ) -> Tensor:
     """Reduce a tensor across replicas with each replica receiving a unique slice of the tensor.
 
@@ -41,20 +41,25 @@ def replicated_reduce_scatter(
     else:
         comm_group = group._to_comm_group()
 
-    settings = ctx._get_op_settings('replicated_reduce_scatter')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedReduceScatter", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("replicated_reduce_scatter")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReplicatedReduceScatter", 1, _ir.NumInputs(1, 2), 1
+    )
 
     _op = pb_g.createConnectedOp_ReplicatedReduceScatterOp(
-        {0: t.id}, {0: g._create_tensor_id(t.name + "_reduce_scattered")},
-        opid, op, comm_group, configure_output_for_replicated_tensor_sharding,
-        settings)
+        {0: t.id},
+        {0: g._create_tensor_id(t.name + "_reduce_scattered")},
+        opid,
+        op,
+        comm_group,
+        configure_output_for_replicated_tensor_sharding,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(_op.outTensor(0))
 
 
-def replica_sharded_slice(t: Tensor,
-                          group: Optional[ReplicaGrouping] = None) -> Tensor:
+def replica_sharded_slice(t: Tensor, group: Optional[ReplicaGrouping] = None) -> Tensor:
     """Take the replicated tensor sharded slice of a Tensor.
 
     Args:
@@ -74,12 +79,19 @@ def replica_sharded_slice(t: Tensor,
     else:
         comm_group = group._to_comm_group()
 
-    settings = ctx._get_op_settings('replicated_reduce_scatter')
-    opid = _ir.OperatorIdentifier("ai.graphcore", "ReplicatedReduceScatter", 1,
-                                  _ir.NumInputs(1, 2), 1)
+    settings = ctx._get_op_settings("replicated_reduce_scatter")
+    opid = _ir.OperatorIdentifier(
+        "ai.graphcore", "ReplicatedReduceScatter", 1, _ir.NumInputs(1, 2), 1
+    )
 
     op = pb_g.createConnectedOp_ReplicatedReduceScatterOp(
-        {0: t.id}, {0: g._create_tensor_id(t.name + "_reduce_scattered")},
-        opid, _ir.CollectiveOperator.Local, comm_group, True, settings)
+        {0: t.id},
+        {0: g._create_tensor_id(t.name + "_reduce_scattered")},
+        opid,
+        _ir.CollectiveOperator.Local,
+        comm_group,
+        True,
+        settings,
+    )
 
     return Tensor._from_pb_tensor(op.outTensor(0))

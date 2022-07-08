@@ -5,6 +5,7 @@ import popart
 # importing test_session requires adding to sys.path
 import sys
 from pathlib import Path
+
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import PopartTestSession
 import test_util as tu
@@ -32,6 +33,6 @@ def test_for_warning(capfd):
     print(err)
     err = err.splitlines()
 
-    warns = [i for i in err if 'No ConstExpr implementation of ' in i]
+    warns = [i for i in err if "No ConstExpr implementation of " in i]
     assert len(warns) > 1
-    assert 'Relu' in warns[0]
+    assert "Relu" in warns[0]

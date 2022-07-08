@@ -11,7 +11,8 @@ def test_modified():
         x = popxl.variable(1)
 
         sg = ir.create_graph(
-            lambda x: ops.var_updates.accumulate_(x, popxl.constant(1)), x)
+            lambda x: ops.var_updates.accumulate_(x, popxl.constant(1)), x
+        )
 
         ops.call(sg, x)
         # Store x
