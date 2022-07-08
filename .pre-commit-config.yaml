@@ -46,7 +46,7 @@ repos:
               checks that pytest test files have a corresponding
               `add_popart_py_unit_test` entry in a neighbouring CMakeLists.txt
               file
-            entry: python3 -m scripts.lint.linters.check_test_has_cmake_entry
+            entry: python3 -m scripts.lint.linters.check_python_test_has_cmake_entry
             language: python
             files: .*.py
             exclude: |

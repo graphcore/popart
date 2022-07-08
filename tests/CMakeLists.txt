@@ -342,3 +342,5 @@ add_subdirectory(unittests)
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
 	FILES_MATCHING REGEX ".*\.(py|sh|md)$")
+
+add_subdirectory(linters)

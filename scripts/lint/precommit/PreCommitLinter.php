@@ -9,7 +9,7 @@ final class PreCommitLinter extends ArcanistExternalLinter {
   private const LINTER_NAME = "pre-commit";
   private const DEFAULT_BINARY = "pre-commit";
   private const RUN_LINTER_COMMAND = "run --file %s";
-  private const INSTALL_LINTER = "Run `pip3 install pre-commit && pre-commit install && pre-commit run` and follow the install instruction";
+  private const INSTALL_LINTER = "Run `pip3 install -r requirements/dev.txt && pre-commit install && pre-commit run` and follow the install instruction";
   private const REGEX_LINTER_FAILED = '/(?<linter>[^\.]+)\.+Failed/';
 
   /** Return the name of linter visible to arc */

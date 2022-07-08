@@ -19,7 +19,7 @@ def linter():
 def test_linter_does_nothing_for_valid_notice(linter: CopyrightLinter):
     code = "# " + expected_copyright_notice
     code = code + "\n\n\n\n\n\n\n\n\n\nThis should still be here"
-    linted_code = linter.apply("scripts/good_file.py", code)
+    linted_code = linter._determine_linter_message("scripts/good_file.py", code)
 
     assert code == linted_code
 
@@ -34,7 +34,7 @@ def test_linter_inserts_notice(linter: CopyrightLinter):
     comment_delims = ["//", "#", "#"]
 
     for code, ext, delim in zip(test_code, test_file_extensions, comment_delims):
-        linted_code = linter.apply("file" + ext, code)
+        linted_code = linter._determine_linter_message("file" + ext, code)
         assert delim + " " + expected_copyright_notice + code in linted_code
 
 
@@ -46,7 +46,7 @@ def test_linter_replaces_incorrect_year(linter: CopyrightLinter):
 
     print_stmt = "print('hello')"
     code = outdated_notice + print_stmt
-    linted_code = linter.apply("test.py", code)
+    linted_code = linter._determine_linter_message("test.py", code)
 
     assert correct_notice in linted_code
     assert outdated_notice not in linted_code
@@ -57,7 +57,7 @@ def test_linter_replaces_incorrect_year(linter: CopyrightLinter):
         file_header = ["#\n"] * number_of_lines
         file_header[i] = outdated_notice
         code = "".join(file_header) + print_stmt
-        linted_code = linter.apply("test.py", code)
+        linted_code = linter._determine_linter_message("test.py", code)
 
         assert correct_notice in linted_code
         assert outdated_notice not in linted_code
@@ -87,14 +87,14 @@ def test_linter_replaces_partial_match(linter: CopyrightLinter):
     ]
 
     for wrong_notice in notices:
-        linted_code = linter.apply("test_file", wrong_notice)
+        linted_code = linter._determine_linter_message("test_file", wrong_notice)
         assert expected_copyright_notice in linted_code
         assert wrong_notice not in linted_code
         assert len(linted_code.split("\n")) == 2
 
 
 def test_linter_works_for_empty_files(linter: CopyrightLinter):
-    linted_code = linter.apply("test.sh", "")
+    linted_code = linter._determine_linter_message("test.sh", "")
 
     assert expected_copyright_notice in linted_code
 
@@ -102,7 +102,7 @@ def test_linter_works_for_empty_files(linter: CopyrightLinter):
 def test_inserts_notice_after_shebang(linter: CopyrightLinter):
     shebang = "#!/bin/bash\n"
     code = shebang + "echo 'Hello'"
-    linted_code = linter.apply("test.sh", code)
+    linted_code = linter._determine_linter_message("test.sh", code)
 
     assert expected_copyright_notice in linted_code
     assert linted_code.index(shebang) < linted_code.index(expected_copyright_notice)
