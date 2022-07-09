@@ -132,6 +132,28 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
   return os;
 }
 
+std::string toString(AccumulateOuterFragmentSchedule r) {
+  switch (r) {
+  case AccumulateOuterFragmentSchedule::Scheduler:
+    return "AccumulateOuterFragmentSchedule::Scheduler";
+  case AccumulateOuterFragmentSchedule::Serial:
+    return "AccumulateOuterFragmentSchedule::Serial";
+  case AccumulateOuterFragmentSchedule::OverlapCycleOptimized:
+    return "AccumulateOuterFragmentSchedule::OverlapCycleOptimized";
+  case AccumulateOuterFragmentSchedule::OverlapMemoryOptimized:
+    return "AccumulateOuterFragmentSchedule::OverlapMemoryOptimized";
+  default:
+    throw error("Unknown AccumulateOuterFragmentSchedule: {}",
+                static_cast<int>(r));
+  }
+}
+
+std::ostream &operator<<(std::ostream &out,
+                         AccumulateOuterFragmentSchedule aofSched) {
+  out << toString(aofSched);
+  return out;
+}
+
 const unsigned SessionOptions::initialDefaultPrefetchBufferingDepthValue =
     111122;
 

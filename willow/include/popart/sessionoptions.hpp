@@ -614,6 +614,12 @@ struct AccumulateOuterFragmentSettings {
   std::vector<int> excludedVirtualGraphs = {};
 };
 
+/// Return a string value for AccumulateOuterFragmentSchedule.
+std::string toString(AccumulateOuterFragmentSchedule r);
+/// Stream the value for AccumulateOuterFragmentSchedule.
+std::ostream &operator<<(std::ostream &out,
+                         AccumulateOuterFragmentSchedule aofSched);
+
 /**
  * Enum type that describes how copies for inputs and outputs for subgraphs
  * are lowered. Currently this only affects subgraphs associated with CallOp
