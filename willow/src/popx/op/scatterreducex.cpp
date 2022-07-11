@@ -318,40 +318,33 @@ public:
 
   void maskedFillOutput(const PopOpx &opx,
                         const snap::Tensor &out,
-                        snap::program::Sequence &prog) const {
-    poplar::Tensor init;
-    poplar::Tensor zero;
-    auto dtype   = out.elementType();
-    auto &graph  = opx.graph().getPoplarGraph();
-    auto &output = out.getPoplarTensor();
-    auto &seq    = prog.getPoplarSequence();
+                        const snap::Tensor &src,
+                        const snap::Tensor &indices,
+                        snap::program::Sequence &prog,
+                        const popops::SlicePlan &plan) const {
+    auto &graph = opx.graph().getPoplarGraph();
+    auto &seq   = prog.getPoplarSequence();
 
-    if (dtype == poplar::FLOAT || dtype == poplar::HALF) {
-      init = graph.addConstant(
-          dtype, {}, maxInitValue<float>(), opx.debugContext("maxInit"));
-      zero = graph.addConstant(dtype, {}, 0.0f, opx.debugContext("zero"));
-    };
+    auto mask = opx.cloneNcopy(prog, out);
+    popops::zero(graph, mask.getPoplarTensor(), seq, "zeros");
 
-    if (dtype == poplar::INT) {
-      init = graph.addConstant(
-          dtype, {}, maxInitValue<int>(), opx.debugContext("maxInit"));
-      zero = graph.addConstant(dtype, {}, 0, opx.debugContext("zero"));
-    };
+    auto ones = opx.cloneNcopy(prog, src);
+    popops::fill(graph, ones.getPoplarTensor(), seq, 1, "ones");
 
-    if (dtype == poplar::UNSIGNED_INT) {
-      init = graph.addConstant(
-          dtype, {}, maxInitValue<unsigned int>(), opx.debugContext("maxInit"));
-      zero = graph.addConstant(dtype, {}, 0, opx.debugContext("zero"));
-    };
+    popops::multiUpdateMax(graph,
+                           mask.getPoplarTensor(),
+                           ones.getPoplarTensor(),
+                           indices.getPoplarTensor(),
+                           {0},
+                           {1},
+                           seq,
+                           plan,
+                           poplar::OptionFlags(),
+                           opx.debugContext("scatter_mask"));
 
-    graph.setTileMapping(init, 0);
-    graph.setTileMapping(zero, 0);
-
-    auto mask =
-        popops::neq(graph, output, init, seq, opx.debugContext("out!=max"));
-
-    popops::selectInPlace(
-        graph, output, zero, mask, seq, opx.debugContext("maskedFill"));
+    auto expr = pe::Select(pe::_1, pe::_2, pe::Cast(pe::_2, poplar::BOOL));
+    snap::popops::mapInPlace(
+        opx.graph(), expr, {out, mask}, prog, opx.debugContext("maskedFill"));
   }
 
   template <typename T> static T maxInitValue() {
@@ -379,7 +372,7 @@ public:
 
     // TODO(T65173): make this an operator option since it can be unnecessary.
     // Replace any non-updated values with zero
-    maskedFillOutput(opx, target, prog);
+    maskedFillOutput(opx, target, update, indices, prog, plan);
   }
 
   snap::Tensor calcGradient(const PopOpx &opx,
