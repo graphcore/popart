@@ -149,9 +149,6 @@ def test_scatterreduce_basic(op_tester, test, reduction, dtype):
     axis = test["dim"]
     axsz = torch.max(index).item() + 1
 
-    if reduction == "min" and dtype == torch.float16:
-        pytest.skip("TODO (T65173): wrong answers with min & half")
-
     if index.dim() > 1:
         for _ in range(index.dim(), src.dim()):
             index = index.unsqueeze(-1)
@@ -194,7 +191,6 @@ def test_scatterreduce_index_broadcasted(op_tester):
     op_tester.run(init_builder, reference)
 
 
-@pytest.mark.skip("TODO (T65173): wrong answer on the forward pass")
 @pytest.mark.parametrize("reduction", ["max", "min"])
 def test_scatterreduce_repro(op_tester, reduction):
     src = torch.linspace(-1, 1, 16).view(-1, 2).T.contiguous()
@@ -266,9 +262,6 @@ def test_scatterreduce_training(op_tester, reduction):
     "axis,broadcast,reduction", product(range(-3, 3), [True, False], reductions)
 )
 def test_scatterreduce_axis(op_tester, axis, broadcast, reduction):
-    if broadcast and reduction == "min":
-        pytest.skip("TODO (T65173): figure out wrong answers with broadcast & min")
-
     torch.manual_seed(0)
     src = torch.rand(6, 10, 64)
     src.transpose_(0, axis)
