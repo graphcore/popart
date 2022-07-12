@@ -5,7 +5,7 @@ Custom operators
 
 This section explains how to implement a custom operator (op) in PopART. Code
 from the `Leaky ReLU custom op example
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.5/feature_examples/popart/custom_operators/leaky_relu_example>`_
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example>`_
 in the Graphcore GitHub repository will be used to illustrate the concepts.
 
 Overview
@@ -94,7 +94,7 @@ dynamically linked into the Python program at runtime, as shown below:
   ctypes.cdll.LoadLibrary(so_path)
 
 You can see how this is done in the `LeakyReLU example
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.5/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L55>`_.
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L55>`_.
 
 
 Implementing a custom op
@@ -371,7 +371,7 @@ The ``OperatorIdentifier`` is a structure with the components ``domain``,
 ``opName`` and ``opVersion``.
 
 For example, from `leaky_relu_custom_op.cpp
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.5/feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`_:
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`_:
 
 .. code-block:: cpp
 
@@ -593,7 +593,7 @@ In your application, the compiled library can be loaded from Python using the ``
 
 The op can be referenced, using the values in the ``OpIdentifier``, in a Python
 program using the ``builder``. For example, from `run_leaky_relu.py
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.5/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
+<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
 
 .. code-block:: python
 
