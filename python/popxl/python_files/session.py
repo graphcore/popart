@@ -44,8 +44,9 @@ class Session:
 
         Args:
             ir (Ir): The Ir to use for this session.
-            device_desc (Literal["ipu_hw", "ipu_model", "cpu"], optional): The type of
-                ipu device to use. One of:
+            device_desc (Literal["ipu_hw", "ipu_model", "cpu"], optional): This can be
+                either a DeviceInfo object created via the popart.DeviceManager or the type of
+                ipu device to use, chosen amongst the following list:
                 "ipu_hw": Real IPU hardware. Uses `DeviceConnectionType` == `OnDemand` and
                     `DeviceSelectionCriterion` == `Random`.
                 "ipu_model": IPU model.
