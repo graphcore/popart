@@ -32,8 +32,8 @@ endif()
 ### Project declaration
 project(popart VERSION ${POPART_VERSION} LANGUAGES CXX)
 
-# Where to find cmake module files
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+# Where to find Findxxxx.cmake files
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
 
 # cmake option definitions for popart
 include(DefineOptions)
@@ -121,11 +121,6 @@ find_package(poprithms REQUIRED)
 find_package(libpvti REQUIRED)
 find_package(pva REQUIRED)
 find_package(gcl REQUIRED)
-
-find_package(graphcore_binary REQUIRED)
-find_package(ipu_arch_info REQUIRED)
-find_package(ipu_user REQUIRED)
-find_package(popdist REQUIRED)
 
 find_package(poprithms REQUIRED)
 

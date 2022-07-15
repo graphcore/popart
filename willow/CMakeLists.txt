@@ -352,6 +352,12 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
         DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}
 )
 
+# For the user's convenience, we install our own Findgcl module, as gcl do not
+# provide their own config file.
+install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findgcl.cmake"
+        DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
+)
+
 # See T6089: to use python3 where strictly required, and
 # then remove this commented out code:
 #> add_custom_target(
