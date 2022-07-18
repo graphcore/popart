@@ -1073,9 +1073,17 @@ bool Devicex::isReplicatedGraph() const {
   return lowering().isReplicatedGraph();
 }
 
-bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
+bool Devicex::isEngineLoaded() const {
+  return getDevicexInfoUnsafe()->isMostRecentlyLoaded(this);
+}
 
-void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
+void Devicex::setEngineIsLoaded(bool isLoaded) {
+  if (isLoaded) {
+    getDevicexInfoUnsafe()->setMostRecentlyLoaded(this);
+  } else {
+    getDevicexInfoUnsafe()->setMostRecentlyLoaded(nullptr);
+  }
+}
 
 void Devicex::loadEngineAndConnectStreams() {
   POPART_TRACEPOINT();
@@ -1086,20 +1094,13 @@ void Devicex::loadEngineAndConnectStreams() {
     throw runtime_error("Trying to load an engine but no compiled engine. Did "
                         "you forget to call prepareDevice()?");
   }
-  auto di_p = dynamic_cast<DevicexInfo *>(deviceInfo.get());
-  if (di_p == nullptr) {
-    throw internal_error("DeviceInfo could not be cast to DevicexInfo.");
-  }
-  DevicexInfo &di = *di_p;
+
+  DevicexInfo &di = *getDevicexInfoUnsafe();
 
   // Let the device info know that this devicex's engine
   // has most recently loaded its engine onto the poplar
   // device
-  for (auto d : di.previouslyLoadedDevicexs) {
-    d->setEngineIsLoaded(false);
-  }
-  di.previouslyLoadedDevicexs.insert(this);
-  setEngineIsLoaded(true);
+  di.setMostRecentlyLoaded(this);
 
   if (di.getConnectionType() == DeviceConnectionType::OnDemand) {
     logging::devicex::debug("Attaching to device on demand");
@@ -1666,6 +1667,20 @@ void Devicex::deinitializeH2dWeightBuffers() {
     logging::devicex::debug(" * deinitialize_h2dWeightBuffers: {}", id);
     h2dWeightBuffers[id].clear();
   }
+}
+
+popx::DevicexInfo *Devicex::getDevicexInfoUnsafe() const {
+  if (!deviceInfo) {
+    throw internal_error("Devicex::deviceInfo unexpectedly not set.");
+  }
+
+  auto castedDeviceInfo = dynamic_cast<DevicexInfo *>(deviceInfo.get());
+  if (castedDeviceInfo == nullptr) {
+    throw internal_error(
+        "Devicex::deviceInfo could not be cast to DevicexInfo.");
+  }
+
+  return castedDeviceInfo;
 }
 
 } // namespace popx

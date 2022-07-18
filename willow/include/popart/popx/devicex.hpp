@@ -42,6 +42,7 @@ using PopStreamId = std::string;
 
 class IrLowering;
 class Executablex;
+class DevicexInfo;
 
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
@@ -317,15 +318,6 @@ private:
   // prefetch by reconnecting the datastreams before each program run.
   void reconnectInputStreams();
 
-  // Is this Devicex's engine the last to have been loaded onto
-  // deviceInfo's device?
-  // Becomes true once loadEngineAndConnectStreams() is called.
-  // Becomes 'false' if another engine has been loaded after
-  // loadEngineAndConnectStreams() has been called. This is
-  // different to 'prepareHasBeenCalled_', which, once true,
-  // is always true
-  bool engineIsLoaded = false;
-
   // Wrapper function that checks the calling devicex was the
   // last to have loaded its engine to deviceInfo's device
   void run(unsigned ind, std::string debugName);
@@ -373,6 +365,11 @@ private:
    * redundant data storage on host.
    */
   void deinitializeH2dWeightBuffers();
+
+  // Helper function that casts deviceInfo to a DevicexInfo* and throws nice
+  // errors if this is not possible. This WILL throw an error if deviceInfo is
+  // not set or if it's not pointing to a DevicexInfo object.
+  popx::DevicexInfo *getDevicexInfoUnsafe() const;
 };
 
 } // namespace popx

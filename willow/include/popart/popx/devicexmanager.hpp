@@ -62,7 +62,8 @@ public:
               poplar::Device &_device,
               const poplar::OptionFlags &_flags)
       : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
-        device(std::move(_device)), isAttached_(false) {}
+        device(std::move(_device)), isAttached_(false),
+        mostRecentlyLoaded(nullptr) {}
 
   virtual ~DevicexInfo();
 
@@ -89,13 +90,33 @@ public:
     return getTarget().getTargetArchString();
   }
 
-  std::set<Devicex *> previouslyLoadedDevicexs;
-
   virtual bool isAttached() const override { return isAttached_; }
+
+  /**
+   * Mark devicex as the last one that was loaded.
+   **/
+  virtual void setMostRecentlyLoaded(Devicex *devicex);
+
+  /**
+   * Check if Devicex was the last one that was loaded.
+   **/
+  virtual bool isMostRecentlyLoaded(const Devicex *devicex) const;
 
 protected:
   poplar::Device device;
   bool isAttached_;
+
+private:
+  // The most recent Devicex that was loaded onto this DevicexInfo's device.
+  // This is set for some device when loadEngineAndConnectStreams() is called
+  // and is overwritten if another engine is loaded after
+  // loadEngineAndConnectStreams() has been called. This is different to
+  // 'Devicex::prepareHasBeenCalled_', which, once true, is always true.
+  //
+  // NOTE: There is no guarantee that this pointer is not dangling. It is
+  // possible that the Devicex destructed since this pointer was set. Do not
+  // dereference this pointer.
+  Devicex *mostRecentlyLoaded;
 };
 
 class DevicexCpuInfo : public DevicexInfo {

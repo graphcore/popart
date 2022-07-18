@@ -320,6 +320,14 @@ void DevicexInfo::detach() {
   writeToDeviceAccessLog("detach-after-poplar-call");
 }
 
+void DevicexInfo::setMostRecentlyLoaded(Devicex *devicex) {
+  mostRecentlyLoaded = devicex;
+}
+
+bool DevicexInfo::isMostRecentlyLoaded(const Devicex *devicex) const {
+  return (mostRecentlyLoaded != nullptr) && (mostRecentlyLoaded == devicex);
+}
+
 std::vector<int> DevicexIpuInfo::getChildIds() const {
   auto numIpus = getNumIpus();
   if (numIpus == 1) {
