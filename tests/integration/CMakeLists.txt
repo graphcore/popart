@@ -124,8 +124,7 @@ add_popart_py_unit_test(randomsetup_test VARIANTS Hw)
 add_popart_py_unit_test(recompute_compatibility_test)
 add_popart_py_unit_test(report_test VARIANTS IpuModel)
 add_popart_py_unit_test(report_test_cpu)
-# TODO: re-enable when T62931 is fixed.
-#add_popart_py_unit_test(saved_executable VARIANTS Hw)
+add_popart_py_unit_test(saved_executable VARIANTS Hw)
 add_popart_py_unit_test(saved_executable_cpu)
 #Temporarily disabled, see T22702.
 #add_popart_py_unit_test(serialise_matmul_manually)
