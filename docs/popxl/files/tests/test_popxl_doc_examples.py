@@ -33,6 +33,11 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "basic_graph.py"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
+    def test_documentation_popxl_replication(self):
+        """Test the popxl replication example"""
+        filename = "replication.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
     def test_documentation_popxl_create_multi_subgraph(self):
         """Test the popxl create multiple subgraph example"""
         filename = "create_multi_graphs_from_same_func.py"

@@ -103,10 +103,9 @@ Code examples
 :numref:`var_settings_example` shows a simple example of the initialization of a few different groupings.
 
 
-.. literalinclude:: ../user_guide/files/replication_popxl.py
+.. literalinclude:: files/replication.py
     :language: python
-    :lines: 1-27
-    :emphasize-lines: 14-16, 18-23, 24-27
+    :lines: 1-29
     :caption: Example of setting up different variables.
     :name: var_settings_example
 
@@ -119,9 +118,8 @@ a group should be identical. However, if you wish to return all replicas within 
 ``"all_replicas"``  when constructing your variable:
 
 
-.. literalinclude:: ../user_guide/files/replication_popxl.py
+.. literalinclude:: files/replication.py
     :language: python
-    :lines: 29-45
-    :emphasize-lines: 1-8, 10-16
+    :lines: 31-46
     :caption: Example of setting up variables with all_replicas retrieval mode.
     :name: var_settings_example_2
