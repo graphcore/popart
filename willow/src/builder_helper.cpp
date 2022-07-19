@@ -293,6 +293,13 @@ void verifyPadBase(std::unique_ptr<BuilderImpl> &impl,
                    std::vector<TensorId> inputs,
                    std::map<std::string, popart::any> attributes) {
 
+  // TODO T17932 : We do not have a mechanism for infering the output shape
+  // of custom ops, so this set of checks can only be applied if the tensor
+  // shape is known
+  if (!impl->hasTensorShape(inputs[0])) {
+    return;
+  }
+
   auto rank = impl->getTensorShape(inputs[0]).size();
   auto &pads =
       popart::any_cast<const std::vector<int64_t> &>(attributes["pads"]);
