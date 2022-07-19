@@ -126,7 +126,18 @@ repos:
                 --inline-suppr,
                 --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
             ]
-    #      - id: cpplint
+          - id: cpplint
+            args: [
+                '--filter=-,+build/header_guard'
+            ]
+            exclude: |
+                (?x)^(
+                    willow/include/popart/docs/pydocs_popart_core.hpp|
+                    willow/include/popart/builder.gen.hpp|
+                    willow/include/popart/onnxoperators.gen.hpp|
+                    willow/src/opsets.gen.hpp
+                  )$
+
     - repo: local
       hooks:
           # The clone linter should run after the format linters so that it only works on formatted files
