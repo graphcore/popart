@@ -42,20 +42,23 @@ final class PreCommitLinter extends ArcanistExternalLinter {
 
   /** Return messages to be printed in case the linter fails. */
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $lines = phutil_split_lines($stdout, false);
     $messages = [];
 
-    foreach ($lines as $line) {
-      preg_match_all(self::REGEX_LINTER_FAILED, $line, $matches, PREG_SET_ORDER, 0);
+    preg_match_all(self::REGEX_LINTER_FAILED, $stdout, $matches, PREG_SET_ORDER, 0);
 
-      if (!empty($matches)) {
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setName($matches[0]['linter']);
-        $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+    if (!empty($matches))
+    {
+      $message = new ArcanistLintMessage();
+      $message->setPath($path);
+      $message->setName('pre-commit');
+      $message->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR);
+      $message->setDescription($stdout . "\nNOTE: PopART uses 'pre-commit' "
+        . "to run linters. You are seeing this message because pre-commit has "
+        . "returned an error. You can run pre-commit directly by calling:\n"
+        . "\n"
+        . " > pre-commit run\n");
 
-        $messages[] = $message;
-      }
+      $messages[] = $message;
     }
 
     return $messages;
