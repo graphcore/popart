@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POSTNREPL_HPP
-#define GUARD_NEURALNET_POSTNREPL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_POSTNREPL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_POSTNREPL_HPP_
 
 #include <vector>
 #include <popart/patterns/pattern.hpp>
@@ -47,4 +47,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_POSTNREPL_HPP_

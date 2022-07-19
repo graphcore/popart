@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXTOONNX_MULTICONVWITHBIAS_HPP
-#define GUARD_NEURALNET_ONNXTOONNX_MULTICONVWITHBIAS_HPP
+#ifndef POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONV_HPP_
+#define POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONV_HPP_
 
 #include <memory>
 #include <onnxpasses/nodepattern.hpp>
@@ -39,4 +39,4 @@ private:
 } // namespace onnxpasses
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONV_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RANDOMBASE_HPP
-#define GUARD_NEURALNET_RANDOMBASE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_RANDOMBASE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_RANDOMBASE_HPP_
 
 #include <memory>
 #include <vector>
@@ -76,4 +76,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_RANDOMBASE_HPP_

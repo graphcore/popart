@@ -1,7 +1,7 @@
 
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GRAD_GROWER_OP_HPP
-#define GUARD_NEURALNET_GRAD_GROWER_OP_HPP
+#ifndef POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_GRADGROWEROP_HPP_
+#define POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_GRADGROWEROP_HPP_
 
 #include <transforms/autodiff/autodiffhelper.hpp>
 #include <vector>
@@ -49,4 +49,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_GRADGROWEROP_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LSTMXUTIL_HPP
-#define GUARD_NEURALNET_LSTMXUTIL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_LSTMXUTIL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_LSTMXUTIL_HPP_
 
 #include <popnn/NonLinearityDef.hpp>
 #include <popart/op/lstmutil.hpp>
@@ -13,4 +13,4 @@ popnn::NonLinearityType convert(ActivationFunction);
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_LSTMXUTIL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAM_HPP
-#define GUARD_NEURALNET_ADAM_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ADAM_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ADAM_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -656,4 +656,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ADAM_HPP_

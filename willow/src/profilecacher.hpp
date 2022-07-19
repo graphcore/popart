@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PROFILECACHER_HPP
-#define GUARD_NEURALNET_PROFILECACHER_HPP
+#ifndef POPART_WILLOW_SRC_PROFILECACHER_HPP_
+#define POPART_WILLOW_SRC_PROFILECACHER_HPP_
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
@@ -49,4 +49,4 @@ private:
 
 } // namespace popart
 
-#endif // GUARD_NEURALNET_PROFILECACHER_HPP
+#endif // POPART_WILLOW_SRC_PROFILECACHER_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DYNAMICBASE_HPP
-#define GUARD_NEURALNET_DYNAMICBASE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICBASE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICBASE_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -220,4 +220,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICBASE_HPP_

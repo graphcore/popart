@@ -1,4 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_OP_DUMMY_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_OP_DUMMY_HPP_
+
 #include <limits>
 #include <memory>
 #include <popart/op.hpp>
@@ -42,3 +45,5 @@ private:
 };
 
 } // namespace test_graphs
+
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_OP_DUMMY_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GATHER_HPP
-#define GUARD_NEURALNET_GATHER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_GATHER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_GATHER_HPP_
 
 #include <cstdint>
 #include <map>
@@ -97,4 +97,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_GATHER_HPP_

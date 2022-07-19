@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NORMX_HPP
-#define GUARD_NEURALNET_NORMX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_NORMX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_NORMX_HPP_
 
 #include <algorithm>
 #include <cstddef>
@@ -52,4 +52,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_NORMX_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SWISHX_HPP
-#define GUARD_NEURALNET_SWISHX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SWISHX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SWISHX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <memory>
@@ -64,4 +64,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SWISHX_HPP_

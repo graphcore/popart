@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DEBUGCONTEXT_HPP
-#define GUARD_NEURALNET_DEBUGCONTEXT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DEBUGCONTEXT_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DEBUGCONTEXT_HPP_
 
 #include <cstdint>
 #include <map>
@@ -203,4 +203,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DEBUGCONTEXT_HPP_

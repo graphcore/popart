@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GRAPHCOREOPERATORS_HPP
-#define GUARD_NEURALNET_GRAPHCOREOPERATORS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_GRAPHCOREOPERATORS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_GRAPHCOREOPERATORS_HPP_
 
 #include <cstdint>
 #include <popart/names.hpp>
@@ -407,4 +407,4 @@ const static AiGraphcoreOpIdV1 AllReduceGrad("AllReduceGrad");
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_GRAPHCOREOPERATORS_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PACKEDDATABLOCK_HPP
-#define GUARD_NEURALNET_PACKEDDATABLOCK_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_PACKEDDATABLOCK_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_PACKEDDATABLOCK_HPP_
 
 #include <cstdint>
 #include <functional>
@@ -187,4 +187,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_PACKEDDATABLOCK_HPP_

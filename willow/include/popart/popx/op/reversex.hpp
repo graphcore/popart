@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REVERSEX_HPP
-#define GUARD_NEURALNET_REVERSEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_REVERSEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_REVERSEX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
@@ -52,4 +52,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_REVERSEX_HPP_

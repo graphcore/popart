@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_COLLECTIVES_HPP
-#define GUARD_NEURALNET_COLLECTIVES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_COLLECTIVES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_COLLECTIVES_HPP_
 
 #include <cstdint>
 #include <iosfwd>
@@ -177,4 +177,4 @@ CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_COLLECTIVES_HPP_

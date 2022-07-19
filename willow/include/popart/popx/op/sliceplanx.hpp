@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SLICEPLANX_HPP
-#define GUARD_NEURALNET_SLICEPLANX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEPLANX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEPLANX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <cstddef>
@@ -60,4 +60,4 @@ snap::Tensor alignToAxis(const snap::Tensor &input,
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEPLANX_HPP_

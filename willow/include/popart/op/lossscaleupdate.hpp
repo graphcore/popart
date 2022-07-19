@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
-#define GUARD_NEURALNET_LOSSSCALEUPDATE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_LOSSSCALEUPDATE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_LOSSSCALEUPDATE_HPP_
 
 #include <memory>
 #include <popart/op.hpp>
@@ -57,4 +57,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_LOSSSCALEUPDATE_HPP_

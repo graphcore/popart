@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
-#define POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_CUSTOM_PARAMETERIZEDOPBINDER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_CUSTOM_PARAMETERIZEDOPBINDER_HPP_
 
 #include <map>
 #include <memory>
@@ -98,4 +98,4 @@ void makeParameterizedOpBindings(pybind11::module m, const char *op_name) {
 } // namespace ir
 } // namespace popart
 
-#endif // POPART_IR_BINDINGS_PARAMETERIZEDOPBINDER_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_CUSTOM_PARAMETERIZEDOPBINDER_HPP_

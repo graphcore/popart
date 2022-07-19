@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LRELU_HPP
-#define GUARD_NEURALNET_LRELU_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_LEAKYRELU_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_LEAKYRELU_HPP_
 
 #include <memory>
 #include <tuple>
@@ -74,4 +74,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_LEAKYRELU_HPP_

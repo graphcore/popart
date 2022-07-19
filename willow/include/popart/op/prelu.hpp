@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PRELU_HPP
-#define GUARD_NEURALNET_PRELU_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_PRELU_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_PRELU_HPP_
 
 #include <memory>
 #include <popart/op/elementwise.hpp>
@@ -18,4 +18,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_PRELU_HPP_

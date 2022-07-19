@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAMUPDATER_HPP
-#define GUARD_NEURALNET_ADAMUPDATER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ADAMUPDATER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ADAMUPDATER_HPP_
 
 #include <memory>
 #include <popart/adam.hpp>
@@ -59,4 +59,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ADAMUPDATER_HPP_

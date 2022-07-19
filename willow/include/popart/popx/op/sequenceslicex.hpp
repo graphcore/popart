@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SEQUENCESLICEX_HPP
-#define GUARD_NEURALNET_SEQUENCESLICEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SEQUENCESLICEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SEQUENCESLICEX_HPP_
 
 #include <popart/popx/popopx.hpp>
 
@@ -31,4 +31,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SEQUENCESLICEX_HPP_

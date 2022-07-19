@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REDUCE_HPP
-#define GUARD_NEURALNET_REDUCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_REDUCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_REDUCE_HPP_
 
 #include <algorithm>
 #include <cstdint>
@@ -102,4 +102,4 @@ protected:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_REDUCE_HPP_

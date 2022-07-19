@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_VOIDDATA_HPP_HPP
-#define GUARD_NEURALNET_VOIDDATA_HPP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_VOIDDATA_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_VOIDDATA_HPP_
 
 #include <vector>
 #include <popart/tensorinfo.hpp>
@@ -35,4 +35,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_VOIDDATA_HPP_

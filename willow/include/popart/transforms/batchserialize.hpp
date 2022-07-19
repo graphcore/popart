@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BATCHSERIALIZE_HPP
-#define GUARD_NEURALNET_BATCHSERIALIZE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_BATCHSERIALIZE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_BATCHSERIALIZE_HPP_
 
 #include <cstddef>
 #include <string>
@@ -124,4 +124,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_BATCHSERIALIZE_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPPROGRAMS_HPP
-#define GUARD_NEURALNET_POPPROGRAMS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_POPPROGRAMS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_POPPROGRAMS_HPP_
 
 #include <iosfwd>
 #include <map>
@@ -342,4 +342,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_POPPROGRAMS_HPP_

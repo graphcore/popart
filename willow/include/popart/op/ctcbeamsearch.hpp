@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CTCBEAMSEARCH_HPP
-#define GUARD_NEURALNET_CTCBEAMSEARCH_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_CTCBEAMSEARCH_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_CTCBEAMSEARCH_HPP_
 
 #include <memory>
 #include <vector>
@@ -61,4 +61,4 @@ private:
 };
 } // namespace popart
 
-#endif // GUARD_NEURALNET_CTCBEAMSEARCH_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_CTCBEAMSEARCH_HPP_

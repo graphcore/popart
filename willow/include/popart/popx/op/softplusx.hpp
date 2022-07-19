@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SOFTPLUSX_HPP
-#define GUARD_NEURALNET_SOFTPLUSX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SOFTPLUSX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SOFTPLUSX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <string>
@@ -52,4 +52,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SOFTPLUSX_HPP_

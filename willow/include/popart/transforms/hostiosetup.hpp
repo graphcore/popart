@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_HOSTIOSETUP_HPP
-#define GUARD_NEURALNET_HOSTIOSETUP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_HOSTIOSETUP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_HOSTIOSETUP_HPP_
 
 #include <cstddef>
 #include <string>
@@ -36,4 +36,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_HOSTIOSETUP_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BASICOPTIONALS_HPP
-#define GUARD_NEURALNET_BASICOPTIONALS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BASICOPTIONALS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BASICOPTIONALS_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -172,4 +172,4 @@ std::ostream &operator<<(std::ostream &ost, const BasicOptional<T, V> &bo) {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_BASICOPTIONALS_HPP_

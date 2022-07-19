@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXTOONNX_CONSTFOLDER_HPP
-#define GUARD_NEURALNET_ONNXTOONNX_CONSTFOLDER_HPP
+#ifndef POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONSTFOLDER_HPP_
+#define POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONSTFOLDER_HPP_
 
 #include <map>
 #include <memory>
@@ -43,4 +43,4 @@ private:
 } // namespace onnxpasses
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_CONSTFOLDER_HPP_

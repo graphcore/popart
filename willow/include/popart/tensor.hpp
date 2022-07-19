@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef NEURALNET_TENSOR_HPP
-#define NEURALNET_TENSOR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSOR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSOR_HPP_
 
 #include <cstdint>
 #include <functional>
@@ -365,4 +365,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSOR_HPP_

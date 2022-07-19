@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PADGRADX_HPP
-#define GUARD_NEURALNET_PADGRADX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_PADGRADX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_PADGRADX_HPP_
 
 #include <popart/popx/op/slicex.hpp>
 
@@ -18,4 +18,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_PADGRADX_HPP_

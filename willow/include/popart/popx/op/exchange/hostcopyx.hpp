@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_HOSTX_HPP
-#define GUARD_NEURALNET_HOSTX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_HOSTCOPYX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_HOSTCOPYX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <snap/Tensor.hpp>
@@ -57,4 +57,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_HOSTCOPYX_HPP_

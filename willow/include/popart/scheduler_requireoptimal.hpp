@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SCHEDULER_REQUIRE_OPTIMAL_HPP
-#define GUARD_NEURALNET_SCHEDULER_REQUIRE_OPTIMAL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SCHEDULER_REQUIREOPTIMAL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SCHEDULER_REQUIREOPTIMAL_HPP_
 
 namespace popart {
 
@@ -10,4 +10,4 @@ enum class RequireOptimalSchedule { Yes = true, No = false };
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SCHEDULER_REQUIREOPTIMAL_HPP_

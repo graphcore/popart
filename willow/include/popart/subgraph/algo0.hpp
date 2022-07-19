@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RINSEMATCHER_ALGO0_HPP
-#define GUARD_NEURALNET_RINSEMATCHER_ALGO0_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO0_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO0_HPP_
 
 #include <vector>
 
@@ -37,4 +37,4 @@ std::vector<Match> getFinalMatches(const std::vector<Match> &matches,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO0_HPP_

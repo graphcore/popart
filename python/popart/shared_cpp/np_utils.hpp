@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NP_UTILS_HPP
-#define GUARD_NEURALNET_NP_UTILS_HPP
+#ifndef POPART_PYTHON_POPART_SHARED_CPP_NP_UTILS_HPP_
+#define POPART_PYTHON_POPART_SHARED_CPP_NP_UTILS_HPP_
 
 #include <map>
 #include <pybind11/cast.h>
@@ -41,4 +41,4 @@ pybind11::array makeContiguous(pybind11::array npArr);
 
 } // namespace popart
 
-#endif
+#endif // POPART_PYTHON_POPART_SHARED_CPP_NP_UTILS_HPP_

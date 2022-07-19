@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BATCHSERIALSCHEDULER_HPP
-#define GUARD_NEURALNET_BATCHSERIALSCHEDULER_HPP
+#ifndef POPART_WILLOW_SRC_TRANSFORMS_BATCHSERIALSCHEDULER_HPP_
+#define POPART_WILLOW_SRC_TRANSFORMS_BATCHSERIALSCHEDULER_HPP_
 
 #include <cstdint>
 #include <functional>
@@ -143,4 +143,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_TRANSFORMS_BATCHSERIALSCHEDULER_HPP_

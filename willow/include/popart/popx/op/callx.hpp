@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CALLX_HPP
-#define GUARD_NEURALNET_CALLX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_CALLX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_CALLX_HPP_
 
 #include <vector>
 #include <popart/popx/op/subgraphx.hpp>
@@ -49,4 +49,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_CALLX_HPP_

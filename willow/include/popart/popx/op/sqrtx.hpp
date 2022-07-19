@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SQRTX_HPP
-#define GUARD_NEURALNET_SQRTX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SQRTX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SQRTX_HPP_
 
 #include <popart/popx/op/elementwisex.hpp>
 
@@ -25,4 +25,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SQRTX_HPP_

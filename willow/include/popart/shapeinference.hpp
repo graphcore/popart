@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_SHAPEINFERENCE_HPP
-#define GUARD_SHAPEINFERENCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SHAPEINFERENCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SHAPEINFERENCE_HPP_
 #include <cstddef>
 #include <functional>
 #include <map>
@@ -113,4 +113,4 @@ inline void propagateShapeFromInputToOutput(ShapeInferenceContext &ctx,
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SHAPEINFERENCE_HPP_

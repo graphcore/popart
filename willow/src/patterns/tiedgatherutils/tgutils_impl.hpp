@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
-#define GUARD_NEURALNET_TEMP_TIEDGATHER_UTILS_IMPL_HPP
+#ifndef POPART_WILLOW_SRC_PATTERNS_TIEDGATHERUTILS_TGUTILS_IMPL_HPP_
+#define POPART_WILLOW_SRC_PATTERNS_TIEDGATHERUTILS_TGUTILS_IMPL_HPP_
 
 #include <memory>
 #include <string>
@@ -142,4 +142,4 @@ template <class T> Tensor *maybeTraverseProducer(InIndex index, Tensor *t) {
 } // namespace tgutil
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_PATTERNS_TIEDGATHERUTILS_TGUTILS_IMPL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_EXECUTABLEX_SERIALIZER_HPP
-#define GUARD_NEURALNET_EXECUTABLEX_SERIALIZER_HPP
+#ifndef POPART_WILLOW_SRC_POPX_EXECUTABLEXSERIALIZER_HPP_
+#define POPART_WILLOW_SRC_POPX_EXECUTABLEXSERIALIZER_HPP_
 
 #include <iostream>
 #include <memory>
@@ -112,4 +112,4 @@ deserializePopartExecutable(std::istream &in,
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_EXECUTABLEX_SERIALIZER_HPP
+#endif // POPART_WILLOW_SRC_POPX_EXECUTABLEXSERIALIZER_HPP_

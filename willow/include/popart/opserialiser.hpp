@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPSERIALISER_HPP
-#define GUARD_NEURALNET_OPSERIALISER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPSERIALISER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPSERIALISER_HPP_
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -144,4 +144,4 @@ template <> void OpEquivIdCreator::appendAttr(const TensorIndexMap &tmap);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPSERIALISER_HPP_

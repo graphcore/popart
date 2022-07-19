@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNX_DEBUGINFO_HPP
-#define GUARD_NEURALNET_ONNX_DEBUGINFO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ONNXDEBUGINFO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ONNXDEBUGINFO_HPP_
 
 #include <popart/debugcontext.hpp>
 #include <popart/names.hpp>
@@ -41,4 +41,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ONNXDEBUGINFO_HPP_

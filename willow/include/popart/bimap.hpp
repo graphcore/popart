@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BIMAP_HPP
-#define GUARD_NEURALNET_BIMAP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BIMAP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BIMAP_HPP_
 
 #include <map>
 
@@ -57,4 +57,4 @@ private:
   std::map<R, L> right;
 };
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_BIMAP_HPP_

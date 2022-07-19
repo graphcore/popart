@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONVTRANSPOSE_HPP
-#define GUARD_NEURALNET_CONVTRANSPOSE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_CONVTRANSPOSE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_CONVTRANSPOSE_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -56,4 +56,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_CONVTRANSPOSE_HPP_

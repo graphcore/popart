@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_NEURALNET_BROADCAST_UTILS_HPP
-#define GUARD_NEURALNET_BROADCAST_UTILS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BROADCASTUTIL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BROADCASTUTIL_HPP_
 
 #include <cstddef>
 #include <vector>
@@ -27,4 +27,4 @@ static std::vector<T> unpadShape(const std::vector<T> &shape,
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_BROADCASTUTIL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSOR_DEBUGINFO_HPP
-#define GUARD_NEURALNET_TENSOR_DEBUGINFO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORDEBUGINFO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORDEBUGINFO_HPP_
 
 #include <string>
 #include <popart/debugcontext.hpp>
@@ -30,4 +30,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORDEBUGINFO_HPP_

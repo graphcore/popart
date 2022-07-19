@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ARGEXTREMAX_HPP
-#define GUARD_NEURALNET_ARGEXTREMAX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGEXTREMAX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGEXTREMAX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
@@ -30,4 +30,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_ARGEXTREMAX_HPP_

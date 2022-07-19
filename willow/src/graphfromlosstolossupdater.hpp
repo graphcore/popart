@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_GRAPHFROMLOSSTOLOSSUPDATERL_H
-#define GUARD_GRAPHFROMLOSSTOLOSSUPDATERL_H
+#ifndef POPART_WILLOW_SRC_GRAPHFROMLOSSTOLOSSUPDATER_HPP_
+#define POPART_WILLOW_SRC_GRAPHFROMLOSSTOLOSSUPDATER_HPP_
 
 namespace popart {
 
@@ -26,4 +26,4 @@ void unsetAll(Graph &g);
 } // namespace graphFromLossToLossUpdater
 } // namespace popart
 
-#endif // GUARD_GRAPHFROMLOSSTOLOSSUPDATERL_H
+#endif // POPART_WILLOW_SRC_GRAPHFROMLOSSTOLOSSUPDATER_HPP_

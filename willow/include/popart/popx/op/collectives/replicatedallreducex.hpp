@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REPLICATEDALLREDUCEX_HPP
-#define GUARD_NEURALNET_REPLICATEDALLREDUCEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_REPLICATEDALLREDUCEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_REPLICATEDALLREDUCEX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/op/collectives/collectivesx.hpp>
@@ -38,4 +38,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_REPLICATEDALLREDUCEX_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RECIPROCAL_HPP
-#define GUARD_NEURALNET_RECIPROCAL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_RECIPROCAL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_RECIPROCAL_HPP_
 
 #include <memory>
 #include <vector>
@@ -25,4 +25,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_RECIPROCAL_HPP_

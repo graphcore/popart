@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_PRITASK_HPP
-#define GUARD_PRITASK_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_PRITASK_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_PRITASK_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -206,4 +206,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_PRITASK_HPP_

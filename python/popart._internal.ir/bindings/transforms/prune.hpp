@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_TRANSFORM_PRUNE_HPP
-#define POPART__INTERNAL_IR_BINDINGS_TRANSFORM_PRUNE_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TRANSFORMS_PRUNE_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TRANSFORMS_PRUNE_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -21,4 +21,4 @@ void bindPrune(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TRANSFORMS_PRUNE_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ACCUMULATEX_HPP
-#define GUARD_NEURALNET_ACCUMULATEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ACCUMULATEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ACCUMULATEX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <set>
@@ -75,4 +75,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_ACCUMULATEX_HPP_

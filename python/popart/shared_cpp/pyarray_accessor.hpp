@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PYBIND11_ARRAY_ACCESSOR_HPP
-#define GUARD_NEURALNET_PYBIND11_ARRAY_ACCESSOR_HPP
+#ifndef POPART_PYTHON_POPART_SHARED_CPP_PYARRAY_ACCESSOR_HPP_
+#define POPART_PYTHON_POPART_SHARED_CPP_PYARRAY_ACCESSOR_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -68,4 +68,4 @@ struct PyArrayAccessor {
 } // namespace StepIONS
 } // namespace popart
 
-#endif
+#endif // POPART_PYTHON_POPART_SHARED_CPP_PYARRAY_ACCESSOR_HPP_

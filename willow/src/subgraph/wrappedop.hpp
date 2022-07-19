@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPH_WRAPPED_OP_HPP
-#define GUARD_NEURALNET_SUBGRAPH_WRAPPED_OP_HPP
+#ifndef POPART_WILLOW_SRC_SUBGRAPH_WRAPPEDOP_HPP_
+#define POPART_WILLOW_SRC_SUBGRAPH_WRAPPEDOP_HPP_
 
 #include <functional>
 #include <map>
@@ -141,4 +141,4 @@ WrappedOpSched toWrappedOpSched(popart::Ir &ir,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_SRC_SUBGRAPH_WRAPPEDOP_HPP_

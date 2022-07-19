@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LIVENESS_HPP
-#define GUARD_NEURALNET_LIVENESS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_LIVENESS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_LIVENESS_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -269,4 +269,4 @@ private:
 } // namespace liveness
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_LIVENESS_HPP_

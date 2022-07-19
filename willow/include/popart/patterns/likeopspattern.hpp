@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LIKEOPSPATTERN_HPP
-#define GUARD_NEURALNET_LIKEOPSPATTERN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_LIKEOPSPATTERN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_LIKEOPSPATTERN_HPP_
 
 #include <vector>
 #include <popart/graph.hpp>
@@ -49,4 +49,4 @@ public:
 };
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_LIKEOPSPATTERN_HPP_

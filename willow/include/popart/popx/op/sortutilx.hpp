@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SORTUTILS_HPP
-#define GUARD_NEURALNET_SORTUTILS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SORTUTILX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SORTUTILX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <snap/Tensor.hpp>
@@ -27,4 +27,4 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SORTUTILX_HPP_

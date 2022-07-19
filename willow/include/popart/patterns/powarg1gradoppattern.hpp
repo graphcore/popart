@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POW_ARG_1_GRAD_OP_PATTERN_HPP
-#define GUARD_NEURALNET_POW_ARG_1_GRAD_OP_PATTERN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_POWARG1GRADOPPATTERN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_POWARG1GRADOPPATTERN_HPP_
 #include <popart/patterns/binarygradoppattern.hpp>
 
 #include "popart/names.hpp"
@@ -30,4 +30,4 @@ protected:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_POWARG1GRADOPPATTERN_HPP_

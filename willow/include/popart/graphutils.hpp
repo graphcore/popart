@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GRAPHUTILS_HPP
-#define GUARD_NEURALNET_GRAPHUTILS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_GRAPHUTILS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_GRAPHUTILS_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -319,4 +319,4 @@ getOpFinalLossRelations(Graph &graph);
 } // namespace graphutils
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_GRAPHUTILS_HPP_

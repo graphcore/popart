@@ -1,7 +1,7 @@
 
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OP_HPP
-#define GUARD_NEURALNET_OP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -1875,4 +1875,4 @@ std::ostream &operator<<(std::ostream &, const GradInOutMapper &);
 std::ostream &operator<<(std::ostream &, const GradOpInType &);
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_HPP_

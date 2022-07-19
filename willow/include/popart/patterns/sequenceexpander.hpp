@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SEQUENCE_EXPANDER_HPP
-#define GUARD_NEURALNET_SEQUENCE_EXPANDER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_SEQUENCEEXPANDER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_SEQUENCEEXPANDER_HPP_
 
 #include <memory>
 #include <vector>
@@ -35,4 +35,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_SEQUENCEEXPANDER_HPP_

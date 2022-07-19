@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPDEVICE_HPP
-#define GUARD_NEURALNET_POPDEVICE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEX_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -375,4 +375,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEX_HPP_

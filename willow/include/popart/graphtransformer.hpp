@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_GRAPHTRANSFORMER_H
-#define GUARD_GRAPHTRANSFORMER_H
+#ifndef POPART_WILLOW_INCLUDE_POPART_GRAPHTRANSFORMER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_GRAPHTRANSFORMER_HPP_
 
 #include <memory>
 #include <string>
@@ -108,4 +108,4 @@ private:
 };
 
 } // namespace popart
-#endif // GUARD_GRAPHTRANSFORMER_H
+#endif // POPART_WILLOW_INCLUDE_POPART_GRAPHTRANSFORMER_HPP_

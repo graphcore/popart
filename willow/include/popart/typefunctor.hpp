@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_TYPEFUNCTOR_HPP
-#define GUARD_TYPEFUNCTOR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TYPEFUNCTOR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TYPEFUNCTOR_HPP_
 
 #include <cstdint>
 #include <map>
@@ -69,4 +69,4 @@ template <> int64_t Int64FromVoid::operator()<popart::Half>(void *);
 } // namespace typefunctor
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TYPEFUNCTOR_HPP_

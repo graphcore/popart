@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXUTIL_HPP
-#define GUARD_NEURALNET_ONNXUTIL_HPP
+#ifndef POPART_WILLOW_SRC_ONNXUTIL_HPP_
+#define POPART_WILLOW_SRC_ONNXUTIL_HPP_
 
 #include <cstdint>
 #include <functional>
@@ -98,4 +98,4 @@ void printOnnxModel(const std::string &modelProtoOrFilename);
 } // namespace onnxutil
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXUTIL_HPP_

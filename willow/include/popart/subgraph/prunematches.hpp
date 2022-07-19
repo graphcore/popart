@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_AUPGRPAH_PRUNE_PRUNEMATCHES_HPP
-#define GUARD_NEURALNET_AUPGRPAH_PRUNE_PRUNEMATCHES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_PRUNEMATCHES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_PRUNEMATCHES_HPP_
 
 #include <algorithm>
 #include <cstdint>
@@ -153,4 +153,4 @@ std::vector<Match> pruneMatches(const std::vector<Match> &inMatches,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_PRUNEMATCHES_HPP_

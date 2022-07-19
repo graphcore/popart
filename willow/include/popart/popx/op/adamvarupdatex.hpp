@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAMVARUPDATEX_HPP
-#define GUARD_NEURALNET_ADAMVARUPDATEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADAMVARUPDATEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADAMVARUPDATEX_HPP_
 
 #include <popart/popx/op/varupdatex.hpp>
 
@@ -27,4 +27,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_ADAMVARUPDATEX_HPP_

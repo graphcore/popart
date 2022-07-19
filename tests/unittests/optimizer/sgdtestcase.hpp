@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP
-#define POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP
+#ifndef POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP_
+#define POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP_
 
 #include <string>
 #include <utility>
@@ -150,4 +150,4 @@ struct SGDCustomTestCase : public _detail::SGDTestCase {
   SGDCustomTestCase(popart::SGD sgd_) : SGDTestCase(std::move(sgd_)) {}
 };
 
-#endif
+#endif // POPART_TESTS_UNITTESTS_OPTIMIZER_SGDTESTCASE_HPP_

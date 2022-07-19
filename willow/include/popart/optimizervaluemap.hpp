@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPTIMIZERVALUEMAP_HPP
-#define GUARD_NEURALNET_OPTIMIZERVALUEMAP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUEMAP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUEMAP_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -59,4 +59,4 @@ inline std::size_t hash_value(const OptimizerValueMap &vmap) {
   return std::hash<OptimizerValueMap>()(vmap);
 }
 } // namespace popart
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUEMAP_HPP_

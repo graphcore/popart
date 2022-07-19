@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ISOMORPHIC_HPP
-#define GUARD_NEURALNET_ISOMORPHIC_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ISOMORPHIC_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ISOMORPHIC_HPP_
 
 #include <map>
 #include <string>
@@ -189,4 +189,4 @@ bool areIsomorphic(int seq_length,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ISOMORPHIC_HPP_

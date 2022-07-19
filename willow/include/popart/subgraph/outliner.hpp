@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RINSEMATCHER_OUTLINER_HPP
-#define GUARD_NEURALNET_RINSEMATCHER_OUTLINER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_OUTLINER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_OUTLINER_HPP_
 
 #include <algorithm>
 #include <cstddef>
@@ -102,4 +102,4 @@ getRinseMatches(const std::vector<T *> &schedule,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_OUTLINER_HPP_

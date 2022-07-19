@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SQRT_HPP
-#define GUARD_NEURALNET_SQRT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SQRT_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SQRT_HPP_
 
 #include <map>
 #include <memory>
@@ -39,4 +39,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SQRT_HPP_

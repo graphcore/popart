@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ROIALIGN_HPP
-#define GUARD_NEURALNET_ROIALIGN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ROIALIGN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ROIALIGN_HPP_
 
 #include <cstdint>
 #include <map>
@@ -80,4 +80,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ROIALIGN_HPP_

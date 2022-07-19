@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_IMPL_HPP
-#define TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_IMPL_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_IMPL_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_IMPL_HPP_
 
 #include <algorithm>
 #include <memory>
@@ -71,4 +71,4 @@ OpsTestWrapper::hasOp(Require testReq) {
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_IMPL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
-#define GUARD_NEURALNET_SUBGRAPH_PARTITIONER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPHPARTITIONER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPHPARTITIONER_HPP_
 
 #include <cstddef>
 #include <iostream>
@@ -218,4 +218,4 @@ std::ostream &operator<<(std::ostream &os, const SubgraphPartitioner::Node &);
 } // namespace liveness
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPHPARTITIONER_HPP_

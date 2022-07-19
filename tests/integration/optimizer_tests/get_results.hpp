@@ -1,4 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#ifndef POPART_TESTS_INTEGRATION_OPTIMIZER_TESTS_GET_RESULTS_HPP_
+#define POPART_TESTS_INTEGRATION_OPTIMIZER_TESTS_GET_RESULTS_HPP_
+
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -455,3 +458,5 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   return std::array<float, 2>{static_cast<float>(rb0[0]),
                               static_cast<float>(rb1[0])};
 }
+
+#endif // POPART_TESTS_INTEGRATION_OPTIMIZER_TESTS_GET_RESULTS_HPP_

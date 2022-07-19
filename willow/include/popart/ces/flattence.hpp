@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPRS_FLATTENCE_HPP
-#define GUARD_NEURALNET_CONSTEXPRS_FLATTENCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_FLATTENCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_FLATTENCE_HPP_
 
 #include <popart/ces/identityce.hpp>
 
@@ -14,4 +14,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_FLATTENCE_HPP_

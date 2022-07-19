@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORREMAPX_HPP
-#define GUARD_NEURALNET_TENSORREMAPX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_TENSORREMAPX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_TENSORREMAPX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/names.hpp>
@@ -31,4 +31,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_TENSORREMAPX_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SGD2VARUPDATE_HPP
-#define GUARD_NEURALNET_SGD2VARUPDATE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SGD2VARUPDATE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SGD2VARUPDATE_HPP_
 
 #include <memory>
 #include <popart/op/sgd1varupdate.hpp>
@@ -34,4 +34,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SGD2VARUPDATE_HPP_

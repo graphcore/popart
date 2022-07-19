@@ -1,6 +1,6 @@
 /// Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_TEST_OP_HPP
-#define TEST_UTILS_IR_QUERY_TEST_OP_HPP
+#ifndef POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_TESTOP_HPP_
+#define POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_TESTOP_HPP_
 
 #include <map>
 #include <memory>
@@ -43,4 +43,4 @@ public:
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_TESTOP_HPP_

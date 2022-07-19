@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef TEST_SUBGRAPH_VALIDATE
-#define TEST_SUBGRAPH_VALIDATE
+#ifndef POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_VALIDATE_HPP_
+#define POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_VALIDATE_HPP_
 
 #include <algorithm>
 #include <iostream>
@@ -87,4 +87,4 @@ bool isValid(const std::vector<fwtools::subgraph::Match> &matches,
   return true;
 }
 
-#endif
+#endif // POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_VALIDATE_HPP_

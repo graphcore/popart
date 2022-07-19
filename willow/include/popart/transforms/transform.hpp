@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TRANSFORM_HPP
-#define GUARD_NEURALNET_TRANSFORM_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_TRANSFORM_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_TRANSFORM_HPP_
 
 #include <cstddef>
 #include <string>
@@ -29,4 +29,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_TRANSFORM_HPP_

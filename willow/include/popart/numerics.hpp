@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NUMERICS_HPP
-#define GUARD_NEURALNET_NUMERICS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_NUMERICS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_NUMERICS_HPP_
 
 #include <cmath>
 #include <map>
@@ -61,4 +61,4 @@ public:
 } // namespace numerics
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_NUMERICS_HPP_

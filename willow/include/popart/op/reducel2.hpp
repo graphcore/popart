@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REDUCEL2_HPP
-#define GUARD_NEURALNET_REDUCEL2_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_REDUCEL2_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_REDUCEL2_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -36,4 +36,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_REDUCEL2_HPP_

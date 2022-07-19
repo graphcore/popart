@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_STREAM_MODE_HPP
-#define GUARD_STREAM_MODE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_REPLICATEDSTREAMMODE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_REPLICATEDSTREAMMODE_HPP_
 
 #include <ostream>
 
@@ -29,4 +29,4 @@ std::ostream &operator<<(std::ostream &os, const ReplicatedStreamMode &tt);
 
 } // namespace popart
 
-#endif // GUARD_STREAM_MODE_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_REPLICATEDSTREAMMODE_HPP_

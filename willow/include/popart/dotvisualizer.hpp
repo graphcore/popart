@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
-#define GUARD_NEURALNET_POPART_DOTVISUALIZER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DOTVISUALIZER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DOTVISUALIZER_HPP_
 
 #include <fstream>
 #include <map>
@@ -59,4 +59,4 @@ private:
 };
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DOTVISUALIZER_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GETRANDOMSEED_HPP
-#define GUARD_NEURALNET_GETRANDOMSEED_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_GETRANDOMSEED_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_GETRANDOMSEED_HPP_
 
 #include <memory>
 #include <string>
@@ -46,4 +46,4 @@ public:
 };
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_GETRANDOMSEED_HPP_

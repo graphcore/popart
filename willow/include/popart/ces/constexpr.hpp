@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPR_HPP
-#define GUARD_NEURALNET_CONSTEXPR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_CONSTEXPR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_CONSTEXPR_HPP_
 
 #include <functional>
 #include <map>
@@ -142,4 +142,4 @@ template <class OP> OP &ConstExprOp::getOp() const {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_CONSTEXPR_HPP_

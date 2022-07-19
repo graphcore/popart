@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SLICE_HPP
-#define GUARD_NEURALNET_SLICE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SLICE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SLICE_HPP_
 
 #include <array>
 #include <cstdint>
@@ -176,4 +176,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SLICE_HPP_

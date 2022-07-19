@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXTOONNX_NODEPATTERN_HPP
-#define GUARD_NEURALNET_ONNXTOONNX_NODEPATTERN_HPP
+#ifndef POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERN_HPP_
+#define POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERN_HPP_
 
 #include <array>
 #include <cstdint>
@@ -210,4 +210,4 @@ private:
 } // namespace onnxpasses
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERN_HPP_

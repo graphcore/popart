@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_STEPIO_HPP
-#define GUARD_NEURALNET_STEPIO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_STEPIO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_STEPIO_HPP_
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -263,4 +263,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_STEPIO_HPP_

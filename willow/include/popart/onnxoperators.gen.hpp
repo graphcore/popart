@@ -4,8 +4,8 @@
  *
  * To regenerate this file run the gen_operators.py script
  */
-#ifndef GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP
-#define GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP
+#ifndef GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP_
+#define GUARD_NEURALNET_ONNXOPERATORS_GEN_HPP_
 
 #include "popart/operatoridentifier.hpp"
 

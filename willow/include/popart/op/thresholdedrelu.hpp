@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_THRESHOLDEDRELU_HPP
-#define GUARD_NEURALNET_THRESHOLDEDRELU_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_THRESHOLDEDRELU_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_THRESHOLDEDRELU_HPP_
 
 #include <memory>
 #include <tuple>
@@ -59,4 +59,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_THRESHOLDEDRELU_HPP_

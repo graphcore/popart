@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_NEURALNET_TIEDGATHER_HPP
-#define GUARD_NEURALNET_TIEDGATHER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_TIEDGATHER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_TIEDGATHER_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -37,4 +37,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_TIEDGATHER_HPP_

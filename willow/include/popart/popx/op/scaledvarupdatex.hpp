@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAPTIVEVARUPDATEX_HPP
-#define GUARD_NEURALNET_ADAPTIVEVARUPDATEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDVARUPDATEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDVARUPDATEX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/op/varupdatex.hpp>
@@ -41,4 +41,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDVARUPDATEX_HPP_

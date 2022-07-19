@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PATTERNS_HPP
-#define GUARD_NEURALNET_PATTERNS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_PATTERNS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_PATTERNS_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -911,4 +911,4 @@ inline std::size_t hash_value(const Patterns &patterns) {
 }
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_PATTERNS_HPP_

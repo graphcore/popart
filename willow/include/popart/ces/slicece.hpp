@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPRS_SLICECE_HPP
-#define GUARD_NEURALNET_CONSTEXPRS_SLICECE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_SLICECE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_SLICECE_HPP_
 
 #include <vector>
 #include <popart/ces/constexpr.hpp>
@@ -20,4 +20,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_SLICECE_HPP_

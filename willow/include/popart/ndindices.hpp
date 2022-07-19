@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NDINDICES_HPP
-#define GUARD_NEURALNET_NDINDICES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_NDINDICES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_NDINDICES_HPP_
 
 #include <cstdint>
 #include <vector>
@@ -38,4 +38,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_NDINDICES_HPP_

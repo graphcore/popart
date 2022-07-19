@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_HPP
-#define TEST_UTILS_IR_QUERY_OPS_TEST_WRAPPER_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_HPP_
 
 #include "testutil/irquery/optestwrapper.hpp"
 #include "testutil/irquery/require.hpp"
@@ -85,4 +85,4 @@ private:
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPSTESTWRAPPER_HPP_

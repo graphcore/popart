@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPHSNAMES_HPP
-#define GUARD_NEURALNET_SUBGRAPHSNAMES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHNAMES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHNAMES_HPP_
 
 #include <string>
 
@@ -20,4 +20,4 @@ using OutIndex = int;
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHNAMES_HPP_

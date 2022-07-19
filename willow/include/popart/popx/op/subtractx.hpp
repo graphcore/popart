@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBTRACTX_HPP
-#define GUARD_NEURALNET_SUBTRACTX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUBTRACTX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUBTRACTX_HPP_
 
 #include <popart/popx/op/elementwisex.hpp>
 #include <popart/popx/op/reducesumx.hpp>
@@ -33,4 +33,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SUBTRACTX_HPP_

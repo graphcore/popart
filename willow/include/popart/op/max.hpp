@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_MAX_HPP
-#define GUARD_NEURALNET_MAX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_MAX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_MAX_HPP_
 
 #include <memory>
 #include <popart/op/variadic.hpp>
@@ -28,4 +28,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_MAX_HPP_

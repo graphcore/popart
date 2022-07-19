@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPRS_SQUEEZECE_HPP
-#define GUARD_NEURALNET_CONSTEXPRS_SQUEEZECE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_SQUEEZECE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_SQUEEZECE_HPP_
 
 #include <popart/ces/identityce.hpp>
 
@@ -14,4 +14,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_SQUEEZECE_HPP_

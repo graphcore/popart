@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_OPTION_FLAGS_HPP
-#define GUARD_OPTION_FLAGS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SESSIONOPTIONS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SESSIONOPTIONS_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -1644,4 +1644,4 @@ template <> struct hash<popart::SessionOptions> {
 };
 } // namespace std
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SESSIONOPTIONS_HPP_

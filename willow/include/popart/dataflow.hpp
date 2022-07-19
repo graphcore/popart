@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 /// \file dataflow.hpp
-#ifndef GUARD_NEURALNET_DATAFLOW_HPP
-#define GUARD_NEURALNET_DATAFLOW_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DATAFLOW_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DATAFLOW_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -367,4 +367,4 @@ template <> struct hash<popart::AnchorReturnType> {
 };
 } // namespace std
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DATAFLOW_HPP_

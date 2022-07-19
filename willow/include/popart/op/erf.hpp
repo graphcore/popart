@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ERF_HPP
-#define GUARD_NEURALNET_ERF_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ERF_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ERF_HPP_
 
 #include <memory>
 #include <vector>
@@ -26,4 +26,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ERF_HPP_

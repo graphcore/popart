@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_RANDOM_UTIL_HPP
-#define GUARD_RANDOM_UTIL_HPP
+#ifndef POPART_TESTS_INTEGRATION_RANDOM_UTIL_HPP_
+#define POPART_TESTS_INTEGRATION_RANDOM_UTIL_HPP_
 
 #include <algorithm>
 #include <boost/random/uniform_int_distribution.hpp>
@@ -46,4 +46,4 @@ std::string randomString(size_t length) {
 
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_INTEGRATION_RANDOM_UTIL_HPP_

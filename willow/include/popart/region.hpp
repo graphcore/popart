@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REGIONIOMAP_HPP
-#define GUARD_NEURALNET_REGIONIOMAP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_REGION_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_REGION_HPP_
 
 #include <cstdint>
 #include <iosfwd>
@@ -348,4 +348,4 @@ bool nonEmptyRegion(const view::Regions &regions);
 } // namespace view
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_REGION_HPP_

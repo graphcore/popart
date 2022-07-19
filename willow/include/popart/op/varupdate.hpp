@@ -2,8 +2,8 @@
 /** \file varupdate.hpp
  * VarUpdate ops.
  */
-#ifndef GUARD_NEURALNET_VARUPDATE_HPP
-#define GUARD_NEURALNET_VARUPDATE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_VARUPDATE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_VARUPDATE_HPP_
 
 #include <map>
 #include <memory>
@@ -61,4 +61,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_VARUPDATE_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REDUCEMEDIANX_HPP
-#define GUARD_NEURALNET_REDUCEMEDIANX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_REDUCEMEDIANX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_REDUCEMEDIANX_HPP_
 
 #include <cstdint>
 #include <vector>
@@ -55,4 +55,4 @@ computePreprocessingParams(const Shape &input_shape,
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_REDUCEMEDIANX_HPP_

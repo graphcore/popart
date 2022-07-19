@@ -1,7 +1,7 @@
 
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_WILLOWIR_HPP
-#define GUARD_NEURALNET_WILLOWIR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_IR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_IR_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -851,4 +851,4 @@ inline std::size_t hash_value(const popart::Ir &ir) {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_IR_HPP_

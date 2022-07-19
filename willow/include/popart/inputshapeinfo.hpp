@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_InputShapeInfo_HPP
-#define GUARD_NEURALNET_InputShapeInfo_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_INPUTSHAPEINFO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_INPUTSHAPEINFO_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -92,4 +92,4 @@ inline std::size_t hash_value(const InputShapeInfo &info) {
 }
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_INPUTSHAPEINFO_HPP_

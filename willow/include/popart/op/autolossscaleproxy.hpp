@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_NEURALNET_AUTOLOSSSCALEPROXY_HPP
-#define GUARD_NEURALNET_AUTOLOSSSCALEPROXY_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_AUTOLOSSSCALEPROXY_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_AUTOLOSSSCALEPROXY_HPP_
 
 #include <map>
 #include <memory>
@@ -37,4 +37,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_AUTOLOSSSCALEPROXY_HPP_

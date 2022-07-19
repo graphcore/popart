@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_MOCK_TEST_FAILURE_TRIGGERER_HPP
-#define TEST_UTILS_IR_QUERY_MOCK_TEST_FAILURE_TRIGGERER_HPP
+#ifndef POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_MOCK_TESTFAILURETRIGGERER_HPP_
+#define POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_MOCK_TESTFAILURETRIGGERER_HPP_
 
 #include <boost/test/unit_test.hpp> // IWYU pragma: keep
 #include <boost/trompeloeil.hpp>
@@ -24,4 +24,4 @@ public:
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_UNITTESTS_TESTUTIL_IRQUERY_MOCK_TESTFAILURETRIGGERER_HPP_

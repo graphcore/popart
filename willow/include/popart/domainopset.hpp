@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_DOMAINOPSET_HPP
-#define GUARD_DOMAINOPSET_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DOMAINOPSET_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DOMAINOPSET_HPP_
 
 #include <memory>
 
@@ -23,4 +23,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DOMAINOPSET_HPP_

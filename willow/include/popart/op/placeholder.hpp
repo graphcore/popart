@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_PLACEHOLDER_HPP
-#define GUARD_NEURALNET_PLACEHOLDER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_PLACEHOLDER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_PLACEHOLDER_HPP_
 
 #include <memory>
 #include <popart/op.hpp>
@@ -18,4 +18,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_PLACEHOLDER_HPP_

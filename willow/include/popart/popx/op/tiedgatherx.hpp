@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TIEDGATHERX_HPP
-#define GUARD_NEURALNET_TIEDGATHERX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_TIEDGATHERX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_TIEDGATHERX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <snap/Tensor.hpp>
@@ -36,4 +36,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_TIEDGATHERX_HPP_

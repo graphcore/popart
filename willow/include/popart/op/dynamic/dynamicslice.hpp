@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DYNAMICSLICE_HPP
-#define GUARD_NEURALNET_DYNAMICSLICE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICSLICE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICSLICE_HPP_
 
 #include <cstdint>
 #include <map>
@@ -114,4 +114,4 @@ protected:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_DYNAMIC_DYNAMICSLICE_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DYNAMICZEROX_HPP
-#define GUARD_NEURALNET_DYNAMICZEROX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICZEROX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICZEROX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/names.hpp>
@@ -40,4 +40,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICZEROX_HPP_

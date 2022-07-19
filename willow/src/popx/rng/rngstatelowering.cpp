@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP
-#define GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP
+#ifndef GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP_
+#define GUARD_NEURALNET_POPX_RNG_RNG_STATE_HELPER_HPP_
 
 #include <algorithm>
 #include <cstddef>

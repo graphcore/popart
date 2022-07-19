@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONCATX_HPP
-#define GUARD_NEURALNET_CONCATX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXPANDX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXPANDX_HPP_
 
 #include <cstddef>
 #include <snap/Tensor.hpp>
@@ -62,4 +62,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXPANDX_HPP_

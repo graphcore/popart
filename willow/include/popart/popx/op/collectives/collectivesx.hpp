@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_COLLECTIVESX_HPP
-#define GUARD_NEURALNET_COLLECTIVESX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_COLLECTIVESX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_COLLECTIVESX_HPP_
 
 #include <cstdint>
 #include <gcl/CollectiveBalancedReorder.hpp>
@@ -213,4 +213,4 @@ gcl::CommGroup toGCLCommGroup(const popart::CommGroup &input);
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_COLLECTIVES_COLLECTIVESX_HPP_

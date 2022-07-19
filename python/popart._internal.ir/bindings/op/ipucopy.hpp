@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_IPUCOPY_HPP
-#define POPART__INTERNAL_IR_BINDINGS_IPUCOPY_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_IPUCOPY_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_IPUCOPY_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -21,4 +21,4 @@ void bindIpuCopy(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_IPUCOPY_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_IPUCOPY_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DATATYPE_HPP
-#define GUARD_NEURALNET_DATATYPE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DATATYPE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DATATYPE_HPP_
 #include <popart/basicoptionals.hpp>
 
 namespace popart {
@@ -35,4 +35,4 @@ using OptionalDataType = BasicOptional<DataType, 0>;
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DATATYPE_HPP_

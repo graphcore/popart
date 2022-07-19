@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_POINTER_COMPARATORS_HPP
-#define GUARD_POINTER_COMPARATORS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_
 
 #include <utility>
 
@@ -32,4 +32,4 @@ struct POpIntCmp {
 };
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_

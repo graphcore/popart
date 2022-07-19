@@ -1,7 +1,7 @@
 
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef NEURALNET_TASK_ID_HPP
-#define NEURALNET_TASK_ID_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TASKID_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TASKID_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -116,4 +116,4 @@ std::ostream &operator<<(std::ostream &out, const TaskId::Type &type);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TASKID_HPP_

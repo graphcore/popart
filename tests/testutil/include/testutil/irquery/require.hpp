@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_REQUIRE_HPP
-#define TEST_UTILS_IR_QUERY_REQUIRE_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_REQUIRE_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_REQUIRE_HPP_
 
 namespace popart {
 namespace irquery {
@@ -42,4 +42,4 @@ enum class Require {
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_REQUIRE_HPP_

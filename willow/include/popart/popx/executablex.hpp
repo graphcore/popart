@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPEXECUTABLE_HPP
-#define GUARD_NEURALNET_POPEXECUTABLE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_EXECUTABLEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_EXECUTABLEX_HPP_
 
 #include <cstdint>
 #include <gcl/CollectiveBalancedReorder.hpp>
@@ -134,4 +134,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_POPEXECUTABLE_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_EXECUTABLEX_HPP_

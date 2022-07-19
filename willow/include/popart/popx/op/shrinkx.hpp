@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SHRINKX_HPP
-#define GUARD_NEURALNET_SHRINKX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SHRINKX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SHRINKX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <memory>
@@ -72,4 +72,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SHRINKX_HPP_

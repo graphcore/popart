@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_FILEREADER_HPP
-#define GUARD_NEURALNET_FILEREADER_HPP
+#ifndef POPART_WILLOW_SRC_FILEREADER_HPP_
+#define POPART_WILLOW_SRC_FILEREADER_HPP_
 
 #include <onnx/onnx_pb.h>
 #include <string>
@@ -80,4 +80,4 @@ std::vector<std::string> getDirns(const std::string &dir);
 
 } // namespace io
 } // namespace popart
-#endif
+#endif // POPART_WILLOW_SRC_FILEREADER_HPP_

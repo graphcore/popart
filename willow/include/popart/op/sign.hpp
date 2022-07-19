@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SIGN_HPP
-#define GUARD_NEURALNET_SIGN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SIGN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SIGN_HPP_
 
 #include <memory>
 #include <popart/op/onewayunary.hpp>
@@ -29,4 +29,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SIGN_HPP_

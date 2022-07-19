@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ALIASZEROCOPY_HPP
-#define GUARD_NEURALNET_ALIASZEROCOPY_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ALIASZEROCOPY_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ALIASZEROCOPY_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -234,4 +234,4 @@ private:
 } // namespace liveness
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ALIASZEROCOPY_HPP_

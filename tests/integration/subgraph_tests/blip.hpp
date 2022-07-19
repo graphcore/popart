@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BLIP_HPP
-#define GUARD_NEURALNET_BLIP_HPP
+#ifndef POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_BLIP_HPP_
+#define POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_BLIP_HPP_
 
 #include <cstdint>
 #include <map>
@@ -104,4 +104,4 @@ public:
 
 } // namespace blip
 
-#endif
+#endif // POPART_TESTS_INTEGRATION_SUBGRAPH_TESTS_BLIP_HPP_

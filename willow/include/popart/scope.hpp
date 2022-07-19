@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SCOPE_HPP
-#define GUARD_NEURALNET_SCOPE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SCOPE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SCOPE_HPP_
 
 #include <cstddef>
 #include <iosfwd>
@@ -48,4 +48,4 @@ std::ostream &operator<<(std::ostream &, const Scope &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SCOPE_HPP_

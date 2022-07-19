@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPRITHMSHOSTTENSOR_HPP
-#define GUARD_NEURALNET_POPRITHMSHOSTTENSOR_HPP
+#ifndef POPART_WILLOW_SRC_POPRITHMSHOSTTENSOR_HPP_
+#define POPART_WILLOW_SRC_POPRITHMSHOSTTENSOR_HPP_
 
 #include <poprithms/compute/host/tensor.hpp>
 #include <poprithms/ndarray/dtype.hpp>
@@ -30,4 +30,4 @@ getPoprithmsComputeHostTensor(const popart::Tensor &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_POPRITHMSHOSTTENSOR_HPP_

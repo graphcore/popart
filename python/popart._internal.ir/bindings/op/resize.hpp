@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
-#define POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_RESIZE_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_RESIZE_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -21,4 +21,4 @@ void bindResize(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_RESIZE_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_RESIZE_HPP_

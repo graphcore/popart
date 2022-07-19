@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPTENSORS_HPP
-#define GUARD_NEURALNET_POPTENSORS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_POPTENSORS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_POPTENSORS_HPP_
 
 #include <map>
 #include <memory>
@@ -51,4 +51,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_POPTENSORS_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RNN_HPP
-#define GUARD_NEURALNET_RNN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_RNN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_RNN_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -90,4 +90,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_RNN_HPP_

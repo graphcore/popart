@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LOOPX_HPP
-#define GUARD_NEURALNET_LOOPX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_LOOPX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_LOOPX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <vector>
@@ -69,4 +69,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_LOOPX_HPP_

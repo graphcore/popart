@@ -1,4 +1,7 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_LSTMOPPATTERN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_LSTMOPPATTERN_HPP_
+
 #include <vector>
 #include <popart/patterns/pattern.hpp>
 
@@ -16,3 +19,5 @@ public:
 };
 
 } // namespace popart
+
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_LSTMOPPATTERN_HPP_

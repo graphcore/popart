@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP
-#define POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP_
 
 #include <pybind11/pybind11.h>
 
@@ -19,4 +19,4 @@ void bindTensors(py::module_ &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_TENSORS_HPP_

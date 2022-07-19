@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SCHEDULEGRAPHGROWER_HPP
-#define GUARD_NEURALNET_SCHEDULEGRAPHGROWER_HPP
+#ifndef POPART_WILLOW_SRC_SCHEDULEGRAPHGROWER_HPP_
+#define POPART_WILLOW_SRC_SCHEDULEGRAPHGROWER_HPP_
 
 #include <cstdint>
 #include <string>
@@ -121,4 +121,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_SCHEDULEGRAPHGROWER_HPP_

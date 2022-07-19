@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_PATTERN_HPP
-#define POPART__INTERNAL_IR_BINDINGS_PATTERN_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_PATTERNS_PATTERN_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_PATTERNS_PATTERN_HPP_
 
 #include <pybind11/pybind11.h>
 #include <vector>
@@ -88,4 +88,4 @@ void bindPattern(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_PATTERN_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_PATTERNS_PATTERN_HPP_

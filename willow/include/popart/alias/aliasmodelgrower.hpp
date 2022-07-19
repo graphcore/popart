@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ALIAS_ALIAS_MODEL_GROWER_HPP
-#define GUARD_NEURALNET_ALIAS_ALIAS_MODEL_GROWER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ALIAS_ALIASMODELGROWER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ALIAS_ALIASMODELGROWER_HPP_
 
 #include <functional>
 #include <memory>
@@ -176,4 +176,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ALIAS_ALIASMODELGROWER_HPP_

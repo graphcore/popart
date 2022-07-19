@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORINFO_HPP
-#define GUARD_NEURALNET_TENSORINFO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORINFO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORINFO_HPP_
 
 #include <algorithm>
 #include <cstddef>
@@ -272,4 +272,4 @@ std::ostream &operator<<(std::ostream &stream, const DataType &dt);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORINFO_HPP_

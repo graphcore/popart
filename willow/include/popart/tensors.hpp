@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_WILLOWTENSORS_HPP
-#define GUARD_NEURALNET_WILLOWTENSORS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORS_HPP_
 
 #include <cstddef>
 #include <iosfwd>
@@ -138,4 +138,4 @@ void addConstInitFromFloat(float value,
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORS_HPP_

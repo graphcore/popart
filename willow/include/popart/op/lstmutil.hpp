@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LSTMUTIL_HPP
-#define GUARD_NEURALNET_LSTMUTIL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_LSTMUTIL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_LSTMUTIL_HPP_
 
 #include <iostream>
 #include <string>
@@ -26,4 +26,4 @@ std::ostream &operator<<(std::ostream &, const ActivationFunction &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_LSTMUTIL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORDATA_HPP
-#define GUARD_NEURALNET_TENSORDATA_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORDATA_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORDATA_HPP_
 
 #include <cstddef>
 #include <vector>
@@ -102,4 +102,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORDATA_HPP_

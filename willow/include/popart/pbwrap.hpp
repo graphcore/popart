@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_PBWRAP_GRAPH_HPP
-#define GUARD_PBWRAP_GRAPH_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PBWRAP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PBWRAP_HPP_
 
 #include <map>
 #include <string>
@@ -62,4 +62,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PBWRAP_HPP_

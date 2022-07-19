@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_VARUPDATE_HPP
-#define POPART__INTERNAL_IR_BINDINGS_VARUPDATE_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_VARUPDATE_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_VARUPDATE_HPP_
 
 #include <map>
 #include <pybind11/pybind11.h>
@@ -66,4 +66,4 @@ void bindVarupdate(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_VARUPDATE_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_VARUPDATE_HPP_

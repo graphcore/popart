@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
-#define GUARD_NEURALNET_ELEMENTWISEUNARYX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ELEMENTWISEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ELEMENTWISEX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <cstdint>
@@ -206,4 +206,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_ELEMENTWISEX_HPP_

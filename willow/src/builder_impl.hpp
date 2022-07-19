@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_BUILDER_IMPL_HPP
-#define GUARD_BUILDER_IMPL_HPP
+#ifndef POPART_WILLOW_SRC_BUILDER_IMPL_HPP_
+#define POPART_WILLOW_SRC_BUILDER_IMPL_HPP_
 
 #include <onnx/onnx_pb.h>
 #include <popart/dataflow.hpp>
@@ -405,4 +405,4 @@ public:
 
 } // namespace popart
 
-#endif // GUARD_BUILDER_IMPL_HPP
+#endif // POPART_WILLOW_SRC_BUILDER_IMPL_HPP_

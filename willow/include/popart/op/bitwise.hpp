@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BITWISE_HPP
-#define GUARD_NEURALNET_BITWISE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_BITWISE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_BITWISE_HPP_
 
 #include <memory>
 #include <vector>
@@ -28,4 +28,4 @@ public:
 };
 } // namespace popart
 
-#endif // !GUARD_NEURALNET_BITWISE_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_BITWISE_HPP_

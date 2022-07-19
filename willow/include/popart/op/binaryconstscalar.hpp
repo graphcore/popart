@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BINARY_CONST_SCALAR_HPP
-#define GUARD_NEURALNET_BINARY_CONST_SCALAR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_BINARYCONSTSCALAR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_BINARYCONSTSCALAR_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -69,4 +69,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_BINARYCONSTSCALAR_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_VIRTUALGRAPH_HPP
-#define GUARD_NEURALNET_VIRTUALGRAPH_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_VIRTUALGRAPH_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_VIRTUALGRAPH_HPP_
 
 #include <memory>
 #include <snap/Graph.hpp>
@@ -33,4 +33,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_VIRTUALGRAPH_HPP_

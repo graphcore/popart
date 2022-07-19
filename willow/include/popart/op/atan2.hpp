@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ATAN2_HPP
-#define GUARD_NEURALNET_ATAN2_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ATAN2_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ATAN2_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -51,4 +51,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ATAN2_HPP_

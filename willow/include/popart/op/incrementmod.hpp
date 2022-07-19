@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_INCREMENTMOD_HPP
-#define GUARD_NEURALNET_INCREMENTMOD_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_INCREMENTMOD_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_INCREMENTMOD_HPP_
 
 #include <memory>
 #include <popart/op/elementwise.hpp>
@@ -73,4 +73,4 @@ private:
 
 } // namespace popart
 
-#endif // !GUARD_NEURALNET_INCREMENTMOD_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_INCREMENTMOD_HPP_

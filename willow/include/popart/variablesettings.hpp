@@ -1,7 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_VARIABLE_SETTINGS_HPP
-#define GUARD_VARIABLE_SETTINGS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_VARIABLESETTINGS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_VARIABLESETTINGS_HPP_
 
 #include <cstdint>
 #include <iosfwd>
@@ -208,4 +208,4 @@ std::ostream &operator<<(std::ostream &os, const VariableSettings &vs);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_VARIABLESETTINGS_HPP_

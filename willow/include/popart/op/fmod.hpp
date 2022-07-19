@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_FMOD_HPP
-#define GUARD_NEURALNET_FMOD_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_FMOD_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_FMOD_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -28,4 +28,4 @@ public:
 
 } // namespace popart
 
-#endif // !GUARD_NEURALNET_FMOD_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_FMOD_HPP_

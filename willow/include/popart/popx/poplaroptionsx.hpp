@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPLAROPTIONSX_HPP
-#define GUARD_NEURALNET_POPLAROPTIONSX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_POPLAROPTIONSX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_POPLAROPTIONSX_HPP_
 
 #include <map>
 #include <string>
@@ -35,4 +35,4 @@ struct PoplarOptions {
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_POPLAROPTIONSX_HPP_

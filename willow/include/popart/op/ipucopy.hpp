@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_IPUCOPY_HPP
-#define GUARD_NEURALNET_IPUCOPY_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_IPUCOPY_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_IPUCOPY_HPP_
 
 #include <map>
 #include <memory>
@@ -94,4 +94,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_IPUCOPY_HPP_

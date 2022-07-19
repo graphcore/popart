@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RESTOREX_HPP
-#define GUARD_NEURALNET_RESTOREX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESTOREX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESTOREX_HPP_
 
 #include <cstdint>
 #include <snap/Tensor.hpp>
@@ -68,4 +68,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_RESTOREX_HPP_

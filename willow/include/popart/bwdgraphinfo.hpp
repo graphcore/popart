@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
-#define GUARD_NEURALNET_CALLED_SUBGRAPHS_GRAD_INFO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BWDGRAPHINFO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BWDGRAPHINFO_HPP_
 
 #include <map>
 #include <ostream>
@@ -64,4 +64,4 @@ std::ostream &operator<<(std::ostream &out, const FwdGraphToBwdGraphInfo &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_BWDGRAPHINFO_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_STEPIO_SIZE_ASSERT_HPP
-#define GUARD_NEURALNET_STEPIO_SIZE_ASSERT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_STEPIO_SIZE_ASSERTION_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_STEPIO_SIZE_ASSERTION_HPP_
 
 #include <cstdint>
 #include <string>
@@ -127,4 +127,4 @@ void assertOutCorrect(const popx::Executablex &exe, const M &_m_, const G &g) {
 } // namespace iosizecheck
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_STEPIO_SIZE_ASSERTION_HPP_

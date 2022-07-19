@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_OP_TEST_WRAPPER_IMPL_HPP
-#define TEST_UTILS_IR_QUERY_OP_TEST_WRAPPER_IMPL_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPTESTWRAPPER_IMPL_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPTESTWRAPPER_IMPL_HPP_
 
 #include <testutil/irquery/optestwrapper.hpp>
 #include <testutil/irquery/tensorindexmaptestwrapper.hpp>
@@ -39,4 +39,4 @@ TensorIndexMapTestWrapper OpTestWrapper<OP, enableif>::outputs() {
 } // namespace irquery
 } // namespace popart
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_OPTESTWRAPPER_IMPL_HPP_

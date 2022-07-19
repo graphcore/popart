@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_OP_HPP
-#define POPART__INTERNAL_IR_BINDINGS_OP_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_HPP_
 
 #include <memory>
 #include <pybind11/cast.h>
@@ -86,4 +86,4 @@ void bindOp(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_OP_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_HPP_

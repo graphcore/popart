@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef TEST_UTILS_IR_QUERY_HPP
-#define TEST_UTILS_IR_QUERY_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_IRQUERY_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_IRQUERY_HPP_
 
 // IWYU pragma: begin_exports
 
@@ -20,4 +20,4 @@
 
 // IWYU pragma: end_exports
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_IRQUERY_IRQUERY_HPP_

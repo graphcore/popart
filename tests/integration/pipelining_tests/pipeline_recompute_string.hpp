@@ -1,4 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
+#ifndef POPART_TESTS_INTEGRATION_PIPELINING_TESTS_PIPELINE_RECOMPUTE_STRING_HPP_
+#define POPART_TESTS_INTEGRATION_PIPELINING_TESTS_PIPELINE_RECOMPUTE_STRING_HPP_
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -48,3 +51,5 @@ void fillLogStreams(std::array<std::stringstream, nIpus> &sss,
   }
 }
 } // namespace pipeline_recompute_util
+
+#endif // POPART_TESTS_INTEGRATION_PIPELINING_TESTS_PIPELINE_RECOMPUTE_STRING_HPP_

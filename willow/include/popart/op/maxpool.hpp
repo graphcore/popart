@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_MAXPOOL_HPP
-#define GUARD_NEURALNET_MAXPOOL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_MAXPOOL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_MAXPOOL_HPP_
 
 #include <cstdint>
 #include <map>
@@ -78,4 +78,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_MAXPOOL_HPP_

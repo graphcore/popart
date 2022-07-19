@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TIED_GATHER_PATTERN_HPP
-#define GUARD_NEURALNET_TIED_GATHER_PATTERN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_TIEDGATHERPATTERN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_TIEDGATHERPATTERN_HPP_
 
 #include <vector>
 #include <popart/patterns/pattern.hpp>
@@ -35,4 +35,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_TIEDGATHERPATTERN_HPP_

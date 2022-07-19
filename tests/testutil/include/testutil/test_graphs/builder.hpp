@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_POPART_TEST_GRAPHS_BUILDER_HPP
-#define GUARD_POPART_TEST_GRAPHS_BUILDER_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_BUILDER_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_BUILDER_HPP_
 
 #include <map>
 #include <memory>
@@ -146,4 +146,4 @@ void withEdges(popart::Graph &graph,
 } // namespace builder
 } // namespace test_graphs
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_BUILDER_HPP_

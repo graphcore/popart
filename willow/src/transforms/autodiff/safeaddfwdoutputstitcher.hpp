@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
-#define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_SAFE_ADD_FWD_OUTPUT_STITCHER_HPP
+#ifndef POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_SAFEADDFWDOUTPUTSTITCHER_HPP_
+#define POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_SAFEADDFWDOUTPUTSTITCHER_HPP_
 
 #include <transforms/autodiff/addfwdoutputstitcher.hpp>
 #include <transforms/autodiff/recomputestitcher.hpp>
@@ -60,4 +60,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_SAFEADDFWDOUTPUTSTITCHER_HPP_

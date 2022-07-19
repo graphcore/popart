@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_LOGGING_HPP
-#define GUARD_LOGGING_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_LOGGING_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_LOGGING_HPP_
 
 #include <cstddef>
 #include <map>
@@ -257,4 +257,4 @@ MAKE_MODULE_TEMPLATE(python)
 } // namespace logging
 } // namespace popart
 
-#endif // GUARD_LOGGING_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_LOGGING_HPP_

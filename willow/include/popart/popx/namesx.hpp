@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NAMESX_HPP
-#define GUARD_NEURALNET_NAMESX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_NAMESX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_NAMESX_HPP_
 
 #include <map>
 #include <utility>
@@ -20,4 +20,4 @@ using PreparedCopyTensors = std::map<InIndex, PreparedCopyTensor>;
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_NAMESX_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DEVICEMANAGER_HPP
-#define GUARD_NEURALNET_DEVICEMANAGER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DEVICEMANAGER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DEVICEMANAGER_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -632,4 +632,4 @@ template <> struct hash<popart::DeviceInfo> {
 };
 } // namespace std
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DEVICEMANAGER_HPP_

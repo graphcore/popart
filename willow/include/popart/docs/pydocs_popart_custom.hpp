@@ -1,4 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#ifndef POPART_WILLOW_INCLUDE_POPART_DOCS_PYDOCS_POPART_CUSTOM_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DOCS_PYDOCS_POPART_CUSTOM_HPP_
 /*
 Define custom documentation strings here. These are accessed like the other
 strings, except with DOC(custom, ...), see below for an example.
@@ -108,3 +110,5 @@ Args:
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif
+
+#endif // POPART_WILLOW_INCLUDE_POPART_DOCS_PYDOCS_POPART_CUSTOM_HPP_

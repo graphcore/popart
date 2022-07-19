@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CHAINS_HPP
-#define GUARD_NEURALNET_CHAINS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CHAINS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CHAINS_HPP_
 
 #include <functional>
 #include <iosfwd>
@@ -88,4 +88,4 @@ std::ostream &operator<<(std::ostream &, const Chains &);
 } // namespace view
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CHAINS_HPP_

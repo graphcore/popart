@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_TRANSITIVE_CLOSURE_HPP
-#define GUARD_TRANSITIVE_CLOSURE_HPP
+#ifndef POPART_WILLOW_SRC_POPRITHMSTRANSITIVECLOSURE_HPP_
+#define POPART_WILLOW_SRC_POPRITHMSTRANSITIVECLOSURE_HPP_
 
 #include <cstddef>
 #include <unordered_map>
@@ -90,4 +90,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_POPRITHMSTRANSITIVECLOSURE_HPP_

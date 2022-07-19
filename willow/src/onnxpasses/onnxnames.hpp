@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXTOONNX_ONNXNAMES_HPP
-#define GUARD_NEURALNET_ONNXTOONNX_ONNXNAMES_HPP
+#ifndef POPART_WILLOW_SRC_ONNXPASSES_ONNXNAMES_HPP_
+#define POPART_WILLOW_SRC_ONNXPASSES_ONNXNAMES_HPP_
 
 #include <map>
 #include <string>
@@ -19,4 +19,4 @@ using Constants  = std::map<std::string, poprithms::compute::host::Tensor>;
 } // namespace onnxpasses
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXPASSES_ONNXNAMES_HPP_

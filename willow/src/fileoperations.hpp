@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_FILEOPERATIONS_HPP
-#define GUARD_FILEOPERATIONS_HPP
+#ifndef POPART_WILLOW_SRC_FILEOPERATIONS_HPP_
+#define POPART_WILLOW_SRC_FILEOPERATIONS_HPP_
 
 #include <boost/filesystem.hpp>
 #include <string>
@@ -59,4 +59,4 @@ rebaseDirHierarchy(const boost::filesystem::path &srcPath,
                    const boost::filesystem::path &dstBaseDir);
 } // namespace popart
 
-#endif // GUARD_FILEOPERATIONS_HPP
+#endif // POPART_WILLOW_SRC_FILEOPERATIONS_HPP_

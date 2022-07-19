@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TRANSFORMS_AUTODIFF_STITCHER_HPP
-#define GUARD_NEURALNET_TRANSFORMS_AUTODIFF_STITCHER_HPP
+#ifndef POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_STITCHER_HPP_
+#define POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_STITCHER_HPP_
 
 #include <transforms/autodiff/autodiffhelper.hpp>
 #include <transforms/autodiff/stitcherinterface.hpp>
@@ -64,4 +64,4 @@ protected:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_STITCHER_HPP_

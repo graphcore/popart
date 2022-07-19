@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_HOSTCOPY_HPP
-#define GUARD_NEURALNET_HOSTCOPY_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_HOSTCOPY_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_HOSTCOPY_HPP_
 
 #include <memory>
 #include <tuple>
@@ -90,4 +90,4 @@ public:
 };
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_HOSTCOPY_HPP_

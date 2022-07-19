@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BITWISEX_HPP
-#define GUARD_NEURALNET_BITWISEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_BITWISEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_BITWISEX_HPP_
 
 #include <popops/ExprOp.hpp>
 #include <popart/popx/op/elementwisex.hpp>
@@ -34,4 +34,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif // !GUARD_NEURALNET_BITWISEX_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_BITWISEX_HPP_

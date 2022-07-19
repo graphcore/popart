@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BATCHNORMX_HPP
-#define GUARD_NEURALNET_BATCHNORMX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_BATCHNORMX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_BATCHNORMX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <tuple>
@@ -86,4 +86,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_BATCHNORMX_HPP_

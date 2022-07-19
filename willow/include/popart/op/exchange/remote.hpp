@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REMOTE_HPP
-#define GUARD_NEURALNET_REMOTE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_REMOTE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_REMOTE_HPP_
 
 #include <memory>
 #include <tuple>
@@ -196,4 +196,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_REMOTE_HPP_

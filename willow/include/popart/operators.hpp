@@ -1,8 +1,8 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPERATORS_HPP
-#define GUARD_NEURALNET_OPERATORS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPERATORS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPERATORS_HPP_
 
 #include "popart/graphcoreoperators.hpp"
 #include "popart/onnxoperators.gen.hpp"
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPERATORS_HPP_

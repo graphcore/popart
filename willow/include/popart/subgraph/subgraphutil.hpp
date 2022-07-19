@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPHS_HPP
-#define GUARD_NEURALNET_SUBGRAPHS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHUTIL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHUTIL_HPP_
 
 #include <functional>
 #include <map>
@@ -92,4 +92,4 @@ bool areCrossing(int seq_length0,
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_SUBGRAPHUTIL_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_TEST_RUNNER_HPP
-#define GUARD_TEST_RUNNER_HPP
+#ifndef POPART_TESTS_INTEGRATION_TEST_RUNNER_HPP_
+#define POPART_TESTS_INTEGRATION_TEST_RUNNER_HPP_
 
 #include <cassert>
 #include <cstdint>
@@ -253,4 +253,4 @@ template <typename T> std::vector<T> TestTensor::getDataCopy() {
   return outData;
 }
 
-#endif
+#endif // POPART_TESTS_INTEGRATION_TEST_RUNNER_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_IMPL_HPP
-#define NEURALNET_ANALYSIS_REPLICA_EQUAL_ANALYSIS_IMPL_HPP
+#ifndef POPART_WILLOW_SRC_ANALYSIS_REPLICAEQUAL_REPLICAEQUALANALYSISIMPL_HPP_
+#define POPART_WILLOW_SRC_ANALYSIS_REPLICAEQUAL_REPLICAEQUALANALYSISIMPL_HPP_
 
 #include <analysis/replicaequal/replicaequalanalysisresults.hpp>
 #include <functional>
@@ -189,4 +189,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ANALYSIS_REPLICAEQUAL_REPLICAEQUALANALYSISIMPL_HPP_

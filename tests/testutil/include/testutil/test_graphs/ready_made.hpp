@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_POPART_TEST_GRAPHS_READY_MADE_HPP
-#define GUARD_POPART_TEST_GRAPHS_READY_MADE_HPP
+#ifndef POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_READY_MADE_HPP_
+#define POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_READY_MADE_HPP_
 
 namespace popart {
 class Graph;
@@ -79,4 +79,4 @@ void initComplexMultiInputMultiOutput(popart::Graph &graph);
 } // namespace ready_made
 } // namespace test_graphs
 
-#endif
+#endif // POPART_TESTS_TESTUTIL_INCLUDE_TESTUTIL_TEST_GRAPHS_READY_MADE_HPP_

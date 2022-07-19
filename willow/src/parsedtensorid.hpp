@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_PARSEDTENSORID_HPP
-#define GUARD_PARSEDTENSORID_HPP
+#ifndef POPART_WILLOW_SRC_PARSEDTENSORID_HPP_
+#define POPART_WILLOW_SRC_PARSEDTENSORID_HPP_
 
 #include <cstddef>
 #include <map>
@@ -188,4 +188,4 @@ private:
 
 } // namespace popart
 
-#endif // GUARD_PARSEDTENSORID_HPP
+#endif // POPART_WILLOW_SRC_PARSEDTENSORID_HPP_

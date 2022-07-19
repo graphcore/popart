@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ERRORUID_HPP
-#define GUARD_NEURALNET_ERRORUID_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ERRORUID_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ERRORUID_HPP_
 
 namespace popart {
 
@@ -10,4 +10,4 @@ enum class ErrorUid : int {
 
 } // namespace popart
 
-#endif // GUARD_NEURALNET_ERRORUID_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_ERRORUID_HPP_

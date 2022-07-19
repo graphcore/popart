@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GRU_HPP
-#define GUARD_NEURALNET_GRU_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_GRU_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_GRU_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -108,4 +108,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_GRU_HPP_

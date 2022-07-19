@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NDARRAYWRAPPER_HPP
-#define GUARD_NEURALNET_NDARRAYWRAPPER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_NDARRAYWRAPPER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_NDARRAYWRAPPER_HPP_
 #include <cstddef>
 #include <cstdint>
 #include <ostream>
@@ -126,4 +126,4 @@ std::ostream &operator<<(std::ostream &os, const NDArrayWrapper<T> &array) {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_NDARRAYWRAPPER_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPRS_GATHERCE_HPP
-#define GUARD_NEURALNET_CONSTEXPRS_GATHERCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_GATHERCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_GATHERCE_HPP_
 
 #include <vector>
 #include <popart/ces/constexpr.hpp>
@@ -16,4 +16,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_GATHERCE_HPP_

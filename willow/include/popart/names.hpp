@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_NAMES_HPP
-#define GUARD_NEURALNET_NAMES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_NAMES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_NAMES_HPP_
 
 #include <cstddef>
 // TODO T7106 : determine what the cost of including these
@@ -270,4 +270,4 @@ static constexpr const char *sReplicatedTensorSharding =
 static constexpr const char *sReplicationFactor = "__replicationFactor";
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_NAMES_HPP_

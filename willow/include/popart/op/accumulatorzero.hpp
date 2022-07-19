@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ACCUMULATORZEROOP_HPP
-#define GUARD_NEURALNET_ACCUMULATORZEROOP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ACCUMULATORZERO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ACCUMULATORZERO_HPP_
 
 #include <memory>
 #include <popart/op/accumulatorscale.hpp>
@@ -23,4 +23,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ACCUMULATORZERO_HPP_

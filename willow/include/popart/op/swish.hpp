@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SWISH_HPP
-#define GUARD_NEURALNET_SWISH_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SWISH_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SWISH_HPP_
 
 #include <memory>
 #include <tuple>
@@ -38,4 +38,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SWISH_HPP_

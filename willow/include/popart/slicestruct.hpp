@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SLICESTRUCT_HPP
-#define GUARD_NEURALNET_SLICESTRUCT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SLICESTRUCT_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SLICESTRUCT_HPP_
 
 #include <cstdint>
 
@@ -21,4 +21,4 @@ struct Slice {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SLICESTRUCT_HPP_

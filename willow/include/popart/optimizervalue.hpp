@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPTIMIZERVALUE_HPP
-#define GUARD_NEURALNET_OPTIMIZERVALUE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUE_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -53,4 +53,4 @@ inline std::size_t hash_value(const OptimizerValue &value) {
 }
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPTIMIZERVALUE_HPP_

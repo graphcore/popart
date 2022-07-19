@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPH_MATCH_HPP
-#define GUARD_NEURALNET_SUBGRAPH_MATCH_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_MATCH_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_MATCH_HPP_
 
 #include <iosfwd>
 #include <vector>
@@ -96,4 +96,4 @@ std::ostream &operator<<(std::ostream &stream, const Match &match);
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_MATCH_HPP_

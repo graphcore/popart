@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAPTIVEDECOMPOSE_PATTERN_HPP
-#define GUARD_NEURALNET_ADAPTIVEDECOMPOSE_PATTERN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_ADAPTIVEDECOMPOSE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_ADAPTIVEDECOMPOSE_HPP_
 
 #include <vector>
 #include <popart/patterns/optimizerdecompose.hpp>
@@ -18,4 +18,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_ADAPTIVEDECOMPOSE_HPP_

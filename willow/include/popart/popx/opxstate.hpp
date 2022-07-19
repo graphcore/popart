@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPXSTATE_HPP
-#define GUARD_NEURALNET_OPXSTATE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OPXSTATE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OPXSTATE_HPP_
 
 namespace popart {
 namespace popx {
@@ -13,4 +13,4 @@ class OpxState {};
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OPXSTATE_HPP_

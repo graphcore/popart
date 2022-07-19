@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_INITTENSOR_HPP
-#define GUARD_INITTENSOR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_INITTENSOR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_INITTENSOR_HPP_
 
 #include <iosfwd>
 #include <memory>
@@ -202,4 +202,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_INITTENSOR_HPP_

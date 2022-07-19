@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORLOCATION_HPP
-#define GUARD_NEURALNET_TENSORLOCATION_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORLOCATION_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORLOCATION_HPP_
 
 #include <cstdint>
 #include <iosfwd>
@@ -192,4 +192,4 @@ std::ostream &operator<<(std::ostream &, const TensorLocation &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORLOCATION_HPP_

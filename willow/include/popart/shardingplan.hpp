@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SHARDINGPLAN_HPP
-#define GUARD_NEURALNET_SHARDINGPLAN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SHARDINGPLAN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SHARDINGPLAN_HPP_
 
 #include <cstdint>
 #include <map>
@@ -195,4 +195,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SHARDINGPLAN_HPP_

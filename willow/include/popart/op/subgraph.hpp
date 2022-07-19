@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPHOP_HPP
-#define GUARD_NEURALNET_SUBGRAPHOP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SUBGRAPH_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SUBGRAPH_HPP_
 
 #include <map>
 #include <memory>
@@ -118,4 +118,4 @@ protected:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SUBGRAPH_HPP_

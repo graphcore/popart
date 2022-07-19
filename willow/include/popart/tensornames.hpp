@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORNAMES_HPP
-#define GUARD_NEURALNET_TENSORNAMES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORNAMES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORNAMES_HPP_
 
 #include <string>
 #include <vector>
@@ -434,4 +434,4 @@ constexpr const char *reservedUpdatedVarPrefix() { return "UpdatedVar___"; }
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORNAMES_HPP_

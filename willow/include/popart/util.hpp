@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_UTIL_HPP
-#define GUARD_NEURALNET_UTIL_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_UTIL_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_UTIL_HPP_
 
 #include <cmath>
 #include <cstddef>
@@ -436,4 +436,4 @@ std::ostream &operator<<(std::ostream &ss, const StochasticRoundingMethod &srm);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_UTIL_HPP_

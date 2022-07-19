@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OPTIMIZER_HPP
-#define GUARD_NEURALNET_OPTIMIZER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPTIMIZER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPTIMIZER_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -290,4 +290,4 @@ inline std::size_t hash_value(const ClipNormSettings &settings) {
 }
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPTIMIZER_HPP_

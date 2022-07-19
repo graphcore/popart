@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DROPOUTBASE_HPP
-#define GUARD_NEURALNET_DROPOUTBASE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_DROPOUTBASE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_DROPOUTBASE_HPP_
 
 #include <memory>
 #include <popart/op.hpp>
@@ -48,4 +48,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_DROPOUTBASE_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_WHERE_HPP
-#define GUARD_NEURALNET_WHERE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_WHERE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_WHERE_HPP_
 
 #include <cstddef>
 #include <map>
@@ -111,4 +111,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_WHERE_HPP_

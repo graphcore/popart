@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SLICEX_HPP
-#define GUARD_NEURALNET_SLICEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
@@ -54,4 +54,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SLICEX_HPP_

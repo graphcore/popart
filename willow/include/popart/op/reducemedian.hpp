@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_REDUCEMEDIAN_HPP
-#define GUARD_NEURALNET_REDUCEMEDIAN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_REDUCEMEDIAN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_REDUCEMEDIAN_HPP_
 
 #include <cstdint>
 #include <memory>
@@ -47,4 +47,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_REDUCEMEDIAN_HPP_

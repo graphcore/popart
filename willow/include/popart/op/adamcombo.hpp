@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ADAMCOMBOOP_HPP
-#define GUARD_NEURALNET_ADAMCOMBOOP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_ADAMCOMBO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_ADAMCOMBO_HPP_
 
 #include <map>
 #include <memory>
@@ -115,4 +115,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_ADAMCOMBO_HPP_

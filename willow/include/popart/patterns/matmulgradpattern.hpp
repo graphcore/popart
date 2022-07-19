@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_MATMULGRADPATTERN_HPP
-#define GUARD_NEURALNET_MATMULGRADPATTERN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_MATMULGRADPATTERN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_MATMULGRADPATTERN_HPP_
 
 #include <vector>
 #include <popart/op/matmul.hpp>
@@ -104,4 +104,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_MATMULGRADPATTERN_HPP_

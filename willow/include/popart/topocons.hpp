@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TOPOCONS_HPP
-#define GUARD_NEURALNET_TOPOCONS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TOPOCONS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TOPOCONS_HPP_
 
 #include <iosfwd>
 #include <map>
@@ -105,4 +105,4 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TOPOCONS_HPP_

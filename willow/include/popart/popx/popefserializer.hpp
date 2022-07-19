@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPEF_SERIALIZER_HPP
-#define GUARD_NEURALNET_POPEF_SERIALIZER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_POPEFSERIALIZER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_POPEFSERIALIZER_HPP_
 
 #include <cstddef>
 #include <iostream>
@@ -117,4 +117,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_POPEF_SERIALIZER_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_POPEFSERIALIZER_HPP_

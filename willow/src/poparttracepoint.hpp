@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPARTTRACEPOINT_HPP
-#define GUARD_NEURALNET_POPARTTRACEPOINT_HPP
+#ifndef POPART_WILLOW_SRC_POPARTTRACEPOINT_HPP_
+#define POPART_WILLOW_SRC_POPARTTRACEPOINT_HPP_
 
 // Would liked to have used string_view but that requires C++17
 // Instead create a wrapper for pointer & length
@@ -66,4 +66,4 @@ constexpr string_view format_pretty_function(const char *s) {
 
 } // namespace popart
 
-#endif // GUARD_NEURALNET_POPARTTRACEPOINT_HPP
+#endif // POPART_WILLOW_SRC_POPARTTRACEPOINT_HPP_

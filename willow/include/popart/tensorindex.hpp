@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_TENSORINDEXMAP_HPP
-#define GUARD_NEURALNET_TENSORINDEXMAP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TENSORINDEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TENSORINDEX_HPP_
 
 #include <iosfwd>
 #include <map>
@@ -72,4 +72,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TENSORINDEX_HPP_

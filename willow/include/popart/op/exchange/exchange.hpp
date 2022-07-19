@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_EXCHANGE_HPP
-#define GUARD_NEURALNET_EXCHANGE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_EXCHANGE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_EXCHANGE_HPP_
 
 #include <iosfwd>
 #include <memory>
@@ -331,4 +331,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_EXCHANGE_EXCHANGE_HPP_

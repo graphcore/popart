@@ -1,7 +1,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 
-#ifndef GUARD_NEURALNET_ERROR_HPP
-#define GUARD_NEURALNET_ERROR_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ERROR_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ERROR_HPP_
 
 #include <exception>
 #include <memory>
@@ -140,4 +140,4 @@ ErrorSource getErrorSource(const std::exception &e);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ERROR_HPP_

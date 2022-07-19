@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SCALEDADD_HPP
-#define GUARD_NEURALNET_SCALEDADD_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SCALEDADD_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SCALEDADD_HPP_
 
 #include <memory>
 #include <tuple>
@@ -95,4 +95,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SCALEDADD_HPP_

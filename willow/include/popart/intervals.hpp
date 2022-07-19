@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_INTERVALS_HPP
-#define GUARD_NEURALNET_INTERVALS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_INTERVALS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_INTERVALS_HPP_
 
 #include <array>
 #include <cstdint>
@@ -21,4 +21,4 @@ getDecreasingIntervals(const std::vector<int64_t> &floorHeights);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_INTERVALS_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_LAMBOP_HPP
-#define GUARD_NEURALNET_LAMBOP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_LAMB_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_LAMB_HPP_
 
 #include <memory>
 
@@ -37,4 +37,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_LAMB_HPP_

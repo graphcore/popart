@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RNNX_HPP
-#define GUARD_NEURALNET_RNNX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_RNNX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_RNNX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <set>
@@ -83,4 +83,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_RNNX_HPP_

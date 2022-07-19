@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DROPOUT_HPP
-#define GUARD_NEURALNET_DROPOUT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_DROPOUT_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_DROPOUT_HPP_
 
 #include <map>
 #include <memory>
@@ -70,4 +70,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_DROPOUT_HPP_

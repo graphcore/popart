@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SIN_HPP
-#define GUARD_NEURALNET_SIN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SIN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SIN_HPP_
 
 #include <memory>
 #include <vector>
@@ -26,4 +26,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SIN_HPP_

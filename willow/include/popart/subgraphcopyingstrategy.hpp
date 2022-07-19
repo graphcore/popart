@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SUBGRAPH_COPYING_STRATEGY_HPP
-#define GUARD_NEURALNET_SUBGRAPH_COPYING_STRATEGY_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPHCOPYINGSTRATEGY_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPHCOPYINGSTRATEGY_HPP_
 
 #include <cstddef>
 #include <deque>
@@ -233,4 +233,4 @@ private:
 } // namespace liveness
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPHCOPYINGSTRATEGY_HPP_

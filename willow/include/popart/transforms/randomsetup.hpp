@@ -1,7 +1,7 @@
 
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RANDOMSETUP_HPP
-#define GUARD_NEURALNET_RANDOMSETUP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_RANDOMSETUP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_RANDOMSETUP_HPP_
 
 #include <cstddef>
 #include <cstdint>
@@ -360,4 +360,4 @@ std::ostream &operator<<(std::ostream &out, const RandomSetup::Strand &strand);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_RANDOMSETUP_HPP_

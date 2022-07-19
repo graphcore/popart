@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ATTRIBUTEHELPER_HPP
-#define GUARD_NEURALNET_ATTRIBUTEHELPER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OPATTRIBUTEHELPER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OPATTRIBUTEHELPER_HPP_
 
 #include <cstdint>
 #include <iosfwd>
@@ -268,4 +268,4 @@ operator<<(std::ostream &os,
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OPATTRIBUTEHELPER_HPP_

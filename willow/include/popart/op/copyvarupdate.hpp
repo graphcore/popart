@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_COPYVARUPDATE_HPP
-#define GUARD_NEURALNET_COPYVARUPDATE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_COPYVARUPDATE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_COPYVARUPDATE_HPP_
 
 #include <map>
 #include <memory>
@@ -31,4 +31,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_COPYVARUPDATE_HPP_

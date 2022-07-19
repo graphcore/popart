@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_INIT_HPP
-#define GUARD_NEURALNET_INIT_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_INIT_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_INIT_HPP_
 
 #include <memory>
 #include <popart/op.hpp>
@@ -69,4 +69,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_INIT_HPP_

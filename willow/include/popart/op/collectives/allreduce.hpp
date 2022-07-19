@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ALLREDUCE_HPP
-#define GUARD_NEURALNET_ALLREDUCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_ALLREDUCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_ALLREDUCE_HPP_
 
 #include <cstdint>
 #include <map>
@@ -85,4 +85,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_ALLREDUCE_HPP_

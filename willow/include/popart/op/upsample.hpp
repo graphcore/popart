@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_UPSAMPLE_HPP
-#define GUARD_NEURALNET_UPSAMPLE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_UPSAMPLE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_UPSAMPLE_HPP_
 
 #include <iosfwd>
 #include <memory>
@@ -44,4 +44,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_UPSAMPLE_HPP_

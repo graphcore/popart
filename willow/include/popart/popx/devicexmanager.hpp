@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPDEVICEXMANAGER_HPP
-#define GUARD_NEURALNET_POPDEVICEXMANAGER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEXMANAGER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEXMANAGER_HPP_
 
 #include <cstdint>
 #include <map>
@@ -237,4 +237,4 @@ void addSyncConfig(const SyncPattern syncPattern, poplar::OptionFlags &flags);
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_DEVICEXMANAGER_HPP_

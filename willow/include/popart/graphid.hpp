@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_GRAPHID_HPP
-#define GUARD_NEURALNET_GRAPHID_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_GRAPHID_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_GRAPHID_HPP_
 #include <ostream>
 #include <string>
 
@@ -27,4 +27,4 @@ std::ostream &operator<<(std::ostream &, const GraphId &);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_GRAPHID_HPP_

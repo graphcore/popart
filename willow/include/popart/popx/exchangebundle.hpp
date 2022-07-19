@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_EXCHANGEBUNDLE_HPP
-#define GUARD_NEURALNET_EXCHANGEBUNDLE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_EXCHANGEBUNDLE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_EXCHANGEBUNDLE_HPP_
 
 #include <snap/RemoteBuffer.hpp>
 #include <snap/Tensor.hpp>
@@ -110,4 +110,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_EXCHANGEBUNDLE_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_EXCHANGEBUNDLE_HPP_

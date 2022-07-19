@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_TEST_DEVICE_HPP
-#define GUARD_TEST_DEVICE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TESTDEVICE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TESTDEVICE_HPP_
 
 #include <iostream>
 #include <map>
@@ -115,4 +115,4 @@ inline std::ostream &operator<<(std::ostream &os, const TestDeviceType &type) {
 }
 } // namespace popart
 
-#endif // GUARD_TEST_DEVICE_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_TESTDEVICE_HPP_

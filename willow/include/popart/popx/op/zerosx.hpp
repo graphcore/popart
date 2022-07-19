@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ZEROSX_HPP
-#define GUARD_NEURALNET_ZEROSX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_ZEROSX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_ZEROSX_HPP_
 
 #include <popart/popx/popopx.hpp>
 
@@ -25,4 +25,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_ZEROSX_HPP_

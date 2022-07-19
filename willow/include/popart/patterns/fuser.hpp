@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_FUSER_HPP
-#define GUARD_NEURALNET_FUSER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_PATTERNS_FUSER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_PATTERNS_FUSER_HPP_
 
 #include <vector>
 #include <popart/patterns/pattern.hpp>
@@ -37,4 +37,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_PATTERNS_FUSER_HPP_

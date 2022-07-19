@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ALIASES_HPP
-#define GUARD_NEURALNET_ALIASES_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_ALIASES_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_ALIASES_HPP_
 
 #include <set>
 #include <string>
@@ -70,4 +70,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_ALIASES_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ONNXTOONNX_GEMM_HPP
-#define GUARD_NEURALNET_ONNXTOONNX_GEMM_HPP
+#ifndef POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_GEMM_HPP_
+#define POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_GEMM_HPP_
 
 #include <memory>
 #include <onnxpasses/nodepattern.hpp>
@@ -50,4 +50,4 @@ private:
 } // namespace onnxpasses
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ONNXPASSES_NODEPATTERNS_GEMM_HPP_

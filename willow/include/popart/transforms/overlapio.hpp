@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_OVERLAPIO_HPP
-#define GUARD_NEURALNET_OVERLAPIO_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_OVERLAPIO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_OVERLAPIO_HPP_
 
 #include <cstddef>
 #include <map>
@@ -50,4 +50,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_OVERLAPIO_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ENIGMATIC_HPP
-#define GUARD_NEURALNET_ENIGMATIC_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_ENIGMA_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_ENIGMA_HPP_
 
 // taken directly from enigma, commit
 // Date:   Fri Oct 19 13:54:14 2018 +0100
@@ -15,4 +15,4 @@ enum class DeviceType { Cpu, IpuModel, Sim, Hw };
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_ENIGMA_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_POPX_RNG_RNG_STATE_LOWERING_HPP
-#define GUARD_NEURALNET_POPX_RNG_RNG_STATE_LOWERING_HPP
+#ifndef POPART_WILLOW_SRC_POPX_RNG_RNGSTATELOWERING_HPP_
+#define POPART_WILLOW_SRC_POPX_RNG_RNGSTATELOWERING_HPP_
 
 #include <functional>
 #include <snap/Tensor.hpp>
@@ -270,4 +270,4 @@ private:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_POPX_RNG_RNGSTATELOWERING_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BUILDER_DEBUGINFO_HPP
-#define GUARD_NEURALNET_BUILDER_DEBUGINFO_HPP
+#ifndef POPART_WILLOW_SRC_BUILDERDEBUGINFO_HPP_
+#define POPART_WILLOW_SRC_BUILDERDEBUGINFO_HPP_
 
 #include <map>
 #include <string>
@@ -65,4 +65,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_BUILDERDEBUGINFO_HPP_

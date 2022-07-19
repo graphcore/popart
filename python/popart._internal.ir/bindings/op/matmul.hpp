@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef POPART__INTERNAL_IR_BINDINGS_MATMUL_HPP
-#define POPART__INTERNAL_IR_BINDINGS_MATMUL_HPP
+#ifndef POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_MATMUL_HPP_
+#define POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_MATMUL_HPP_
 
 #include <pybind11/pybind11.h>
 #include <popart/names.hpp>
@@ -59,4 +59,4 @@ void bindMatmul(py::module &m);
 } // namespace _internal
 } // namespace popart
 
-#endif // POPART__INTERNAL_IR_BINDINGS_MATMUL_HPP
+#endif // POPART_PYTHON_POPART__INTERNAL_IR_BINDINGS_OP_MATMUL_HPP_

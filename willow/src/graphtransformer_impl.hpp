@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_GRAPHTRANSFORMER_IMPL_H
-#define GUARD_GRAPHTRANSFORMER_IMPL_H
+#ifndef POPART_WILLOW_SRC_GRAPHTRANSFORMER_IMPL_HPP_
+#define POPART_WILLOW_SRC_GRAPHTRANSFORMER_IMPL_HPP_
 
 #include <onnx/onnx_pb.h>
 #include <string>
@@ -47,4 +47,4 @@ private:
 };
 
 } // namespace popart
-#endif // GUARD_GRAPHTRANSFORMER_H
+#endif // POPART_WILLOW_SRC_GRAPHTRANSFORMER_IMPL_HPP_

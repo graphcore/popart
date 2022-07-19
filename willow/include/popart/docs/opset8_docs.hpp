@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_OPSET8_DOCS_HPP
-#define GUARD_OPSET8_DOCS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET8_DOCS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET8_DOCS_HPP_
 /*
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by gen_operators.py.
@@ -1386,4 +1386,4 @@ elementwise on the input tensors `A` and `B` (with Numpy-style broadcasting supp
 This operator supports **multidirectional (i.e., Numpy-style) broadcasting**; for more details please check [the doc](Broadcasting.md).
 )doc";
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET8_DOCS_HPP_

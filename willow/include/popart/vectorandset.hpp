@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_VECTORANDSET_HPP
-#define GUARD_NEURALNET_VECTORANDSET_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_VECTORANDSET_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_VECTORANDSET_HPP_
 
 #include <set>
 #include <vector>
@@ -66,4 +66,4 @@ template <class T> void VectorAndSet<T>::insert(const T &id) {
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_VECTORANDSET_HPP_

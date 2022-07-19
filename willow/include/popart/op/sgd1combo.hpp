@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SGD1VARUPDATECOMBOOP_HPP
-#define GUARD_NEURALNET_SGD1VARUPDATECOMBOOP_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SGD1COMBO_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SGD1COMBO_HPP_
 
 #include <memory>
 #include <popart/op/sgdcombobase.hpp>
@@ -49,4 +49,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SGD1COMBO_HPP_

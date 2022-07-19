@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_COMMGROUPS_HPP
-#define GUARD_NEURALNET_COMMGROUPS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_COMMGROUP_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_COMMGROUP_HPP_
 
 #include <iostream>
 
@@ -93,4 +93,4 @@ std::ostream &operator<<(std::ostream &os, const CommGroup &group);
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_COMMGROUP_HPP_

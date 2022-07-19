@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_DYNAMICUPDATEX_HPP
-#define GUARD_NEURALNET_DYNAMICUPDATEX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICUPDATEX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICUPDATEX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <set>
@@ -45,4 +45,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_DYNAMIC_DYNAMICUPDATEX_HPP_

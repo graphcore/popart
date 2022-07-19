@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BUILDER_HELPER_HPP
-#define GUARD_NEURALNET_BUILDER_HELPER_HPP
+#ifndef POPART_WILLOW_SRC_BUILDER_HELPER_HPP_
+#define POPART_WILLOW_SRC_BUILDER_HELPER_HPP_
 
 #include <cstdint>
 #include <map>
@@ -94,4 +94,4 @@ void verify_AiOnnxOpset6_Pad_2(
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_BUILDER_HELPER_HPP_

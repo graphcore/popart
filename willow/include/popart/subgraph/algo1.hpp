@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_RINSEMATCHER_ALGO1_HPP
-#define GUARD_NEURALNET_RINSEMATCHER_ALGO1_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO1_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO1_HPP_
 
 #include <array>
 #include <cstddef>
@@ -246,4 +246,4 @@ private:
 } // namespace subgraph
 } // namespace fwtools
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SUBGRAPH_ALGO1_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SplitX_HPP
-#define GUARD_NEURALNET_SplitX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SPLITX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SPLITX_HPP_
 
 #include <popart/popx/popopx.hpp>
 
@@ -25,4 +25,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SPLITX_HPP_

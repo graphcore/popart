@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_AUTODIFF_IR_ADAPTER_HPP
-#define GUARD_NEURALNET_AUTODIFF_IR_ADAPTER_HPP
+#ifndef POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_AUTODIFFIRADAPTER_HPP_
+#define POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_AUTODIFFIRADAPTER_HPP_
 
 #include <functional>
 #include <string>
@@ -66,4 +66,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_TRANSFORMS_AUTODIFF_AUTODIFFIRADAPTER_HPP_

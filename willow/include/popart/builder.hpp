@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_BUILDER_HPP
-#define GUARD_BUILDER_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BUILDER_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BUILDER_HPP_
 
 #include <cstdint>
 #include <map>
@@ -2218,4 +2218,4 @@ private:
 
 } // namespace popart
 
-#endif // GUARD_BUILDER_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_BUILDER_HPP_

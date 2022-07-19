@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_MERGELOOPS_HPP
-#define GUARD_NEURALNET_MERGELOOPS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_MERGELOOPS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_MERGELOOPS_HPP_
 
 #include <cstddef>
 #include <functional>
@@ -78,4 +78,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_MERGELOOPS_HPP_

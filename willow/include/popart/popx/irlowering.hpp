@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_IRLOWERING_HPP
-#define GUARD_NEURALNET_IRLOWERING_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_IRLOWERING_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_IRLOWERING_HPP_
 
 #include <algorithm>
 #include <cstddef>
@@ -741,4 +741,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif // GUARD_NEURALNET_IRLOWERING_HPP
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_IRLOWERING_HPP_

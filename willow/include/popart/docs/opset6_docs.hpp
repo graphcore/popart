@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_OPSET6_DOCS_HPP
-#define GUARD_OPSET6_DOCS_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET6_DOCS_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET6_DOCS_HPP_
 /*
   This file contains docstrings for use in the Python bindings.
   Do not edit! They were automatically extracted by gen_operators.py.
@@ -1315,4 +1315,4 @@ to match the shape of left-hand-side argument. See the doc of `Add` for a
 detailed description of the broadcasting rules.
 )doc";
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_DOCS_OPSET6_DOCS_HPP_

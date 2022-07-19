@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CODECOPYX_HPP
-#define GUARD_NEURALNET_CODECOPYX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_CODECOPYX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_CODECOPYX_HPP_
 
 #include <popart/popx/op/exchange/exchangex.hpp>
 
@@ -29,4 +29,4 @@ public:
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_EXCHANGE_CODECOPYX_HPP_

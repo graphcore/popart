@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_BOOLLOGIC_HPP
-#define GUARD_NEURALNET_BOOLLOGIC_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_BOOLLOGIC_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_BOOLLOGIC_HPP_
 
 #include <iosfwd>
 #include <map>
@@ -76,4 +76,4 @@ std::ostream &operator<<(std::ostream &os, const Term &term);
 
 } // namespace boollogic
 } // namespace popart
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_BOOLLOGIC_HPP_

@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_AUTODIFF_HPP
-#define GUARD_NEURALNET_AUTODIFF_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_AUTODIFF_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_AUTODIFF_HPP_
 
 #include <cstddef>
 #include <memory>
@@ -280,4 +280,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_TRANSFORMS_AUTODIFF_HPP_

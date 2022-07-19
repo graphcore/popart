@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_ENGINE_OPTIONS_CREATOR_HPP
-#define GUARD_NEURALNET_ENGINE_OPTIONS_CREATOR_HPP
+#ifndef POPART_WILLOW_SRC_ENGINEOPTIONSCREATOR_HPP_
+#define POPART_WILLOW_SRC_ENGINEOPTIONSCREATOR_HPP_
 
 #include <popart/sessionoptions.hpp>
 
@@ -61,4 +61,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_ENGINEOPTIONSCREATOR_HPP_

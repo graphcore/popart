@@ -1,6 +1,6 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SELU_HPP
-#define GUARD_NEURALNET_SELU_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SELU_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SELU_HPP_
 
 #include <memory>
 #include <tuple>
@@ -66,4 +66,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SELU_HPP_

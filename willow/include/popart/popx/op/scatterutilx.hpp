@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
-#define NEURALNET_GUARD_POPX_OP_SCATTERUTILX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCATTERUTILX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCATTERUTILX_HPP_
 
 #include "popart/popx/debugcontextx.hpp"
 #include <cstdint>
@@ -74,4 +74,4 @@ snap::Tensor growScatterUpdateGrad(const PopOpx &opx,
 } // namespace popx
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCATTERUTILX_HPP_

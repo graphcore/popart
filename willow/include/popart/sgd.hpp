@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_SGD_HPP
-#define GUARD_SGD_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_SGD_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_SGD_HPP_
 
 #include <cstddef>
 #include <iosfwd>
@@ -1052,4 +1052,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_SGD_HPP_

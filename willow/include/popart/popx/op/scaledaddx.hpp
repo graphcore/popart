@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SCALEDADDX_HPP
-#define GUARD_NEURALNET_SCALEDADDX_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDADDX_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDADDX_HPP_
 
 #include <snap/Tensor.hpp>
 #include <popart/popx/popopx.hpp>
@@ -49,4 +49,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_POPX_OP_SCALEDADDX_HPP_

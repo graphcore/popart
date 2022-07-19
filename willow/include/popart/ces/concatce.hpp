@@ -1,6 +1,6 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_CONSTEXPRS_CONCATCE_HPP
-#define GUARD_NEURALNET_CONSTEXPRS_CONCATCE_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_CES_CONCATCE_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_CES_CONCATCE_HPP_
 
 #include <cstdint>
 #include <vector>
@@ -21,4 +21,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_CES_CONCATCE_HPP_

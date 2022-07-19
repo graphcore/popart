@@ -1,6 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_SOFTSIGN_HPP
-#define GUARD_NEURALNET_SOFTSIGN_HPP
+#ifndef POPART_WILLOW_INCLUDE_POPART_OP_SOFTSIGN_HPP_
+#define POPART_WILLOW_INCLUDE_POPART_OP_SOFTSIGN_HPP_
 
 #include <memory>
 #include <tuple>
@@ -39,4 +39,4 @@ public:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_INCLUDE_POPART_OP_SOFTSIGN_HPP_

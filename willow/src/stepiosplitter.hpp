@@ -1,6 +1,6 @@
 // Copyright (c) 2020 Graphcore Ltd. All rights reserved.
-#ifndef GUARD_NEURALNET_STEPIOSPLITTER_HPP
-#define GUARD_NEURALNET_STEPIOSPLITTER_HPP
+#ifndef POPART_WILLOW_SRC_STEPIOSPLITTER_HPP_
+#define POPART_WILLOW_SRC_STEPIOSPLITTER_HPP_
 
 #include <cstdint>
 #include <functional>
@@ -200,4 +200,4 @@ private:
 
 } // namespace popart
 
-#endif
+#endif // POPART_WILLOW_SRC_STEPIOSPLITTER_HPP_
