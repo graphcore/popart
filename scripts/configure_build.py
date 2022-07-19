@@ -180,6 +180,7 @@ class CMakeScript:
             ],
             0,
             "PopART",
+            omit_if_default=False,
         )
         self.add_cmake_arg(
             "CMAKE_BUILD_TYPE",
