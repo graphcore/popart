@@ -26,6 +26,18 @@ public:
                   OptimizerReductionType reductionType_,
                   const Op::Settings &);
 
+  SGDMComboBaseOp(const OperatorIdentifier &opid,
+                  OptimizerValue initialSmm1,
+                  OptimizerValue initialDpsf1,
+                  OptimizerValue initialSwd1,
+                  OptimizerValue initialSlr1,
+                  OptimizerValue initialMm,
+                  OptimizerValue initialWd,
+                  OptimizerValue initialNgsf,
+                  OptimizerValue initialNdsf,
+                  OptimizerReductionType reductionType_,
+                  const Op::Settings &);
+
   std::unique_ptr<Op> clone() const override = 0;
 
   // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
@@ -33,7 +45,7 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  // momentum
+  // scaled momentum
   const OptimizerValue initSmm1;
 
   // dampening scale factor
@@ -45,12 +57,31 @@ public:
   // scaled learning rate
   const OptimizerValue initSlr1;
 
+  // momentum
+  OptimizerValue initMm;
+
+  // weight decay
+  OptimizerValue initWd;
+
+  // nesterov gradient scale factor
+  OptimizerValue initNgsf;
+
+  // nesterov dampening scale factor
+  OptimizerValue initNdsf;
+
   const OptimizerReductionType reductionType;
+
+  // Option to enable Nesterov momentum
+  bool nesterov;
 
   static InIndex getSmm1InIndex() { return 2; }
   static InIndex getDpsf1InIndex() { return 3; }
   static InIndex getSwd1InIndex() { return 4; }
   static InIndex getSlr1InIndex() { return 5; }
+  static InIndex getMmInIndex() { return 6; }
+  static InIndex getWdInIndex() { return 7; }
+  static InIndex getNgsfInIndex() { return 8; }
+  static InIndex getNdsfInIndex() { return 9; }
 
   std::set<InIndex> optionalInputs() const override;
 

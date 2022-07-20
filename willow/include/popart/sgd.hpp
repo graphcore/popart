@@ -70,20 +70,28 @@ std::ostream &operator<<(std::ostream &os,
 //
 // Basic SGD Update Equation
 // -------------------------
-// Based on the non-Nesterov PyTorch implementation
+// Based on the PyTorch implementation
 // https://PyTorch.org/docs/stable/_modules/torch/optim/sgd.html#SGD , the SGD
 // update equation with weight decay, dampening, and momentum, is
 //
 // g = gradient computed in backwards pass
 // g = g + wd * w
 // v = v * mm + (1 - dm) * g
-// w = w - lr * v
+// if enable nesterov momentum:
+//   g = g + mm * v
+//   w = w - lr * g
+// else:
+//   w = w - lr * v
 //
 // which is equivalent to
 //
 // g = gradient computed in backwards pass
 // v = v * mm + (1 - dm) * g + (1 - dm) * wd * w
-// w = w - lr * v
+// if enable nesterov momentum:
+//   g = g + wd * w + mm * v
+//   w = w - lr * g
+// else:
+//   w = w - lr * v
 //
 // Loss Scaling
 // ------------
@@ -93,7 +101,11 @@ std::ostream &operator<<(std::ostream &os,
 //
 // g = gradient computed in backwards pass (scaled by ls)
 // v = v * mm + (1 - dm) / ls * g + (1 - dm) * wd * w
-// w = w - lr * v
+// if enable nesterov momentum:
+//   g = 1 / ls * g + wd * w + mm * v
+//   w = w - lr * g
+// else:
+//   w = w - lr * v
 //
 // Velocity Scaling
 // ----------------
@@ -107,7 +119,11 @@ std::ostream &operator<<(std::ostream &os,
 // v = v_0 * vs
 //
 // v = v * mm + vs * ((1 - dm) / ls * g + (1 - dm) * wd * w)
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   g = vs * (1 / ls * g + wd * w) + mm * v
+//   w = w - lr / vs * g
+// else:
+//   w = w - lr / vs * v
 //
 // The above v equation can be rewritten as:
 // v = v * mm + (1 - dm) * vs / ls * g + (1 - dm) * wd * vs * w
@@ -126,7 +142,11 @@ std::ostream &operator<<(std::ostream &os,
 // for each micro-batch
 //   a += g
 // v = v * mm + (1 - dm) * vs / ls * a + (1 - dm) * wd * vs * w
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 //
 // Where a is the "accumulator" tensor.
 //
@@ -146,7 +166,11 @@ std::ostream &operator<<(std::ostream &os,
 //   a += g
 // allReduce(a)
 // v = v * mm + (1 - dm) * vs / ls * a + (1 - dm) * wd * vs * w
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 //
 // The reduction performed is ALWAYS a sum, even though you can mean gradients
 // over replicas (see below).
@@ -181,7 +205,11 @@ std::ostream &operator<<(std::ostream &os,
 //   a += g
 // allReduce(a)
 // v = v * mm + (1 - dm) * vs / (ls * af) * a + (1 - dm) * wd * vs * w
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 //
 // To implement the mean reduction over replicas, we perform the division by the
 // replication factor rf on the loss gradient before starting the backward pass.
@@ -204,7 +232,11 @@ std::ostream &operator<<(std::ostream &os,
 //
 //    |- 1 -|   |------------ 2 ------------|   |---------- 3 -------|
 // v = v * mm + (1 - dm) * vs / (ls * af) * g + (1 - dm) * wd * vs * w
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   g = vs * (1 / ls * g + wd * w) + mm * v
+//   w = w - lr / vs * g
+// else:
+//   w = w - lr / vs * v
 //
 // Every time a weight is updated, we have all the information required to
 // immediately pre-compute 1 and 3 for the next time step. Thus, the actual
@@ -217,7 +249,11 @@ std::ostream &operator<<(std::ostream &os,
 //
 // Then:
 // v = (1 - dm) * vs / (ls * af) * g        (2)
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   g = vs * (1 / ls * g + wd * w) + mm * v
+//   w = w - lr / vs * g
+// else:
+//   w = w - lr / vs * v
 // v = v * mm + (1 - dm) * wd * vs * w      (precompute 1 and 3 for next step)
 //
 // ----------------------------------------------
@@ -228,15 +264,25 @@ std::ostream &operator<<(std::ostream &os,
 // a = 0
 // for each micro batch
 //   a += g
-// v = (1 - dm) * vs / (ls * af) * g
-// w = w - lr / vs * v
+// v = (1 - dm) * vs / (ls * af) * a
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 // v = v * mm + (1 - dm) * wd * vs * w
 //
 // We can elide the accumulator tensor by directly accumulating into v:
 //
 // for each micro batch
 //   v += (1 - dm) * vs / (ls * af) * g
-// w = w - lr / vs * v
+//   if enable nesterov momentum:
+//     a += g
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 // v = v * mm + (1 - dm) * wd * vs * w
 //
 // ----------------------------------------------
@@ -246,9 +292,15 @@ std::ostream &operator<<(std::ostream &os,
 //
 // for each micro batch
 //   v += (1 - dm) * vs / ls * g
+//   if enable nesterov momentum:
+//     a += g
 // # There is no accumulator to reduce
 // allReduce(??)
-// w = w - lr / vs * v
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 // v = v * mm + (1 - dm) * wd * vs * w
 //
 // There is no longer an accumulator/grad tensor to all-reduce. All-reducing v
@@ -316,8 +368,14 @@ std::ostream &operator<<(std::ostream &os,
 //
 // for each micro batch
 //   v += (1 - dm) * vs * rf / (ls * af) * g
+//   if enable nesterov momentum:
+//     a += g
 // allReduce(v)
-// w = w - lr / (vs * rf) * v
+// if enable nesterov momentum:
+//   a = (vs * rf) * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / (vs * rf) * a
+// else:
+//   w = w - lr / (vs * rf) * v
 // v = v * mm / rf + (1 - dm) * wd * vs * w
 //
 // This type of reduction (which as usual is inferred by the SGD class) is known
@@ -396,8 +454,14 @@ std::ostream &operator<<(std::ostream &os,
 //
 // for each micro batch
 //   v += (1 - dm) * vs * rf / (ls * af) * g
+//   if enable nesterov momentum:
+//     a += g
 // allReduce(v)
-// w = w - lr / (vs * rf) * v
+// if enable nesterov momentum:
+//   a = (vs * rf) * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / (vs * rf) * a
+// else:
+//   w = w - lr / (vs * rf) * v
 // v = v * mm / rf + (1 - dm) * wd * vs * w
 //
 // and thus the compound scalars are:
@@ -410,10 +474,17 @@ std::ostream &operator<<(std::ostream &os,
 //       (1 - dm) * vs * rf / (ls * af)
 //
 //   - scaledLearningRate1 (slr1) =            .  .  .  x  .  x  x  .
-//       lr / ( vs * rf)
+//       lr / (vs * rf)
 //
 //   - scaledMomentum1 (smm1) =                x  .  .  .  .  .  x  .
 //       mm / rf
+//
+//   - nesterovDampeningScaleFactor1 (ndsf1) = .  x  .  .  .  x  x  x
+//       af / ((1 - dm) * vs * rf)
+//       ndsf1 * dpsf1 = 1 / ls
+//
+//   - nesterovGradScalFactor1 (ngsf1) =       .  .  .  .  .  x  x  .
+//       vs * rf
 //
 // Recall that af is the accumulation factor only if using gradient accumulation
 // and the SessionOptions::accumulationAndReplicationReductionType was
@@ -430,11 +501,38 @@ std::ostream &operator<<(std::ostream &os,
 // for each micro-batch
 //   a += g
 // allReduce(a)
-// v = v * mm + (1 - dm) * vs / (ls * af) * a + (1 - dm) * wd * vs * w
-// w = w - lr / vs * v
+// v = v * mm + (1 - dm) * vs / (ls * af * rf) * a + (1 - dm) * wd * vs * w
+// if enable nesterov momentum:
+//   a = vs * (1 / ls * a + wd * w) + mm * v
+//   w = w - lr / vs * a
+// else:
+//   w = w - lr / vs * v
 //
 // Thus the above compound scalars for SGDAccumulatorAndMomentum::Combined can
 // actually be reused, but with rf = 1 always, as no rf scaling is required.
+//
+// The compound scalars are:
+//                                             mm dm wd lr ls vs rf af
+//                                             =======================
+//   - scaledWeightDecay1 (swd1) =             .  x  x  .  .  x  .  .
+//       (1 - dm) * wd * vs
+//
+//   - dampeningScaleFactor2 (dpsf2) =         .  x  .  .  x  x  .  x
+//       (1 - dm) * vs / (ls * af * rf)
+//
+//   - scaledLearningRate2 (slr2) =            .  .  .  x  .  x  .  .
+//       lr / vs
+//
+//   - scaledMomentum2 (smm2) =                x  .  .  .  .  .  .  .
+//       mm
+//
+//   - nesterovDampeningScaleFactor2 (ndsf2) = .  x  .  .  .  x  x  x
+//       af * rf / ((1 - dm) * vs)
+//       ndsf2 * dpsf2 = 1 / ls
+//
+//   - nesterovGradScalFactor2 (ngsf2) =       .  .  .  .  .  x  .  .
+//       vs
+//
 //
 // Internally, we call this case SGD2, as there are 2 extra optimiser tensors.
 //
@@ -479,6 +577,7 @@ std::ostream &operator<<(std::ostream &os,
  *  * *dampening* (\f$\text{dm}\f$)
  *  * *velocity scaling* (\f$\text{vs}\f$)
  *  * *loss scaling* (\f$\text{ls}\f$)
+ *  * *nesterov*
  *  * *clip norm settings*
  *
  * The values of these parameters can be shared between all weights but some
@@ -503,6 +602,14 @@ std::ostream &operator<<(std::ostream &os,
  * Following the update of the optimizer state the optimizer uses said
  * state to update the weight:
  *
+ * if nesterov is True:
+ * \f[
+ *    g' := g + \text{wd} * w + \text{mm} * v' \text{ \ . }
+ * \f]
+ * \f[
+ *    w' := w - \text{lr} * g' \text{ \ . }
+ * \f]
+ * else:
  * \f[
  *    w' := w - \text{lr} * v' \text{ \ . }
  * \f]
@@ -563,7 +670,60 @@ public:
     return {1.0f, true}; // no loss scaling, ever
   }
 
+  /// Default nesterov.
+  static OptimizerValue getUnsetNesterov() {
+    return {0.0f, true}; // no nesterov, ever
+  }
+
 public:
+  /// Constructor.
+  /// \param defaultLearningRate The learning rate value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultWeightDecay The weight decay value  to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultMomentum The momentum value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultDampening The dampening value to use for weights
+  ///     for which no weight-specific hyper parameter have been inserted.
+  /// \param defaultVelocityScaling The velocity scaling value to use for
+  ///     weights for which no weight-specific hyper parameter have been
+  ///     inserted.
+  /// \param lossScaling The loss scaling value to use.
+  /// \param nesterov Option to enable Nesterov momentum. Defaults to false.
+  /// \param clipNormSettings A vector of ClipNormSettings (this can be used
+  ///     to set maximum values for weights).
+  /// \param sgdAccMm The implementation strategy to use when gradient
+  ///     accumulation and/or momentum are used, otherwise ignored. \sa
+  ///     SGDAccumulatorAndMomentum. Defaults to
+  ///     SGDAccumulatorAndMomentum::Combined.
+  /// \param accumType The DataType of the accum tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
+  /// \param accl1Type The DataType of the accl1 tensor, when gradient
+  ///     accumulation is used and sgdAccMm =
+  ///     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+  ///     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+  ///     UNDEFINED, the same type as the weights will be used. If accumType is
+  ///     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+  ///     upcasted before being passed to the op that updates accl1.
+  /// \param debugContext Optional debug context.
+  SGD(OptimizerValue defaultLearningRate,
+      OptimizerValue defaultWeightDecay,
+      OptimizerValue defaultMomentum,
+      OptimizerValue defaultDampening,
+      OptimizerValue defaultVelocityScaling,
+      OptimizerValue lossScaling,
+      OptimizerValue nesterov,
+      const std::vector<ClipNormSettings> &clipNormSettings = {},
+      SGDAccumulatorAndMomentum sgdAccMm = SGDAccumulatorAndMomentum::Combined,
+      DataType accumType                 = DataType::UNDEFINED,
+      DataType accl1Type                 = DataType::UNDEFINED,
+      const DebugContext &debugContext   = {});
+
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
   ///     for which no weight-specific hyper parameter have been inserted.
@@ -613,7 +773,8 @@ public:
   /// Constructor.
   /// \param params A parameter map where the keys are one or more of
   ///     `"defaultLearningRate"`, `"defaultWeightDecay"`, `"defaultMomentum"`,
-  ///     `"defaultDampening"`, `"defaultVelocityScaling"` or `"lossScaling"`.
+  ///     `"defaultDampening"`, `"defaultVelocityScaling"`, `"lossScaling"`
+  ///     or `"nesterov".
   ///     The map's values are pairs of floats and booleans representing
   ///     OptimizerValue constructor arguments. The map does not have to
   ///     specify each hyper parameter because default values will be used where
@@ -737,12 +898,14 @@ public:
   ///     weight.
   /// \param velocityScaling The velocity scaling value to use for this
   ///     specific weight.
+  /// \param nesterov Option to enable Nesterov momentum. Defaults to false.
   void insertSpecific(const TensorId &weight,
                       OptimizerValue learningRate,
                       OptimizerValue weightDecay,
                       OptimizerValue momentum,
                       OptimizerValue dampening,
-                      OptimizerValue velocityScaling);
+                      OptimizerValue velocityScaling,
+                      OptimizerValue nesterov);
 
   /// Insert a weight-specific set of hyper parameters.
   /// \param weight The TensorId of the weight.
@@ -769,17 +932,21 @@ public:
   const OptimizerValueMap &momentums() const { return mms; }
   const OptimizerValueMap &dampenings() const { return dps; }
   const OptimizerValueMap &velocityScalings() const { return vss; }
+  const OptimizerValueMap &nesterov() const { return nts; }
 
   virtual size_t hash() const;
 
 private:
   bool hasMomentum(const Tensor &weight) const;
 
+  bool enableNesterov(const Tensor &weight) const;
+
   void runValueChecks(OptimizerValue lr,
                       OptimizerValue wd,
                       OptimizerValue mm,
                       OptimizerValue dp,
-                      OptimizerValue vs) const;
+                      OptimizerValue vs,
+                      OptimizerValue nt) const;
 
   // The atomic scalars
   // ------------------
@@ -797,6 +964,9 @@ private:
 
   // velocity scalings
   OptimizerValueMap vss;
+
+  // Enables Nesterov momentum.
+  OptimizerValueMap nts;
 
   // The compound scalars
   // --------------------
@@ -822,6 +992,14 @@ private:
   DataType sgdAccumType;
   // SGD2 only: accl1 tensors can be specified.
   DataType sgd2Accl1Type;
+
+  // Nesterov momentum only
+  SGDMomentumHelper mmHelper;
+  SGDWeightDecayHelper wdHelper;
+  NesterovGradScaleFactor1Helper ngsf1helper;
+  NesterovGradScaleFactor2Helper ngsf2helper;
+  NesterovDampeningScaleFactor1Helper ndsf1helper;
+  NesterovDampeningScaleFactor2Helper ndsf2helper;
 
   // int argument only to disambiguate from the other SGD constructor
   SGD(const std::map<std::string, OptimizerValue> &,
@@ -864,7 +1042,12 @@ public:
             getUnsetDampening(),
             getUnsetVelocityScaling(),
             {lossScaling, true},
-            clipNormSettings) {}
+            getUnsetNesterov(),
+            clipNormSettings,
+            getSGDAccumulatorAndMomentum(),
+            DataType::UNDEFINED,
+            DataType::UNDEFINED,
+            {}) {}
 };
 
 } // namespace popart

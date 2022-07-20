@@ -33,6 +33,17 @@ public:
               OptimizerReductionType reductionType_,
               const Op::Settings &);
 
+  SGD1ComboOp(OptimizerValue initialSmm1,
+              OptimizerValue initialDpsf1,
+              OptimizerValue initialSwd1,
+              OptimizerValue initialSlr1,
+              OptimizerValue initialMm,
+              OptimizerValue initialWd,
+              OptimizerValue initialNgsf1,
+              OptimizerValue initialNdsf1,
+              OptimizerReductionType reductionType_,
+              const Op::Settings &);
+
   std::unique_ptr<Op> clone() const final;
 };
 

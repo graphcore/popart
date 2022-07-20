@@ -19,7 +19,8 @@ import test_util as tu
 
 
 @pytest.mark.parametrize("optType", ["SGD1", "SGD2"])
-def test_accumulators_names_dont_clash(optType):
+@pytest.mark.parametrize("nesterov", [True, False])
+def test_accumulators_names_dont_clash(optType, nesterov):
     np.random.seed(1984)
 
     builder = popart.Builder()
@@ -69,6 +70,7 @@ def test_accumulators_names_dont_clash(optType):
             "defaultLearningRate": (0.1, True),
             "defaultMomentum": (0.9, True),
             "defaultDampening": (0, True),
+            "nesterov": (nesterov, False),
         },
         accumulatorAndMomentum=sgdAccMm,
     )

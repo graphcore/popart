@@ -847,6 +847,7 @@ PYBIND11_MODULE(popart_core, m) {
       sgd.def("momentums", &SGD::momentums);
       sgd.def("dampenings", &SGD::dampenings);
       sgd.def("velocityScalings", &SGD::velocityScalings);
+      sgd.def("nesterov", &SGD::nesterov);
 
       { // This class is deprecated, and SGD should be preferred
         py::class_<ConstSGD> cls(m, "ConstSGD", sgd, DOC(popart, ConstSGD));

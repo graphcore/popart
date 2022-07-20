@@ -48,10 +48,42 @@ BOOST_AUTO_TEST_CASE(TestCtorValidation) {
                 DataType::FLOAT,
                 Op::Settings{g, "SGD2Combo"}};
   });
+  // test constructor with nesterov parameters.
+  tf.requireThrows([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                true,
+                OptimizerReductionType::AcclReduce,
+                DataType::FLOAT,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
 
   // Rejects no grad acc + AccumReduce.
   tf.requireThrows([](Graph &g) {
     SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                false, // grad acc off.
+                OptimizerReductionType::AccumReduce,
+                DataType::FLOAT,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  // test constructor with nesterov parameters.
+  tf.requireThrows([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
                 {},
                 {},
                 {},
@@ -74,10 +106,42 @@ BOOST_AUTO_TEST_CASE(TestCtorValidation) {
                 DataType::FLOAT,
                 Op::Settings{g, "SGD2Combo"}};
   });
+  // test constructor with nesterov parameters.
+  tf.requireNoThrow([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                true, // grad acc on.
+                OptimizerReductionType::AccumReduce,
+                DataType::FLOAT,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
 
   // Accepts None reduction.
   tf.requireNoThrow([](Graph &g) {
     SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                false,
+                OptimizerReductionType::None,
+                DataType::FLOAT,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  // test constructor with nesterov parameters.
+  tf.requireNoThrow([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
                 {},
                 {},
                 {},
@@ -100,8 +164,40 @@ BOOST_AUTO_TEST_CASE(TestCtorValidation) {
                 DataType::FLOAT,
                 Op::Settings{g, "SGD2Combo"}};
   });
+  // test constructor with nesterov parameters.
   tf.requireThrows([](Graph &g) {
     SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                true,
+                OptimizerReductionType::AccumReduce,
+                DataType::UINT16,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  tf.requireThrows([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                true,
+                OptimizerReductionType::AccumReduce,
+                DataType::FLOAT,
+                DataType::STRING,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  // test constructor with nesterov parameters.
+  tf.requireThrows([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
                 {},
                 {},
                 {},
@@ -122,8 +218,40 @@ BOOST_AUTO_TEST_CASE(TestCtorValidation) {
                 DataType::FLOAT,
                 Op::Settings{g, "SGD2Combo"}};
   });
+  // test constructor with nesterov parameters.
   tf.requireNoThrow([](Graph &g) {
     SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                false,
+                OptimizerReductionType::None,
+                DataType::FLOAT16,
+                DataType::FLOAT,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  tf.requireNoThrow([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                true,
+                OptimizerReductionType::GradReduce,
+                DataType::FLOAT,
+                DataType::FLOAT16,
+                Op::Settings{g, "SGD2Combo"}};
+  });
+  // test constructor with nesterov parameters.
+  tf.requireNoThrow([](Graph &g) {
+    SGD2ComboOp{{},
+                {},
+                {},
+                {},
+                {},
                 {},
                 {},
                 {},

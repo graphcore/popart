@@ -85,6 +85,26 @@ struct SGD1TestCase : public _detail::SGDTestCase {
 };
 
 /**
+ * SGD1Nesterov as gradient accumulation factor is 2, SGDAccumulatorAndMomentum
+ * is Combined; unset OptimizerValues; all weights default; enable nesterov
+ * momentum.
+ */
+struct SGD1NesterovTestCase : public _detail::SGDTestCase {
+  SGD1NesterovTestCase()
+      : SGDTestCase(popart::SGD{
+            {{"defaultMomentum", {0.20f, true}}, {"nesterov", {true, true}}},
+            {},
+            popart::SGDAccumulatorAndMomentum::Combined}) {
+    using namespace popart;
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = true;
+    opts.accumulationFactor         = 2;
+    ir.setUserOptions(opts);
+  }
+};
+
+/**
  * SGD2 as gradient accumulation factor is 2, SGDAccumulatorAndMomentum is
  * Separate; non-zero momentum; other OptimizerValues unset; all weights
  * default.
@@ -94,6 +114,26 @@ struct SGD2TestCase : public _detail::SGDTestCase {
       : SGDTestCase(popart::SGD{{{"defaultMomentum", {0.20f, true}}},
                                 {},
                                 popart::SGDAccumulatorAndMomentum::Separate}) {
+    using namespace popart;
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = true;
+    opts.accumulationFactor         = 2;
+    ir.setUserOptions(opts);
+  }
+};
+
+/**
+ * SGD2Nesterov as gradient accumulation factor is 2, SGDAccumulatorAndMomentum
+ * is Separate; non-zero momentum; other OptimizerValues unset; all weights
+ * default; enable nesterov momentum.
+ */
+struct SGD2NesterovTestCase : public _detail::SGDTestCase {
+  SGD2NesterovTestCase()
+      : SGDTestCase(popart::SGD{
+            {{"defaultMomentum", {0.20f, true}}, {"nesterov", {true, true}}},
+            {},
+            popart::SGDAccumulatorAndMomentum::Separate}) {
     using namespace popart;
 
     SessionOptions opts;

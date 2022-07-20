@@ -38,6 +38,20 @@ public:
               DataType accl1Type_,
               const Op::Settings &);
 
+  SGD2ComboOp(OptimizerValue initialSmm1,
+              OptimizerValue initialDpsf1,
+              OptimizerValue initialSwd1,
+              OptimizerValue initialSlr1,
+              OptimizerValue initialMm,
+              OptimizerValue initialWd,
+              OptimizerValue initialNgsf2,
+              OptimizerValue initialNdsf2,
+              bool withGradAccum_,
+              OptimizerReductionType reductionType_,
+              DataType accumType_,
+              DataType accl1Type_,
+              const Op::Settings &);
+
   // Gradient accumulation
   const bool withGradAccum;
 

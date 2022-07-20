@@ -198,7 +198,8 @@ def test_sgd_mixed_mode_0(tmpdir, sgdAccMm, accumType, accl1Type):
 
 
 # Test SGD with weight specific const and non-const parameters
-def test_sgd_mixed_mode_1(tmpdir):
+@pytest.mark.parametrize("nesterov", [True, False])
+def test_sgd_mixed_mode_1(tmpdir, nesterov):
 
     # optimizer parameters
     defaultLearningRate0 = 2e-4
@@ -207,7 +208,10 @@ def test_sgd_mixed_mode_1(tmpdir):
     defaultMomentum = 0.7
     defaultVelocityScaling = 0.8
     defaultWeightDecay = 0.1
-    defaultDampening = 0.05
+    if nesterov:
+        defaultDampening = 0.0
+    else:
+        defaultDampening = 0.05
     lossScaling = 10.0
 
     sgd00 = popart.SGD(
@@ -218,6 +222,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, True),
             "defaultDampening": (defaultDampening, True),
             "lossScaling": (lossScaling, True),
+            "nesterov": (nesterov, True),
         }
     )
 
@@ -236,6 +241,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, True),
             "defaultDampening": (defaultDampening, True),
             "lossScaling": (lossScaling, True),
+            "nesterov": (nesterov, True),
         }
     )
 
@@ -254,6 +260,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, False),
             "defaultDampening": (defaultDampening, False),
             "lossScaling": (lossScaling, False),
+            "nesterov": (nesterov, True),
         }
     )
 
@@ -272,6 +279,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, False),
             "defaultDampening": (defaultDampening, False),
             "lossScaling": (lossScaling, False),
+            "nesterov": (nesterov, True),
         }
     )
 
@@ -290,6 +298,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, False),
             "defaultDampening": (defaultDampening, False),
             "lossScaling": (lossScaling, False),
+            "nesterov": (nesterov, True),
         }
     )
 
@@ -308,6 +317,7 @@ def test_sgd_mixed_mode_1(tmpdir):
             "defaultWeightDecay": (defaultWeightDecay, False),
             "defaultDampening": (defaultDampening, False),
             "lossScaling": (lossScaling, False),
+            "nesterov": (nesterov, True),
         }
     )
 

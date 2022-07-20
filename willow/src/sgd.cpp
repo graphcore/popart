@@ -43,7 +43,8 @@ const std::vector<std::string> &getSpecificNames() {
                                               "weightDecay",
                                               "momentum",
                                               "dampening",
-                                              "velocityScaling"};
+                                              "velocityScaling",
+                                              "nesterov"};
   return names;
 }
 
@@ -90,6 +91,7 @@ void SGD::insertSpecific(
   complete.insert({"momentum", mms.getDefault()});
   complete.insert({"dampening", dps.getDefault()});
   complete.insert({"velocityScaling", vss.getDefault()});
+  complete.insert({"nesterov", nts.getDefault()});
   for (auto key_val : m0) {
     if (std::find(names.cbegin(), names.cend(), key_val.first) ==
         names.cend()) {
@@ -110,7 +112,8 @@ void SGD::insertSpecific(
                  complete.at("weightDecay"),
                  complete.at("momentum"),
                  complete.at("dampening"),
-                 complete.at("velocityScaling"));
+                 complete.at("velocityScaling"),
+                 complete.at("nesterov"));
 }
 
 bool SGD::hasSpecific(const Tensor &w) const {
@@ -123,6 +126,7 @@ bool SGD::hasSpecific(const Tensor &w) const {
   counter += mms.hasSpecific(id);
   counter += dps.hasSpecific(id);
   counter += vss.hasSpecific(id);
+  counter += nts.hasSpecific(id);
 
   if (counter != 0 && counter != getSpecificNames().size()) {
     throw error("Inconsistency in SGD::hasSpecific : there should either be a "
@@ -139,7 +143,8 @@ bool SGD::hasSpecific() const {
                     wds.hasSpecific(),
                     mms.hasSpecific(),
                     dps.hasSpecific(),
-                    vss.hasSpecific()};
+                    vss.hasSpecific(),
+                    nts.hasSpecific()};
   return std::any_of(
       specifics.begin(), specifics.end(), [](bool s) { return s; });
 }
@@ -149,27 +154,36 @@ bool SGD::hasMomentum(const Tensor &weight) const {
   return !mm.isConst() || mm.val() != 0.0f;
 }
 
+bool SGD::enableNesterov(const Tensor &weight) const {
+  float nt = nts.get(weight.id).val();
+  float mm = mms.get(weight.id).val();
+  return nt != 0 && mm > 0;
+}
+
 void SGD::insertSpecific(const TensorId &id,
                          OptimizerValue lr,
                          OptimizerValue wd,
                          OptimizerValue mm,
                          OptimizerValue dp,
-                         OptimizerValue vs) {
+                         OptimizerValue vs,
+                         OptimizerValue nt) {
 
   lrs.insertSpecific(id, lr);
   wds.insertSpecific(id, wd);
   mms.insertSpecific(id, mm);
   dps.insertSpecific(id, dp);
   vss.insertSpecific(id, vs);
+  nts.insertSpecific(id, nt);
 
-  runValueChecks(lr, wd, mm, dp, vs);
+  runValueChecks(lr, wd, mm, dp, vs, nt);
 }
 
 void SGD::runValueChecks(OptimizerValue lr,
                          OptimizerValue wd,
                          OptimizerValue mm,
                          OptimizerValue dp,
-                         OptimizerValue vs) const {
+                         OptimizerValue vs,
+                         OptimizerValue nt) const {
   if (lr.val() < 0) {
     throw error("Negative learning rate ({}) in SGD, bailing as this might be "
                 "a user error.",
@@ -201,6 +215,12 @@ void SGD::runValueChecks(OptimizerValue lr,
     throw error("Non-positive velocity scaling ({}) in SGD is not supported",
                 vs.val());
   }
+
+  if (nt.val() != 0 && dp.val() > 0) {
+    throw error(
+        "When enable nesterov momentum, dampening ({}) in SGD shouled be zero",
+        dp.val());
+  }
 }
 
 SGD::SGD(const std::map<std::string, OptimizerValue> &cmap,
@@ -216,11 +236,30 @@ SGD::SGD(const std::map<std::string, OptimizerValue> &cmap,
           cmap.at("defaultDampening"),
           cmap.at("defaultVelocityScaling"),
           cmap.at("lossScaling"),
+          cmap.at("nesterov"),
           clipNormSettings,
           sgdAccMm,
           accumType,
           accl1Type,
           debugContext) {}
+
+SGD::SGD(OptimizerValue lr,
+         OptimizerValue wd,
+         OptimizerValue mm,
+         OptimizerValue dp,
+         OptimizerValue vs,
+         OptimizerValue lossScaling,
+         OptimizerValue nesterov,
+         const std::vector<ClipNormSettings> &clipNormSettings,
+         SGDAccumulatorAndMomentum sgdAccMm_,
+         DataType accumType_,
+         DataType accl1Type_,
+         const DebugContext &debugContext_)
+    : Optimizer(lossScaling, clipNormSettings, debugContext_), lrs(lr), wds(wd),
+      mms(mm), dps(dp), vss(vs), nts(nesterov), sgdAccMm(sgdAccMm_),
+      sgdAccumType(accumType_), sgd2Accl1Type(accl1Type_) {
+  runValueChecks(lr, wd, mm, dp, vs, nesterov);
+}
 
 SGD::SGD(OptimizerValue lr,
          OptimizerValue wd,
@@ -234,20 +273,21 @@ SGD::SGD(OptimizerValue lr,
          DataType accl1Type_,
          const DebugContext &debugContext_)
     : Optimizer(lossScaling, clipNormSettings, debugContext_), lrs(lr), wds(wd),
-      mms(mm), dps(dp), vss(vs), sgdAccMm(sgdAccMm_), sgdAccumType(accumType_),
-      sgd2Accl1Type(accl1Type_) {
-  runValueChecks(lr, wd, mm, dp, vs);
+      mms(mm), dps(dp), vss(vs), nts(OptimizerValue(0.0f, true)),
+      sgdAccMm(sgdAccMm_), sgdAccumType(accumType_), sgd2Accl1Type(accl1Type_) {
+  runValueChecks(lr, wd, mm, dp, vs, OptimizerValue(0.0f, true));
 }
 
 std::map<std::string, OptimizerValue>
 SGD::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
-  std::vector<std::string> sixParamArgs{"defaultLearningRate",
-                                        "defaultWeightDecay",
-                                        "defaultMomentum",
-                                        "defaultDampening",
-                                        "defaultVelocityScaling",
-                                        "lossScaling"};
+  std::vector<std::string> sevenParamArgs{"defaultLearningRate",
+                                          "defaultWeightDecay",
+                                          "defaultMomentum",
+                                          "defaultDampening",
+                                          "defaultVelocityScaling",
+                                          "lossScaling",
+                                          "nesterov"};
 
   std::map<std::string, OptimizerValue> complete{};
 
@@ -257,15 +297,16 @@ SGD::getComplete(const std::map<std::string, OptimizerValue> &m) {
   complete.insert({"defaultDampening", getUnsetDampening()});
   complete.insert({"defaultVelocityScaling", getUnsetVelocityScaling()});
   complete.insert({"lossScaling", getUnsetLossScaling()});
+  complete.insert({"nesterov", getUnsetNesterov()});
 
   for (auto key_val : m) {
     auto key = key_val.first;
     auto val = key_val.second;
-    if (std::find(sixParamArgs.cbegin(), sixParamArgs.cend(), key) ==
-        sixParamArgs.cend()) {
+    if (std::find(sevenParamArgs.cbegin(), sevenParamArgs.cend(), key) ==
+        sevenParamArgs.cend()) {
       std::ostringstream oss;
       oss << "Invalid SGD key, " << key << ", the allowed keys are ( ";
-      for (auto x : sixParamArgs) {
+      for (auto x : sevenParamArgs) {
         oss << x << ' ';
       }
       oss << ')';
@@ -282,6 +323,8 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
   OptimizerReductionType reductionType{OptimizerReductionType::None};
 
   bool withMomentum = hasMomentum(w);
+
+  bool withNesterov = enableNesterov(w);
 
   DebugInfo debugInfo(debugContext, "popart_builder");
   auto opSettings = Op::Settings(graph, "", debugInfo.getId());
@@ -330,25 +373,69 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
     const auto dpsf1 = dpsf1helper.getFromWeightId(w.id, *this);
     const auto slr1  = slr1helper.getFromWeightId(w.id, *this);
 
-    return std::make_unique<SGD1ComboOp>(
-        smm1, dpsf1, swd, slr1, reductionType, opSettings);
+    if (withNesterov) {
+      const auto mm    = mmHelper.getFromWeightId(w.id, *this);
+      const auto wd    = wdHelper.getFromWeightId(w.id, *this);
+      const auto ngsf1 = ngsf1helper.getFromWeightId(w.id, *this);
+      const auto ndsf1 = ndsf1helper.getFromWeightId(w.id, *this);
+
+      return std::make_unique<SGD1ComboOp>(smm1,
+                                           dpsf1,
+                                           swd,
+                                           slr1,
+                                           mm,
+                                           wd,
+                                           ngsf1,
+                                           ndsf1,
+                                           reductionType,
+                                           opSettings);
+    } else {
+      return std::make_unique<SGD1ComboOp>(
+          smm1, dpsf1, swd, slr1, reductionType, opSettings);
+    }
   }
   case SGDAccumulatorAndMomentum::Separate: {
     const auto smm2  = smm2helper.getFromWeightId(w.id, *this);
     const auto dpsf2 = dpsf2helper.getFromWeightId(w.id, *this);
     const auto slr2  = slr2helper.getFromWeightId(w.id, *this);
-    return std::make_unique<SGD2ComboOp>(
-        smm2,
-        dpsf2,
-        swd,
-        slr2,
-        gradientAccumulationEnabled(),
-        reductionType,
-        sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
-                                            : sgdAccumType,
-        sgd2Accl1Type == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
-                                             : sgd2Accl1Type,
-        opSettings);
+
+    if (withNesterov) {
+      const auto mm    = mmHelper.getFromWeightId(w.id, *this);
+      const auto wd    = wdHelper.getFromWeightId(w.id, *this);
+      const auto ngsf2 = ngsf2helper.getFromWeightId(w.id, *this);
+      const auto ndsf2 = ndsf2helper.getFromWeightId(w.id, *this);
+      return std::make_unique<SGD2ComboOp>(
+          smm2,
+          dpsf2,
+          swd,
+          slr2,
+          mm,
+          wd,
+          ngsf2,
+          ndsf2,
+          gradientAccumulationEnabled(),
+          reductionType,
+          sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
+                                              : sgdAccumType,
+          sgd2Accl1Type == DataType::UNDEFINED
+              ? w.info.getDataTypeInfo()->type()
+              : sgd2Accl1Type,
+          opSettings);
+    } else {
+      return std::make_unique<SGD2ComboOp>(
+          smm2,
+          dpsf2,
+          swd,
+          slr2,
+          gradientAccumulationEnabled(),
+          reductionType,
+          sgdAccumType == DataType::UNDEFINED ? w.info.getDataTypeInfo()->type()
+                                              : sgdAccumType,
+          sgd2Accl1Type == DataType::UNDEFINED
+              ? w.info.getDataTypeInfo()->type()
+              : sgd2Accl1Type,
+          opSettings);
+    }
   }
   default:
     throw internal_error(
@@ -361,12 +448,18 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 
   bool withMomentum = hasMomentum(w);
 
+  bool withNesterov = enableNesterov(w);
+
   const TensorId &varId = w.id;
   std::vector<TensorId> inputs;
   if (!withMomentum) {
     inputs.resize(4, "");
   } else {
-    inputs.resize(6, "");
+    if (withNesterov) {
+      inputs.resize(10, "");
+    } else {
+      inputs.resize(6, "");
+    }
   }
 
   // variable
@@ -396,25 +489,54 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
       inputs[SGDMComboBaseOp::getSlr1InIndex()] =
           slr1helper.getScalarIdIfNonConst(w, *this);
 
-      // momentum (optional)
+      // scaled momentum (optional)
       inputs[SGDMComboBaseOp::getSmm1InIndex()] =
           smm1helper.getScalarIdIfNonConst(w, *this);
 
       // dampening scale factor (optional)
       inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
           dpsf1helper.getScalarIdIfNonConst(w, *this);
+
+      if (withNesterov) {
+        // nesterov dampening scale factor (optional)
+        inputs[SGDMComboBaseOp::getNdsfInIndex()] =
+            ndsf1helper.getScalarIdIfNonConst(w, *this);
+
+        // nesterov gradient scale factor (optional)
+        inputs[SGDMComboBaseOp::getNgsfInIndex()] =
+            ngsf1helper.getScalarIdIfNonConst(w, *this);
+      }
     } else {
       // scaled learning rate (optional)
       inputs[SGDMComboBaseOp::getSlr1InIndex()] =
           slr2helper.getScalarIdIfNonConst(w, *this);
 
-      // momentum (optional)
+      // scaled momentum (optional)
       inputs[SGDMComboBaseOp::getSmm1InIndex()] =
           smm2helper.getScalarIdIfNonConst(w, *this);
 
       // dampening scale factor (optional)
       inputs[SGDMComboBaseOp::getDpsf1InIndex()] =
           dpsf2helper.getScalarIdIfNonConst(w, *this);
+
+      if (withNesterov) {
+        // nesterov dampening scale factor (optional)
+        inputs[SGDMComboBaseOp::getNdsfInIndex()] =
+            ndsf2helper.getScalarIdIfNonConst(w, *this);
+
+        // nesterov gradient scale factor (optional)
+        inputs[SGDMComboBaseOp::getNgsfInIndex()] =
+            ngsf2helper.getScalarIdIfNonConst(w, *this);
+      }
+    }
+    if (withNesterov) {
+      // momentum (optional)
+      inputs[SGDMComboBaseOp::getMmInIndex()] =
+          mmHelper.getScalarIdIfNonConst(w, *this);
+
+      // weight decay (optional)
+      inputs[SGDMComboBaseOp::getWdInIndex()] =
+          wdHelper.getScalarIdIfNonConst(w, *this);
     }
   }
 
@@ -426,6 +548,8 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
 
   bool withMomentum = hasMomentum(weight);
 
+  bool withNesterov = enableNesterov(weight);
+
   std::vector<TensorId> ids;
   if (!withMomentum) {
     ids.push_back(slr0helper.getScalarIdIfNonConst(weight, *this));
@@ -436,17 +560,30 @@ SGD::getOptimizerInputs(const Tensor &weight) const {
       ids.push_back(slr1helper.getScalarIdIfNonConst(weight, *this));
       ids.push_back(smm1helper.getScalarIdIfNonConst(weight, *this));
       ids.push_back(dpsf1helper.getScalarIdIfNonConst(weight, *this));
+      if (withNesterov) {
+        ids.push_back(ndsf1helper.getScalarIdIfNonConst(weight, *this));
+        ids.push_back(ngsf1helper.getScalarIdIfNonConst(weight, *this));
+      }
     } else {
       ids.push_back(slr2helper.getScalarIdIfNonConst(weight, *this));
       ids.push_back(smm2helper.getScalarIdIfNonConst(weight, *this));
       ids.push_back(dpsf2helper.getScalarIdIfNonConst(weight, *this));
+      if (withNesterov) {
+        ids.push_back(ndsf2helper.getScalarIdIfNonConst(weight, *this));
+        ids.push_back(ngsf2helper.getScalarIdIfNonConst(weight, *this));
+      }
+    }
+    if (withNesterov) {
+      ids.push_back(mmHelper.getScalarIdIfNonConst(weight, *this));
+      ids.push_back(wdHelper.getScalarIdIfNonConst(weight, *this));
     }
   }
 
   std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
   for (const auto &id : ids) {
     // empty denotes const, not an input
-    if ((withMomentum && (smm1helper.idMatch(id) || smm2helper.idMatch(id))) ||
+    if ((withMomentum && (smm1helper.idMatch(id) || smm2helper.idMatch(id) ||
+                          mmHelper.idMatch(id))) ||
         wdsf0helper.idMatch(id)) {
       // Use weight dtype for momentum and weight decay, Float32 for everything
       // else.
@@ -522,6 +659,30 @@ float SGD::getStoredValue(const TensorId &optId) const {
     return smm2helper.getFromScalarId(optId, *this).val();
   }
 
+  if (mmHelper.idMatch(optId)) {
+    return mmHelper.getFromScalarId(optId, *this).val();
+  }
+
+  if (wdHelper.idMatch(optId)) {
+    return wdHelper.getFromScalarId(optId, *this).val();
+  }
+
+  if (ngsf1helper.idMatch(optId)) {
+    return ngsf1helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (ngsf2helper.idMatch(optId)) {
+    return ngsf2helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (ndsf1helper.idMatch(optId)) {
+    return ndsf1helper.getFromScalarId(optId, *this).val();
+  }
+
+  if (ndsf2helper.idMatch(optId)) {
+    return ndsf2helper.getFromScalarId(optId, *this).val();
+  }
+
   throw runtime_error("In getStoredValue for {}, it doesn't match any existing "
                       "optimizer prefix",
                       optId);
@@ -543,6 +704,7 @@ void SGD::validReplacement(const Optimizer &other) const {
   checkReplacementValue(wds, asSgd->wds, "weight decays");
   checkReplacementValue(mms, asSgd->mms, "momentums");
   checkReplacementValue(vss, asSgd->vss, "velocity scalings");
+  checkReplacementValue(nts, asSgd->nts, "nesterov");
 
   auto hasVelocityTensor = [](const SGD *sgd) {
     return !sgd->mms.getDefault().isConst() ||
@@ -619,6 +781,7 @@ size_t SGD::hash() const {
   boost::hash_combine(seed, mms);
   boost::hash_combine(seed, dps);
   boost::hash_combine(seed, vss);
+  boost::hash_combine(seed, nts);
 
   bool hasVelocityTensor =
       !mms.getDefault().isConst() || mms.getDefault().val() != 0.0f;

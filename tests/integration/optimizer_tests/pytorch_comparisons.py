@@ -269,6 +269,9 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
                 momentum=optMaps[step]["defaultMomentum"][0],
                 dampening=optMaps[step]["defaultDampening"][0],
                 weight_decay=optMaps[step]["defaultWeightDecay"][0],
+                nesterov=optMaps[step]["nesterov"][0]
+                if "nesterov" in optMaps[step]
+                else False,
             )
 
         if step is 0:
@@ -328,7 +331,7 @@ def compare_against_pytorch(optType, optMaps, batchesPerStep=5, scaled=False):
     assert error1 < 1e-5
 
 
-def sgd_test_against_pytorch(optType):
+def sgd_test_against_pytorch(optType, nesterov=False):
     # optimizer parameters
     defaultLearningRate0 = 0.5
     defaultLearningRate1 = 0.3
@@ -338,7 +341,8 @@ def sgd_test_against_pytorch(optType):
     defaultDampening0 = 0
     if optType != "sgd0":
         defaultMomentum0 = 0.1
-        defaultDampening0 = 0.3
+        if not nesterov:
+            defaultDampening0 = 0.3
     lossScaling0 = 10.0
     defaultVelocityScaling0 = 0.5
     defaultWeightDecay0 = 0.01
@@ -350,6 +354,7 @@ def sgd_test_against_pytorch(optType):
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
         "defaultWeightDecay": (defaultWeightDecay0, False),
+        "nesterov": (nesterov, True),
     }
 
     optMap1 = {
@@ -359,6 +364,7 @@ def sgd_test_against_pytorch(optType):
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
         "defaultWeightDecay": (defaultWeightDecay0, False),
+        "nesterov": (nesterov, True),
     }
 
     optMap2 = {
@@ -368,6 +374,7 @@ def sgd_test_against_pytorch(optType):
         "defaultVelocityScaling": (defaultVelocityScaling0, False),
         "lossScaling": (lossScaling0, False),
         "defaultWeightDecay": (defaultWeightDecay0, False),
+        "nesterov": (nesterov, True),
     }
 
     compare_against_pytorch(optType, [optMap0, optMap1, optMap2])
@@ -379,12 +386,14 @@ def test_sgd0_against_pytorch():
 
 
 @tu.requires_ipu_model
-def test_sgd2_against_pytorch():
-    sgd_test_against_pytorch("sgd2")
+@pytest.mark.parametrize("nesterov", (True, False))
+def test_sgd2_against_pytorch(nesterov):
+    sgd_test_against_pytorch("sgd2", nesterov)
 
 
 @tu.requires_ipu_model
-def test_sgd1_against_pytorch():
+@pytest.mark.parametrize("nesterov", (True, False))
+def test_sgd1_against_pytorch(nesterov):
     """
     Comparison of popart and PyTorch optimizers, and the changes needed to PyTorch
     to match popart. Note that these differences should have no effect on overall
@@ -414,7 +423,7 @@ def test_sgd1_against_pytorch():
     See also sgd_mixed_mode_test_cpp_1_3.cpp
     """
 
-    sgd_test_against_pytorch("sgd1")
+    sgd_test_against_pytorch("sgd1", nesterov)
 
 
 @tu.requires_ipu_model

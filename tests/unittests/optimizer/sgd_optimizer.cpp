@@ -73,6 +73,11 @@ BOOST_AUTO_TEST_CASE(TestCtorGivesDefaultHyperParamsEquivalentToUnsetMethods) {
       sgd,
       [](const SGD &sgd) { return sgd.dampenings(); },
       [](const SGD &sgd) { return sgd.getUnsetDampening(); });
+
+  test(
+      sgd,
+      [](const SGD &sgd) { return sgd.nesterov(); },
+      [](const SGD &sgd) { return sgd.getUnsetNesterov(); });
 }
 
 BOOST_AUTO_TEST_CASE(TestCtorValidation) {
@@ -138,6 +143,7 @@ BOOST_AUTO_TEST_CASE(TestHashAndEq) {
   BOOST_CHECK_THROW(sgd2.validReplacement(sgd3), runtime_error);
   BOOST_CHECK(sgd2.hash() != sgd3.hash());
 
+  // Cannot replace non-nesterov SGD with nesterov SGD.
   SGD sgd4{{{"defaultMomentum", {0.38f, true}}},
            {},
            SGDAccumulatorAndMomentum::Separate,
@@ -145,6 +151,14 @@ BOOST_AUTO_TEST_CASE(TestHashAndEq) {
            DataType::UNDEFINED};
   BOOST_CHECK_NO_THROW(sgd3.validReplacement(sgd4));
   BOOST_CHECK_EQUAL(sgd3.hash(), sgd4.hash());
+
+  SGD sgd5{{{"defaultMomentum", {0.38f, true}}, {"nesterov", {true, true}}},
+           {},
+           SGDAccumulatorAndMomentum::Separate,
+           DataType::FLOAT,
+           DataType::UNDEFINED};
+  BOOST_CHECK_THROW(sgd4.validReplacement(sgd5), runtime_error);
+  BOOST_CHECK(sgd4.hash() != sgd5.hash());
 }
 
 BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD0) {
@@ -179,7 +193,9 @@ BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD1_2) {
 
     const auto inputIds = tc.sgd.getInputIds(*tc.w);
 
-    constexpr size_t expectedNumSgd1or2Inputs = 6u;
+    bool isNesterov = tc.sgd.nesterov().get(tc.w->id).val();
+
+    size_t expectedNumSgd1or2Inputs = isNesterov ? 10u : 6u;
 
     BOOST_REQUIRE_EQUAL(inputIds.size(), expectedNumSgd1or2Inputs);
     BOOST_REQUIRE_EQUAL(inputIds[VarUpdateOp::getVarToUpdateInIndex()], tc.wId);
@@ -189,6 +205,12 @@ BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD1_2) {
     BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getDpsf1InIndex()], "");
     BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getSwd1InIndex()], "");
     BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getSlr1InIndex()], "");
+    if (isNesterov) {
+      BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getNdsfInIndex()], "");
+      BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getNgsfInIndex()], "");
+      BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getMmInIndex()], "");
+      BOOST_REQUIRE_EQUAL(inputIds[SGDMComboBaseOp::getWdInIndex()], "");
+    }
   };
 
   {
@@ -197,6 +219,14 @@ BOOST_AUTO_TEST_CASE(TestGetInputIds_SGD1_2) {
   }
   {
     SGD2TestCase tc;
+    test(tc);
+  }
+  {
+    SGD1NesterovTestCase tc;
+    test(tc);
+  }
+  {
+    SGD2NesterovTestCase tc;
     test(tc);
   }
 }
@@ -223,8 +253,11 @@ void testOptimizerInputs(
 
 } // namespace
 
-using SGDAllTestCaseTypes =
-    std::tuple<SGD0TestCase, SGD1TestCase, SGD2TestCase>;
+using SGDAllTestCaseTypes = std::tuple<SGD0TestCase,
+                                       SGD1TestCase,
+                                       SGD2TestCase,
+                                       SGD1NesterovTestCase,
+                                       SGD2NesterovTestCase>;
 BOOST_AUTO_TEST_CASE_TEMPLATE(TestGetOptimizerInputs_Default,
                               SGDTestCaseTy,
                               SGDAllTestCaseTypes) {
@@ -311,6 +344,84 @@ BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD1) {
   testOptimizerInputs(tc, inputs, testSlr1);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD1Nesterov) {
+  SGD1NesterovTestCase tc;
+  tc.setFactorsFromOptions();
+  // Give specific non-const values so getOptimizerInputs returns a value for
+  // them.
+  tc.sgd.insertSpecific(tc.wId,
+                        std::map<std::string, std::pair<float, bool>>({
+                            {"momentum", {0.38f, false}},
+                            {"learningRate", {0.01f, false}},
+                            {"dampening", {0.0f, false}},
+                        }));
+
+  auto inputs = tc.sgd.getOptimizerInputs(*tc.w);
+  BOOST_REQUIRE_EQUAL(inputs.size(), 6u);
+
+  const auto testSmm1 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledMomentum1Prefix() + tc.wId) {
+          matched = true;
+          BOOST_REQUIRE_EQUAL(tInfo, TensorInfo(tc.w->info.dataType(), {}));
+        }
+        return matched;
+      };
+  const auto testSlr1 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledLearningRate1Prefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+  const auto testDpsf1 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificDampeningScaleFactor1Prefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+  const auto testNdsf1 = [](const auto &tc,
+                            const TensorId &tId,
+                            const TensorInfo &tInfo) {
+    bool matched = false;
+    if (tId == reservedSpecificNesterovDampeningScaleFactor1Prefix() + tc.wId) {
+      matched = true;
+
+      TensorInfo expected{DataType::FLOAT, {}};
+      BOOST_REQUIRE_EQUAL(tInfo, expected);
+    }
+    return matched;
+  };
+  const auto testMm =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificSGDMomentumPrefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+
+  testOptimizerInputs(tc, inputs, testSmm1);
+  testOptimizerInputs(tc, inputs, testSlr1);
+  testOptimizerInputs(tc, inputs, testDpsf1);
+  // Inputs for nesterov momentum
+  testOptimizerInputs(tc, inputs, testNdsf1);
+  testOptimizerInputs(tc, inputs, testMm);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD2) {
   SGD2TestCase tc;
   tc.setFactorsFromOptions();
@@ -347,6 +458,84 @@ BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD2) {
 
   testOptimizerInputs(tc, inputs, testSmm1);
   testOptimizerInputs(tc, inputs, testSlr1);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetOptimizerInputs_SGD2Nesterov) {
+  SGD2NesterovTestCase tc;
+  tc.setFactorsFromOptions();
+  // Give specific non-const values so getOptimizerInputs returns a value for
+  // them.
+  tc.sgd.insertSpecific(tc.wId,
+                        std::map<std::string, std::pair<float, bool>>({
+                            {"momentum", {0.38f, false}},
+                            {"learningRate", {0.01f, false}},
+                            {"dampening", {0.0f, false}},
+                        }));
+
+  auto inputs = tc.sgd.getOptimizerInputs(*tc.w);
+  BOOST_REQUIRE_EQUAL(inputs.size(), 6u);
+
+  const auto testSmm2 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledMomentum2Prefix() + tc.wId) {
+          matched = true;
+          BOOST_REQUIRE_EQUAL(tInfo, TensorInfo(tc.w->info.dataType(), {}));
+        }
+        return matched;
+      };
+  const auto testSlr2 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificScaledLearningRate2Prefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+  const auto testDpsf2 =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificDampeningScaleFactor2Prefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+  const auto testNdsf2 = [](const auto &tc,
+                            const TensorId &tId,
+                            const TensorInfo &tInfo) {
+    bool matched = false;
+    if (tId == reservedSpecificNesterovDampeningScaleFactor2Prefix() + tc.wId) {
+      matched = true;
+
+      TensorInfo expected{DataType::FLOAT, {}};
+      BOOST_REQUIRE_EQUAL(tInfo, expected);
+    }
+    return matched;
+  };
+  const auto testMm =
+      [](const auto &tc, const TensorId &tId, const TensorInfo &tInfo) {
+        bool matched = false;
+        if (tId == reservedSpecificSGDMomentumPrefix() + tc.wId) {
+          matched = true;
+
+          TensorInfo expected{DataType::FLOAT, {}};
+          BOOST_REQUIRE_EQUAL(tInfo, expected);
+        }
+        return matched;
+      };
+
+  testOptimizerInputs(tc, inputs, testSmm2);
+  testOptimizerInputs(tc, inputs, testSlr2);
+  testOptimizerInputs(tc, inputs, testDpsf2);
+  // Inputs for nesterov momentum
+  testOptimizerInputs(tc, inputs, testNdsf2);
+  testOptimizerInputs(tc, inputs, testMm);
 }
 
 /* The following CreateOp tests are integration test with the
@@ -390,41 +579,105 @@ BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD0_GA) {
 }
 
 BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD1) {
-  SGD1TestCase tc;
-  tc.setFactorsFromOptions();
+  {
+    SGD1TestCase tc;
+    tc.setFactorsFromOptions();
 
-  const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-  const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
-  BOOST_REQUIRE(sgd1);
+    const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd1);
 
-  BOOST_REQUIRE(sgd1->initSmm1 ==
-                ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd1->initDpsf1 ==
-                DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd1->initSwd1 ==
-                ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd1->initSlr1 ==
-                ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initSmm1 ==
+                  ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd1->initDpsf1 ==
+        DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initSwd1 ==
+                  ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initSlr1 ==
+                  ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+  }
+  {
+    SGD1NesterovTestCase tc;
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd1);
+
+    BOOST_REQUIRE(sgd1->initSmm1 ==
+                  ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd1->initDpsf1 ==
+        DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initSwd1 ==
+                  ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initSlr1 ==
+                  ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initMm ==
+                  SGDMomentumHelper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd1->initWd ==
+                  SGDWeightDecayHelper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd1->initNgsf ==
+        NesterovGradScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd1->initNdsf ==
+        NesterovDampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+  }
 }
 
 BOOST_AUTO_TEST_CASE(TestCreateOpIntegrationWithCompoundScalarHelper_SGD2) {
-  SGD2TestCase tc;
-  tc.setFactorsFromOptions();
+  {
+    SGD2TestCase tc;
+    tc.setFactorsFromOptions();
 
-  const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
 
-  const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
-  BOOST_REQUIRE(sgd2);
+    const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd2);
 
-  BOOST_REQUIRE(sgd2->initSmm1 ==
-                ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd2->initDpsf1 ==
-                DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd2->initSwd1 ==
-                ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
-  BOOST_REQUIRE(sgd2->initSlr1 ==
-                ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initSmm1 ==
+                  ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd2->initDpsf1 ==
+        DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initSwd1 ==
+                  ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initSlr1 ==
+                  ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+  }
+  {
+    SGD2NesterovTestCase tc;
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd2);
+
+    BOOST_REQUIRE(sgd2->initSmm1 ==
+                  ScaledMomentum1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd2->initDpsf1 ==
+        DampeningScaleFactor1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initSwd1 ==
+                  ScaledWeightDecay1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initSlr1 ==
+                  ScaledLearningRate1Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initMm ==
+                  SGDMomentumHelper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(sgd2->initWd ==
+                  SGDWeightDecayHelper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd2->initNgsf ==
+        NesterovGradScaleFactor2Helper{}.getFromWeightId(tc.wId, tc.sgd));
+    BOOST_REQUIRE(
+        sgd2->initNdsf ==
+        NesterovDampeningScaleFactor2Helper{}.getFromWeightId(tc.wId, tc.sgd));
+  }
 }
 
 BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD0) {
@@ -508,7 +761,45 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD1) {
     BOOST_REQUIRE(sgd1->reductionType == OptimizerReductionType::None);
   }
   {
+    SGDCustomTestCase tc{
+        SGD{{{"defaultMomentum", {0.1, true}}, {"nesterov", {true, true}}},
+            {},
+            SGDAccumulatorAndMomentum::Combined}};
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation        = false;
+    opts.enableReplicatedGraphs            = false;
+    opts.enableDistributedReplicatedGraphs = false;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd1);
+
+    BOOST_REQUIRE(sgd1->reductionType == OptimizerReductionType::None);
+  }
+  {
     SGD1TestCase tc;
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = true;
+    opts.accumulationFactor         = 4;
+    opts.enableReplicatedGraphs     = true;
+    opts.replicatedGraphCount       = 2;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd1);
+
+    BOOST_REQUIRE(sgd1->reductionType == OptimizerReductionType::AcclReduce);
+  }
+  {
+    SGD1NesterovTestCase tc;
 
     SessionOptions opts;
     opts.enableGradientAccumulation = true;
@@ -529,6 +820,26 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD1) {
     SGDCustomTestCase tc{SGD{{{"defaultMomentum", {0.1, true}}},
                              {},
                              SGDAccumulatorAndMomentum::Combined}};
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = false;
+    opts.enableReplicatedGraphs     = true;
+    opts.replicatedGraphCount       = 2;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd1 = dynamic_cast<const SGD1ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd1);
+
+    BOOST_REQUIRE(sgd1->reductionType == OptimizerReductionType::GradReduce);
+  }
+  {
+    SGDCustomTestCase tc{
+        SGD{{{"defaultMomentum", {0.1, true}}, {"nesterov", {true, true}}},
+            {},
+            SGDAccumulatorAndMomentum::Combined}};
 
     SessionOptions opts;
     opts.enableGradientAccumulation = false;
@@ -574,7 +885,56 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD2) {
     BOOST_REQUIRE(sgd2->accl1Type == DataType::FLOAT16);
   }
   {
+    SGDCustomTestCase tc{
+        SGD{{{"defaultMomentum", {0.1, true}}, {"nesterov", {true, true}}},
+            {},
+            SGDAccumulatorAndMomentum::Separate,
+            DataType::UNDEFINED,
+            DataType::FLOAT16}};
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation        = false;
+    opts.enableReplicatedGraphs            = false;
+    opts.enableDistributedReplicatedGraphs = false;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd2);
+
+    BOOST_REQUIRE(sgd2->reductionType == OptimizerReductionType::None);
+    BOOST_REQUIRE(!sgd2->withGradAccum);
+    BOOST_REQUIRE(sgd2->accumType == tc.w->info.dataType());
+    BOOST_REQUIRE(sgd2->accl1Type == DataType::FLOAT16);
+  }
+  {
     SGD2TestCase tc;
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = true;
+    opts.accumulationFactor         = 4;
+    opts.enableReplicatedGraphs     = true;
+    opts.replicatedGraphCount       = 2;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd2);
+
+    BOOST_REQUIRE(sgd2->reductionType == OptimizerReductionType::AccumReduce);
+    BOOST_REQUIRE(sgd2->withGradAccum);
+    // SGD2TestCase gives default accumType and accl1Type. Check this was
+    // UNDEFINED.
+    const auto wDataType = tc.w->info.dataType();
+    BOOST_REQUIRE(sgd2->accumType == wDataType);
+    BOOST_REQUIRE(sgd2->accl1Type == wDataType);
+  }
+  {
+    SGD2NesterovTestCase tc;
 
     SessionOptions opts;
     opts.enableGradientAccumulation = true;
@@ -603,6 +963,31 @@ BOOST_AUTO_TEST_CASE(TestCreateOpAllOtherFields_SGD2) {
                              SGDAccumulatorAndMomentum::Separate,
                              DataType::FLOAT16,
                              DataType::FLOAT}};
+
+    SessionOptions opts;
+    opts.enableGradientAccumulation = false;
+    opts.enableReplicatedGraphs     = true;
+    opts.replicatedGraphCount       = 2;
+    tc.ir.setUserOptions(opts);
+    tc.setFactorsFromOptions();
+
+    const auto op = tc.sgd.createOp(*tc.w, tc.graph());
+
+    const auto sgd2 = dynamic_cast<const SGD2ComboOp *>(op.get());
+    BOOST_REQUIRE(sgd2);
+
+    BOOST_REQUIRE(sgd2->reductionType == OptimizerReductionType::GradReduce);
+    BOOST_REQUIRE(!sgd2->withGradAccum);
+    BOOST_REQUIRE(sgd2->accumType == DataType::FLOAT16);
+    BOOST_REQUIRE(sgd2->accl1Type == DataType::FLOAT);
+  }
+  {
+    SGDCustomTestCase tc{
+        SGD{{{"defaultMomentum", {0.2, true}}, {"nesterov", {true, true}}},
+            {},
+            SGDAccumulatorAndMomentum::Separate,
+            DataType::FLOAT16,
+            DataType::FLOAT}};
 
     SessionOptions opts;
     opts.enableGradientAccumulation = false;

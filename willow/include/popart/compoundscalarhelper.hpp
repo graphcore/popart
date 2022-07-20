@@ -196,6 +196,100 @@ private:
   }
 };
 
+class SGDWeightDecayHelper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float wd) const { return wd; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultSGDWeightDecayPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificSGDWeightDecayPrefix();
+  }
+};
+
+class SGDMomentumHelper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float mm) const { return mm; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultSGDMomentumPrefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificSGDMomentumPrefix();
+  }
+};
+
+class NesterovGradScaleFactor1Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float vs, float rf) const { return vs * rf; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultNesterovGradScaleFactor1Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificNesterovGradScaleFactor1Prefix();
+  }
+};
+
+class NesterovGradScaleFactor2Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float vs) const { return vs; }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultNesterovGradScaleFactor2Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificNesterovGradScaleFactor2Prefix();
+  }
+};
+
+class NesterovDampeningScaleFactor1Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float dm, float vs, float af, float rf) const {
+    return af / ((1.0f - dm) * vs * rf);
+  }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultNesterovDampeningScaleFactor1Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificNesterovDampeningScaleFactor1Prefix();
+  }
+};
+
+class NesterovDampeningScaleFactor2Helper : public CompoundScalarHelper<SGD> {
+public:
+  float val(const TensorId &weightId, const SGD &) const final;
+  bool isConst(const TensorId &weightId, const SGD &) const final;
+  float val(float dm, float vs, float af, float rf) const {
+    return af * rf / ((1.0f - dm) * vs);
+  }
+
+private:
+  std::string defaultPrefix() const final {
+    return reservedDefaultNesterovDampeningScaleFactor2Prefix();
+  }
+  std::string specificPrefix() const final {
+    return reservedSpecificNesterovDampeningScaleFactor2Prefix();
+  }
+};
+
 class AdamBeta1Helper : public CompoundScalarHelper<Adam> {
 public:
   float val(const TensorId &weightId, const Adam &) const final;

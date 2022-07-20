@@ -7,8 +7,10 @@
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/mul.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
+#include <popart/op/sgd1nesterov.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
@@ -23,6 +25,7 @@
 #include "popart/logging.hpp"
 #include "popart/op.hpp"
 #include "popart/op/varupdate.hpp"
+#include "popart/operators.hpp"
 #include "popart/optimizervalue.hpp"
 #include "popart/patterns/patterns.hpp"
 #include "popart/sessionoptions.hpp"
@@ -116,6 +119,14 @@ bool SGD1Decompose::apply(Op *op) const {
   // 5) Reduced gradient if gradient reduction is used
   auto reducedWeightGradId = weightId + "_reducedGrad";
 
+  // 6) Nesterov momentum updated gradient if nesterov momentum is enabled
+  auto nesterovAcclGradId = reservedAcclPrefix() + weightId + "_nesterovGrad";
+  auto nesterovAcclReduceId =
+      reservedAcclToReducePrefix() + weightId + "_nesterovGrad";
+  auto nesterovAcclUpdateId =
+      reservedAcclToUpdatePrefix() + weightId + "_nesterovGrad";
+  auto nesterovGradId = weightId + "_nesterovGrad";
+
   // Create Accumulator Tensor, a Variable Tensor
   if (weightGrad->info.dataType() != weight->info.dataType()) {
     throw error("Currently, weight and weight gradient should have the same "
@@ -133,9 +144,23 @@ bool SGD1Decompose::apply(Op *op) const {
     if (weightGrad->info.dataType() == DataType::FLOAT) {
       addAcclInTensor<float>(
           *combo, *weight, *weightGrad, acclIntoAccumulatorId);
+      if (combo->nesterov) {
+        addStateTensor(graph,
+                       nesterovAcclGradId,
+                       weight->info.shape(),
+                       DataType::FLOAT,
+                       VariableSettings());
+      }
     } else if (weightGrad->info.dataType() == DataType::FLOAT16) {
       addAcclInTensor<float16_t>(
           *combo, *weight, *weightGrad, acclIntoAccumulatorId);
+      if (combo->nesterov) {
+        addStateTensor(graph,
+                       nesterovAcclGradId,
+                       weight->info.shape(),
+                       DataType::FLOAT16,
+                       VariableSettings());
+      }
     } else {
       throw error("Unsupported type in gradient accumulation transformation, "
                   "currently only FLOAT16 and FLOAT are supported");
@@ -225,6 +250,48 @@ bool SGD1Decompose::apply(Op *op) const {
   graph.topoCons->transfer(combo, acclOp);
   acclOp->setup();
 
+  if (combo->nesterov) {
+    // Accumulate Op
+    //
+    // Inputs:
+    // (1) acclGrad (Gradient Accumulation Tensor)
+    // (2) dW (a.k.a. the Mini-Batch Weight Gradient Tensor)
+    //
+    // Outputs:
+    // (4) an alias of acclIn
+    auto acclOp = graph.createOp<AccumulateOp>(
+        AccumulationType::DampenedAdd,
+        OptimizerValue(1.0f),
+        Op::Settings(
+            graph, combo->name() + "_accumulate", combo->settings.debugInfoId));
+    transferBaseProperties(combo, acclOp);
+
+    // (1)
+    acclOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                            nesterovAcclGradId);
+    // (2)
+    acclOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
+                            combo->reductionType ==
+                                    OptimizerReductionType::GradReduce
+                                ? reducedWeightGradId
+                                : weightGradId);
+
+    // (3)
+    // if there is no AcclReduce, the output goes directly into the updates.
+    acclOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+                                      combo->reductionType ==
+                                              OptimizerReductionType::AcclReduce
+                                          ? nesterovAcclReduceId
+                                          : nesterovAcclUpdateId);
+
+    // T12001 better encapsulation
+    ir.addAdditionalModelProtoTensor(nesterovAcclGradId);
+
+    // T12001 confirm that there are no topo cons here rather
+    graph.topoCons->transfer(combo, acclOp);
+    acclOp->setup();
+  }
+
   // Remaining ops run after the gradient accumulation loop (if enabled)
 
   // Accl reduction (mutually exclusive with gradient reduction)
@@ -260,6 +327,134 @@ bool SGD1Decompose::apply(Op *op) const {
           ExecutionContext::AccumulateOuterFragment;
       reduceOp->settings.schedulePriority = 0.0;
     }
+
+    if (combo->nesterov) {
+      // AcclReduceOp
+      //
+      // Inputs:
+      // (1) redIn
+      //
+      // Outputs:
+      // (2) alias of input
+      auto reduceOp = graph.createOp<ReplicatedAllReduceInplaceOp>(
+          Onnx::CustomOperators::ReplicatedAllReduceInplace,
+          Op::Settings(
+              graph, combo->name() + "_reduce", combo->settings.debugInfoId));
+      transferBaseProperties(combo, reduceOp);
+
+      // (1)
+      reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),
+                                nesterovAcclReduceId);
+
+      // (2)
+      reduceOp->createAndConnectOutTensor(
+          ReplicatedAllReduceInplaceOp::getOutIndex(), nesterovAcclUpdateId);
+
+      reduceOp->setup();
+      if (ir.getSessionOptions().enableGradientAccumulation) {
+        reduceOp->settings.executionContext =
+            ExecutionContext::AccumulateOuterFragment;
+        reduceOp->settings.schedulePriority = 0.0;
+      }
+    }
+  }
+
+  if (combo->nesterov) {
+    // Get inverse loss scale tensor(Dpsf1 * Ndsf = 1 / ls)
+    TensorId sgdInverselossScale = "";
+    if (!combo->initDpsf1.isConst()) {
+      auto mulOp =
+          graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul,
+                                Op::Settings(graph,
+                                             combo->name() + "_nesterov_0",
+                                             combo->settings.debugInfoId));
+      mulOp->connectInTensor(MulOp::getArg0InIndex(),
+                             combo->inId(SGD1ComboOp::getDpsf1InIndex()));
+      mulOp->connectInTensor(MulOp::getArg1InIndex(),
+                             combo->inId(SGD1ComboOp::getNdsfInIndex()));
+      mulOp->createAndConnectOutTensor(MulOp::getOutIndex(),
+                                       weightId + "_sgdInverseLossScale");
+      mulOp->setup();
+      if (ir.getSessionOptions().enableGradientAccumulation) {
+        mulOp->settings.executionContext =
+            ExecutionContext::AccumulateOuterFragment;
+        mulOp->settings.schedulePriority = 0.0;
+      }
+      sgdInverselossScale = mulOp->outTensor(MulOp::getOutIndex())->id;
+    }
+
+    // SGD1Nesterov Op
+    //
+    // g_out = ngsf * (1 / ls * g + wd * w) + mm * v
+    //
+    // Inputs
+    // (1) g - Gradient
+    // (2) w - Weight
+    // (3) v - Velocity
+    // (4) 1 / ls - Inverse loss scale
+    // (5) wd - Weight decay
+    // (6) ngsf - Nesterov gradient scale factor(= vs * rf)
+    // (7) mm - Momentum
+    //
+    // Outputs
+    // (8) g_out - Nesterov updated gradient
+    auto nesterovOp = graph.createOp<SGD1NesterovOp>(
+        Onnx::CustomOperators::SGD1Nesterov,
+        combo->initNdsf.val() * combo->initDpsf1.val(),
+        combo->initWd.val(),
+        combo->initNgsf.val(),
+        combo->initMm.val(),
+        Op::Settings(
+            graph, combo->name() + "_nesterov_1", combo->settings.debugInfoId));
+    transferBaseProperties(combo, nesterovOp);
+
+    // (1)
+    nesterovOp->connectInTensor(SGD1NesterovOp::getGradInIndex(),
+                                nesterovAcclUpdateId);
+    // (2)
+    nesterovOp->connectInTensor(SGD1NesterovOp::getWeightInIndex(), weightId);
+
+    // (3)
+    nesterovOp->connectInTensor(SGD1NesterovOp::getVelocityInIndex(),
+                                acclIntoUpdateId);
+
+    // (4)
+    if (!combo->initNdsf.isConst()) {
+      nesterovOp->connectInTensor(SGD1NesterovOp::getInverseLossScaleInIndex(),
+                                  sgdInverselossScale);
+    }
+
+    // (5)
+    if (!combo->initWd.isConst()) {
+      nesterovOp->connectInTensor(SGD1NesterovOp::getWdInIndex(),
+                                  combo->inId(SGD1ComboOp::getWdInIndex()));
+    }
+
+    // (6)
+    if (!combo->initNgsf.isConst()) {
+      nesterovOp->connectInTensor(SGD1NesterovOp::getNgsfInIndex(),
+                                  combo->inId(SGD1ComboOp::getNgsfInIndex()));
+    }
+
+    // (7)
+    if (!combo->initMm.isConst()) {
+      nesterovOp->connectInTensor(SGD1NesterovOp::getMmInIndex(),
+                                  combo->inId(SGD1ComboOp::getMmInIndex()));
+    }
+
+    // (8)
+    nesterovOp->createAndConnectOutTensor(SGD1NesterovOp::getOutIndex(),
+                                          nesterovGradId);
+
+    nesterovOp->setup();
+
+    if (ir.getSessionOptions().enableGradientAccumulation) {
+      nesterovOp->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+      nesterovOp->settings.schedulePriority = 0.0;
+    }
+
+    zeroAccumulator(graph, combo, {nesterovOp}, nesterovAcclGradId);
   }
 
   // AcclUpdate Op
@@ -331,7 +526,8 @@ bool SGD1Decompose::apply(Op *op) const {
                                    weightId);
   // (2)
   sgd1VarUpdateOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
-                                   acclIntoUpdateId);
+                                   combo->nesterov ? nesterovGradId
+                                                   : acclIntoUpdateId);
   // (3)
   if (!combo->initSlr1.isConst()) {
     sgd1VarUpdateOp->connectInTensor(

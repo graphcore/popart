@@ -26,9 +26,17 @@ class Tensor;
  *   (_)   for each micro batch
  *   (1)     allReduce(g)          [if OptimizerReductionType=GradReduce]
  *   (2)     v += dpsf1 * g
+ *   (_)     if enable nesterov momentum:
+ *   (_)       a += g
  *   (3)   v = allReduce(v)        [if OptimizerReductionType=AcclReduce]
- *   (4)   w = w - slr1 * v
- *   (5)   v = v * smm1 + swd1 * w
+ *   (_)   if enable nesterov momentum:
+ *   (_)     a = allReduce(a)      [if OptimizerReductionType=AcclReduce]
+ *   (4)   if enable nesterov momentum:
+ *           ils = ndsf * dpsf1
+ *           a = ngsf * (ils * a + wd * w) + mm * v
+ *   (_)   [let x := g if enable nesterov momentum else v]
+ *   (5)   w = w - slr1 * x
+ *   (6)   v = v * smm1 + swd1 * w
  *
  * See the SGD docs in optimizer.hpp for derivation of the above.
  *
@@ -38,15 +46,17 @@ class Tensor;
  *
  * (3) is implemented by a ReplicatedAllReduceInplaceOp.
  *
- * (4) is implemented by an SGD1VarUpdateOp.
+ * (4) is implemented by a MulOp and a SGD1NesterovOp.
  *
- * (5) is implemented by an SGD1AcclUpdateOp.
+ * (5) is implemented by an SGD1VarUpdateOp.
+ *
+ * (6) is implemented by an SGD1AcclUpdateOp.
  *
  * For all the above ops, if they consume a non-const OptimizerValue, then the
  * SGD1ComboOp will have an additional input for that scalar, which will be
  * connected to the new Op.
  *
- * If gradient accumulation, (3), (4), (5) are put outside the microbatches
+ * If gradient accumulation, (3), (4), (5), (6) are put outside the microbatches
  * loop implicitly by setting
  *   op->settings.executionContext = ExecutionContext::AccumulateOuterFragment
  * Additionally, we will set
@@ -66,7 +76,7 @@ class Tensor;
  *     run in the optimiser step (the other ops consume (2)'s output so will
  *     always run after), this ensures the pre-existing topo cons on combo are
  *     respected.
- *  3. Insert topo con from (4) to (5), to ensure w update happens before the
+ *  3. Insert topo con from (5) to (6), to ensure w update happens before the
  *     next step's v update.
  */
 class SGD1Decompose : public OptimizerDecompose {

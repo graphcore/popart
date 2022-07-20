@@ -258,6 +258,42 @@ constexpr const char *reservedDefaultScaledMomentum2Prefix() {
 constexpr const char *reservedSpecificScaledMomentum2Prefix() {
   return "scaledMomentum2___specific___";
 }
+constexpr const char *reservedDefaultSGDWeightDecayPrefix() {
+  return "sgdWeightDecay___default___";
+}
+constexpr const char *reservedSpecificSGDWeightDecayPrefix() {
+  return "sgdWeightDecay___specific___";
+}
+constexpr const char *reservedDefaultSGDMomentumPrefix() {
+  return "sgdMomentum___default___";
+}
+constexpr const char *reservedSpecificSGDMomentumPrefix() {
+  return "sgdMomentum___specific___";
+}
+constexpr const char *reservedDefaultNesterovGradScaleFactor1Prefix() {
+  return "nesterovGradScaleFactor1___default___";
+}
+constexpr const char *reservedSpecificNesterovGradScaleFactor1Prefix() {
+  return "nesterovGradScaleFactor1___specific___";
+}
+constexpr const char *reservedDefaultNesterovGradScaleFactor2Prefix() {
+  return "nesterovGradScaleFactor2___default___";
+}
+constexpr const char *reservedSpecificNesterovGradScaleFactor2Prefix() {
+  return "nesterovGradScaleFactor2___specific___";
+}
+constexpr const char *reservedDefaultNesterovDampeningScaleFactor1Prefix() {
+  return "nesterovDampeningScaleFactor1___default___";
+}
+constexpr const char *reservedSpecificNesterovDampeningScaleFactor1Prefix() {
+  return "nesterovDampeningScaleFactor1___specific___";
+}
+constexpr const char *reservedDefaultNesterovDampeningScaleFactor2Prefix() {
+  return "nesterovDampeningScaleFactor2___default___";
+}
+constexpr const char *reservedSpecificNesterovDampeningScaleFactor2Prefix() {
+  return "nesterovDampeningScaleFactor2___specific___";
+}
 // Adam / Lamb (part of reservedOptimizerPrefixes)
 constexpr const char *reservedDefaultAdamBeta1Prefix() {
   return "adamBeta1___default___";

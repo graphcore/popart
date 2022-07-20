@@ -280,6 +280,99 @@ bool DampeningScaleFactor2Helper::isConst(const TensorId &weightId,
   return dm.isConst() && vs.isConst() && ls.isConst();
 }
 
+float SGDWeightDecayHelper::val(const TensorId &weightId,
+                                const SGD &sgd) const {
+  auto wd = sgd.weightDecays().get(weightId).val();
+  return val(wd);
+}
+
+bool SGDWeightDecayHelper::isConst(const TensorId &weightId,
+                                   const SGD &sgd) const {
+  auto wd = sgd.weightDecays().get(weightId);
+  return wd.isConst();
+}
+
+float SGDMomentumHelper::val(const TensorId &weightId, const SGD &sgd) const {
+  float mm = sgd.momentums().get(weightId).val();
+  return val(mm);
+}
+
+bool SGDMomentumHelper::isConst(const TensorId &weightId,
+                                const SGD &sgd) const {
+  auto mm = sgd.momentums().get(weightId);
+  return mm.isConst();
+}
+
+float NesterovGradScaleFactor1Helper::val(const TensorId &weightId,
+                                          const SGD &sgd) const {
+  auto vs = sgd.velocityScalings().get(weightId).val();
+  float rf =
+      sgd.gradientAccumulationEnabled() ? sgd.getReplicatedGraphCount() : 1.0f;
+  return val(vs, rf);
+}
+
+bool NesterovGradScaleFactor1Helper::isConst(const TensorId &weightId,
+                                             const SGD &sgd) const {
+  auto vs = sgd.velocityScalings().get(weightId);
+  return vs.isConst();
+}
+
+float NesterovGradScaleFactor2Helper::val(const TensorId &weightId,
+                                          const SGD &sgd) const {
+  float vs = sgd.velocityScalings().get(weightId).val();
+  return val(vs);
+}
+
+bool NesterovGradScaleFactor2Helper::isConst(const TensorId &weightId,
+                                             const SGD &sgd) const {
+  auto vs = sgd.velocityScalings().get(weightId);
+  return vs.isConst();
+}
+
+float NesterovDampeningScaleFactor1Helper::val(const TensorId &weightId,
+                                               const SGD &sgd) const {
+  float dm = sgd.dampenings().get(weightId).val();
+  float vs = sgd.velocityScalings().get(weightId).val();
+  float af =
+      sgd.postMeanAccumulationEnabled() ? sgd.getAccumulationFactor() : 1;
+  float rf = 1.0f;
+  if (sgd.gradientAccumulationEnabled() && !sgd.meanReductionEnabled()) {
+    // Gradient Accumulation with ReductionType::Sum
+    rf = sgd.getReplicatedGraphCount();
+  } else if (!sgd.gradientAccumulationEnabled() && sgd.meanReductionEnabled()) {
+    // No Gradient Accumulation with ReductionType::Mean
+    rf = 1.0f / static_cast<float>(sgd.getReplicatedGraphCount());
+  }
+  return val(dm, vs, af, rf);
+}
+
+bool NesterovDampeningScaleFactor1Helper::isConst(const TensorId &weightId,
+                                                  const SGD &sgd) const {
+  auto dm = sgd.dampenings().get(weightId);
+  auto vs = sgd.velocityScalings().get(weightId);
+  auto ls = sgd.lossScaling();
+  return dm.isConst() && vs.isConst() && ls.isConst();
+}
+
+float NesterovDampeningScaleFactor2Helper::val(const TensorId &weightId,
+                                               const SGD &sgd) const {
+  float dm = sgd.dampenings().get(weightId).val();
+  float vs = sgd.velocityScalings().get(weightId).val();
+  float af =
+      sgd.postMeanAccumulationEnabled() ? sgd.getAccumulationFactor() : 1;
+  float rf =
+      sgd.postMeanReplicationEnabled() ? sgd.getReplicatedGraphCount() : 1;
+  return val(dm, vs, af, rf);
+}
+
+bool NesterovDampeningScaleFactor2Helper::isConst(const TensorId &weightId,
+                                                  const SGD &sgd) const {
+  auto dm = sgd.dampenings().get(weightId);
+  auto vs = sgd.velocityScalings().get(weightId);
+  auto ls = sgd.lossScaling();
+  return dm.isConst() && vs.isConst() && ls.isConst();
+}
+
 float AdamBeta1Helper::val(const TensorId &weightId, const Adam &adam) const {
   auto b1 = adam.beta1s().get(weightId).val();
   return val(b1);

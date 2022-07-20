@@ -7,6 +7,8 @@
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/accumulate.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/sgd1nesterov.hpp>
 #include <popart/op/sgd2acclupdate.hpp>
 #include <popart/op/sgd2combo.hpp>
 #include <popart/op/sgd2varupdate.hpp>
@@ -17,6 +19,7 @@
 #include "popart/error.hpp"
 #include "popart/logging.hpp"
 #include "popart/op/varupdate.hpp"
+#include "popart/operators.hpp"
 #include "popart/optimizervalue.hpp"
 #include "popart/patterns/patterns.hpp"
 #include "popart/tensor.hpp"
@@ -100,7 +103,7 @@ bool SGD2Decompose::apply(Op *op) const {
 
   // Remaining ops run after the gradient accumulation loop (if enabled)
 
-  const TensorId updatedAcc1lId =
+  TensorId updatedAcc1lId =
       acclUpdate(graph, combo, gradIntoAcclId, accl1Id, weightId);
 
   // Zero the gradient accumulator after updating the 1st momentum term
@@ -108,6 +111,12 @@ bool SGD2Decompose::apply(Op *op) const {
   if (combo->withGradAccum && !runningMeanReduction(graph)) {
     const auto acclOp = graph.getTensors().get(updatedAcc1lId)->getProducer();
     zeroAccumulator(graph, combo, {acclOp}, accumId);
+  }
+
+  // If enable nesterov momentum, update gradient
+  if (combo->nesterov) {
+    updatedAcc1lId = nesterovGradUpdate(
+        graph, combo, gradIntoAcclId, weightId, updatedAcc1lId);
   }
 
   varUpdateAndEraseCombo(
@@ -239,6 +248,110 @@ TensorId SGD2Decompose::acclUpdate(Graph &graph,
   }
 
   return accl1Id_1;
+}
+
+TensorId
+SGD2Decompose::nesterovGradUpdate(Graph &graph,
+                                  const SGD2ComboOp *combo,
+                                  const TensorId &gradIntoAcclId,
+                                  const TensorId &weightId,
+                                  const TensorId &updatedAcc1lId) const {
+  // TensorIds to use as the outputs of the AccumulateOp.
+  const auto nesterovGradUpdatedId = weightId + "_nesterovGrad";
+
+  // Get inverse loss scale tensor(Dpsf1 * Ndsf = 1 / ls)
+  TensorId sgdInverselossScale = "";
+  if (!combo->initDpsf1.isConst()) {
+    auto mulOp = graph.createOp<MulOp>(
+        Onnx::AiOnnx::OpSet6::Mul,
+        Op::Settings(
+            graph, combo->name() + "_nesterov_0", combo->settings.debugInfoId));
+    mulOp->connectInTensor(MulOp::getArg0InIndex(),
+                           combo->inId(SGD2ComboOp::getDpsf1InIndex()));
+    mulOp->connectInTensor(MulOp::getArg1InIndex(),
+                           combo->inId(SGD2ComboOp::getNdsfInIndex()));
+    mulOp->createAndConnectOutTensor(MulOp::getOutIndex(),
+                                     weightId + "_sgdInverseLossScale");
+    mulOp->setup();
+    if (combo->withGradAccum) {
+      mulOp->settings.executionContext =
+          ExecutionContext::AccumulateOuterFragment;
+      mulOp->settings.schedulePriority = 0.0;
+    }
+    sgdInverselossScale = mulOp->outTensor(MulOp::getOutIndex())->id;
+  }
+
+  // SGD1Nesterov Op
+  //
+  // g_out = ngsf * (1 / ls * g + wd * w) + mm * v
+  //
+  // Inputs
+  // (1) g - Gradient
+  // (2) w - Weight
+  // (3) v - Velocity
+  // (4) 1 / (ls * rf) - Inverse loss scale
+  // (5) wd - Weight decay
+  // (6) ngsf - Nesterov gradient scale factor(= vs)
+  // (7) mm - Momentum
+  //
+  // Outputs
+  // (8) g_out - Nesterov updated gradient
+  auto nesterovOp = graph.createOp<SGD1NesterovOp>(
+      Onnx::CustomOperators::SGD1Nesterov,
+      combo->initNdsf.val() * combo->initDpsf1.val(),
+      combo->initWd.val(),
+      combo->initNgsf.val(),
+      combo->initMm.val(),
+      Op::Settings(
+          graph, combo->name() + "_nesterov_1", combo->settings.debugInfoId));
+  transferBaseProperties(combo, nesterovOp);
+
+  // (1)
+  nesterovOp->connectInTensor(SGD1NesterovOp::getGradInIndex(), gradIntoAcclId);
+  // (2)
+  nesterovOp->connectInTensor(SGD1NesterovOp::getWeightInIndex(), weightId);
+
+  // (3)
+  nesterovOp->connectInTensor(SGD1NesterovOp::getVelocityInIndex(),
+                              updatedAcc1lId);
+
+  // (4)
+  if (!combo->initNdsf.isConst()) {
+    nesterovOp->connectInTensor(SGD1NesterovOp::getInverseLossScaleInIndex(),
+                                sgdInverselossScale);
+  }
+
+  // (5)
+  if (!combo->initWd.isConst()) {
+    nesterovOp->connectInTensor(SGD1NesterovOp::getWdInIndex(),
+                                combo->inId(SGD2ComboOp::getWdInIndex()));
+  }
+
+  // (6)
+  if (!combo->initNgsf.isConst()) {
+    nesterovOp->connectInTensor(SGD1NesterovOp::getNgsfInIndex(),
+                                combo->inId(SGD2ComboOp::getNgsfInIndex()));
+  }
+
+  // (7)
+  if (!combo->initMm.isConst()) {
+    nesterovOp->connectInTensor(SGD1NesterovOp::getMmInIndex(),
+                                combo->inId(SGD2ComboOp::getMmInIndex()));
+  }
+
+  // (8)
+  nesterovOp->createAndConnectOutTensor(SGD1NesterovOp::getOutIndex(),
+                                        nesterovGradUpdatedId);
+
+  nesterovOp->setup();
+
+  if (combo->withGradAccum) {
+    nesterovOp->settings.executionContext =
+        ExecutionContext::AccumulateOuterFragment;
+    nesterovOp->settings.schedulePriority = 0.0;
+  }
+
+  return nesterovGradUpdatedId;
 }
 
 void SGD2Decompose::varUpdateAndEraseCombo(

@@ -43,8 +43,12 @@ class Tensor;
  *             update equation into two steps:
  *   (4)    v += dpsf1 * a
  *   (5)    v = v * smm1 + swd1 * w
- *   (6)    w = w - slr1 * v
- *   (7)    a = 0                    [if grad acc]
+ *   (6)    if enable nesterov momentum:
+ *            ils = ndsf * dpsf1
+ *            a = ngsf * (ils * a + wd * w) + mm * v
+ *   (_)    [let x := a if enable nesterov momentum else v]
+ *   (7)    w = w - slr1 * x
+ *   (8)    a = 0                    [if grad acc]
  *
  * See the SGD docs in optimizer.hpp for derivation of the above.
  *
@@ -59,10 +63,12 @@ class Tensor;
  * (5) is implemented by an SGD2AcclUpdateOp. Note this is equivalent to an
  * SGD1AcclUpdateOp.
  *
- * (6) is implemented by an SGD2VarUpdateOp. Note this is equivalent to an
+ * (6) is implemented by a MulOp and a SGD1NesterovOp.
+ *
+ * (7) is implemented by an SGD2VarUpdateOp. Note this is equivalent to an
  * SGD1VarUpdateOp.
  *
- * (7) is implemented by an AccumulatorUpdateOp.
+ * (8) is implemented by an AccumulatorUpdateOp.
  *
  * For all the above ops, if they consume a non-const OptimizerValue, then the
  * SGD2ComboOp will have an additional input for that scalar, which will be
@@ -86,9 +92,9 @@ class Tensor;
  *
  *  1. Transfer topo cons from combo to (1).
  *  2. Transfer topo cons from combo to (2).
- *  3. Insert topo con from (6) to (8) to ensure accum not zeroed until after
+ *  3. Insert topo con from (7) to (8) to ensure accum not zeroed until after
  *     v update (which consumes it).
- *  4. Transfer topo cons from combo to (7). Only required if not grad acc.
+ *  4. Transfer topo cons from combo to (8). Only required if not grad acc.
  */
 class SGD2Decompose : public OptimizerDecompose {
 public:
@@ -102,6 +108,11 @@ private:
                       const TensorId &gradIntoAcclId,
                       const TensorId &accl1Id,
                       const TensorId &weightId) const;
+  TensorId nesterovGradUpdate(Graph &graph,
+                              const SGD2ComboOp *combo,
+                              const TensorId &gradIntoAcclId,
+                              const TensorId &weightId,
+                              const TensorId &updatedAcc1lId) const;
 
   void varUpdateAndEraseCombo(Graph &graph,
                               SGD2ComboOp *combo,

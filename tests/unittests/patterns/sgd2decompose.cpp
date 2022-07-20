@@ -47,6 +47,46 @@ BOOST_AUTO_TEST_CASE(TestMatchesSGD2ComboOpOnly) {
   BOOST_REQUIRE(!pat.matches(sgd1));
 }
 
+BOOST_AUTO_TEST_CASE(TestMatchesNesterovSGD2ComboOpOnly) {
+  // Test with nesterov momentum.
+  Ir ir;
+  Graph &graph = ir.getMainGraph();
+
+  // Make any SGD2.
+  const auto sgd2 =
+      graph.createOp<SGD2ComboOp>(OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  true,
+                                  OptimizerReductionType::AccumReduce,
+                                  DataType::FLOAT,
+                                  DataType::FLOAT,
+                                  Op::Settings(graph, "sgd2"));
+
+  // Make any other op.
+  const auto sgd1 =
+      graph.createOp<SGD1ComboOp>(OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerValue{},
+                                  OptimizerReductionType::AccumReduce,
+                                  Op::Settings(graph, "sgd1"));
+
+  // Test only matches SGD2.
+  SGD2Decompose pat;
+  BOOST_REQUIRE(pat.matches(sgd2));
+  BOOST_REQUIRE(!pat.matches(sgd1));
+}
+
 BOOST_AUTO_TEST_CASE(TestPatternNamesContainsSGD2Decompose) {
   BOOST_REQUIRE_NO_THROW(PatternNames::getName<SGD2Decompose>());
 }

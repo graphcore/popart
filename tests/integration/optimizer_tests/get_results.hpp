@@ -70,10 +70,11 @@ void pytorchUpdateWithScaling(float &w,
                               float mm,
                               float dp,
                               float lr,
-                              bool repl  = false,
-                              bool accum = false,
-                              float vs   = 1.0f,
-                              float ls   = 1.0f) {
+                              bool repl     = false,
+                              bool accum    = false,
+                              float vs      = 1.0f,
+                              float ls      = 1.0f,
+                              bool nesterov = false) {
   // from the model below
   g = +1.0f * ls;
   if (repl) {
@@ -85,7 +86,14 @@ void pytorchUpdateWithScaling(float &w,
 
   v = v * mm + (1.0f - dp) * vs / ls * g + (1.0f - dp) * vs * wd * w;
 
-  w -= lr / vs * v;
+  if (nesterov) {
+    float g_t = 1 / ls * g;
+    g_t       = g_t + wd * w;
+    g_t       = vs * g_t + v * mm;
+    w -= lr / vs * g_t;
+  } else {
+    w -= lr / vs * v;
+  }
 }
 
 // The pytorch update equations:
@@ -104,9 +112,11 @@ void pytorchUpdate(float &w,
                    float mm,
                    float dp,
                    float lr,
-                   bool repl  = false,
-                   bool accum = false) {
-  return pytorchUpdateWithScaling(w, g, v, wd, mm, dp, lr, repl, accum, 1, 1);
+                   bool repl     = false,
+                   bool accum    = false,
+                   bool nesterov = false) {
+  return pytorchUpdateWithScaling(
+      w, g, v, wd, mm, dp, lr, repl, accum, 1, 1, nesterov);
 }
 
 namespace _detail {
@@ -177,9 +187,10 @@ struct SGD2TestConfig : public _detail::SGDTestConfig<SGD2TestConfig> {
                                   float mm,
                                   float dp,
                                   float lr,
-                                  bool repl  = false,
-                                  bool accum = false) {
-    pytorchUpdate(w, g, v, wd, mm, dp, lr, repl, accum);
+                                  bool repl     = false,
+                                  bool accum    = false,
+                                  bool nesterov = false) {
+    pytorchUpdate(w, g, v, wd, mm, dp, lr, repl, accum, nesterov);
   }
 
   static void laggedPytorchUpdateWithScaling(float &w,
@@ -190,8 +201,10 @@ struct SGD2TestConfig : public _detail::SGDTestConfig<SGD2TestConfig> {
                                              float dp,
                                              float lr,
                                              float vs,
-                                             float ls) {
-    pytorchUpdateWithScaling(w, g, v, wd, mm, dp, lr, false, false, vs, ls);
+                                             float ls,
+                                             bool nesterov = false) {
+    pytorchUpdateWithScaling(
+        w, g, v, wd, mm, dp, lr, false, false, vs, ls, nesterov);
   }
 };
 
@@ -212,8 +225,9 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
                                   float mm,
                                   float dp,
                                   float lr,
-                                  bool repl  = false,
-                                  bool accum = false) {
+                                  bool repl     = false,
+                                  bool accum    = false,
+                                  bool nesterov = false) {
 
     // from the model below
     g = +1.0f;
@@ -225,7 +239,14 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
     }
 
     v = v + (1.0f - dp) * g;
-    w = w - lr * v;
+    if (nesterov) {
+      float g_t = g;
+      g_t       = g_t + wd * w;
+      g_t       = g_t + v * mm;
+      w         = w - lr * g_t;
+    } else {
+      w = w - lr * v;
+    }
     v = v * mm + (1.0f - dp) * wd * w;
   }
 
@@ -237,11 +258,19 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
                                              float dp,
                                              float lr,
                                              float vs,
-                                             float ls) {
+                                             float ls,
+                                             bool nesterov = false) {
 
     g = +1.0f * ls;
     v = v + vs * (1.0f - dp) * g / ls;
-    w = w - lr * v / vs;
+    if (nesterov) {
+      float g_t = 1 / ls * g;
+      g_t       = g_t + wd * w;
+      g_t       = vs * g_t + v * mm;
+      w         = w - lr * g_t / vs;
+    } else {
+      w = w - lr * v / vs;
+    }
     v = v * mm + vs * (1.0f - dp) * wd * w;
   }
 };
