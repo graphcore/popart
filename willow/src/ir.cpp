@@ -1582,7 +1582,9 @@ void Ir::prepareImpl(const IrBundle &gb,
     applyTransform(ContiguateCollectivesTransform::id(), getMainGraph());
     updateVertices();
   }
-  if (userOptions.replicatedCollectivesSettings.mergeAllReduceCollectives) {
+  if (userOptions.replicatedCollectivesSettings.mergeAllReduceCollectives ||
+      userOptions.replicatedCollectivesSettings.mergeReduceScatterCollectives ||
+      userOptions.replicatedCollectivesSettings.mergeAllGatherCollectives) {
     applyTransform(MergeCollectivesTransform::id(), getMainGraph());
     updateVertices();
   }
@@ -2790,14 +2792,14 @@ void Ir::updateVertices() {
         op->settings.recomputeType = RecomputeType::Checkpoint;
       }
     }
-
     if (graph.id == getMainGraph().id) {
       logging::ir::debug(
           "setting scheduledPreLoss for Tensors in updateVertices");
       // 3.2) scheduledPreLoss for Tensors and any ops occuring post the loss
       // in the schedule
       bool postLoss = false;
-      for (auto op : graph.getOpSchedule({}, RequireOptimalSchedule::Yes)) {
+      auto ops      = graph.getOpSchedule({}, RequireOptimalSchedule::Yes);
+      for (auto op : ops) {
         postLoss |= op->scheduledPreLoss == ScheduledPreLoss::No;
         if (postLoss) {
           // The loss has been crossed, everything ScheduledPreLoss::No from
@@ -2815,6 +2817,7 @@ void Ir::updateVertices() {
             }
           }
         }
+
         // Outputs are always the same as the producer Op, this rule takes
         // priority over all input annotation rules.
         for (auto tensor : op->output->tensors()) {

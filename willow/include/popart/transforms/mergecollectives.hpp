@@ -6,6 +6,23 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <popart/alias/aliasmodel.hpp>
+#include <popart/alias/aliasmodelgrower.hpp>
+#include <popart/graph.hpp>
+#include <popart/graphutils.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op.hpp>
+#include <popart/op/collectives/collectives.hpp>
+#include <popart/op/collectives/multi_replicatedallgather.hpp>
+#include <popart/op/collectives/multi_replicatedallreduce.hpp>
+#include <popart/op/collectives/multi_replicatedreducescatter.hpp>
+#include <popart/op/collectives/replicatedallgather.hpp>
+#include <popart/op/collectives/replicatedallreduce.hpp>
+#include <popart/op/collectives/replicatedreducescatter.hpp>
+#include <popart/operators.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/topocons.hpp>
 #include <popart/transforms/transform.hpp>
 
 #include "popart/names.hpp"
@@ -39,6 +56,16 @@ public:
   }
 
   /**
+   * Confirm that two collective ops of the same BaseType use the same
+   * collective operation i.e. ADD, MUL etc. If the BaseType does not require a
+   * collective op (gather), return true \param A the first op \param B the
+   * second op \return true is A and B use the same collective operation or both
+   * use none
+   */
+  template <typename BaseType>
+  bool collectiveOpCheck(BaseType *A, BaseType *B) const;
+
+  /**
    * Given a collective operation, attempt to merge it with other compatible
    * collective ops which are tied (in the schedule) to the current op.
    * \param baseOp a collective op that should be merged
@@ -54,23 +81,22 @@ public:
    * Constructs a new MultiOpType which will replace the baseOp and
    *  all matching ops
    * \param baseOp is the operation to be replaced
-   * \param modifiesIndexInplace specifies which indices are used inplace
-   *        by the original ops
    * \param outInfoFromBaseOps is the output information for each output tensor
    *        collected from the ops with which base op will be merged.
    * \param inputVirtualGraphIdAndTileSet the input virtual graph and tile set
    *        information collected from the ops that will be merged
    * \param outputVirtualGraphIdAndTileSet the output virtual graph and tile set
             information collected from the ops that will be merged
+   * \param matchingOps the vector of matching ops
    * \return a unique pointer to the new multi-collective op
    */
   template <typename MultiOpType, typename BaseType>
   std::unique_ptr<MultiOpType> constructMultiOp(
       BaseType *baseOp,
-      std::vector<bool> modifiesIndexInplace,
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
-      std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet) const;
+      std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
+      std::vector<BaseType *> matchingOps) const;
 };
 } // namespace popart
 

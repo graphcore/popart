@@ -1123,15 +1123,23 @@ PYBIND11_MODULE(popart_core, m) {
     py::class_<ReplicatedCollectivesSettings> cls(
         m, "ReplicatedCollectivesSettings");
     cls.def(py::init<>());
-    cls.def(py::init<bool, bool>(),
+    cls.def(py::init<bool, bool, bool, bool>(),
             py::arg("prepareScheduleForMergingCollectives") = false,
-            py::arg("mergeAllReduceCollectives")            = false);
+            py::arg("mergeAllReduceCollectives")            = false,
+            py::arg("mergeReduceScatterCollectives")        = false,
+            py::arg("mergeAllGatherCollectives")            = false);
     cls.def_readwrite(
         "prepareScheduleForMergingCollectives",
         &ReplicatedCollectivesSettings::prepareScheduleForMergingCollectives);
     cls.def_readwrite(
         "mergeAllReduceCollectives",
         &ReplicatedCollectivesSettings::mergeAllReduceCollectives);
+    cls.def_readwrite(
+        "mergeReduceScatterCollectives",
+        &ReplicatedCollectivesSettings::mergeReduceScatterCollectives);
+    cls.def_readwrite(
+        "mergeAllGatherCollectives",
+        &ReplicatedCollectivesSettings::mergeAllGatherCollectives);
   }
   {
     // This setting is experimental and may change.

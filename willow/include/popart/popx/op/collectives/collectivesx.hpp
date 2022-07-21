@@ -10,6 +10,7 @@
 #include <poplar/Tensor.hpp>
 #include <popart/names.hpp>
 #include <popart/op/collectives/collectives.hpp>
+#include <popart/popx/opxstate.hpp>
 #include <popart/popx/popopx.hpp>
 #include <popart/popx/viewchangers.hpp>
 #include <popart/replicatedtensorsharding.hpp>
@@ -185,21 +186,50 @@ public:
       snap::Tensor tensor,
       ReplicatedTensorShardingIndicesIndex groupIndex) const;
 };
-
+/**
+ * A base class for the lowering of different subclasses of
+ * MultiCollectiveBaseOp. Each output tensor can be grown separately.
+ */
 class MultiCollectiveBaseOpx : public CollectivesBaseOpx {
 public:
   MultiCollectiveBaseOpx(Op *op, Devicex *devicex);
 
-  // Which "parts" use the input tensor
-  // there are "output->n()" parts
-  //  part "i" uses input "i" and the indices at "i + output->n()"
-  // this also works for allreduce (no indices, just input tensors)
+  /**
+   * Defines which "parts" use a particular input tensor
+   * There are "output->n()" parts in the collective operation:
+   * part "i" uses input "i" and the indices tensor at "i + output->n()"
+   * this logic is the same for all collective ops, even in the absence of
+   * an indices tensor
+   * \param inTensor the tensor for which to return a part id
+   */
   std::set<OpxGrowPartId> getInGrowPartIds(Tensor *inTensor) const override;
 
-  // Which "part" constructs the output tensor
-  // there are "output->n()" parts
-  // each part "i" produces output "i"
+  /**
+   * Defines which "part" is responsible for constructing a particular output
+   * There are "output->n()" parts: each part "i" produces output "i"
+   * \param outTensor the tensor for which to return a corresponding
+   * part id
+   */
   OpxGrowPartId getOutGrowPartId(Tensor *outTensor) const override;
+};
+
+/**
+ *  Store MultiCollectivesOpx input and output tensors in OpxState to enable
+ *  easily passing relevant tensors from the growPart methods which construct
+ *  the output tensors, to the grow method which adds the collective program
+ */
+class MultiCollectivesOpxState : public OpxState {
+public:
+  // The inputs which have been transformed inside growPart
+  // such that they are ready to be used in the collective
+  std::map<OpxGrowPartId, poplar::Tensor> configuredInputs;
+  // The outputs which have been constructed inside growPart
+  // and are able to serve as destination tensors in the collective
+  std::map<OpxGrowPartId, poplar::Tensor> configuredOutputs;
+  // The sequence of programs used to configure the inputs inside the
+  // growPart method. This sequence of programs is added to the main program
+  // inside the grow method.
+  poplar::program::Sequence inputConfiguringPrograms;
 };
 
 /**

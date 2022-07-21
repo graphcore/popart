@@ -19,6 +19,12 @@ class Op;
 namespace popx {
 class Devicex;
 
+/**
+ * Lowers the MultiReplicatedAllReduceOp to Poplar by growing each
+ * individual output tensor, and performing a to-destination all-reduce
+ * on a concatenation of the input tensors. Mixing of both in-place and
+ * out-place all-reduce operations is supported.
+ */
 class MultiReplicatedAllReduceOpx : public MultiCollectiveBaseOpx {
 public:
   MultiReplicatedAllReduceOpx(popart::Op *op, Devicex *devicex);

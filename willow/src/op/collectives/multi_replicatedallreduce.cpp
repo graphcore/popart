@@ -36,11 +36,10 @@ MultiReplicatedAllReduceOp::MultiReplicatedAllReduceOp(
     : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedAllReduce,
                             group_,
                             settings_,
-                            modifiesIndexInplace_,
                             outInfoFromBaseOps_,
                             inputVirtualGraphIdAndTileSet_,
                             outputVirtualGraphIdAndTileSet_),
-      op(op_) {}
+      op(op_), modifiesIndexInplace(modifiesIndexInplace_) {}
 
 std::unique_ptr<Op> MultiReplicatedAllReduceOp::clone() const {
   return std::make_unique<MultiReplicatedAllReduceOp>(*this);
@@ -77,7 +76,7 @@ MultiReplicatedAllReduceOp::getReplicatedTensorShardingIndices() const {
 }
 
 view::Regions MultiReplicatedAllReduceOp::modifies(InIndex index) const {
-  if (getModifiesIndexInplace().at(index)) {
+  if (modifiesIndexInplace.at(index)) {
     return {view::Region::getFull(inShape(index))};
   }
   return {view::Region::getEmpty(inRank(index))};
@@ -85,7 +84,7 @@ view::Regions MultiReplicatedAllReduceOp::modifies(InIndex index) const {
 
 view::Regions MultiReplicatedAllReduceOp::aliases(InIndex in,
                                                   OutIndex out) const {
-  if (in == out && getModifiesIndexInplace().at(in)) {
+  if (in == out && modifiesIndexInplace.at(in)) {
     return {view::Region::getFull(inShape(in))};
   } else {
     return {view::Region::getEmpty(inRank(in))};

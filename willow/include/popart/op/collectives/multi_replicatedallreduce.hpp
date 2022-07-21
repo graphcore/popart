@@ -17,8 +17,34 @@ class Tensor;
 class TensorInfo;
 class ReplicaEqualAnalysisProxy;
 
+/**
+ * A multi-collective class for performing an all-reduce operation on a list of
+ *tensors. The tensors will be merged into a single large tensor and reduced as
+ *one, leading to better bandwidth utilization and fewer syncs between replicas
+ *than doing the all-reduce on a per-tensor basis. The class supports mixing
+ *in-place and out-place all-reduce operations, but requires that all tensors
+ *use the same collective group i.e. reduction is over the same replicas. This
+ *op is usually constructed in the MergeCollectivesTransform
+ **/
 class MultiReplicatedAllReduceOp : public MultiCollectiveBaseOp {
 public:
+  /**
+   * Constructor for the MultiReplicatedAllReduceOp
+   *
+   * \param collectiveOperator the collective operator is the same
+   * for all input tensors
+   * \param commGroup all of the inputs will be reduced across the same
+   * communications group
+   * \param settings the settings of the op are shared across all inputs
+   * \param modifiesIndexInplace for each of the inputs, specify whether
+   * it should be modified in place
+   * \param outInfoFromBaseOps  the output information for each tensor,
+   * usually inherited from a ReplicatedAllReduceOp for that tensor
+   * \param inputVirtualGraphIdAndTileSet each input tensor has it's own
+   * associated virtual graph
+   * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
+   * associated virtual graph
+   */
   MultiReplicatedAllReduceOp(
       CollectiveOperator collectiveOperator,
       CommGroup commGroup,
@@ -30,6 +56,10 @@ public:
 
   std::unique_ptr<Op> clone() const override;
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  /**
+   * Returns the type of the collective used in the all reduce e.g. addition
+   * the same collective operator is used across all the inputs to be reduced
+   */
   CollectiveOperator getCollectiveOp() const { return op; }
   bool hasCorrespondingLinkedIndexTensor(Tensor *t) override;
   Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override;
@@ -46,7 +76,14 @@ public:
                              ReplicaEqualAnalysisProxy &proxy) const override;
 
 private:
+  /**
+   * The collective operation used in the reduce-scatter during lowering
+   */
   CollectiveOperator op;
+  /**
+   * On a per-tensor basis, which inputs should be modified in place
+   */
+  std::vector<bool> modifiesIndexInplace;
 };
 } // namespace popart
 

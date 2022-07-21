@@ -74,15 +74,21 @@ BatchSerializationSettings::BatchSerializationSettings(
 
 ReplicatedCollectivesSettings::ReplicatedCollectivesSettings(
     bool prepareScheduleForMergingCollectives_,
-    bool mergeAllReduceCollectives_)
+    bool mergeAllReduceCollectives_,
+    bool mergeReduceScatterCollectives_,
+    bool mergeAllGatherCollectives_)
     : prepareScheduleForMergingCollectives(
           prepareScheduleForMergingCollectives_),
-      mergeAllReduceCollectives{mergeAllReduceCollectives_} {}
+      mergeAllReduceCollectives{mergeAllReduceCollectives_},
+      mergeReduceScatterCollectives{mergeReduceScatterCollectives_},
+      mergeAllGatherCollectives{mergeAllGatherCollectives_} {}
 
 std::size_t ReplicatedCollectivesSettings::hash() const {
   std::size_t seed = 0;
   boost::hash_combine(seed, prepareScheduleForMergingCollectives);
   boost::hash_combine(seed, mergeAllReduceCollectives);
+  boost::hash_combine(seed, mergeReduceScatterCollectives);
+  boost::hash_combine(seed, mergeAllGatherCollectives);
   return seed;
 }
 

@@ -95,12 +95,10 @@ MultiCollectiveBaseOp::MultiCollectiveBaseOp(
     const OperatorIdentifier &_opid,
     CommGroup group,
     const Op::Settings &settings_,
-    std::vector<bool> modifiesIndexInplace_,
     std::vector<TensorInfo> outInfoFromBaseOps_,
     std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet_,
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
     : CollectivesBaseOp(_opid, group, settings_),
-      modifiesIndexInplace(modifiesIndexInplace_),
       outInfoFromBaseOps(outInfoFromBaseOps_),
       inputVirtualGraphIdAndTileSet(inputVirtualGraphIdAndTileSet_),
       outputVirtualGraphIdAndTileSet(outputVirtualGraphIdAndTileSet_) {}
@@ -163,6 +161,10 @@ bool MultiCollectiveBaseOp::isCollectiveLinkedIndexTensor(InIndex in) const {
 
 bool MultiCollectiveBaseOp::isCollectiveLinkedIndexTensor(Tensor *t) const {
   return input->contains(t) && isCollectiveLinkedIndexTensor(inIndex(t));
+}
+
+void MultiCollectiveBaseOp::growAliasModel(AliasModel &m) const {
+  growAliasModelMulti(m);
 }
 
 std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op) {

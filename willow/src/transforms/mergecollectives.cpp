@@ -43,6 +43,20 @@ bool MergeCollectivesTransform::apply(Graph &graph) const {
   return true;
 }
 
+template <typename BaseType>
+bool MergeCollectivesTransform::collectiveOpCheck(BaseType *A,
+                                                  BaseType *B) const {
+  return A->getCollectiveOp() == B->getCollectiveOp();
+}
+
+template <>
+bool MergeCollectivesTransform::collectiveOpCheck<ReplicatedAllGatherOp>(
+    ReplicatedAllGatherOp *A,
+    ReplicatedAllGatherOp *B) const {
+  // Gather does not use a collective op
+  return true;
+}
+
 std::vector<Op *>
 MergeCollectivesTransform::applyToOps(Graph &graph,
                                       const std::set<OpId> includeOps) const {
@@ -53,7 +67,6 @@ MergeCollectivesTransform::applyToOps(Graph &graph,
   for (Op *op : opSchedule) {
     scheduleNames.emplace_back("\t" + op->debugName() + "\n");
   }
-  logging::debug("Schedule for merging: \n {}", scheduleNames);
 
   // Touch each op in the schedule exactly once
   for (std::vector<Op *>::iterator schedulePos = opSchedule.begin();
@@ -61,54 +74,154 @@ MergeCollectivesTransform::applyToOps(Graph &graph,
        ++schedulePos) {
     Op *op = *schedulePos;
     if (includeOps.count(op->id) > 0) {
-      if (graph.getIr()
-              .getSessionOptions()
-              .replicatedCollectivesSettings.mergeAllReduceCollectives) {
-        if (auto candidate = dynamic_cast<ReplicatedAllReduceOp *>(op)) {
-          Op *new_op = attemptToMergeOnOp<MultiReplicatedAllReduceOp>(
+      if (auto candidate = dynamic_cast<ReplicatedAllReduceOp *>(op)) {
+        if (graph.getIr()
+                .getSessionOptions()
+                .replicatedCollectivesSettings.mergeAllReduceCollectives) {
+          Op *newOp = attemptToMergeOnOp<MultiReplicatedAllReduceOp>(
               candidate, schedulePos, opSchedule);
-          if (new_op) {
-            createdOps.emplace_back(new_op);
-          }
+          createdOps.emplace_back(newOp);
+        }
+      } else if (auto candidate =
+                     dynamic_cast<ReplicatedReduceScatterOp *>(op)) {
+        if (graph.getIr()
+                .getSessionOptions()
+                .replicatedCollectivesSettings.mergeReduceScatterCollectives) {
+          Op *newOp = attemptToMergeOnOp<MultiReplicatedReduceScatterOp>(
+              candidate, schedulePos, opSchedule);
+          createdOps.emplace_back(newOp);
+        }
+      } else if (auto candidate = dynamic_cast<ReplicatedAllGatherOp *>(op)) {
+        if (graph.getIr()
+                .getSessionOptions()
+                .replicatedCollectivesSettings.mergeAllGatherCollectives) {
+          Op *newOp = attemptToMergeOnOp<MultiReplicatedAllGatherOp>(
+              candidate, schedulePos, opSchedule);
+          createdOps.emplace_back(newOp);
         }
       }
-      // TODO T56323 support merging reducescatter collectives
-      // TODO T56324 support merging allgather collectives
     }
   }
-
   return createdOps;
-}
+} // namespace popart
 
-template <typename MultiOpType, typename BaseType>
-std::unique_ptr<MultiOpType> MergeCollectivesTransform::constructMultiOp(
-    BaseType *baseOp,
-    std::vector<bool> modifiesIndexInplace,
+template <>
+std::unique_ptr<MultiReplicatedAllReduceOp>
+MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllReduceOp,
+                                            ReplicatedAllReduceOp>(
+    ReplicatedAllReduceOp *baseOp,
     std::vector<TensorInfo> outInfoFromBaseOps,
     std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
-    std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet) const {
+    std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
+    std::vector<ReplicatedAllReduceOp *> matchingOps) const {
 
   CommGroup group                   = baseOp->getGCLCommGroup();
   CollectiveOperator collectiveType = baseOp->getCollectiveOp();
 
+  // Grow a partial alias model which covers all affected inputs
+  AliasModel popMem;
+  AliasModelGrower aliasModelGrower{popMem};
+  for (ReplicatedAllReduceOp *match : matchingOps) {
+    aliasModelGrower.growPartialGraph(baseOp->getGraph(),
+                                      match->inId(match->getInIndex()),
+                                      DataDependenciesOnly::No);
+  }
+  // The allreduce operation can be performed inplace
+  // Determine which parts of the multiop can be inplaced. Even if the original
+  // base op is inplace, in the multiOp there can be aliases between
+  // the inputs, which prevents full inplacing.
+  std::vector<bool> modifiesIndexInplace;
+  for (size_t i = 0; i < matchingOps.size(); i++) {
+    auto opI      = matchingOps.at(i);
+    bool modifies = opI->modifiesIndex(opI->getInIndex());
+    modifiesIndexInplace.emplace_back(modifies);
+    popart::Tensor *inputI = opI->inTensor(opI->getInIndex());
+    auto aliases           = popMem.allAliases(*inputI);
+    for (size_t j = 0; j < i; j++) {
+      auto opJ               = matchingOps.at(j);
+      popart::Tensor *inputJ = opJ->inTensor(opJ->getInIndex());
+      if (std::find(aliases.begin(), aliases.end(), inputJ) != aliases.end()) {
+        modifiesIndexInplace[i] = false;
+        modifiesIndexInplace[j] = false;
+        logging::warn("[MergeCollectivesTransform::attemptToMergeOnOp] "
+                      " Inputs {} and {} are aliases. Collective operation "
+                      " on these tensors will be outplaced.",
+                      inputI->str(),
+                      inputJ->str());
+      }
+    }
+  }
+
   // Construct the multi collective operation
-  auto multiOp = std::make_unique<MultiOpType>(
+  auto multiOp = std::make_unique<MultiReplicatedAllReduceOp>(
       collectiveType,
       group,
-      popart::Op::Settings(baseOp->getGraph(), "MultiCollectiveOp"),
+      popart::Op::Settings(baseOp->getGraph(), "MultiReplicatedAllReduceOp"),
       modifiesIndexInplace,
       outInfoFromBaseOps,
       inputVirtualGraphIdAndTileSet,
       outputVirtualGraphIdAndTileSet);
-  multiOp->setup();
+  return multiOp;
+}
 
-  multiOp->setVirtualGraphId(baseOp->getVirtualGraphId());
-  if (baseOp->hasPipelineStage()) {
-    multiOp->setPipelineStage(baseOp->getPipelineStage());
+template <>
+std::unique_ptr<MultiReplicatedReduceScatterOp>
+MergeCollectivesTransform::constructMultiOp<MultiReplicatedReduceScatterOp,
+                                            ReplicatedReduceScatterOp>(
+    ReplicatedReduceScatterOp *baseOp,
+    std::vector<TensorInfo> outInfoFromBaseOps,
+    std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
+    std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
+    std::vector<ReplicatedReduceScatterOp *> matchingOps) const {
+
+  CommGroup group                   = baseOp->getGCLCommGroup();
+  CollectiveOperator collectiveType = baseOp->getCollectiveOp();
+
+  std::vector<bool> rearrangeForCollective;
+  for (ReplicatedReduceScatterOp *op : matchingOps) {
+    rearrangeForCollective.emplace_back(
+        op->isConfigureOutputForReplicatedTensorSharding());
   }
-  if (baseOp->hasExecutionPhase()) {
-    multiOp->setExecutionPhase(baseOp->getExecutionPhase());
+
+  // Construct the multi collective operation
+  auto multiOp = std::make_unique<MultiReplicatedReduceScatterOp>(
+      collectiveType,
+      group,
+      popart::Op::Settings(baseOp->getGraph(),
+                           "MultiReplicatedReduceScatterOp"),
+      outInfoFromBaseOps,
+      rearrangeForCollective,
+      inputVirtualGraphIdAndTileSet,
+      outputVirtualGraphIdAndTileSet);
+  return multiOp;
+}
+
+template <>
+std::unique_ptr<MultiReplicatedAllGatherOp>
+MergeCollectivesTransform::constructMultiOp<MultiReplicatedAllGatherOp,
+                                            ReplicatedAllGatherOp>(
+    ReplicatedAllGatherOp *baseOp,
+    std::vector<TensorInfo> outInfoFromBaseOps,
+    std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
+    std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet,
+    std::vector<ReplicatedAllGatherOp *> matchingOps) const {
+
+  CommGroup group = baseOp->getGCLCommGroup();
+
+  std::vector<bool> undoRearrangeForCollective;
+  for (ReplicatedAllGatherOp *op : matchingOps) {
+    undoRearrangeForCollective.emplace_back(
+        op->isConfigureOutputForReplicatedTensorSharding());
   }
+
+  // Construct the multi collective operation
+  auto multiOp = std::make_unique<MultiReplicatedAllGatherOp>(
+      group,
+      popart::Op::Settings(baseOp->getGraph(), "MultiReplicatedAllGatherOp"),
+      outInfoFromBaseOps,
+      undoRearrangeForCollective,
+      inputVirtualGraphIdAndTileSet,
+      outputVirtualGraphIdAndTileSet);
   return multiOp;
 }
 
@@ -126,7 +239,6 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
   auto requiredDataType =
       baseOp->inTensor(baseOp->getInIndex())->info.data_type();
   auto requiredGCLGroup          = baseOp->getGCLCommGroup();
-  auto requiredCollectiveOp      = baseOp->getCollectiveOp();
   auto &requiredExecutionContext = baseOp->settings.executionContext;
 
   // Keep iterating through the schedule until the next
@@ -139,9 +251,8 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
       bool dtypeCheck =
           candidate->inTensor(candidate->getInIndex())->info.data_type() ==
           requiredDataType;
-      bool groupCheck = candidate->getGCLCommGroup() == requiredGCLGroup;
-      bool collectiveCheck =
-          candidate->getCollectiveOp() == requiredCollectiveOp;
+      bool groupCheck      = candidate->getGCLCommGroup() == requiredGCLGroup;
+      bool collectiveCheck = collectiveOpCheck(baseOp, candidate);
       bool executionContextCheck =
           candidate->settings.executionContext == requiredExecutionContext;
       // There should be no data inconsistencies introduced by the merge
@@ -186,39 +297,6 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
     outInfoFromBaseOps.emplace_back(op->outInfo(op->getOutIndex()));
   }
 
-  // Grow a partial alias model which covers all affected inputs
-  AliasModel popMem;
-  AliasModelGrower aliasModelGrower{popMem};
-  for (BaseType *match : matchingOps) {
-    aliasModelGrower.growPartialGraph(
-        graph, match->inId(match->getInIndex()), DataDependenciesOnly::No);
-  }
-
-  // Determine which parts of the multiop can be inplaced. Even if the original
-  // base op is inplace, in the multiOp there can be aliases between
-  // the inputs, which prevents full inplacing.
-  std::vector<bool> modifiesIndexInplace;
-  for (size_t i = 0; i < matchingOps.size(); i++) {
-    auto opI      = matchingOps.at(i);
-    bool modifies = opI->modifiesIndex(opI->getInIndex());
-    modifiesIndexInplace.emplace_back(modifies);
-    popart::Tensor *inputI = opI->inTensor(opI->getInIndex());
-    auto aliases           = popMem.allAliases(*inputI);
-    for (size_t j = 0; j < i; j++) {
-      auto opJ               = matchingOps.at(j);
-      popart::Tensor *inputJ = opJ->inTensor(opJ->getInIndex());
-      if (std::find(aliases.begin(), aliases.end(), inputJ) != aliases.end()) {
-        modifiesIndexInplace[i] = false;
-        modifiesIndexInplace[j] = false;
-        logging::warn("[MergeCollectivesTransform::attemptToMergeOnOp] "
-                      " Inputs {} and {} are aliases. Collective operation "
-                      " on these tensors will be outplaced.",
-                      inputI->str(),
-                      inputJ->str());
-      }
-    }
-  }
-
   std::vector<popart::Tensor *> inputTensors;
   std::vector<popart::Tensor *> outputTensors;
   std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet;
@@ -246,19 +324,32 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
     }
   }
 
-  for (auto op : matchingOps) {
-    op->disconnectAllInputs();
-    op->disconnectAllOutputs();
-  }
-
   // Construct new op
   std::unique_ptr<MultiOpType> multiOp =
       constructMultiOp<MultiOpType>(baseOp,
-                                    modifiesIndexInplace,
                                     outInfoFromBaseOps,
                                     inputVirtualGraphIdAndTileSet,
-                                    outputVirtualGraphIdAndTileSet);
+                                    outputVirtualGraphIdAndTileSet,
+                                    matchingOps);
   OpId multiOpId = multiOp->id;
+  // Setup the op
+  multiOp->setup();
+  if (baseOp->hasVirtualGraphId()) {
+    multiOp->setVirtualGraphId(baseOp->getVirtualGraphId());
+  }
+  if (baseOp->hasExecutionPhase()) {
+    multiOp->setExecutionPhase(baseOp->getExecutionPhase());
+  }
+  if (baseOp->hasPipelineStage()) {
+    multiOp->setPipelineStage(baseOp->getPipelineStage());
+  }
+  if (baseOp->hasBatchSerializedPhase()) {
+    multiOp->setBatchSerializedPhase(baseOp->getBatchSerializedPhase());
+  }
+  multiOp->settings.executionContext = baseOp->settings.executionContext;
+  multiOp->settings.scope            = baseOp->settings.scope;
+  multiOp->fromLoss                  = baseOp->fromLoss;
+  multiOp->toLoss                    = baseOp->toLoss;
 
   // Transfer settings
   multiOp->settings.executionContext = baseOp->settings.executionContext;
@@ -275,6 +366,10 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
   multiOp->settings.optimizerOp = containsOptimizerOps;
 
   // Connect input, outputs and linked indices
+  for (auto op : matchingOps) {
+    op->disconnectAllInputs();
+    op->disconnectAllOutputs();
+  }
   InIndex inputIndex{0};
   for (auto inputTensor : inputTensors) {
     multiOp->connectInTensor(inputIndex, inputTensor->id);
@@ -300,6 +395,7 @@ Op *MergeCollectivesTransform::attemptToMergeOnOp(
   for (auto op : matchingOps) {
     graph.eraseOp(op->id);
   }
+
   return graph.getOp(multiOpId);
 }
 

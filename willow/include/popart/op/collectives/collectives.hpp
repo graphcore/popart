@@ -99,24 +99,49 @@ public:
 private:
   CommGroup group;
 };
-
+/**
+ *The base class for multi-collective which perform all-gather, all-reduce
+ *reduce-scatter operations on lists of tensors by first merging them into
+ *a larger tensor. This improves bandwidth utilization and decreases the
+ *number of syncs needed.
+ **/
 class MultiCollectiveBaseOp : public CollectivesBaseOp {
 public:
+  /**
+   * Constructor for the MultiReplicatedBaseOp
+   *
+   * \param operatorIdentifier the identifier for the constructed op
+   * \param commGroup all of the inputs will be reduced scattered across
+   * the same communications group
+   * \param settings the settings of the op are shared across all inputs
+   * \param outInfoFromBaseOps the output information for each tensor,
+   * usually inherited from a ReplicatedReduceScatterOp for that tensor
+   * \param inputVirtualGraphIdAndTileSet each input tensor has it's own
+   * associated virtual graph
+   * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
+   * associated virtual graph
+   */
   MultiCollectiveBaseOp(
       const OperatorIdentifier &operatorIdentifier,
       CommGroup commGroup,
       const Op::Settings &settings,
-      std::vector<bool> modifiesIndexInplace,
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
   std::unique_ptr<Op> clone() const override = 0;
   void setup() override;
+  /**
+   * Get virtual graph ID and tile set associated with an input index.
+   * \param InIndex The input index.
+   * \returns The virtual graph ID and tile set at the input index.
+   */
   VGraphIdAndTileSet getIntrospectionInVirtualGraphId(InIndex in) const;
+  /**
+   * Get virtual graph ID and tile set associated with an output index.
+   * \param OutIndex The output index.
+   * \returns The virtual graph ID and tile set at the output index.
+   */
   VGraphIdAndTileSet getIntrospectionOutVirtualGraphId(OutIndex out) const;
-  std::vector<bool> getModifiesIndexInplace() const {
-    return modifiesIndexInplace;
-  }
   VGraphIdAndTileSet
   getIntrospectionInVirtualGraphId(InIndex in,
                                    std::set<OpId> &visited) const override;
@@ -127,11 +152,21 @@ public:
   Tensor *getCorrespondingLinkedIndexTensor(Tensor *t) override;
   bool isCollectiveLinkedIndexTensor(InIndex in) const override;
   bool isCollectiveLinkedIndexTensor(Tensor *t) const override;
+  void growAliasModel(AliasModel &m) const override;
 
 private:
-  std::vector<bool> modifiesIndexInplace;
+  /**
+   * The output information for each tensor, usually inherited from
+   * a ReplicatedReduceScatterOp for that tensor. Used to setup the op.
+   */
   std::vector<TensorInfo> outInfoFromBaseOps;
+  /**
+   * Each input tensor has it's own associated virtual graph
+   */
   std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet;
+  /**
+   * Each output tensor has it's own associated virtual graph
+   */
   std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet;
 };
 

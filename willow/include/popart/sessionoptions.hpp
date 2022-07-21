@@ -192,7 +192,9 @@ struct ReplicatedCollectivesSettings {
    */
   ReplicatedCollectivesSettings(
       bool prepareScheduleForMergingCollectives = false,
-      bool mergeAllReduceCollectives            = false);
+      bool mergeAllReduceCollectives            = false,
+      bool mergeReduceScatterCollectives        = false,
+      bool mergeAllGatherCollectives            = false);
 
   std::size_t hash() const;
 
@@ -210,6 +212,16 @@ struct ReplicatedCollectivesSettings {
    * `true` to identify operations, `false` otherwise. Default: `false`.
    */
   bool mergeAllReduceCollectives = false;
+
+  /// Identifies reduce scatter operations which can be scheduled
+  /// at the same time, and performs them as one larger operation
+  /// so as to better utilize the bandwidth between replicas
+  bool mergeReduceScatterCollectives = false;
+
+  /// Identifies allgather operations which can be scheduled
+  /// at the same time, and performs them as one larger operation
+  /// so as to better utilize the bandwidth between replicas
+  bool mergeAllGatherCollectives = false;
 };
 
 /// Enum type used to specify a virtual graph mode.
