@@ -436,8 +436,10 @@ void sequenceSliceCallbackOutput(const CallbackIO &inputInfo,
 void createLoopOp(PackedDataBlockOp *pdb, const TensorId &resultId) {
   auto &graph    = pdb->getGraph();
   auto &loopBody = pdb->getCalledGraph();
-  auto loopOp    = dynamic_cast<LoopOp *>(graph.createOp<LoopOp>(
-      Onnx::AiOnnx::OpSet11::Loop, Op::Settings(graph, ""), loopBody));
+  auto loopOp    = dynamic_cast<LoopOp *>(
+      graph.createOp<LoopOp>(Onnx::AiOnnx::OpSet11::Loop,
+                             Op::Settings(graph, "", pdb->debugInfo.getId()),
+                             loopBody));
   pdb->transferBaseProperties(loopOp);
 
   loopOp->setTripCountValue(pdb->getCallbackIterations());
@@ -493,7 +495,7 @@ bool PackedDataBlockPattern::apply(Op *op) const {
   // Add the output for the loopCondition
   callbackGraph.markAsOutput(0, inputInfo.loopCondition, false);
 
-  Op::Settings callbackSettings{callbackGraph, ""};
+  Op::Settings callbackSettings{callbackGraph, "", op->debugInfo.getId()};
 
   indexOffsetsAndLengths(inputInfo, packedDataBlock, callbackSettings);
 

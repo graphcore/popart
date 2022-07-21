@@ -203,7 +203,7 @@ void EnsureFp32LossScale::upCastTensor(Op *op, InIndex index) const {
                                   {{CastOp::getOutIndex(), upCastTensorId}},
                                   Onnx::Operators::Cast_9,
                                   DataType::FLOAT,
-                                  Op::Settings(g, ""));
+                                  Op::Settings(g, "", op->debugInfo.getId()));
 
   op->connectInTensor(index, upCastTensorId);
 

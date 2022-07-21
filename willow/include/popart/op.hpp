@@ -235,7 +235,10 @@ public:
      * \param name_ The name of the op.
      */
     Settings(Graph &graph_, const std::string &name_)
-        : graph(graph_), name(name_) {}
+        : graph(graph_), name(name_) {
+      DebugInfo di({name}, "popartbuilder");
+      debugInfoId = di.getId();
+    }
 
     /**
      * Constructor for the Settings structure.
@@ -245,7 +248,24 @@ public:
      * \param scope_ The scope of the op.
      */
     Settings(Graph &graph_, const std::string &name_, const Scope &scope_)
-        : graph(graph_), name(name_), scope(scope_) {}
+        : graph(graph_), name(name_), scope(scope_) {
+      DebugInfo di({name}, "popartbuilder");
+      debugInfoId = di.getId();
+    }
+
+    /**
+     * Constructor for the Settings structure.
+     *
+     * \param graph_ The graph the op belongs to.
+     * \param name_ The name of the op.
+     * \param scope_ The scope of the op.
+     * \param parentId_ The ID of the debug info.
+     */
+    Settings(Graph &graph_,
+             const std::string &name_,
+             const Scope &scope_,
+             const uint64_t parentId_)
+        : graph(graph_), name(name_), scope(scope_), debugInfoId(parentId_) {}
 
     /**
      * Constructor for the Settings structure.

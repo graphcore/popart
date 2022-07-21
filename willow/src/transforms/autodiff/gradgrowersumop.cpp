@@ -75,6 +75,7 @@ Op *GradGrowerSumOp::growGradSumOp(Graph &bwdGraph,
   for (auto &tensor : toSum) {
     inputs[inCount++] = tensor->id;
   }
+  DebugInfo di({"growGradSum"}, "popartbuilder");
 
   // TODO: T36603 Growing the grad sum with a fixed version may result
   // in suboptimal outlining (it's included as an outline attribute).
@@ -82,7 +83,8 @@ Op *GradGrowerSumOp::growGradSumOp(Graph &bwdGraph,
       inputs,
       {{0, gradientId}},
       Onnx::Operators::Sum_8,
-      Op::Settings{bwdGraph, getGradSumOpNamePrefix() + "_" + gradientId});
+      Op::Settings{
+          bwdGraph, getGradSumOpNamePrefix() + "_" + gradientId, di.getId()});
 
   sumOp->inheritPlacementAttributes(true, bwdGraphAliases);
   return sumOp;

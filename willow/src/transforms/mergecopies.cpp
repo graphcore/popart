@@ -70,7 +70,8 @@ static bool isCopyTensor(const Tensor *t) {
 }
 
 static IpuCopyOp *createCopyOp(Graph &graph, uint64_t to_ipu) {
-  Op::Settings settings(graph, "");
+  DebugInfo di({"CopyOp"}, "popartbuilder");
+  Op::Settings settings(graph, "", di.getId());
   auto ipuCopy_op = std::make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, to_ipu, settings);
   auto ipuCopy = ipuCopy_op.get();

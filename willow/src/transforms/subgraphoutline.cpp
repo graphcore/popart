@@ -874,10 +874,12 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
+  DebugInfo di({"replaceWithCall"}, "popartbuilder");
   auto up_call_op = std::make_unique<CallOp>(
       Onnx::CustomOperators::Call_1,
       subgraph,
-      Op::Settings{instance.getGraph(), "", instance.getGraph().getScope()});
+      Op::Settings{
+          instance.getGraph(), "", instance.getGraph().getScope(), di.getId()});
   auto call_op_id = instance.getGraph().moveIntoGraph(std::move(up_call_op));
   CallOp *callOp =
       dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));
@@ -968,7 +970,9 @@ Graph &SubgraphOutline::createEmptySubgraph(
     AliasModel &aliasModel) {
   auto &subgraph      = ir.createGraph(GraphId(subgraphId));
   auto subgraph_scope = subgraph.getScope();
-  Op::Settings subgraphSettings(subgraph, subgraphId, subgraph.getScope());
+  DebugInfo di({"emptySubgraph"}, "popartbuilder");
+  Op::Settings subgraphSettings(
+      subgraph, subgraphId, subgraph.getScope(), di.getId());
 
   // duplicate all the output tensors
   std::map<Tensor *, Tensor *> tensor_map;
@@ -1203,10 +1207,11 @@ Op *SubgraphOutline::replaceWithEmptyElseBranchIfOp(
   BranchInfo branchInfoEmptySubgraph{
       emptySubgraph.getGraphId(), subgraphInputIndices, subgraphOutputIndices};
 
+  DebugInfo di({"replaceWithEmptyElseBranchIf"}, "popartbuilder");
   auto ifOp = graph.createOp<IfOp>(Onnx::Operators::If_1,
                                    branchInfoSubgraph,
                                    branchInfoEmptySubgraph,
-                                   Op::Settings(graph, ""));
+                                   Op::Settings(graph, "", di.getId()));
 
   setSubgraphOpSettingsFromClusterInstance(ifOp, instance);
 

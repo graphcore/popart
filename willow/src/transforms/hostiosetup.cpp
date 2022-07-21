@@ -77,8 +77,8 @@ void HostIOSetup::setupHostLoadOps(Tensor *inTensor,
       "[HostIOSetup] HostLoadOp Started for tensor {} stream tensor ID {}",
       inTensor->id,
       streamTensorId);
-
-  Op::Settings settings(graph, "");
+  DebugInfo di({"HoastLoad"}, "popartbuilder");
+  Op::Settings settings(graph, "", di.getId());
   if (inTensor->getGraph().id == ir.getMainGraph().id) {
     settings.executionContext = ExecutionContext::Normal;
   } else {
@@ -163,8 +163,8 @@ void HostIOSetup::setupHostStoreOps(Tensor *anchorTensor,
       "[HostIOSetup] HostStoreOp started for tensor {} stream tensor ID {}",
       anchorTensor->id,
       streamTensorId);
-
-  Op::Settings settings(graph, "");
+  DebugInfo di({"HostStore"}, "popartbuilder");
+  Op::Settings settings(graph, "", di.getId());
   if (anchorTensor->getGraph().id == ir.getMainGraph().id) {
     settings.executionContext = ExecutionContext::Normal;
   } else {

@@ -326,7 +326,7 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
   bool withNesterov = enableNesterov(w);
 
-  DebugInfo debugInfo(debugContext, "popart_builder");
+  DebugInfo debugInfo(debugContext, "popartbuilder");
   auto opSettings = Op::Settings(graph, "", debugInfo.getId());
 
   for (Op *op : w.consumers.getOps()) {

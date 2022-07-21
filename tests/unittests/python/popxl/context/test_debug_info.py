@@ -27,10 +27,10 @@ def test_basic(tmpdir):
         data = json.load(json_file)
 
     ctxs = data["contexts"]
-    assert len(ctxs) == 4  # 1 op, 3 tensors
+    assert len(ctxs) == 5  # 1 popartbuilder, 1 op, 3 tensors
     op_ctx = None
     for ctx in ctxs:
-        if ctx["category"] == "op":
+        if "category" in ctx and ctx["category"] == "op":
             op_ctx = ctx
             break
     assert op_ctx is not None

@@ -122,9 +122,9 @@ bool TiedGatherPattern::apply(Op *op) const {
       gather->name().empty() ? std::to_string(gather->id) : gather->name();
 
   // (2)
-  auto detach =
-      graph.createOp<DetachOp>(Onnx::CustomOperators::Detach_1,
-                               Op::Settings(graph, name + "/TiedGatherDetach"));
+  auto detach = graph.createOp<DetachOp>(
+      Onnx::CustomOperators::Detach_1,
+      Op::Settings(graph, name + "/TiedGatherDetach", op->debugInfo.getId()));
   transferBaseProperties(gather, detach);
   detach->connectInTensor(DetachOp::getInIndex(), data->id);
   auto detached_data_id = data->id + "/detached";
@@ -137,11 +137,11 @@ bool TiedGatherPattern::apply(Op *op) const {
                                    int64_t i,
                                    const std::string &debugPrefix) {
     bool zeroOutOfRangeIndices = true;
-    auto tiedGather =
-        graph.createOp<TiedGatherOp>(axis,
-                                     Op::Settings(graph, debugPrefix),
-                                     availMemProp,
-                                     zeroOutOfRangeIndices);
+    auto tiedGather            = graph.createOp<TiedGatherOp>(
+        axis,
+        Op::Settings(graph, debugPrefix, op->debugInfo.getId()),
+        availMemProp,
+        zeroOutOfRangeIndices);
     transferBaseProperties(gather, tiedGather);
 
     tiedGather->connectInTensor(TiedGatherOp::dataInIndex(), dict);
@@ -179,12 +179,12 @@ bool TiedGatherPattern::apply(Op *op) const {
     auto insertSliceOp = [&](int64_t starts,
                              int64_t ends,
                              const std::string &debugPrefix) {
-      auto slice =
-          graph.createOp<SliceOp>(Onnx::AiOnnx::OpSet9::Slice,
-                                  std::vector<int64_t>({starts}),
-                                  std::vector<int64_t>({ends}),
-                                  std::vector<int64_t>({axis}),
-                                  Op::Settings(graph, debugPrefix + "/slice"));
+      auto slice = graph.createOp<SliceOp>(
+          Onnx::AiOnnx::OpSet9::Slice,
+          std::vector<int64_t>({starts}),
+          std::vector<int64_t>({ends}),
+          std::vector<int64_t>({axis}),
+          Op::Settings(graph, debugPrefix + "/slice", op->debugInfo.getId()));
       transferBaseProperties(gather, slice);
       slice->connectInTensor(SliceOp::getInIndex(), data->id);
       auto data_slice = debugPrefix + "/slice:0";
@@ -193,33 +193,34 @@ bool TiedGatherPattern::apply(Op *op) const {
       return data_slice;
     };
 
-    int sub_i_                = 0; // Counter used in lambda.
-    auto subtractWithConstant = [&](Tensor *a,
-                                    int64_t c,
-                                    const std::string &debugPrefix) {
-      auto sub = graph.createOp<SubtractOp>(
-          Onnx::Operators::Sub_7, Op::Settings(graph, debugPrefix + "/sub"));
-      transferBaseProperties(gather, sub);
-      sub->connectInTensor(SubtractOp::getArg0InIndex(), a->id);
-      // Create constant to subtract from
-      auto subConstId =
-          debugPrefix + "/" + a->id + "_sub_const_" + std::to_string(sub_i_++);
-      TensorInfo subInfo(a->info.dataType(), {1});
-      std::vector<unsigned> d(1, c);
-      graph.getTensors().addConstInit(subConstId, subInfo, d.data());
-      sub->connectInTensor(SubtractOp::getArg1InIndex(), subConstId);
-      auto indicesSub = debugPrefix + "/sub:0";
-      sub->createAndConnectOutTensor(SubtractOp::getOutIndex(), indicesSub);
-      sub->setup();
-      return indicesSub;
-    };
+    int sub_i_ = 0; // Counter used in lambda.
+    auto subtractWithConstant =
+        [&](Tensor *a, int64_t c, const std::string &debugPrefix) {
+          auto sub = graph.createOp<SubtractOp>(
+              Onnx::Operators::Sub_7,
+              Op::Settings(graph, debugPrefix + "/sub", op->debugInfo.getId()));
+          transferBaseProperties(gather, sub);
+          sub->connectInTensor(SubtractOp::getArg0InIndex(), a->id);
+          // Create constant to subtract from
+          auto subConstId = debugPrefix + "/" + a->id + "_sub_const_" +
+                            std::to_string(sub_i_++);
+          TensorInfo subInfo(a->info.dataType(), {1});
+          std::vector<unsigned> d(1, c);
+          graph.getTensors().addConstInit(subConstId, subInfo, d.data());
+          sub->connectInTensor(SubtractOp::getArg1InIndex(), subConstId);
+          auto indicesSub = debugPrefix + "/sub:0";
+          sub->createAndConnectOutTensor(SubtractOp::getOutIndex(), indicesSub);
+          sub->setup();
+          return indicesSub;
+        };
 
     auto insertAddOp = [&](const TensorId &a,
                            const TensorId &b,
                            const TensorId &out,
                            const std::string &debugPrefix) {
       auto addOp = graph.createOp<AddOp>(
-          Onnx::Operators::Add_6, Op::Settings(graph, debugPrefix + "/add"));
+          Onnx::Operators::Add_6,
+          Op::Settings(graph, debugPrefix + "/add", op->debugInfo.getId()));
       transferBaseProperties(gather, addOp);
       addOp->connectInTensor(AddOp::getArg0InIndex(), a);
       addOp->connectInTensor(AddOp::getArg1InIndex(), b);
@@ -450,7 +451,8 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
            {DivOp::getArg1InIndex(), factor->id}},
           {{DivOp::getOutIndex(), inv_counter}},
           Onnx::Operators::Div_7,
-          Op::Settings(graph, "mean_accumulate_inverse"));
+          Op::Settings(
+              graph, "mean_accumulate_inverse", op->debugInfo.getId()));
       transferBaseProperties(gatherGrad, inv_op);
 
       for (auto cons : factor->consumers.getOps()) {
@@ -468,7 +470,9 @@ bool TiedGatherAccumulatePattern::apply(Op *op) const {
       accumType,
       denseAccumOp->getFactor(),
       gatherGrad->getAxis(),
-      Op::Settings(graph, "_tiedAccumulate/" + std::to_string(serialIndex)));
+      Op::Settings(graph,
+                   "_tiedAccumulate/" + std::to_string(serialIndex),
+                   op->debugInfo.getId()));
   transferBaseProperties(gatherGrad, sparseAccumOp);
 
   // Inputs
@@ -526,10 +530,10 @@ TensorId TiedGatherAccumulatePattern::inplaceTranspose(TensorId tid,
   auto &graph = op->getGraph();
 
   // TransposeInplaceOp's constructor requires a transposeOp
-  auto outplace_up =
-      std::make_unique<TransposeOp>(Onnx::AiOnnx::OpSet9::Transpose,
-                                    std::vector<int64_t>{1, 0},
-                                    Op::Settings(graph, tid + "_Transpose"));
+  auto outplace_up = std::make_unique<TransposeOp>(
+      Onnx::AiOnnx::OpSet9::Transpose,
+      std::vector<int64_t>{1, 0},
+      Op::Settings(graph, tid + "_Transpose", op->debugInfo.getId()));
   auto transpose_up =
       outplace_up->getInplaceVariant(Onnx::CustomOperators::TransposeInplace);
 

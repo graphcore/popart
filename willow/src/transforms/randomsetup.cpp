@@ -513,7 +513,7 @@ void RandomSetup::addGetRandomSeedOp(Ir &ir, const Config &cfg) const {
   // 1. Create [randomSeed___fromHost] tensor.
   TensorId randomSeedFromHost = GetRandomSeedOp::getStreamedSeedTensorId();
 
-  DebugInfo di({randomSeedFromHost}, "popart_builder");
+  DebugInfo di({randomSeedFromHost}, "popartbuilder");
   graph.getTensors().addStream(randomSeedFromHost, seedTensorInfo, {di});
   Tensor &seedTensor = *graph.getTensors().get(randomSeedFromHost);
   seedTensor.setReplicatedStreamMode(ReplicatedStreamMode::Replicate);
@@ -524,7 +524,7 @@ void RandomSetup::addGetRandomSeedOp(Ir &ir, const Config &cfg) const {
   TensorId randomSeedUpdated = GetRandomSeedOp::getUpdatedSeedTensorId();
 
   // 3. Create GetRandomSeedOp.
-  Op::Settings settings(graph, "");
+  Op::Settings settings(graph, "", di.getId());
   auto getRandomSeedOp = std::make_unique<GetRandomSeedOp>(
       Onnx::CustomOperators::GetRandomSeed, settings);
 
@@ -581,7 +581,8 @@ RandomSetup::addModifyRandomSeedOp(Graph &graph,
   auto &virtualGraphId = std::get<0>(strand);
   auto &pipelineStage  = std::get<1>(strand);
 
-  Op::Settings settings(graph, "");
+  DebugInfo di({"ModifyRandomSeed"}, "popartbuilder");
+  Op::Settings settings(graph, "", di.getId());
   auto modifyRandomSeedOp = std::make_unique<ModifyRandomSeedOp>(
       Onnx::CustomOperators::ModifyRandomSeed, settings);
 

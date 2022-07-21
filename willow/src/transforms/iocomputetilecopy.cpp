@@ -70,7 +70,7 @@ void IoComputeTileCopy::insertIoTileCopy(Graph &graph,
                                          Op *toOp,
                                          InIndex inIndex) const {
 
-  Op::Settings settings(graph, "");
+  Op::Settings settings(graph, "", fromOp->debugInfo.getId());
 
   auto ioCopyOp = std::make_unique<IoTileCopyOp>(
       Onnx::CustomOperators::IoTileCopy, settings);

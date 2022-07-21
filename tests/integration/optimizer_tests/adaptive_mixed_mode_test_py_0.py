@@ -296,7 +296,7 @@ def test_adaptive_mixed_mode_1(tmpdir):
         for context in data["contexts"]:
             if context["id"] in parents:
                 parents.remove(context["id"])
-                assert context["layer"] == "popart_builder"
+                assert context["layer"] == "popartbuilder"
                 assert data["stringTable"][context["name"]] == "adaptive"
     assert num_adaptives == 24
     assert len(parents) == 0

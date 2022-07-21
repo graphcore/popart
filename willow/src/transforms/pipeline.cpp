@@ -886,7 +886,8 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   logging::transform::debug("Adding Identity Copy for random seed tensor {}",
                             randomSeed->id);
   Op::Settings identitySettings(randomSeedOp->getGraph(),
-                                randomSeed->id + "_pipelineCopyOp");
+                                randomSeed->id + "_pipelineCopyOp",
+                                randomSeedOp->debugInfo.getId());
   TensorId identityOutput = randomSeed->id + "_pipelineCopy";
   IdentityOp *identityOp  = [&] {
     auto x = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
@@ -1608,8 +1609,9 @@ TensorId Pipeline::addDynamicStashOpForTensor(
   LoopOp *innerLoopOp              = MainLoops::getInnerLoopOp(ir);
   auto &pipelineMainLoopOuterGraph = innerLoopOp->getGraph();
 
-  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "");
-  Op::Settings stashSettings(graph, "");
+  DebugInfo di({"DynamicStash"}, "popartbuilder");
+  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "", di.getId());
+  Op::Settings stashSettings(graph, "", di.getId());
 
   // Info for the stash counters
   TensorInfo counterInfo(DataType::INT32, {});
@@ -1745,9 +1747,9 @@ Pipeline::addDynamicRestoreOpForTensor(Graph &graph,
   auto &ir                         = graph.getIr();
   LoopOp *innerLoopOp              = MainLoops::getInnerLoopOp(ir);
   auto &pipelineMainLoopOuterGraph = innerLoopOp->getGraph();
-
-  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "");
-  Op::Settings restoreSettings(graph, "");
+  DebugInfo di({"DynamicRestore"}, "popartbuilder");
+  Op::Settings outerSettings(pipelineMainLoopOuterGraph, "", di.getId());
+  Op::Settings restoreSettings(graph, "", di.getId());
 
   Op *restoreRefOp = info.restoreRefOps.at(restoreRefOpIndex);
 
@@ -1979,7 +1981,8 @@ bool Pipeline::addStashRestoreOps(Graph &graph) const {
 
   // For each Tensor to be stashed, create a single stash
   // and one or more (possible in-place) restore ops
-  Op::Settings settings(graph, "");
+  DebugInfo di({"StashRestore"}, "popartbuilder");
+  Op::Settings settings(graph, "", di.getId());
 
   for (auto &tid : pipelineStashInfo.toStashTensors) {
     auto tensor = graph.getTensors().get(tid);

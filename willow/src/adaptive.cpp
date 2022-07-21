@@ -306,7 +306,7 @@ Adaptive::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
 std::unique_ptr<Op> Adaptive::createOp(const Tensor &w, Graph &graph) const {
 
-  DebugInfo debugInfo(debugContext, "popart_builder");
+  DebugInfo debugInfo(debugContext, "popartbuilder");
   auto opSettings = Op::Settings(graph, "", debugInfo.getId());
 
   for (Op *op : w.consumers.getOps()) {

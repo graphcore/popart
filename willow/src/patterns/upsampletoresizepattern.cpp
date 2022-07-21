@@ -55,7 +55,8 @@ bool UpsampleToResizePattern::apply(Op *op) const {
 
   auto resize2 = std::make_unique<ResizeOp>(
       Onnx::CustomOperators::Resize,
-      Op::Settings(graph, upsample->name() + "_" + "Resize"),
+      Op::Settings(
+          graph, upsample->name() + "_" + "Resize", op->debugInfo.getId()),
       upsampleToResizeMode(upsample->getMode()),
       upsample->getScales(),
       // This resize mode preserves the previous behaviour.

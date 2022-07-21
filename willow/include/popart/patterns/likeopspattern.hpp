@@ -31,7 +31,8 @@ public:
     auto outTensor = likeOp->outTensor(likeOp->getOutIndex());
 
     auto &graph = op->getGraph();
-    Op::Settings settings(graph, likeOp->name() + "_" + getPatternName());
+    Op::Settings settings(
+        graph, likeOp->name() + "_" + getPatternName(), op->debugInfo.getId());
     auto foldedOp = likeOp->foldInputTensor(settings);
     transferBaseProperties(likeOp, foldedOp.get());
 

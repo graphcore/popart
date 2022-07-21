@@ -193,8 +193,9 @@ SumOp *LambSerialisedWeightPattern::insertSumOp(Graph &graph,
                                                 TensorId outId,
                                                 Op *refOp,
                                                 std::string debugName) const {
-  auto sum = graph.createOp<SumOp>(Onnx::Operators::Sum_8,
-                                   Op::Settings(graph, debugName));
+  auto sum = graph.createOp<SumOp>(
+      Onnx::Operators::Sum_8,
+      Op::Settings(graph, debugName, refOp->debugInfo.getId()));
   transferBaseProperties(refOp, sum);
 
   for (unsigned i = 0; i < inIds.size(); i++) {

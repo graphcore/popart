@@ -600,8 +600,8 @@ BOOST_AUTO_TEST_CASE(DebugInfo_Test) {
     // Load the json file in this ptree
     pt::read_json(tfm.name, root);
 
-    // 3 tensors & 1 op
-    BOOST_CHECK(4 == root.get_child("contexts").size());
+    // 3 tensors & 1 op & 1 popartbuilder
+    BOOST_CHECK(5 == root.get_child("contexts").size());
     BOOST_CHECK("op" == root.get_child("contexts")
                             .back()
                             .second.get_child("category")

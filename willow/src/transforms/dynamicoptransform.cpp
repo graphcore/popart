@@ -282,7 +282,8 @@ void DynamicOpTransform::chainDynamicInplaceGradOps(
       auto sumOpUP =
           std::make_unique<SumOp>(Onnx::Operators::Sum_8,
                                   Op::Settings(kv.second.front()->getGraph(),
-                                               "DynamicOpTransform_tempSum"));
+                                               "DynamicOpTransform_tempSum",
+                                               consumerOp->debugInfo.getId()));
       auto sumOp = sumOpUP.get();
       ir.getMainGraph().moveIntoGraph(std::move(sumOpUP));
 

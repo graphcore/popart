@@ -301,7 +301,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
                               toIpu);
   }
 
-  Op::Settings settings(graph, "");
+  Op::Settings settings(graph, "", fromOp->debugInfo.getId());
 
   // Link debug information to fromOp
   settings.debugInfoId = fromOp->debugInfo.getId();

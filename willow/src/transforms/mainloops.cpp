@@ -576,12 +576,13 @@ void MainLoops::setupAnchors(Graph &graph,
       TensorId currId = addScope(mainGraph, accumIn);
       TensorId oldId  = currId;
 
-      Op *initOp =
-          mainGraph.createOp<InitOp>(Onnx::CustomOperators::Init_1,
-                                     tInfo,
-                                     TensorType::ActGrad,
-                                     InitType::Zero,
-                                     Op::Settings({mainGraph, "Init"}));
+      DebugInfo di({"Anchors"}, "popartbuilder");
+      Op *initOp = mainGraph.createOp<InitOp>(
+          Onnx::CustomOperators::Init_1,
+          tInfo,
+          TensorType::ActGrad,
+          InitType::Zero,
+          Op::Settings({mainGraph, "Init", di.getId()}));
       initOp->createAndConnectOutTensor(InitOp::getOutIndex(), currId);
       initOp->setup();
       newMainGraphOps.push_back(initOp);
@@ -607,7 +608,8 @@ void MainLoops::setupAnchors(Graph &graph,
         currId = addScope(innerGraph, accumOut);
 
         Op *addOp = innerGraph.createOp<AddOp>(
-            Onnx::Operators::Add_7, Op::Settings({innerGraph, "Add"}));
+            Onnx::Operators::Add_7,
+            Op::Settings({innerGraph, "Add", di.getId()}));
         addOp->connectInTensor(AddOp::getArg0InIndex(), oldId);
         addOp->connectInTensor(AddOp::getArg1InIndex(), leftId);
         addOp->createAndConnectOutTensor(AddOp::getOutIndex(), currId);
@@ -700,7 +702,8 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
   std::map<TensorId, TensorId> accumTensorRemap;
 
   if (batchesPerStep > 1) {
-    Op::Settings stepLoopSettings(graph, "stepLoop");
+    DebugInfo di({"stepLoop"}, "popartbuilder");
+    Op::Settings stepLoopSettings(graph, "stepLoop", di.getId());
     stepLoopSettings.executionContext = ExecutionContext::Normal;
 
     Graph &stepGraph = ir.createGraph({getStepGraphName()});
@@ -753,7 +756,8 @@ std::pair<LoopOp *, LoopOp *> MainLoops::setupLoops(Graph &graph) const {
   if (accumulationFactor > 1) {
     Graph &stepGraph = ir.getGraph(stepGraphId);
 
-    Op::Settings accumLoopSettings(stepGraph, "accumulationLoop");
+    DebugInfo di({"accumulationLoop"}, "popartbuilder");
+    Op::Settings accumLoopSettings(stepGraph, "accumulationLoop", di.getId());
     if (stepLoop) {
       accumLoopSettings.executionContext = ExecutionContext::Subgraph;
     } else {

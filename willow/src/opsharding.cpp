@@ -822,7 +822,8 @@ Op::adjustShardPlans(const ShardingPlan inputPlan) {
             helper.staticShard(axis, sliceIds, concatId, sliceSettings);
           }
         } else if (type == ShardTensorType::Offset) {
-          sliceSettings.resize(sliceIds.size(), Op::Settings(graph, ""));
+          sliceSettings.resize(sliceIds.size(),
+                               Op::Settings(graph, "", settings.debugInfoId));
           helper.offsets(sliceIds, concatId, sliceSettings);
         } else {
           throw error("[Op] Unsupported sharding tensor type.");

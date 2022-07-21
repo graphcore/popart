@@ -474,7 +474,8 @@ std::unique_ptr<Op> OpManager::create(const OperatorIdentifier &opid,
                                       const std::vector<TensorId> &outputIds,
                                       OpFactoryFunc func) {
 
-  Op::Settings settings(graph, name, scope);
+  DebugInfo di({"create"}, "popartbuilder");
+  Op::Settings settings(graph, name, scope, di.getId());
   settings.setFromAttributes(attr);
 
   OpCreatorInfo info(opid, settings, attr, inputIds, outputIds);
@@ -489,7 +490,8 @@ Op *OpManager::create(const OperatorIdentifier &opid,
                       const std::vector<TensorId> &inputIds,
                       const std::vector<TensorId> &outputIds,
                       ComplexOpFactoryFunc func) {
-  Op::Settings settings(graph, name, scope);
+  DebugInfo di({"create"}, "popartbuilder");
+  Op::Settings settings(graph, name, scope, di.getId());
   settings.setFromAttributes(attr);
 
   OpCreatorInfo info(opid, settings, attr, inputIds, outputIds);

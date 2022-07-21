@@ -224,7 +224,8 @@ TensorId TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
                                          OptionalExecutionPhase executionPhase,
                                          const std::string opName,
                                          const std::string outputName) {
-  Op::Settings settings(graph, opName);
+  DebugInfo di({opName}, "popartbuilder");
+  Op::Settings settings(graph, opName, di.getId());
 
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
 
@@ -262,7 +263,8 @@ void TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
                                      OptionalPipelineStage pipelineStage,
                                      OptionalExecutionPhase executionPhase,
                                      const std::string opName) {
-  Op::Settings settings(graph, opName);
+  DebugInfo di({opName}, "popartbuilder");
+  Op::Settings settings(graph, opName, di.getId());
 
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
 
@@ -363,7 +365,8 @@ TensorId TransformBuilder::sliceInPlace(TensorId in,
                                         const std::string outputName) {
   std::vector<TensorId> inputs = {in};
 
-  Op::Settings settings(graph, opName);
+  DebugInfo di({opName}, "popartbuilder");
+  Op::Settings settings(graph, opName, di.getId());
 
   auto op =
       std::make_unique<SliceInplaceOp>(Onnx::CustomOperators::SliceInplace,

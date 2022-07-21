@@ -658,8 +658,8 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   TensorId counterId = op->str() + "_counter";
   Tensor *counter    = addOneTensor(graph, counterId, -1);
 
-  auto incrementModInplaceOp =
-      graph.createOp<IncrementModInplaceOp>(1, m, Op::Settings(graph, ""));
+  auto incrementModInplaceOp = graph.createOp<IncrementModInplaceOp>(
+      1, m, Op::Settings(graph, "", op->debugInfo.getId()));
   incrementModInplaceOp->connectInTensor(IncrementModInplaceOp::getInIndex(),
                                          counter->id);
   incrementModInplaceOp->createAndConnectOutTensor(
@@ -684,8 +684,8 @@ Op *AutomaticLossScale::executeOpNTimesEveryMTimes(
   graph.getTensors().addConstInit(
       lessId, {DataType::INT32, {}}, lessData.data());
 
-  auto lessOp =
-      graph.createOp<LessOp>(Onnx::Operators::Less_9, Op::Settings(graph, ""));
+  auto lessOp = graph.createOp<LessOp>(
+      Onnx::Operators::Less_9, Op::Settings(graph, "", op->debugInfo.getId()));
   lessOp->connectInTensor(
       LessOp::getArg0InIndex(),
       incrementModInplaceOp->outTensor(IncrementModInplaceOp::getOutIndex())
@@ -771,6 +771,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   std::vector<Tensor *> toTrackTensors = getToTrackTensors(graph);
   std::vector<Tensor *> histogramOutputs;
   std::vector<Op *> histograms;
+  DebugInfo di({"histogram"}, "popartbuilder");
   for (Tensor *tensor : toTrackTensors) {
     logging::transform::debug("Collecting statistics for tensor '{}' for "
                               "control of loss-scale value.",
@@ -785,7 +786,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
         graph.createOp<HistogramOp>(Onnx::CustomOperators::Histogram,
                                     getLevels(tensor, binEdgeLocation),
                                     absoluteOfInput(),
-                                    Op::Settings(graph, ""));
+                                    Op::Settings(graph, "", di.getId()));
 
     histogramOp->connectInTensor(HistogramOp::getInIndex(), tensor->id);
     histogramOp->createAndConnectOutTensor(HistogramOp::getOutIndex(),
@@ -810,15 +811,15 @@ bool AutomaticLossScale::apply(Graph &graph) const {
       getInverseLossScaleTensors(graph);
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
-  Op *lossScaleUpdateOp =
-      graph.createOp<LossScaleUpdateOp>(Onnx::CustomOperators::LossScaleUpdate,
-                                        lossScaleTensor->info.dataType(),
-                                        Op::Settings(graph, "LossScaleUpdate"));
+  Op *lossScaleUpdateOp = graph.createOp<LossScaleUpdateOp>(
+      Onnx::CustomOperators::LossScaleUpdate,
+      lossScaleTensor->info.dataType(),
+      Op::Settings(graph, "LossScaleUpdate", di.getId()));
 
   // Case 0, 1, 2 or 3: Sum the statistics tensors
   // Sum the histogram tensors
-  auto statsSumOp =
-      graph.createOp<SumOp>(Onnx::Operators::Sum_8, Op::Settings(graph, ""));
+  auto statsSumOp = graph.createOp<SumOp>(Onnx::Operators::Sum_8,
+                                          Op::Settings(graph, "", di.getId()));
 
   for (int i = 0; i < histogramOutputs.size(); i++) {
     Tensor *tensor = histogramOutputs.at(i);
@@ -835,7 +836,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   auto statsCastOp =
       graph.createOp<CastOp>(Onnx::Operators::Cast_9,
                              DataType::FLOAT,
-                             Op::Settings(graph, "HistogramCast"));
+                             Op::Settings(graph, "HistogramCast", di.getId()));
   statsCastOp->connectInTensor(CastOp::getInIndex(), "summedHistograms");
   statsCastOp->createAndConnectOutTensor(CastOp::getOutIndex(),
                                          "summedCastedHistograms");
@@ -855,8 +856,9 @@ bool AutomaticLossScale::apply(Graph &graph) const {
         toAcclId, finalStatisticsTensor->info, d.data());
 
     // 2. add op to accumulate
-    TensorId inId    = finalStatisticsTensor->id;
-    auto statsAcclOp = graph.createOp<AddRhsInplaceOp>(Op::Settings(graph, ""));
+    TensorId inId = finalStatisticsTensor->id;
+    auto statsAcclOp =
+        graph.createOp<AddRhsInplaceOp>(Op::Settings(graph, "", di.getId()));
     statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg0InIndex(), inId);
     statsAcclOp->connectInTensor(AddRhsInplaceOp::getArg1InIndex(), toAcclId);
     statsAcclOp->createAndConnectOutTensor(AddRhsInplaceOp::getOutIndex(),
@@ -867,7 +869,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     // 3. add AccumulatorZeroOp to reset the accl tensor
     auto statsAcclResetOp =
-        graph.createOp<AccumulatorZeroOp>(Op::Settings(graph, ""));
+        graph.createOp<AccumulatorZeroOp>(Op::Settings(graph, "", di.getId()));
     statsAcclResetOp->connectInTensor(
         AccumulatorZeroOp::getVarToUpdateInIndex(), toAcclId);
     statsAcclResetOp->createAndConnectOutTensor(
@@ -891,7 +893,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
     auto reduceOp = graph.createOp<ReplicatedAllReduceOp>(
         Onnx::CustomOperators::ReplicatedAllReduce,
-        Op::Settings(graph, inId + "_reduced"));
+        Op::Settings(graph, inId + "_reduced", di.getId()));
 
     reduceOp->connectInTensor(ReplicatedAllReduceOp::getInIndex(), inId);
     reduceOp->createAndConnectOutTensor(ReplicatedAllReduceOp::getOutIndex(),
@@ -948,7 +950,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   Op *copyVarUpdates;
   if (updatePeriod > 1) {
     auto copyVarUpdateOp =
-        graph.createOp<CopyVarUpdateOp>(Op::Settings(graph, ""));
+        graph.createOp<CopyVarUpdateOp>(Op::Settings(graph, "", di.getId()));
     copyVarUpdateOp->connectInTensor(CopyVarUpdateOp::getVarToUpdateInIndex(),
                                      lsUpdateFactor->id);
     copyVarUpdateOp->connectInTensor(
@@ -971,8 +973,8 @@ bool AutomaticLossScale::apply(Graph &graph) const {
   // - loss scale tensor
   // - the inverse loss scale tensor(s)
 
-  auto lsMulOp =
-      graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul, Op::Settings(graph, ""));
+  auto lsMulOp = graph.createOp<MulOp>(Onnx::AiOnnx::OpSet6::Mul,
+                                       Op::Settings(graph, "", di.getId()));
   lsMulOp->connectInTensor(MulOp::getArg0InIndex(), lossScaleTensor->id);
   lsMulOp->connectInTensor(MulOp::getArg1InIndex(), lsUpdateFactor->id);
   // Design note:
@@ -1019,7 +1021,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     Tensor *finalLossScaleUpdateFactor = nullptr;
     if (dtype != lsUpdateFactor->info.dataType()) {
       auto castOp = graph.createOp<CastOp>(
-          Onnx::Operators::Cast_9, dtype, Op::Settings(graph, ""));
+          Onnx::Operators::Cast_9, dtype, Op::Settings(graph, "", di.getId()));
       castOp->connectInTensor(CastOp::getInIndex(), lsUpdateFactor->id);
       castOp->createAndConnectOutTensor(CastOp::getOutIndex(),
                                         lsUpdateFactor->id + "_cast");
@@ -1038,7 +1040,7 @@ bool AutomaticLossScale::apply(Graph &graph) const {
     for (int i = 0; i < tensors.size(); i++) {
       Tensor *inverseLossScaleTensor = tensors.at(i);
       auto lsDivOp = graph.createOp<DivOp>(Onnx::AiOnnx::OpSet6::Div,
-                                           Op::Settings(graph, ""));
+                                           Op::Settings(graph, "", di.getId()));
       lsDivOp->connectInTensor(DivOp::getArg0InIndex(),
                                inverseLossScaleTensor->id);
       lsDivOp->connectInTensor(DivOp::getArg1InIndex(),
