@@ -23,3 +23,23 @@ class TestHostStore:
         assert len(g.tensors) == 3
         assert len(g.variables) == 1
         assert contains_op_of_type("HostStore", _ir.op.exchange.HostStoreOp, g)
+
+    def test_within_graph(self):
+        ir = popxl.Ir()
+        g = ir.main_graph
+
+        sg = ir.create_empty_graph("subgraph")
+
+        with g:
+            with sg:
+                a = popxl.constant(1.0, name="a")
+                b = ops.add(a, a)
+
+                # Adds a dummy ActGrad tensor in the main graph as the stream handle
+                d2h = popxl.d2h_stream((), popxl.dtypes.float32)
+                ops.host_store(d2h, b)
+
+        assert len(g.tensors) == 1
+        assert len(sg.tensors) == 2
+        assert len(sg.constants) == 1
+        assert contains_op_of_type("HostStore", _ir.op.exchange.HostStoreOp, sg)

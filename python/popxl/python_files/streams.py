@@ -1,11 +1,11 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
-from popxl.context import gcg, gmg
+from typing import Any, Iterable, Optional, Tuple
+
+from popxl.context import gmg
 from popxl.tensor import Tensor, TensorSpec
 from popxl.dtypes import dtype
 
 import popart._internal.ir as _ir
-
-from typing import Any, Iterable, Optional, Tuple
 
 
 class Stream:
@@ -87,14 +87,7 @@ class DeviceToHostStream(Stream):
 def h2d_stream(
     shape: Iterable[int], dtype: dtype, name: Optional[str] = None
 ) -> HostToDeviceStream:
-    g = gcg()
     mg = gmg()
-
-    if g.name != mg.name:
-        raise ValueError(
-            "popxl: Can only call `h2d_stream` in context of main graph. You are in context of graph:",
-            g.name,
-        )
 
     pb_mg = mg._pb_graph
 
@@ -112,15 +105,8 @@ def h2d_stream(
 def d2h_stream(
     shape: Iterable[int], dtype: dtype, name: Optional[str] = None
 ) -> DeviceToHostStream:
-    g = gcg()
     mg = gmg()
     ir_ = mg.ir._pb_ir
-
-    if g.name != mg.name:
-        raise ValueError(
-            "popxl: Can only call `d2h_stream` in context of main graph. You are in context of graph:",
-            g.name,
-        )
 
     pb_mg = mg._pb_graph
 
