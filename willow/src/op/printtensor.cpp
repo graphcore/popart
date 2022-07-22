@@ -7,6 +7,8 @@
 #include <popart/op/printtensor.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
 #include "popart/attributes.hpp"
 #include "popart/datatype.hpp"
@@ -39,11 +41,16 @@ void PrintTensorOp::appendOutlineAttributes(OpSerialiserBase &os) const {
 
 std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
+  auto inputId = inTensor(getInIndex())->id;
+  // If title is specifed, grad title is title + "_gradient"
+  // otherwise its "Gradient__" + inputTensor
+  auto newTitle =
+      title.empty() ? reservedGradientPrefix() + inputId : title + "_gradient";
   upops.emplace_back(
       std::make_unique<PrintTensorOp>(Onnx::CustomOperators::PrintTensor_1,
                                       printGradient,
                                       printGradient,
-                                      title,
+                                      newTitle,
                                       getSettings()));
   return upops;
 }

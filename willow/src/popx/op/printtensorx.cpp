@@ -37,19 +37,10 @@ std::string PrintTensorOpx::getTitle() const {
   const auto &op = getOp<PrintTensorOp>();
   auto title     = op.getTitle();
 
-  // If scheduledPreLoss is No, this is probably a gradient op.
-  if (op_p->scheduledPreLoss == ScheduledPreLoss::No) {
-    if (title.size() > 0) {
-      return logging::format("{}_gradient", title);
-    } else {
-      return op_p->outTensor(PrintTensorOp::getOutIndex())->id;
-    }
+  if (title.size() > 0) {
+    return title;
   } else {
-    if (title.size() > 0) {
-      return title;
-    } else {
-      return op_p->inTensor(PrintTensorOp::getInIndex())->id;
-    }
+    return op_p->inTensor(PrintTensorOp::getInIndex())->id;
   }
 }
 

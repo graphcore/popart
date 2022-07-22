@@ -39,7 +39,7 @@ list(
   ${popart_op_headers_dir}/onehot.hpp
   ${popart_op_headers_dir}/topk.hpp
   ${popart_op_headers_dir}/pow.hpp
-  ${popart_op_headers_dir}/printtensor.hpp
+  #${popart_op_headers_dir}/printtensor.hpp # Manually bound
   ${popart_op_headers_dir}/dropout.hpp
   ${popart_op_headers_dir}/gather.hpp
   ${popart_op_headers_dir}/scatter.hpp
@@ -195,6 +195,7 @@ add_popart_python_module(
   bindings/op/conv.cpp
   bindings/op/roialign.cpp
   bindings/op/pool.cpp
+  bindings/op/printtensor.cpp
   bindings/op/argminmax.cpp
   bindings/op/resize.cpp
   bindings/op/matmul.cpp

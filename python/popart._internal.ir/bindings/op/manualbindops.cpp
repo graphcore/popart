@@ -26,6 +26,7 @@
 #include <popart/op/loop.hpp>              // IWYU pragma: keep
 #include <popart/op/matmul.hpp>            // IWYU pragma: keep
 #include <popart/op/maxpool.hpp>           // IWYU pragma: keep
+#include <popart/op/printtensor.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
 
@@ -35,6 +36,7 @@
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
 #include "bindings/op/pool.hpp"
+#include "bindings/op/printtensor.hpp"
 #include "bindings/op/resize.hpp"
 #include "bindings/op/roialign.hpp"
 #include "bindings/op/varupdate.hpp"
@@ -406,6 +408,8 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("axis"),
       py::arg("settings"),
       py::return_value_policy::reference);
+
+  // RemoteCodeLoadOp
   g.def(
       "createOp_RemoteCodeLoadOp",
       [](Graph &self,
@@ -419,6 +423,25 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("opid"),
       py::arg("graphid"),
       py::arg("destinationType"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // PrintTensorOp
+  g.def(
+      "createOp_PrintTensorOp",
+      [](Graph &self,
+         const popart::OperatorIdentifier opid,
+         bool printSelf_,
+         bool printGradient_,
+         const std::string &title_,
+         const Op::Settings &settings_) {
+        return self.createOp<PrintTensorOp>(
+            opid, printSelf_, printGradient_, title_, settings_);
+      },
+      py::arg("opid"),
+      py::arg("printSelf"),
+      py::arg("printGradient"),
+      py::arg("title"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }
@@ -900,6 +923,8 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("axis"),
       py::arg("settings"),
       py::return_value_policy::reference);
+
+  // RemoteCodeLoadOp
   g.def(
       "createConnectedOp_RemoteCodeLoadOp",
       [](Graph &self,
@@ -917,6 +942,29 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("opid"),
       py::arg("graphid"),
       py::arg("destinationType"),
+      py::arg("settings"),
+      py::return_value_policy::reference);
+
+  // PrintTensorOp
+  g.def(
+      "createConnectedOp_PrintTensorOp",
+      [](Graph &self,
+         const std::map<InIndex, TensorId> &in,
+         const std::map<OutIndex, TensorId> &out,
+         const OperatorIdentifier &opid,
+         bool printSelf_,
+         bool printGradient_,
+         const std::string &title_,
+         const Op::Settings &settings_) {
+        return self.createConnectedOp<PrintTensorOp>(
+            in, out, opid, printSelf_, printGradient_, title_, settings_);
+      },
+      py::arg("in"),
+      py::arg("out"),
+      py::arg("opid"),
+      py::arg("printSelf"),
+      py::arg("printGradient"),
+      py::arg("title"),
       py::arg("settings"),
       py::return_value_policy::reference);
 }

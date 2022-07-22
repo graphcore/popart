@@ -189,7 +189,11 @@ void bindGraph(py::module &m) {
            py::arg("retainUsedIOTensors") = false,
            py::arg("retainAllIOTensors")  = false,
            py::arg("retainVarTensors")    = false,
-           py::arg("retainConstTensors")  = false);
+           py::arg("retainConstTensors")  = false)
+      .def(
+          "copyFrom",
+          [](Graph &self, const Graph &other) { self.copyFrom(other); },
+          py::arg("other"));
 
   bindCreateOpFunctionToGraphClass(g);
 

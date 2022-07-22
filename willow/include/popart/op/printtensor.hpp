@@ -31,6 +31,7 @@ public:
 
   bool shouldPrint() const { return printSelf; }
   const std::string &getTitle() const { return title; }
+  void setTitle(std::string title_) { title = std::move(title_); }
 
 private:
   bool printSelf;

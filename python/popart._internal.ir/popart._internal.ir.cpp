@@ -28,6 +28,7 @@
 #include "bindings/op/optimizervalue.hpp"
 #include "bindings/op/optional.hpp"
 #include "bindings/op/pool.hpp"
+#include "bindings/op/printtensor.hpp"
 #include "bindings/op/resize.hpp"
 #include "bindings/op/roialign.hpp"
 #include "bindings/op/varupdate.hpp"
@@ -100,6 +101,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindConv(m);
     op::bindRoiAlign(m);
     op::bindPool(m);
+    op::bindPrintTensor(m);
     op::bindArgMinMax(m);
     op::bindResize(m);
     // Exchange
