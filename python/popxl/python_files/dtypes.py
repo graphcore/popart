@@ -295,7 +295,7 @@ class dtype:
         return self
 
 
-# yapf: disable
+# fmt: off
 # Fixed point types
 # Args: name, is_complex, is_int, is_floating_point, is_signed, np_type, pt_type, py_type, pb_type
 bool = dtype._factory('bool', False, False, False, False, 'bool_', 'bool', builtins.bool, _ir.DataType.BOOL)
@@ -316,7 +316,7 @@ float64 = dtype._factory('float64', False, False, True, True, 'float64', 'float6
 # Complex types
 complex64 = dtype._factory('complex64', True, False, False, True, 'complex64', 'complex64', None, _ir.DataType.COMPLEX64)
 complex128 = dtype._factory('complex128', True, False, False, True, 'complex128', 'complex128', None, _ir.DataType.COMPLEX128)
-# yapf: enable
+# fmt: on
 
 # Type aliases
 half = float16

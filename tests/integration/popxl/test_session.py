@@ -81,7 +81,7 @@ def test_session_multi_iteration():
         assert np.allclose(output[i, ...], (input_[i, ...] @ W_data) + b_data)
 
 
-# yapf: disable
+# fmt: off
 @pytest.mark.parametrize("data,shape,dtype", [
     [[0.0, 1.0, 2.0, 3.0], (4,), popxl.float32],
     [np.array([0.0, 1.0, 2.0, 3.0], dtype='float64'), (4,), popxl.float32],
@@ -102,7 +102,7 @@ def test_session_input_types(data, shape, dtype):
 
     with popxl.Session(ir, device_desc="ipu_model") as session:
         _ = session.run(inputs={x_h2d: data})
-# yapf: enable
+# fmt: on
 
 
 def run_session(ir, input_tensors, input_d2hs, num_host_transfers):

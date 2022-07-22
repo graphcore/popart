@@ -7,7 +7,7 @@ import torch
 import numpy as np
 
 
-# yapf: disable
+# fmt: off
 @pytest.mark.parametrize("x,dtype,downcast,expected_type", [
     # Numpy input
     [np.arange(4, dtype='float32'), None, True, np.dtype('float32')], # No downcast needed
@@ -37,4 +37,4 @@ def test_to_numpy(x, dtype, downcast, expected_type):
     assert isinstance(out, np.ndarray)
     assert expected_type == out.dtype
 
-# yapf: enable
+# fmt: on

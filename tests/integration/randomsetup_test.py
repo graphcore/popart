@@ -62,17 +62,17 @@ def test_random_behaviour_governed_by_seed(useHostCopyOps):
 
     # run0 and run1 (which use the same seed) should agree on each step.
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run1, 'main_dropout0', s, whole)
-        # yapf: enable
+        # fmt: on
 
     # run0 and run2 (which use different seeds) should disagree on every step.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
-        # yapf: disable
+        # fmt: off
         ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                               run2, 'main_dropout0', s1, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_distinct_random_behaviour_per_step():
@@ -106,18 +106,18 @@ def test_distinct_random_behaviour_per_step():
 
     # forwards/backwards mask should be the same
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run0, 'main_dropout0_grad', s, whole)
-        # yapf: enable
+        # fmt: on
 
     # no steps should be the same
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
         if s0 < s1:
-            # yapf: disable
+            # fmt: off
             ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                                   run0, 'main_dropout0', s1, whole)
-            # yapf: enable
+            # fmt: on
 
 
 def test_distinct_random_behaviour_per_op():
@@ -158,19 +158,19 @@ def test_distinct_random_behaviour_per_op():
 
     # ops should have different seeds.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
-        # yapf: disable
+        # fmt: off
         ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                               run0, 'main_dropout1', s1, whole)
-        # yapf: enable
+        # fmt: on
 
     # but fwd/bwd mask should match for each op.
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run0, 'main_dropout0_grad', s, whole)
         ensure_mask_equal(run0, 'main_dropout1', s, whole,
                           run0, 'main_dropout1_grad', s, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_random_op_in_subgraph():
@@ -210,17 +210,17 @@ def test_random_op_in_subgraph():
     # no step should yield the same mask.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
         if s0 < s1:
-            # yapf: disable
+            # fmt: off
             ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                                   run0, 'main_dropout0', s1, whole)
-            # yapf: enable
+            # fmt: on
 
     # op and grad op should have the same mask.
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run0, 'main_dropout0_grad', s, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_two_calls_to_subgraph_with_random_op():
@@ -266,19 +266,19 @@ def test_two_calls_to_subgraph_with_random_op():
 
     # calls should not agree on seeds for any steps.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
-        # yapf: disable
+        # fmt: off
         ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                               run0, 'main_dropout1', s1, whole)
-        # yapf: enable
+        # fmt: on
 
     # but fwd/bwd mask should match for each individual op.
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run0, 'main_dropout0_grad', s, whole)
         ensure_mask_equal(run0, 'main_dropout1', s, whole,
                           run0, 'main_dropout1_grad', s, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_nesting_of_subgraphs():
@@ -323,17 +323,17 @@ def test_nesting_of_subgraphs():
     # no step should yield the same mask.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
         if s0 < s1:
-            # yapf: disable
+            # fmt: off
             ensure_mask_not_equal(run0, 'main_dropout0', s0, whole,
                                   run0, 'main_dropout0', s1, whole)
-            # yapf: enable
+            # fmt: on
 
     # op and grad op should have the same mask.
     for s in range(num_steps):
-        # yapf: disable
+        # fmt: off
         ensure_mask_equal(run0, 'main_dropout0', s, whole,
                           run0, 'main_dropout0_grad', s, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_distinct_random_behaviour_with_subgraphs():
@@ -400,12 +400,12 @@ def test_distinct_random_behaviour_with_subgraphs():
 
     # ops should have different seeds.
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
-        # yapf: disable
+        # fmt: off
         for d0, d1 in itertools.product(range(4), repeat=2):
             if d0 < d1:
                 ensure_mask_not_equal(run0, f'main_dropout{d0}', s0, whole,
                                       run0, f'main_dropout{d1}', s1, whole)
-        # yapf: enable
+        # fmt: on
 
 
 def test_random_op_in_loop_body():
@@ -468,12 +468,12 @@ def test_random_op_in_loop_body():
     for s0, s1 in itertools.product(range(num_steps), repeat=2):
         for i0, i1 in itertools.product(range(num_iters), repeat=2):
             if s0 <= s1 and i0 <= i1 and (s0 != s1 or i0 != i1):
-                # yapf: disable
+                # fmt: off
                 slice0 = Slice(index=i0, total_slices=num_iters)
                 slice1 = Slice(index=i1, total_slices=num_iters)
                 ensure_value_not_equal(run0, 'main_rnd', s0, slice0,
                                        run0, 'main_rnd', s1, slice1)
-                # yapf: enable
+                # fmt: on
 
 
 def run_model(builder_fn, steps, seed, training=True, options=popart.SessionOptions()):

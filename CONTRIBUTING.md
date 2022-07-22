@@ -15,10 +15,9 @@ pre-commit install
 This will run the hooks every time you run `git commit`.
 To run the linters on all files use `pre-commit run --all-files`.
 
-Alternatively one could use the `./format.sh` script in the base `popart` directory before making a pull request. This uses `clang-format`
-on C++ code and `yapf` on python code. Please use `clang-format` version 9.0.0  and `yapf` version 0.27.0.
-
-**NOTE**: `yapf` can be installed with `pip3`.
+The first time you run pre-commit you will get instructions on how to install
+the linters you need. This includes `cpplint` 1.6.0, `clang-format` 9.0.0 for
+C++ code, `black` 22.6.0, `pylint` 2.13.9 which are installed via pip.
 
 ### Unit Tests
 

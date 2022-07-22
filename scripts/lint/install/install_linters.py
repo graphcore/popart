@@ -142,7 +142,7 @@ class Installer:
 
     def _install_uninstalled_pip_packages(self):
         """Install pip packages."""
-        pip_packages = (("yapf", "clang-format", "pylint", "cpplint"),)
+        pip_packages = ("black", "clang-format", "pylint", "cpplint")
         for pip_package in pip_packages:
             if pip_package in self.linters_to_install:
                 command = f"pip3 install {pip_package}=={self.version_checker.version_list[pip_package]}"

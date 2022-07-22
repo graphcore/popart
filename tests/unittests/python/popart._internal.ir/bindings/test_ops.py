@@ -108,7 +108,7 @@ def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"], outs: Dict[int, "_ir.Te
 
 
 @pytest.mark.parametrize("connected", [True, False])
-# yapf: disable, pylint: disable-all
+# fmt: off, pylint: disable-all
 @pytest.mark.parametrize(
     "op_name,inplace,kwargs",
     [
@@ -135,7 +135,7 @@ def op_assertions(op: Any, ins: Dict[int, "_ir.Tensor"], outs: Dict[int, "_ir.Te
         ("WhereOp", False, {}),
     ],
 )
-# yapf: enable, pylint: enable-all
+# fmt: on, pylint: enable-all
 def test_ternary_ops(
     connected: bool, inplace: bool, op_name: str, kwargs: Dict[str, Any]
 ) -> None:
@@ -154,7 +154,7 @@ def test_ternary_ops(
 
 
 # yapf mangles these param lists
-# yapf: disable, pylint: disable-all
+# fmt: off, pylint: disable-all
 @pytest.mark.parametrize(
     "op_name,inplace,kwargs",
     [
@@ -179,7 +179,7 @@ def test_ternary_ops(
         ("VarUpdateWithUpdaterOp", False, {}),
     ],
 )
-# yapf: enable, pylint: enable-all
+# fmt: on, pylint: enable-all
 @pytest.mark.parametrize("connected", [True, False])
 def test_binary_ops(
     op_name: str, inplace: bool, connected: bool, kwargs: Dict[str, Any]
@@ -199,7 +199,7 @@ def test_binary_ops(
 
 
 @pytest.mark.parametrize("connected", [True, False])
-# yapf: disable, pylint: disable-all
+# fmt: off, pylint: disable-all
 @pytest.mark.parametrize(
     "op_name,kwargs,n_outputs",
     [
@@ -287,7 +287,7 @@ def test_binary_ops(
         ),
     ],
 )
-# yapf: enable, pylint: enable-all
+# fmt: on, pylint: enable-all
 def test_unary_ops(
     connected: bool, op_name: str, kwargs: Dict[str, Any], n_outputs: int
 ) -> None:
