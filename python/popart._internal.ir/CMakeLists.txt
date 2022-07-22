@@ -199,6 +199,7 @@ add_popart_python_module(
   bindings/op/argminmax.cpp
   bindings/op/resize.cpp
   bindings/op/matmul.cpp
+  bindings/op/if.cpp
   bindings/op/accumulate.cpp
   bindings/op/manualbindops.cpp
   bindings/op/adamupdater.cpp

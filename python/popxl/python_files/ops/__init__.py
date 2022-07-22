@@ -5,6 +5,7 @@ from .pool import average_pool, max_pool
 from .call import call, call_with_info, CallSiteInfo
 from .cast import cast
 from .concat import concat, concat_
+from .conditional import conditional, conditional_with_info
 from .conv import conv, PadType
 from .code_copy import remote_code_load
 from .cos import cos
@@ -105,6 +106,9 @@ __all__ = [
     "roi_align",
     # interpolate.py,
     "interpolate",
+    # conditional.py,
+    "conditional",
+    "conditional_with_info",
     # detach.py
     "detach",
     "detach_",

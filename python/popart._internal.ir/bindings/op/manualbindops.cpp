@@ -26,12 +26,14 @@
 #include <popart/op/loop.hpp>              // IWYU pragma: keep
 #include <popart/op/matmul.hpp>            // IWYU pragma: keep
 #include <popart/op/maxpool.hpp>           // IWYU pragma: keep
+#include <popart/op/if.hpp>                // IWYU pragma: keep
 #include <popart/op/printtensor.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
 
 #include "bindings/basicoptionals.hpp"
 #include "bindings/op/argminmax.hpp"
+#include "bindings/op/if.hpp"
 #include "bindings/op/manualbindops.hpp"
 #include "bindings/op/matmul.hpp"
 #include "bindings/op/optional.hpp"
@@ -198,6 +200,19 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("opid"),
         py::arg("axis"),
         py::arg("keepdims"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // If
+  g.def("createOp_IfOp",
+        &Graph::createOp<IfOp,
+                         const popart::OperatorIdentifier &,
+                         const BranchInfo &,
+                         const BranchInfo &,
+                         const Op::Settings &>,
+        py::arg("opid"),
+        py::arg("thenBranchInfo"),
+        py::arg("elseBranchInfo"),
         py::arg("settings"),
         py::return_value_policy::reference);
 
@@ -609,6 +624,21 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
         py::arg("opid"),
         py::arg("axis"),
         py::arg("keepdims"),
+        py::arg("settings"),
+        py::return_value_policy::reference);
+
+  // If
+  g.def("createConnectedOp_IfOp",
+        &Graph::createConnectedOp<IfOp,
+                                  const popart::OperatorIdentifier &,
+                                  const BranchInfo &,
+                                  const BranchInfo &,
+                                  const Op::Settings &>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("thenBranchInfo"),
+        py::arg("elseBranchInfo"),
         py::arg("settings"),
         py::return_value_policy::reference);
 

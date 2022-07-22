@@ -91,7 +91,7 @@ class TestCall:
         # 4 call sites total
         assert len(g.tensors) == 8
         assert len(g.variables) == 4
-        assert num_op_of_type("Call", _ir.op.CallOp, g) == 5
+        assert num_op_of_type("Call", _ir.op.CallOp, g) == 4
 
         # Test subgraphs have unique scopes
         assert add_weight_graph0.name != add_weight_graph1.name
@@ -240,3 +240,151 @@ class TestCall:
 
             with pytest.raises(TypeError):
                 ops.call(g, None)
+
+
+class TestCallSiteInfo:
+    @staticmethod
+    def foo(a, b):
+        return a + b, a - b
+
+    def test_called_graph(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.called_graph == foo_g
+
+    def test_graph_to_parent_input_index(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.graph_to_parent_input_index(0) == 0
+            assert call_info.graph_to_parent_input_index(1) == 1
+
+    def test_parent_to_graph_input_index(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.parent_to_graph_input_index(0) == 0
+            assert call_info.parent_to_graph_input_index(1) == 1
+
+    def test_graph_to_parent_output_index(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.graph_to_parent_output_index(0) == 0
+            assert call_info.graph_to_parent_output_index(1) == 1
+
+    def test_parent_to_graph_output_index(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.parent_to_graph_output_index(0) == 0
+            assert call_info.parent_to_graph_output_index(1) == 1
+
+    def test_graph_to_parent(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.graph_to_parent(
+                foo_g.inputs[0]) == call_info.inputs[0]
+            assert call_info.graph_to_parent(
+                foo_g.inputs[1]) == call_info.inputs[1]
+            assert call_info.graph_to_parent(
+                foo_g.outputs[0]) == call_info.outputs[0]
+            assert call_info.graph_to_parent(
+                foo_g.outputs[1]) == call_info.outputs[1]
+
+            other_tensor = popxl.variable(1, name='other_tensor')
+            with pytest.raises(ValueError):
+                call_info.graph_to_parent(other_tensor)
+
+    def test_parent_to_graph(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.parent_to_graph(
+                call_info.inputs[0]) == foo_g.inputs[0]
+            assert call_info.parent_to_graph(
+                call_info.inputs[1]) == foo_g.inputs[1]
+
+            other_tensor = popxl.variable(1, name='other_tensor')
+            with pytest.raises(ValueError):
+                call_info.parent_to_graph(other_tensor)
+
+    def test_parent_input(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.parent_input(0) == a
+            assert call_info.parent_input(1) == b
+
+            with pytest.raises(IndexError):
+                call_info.parent_input(2)
+
+    def test_parent_output(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert call_info.parent_output(0) == call_info.outputs[0]
+            assert call_info.parent_output(1) == call_info.outputs[1]
+
+            with pytest.raises(IndexError):
+                call_info.parent_output(2)
+
+    def test_inputs(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert len(call_info.inputs) == 2
+            assert call_info.inputs[0] == a
+            assert call_info.inputs[1] == b
+
+    def test_outputs(self):
+        ir = popxl.Ir()
+        with ir.main_graph:
+            a = popxl.variable(1, name='a')
+            b = popxl.variable(1, name='b')
+            foo_g = ir.create_graph(self.foo, a, b)
+
+            call_info = ops.call_with_info(foo_g, a, b)
+            assert len(call_info.outputs) == 2

@@ -22,6 +22,7 @@
 #include "bindings/op/concat.hpp"
 #include "bindings/op/conv.hpp"
 #include "bindings/op/enums.hpp"
+#include "bindings/op/if.hpp"
 #include "bindings/op/ipucopy.hpp"
 #include "bindings/op/loop.hpp"
 #include "bindings/op/matmul.hpp"
@@ -100,6 +101,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindAdamUpdater(m);
     op::bindConcat(m);
     op::bindConv(m);
+    op::bindIf(m);
     op::bindRoiAlign(m);
     op::bindPool(m);
     op::bindPrintTensor(m);
