@@ -89,7 +89,8 @@ RemoteLoadOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 RemoteLoadOp::getInplaceVariant(const OperatorIdentifier &operatorId) const {
   if (operatorId == Onnx::CustomOperators::RemoteLoadInplace) {
-    return std::make_unique<RemoteLoadInplaceOp>(*this);
+    return std::make_unique<RemoteLoadInplaceOp>(
+        Onnx::CustomOperators::RemoteLoadInplace, settings, remoteBufferId);
   }
   // Catch remaining cases and throw an error
   return Op::getInplaceVariant(operatorId);
