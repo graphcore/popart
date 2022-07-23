@@ -176,6 +176,7 @@ def test_ternary_ops(
         ("CopyVarUpdateOp", True, {}),
         ("ScaledAddOp", False, {"scale_0_": 0.9, "scale_1_": 0.1}),
         ("ScaledAddLhsInplaceOp", True, {"scale_0_": 0.9, "scale_1_": 0.1}),
+        ("VarUpdateWithUpdaterOp", False, {}),
     ],
 )
 # yapf: enable, pylint: enable-all
@@ -239,7 +240,6 @@ def test_binary_ops(
             1,
         ),
         ("VarUpdateOp", {}, 1),
-        ("VarUpdateWithUpdaterOp", {}, 1),
         ("IncrementModOp", {"increment_": 1, "modulus_": 3}, 1),
         ("IncrementModInplaceOp", {"increment_": 1, "modulus_": 3}, 1),
         (
@@ -1166,13 +1166,19 @@ def test_adam_var_update_op(connected: bool, const_lr: bool, const_mwn: bool) ->
     _, graphs = create_ir()
     main = graphs[0]
     weight = add_random_tensor("weight", _ir.TensorType.Variable, [4], main)
+    updater = add_actgrad_tensor("updater", [4], main)
     lamb_r1_square = add_actgrad_tensor("lamb_r1_square", [4], main)
     lamb_r2_square = add_actgrad_tensor("lamb_r2_square", [4], main)
 
     out = add_actgrad_tensor("updated_weight", [4], main)
 
     settings = _ir.Settings(main, "adam_var_update")
-    ins: Dict[int, str] = {0: weight.id, 2: lamb_r1_square.id, 3: lamb_r2_square.id}
+    ins: Dict[int, str] = {
+        0: weight.id,
+        1: updater.id,
+        2: lamb_r1_square.id,
+        3: lamb_r2_square.id,
+    }
     if not const_lr:
         learning_rate = add_actgrad_tensor("learning_rate", [1], main)
         ins[4] = learning_rate.id
