@@ -41,30 +41,38 @@ void PopTensors::verify(TensorId id, const snap::Tensor &pt) {
         "no tensor named {} in ir, is this a valid snap::Tensor?", id);
   }
 
-  // confirm shapes agree (up to squeezing out the extra 1s)
+  // confirm shapes agree (up to squeezing out the leading 1s)
   auto irTensor = ir.getTensor(id);
 
-  auto shape = foundViewChangers == viewChangers_.end()
-                   ? pt.shape()
-                   : foundViewChangers->second->apply(pt).shape();
+  const auto ptShapeUnsqueezed =
+      foundViewChangers == viewChangers_.end()
+          ? pt.shape()
+          : foundViewChangers->second->apply(pt).shape();
+  auto ptShape = ptShapeUnsqueezed;
 
-  if (shape != irTensor->info.shape_szt()) {
+  const auto irShapeUnsqueezed = irTensor->info.shape_szt();
+  auto irShape                 = irShapeUnsqueezed;
 
-    // squeeze out extra 1s
-    while (!shape.empty() && shape[0] == 1) {
-      shape.erase(shape.begin());
+  if (ptShape != irShape) {
+
+    // squeeze out leading 1s
+    while (!ptShape.empty() && ptShape[0] == 1) {
+      ptShape.erase(ptShape.begin());
+    }
+    while (!irShape.empty() && irShape[0] == 1) {
+      irShape.erase(irShape.begin());
     }
 
-    if (shape != irTensor->info.shape_szt()) {
+    if (ptShape != irShape) {
       std::stringstream ss;
       ss << "snap::Tensor " << id << " of unexpected shape. ";
       if (foundViewChangers != viewChangers_.end()) {
-        ss << "Poplar tensor shape: " << pt.shape() << "->" << shape
+        ss << "Poplar tensor shape: " << pt.shape() << "->" << ptShapeUnsqueezed
            << " (view changed)";
       } else {
-        ss << "Poplar tensor shape: " << shape;
+        ss << "Poplar tensor shape: " << ptShapeUnsqueezed;
       }
-      ss << ". Expected (Ir) tensor shape: " << irTensor->info.shape_szt()
+      ss << ". Expected (Ir) tensor shape: " << irShapeUnsqueezed
          << ". This for tensor " << irTensor->str();
       throw error(ss.str());
     }
