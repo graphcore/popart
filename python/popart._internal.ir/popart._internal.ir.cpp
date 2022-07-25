@@ -45,6 +45,7 @@
 #include "bindings/util.hpp"
 // transforms
 #include "bindings/transforms/autodiff.hpp"
+#include "bindings/transforms/decomposesum.hpp"
 #include "bindings/transforms/mergeexchange.hpp"
 #include "bindings/transforms/prune.hpp"
 #include "bindings/transforms/transform.hpp"
@@ -113,6 +114,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     transforms::bindTransform(sm);
     transforms::bindPrune(sm);
     transforms::bindAutodiff(sm);
+    transforms::bindDecomposeSum(sm);
     transforms::bindMergeExchange(sm);
   }
   // Patterns

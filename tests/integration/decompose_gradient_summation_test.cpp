@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(
     // This will match only the adds from the grad sum decomposition of the
     // weight gradient, not from the skip connections.
     const auto isGradAdd = [](const Op *op) {
-      return op->getName().find("GradAdd") != std::string::npos;
+      return op->getName().find("add") != std::string::npos;
     };
 
     // Because the activations are much larger than the weights, peak liveness

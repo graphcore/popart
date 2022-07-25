@@ -8,6 +8,8 @@ from .autodiff import (
 )
 from .merge_exchange import merge_exchange, io_tile_exchange
 
+from .decompose_sum import decompose_sum
+
 __all__ = [
     # autodiff.py
     "ExpectedConnectionType",
@@ -17,4 +19,6 @@ __all__ = [
     # merge_exchange.py
     "merge_exchange",
     "io_tile_exchange",
+    # decompose sum
+    "decompose_sum",
 ]

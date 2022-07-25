@@ -213,6 +213,11 @@ class Graph:
             for t in self._pb_graph.getTensorsOfType(_ir.TensorType.Const)
         )
 
+    @property
+    def called_graphs(self) -> Tuple["Graph", ...]:
+        """Return all Graphs called by ops in the graph."""
+        return tuple(Graph._from_pb(g) for g in set(self._pb_graph.getCalledGraphs()))
+
     def __enter__(self):
         get_current_context().push_graph(self)
         return self

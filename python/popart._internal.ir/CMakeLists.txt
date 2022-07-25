@@ -225,6 +225,7 @@ add_popart_python_module(
   bindings/transforms/transform.cpp
   bindings/transforms/prune.cpp
   bindings/transforms/autodiff.cpp
+  bindings/transforms/decomposesum.cpp
   bindings/transforms/mergeexchange.cpp
   # end transforms
   bindings/op/enums.cpp
