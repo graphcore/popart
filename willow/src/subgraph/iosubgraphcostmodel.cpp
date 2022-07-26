@@ -42,8 +42,8 @@ float IoSubgraphCostModel::value(
 
   // the external inputs and outputs, which we use to adjust the value of
   // match downwards
-  std::set<Tensor *> externalInputs;
-  std::set<Tensor *> externalOutputs;
+  TensorSet externalInputs;
+  TensorSet externalOutputs;
 
   for (auto i = start; i < end; ++i) {
     Op *op = schedule[i];

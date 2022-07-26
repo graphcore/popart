@@ -1090,13 +1090,13 @@ bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   return tt == TensorType::Const;
 }
 
-std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
+TensorSet Ir::getRootInputsToOp(Op *op) {
   if (opAndRootInputs.find(op->id) != opAndRootInputs.end()) {
     // We have already stored the root inputs for this op
     // in a map. Retrieve here instead of performing search
     return opAndRootInputs.at(op->id);
   } else {
-    std::set<Tensor *> rootInputs;
+    TensorSet rootInputs;
 
     // Get input tensors Ids
     std::vector<TensorId> inputIds = getTensors().getNoProducerIds();
@@ -1144,7 +1144,7 @@ void Ir::verifyConstExprFolding() {
     }
 
     // 2 & 3
-    std::set<Tensor *> rootInputs;
+    TensorSet rootInputs;
     for (auto consumingOp : tensor->consumers.getOps()) {
       for (auto rootInput : getRootInputsToOp(consumingOp)) {
         rootInputs.insert(rootInput);

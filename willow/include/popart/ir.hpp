@@ -680,7 +680,7 @@ private:
   // as expected
   void verifyConstExprFolding();
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
-  std::set<Tensor *> getRootInputsToOp(Op *op);
+  TensorSet getRootInputsToOp(Op *op);
 
 public:
   /**
@@ -735,7 +735,7 @@ private:
   std::map<std::size_t, bool> transformEnableMap;
 
   // Map of ops and their root inputs
-  std::map<OpId, std::set<Tensor *>> opAndRootInputs;
+  std::map<OpId, TensorSet> opAndRootInputs;
 
   TensorId finalLossId;
   OpId finalLossOpId{-1000};

@@ -131,9 +131,7 @@ void PruneHelper::setFront(std::vector<Tensor *> tensorFront_) {
     tensorsVisited.insert(t);
   }
 }
-void PruneHelper::setRequired(std::set<Op *> required_) {
-  required = required_;
-}
+void PruneHelper::setRequired(OpSet required_) { required = required_; }
 
 bool Prune::apply(Graph &graph) const {
   auto &ir = graph.getIr();
@@ -142,7 +140,7 @@ bool Prune::apply(Graph &graph) const {
   auto rootAnchorIds = ir.getRootAnchors();
 
   // initialise with all operations modifying weights (directly or indirectly)
-  std::set<Op *> required;
+  OpSet required;
 
   // Don't prune Ops that modify inputs which are required
   auto modifiedInputRequired = [](Op *op, InIndex index) {

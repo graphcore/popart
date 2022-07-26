@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <popart/names.hpp>
+#include <popart/tensor.hpp>
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
@@ -33,7 +34,7 @@ public:
 
   std::vector<Tensor *> external_inputs;
   std::vector<Tensor *> external_outputs;
-  std::set<Tensor *> all_outputs;
+  TensorSet all_outputs;
 
   int getIndex(const Op *) const;
 

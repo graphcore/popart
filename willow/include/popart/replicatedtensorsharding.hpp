@@ -9,6 +9,7 @@
 
 #include "popart/names.hpp"
 #include "popart/pointercomparators.hpp"
+#include "popart/tensor.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/vendored/optional.hpp"
 
@@ -231,18 +232,17 @@ private:
     /**
      * Set of tensors to start from
      */
-    std::set<Tensor *> startTensors;
+    TensorSet startTensors;
 
     /**
      * Map from tensors to associated remote buffer IDs
      */
-    std::map<Tensor *, std::set<RemoteBufferId>, PTensorCmp>
-        tensorRemoteBufferMap;
+    TensorMap<std::set<RemoteBufferId>> tensorRemoteBufferMap;
 
     /**
      * Map from remote buffer IDs to associated tensors
      */
-    std::map<RemoteBufferId, std::set<Tensor *>> remoteBufferTensorMap;
+    std::map<RemoteBufferId, TensorSet> remoteBufferTensorMap;
   };
 
   /**

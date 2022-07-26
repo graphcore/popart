@@ -208,7 +208,8 @@ public:
 private:
   view::Regions getAcceptedSubregions(view::Region);
 
-  std::map<ICreatorCandidatePtr, view::Regions> candidates;
+  std::map<ICreatorCandidatePtr, view::Regions, ICreatorCandidatePtrCmp>
+      candidates;
 };
 
 } // namespace popx

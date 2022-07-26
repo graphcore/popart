@@ -79,7 +79,7 @@ void annotateStandard(const Graph &graph) {
   // been consumed by their (non-grad) consumers just after
   // linearised[i] has run. By this defn,
   // linearised[i] \in live[i]
-  std::vector<std::set<Op *>> liveSets = graph.getLiveSets(fwdOps);
+  auto liveSets = graph.getLiveSets(fwdOps);
 
   // The memory (bytes) which will be needed to
   // store all the output tensors in a liveness set.
@@ -120,7 +120,7 @@ void annotateStandard(const Graph &graph) {
   //   defn, checkpoints: Ops whose
   //   outputs we guarantee will be available
   //   at any time
-  std::set<Op *> checkpoints;
+  OpSet checkpoints;
 
   // we choose the lowest memory set from each interval,
   // and add its members to checkpoints.
@@ -128,7 +128,7 @@ void annotateStandard(const Graph &graph) {
     int begin            = interval[0];
     int end              = interval[1];
     int64_t lowestMemory = std::numeric_limits<int64_t>::max();
-    std::set<Op *> bestSet{};
+    OpSet bestSet{};
     for (int i = begin; i < end; ++i) {
       if (memoryOfLives[i] < lowestMemory) {
         lowestMemory = memoryOfLives[i];

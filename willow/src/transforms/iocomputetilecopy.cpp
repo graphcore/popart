@@ -153,7 +153,7 @@ bool IoComputeTileCopy::apply(Graph &graph) const {
   // For each op (in schedule order)
   for (Op *from : schedule) {
 
-    std::set<Tensor *> tensors;
+    TensorSet tensors;
 
     if (from->opid != Onnx::CustomOperators::IoTileCopy) {
       auto &input  = from->input;

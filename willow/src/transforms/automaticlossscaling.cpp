@@ -806,9 +806,8 @@ bool AutomaticLossScale::apply(Graph &graph) const {
 
   // Get the loss scale tensor and the inverse loss scale tensor:
   // the tensors to be updated
-  Tensor *lossScaleTensor = getLossScaleTensor(graph);
-  std::set<Tensor *> inverseLossScaleTensors =
-      getInverseLossScaleTensors(graph);
+  Tensor *lossScaleTensor      = getLossScaleTensor(graph);
+  auto inverseLossScaleTensors = getInverseLossScaleTensors(graph);
 
   // Pass loss scale tensor and HistogramOp outputs into the LossScaleUpdateOp
   Op *lossScaleUpdateOp = graph.createOp<LossScaleUpdateOp>(

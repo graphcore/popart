@@ -523,7 +523,7 @@ void processEdgeMatch(PartialMatch &match,
   bool first = true;
   for (auto &inEdge : inEdges) {
     auto fromOp = match.ops.at(inEdge.getFrom());
-    std::set<Tensor *> tensors;
+    TensorSet tensors;
     if (inEdge.getEdgeType() == EdgeType::Tensor) {
       if (inEdge.getOut() == -1) {
         auto fromTensors = fromOp->output->tensors();
@@ -534,7 +534,7 @@ void processEdgeMatch(PartialMatch &match,
         }
       }
     }
-    std::set<Op *, POpCmp> localCandidates;
+    OpSet localCandidates;
     if (inEdge.getEdgeType() == EdgeType::TopoCon) {
       for (auto c : fromOp->getGraph().topoCons->getAfters(fromOp)) {
         if (preds.at(index)(c) && !match.contains(c)) {
@@ -556,7 +556,7 @@ void processEdgeMatch(PartialMatch &match,
     if (first) {
       candidates = localCandidates;
     } else {
-      std::set<Op *, POpCmp> intersectCandidates;
+      OpSet intersectCandidates;
       std::set_intersection(
           candidates.begin(),
           candidates.end(),

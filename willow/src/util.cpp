@@ -133,7 +133,7 @@ Tensor *getLossScaleTensor(const Graph &graph) {
   return lossScaleTensor;
 }
 
-std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
+TensorSet getInverseLossScaleTensors(const Graph &graph) {
   const Ir &ir               = graph.getIr();
   const Optimizer &optimizer = ir.getOptimizer();
 
@@ -144,7 +144,7 @@ std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph) {
   // per type.
   auto variables = graph.getTensors().getOfType(TensorType::Variable);
 
-  std::set<Tensor *> inverseLossScaleTensors;
+  TensorSet inverseLossScaleTensors;
   for (Tensor *variable : variables) {
     // find out if the tensor is connected to an optimizer
     auto isUpdatedVariable = [](Tensor *tensor) -> bool {

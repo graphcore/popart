@@ -119,7 +119,7 @@ void AliasModelGrower::growPartialGraph(const Graph &graph,
 
   // Map containing the subset of ops as keys, mapping them to the uint64_t
   // value we will use in the poprithms::schedule::vanilla call.
-  std::map<Op *, uint64_t> opToVanillaNum;
+  OpMap<uint64_t> opToVanillaNum;
 
   // Inverse mapping of `opToVanillaNum`.
   std::vector<Op *> vanillaNumToOp;

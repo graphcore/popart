@@ -1591,8 +1591,7 @@ public:
    * \returns A map of consumer ops for the tensors produced at the output
    * index.
    */
-  std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
-  getSubgraphOutputs() const;
+  std::map<fwtools::subgraph::OutIndex, OpSet> getSubgraphOutputs() const;
 
   // default high value here means that sub-graphs
   // of single ops are cached by default

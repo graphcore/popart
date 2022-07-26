@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 #include <popart/datatype.hpp>
+#include <popart/tensor.hpp>
 #include <popart/vendored/optional.hpp>
 
 #include "popart/names.hpp"
@@ -80,9 +81,9 @@ Tensor *getLossScaleTensor(const Graph &graph);
  * compound scalar tensor which contains the inverse loss scale factor.
  *
  * \param graph The graph, in which the loss scale belongs.
- * \return std::set<Tensor *> The inverse loss scale tensors.
+ * \return popart::TensorSet The inverse loss scale tensors.
  */
-std::set<Tensor *> getInverseLossScaleTensors(const Graph &graph);
+TensorSet getInverseLossScaleTensors(const Graph &graph);
 
 std::vector<char>
 cast(DataType src, DataType dst, const void *data, size_t nbytes);

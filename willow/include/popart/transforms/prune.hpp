@@ -6,6 +6,9 @@
 #include <set>
 #include <string>
 #include <vector>
+
+#include "popart/op.hpp"
+#include "popart/tensor.hpp"
 #include <popart/transforms/transform.hpp>
 
 namespace popart {
@@ -20,7 +23,7 @@ public:
 
   void setFront(std::vector<Tensor *> tensorFront_);
 
-  void setRequired(std::set<Op *> required_);
+  void setRequired(OpSet required_);
 
   void analyze();
 
@@ -38,7 +41,7 @@ private:
   Graph *graph;
 
   // Ops that can't be pruned
-  std::set<Op *> required;
+  OpSet required;
 
   // as we work backwards, we keep a
   // "front" of tensors,
@@ -46,7 +49,7 @@ private:
 
   // when a tensor enters the "front",
   // we record that it has been visited
-  std::set<Tensor *> tensorsVisited;
+  TensorSet tensorsVisited;
 
   // ops \ required
   std::vector<Op *> opsToDelete;

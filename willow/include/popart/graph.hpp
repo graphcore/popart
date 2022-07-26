@@ -219,8 +219,7 @@ public:
   // Note : if topoOps is just the forward pass, the grad-op
   // consumers of a tensor do not appear in "ops". This agrees
   // with the definition.
-  std::vector<std::set<Op *>>
-  getLiveSets(const std::vector<Op *> &topoOps) const;
+  std::vector<OpSet> getLiveSets(const std::vector<Op *> &topoOps) const;
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
   /// Get the index of the graph input with a specific id. If the id is not

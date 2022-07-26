@@ -614,8 +614,7 @@ bool Graph::hasUserRecomputeOps() const {
   return false;
 }
 
-std::vector<std::set<Op *>>
-Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
+std::vector<OpSet> Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
 
   // the key op waits for the ops in val
   // so the key op is later in the sort.
@@ -646,8 +645,8 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
     }
   }
 
-  std::set<Op *> live = {};
-  std::vector<std::set<Op *>> liveSets;
+  OpSet live = {};
+  std::vector<OpSet> liveSets;
   for (Op *newOp : topoOps) {
     for (Op *isEarlier : waiting[newOp]) {
       if (live.count(isEarlier) == 0) {

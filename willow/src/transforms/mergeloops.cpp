@@ -576,7 +576,7 @@ void MergeLoops::prunePaths(LoopOp *loop) const {
   // Graph &graph = loop->getGraph();
   Graph &sgraph = loop->getCalledGraph();
 
-  std::set<Op *> required;
+  OpSet required;
   std::vector<Tensor *> front;
 
   using IoTuple = std::tuple<TensorId, TensorId, InIndex, OutIndex>;

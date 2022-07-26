@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(TestGetInverseLossScaleTensors) {
       popart::reservedSpecificScaledLearningRate0Prefix() + bn_outs[2],
   };
   auto &ir = session->getIr();
-  std::set<popart::Tensor *> inverseLossScaleTensors =
+  auto inverseLossScaleTensors =
       popart::getInverseLossScaleTensors(ir.getMainGraph());
 
   // check returned  inverseLossScaleTensors is the same as expected

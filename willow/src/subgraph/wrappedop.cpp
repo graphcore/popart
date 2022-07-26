@@ -78,7 +78,6 @@ WrappedOp::getSubgraphOutputs() const {
 
   using OutIndex = fwtools::subgraph::OutIndex;
 
-  using OpSet        = std::set<Op *>;
   using WrappedOpSet = std::set<WrappedOp *>;
 
   using OpMap        = std::map<OutIndex, OpSet>;
@@ -87,7 +86,7 @@ WrappedOp::getSubgraphOutputs() const {
   // Function to map Op* to WrappedOp*
   auto opToWrappedOp = [&](Op *op) -> WrappedOp * { return getWrappedOp(op); };
 
-  // Function to map std::set<Op*> to std::set<WrappedOp*>
+  // Function to map OpSet to std::set<WrappedOp*>
   auto opSetToWrappedOpSet = [&](const OpSet &ops) -> WrappedOpSet {
     WrappedOpSet resOps;
     std::transform(ops.begin(),
@@ -97,7 +96,7 @@ WrappedOp::getSubgraphOutputs() const {
     return resOps;
   };
 
-  // Function to map std::map<OutIndex, std::set<Op*>> to
+  // Function to map std::map<OutIndex, OpSet> to
   // std::map<OutIndex, std::set<WrappedOp*>>.
   auto opMapToWrappedOpMap = [&](const OpMap &opMap) -> WrappedOpMap {
     WrappedOpMap wrappedOpMap;

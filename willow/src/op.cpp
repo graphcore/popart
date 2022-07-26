@@ -1136,15 +1136,14 @@ Op::getSubgraphInputs() const {
   return ins;
 }
 
-std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
-Op::getSubgraphOutputs() const {
+std::map<fwtools::subgraph::OutIndex, OpSet> Op::getSubgraphOutputs() const {
 
-  std::map<fwtools::subgraph::OutIndex, std::set<Op *>> cmap;
+  std::map<fwtools::subgraph::OutIndex, OpSet> cmap;
 
   for (auto &index_tensor : output->tensorMap()) {
     auto out_index  = index_tensor.first;
     auto out_tensor = index_tensor.second;
-    std::set<Op *> consumers;
+    OpSet consumers;
     if (settings.graph.get().getIr().isAnchored(out_tensor->id)) {
       consumers.insert(
           &settings.graph.get().getIr().getSubgraphAnchorPlaceholder());
