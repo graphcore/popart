@@ -2,11 +2,18 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_
 
+#include <memory>
 #include <utility>
 
 namespace popart {
 class Op;
 class Tensor;
+
+namespace popx {
+class ICreatorCandidate;
+} // namespace popx
+
+using ICreatorCandidatePtr = std::shared_ptr<popx::ICreatorCandidate>;
 
 // A note on non-determinism. For maps with
 // pointers as keys, iterating through them
@@ -30,6 +37,17 @@ struct POpIntCmp {
   bool operator()(std::pair<Op *, int> const &a,
                   std::pair<Op *, int> const &b) const;
 };
+
+struct PICreatorCandidateCmp {
+  bool operator()(const popx::ICreatorCandidate *a,
+                  const popx::ICreatorCandidate *b) const;
+};
+
+struct ICreatorCandidatePtrCmp {
+  bool operator()(const ICreatorCandidatePtr a,
+                  const ICreatorCandidatePtr b) const;
+};
+
 } // namespace popart
 
 #endif // POPART_WILLOW_INCLUDE_POPART_POINTERCOMPARATORS_HPP_

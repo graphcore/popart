@@ -4,6 +4,7 @@
 #include <utility>
 #include <popart/op.hpp>
 #include <popart/pointercomparators.hpp>
+#include <popart/popx/creatorx.hpp>
 #include <popart/tensor.hpp>
 
 #include "popart/names.hpp"
@@ -80,6 +81,28 @@ bool POpIntCmp::operator()(std::pair<Op *, int> const &a,
 #endif
   return std::pair<OpId, int>(a.first->id, a.second) <
          std::pair<OpId, int>(b.first->id, b.second);
+}
+
+bool PICreatorCandidateCmp::operator()(const popx::ICreatorCandidate *a,
+                                       const popx::ICreatorCandidate *b) const {
+#ifdef POPART_STRICT_COMPARATOR_CHECKS
+  if (a == nullptr || b == nullptr) {
+    throw internal_error("[PICreatorCandidateCmp] Invalid pointer.");
+  }
+#endif
+  return std::tuple<double, int64_t, int64_t>(a->getMaxCreatorPriority(),
+                                              a->getNumElems(),
+                                              b->getScheduleIndex()) >
+         std::tuple<double, int64_t, int64_t>(b->getMaxCreatorPriority(),
+                                              b->getNumElems(),
+                                              a->getScheduleIndex());
+}
+
+bool ICreatorCandidatePtrCmp::operator()(
+    const popx::ICreatorCandidatePtr a,
+    const popx::ICreatorCandidatePtr b) const {
+  PICreatorCandidateCmp cmp;
+  return cmp(a.get(), b.get());
 }
 
 } // namespace popart

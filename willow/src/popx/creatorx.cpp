@@ -185,12 +185,7 @@ ICreatorCandidate::ICreatorCandidate() {}
 
 bool ICreatorCandidate::greaterThan(ICreatorCandidatePtr icc1,
                                     ICreatorCandidatePtr icc2) {
-  return std::tuple<double, int64_t, int64_t>(icc1->getMaxCreatorPriority(),
-                                              icc1->getNumElems(),
-                                              icc2->getScheduleIndex()) >
-         std::tuple<double, int64_t, int64_t>(icc2->getMaxCreatorPriority(),
-                                              icc2->getNumElems(),
-                                              icc1->getScheduleIndex());
+  return ICreatorCandidatePtrCmp()(icc1, icc2);
 }
 
 InputCreatorCandidate::InputCreatorCandidate(
@@ -211,11 +206,11 @@ InputCreatorCandidate::InputCreatorCandidate(
   }
 }
 
-double InputCreatorCandidate::getMaxCreatorPriority() {
+double InputCreatorCandidate::getMaxCreatorPriority() const {
   return getOpx()->inputCreatorPriority;
 }
 
-int64_t InputCreatorCandidate::getNumElems() { return numElements; }
+int64_t InputCreatorCandidate::getNumElems() const { return numElements; }
 
 view::Regions InputCreatorCandidate::unwind() {
   return unwind(view::Region::getFull(opx->inShape(index)));
@@ -381,7 +376,7 @@ std::string InputCreatorCandidate::str() {
 InputMultiCreatorCandidate::InputMultiCreatorCandidate()
     : ICreatorCandidate() {}
 
-double InputMultiCreatorCandidate::getMaxCreatorPriority() {
+double InputMultiCreatorCandidate::getMaxCreatorPriority() const {
   double priority = std::numeric_limits<double>::lowest();
   for (auto &candidate : candidates) {
     priority = std::max(candidate.first->getMaxCreatorPriority(), priority);
@@ -433,7 +428,7 @@ int64_t InputMultiCreatorCandidate::getScheduleIndex() const {
   return index;
 }
 
-int64_t InputMultiCreatorCandidate::getNumElems() {
+int64_t InputMultiCreatorCandidate::getNumElems() const {
   int64_t elems = 0;
   // Loop over all candidates
   for (auto &candidate : candidates) {

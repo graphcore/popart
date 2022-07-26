@@ -183,6 +183,12 @@ public:
   bool operator==(const GradInOutMapper &rhs) const;
 };
 
+// Map and set classes for `popart::Op *` for deterministic iteration order.
+template <typename T> using OpMap      = std::map<Op *, T, POpCmp>;
+template <typename T> using ConstOpMap = std::map<const Op *, T, POpCmp>;
+using OpSet                            = std::set<Op *, POpCmp>;
+using ConstOpSet                       = std::set<const Op *, POpCmp>;
+
 // clang-off
 /**
  * Parent class for the concrete \c Op implementations.
@@ -1893,6 +1899,7 @@ private:
 
 std::ostream &operator<<(std::ostream &, const GradInOutMapper &);
 std::ostream &operator<<(std::ostream &, const GradOpInType &);
+
 } // namespace popart
 
 #endif // POPART_WILLOW_INCLUDE_POPART_OP_HPP_

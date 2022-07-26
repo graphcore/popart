@@ -1,18 +1,22 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE PointerComparators
 
+#include <boost/test/data/monomorphic.hpp>
+#include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
 #include <utility>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
 #include <popart/op/init.hpp>
 #include <popart/pointercomparators.hpp>
+#include <popart/popx/creatorx.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 
 #include "popart/graph.hpp"
 #include "popart/graphcoreoperators.hpp"
 #include "popart/names.hpp"
+#include "popart/popx/viewchangers.hpp"
 #include "popart/tensordebuginfo.hpp"
 
 using namespace popart;
@@ -263,5 +267,96 @@ BOOST_AUTO_TEST_CASE(testPOpIntCmpNegative) {
   BOOST_CHECK_EXCEPTION(cmp(op1Int1, op1Int0), internal_error, checkError);
   BOOST_CHECK_EXCEPTION(cmp(op2Int0, op1Int1), internal_error, checkError);
   BOOST_CHECK_EXCEPTION(cmp(op2Int0, op1Int0), internal_error, checkError);
+}
+#endif
+
+class FakeCreatorCandidate : public popx::ICreatorCandidate {
+private:
+  const double max_priority_;
+  const double num_elems_;
+  const int64_t schedule_index_;
+
+public:
+  FakeCreatorCandidate(const double max_priority,
+                       const double num_elems,
+                       const int64_t schedule_index)
+      : max_priority_(max_priority), num_elems_(num_elems),
+        schedule_index_(schedule_index) {}
+
+  double getMaxCreatorPriority() const override { return max_priority_; };
+
+  int64_t getNumElems() const override { return num_elems_; };
+
+  int64_t getScheduleIndex() const override { return schedule_index_; };
+
+  std::pair<snap::Tensor, popx::ViewChangers>
+  createInput(const poplar::DebugNameAndId &dnai) override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  DnfTensorIds mustExistBeforeCreate() override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  std::vector<std::vector<popx::OpxInAndOutIndex>>
+  getPathsFromInput() override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  std::string str() override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  std::pair<snap::Tensor, popx::ViewChangers> unwind(snap::Tensor) override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  std::vector<popart::view::Region> unwind(popart::view::Region) override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+
+  std::vector<popart::view::Region> unwind() override {
+    throw error(std::string(BOOST_CURRENT_FUNCTION) + "is unimplemented.");
+  }
+};
+
+typedef std::pair<FakeCreatorCandidate, FakeCreatorCandidate>
+    FakeCreatorCandidatePair;
+
+const std::vector<FakeCreatorCandidatePair> candidatess{{{2, 2, 3}, {1, 2, 3}},
+                                                        {{1, 3, 3}, {1, 2, 3}},
+                                                        {{1, 2, 2}, {1, 2, 3}}};
+
+BOOST_TEST_DONT_PRINT_LOG_VALUE(FakeCreatorCandidatePair)
+
+BOOST_DATA_TEST_CASE(testPICreatorCandidateCmpPositive,
+                     boost::unit_test::data::make(candidatess),
+                     candidates) {
+  const auto &candidate0 = candidates.first;
+  const auto &candidate1 = candidates.second;
+
+  PICreatorCandidateCmp cmp;
+  BOOST_CHECK(cmp(&candidate0, &candidate1));
+  BOOST_CHECK(!cmp(&candidate0, &candidate0));
+  BOOST_CHECK(!cmp(&candidate1, &candidate0));
+}
+
+#ifdef POPART_STRICT_COMPARATOR_CHECKS
+BOOST_AUTO_TEST_CASE(testPICreatorCandidateCmpNegative) {
+  FakeCreatorCandidate *null_candidate = nullptr;
+  FakeCreatorCandidate candidate{1, 2, 3};
+
+  auto checkError = [](const internal_error &error) {
+    return std::string(error.what()) ==
+           "[PICreatorCandidateCmp] Invalid pointer.";
+  };
+
+  PICreatorCandidateCmp cmp;
+  BOOST_CHECK_EXCEPTION(
+      cmp(null_candidate, &candidate), internal_error, checkError);
+  BOOST_CHECK_EXCEPTION(
+      cmp(&candidate, null_candidate), internal_error, checkError);
+  BOOST_CHECK_EXCEPTION(
+      cmp(null_candidate, null_candidate), internal_error, checkError);
 }
 #endif

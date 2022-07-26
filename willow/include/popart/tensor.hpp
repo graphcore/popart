@@ -363,6 +363,13 @@ private:
   TensorId copyFromTensor;
 };
 
+// Map and set classes for `popart::Tensor *` for deterministic iteration order.
+template <typename T> using TensorMap = std::map<Tensor *, T, PTensorCmp>;
+template <typename T>
+using ConstTensorMap = std::map<const Tensor *, T, PTensorCmp>;
+using TensorSet      = std::set<Tensor *, PTensorCmp>;
+using ConstTensorSet = std::set<const Tensor *, PTensorCmp>;
+
 } // namespace popart
 
 #endif // POPART_WILLOW_INCLUDE_POPART_TENSOR_HPP_

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "popart/names.hpp"
+#include "popart/pointercomparators.hpp"
 #include "popart/popx/debugcontextx.hpp"
 #include "popart/region.hpp"
 
@@ -59,6 +60,19 @@ struct OpxInAndOutIndex {
   bool isDelegate;
 };
 
+// Map and set classes for `popart::popx::ICreatorCandidate *` for deterministic
+// iteration order.
+template <typename T>
+using ICreatorCandidateMap =
+    std::map<ICreatorCandidate *, T, PICreatorCandidateCmp>;
+template <typename T>
+using ConstICreatorCandidateMap =
+    std::map<const ICreatorCandidate *, T, PICreatorCandidateCmp>;
+using ICreatorCandidateSet =
+    std::set<ICreatorCandidate *, PICreatorCandidateCmp>;
+using ConstICreatorCandidateSet =
+    std::set<const ICreatorCandidate *, PICreatorCandidateCmp>;
+
 // An interface for a potential creator of a tensor
 class ICreatorCandidate {
 public:
@@ -74,11 +88,11 @@ public:
   // at least one full set of TensorIds in the vector must exist
   virtual DnfTensorIds mustExistBeforeCreate() = 0;
 
-  virtual double getMaxCreatorPriority() = 0;
+  virtual double getMaxCreatorPriority() const = 0;
 
   // Number of efficiently laid out tensor elements by the creator candidate
   // after unwinding
-  virtual int64_t getNumElems() = 0;
+  virtual int64_t getNumElems() const = 0;
 
   virtual std::vector<std::vector<OpxInAndOutIndex>> getPathsFromInput() = 0;
 
@@ -112,9 +126,9 @@ public:
 
   DnfTensorIds mustExistBeforeCreate() override;
 
-  double getMaxCreatorPriority() override;
+  double getMaxCreatorPriority() const override;
 
-  int64_t getNumElems() override;
+  int64_t getNumElems() const override;
 
   InIndex getIndex() const { return index; }
   const PopOpx *getOpx() const { return opx; }
@@ -175,8 +189,8 @@ public:
   createInput(const poplar::DebugNameAndId &dnai) override;
   DnfTensorIds mustExistBeforeCreate() override;
 
-  double getMaxCreatorPriority() override;
-  int64_t getNumElems() override;
+  double getMaxCreatorPriority() const override;
+  int64_t getNumElems() const override;
 
   std::string str() override;
 
