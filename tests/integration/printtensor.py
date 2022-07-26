@@ -65,6 +65,67 @@ def test_basic(capfd):
     assert matches[1] == "Add:0/1: {6,9,12}"
 
 
+def test_basic_dangling(capfd):
+    """test when the print op output is not consumed by another op"""
+    builder = popart.Builder()
+
+    shape = popart.TensorInfo("FLOAT", [3])
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+
+    a1 = builder.aiOnnx.add([i1, i2])
+    builder.aiGraphcore.printtensor([a1])
+    a2 = builder.aiOnnx.add([i1, a1])
+    builder.aiGraphcore.printtensor([a2])
+
+    o = a2
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("All")})
+
+    opts = popart.SessionOptions()
+    opts.enableOutlining = False
+    opts.enableOutliningCopyCostPruning = False
+
+    with tu.create_test_device() as device:
+        session = popart.InferenceSession(
+            fnModel=proto, dataFlow=dataFlow, userOptions=opts, deviceInfo=device
+        )
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {
+            i1: np.array([1.0, 2.0, 3.0], dtype=np.float32),
+            i2: np.array([4.0, 5.0, 6.0], dtype=np.float32),
+        }
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        capfd.readouterr()
+
+        session.run(stepio)
+
+    captured = capfd.readouterr()
+    output = captured.err
+
+    # patterns to match a1 and a2
+    a1_pattern = f"(?:{a1})"
+    a2_pattern = f"(?:{a2})"
+    # pattern to match a1 or a2
+    a1_or_a2 = f"(?:{a1_pattern}|{a2_pattern})"
+    # pattern to match tensor values
+    value_pattern = r"{\d+,\d+,\d+}"
+    pat = f"{a1_or_a2}: {value_pattern}"
+    matches = re.findall(pat, output)
+
+    assert len(matches) == 2
+    assert matches[0] == "Add:0: {5,7,9}"
+    assert matches[1] == "Add:0/1: {6,9,12}"
+
+
 def test_train(capfd):
     filt_data = np.array([1.0, 2.0, 1.0, 2.0], dtype=np.float32)
     filt_data = np.reshape(filt_data, [1, 1, 2, 2])

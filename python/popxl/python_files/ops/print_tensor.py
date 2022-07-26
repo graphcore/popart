@@ -12,7 +12,8 @@ def print_tensor(
     """
     Print a tensor.
 
-    You need to use the output tensor of this op, otherwise the op will be optimised away and the tensor will not be printed.
+    The output tensor of this op must be consumed if you want to print the gradient tensor.
+    If the output is not consumed this op does not get pruned when running `removeIsolatedTensors`.
 
     Args:
         t (Tensor): The tensor to print.
@@ -35,7 +36,7 @@ def print_tensor(
         "ai.graphcore", "PrintTensor", 1, _ir.NumInputs(1, 1), 1
     )
     if title is None:
-        title = f"print{t.name}"
+        title = f"print_{t.name}"
 
     op = pb_g.createConnectedOp_PrintTensorOp(
         {
