@@ -50,7 +50,7 @@ public:
     return available_memory_proportion;
   }
 
-  void setAvailableMemoryProportion(float v) {
+  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
     available_memory_proportion = v;
   }
 

@@ -22,11 +22,12 @@
 #include <popart/op/concat.hpp>
 #include <popart/op/conv.hpp>              // IWYU pragma: keep
 #include <popart/op/exchange/codecopy.hpp> // IWYU pragma: keep
+#include <popart/op/gather.hpp>            // IWYU pragma: keep
+#include <popart/op/if.hpp>                // IWYU pragma: keep
 #include <popart/op/ipucopy.hpp>           // IWYU pragma: keep
 #include <popart/op/loop.hpp>              // IWYU pragma: keep
 #include <popart/op/matmul.hpp>            // IWYU pragma: keep
 #include <popart/op/maxpool.hpp>           // IWYU pragma: keep
-#include <popart/op/if.hpp>                // IWYU pragma: keep
 #include <popart/op/printtensor.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
@@ -459,6 +460,21 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("title"),
       py::arg("settings"),
       py::return_value_policy::reference);
+
+  // GatherOp
+  g.def("createOp_GatherOp",
+        &Graph::createOp<GatherOp,
+                         const OperatorIdentifier &,
+                         int64_t,
+                         const Op::Settings &,
+                         const nonstd::optional<float> &,
+                         bool>,
+        py::arg("opid"),
+        py::arg("axis_"),
+        py::arg("settings"),
+        py::arg("available_memory_proportion_"),
+        py::arg("zeroOutOfRangeIndices_"),
+        py::return_value_policy::reference);
 }
 
 void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
@@ -997,6 +1013,23 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("title"),
       py::arg("settings"),
       py::return_value_policy::reference);
+
+  // GatherOp
+  g.def("createConnectedOp_GatherOp",
+        &Graph::createConnectedOp<GatherOp,
+                                  const OperatorIdentifier &,
+                                  int64_t,
+                                  const Op::Settings &,
+                                  const nonstd::optional<float> &,
+                                  bool>,
+        py::arg("in"),
+        py::arg("out"),
+        py::arg("opid"),
+        py::arg("axis_"),
+        py::arg("settings"),
+        py::arg("available_memory_proportion_"),
+        py::arg("zeroOutOfRangeIndices_"),
+        py::return_value_policy::reference);
 }
 
 } // namespace ir

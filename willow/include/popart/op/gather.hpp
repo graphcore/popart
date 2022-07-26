@@ -48,7 +48,7 @@ public:
     return available_memory_proportion;
   }
 
-  void setAvailableMemoryProportion(float v) {
+  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
     available_memory_proportion = v;
   }
 
@@ -87,6 +87,9 @@ public:
 
   nonstd::optional<float> getAvailableMemoryProportion() const {
     return available_memory_proportion;
+  }
+  void setAvailableMemoryProportion(const nonstd::optional<float> v) {
+    available_memory_proportion = v;
   }
 
 private:

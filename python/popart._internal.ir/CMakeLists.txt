@@ -41,7 +41,7 @@ list(
   ${popart_op_headers_dir}/pow.hpp
   #${popart_op_headers_dir}/printtensor.hpp # Manually bound
   ${popart_op_headers_dir}/dropout.hpp
-  ${popart_op_headers_dir}/gather.hpp
+  # ${popart_op_headers_dir}/gather.hpp
   ${popart_op_headers_dir}/scatter.hpp
   ${popart_op_headers_dir}/cast.hpp
   ${popart_op_headers_dir}/collectives/collectives.hpp
@@ -208,6 +208,7 @@ add_popart_python_module(
   bindings/op/accumulatorscale.cpp
   bindings/op/accumulatorzero.cpp
   bindings/op/codecopy.cpp
+  bindings/op/gather.cpp
   # End ops
   bindings/scope.cpp
   bindings/tensor.cpp

@@ -22,6 +22,7 @@
 #include "bindings/op/concat.hpp"
 #include "bindings/op/conv.hpp"
 #include "bindings/op/enums.hpp"
+#include "bindings/op/gather.hpp"
 #include "bindings/op/if.hpp"
 #include "bindings/op/ipucopy.hpp"
 #include "bindings/op/loop.hpp"
@@ -107,6 +108,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
     op::bindPrintTensor(m);
     op::bindArgMinMax(m);
     op::bindResize(m);
+    op::bindGather(m);
     // Exchange
     { op::exchange::bindCodeCopy(m); }
   }

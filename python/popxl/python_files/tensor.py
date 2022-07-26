@@ -203,13 +203,13 @@ class Tensor:
         return tuple(self._pb_tensor.info.strides(shape))
 
     @property
-    @debug_context_frame_offset(2)
+    @debug_context_frame_offset(1)
     def T(self) -> "Tensor":
         """Return the tensor transposed with reversed axes."""
         return self.transpose()
 
     @property
-    @debug_context_frame_offset(2)
+    @debug_context_frame_offset(1)
     def T_(self) -> "Tensor":
         """Return the tensor transposed with reversed axes in-place."""
         return self.transpose_()
