@@ -9,6 +9,7 @@ from .conditional import conditional, conditional_with_info
 from .conv import conv, PadType
 from .code_copy import remote_code_load
 from .cos import cos
+from .cumsum import cumsum
 from .roialign import roi_align
 from .argminmax import argmin, argmax
 from .interpolate import interpolate
@@ -110,6 +111,8 @@ __all__ = [
     "PadType",
     # cos.py
     "cos",
+    # cumsum.py
+    "cumsum",
     # roialign.py
     "roi_align",
     # interpolate.py,

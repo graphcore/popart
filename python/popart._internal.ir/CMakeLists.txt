@@ -19,6 +19,7 @@ list(
   APPEND
   op_headers
   ${popart_op_headers_dir}/abs.hpp
+  ${popart_op_headers_dir}/cumsum.hpp
   # ${popart_op_headers_dir}/accumulate.hpp # Manually bound
   ${popart_op_headers_dir}/add.hpp
   ${popart_op_headers_dir}/scaledadd.hpp
