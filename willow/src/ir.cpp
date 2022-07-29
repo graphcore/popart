@@ -3720,7 +3720,7 @@ void Ir::applyInplacePattern(Graph &graph) {
       // (insOutsToBeAliased) that would be aliased if we did inplacing. We
       // do this in order to predict the effect of inplacing in the current
       // graph where inplacing has actually not been done yet.
-      std::set<std::vector<Tensor *>> insOutsToBeAliased;
+      std::set<std::vector<Tensor *>, VectorPTensorCmp> insOutsToBeAliased;
       for (const auto &in_tensor : op->input->tensorMap()) {
         std::vector<Tensor *> currentInsOuts{in_tensor.second};
         auto aliases = popMem.allAliases(*in_tensor.second);
