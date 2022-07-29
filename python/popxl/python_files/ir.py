@@ -56,6 +56,8 @@ class Ir:
         opts.enableExplicitMainLoops = True
         opts.explicitRecomputation = True
         opts.enableInplaceAmbiguityChecking = True
+        # TODO(T17972): Remove below.
+        opts.decomposeGradSum = True
         # TODO(T64572): Remove below.
         opts.engineOptions["debug.retainDebugInformation"] = opts.engineOptions.get(
             "debug.retainDebugInformation", "false"

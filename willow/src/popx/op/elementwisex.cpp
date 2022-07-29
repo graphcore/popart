@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <poprithms/logging/timepartitionlogger.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/op/elementwise.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
@@ -66,8 +67,28 @@ view::RegMap ElementWiseUnaryOpx::unwindRegion(InIndex, OutIndex) const {
 ElementWiseBinaryOpx::ElementWiseBinaryOpx(Op *op, Devicex *devicex)
     : PopOpx(op, devicex) {}
 
+bool ElementWiseBinaryOpx::broadcastCreatorAvailable(InIndex index) const {
+  // Not broadcasting this arg.
+  if (inInfo(index) == outInfo(ElementWiseBinaryBaseOp::getOutIndex())) {
+    return false;
+  }
+  // Both args are broadcasted, this is not currently supported.
+  if (inInfo(1 - index) != outInfo(ElementWiseBinaryBaseOp::getOutIndex())) {
+    return false;
+  }
+  // Ignore scalars.
+  if (inInfo(index).rank() == 0 || inInfo(index).nelms() == 1) {
+    return false;
+  }
+  return true;
+}
+
 InputCreatorType
 ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
+  // Is this type of broadcasting supported?
+  if (broadcastCreatorAvailable(index)) {
+    return InputCreatorType::CanCreate;
+  }
   // Check shape doesn't change due to numpy-style broadcasting.
   // Design choice: even without broadcasting, it is possible for the
   // two inputs (of same shape) have different layout.
@@ -114,6 +135,10 @@ ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
 
 std::set<TensorId>
 ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
+  // Broadcast
+  if (broadcastCreatorAvailable(index)) {
+    return {inId(1 - index)};
+  }
 
   const auto &settings = this->op_p->settings;
   const auto arg0Idx   = ElementWiseBinaryBaseOp::getArg0InIndex();
@@ -135,6 +160,79 @@ ElementWiseBinaryOpx::mustExistBeforeCreate(InIndex index) const {
 snap::Tensor ElementWiseBinaryOpx::createInputTensor(
     InIndex index,
     const poplar::DebugNameAndId &dnai) const {
+  // Broadcast
+  if (broadcastCreatorAvailable(index)) {
+    auto otherOperand    = getInTensor(1 - index);
+    auto thisOperandInfo = inInfo(index);
+    logging::debug(
+        "Using `createBroadcastOperand` for {}. Shapes: otherOperand "
+        "{}. thisOperand {}",
+        inId(index),
+        otherOperand.shape(),
+        thisOperandInfo.shape_szt());
+
+    // Iterate over dimensions in reverse order, aligning at the last dimension
+    // (because of broadcasting rules, see:
+    // https://numpy.org/doc/stable/user/basics.broadcasting.html) and collate
+    // non-broadcastable dimensions in a set that sorts by ascending order.
+    std::set<unsigned> nonBroadcastDimSet;
+    for (int64_t i = 1; i <= otherOperand.rank(); ++i) {
+      if (i > thisOperandInfo.rank()) {
+        // Missing dimensions are always broadcast.
+        break;
+      }
+      auto otherOperandDim = otherOperand.rank() - i;
+      auto thisOperandDim  = thisOperandInfo.rank() - i;
+      if (otherOperand.dim(otherOperandDim) ==
+          thisOperandInfo.dim(thisOperandDim)) {
+        nonBroadcastDimSet.insert(otherOperandDim);
+      }
+    }
+
+    // Create a permutation of the other operator tensor, which puts all the
+    // non-broadcastable dimensions together at the start. Note we are careful
+    // here to ensure the non-broadcastable and broadcastable dimensions are in
+    // ascending order. The permutation we want to end up with is
+    //
+    //    [*nonBroadcastDimSet, *broadcastDimSet]
+    std::vector<unsigned> permutation(otherOperand.rank());
+    std::copy(nonBroadcastDimSet.begin(),
+              nonBroadcastDimSet.end(),
+              permutation.begin());
+    auto nonBroadcastDims = nonBroadcastDimSet.size();
+    for (int64_t i = 0; i < otherOperand.rank(); ++i) {
+      if (nonBroadcastDimSet.find(i) == nonBroadcastDimSet.end()) {
+        permutation[nonBroadcastDims] = i;
+        nonBroadcastDims++;
+      }
+    }
+
+    // Apply the permutation.
+    otherOperand = otherOperand.dimShuffle(permutation);
+
+    // Collapse all the non-broadcastable dimensions so we end up with
+    //
+    //    [sum(nonBroadcastDimSet), *broadcastDimSet]
+    otherOperand = otherOperand.flatten(0, nonBroadcastDimSet.size());
+    if (otherOperand.dim(0) != thisOperandInfo.nelms()) {
+      throw internal_error("Expected flattened non-broadcastable dimensions "
+                           "({}) to equal the candidate tensor size ({})",
+                           otherOperand.dim(0),
+                           thisOperandInfo.nelms());
+    }
+
+    // Create the tensor.
+    auto created =
+        poputil::createBroadcastOperand(graph().getPoplarGraph(),
+                                        otherOperand.getPoplarTensor(),
+                                        popType(thisOperandInfo),
+                                        0,
+                                        false,
+                                        dnai);
+
+    // Reshape to the required format.
+    return snap::Tensor{created.reshape(thisOperandInfo.shape_szt()), graph()};
+  }
 
   const auto arg0Idx = ElementWiseBinaryBaseOp::getArg0InIndex();
   const auto arg1Idx = ElementWiseBinaryBaseOp::getArg1InIndex();
