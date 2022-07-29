@@ -17,6 +17,7 @@ for op in supported_ops:
 print("Writing supported ops to " + sys.argv[1])
 with open(sys.argv[1], "w", encoding="utf-8") as f:
     for domain in ops:
+        print(".. _sec_domain_" + domain + ":", file=f)
         print("Domain: " + domain, file=f)
         print("-" * (8 + len(domain)), file=f)
         print("", file=f)

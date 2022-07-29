@@ -7,12 +7,16 @@ PopART is compatible with ONNX versions up to and including 1.6.
 (see `ONNX Versioning <https://github.com/onnx/onnx/blob/master/docs/Versioning.md>`_).
 This section lists the supported operators.
 
-The Graphcore (ai.graphcore) and ONNX (ai.onnx) operators, and versions supported,
+The Graphcore (:ref:`ai.graphcore <sec_domain_ai.graphcore>`) and ONNX (:ref:`ai.onnx <sec_domain_ai.onnx>`) operators, and versions supported,
 are listed below.
 See `ONNX Operators <https://github.com/onnx/onnx/blob/master/docs/Operators.md>`_
 for more information.
 
+.. note:: The limitations of these operators are listed in :numref:`sec_supported_ops_limitations`.
+
 .. include:: ../popart_supported_ops_gen.rst
+
+.. _sec_supported_ops_limitations:
 
 Limitations
 -----------
