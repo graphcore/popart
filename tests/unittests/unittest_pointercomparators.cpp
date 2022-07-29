@@ -119,6 +119,29 @@ BOOST_AUTO_TEST_CASE(testPTensorCmpNegative) {
 }
 #endif
 
+BOOST_AUTO_TEST_CASE(testVectorPTensorCmpPositive) {
+  // Test that the std::vector<Tensor *> comparator is working
+  Ir ir;
+  auto &graph = ir.getMainGraph();
+
+  // NOTE: The tensor needs to be in the Ir (at least when
+  // POPART_STRICT_COMPARATOR_CHECKS
+  //       is defined), we use the createOp function
+  TensorInfo tInfo{};
+  TensorId tId1 = "tId1";
+  TensorId tId2 = "tId2";
+  graph.addInput(tId1, tInfo);
+  graph.addInput(tId2, tInfo);
+
+  std::vector<Tensor *> v1 = {graph.getTensor(tId1)};
+  std::vector<Tensor *> v2 = {graph.getTensor(tId2)};
+
+  VectorPTensorCmp cmp;
+  BOOST_CHECK(cmp(v1, v2));  // Less than
+  BOOST_CHECK(!cmp(v1, v1)); // Equal
+  BOOST_CHECK(!cmp(v2, v1)); // Greater
+}
+
 BOOST_AUTO_TEST_CASE(testPOpBoolCmpPositive) {
   // Test that the pair<Op *, bool> comparator is working
   Ir ir;

@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace popart {
 class Op;
@@ -26,6 +27,11 @@ struct POpCmp {
 
 struct PTensorCmp {
   bool operator()(const Tensor *const &a, const Tensor *const &b) const;
+};
+
+struct VectorPTensorCmp {
+  bool operator()(const std::vector<Tensor *> &a,
+                  const std::vector<Tensor *> &b) const;
 };
 
 struct POpBoolCmp {

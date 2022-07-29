@@ -49,6 +49,12 @@ bool PTensorCmp::operator()(const Tensor *const &a,
   return a->id < b->id;
 }
 
+bool VectorPTensorCmp::operator()(const std::vector<Tensor *> &a,
+                                  const std::vector<Tensor *> &b) const {
+  return std::lexicographical_compare(
+      a.begin(), a.end(), b.begin(), b.end(), PTensorCmp());
+}
+
 bool POpBoolCmp::operator()(const std::pair<Op *, bool> &a,
                             const std::pair<Op *, bool> &b) const {
 #ifdef POPART_STRICT_COMPARATOR_CHECKS
