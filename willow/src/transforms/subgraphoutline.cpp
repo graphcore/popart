@@ -838,35 +838,6 @@ Graph &SubgraphOutline::createSubgraph(
   return subgraph;
 }
 
-static void addCallOutlineDebugInfo(Op *call,
-                                    const SubgraphableOpCluster &instance,
-                                    const std::map<Op *, int> &index_map) {
-  // Debug context IDs of PopArt ops that were replaced by a Call...
-  {
-    std::ostringstream oss("[", std::ios::ate);
-    for (auto const opId : instance.ops) {
-      oss << instance.graph->getOp(opId)->debugInfo.getId() << ",";
-    }
-    if (oss.tellp() > 1) {
-      oss.seekp(-1, oss.cur); // Replace last comma
-    }
-    oss << "]";
-    call->debugInfo.setValue("replacedDebugContextIds", oss.str());
-  }
-  // ...and corresponding debug context IDs of PopArt ops in the Call function
-  {
-    std::ostringstream oss("[", std::ios::ate);
-    for (auto const &opAndIndex : index_map) {
-      oss << opAndIndex.first->debugInfo.getId() << ",";
-    }
-    if (oss.tellp() > 1) {
-      oss.seekp(-1, oss.cur); // Replace last comma
-    }
-    oss << "]";
-    call->debugInfo.setValue("outlinedDebugContextIds", oss.str());
-  }
-}
-
 Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
                                        Graph &subgraph,
                                        const std::map<Op *, int> &index_map,
@@ -885,7 +856,6 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
       dynamic_cast<CallOp *>(instance.getGraph().getOp(call_op_id));
 
   setSubgraphOpSettingsFromClusterInstance(callOp, instance);
-  addCallOutlineDebugInfo(callOp, instance, index_map);
 
   auto &aliases = aliasesMap.getAliases(instance.getGraph());
 
@@ -942,12 +912,26 @@ Op *SubgraphOutline::replaceWithCallOp(const SubgraphableOpCluster &instance,
   }
 
   std::map<Op *, std::vector<Op *>, POpCmp> opRemaps;
+  std::ostringstream replacedOss("[", std::ios::ate);
+  std::ostringstream outlinedOss("[", std::ios::ate);
 
   // Remap between instance ops and subgraph ops (used to transfer topocons)
   for (auto &opAndIndex : index_map) {
-    opRemaps.insert({instance.graph->getOp(instance.ops.at(opAndIndex.second)),
-                     {opAndIndex.first}});
+    Op *replaced = instance.graph->getOp(instance.ops.at(opAndIndex.second));
+    // Debug context IDs of PopArt ops that were replaced by a Call...
+    replacedOss << replaced->debugInfo.getId() << ",";
+    // ...and corresponding debug context IDs of PopArt ops in the Call function
+    outlinedOss << opAndIndex.first->debugInfo.getId() << ",";
+    opRemaps.insert({replaced, {opAndIndex.first}});
   }
+  if (replacedOss.tellp() > 1) {
+    replacedOss.seekp(-1, replacedOss.cur); // Replace last comma
+    outlinedOss.seekp(-1, outlinedOss.cur); // Replace last comma
+  }
+  replacedOss << "]";
+  outlinedOss << "]";
+  callOp->debugInfo.setValue("replacedDebugContextIds", replacedOss.str());
+  callOp->debugInfo.setValue("outlinedDebugContextIds", outlinedOss.str());
 
   TopoCons::transferToSubgraph(callOp, opRemaps);
 
