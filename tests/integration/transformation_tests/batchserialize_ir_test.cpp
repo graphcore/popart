@@ -129,8 +129,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphs) {
     runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
     runner.patterns              = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
-    runner.patterns.inplaceEnabled = false;
-    runner.loss                    = loss;
+    runner.patterns.enableInPlace(false);
+    runner.loss = loss;
 
     return act;
   });
@@ -235,8 +235,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwd) {
     runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
     runner.patterns              = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
-    runner.patterns.inplaceEnabled = false;
-    runner.loss                    = loss;
+    runner.patterns.enableInPlace(false);
+    runner.loss = loss;
 
     return act;
   });
@@ -343,8 +343,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsBwdLoop) {
     runner.opts.virtualGraphMode = VirtualGraphMode::Manual;
     runner.patterns              = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
-    runner.patterns.inplaceEnabled = false;
-    runner.loss                    = loss;
+    runner.patterns.enableInPlace(false);
+    runner.loss = loss;
 
     return act;
   });
@@ -424,8 +424,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithVGraphsOutlined) {
     runner.opts.virtualGraphMode               = VirtualGraphMode::Manual;
     runner.patterns = Patterns(PatternsLevel::Default);
     // Disable so that no false negatives (rhs vs. lhs inplace) exist
-    runner.patterns.inplaceEnabled = false;
-    runner.loss                    = loss;
+    runner.patterns.enableInPlace(false);
+    runner.loss = loss;
 
     return act;
   });
@@ -830,8 +830,8 @@ BOOST_AUTO_TEST_CASE(TestBatchSerialWithOverlappedSchedule) {
       runner.patterns = Patterns(PatternsLevel::Default);
 
       // Disable so that no false negatives (rhs vs. lhs inplace) exist
-      runner.patterns.inplaceEnabled = false;
-      runner.loss                    = loss;
+      runner.patterns.enableInPlace(false);
+      runner.loss = loss;
 
       return act;
     });

@@ -146,7 +146,7 @@ public:
     };
 
     auto checkIr = [&](Ir &ir) {
-      auto tensor = ir.getTensors().get(opOut);
+      auto tensor = ir.getMainGraphTensors().get(opOut);
       auto op     = tensor->getProducer();
 
       auto arg0Map = op->fwdRegMap(ElementWiseBinaryBaseOp::getArg0InIndex(),
@@ -183,7 +183,7 @@ public:
     };
 
     auto checkIr = [&](Ir &ir) {
-      auto tensor = ir.getTensors().get(opOut);
+      auto tensor = ir.getMainGraphTensors().get(opOut);
       auto addOp  = tensor->getProducer();
 
       auto arg1Map = addOp->bwdRegMap(ElementWiseBinaryBaseOp::getArg1InIndex(),

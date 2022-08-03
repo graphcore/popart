@@ -80,8 +80,8 @@ BOOST_AUTO_TEST_CASE(TestOutliningWithExtraAttributes) {
       runner.opts.virtualGraphMode               = VirtualGraphMode::Manual;
       runner.patterns = Patterns(PatternsLevel::Default);
       // Disable so that no false negatives (rhs vs. lhs inplace) exist
-      runner.patterns.inplaceEnabled = false;
-      runner.loss                    = loss;
+      runner.patterns.enableInPlace(false);
+      runner.loss = loss;
 
       return act;
     });
@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(TestOutliningAcrossBoundaries) {
       // runner.opts.virtualGraphMode               = VirtualGraphMode::Manual;
       runner.patterns = Patterns(PatternsLevel::Default);
       // Disable so that no false negatives (rhs vs. lhs inplace) exist
-      runner.patterns.inplaceEnabled = false;
+      runner.patterns.enableInPlace(false);
 
       return act;
     });
