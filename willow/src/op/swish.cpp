@@ -46,6 +46,10 @@ SwishInplaceOp::SwishInplaceOp(const SwishOp &op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SwishInplace,
                                 op.getSettings()) {}
 
+SwishInplaceOp::SwishInplaceOp(const Op::Settings &settings)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SwishInplace,
+                                settings) {}
+
 std::unique_ptr<Op> SwishInplaceOp::clone() const {
   return std::make_unique<SwishInplaceOp>(*this);
 }

@@ -97,6 +97,8 @@ list(
   ${popart_op_headers_dir}/histogram.hpp
   ${popart_op_headers_dir}/cos.hpp
   ${popart_op_headers_dir}/sin.hpp
+  ${popart_op_headers_dir}/swish.hpp
+  ${popart_op_headers_dir}/greater.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 

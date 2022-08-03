@@ -73,6 +73,8 @@ from .sumsquare import sumsquare
 from .tanh import tanh
 from .transpose import transpose, transpose_
 from .where import where
+from .swish import swish, swish_
+from .greater import greater
 
 from . import collectives
 from . import var_updates
@@ -98,6 +100,11 @@ __all__ = [
     # concat.py
     "concat",
     "concat_",
+    # swish.py
+    "swish",
+    "swish_",
+    # greater.py
+    "greater",
     # conv.py
     "conv",
     "PadType",

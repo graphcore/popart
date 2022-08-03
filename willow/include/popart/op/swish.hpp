@@ -27,6 +27,7 @@ public:
 class SwishInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   SwishInplaceOp(const SwishOp &);
+  SwishInplaceOp(const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
 };
 
