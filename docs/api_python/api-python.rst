@@ -4,15 +4,19 @@ PopART Python API
 Sessions
 --------
 
+.. autoclass:: popart.Session
+
 Training session
 ^^^^^^^^^^^^^^^^
 
 .. autoclass:: popart.TrainingSession
+.. autoclass:: popart_core._TrainingSessionCore
 
 Inference session
 ^^^^^^^^^^^^^^^^^
 
 .. autoclass:: popart.InferenceSession
+.. autoclass:: popart_core._InferenceSessionCore
 
 Session Options
 ^^^^^^^^^^^^^^^
@@ -37,6 +41,7 @@ Session Options
 .. autoclass:: popart.IrSerializationFormat
 .. autoclass:: popart.MeanReductionStrategy
 .. autoclass:: popart.MergeVarUpdateType
+.. autoclass:: popart.PyWeightsIO
 .. autoclass:: popart.RecomputationType
 .. autoclass:: popart.ReductionType
 .. autoclass:: popart.ReplicatedTensorSharding
@@ -117,9 +122,7 @@ Builder
 --------
 
 .. automodule:: popart.builder
-.. autoclass:: popart.Builder
-.. autoclass:: popart.AiGraphcoreOpset1
-.. autoclass:: popart.Scope
+.. autoclass:: popart.builder._BuilderCore
 
 
 AiGraphcoreOpset1

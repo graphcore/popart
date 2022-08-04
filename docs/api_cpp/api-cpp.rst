@@ -71,12 +71,15 @@ Session options
   #include <popart/variablesettings.hpp>
 
 .. doxygenclass:: popart::VariableSettings
+.. doxygenenum:: popart::VariableRetrievalMode
+
 
 .. code-block:: cpp
 
   #include <popart/commgroup.hpp>
 
 .. doxygenclass:: popart::CommGroup
+.. doxygenenum:: popart::CommGroupType
 
 Data input and output (IStepIO)
 -------------------------------
