@@ -320,11 +320,13 @@ std::set<Op *, POpCmp> Tensor::getInplaceModifiers() const {
 }
 
 VGraphId Tensor::getVirtualGraphIdUnsafe() const {
-  std::set<OpId> visited;
-  return getVirtualGraphIdAndTileSetUnsafe(visited).first;
+  return getVirtualGraphIdAndTileSetUnsafe().first;
 }
 
 VGraphIdAndTileSet Tensor::getVirtualGraphIdAndTileSetUnsafe() const {
+  if (getIr().isPrepared()) {
+    return preparedVGraphIdAndTileSet;
+  }
   std::set<OpId> visited;
   return getVirtualGraphIdAndTileSetUnsafe(visited);
 }
@@ -1204,6 +1206,10 @@ void Tensor::verifyMutableVoidInfo(const TensorInfo mutableVoidInfo,
         mutableVoidInfo.shape().size(),
         mutableVoidInfo.shape());
   }
+}
+
+void Tensor::setPreparedVGraphIdAndTileSet() {
+  preparedVGraphIdAndTileSet = getVirtualGraphIdAndTileSetUnsafe();
 }
 
 std::vector<Op *> Consumers::getOps() const {

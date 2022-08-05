@@ -106,6 +106,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -1769,8 +1770,20 @@ void Ir::setIsPrepared() {
                   "should only be called once.");
   }
 
+  // Collect all tensors
+  std::set<Tensor *, PTensorCmp> allTensors;
   for (auto &graph : getAllGraphs()) {
-    getGraph(graph->id).finalizeSchedule();
+    auto &curGraph = getGraph(graph->id);
+    curGraph.finalizeSchedule();
+    auto tensors = curGraph.getTensors().getAll();
+    std::copy(tensors.begin(),
+              tensors.end(),
+              std::inserter(allTensors, allTensors.end()));
+  }
+
+  // Set preparedVGraphIdAndTileSet for all tensors
+  for (auto &tensor : allTensors) {
+    tensor->setPreparedVGraphIdAndTileSet();
   }
 
   isPrepared_ = true;

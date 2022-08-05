@@ -355,12 +355,18 @@ public:
   void verifyMutableVoidInfo(const TensorInfo mutableVoidInfo,
                              unsigned replicationFactor);
 
+  /// Set the preparedVGraphIdAndTileSet
+  void setPreparedVGraphIdAndTileSet();
+
 private:
   VariableUpdateType variableUpdateType;
   VariableSettings variableSettings = VariableSettings();
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;
+
+  // The virtual graph id and tile set after Ir::setIsPrepared is called
+  VGraphIdAndTileSet preparedVGraphIdAndTileSet;
 };
 
 // Map and set classes for `popart::Tensor *` for deterministic iteration order.
