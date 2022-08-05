@@ -29,6 +29,7 @@
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define protected public
+#include <testdevice.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/op/autolossscaleproxy.hpp>
@@ -38,7 +39,6 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #undef protected
 
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(TestGetInverseLossScaleTensors) {
   auto proto     = builder->getModelProto();
   auto dataFlow  = popart::DataFlow(1);
 
-  auto device  = popart::createTestDevice(popart::TEST_TARGET);
+  auto device  = popart::createTestDevice(TEST_TARGET);
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto, dataFlow, act_final, optimizer, device);
 

@@ -24,6 +24,7 @@
 #define protected public
 
 #include <filereader.hpp>
+#include <testdevice.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -38,7 +39,6 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 using namespace popart;
 

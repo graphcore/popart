@@ -10,6 +10,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -17,7 +18,6 @@
 #include <popart/ir.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "pipeline_recompute_string.hpp"
 #include "popart/builder.gen.hpp"

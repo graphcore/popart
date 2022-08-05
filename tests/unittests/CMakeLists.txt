@@ -3,7 +3,7 @@
 # Unit tests in this folder should be quick to run (<<0.1s) and should test one
 # class in isolation. If the class has other classes it depends you should
 # consider mocking those dependencies so you are only testing one class. By
-# adding the `TEST_UTILS trompeloeil` you should have access to the trompeloeil
+# adding the `SUPPORT_LIBS trompeloeil` you should have access to the trompeloeil
 # mocking framework. An example of a unit test that uses trompeloeil can be
 # found in `unittest_example.cpp`.
 #
@@ -45,76 +45,76 @@
 # `./test.sh popart -R unittest`.
 
 # C++ unittests for main codebase:
-add_popart_cpp_unit_test(unittest_example unittest_example.cpp TEST_UTILS trompeloeil)
-add_popart_cpp_unit_test(unittest_profilecacher unittest_profilecacher.cpp)
-add_popart_cpp_unit_test(unittest_fileoperations unittest_fileoperations.cpp)
-add_popart_cpp_unit_test(unittest_gen_operators unittest_gen_operators.cpp)
-add_popart_cpp_unit_test(unittest_graphutils unittest_graphutils.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_tensor unittest_tensor.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_tensorid unittest_tensorid.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_vectorandset unittest_vectorandset.cpp)
-add_popart_cpp_unit_test(unittest_utils unittest_utils.cpp TEST_UTILS trompeloeil)
-add_popart_cpp_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
+add_unit_test(unittest_example unittest_example.cpp SUPPORT_LIBS trompeloeil)
+add_unit_test(unittest_profilecacher unittest_profilecacher.cpp)
+add_unit_test(unittest_fileoperations unittest_fileoperations.cpp)
+add_unit_test(unittest_gen_operators unittest_gen_operators.cpp)
+add_unit_test(unittest_graphutils unittest_graphutils.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_tensor unittest_tensor.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_tensorid unittest_tensorid.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_vectorandset unittest_vectorandset.cpp)
+add_unit_test(unittest_utils unittest_utils.cpp SUPPORT_LIBS trompeloeil)
+add_unit_test(unittest_Session_createFromIr session_createFromIr.cpp)
 
-add_popart_cpp_unit_test(unittest_region unittest_region.cpp)
-add_popart_cpp_unit_test(unittest_pointercomparators unittest_pointercomparators.cpp)
-add_popart_cpp_unit_test(unittest_parsedtensorid unittest_parsedtensorid.cpp)
-add_popart_cpp_unit_test(unittest_replicatedtensorsharding unittest_replicatedtensorsharding.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
+add_unit_test(unittest_region unittest_region.cpp)
+add_unit_test(unittest_pointercomparators unittest_pointercomparators.cpp)
+add_unit_test(unittest_parsedtensorid unittest_parsedtensorid.cpp)
+add_unit_test(unittest_replicatedtensorsharding unittest_replicatedtensorsharding.cpp SUPPORT_LIBS test-graphs-test-util ir-query-test-util)
 
-add_popart_cpp_unit_test(unittest_ReplicatedTensorMutableVoidInfoVerifier unittest_replicatedtensormutablevoidinfoverifier.cpp)
+add_unit_test(unittest_ReplicatedTensorMutableVoidInfoVerifier unittest_replicatedtensormutablevoidinfoverifier.cpp)
 
-add_popart_cpp_unit_test(unittest_pattern_optimizerdecompose patterns/optimizerdecompose.cpp)
-add_popart_cpp_unit_test(unittest_pattern_lambserialisedweight patterns/lambserialisedweight.cpp)
-add_popart_cpp_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp TEST_UTILS test-graphs-test-util ir-query-test-util)
-add_popart_cpp_unit_test(unittest_pattern_tiedgather patterns/tiedgather.cpp)
-add_popart_cpp_unit_test(unittest_pattern_updateinplaceprioritiesforipu patterns/updateinplaceprioritiesforipu.cpp)
+add_unit_test(unittest_pattern_optimizerdecompose patterns/optimizerdecompose.cpp)
+add_unit_test(unittest_pattern_lambserialisedweight patterns/lambserialisedweight.cpp)
+add_unit_test(unittest_pattern_sgd2decompose patterns/sgd2decompose.cpp SUPPORT_LIBS test-graphs-test-util ir-query-test-util)
+add_unit_test(unittest_pattern_tiedgather patterns/tiedgather.cpp)
+add_unit_test(unittest_pattern_updateinplaceprioritiesforipu patterns/updateinplaceprioritiesforipu.cpp)
 
-add_popart_cpp_unit_test(unittest_sgd_optimizer optimizer/sgd_optimizer.cpp)
+add_unit_test(unittest_sgd_optimizer optimizer/sgd_optimizer.cpp)
 
-add_popart_cpp_unit_test(unittest_graphtestwrapper testutil/irquery/unittest_graphtestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_irtestwrapper testutil/irquery/unittest_irtestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_opstestwrapper testutil/irquery/unittest_opstestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_optestwrapper testutil/irquery/unittest_optestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_tensorindexmaptestwrapper testutil/irquery/unittest_tensorindexmaptestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_tensorindextestwrapper testutil/irquery/unittest_tensorindextestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
-add_popart_cpp_unit_test(unittest_tensortestwrapper testutil/irquery/unittest_tensortestwrapper.cpp TEST_UTILS ir-query-test-util trompeloeil)
+add_unit_test(unittest_graphtestwrapper testutil/irquery/unittest_graphtestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_irtestwrapper testutil/irquery/unittest_irtestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_opstestwrapper testutil/irquery/unittest_opstestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_optestwrapper testutil/irquery/unittest_optestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_tensorindexmaptestwrapper testutil/irquery/unittest_tensorindexmaptestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_tensorindextestwrapper testutil/irquery/unittest_tensorindextestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
+add_unit_test(unittest_tensortestwrapper testutil/irquery/unittest_tensortestwrapper.cpp SUPPORT_LIBS ir-query-test-util trompeloeil)
 
-add_popart_cpp_unit_test(unittest_op_conv op/conv.cpp)
-add_popart_cpp_unit_test(unittest_op_dynamicop op/dynamicop.cpp TEST_UTILS ir-query-test-util)
-add_popart_cpp_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
-add_popart_cpp_unit_test(unittest_op_varupdate op/varupdate.cpp)
+add_unit_test(unittest_op_conv op/conv.cpp)
+add_unit_test(unittest_op_dynamicop op/dynamicop.cpp SUPPORT_LIBS ir-query-test-util)
+add_unit_test(unittest_op_sgd2combo op/sgd2combo.cpp)
+add_unit_test(unittest_op_varupdate op/varupdate.cpp)
 
-add_popart_cpp_unit_test(unittest_ir_deonnxing_regression_tests ir/deonnxing_regression_tests.cpp)
-add_popart_cpp_unit_test(unittest_ir_tensor_accessors ir/tensor_accessors.cpp)
-add_popart_cpp_unit_test(unittest_ir_clone_graph ir/clone_graph.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_ir_executeOpNTimesEveryMTimes ir/executeOpNTimesEveryMTimes.cpp)
-add_popart_cpp_unit_test(unittest_ir_remove_isolated_graphs ir/remove_isolated_graphs.cpp)
+add_unit_test(unittest_ir_deonnxing_regression_tests ir/deonnxing_regression_tests.cpp)
+add_unit_test(unittest_ir_tensor_accessors ir/tensor_accessors.cpp)
+add_unit_test(unittest_ir_clone_graph ir/clone_graph.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_ir_executeOpNTimesEveryMTimes ir/executeOpNTimesEveryMTimes.cpp)
+add_unit_test(unittest_ir_remove_isolated_graphs ir/remove_isolated_graphs.cpp)
 
-add_popart_cpp_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regression_tests.cpp)
+add_unit_test(unittest_stepio_deonnxing_regression_tests stepio/deonnxing_regression_tests.cpp)
 
-add_popart_cpp_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_overlapio transforms/unittest_overlapio.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_mainloops transforms/unittest_mainloops.cpp VARIANTS Cpu)
-add_popart_cpp_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)
-add_popart_cpp_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)
-add_popart_cpp_unit_test(unittest_subgraph_autodiff transforms/autodiff/unittest_subgraph_autodiff.cpp TEST_UTILS ir-query-test-util)
-add_popart_cpp_unit_test(unittest_streamingmemory transforms/unittest_streamingmemory.cpp TEST_UTILS ir-query-test-util test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_decomposeloops transforms/unittest_decomposeloops.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_explicitrecompute transforms/unittest_explicitrecompute.cpp TEST_UTILS test-graphs-test-util)
+add_unit_test(unittest_autodiff transforms/unittest_autodiff.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
+add_unit_test(unittest_overlapio transforms/unittest_overlapio.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
+add_unit_test(unittest_mainloops transforms/unittest_mainloops.cpp VARIANTS Cpu)
+add_unit_test(unittest_backwardsgraphcreator transforms/autodiff/unittest_backwardsgraphcreator.cpp)
+add_unit_test(unittest_calledgraphgradophelper transforms/autodiff/unittest_calledgraphgradophelper.cpp)
+add_unit_test(unittest_subgraph_autodiff transforms/autodiff/unittest_subgraph_autodiff.cpp SUPPORT_LIBS ir-query-test-util)
+add_unit_test(unittest_streamingmemory transforms/unittest_streamingmemory.cpp SUPPORT_LIBS ir-query-test-util test-graphs-test-util)
+add_unit_test(unittest_decomposeloops transforms/unittest_decomposeloops.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_explicitrecompute transforms/unittest_explicitrecompute.cpp SUPPORT_LIBS test-graphs-test-util)
 
-add_popart_cpp_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp TEST_UTILS test-graphs-test-util)
-add_popart_cpp_unit_test(unittest_recompute transforms/unittest_recompute_mode.cpp)
+add_unit_test(unittest_pipeline transforms/unittest_pipeline.cpp SUPPORT_LIBS test-graphs-test-util)
+add_unit_test(unittest_recompute transforms/unittest_recompute_mode.cpp)
 
-add_popart_cpp_unit_test(unittest_preautomaticlossscaling transforms/unittest_preautomaticlossscaling.cpp)
-add_popart_cpp_unit_test(unittest_ensurefp32lossscale transforms/unittest_ensurefp32lossscale.cpp)
+add_unit_test(unittest_preautomaticlossscaling transforms/unittest_preautomaticlossscaling.cpp)
+add_unit_test(unittest_ensurefp32lossscale transforms/unittest_ensurefp32lossscale.cpp)
 
-add_popart_cpp_unit_test(unittest_opattributehelper unittest_opattributehelper.cpp)
+add_unit_test(unittest_opattributehelper unittest_opattributehelper.cpp)
 
 add_popart_py_unit_test(test_error)
 
-add_popart_cpp_unit_test(unittest_reduceprodce ces/reduceprodce.cpp)
+add_unit_test(unittest_reduceprodce ces/reduceprodce.cpp)
 
-add_popart_cpp_unit_test(unittest_complement unittest_complement.cpp)
+add_unit_test(unittest_complement unittest_complement.cpp)
 
 add_subdirectory("compoundscalarhelper")
 

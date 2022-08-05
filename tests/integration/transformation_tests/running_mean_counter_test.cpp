@@ -6,6 +6,7 @@
 #include <filereader.hpp>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/adam.hpp>
@@ -14,7 +15,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/accumulate.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/datatype.hpp"

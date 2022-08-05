@@ -9,6 +9,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -17,7 +18,6 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/inputshapeinfo.hpp"

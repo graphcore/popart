@@ -3,4 +3,4 @@
 # to run only these tests with ctest, consider using something like,
 # `ctest -R transformation -j5 -VV'.
 
-add_popart_cpp_unit_test(unwinding_test0 unwinding_test0.cpp)
+add_unit_test(unwinding_test0 unwinding_test0.cpp)

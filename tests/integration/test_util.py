@@ -4,11 +4,16 @@ import functools
 import inspect
 import os
 import re
-from typing import Dict
-
-import pytest
+from typing import Dict, List, Union
+from typing_extensions import Literal
 
 import popart
+import pytest
+
+IPU_MODEL_TYPES: List[str] = ["IpuModel", "IpuModel21", "IpuModel2"]
+SIM_TYPES: List[str] = ["Sim21", "Sim2", "Sim"]
+HW_AND_MODEL_TYPES: List[str] = ["Hw"] + IPU_MODEL_TYPES + SIM_TYPES
+ALL_TYPES: List[str] = HW_AND_MODEL_TYPES + ["Cpu"]
 
 
 def filter_dict(dict_to_filter, fun):
@@ -29,8 +34,32 @@ def filter_dict(dict_to_filter, fun):
 USE_ALL_TILES = 0
 
 
+def device_to_ipu_name(device_type: str) -> Literal["ipu2", "ipu21"]:
+    """Get the ipu name from the device type.
+
+    Args:
+        device_type (str): The device type: Sim21, IpuModel
+
+    Raises:
+        ValueError: If an incorrect device type is passed.
+
+    Returns:
+        str: The ipu name, one of "ipu21" or "ipu2"
+    """
+    if device_type in ["Sim2", "IpuModel2"]:
+        return "ipu2"
+    elif device_type in ["Sim21", "IpuModel21"]:
+        return "ipu21"
+    elif device_type in ["Sim", "IpuModel"]:
+        # default for backwards compatability
+        return "ipu21"
+    else:
+        raise ValueError(f"Unknown device type: {device_type}")
+
+
 class DeviceContext:
-    """This is a wrapper around DeviceInfo which forces DeviceInfo to be used as a context manager."""
+    """This is a wrapper around DeviceInfo which forces DeviceInfo to be used
+    as a context manager."""
 
     def __init__(self, device):
         self.device = device
@@ -44,32 +73,68 @@ class DeviceContext:
 
 def create_test_device(
     numIpus: int = 1,
-    opts: Dict = None,
+    opts: Union[Dict, None] = None,
     pattern: popart.SyncPattern = popart.SyncPattern.Full,
     connectionType: popart.DeviceConnectionType = popart.DeviceConnectionType.OnDemand,
     selectionCriterion: popart.DeviceSelectionCriterion = popart.DeviceSelectionCriterion.Random,
-    tilesPerIPU=None,
+    tilesPerIPU: Union[int, None] = None,
 ) -> DeviceContext:
+    """Create a PopART device to be used on a PopART test, given the provided
+    arguments.
+
+    Args:
+        numIpus (int, optional):
+            The number of IPUs to request. Must be a power of 2. Defaults to 1.
+        opts (Union[Dict, None], optional):
+            A dictionary of strings to pass to the device manager. Defaults to
+            None.
+        pattern (popart.SyncPattern, optional):
+            The syncpattern to use. See the sync patterns section in the
+            documentation. Defaults to popart.SyncPattern.Full.
+        connectionType (popart.DeviceConnectionType, optional):
+            The device connection type to use, see devicemanager.hpp for
+            details. Defaults to popart.DeviceConnectionType.OnDemand.
+        selectionCriterion (popart.DeviceSelectionCriterion, optional):
+            The device selection to use, see devicemanager.hpp for details.
+            Defaults to popart.DeviceSelectionCriterion.Random.
+        tilesPerIPU (Union[int, None], optional):
+            The number of tiles per IPU to use, use a small number e.g. 4 to
+            speed up tests. Defaults to None, which will use the maximum
+            available.
+
+    Raises:
+        RuntimeError: If there is a conflict between the options passed as
+            arguments, and the options passed as `opts`
+        RuntimeError: If an invalid device type is passed as the `TEST_TARGET`
+            env variable.
+
+    Returns:
+        DeviceContext: A wrapper around the DeviceInfo object used to run a
+            session. This is a wrapper around DeviceInfo which forces DeviceInfo
+            to be used as a context manager.
+    """
     testDeviceType = os.environ.get("TEST_TARGET")
 
     if opts:
         if tilesPerIPU is not None and "tilesPerIPU" in opts.keys():
             raise RuntimeError("Cannot set tilesPerIPU in 2 ways")
 
-    # NOTE: This function isn't symmetric with willow/include/popart/testdevice.hpp because it doesn't
+    # NOTE: This function isn't symmetric with testdevice.hpp because it doesn't
     # pass on the number of tiles for simulated devices (perhaps it should).
-    if tilesPerIPU is None and testDeviceType in ("Hw", "IpuModel", "Sim"):
+    if tilesPerIPU is None and testDeviceType in HW_AND_MODEL_TYPES:
         tilesPerIPU = 4
 
     if testDeviceType is None:
         testDeviceType = "Cpu"
     if testDeviceType == "Cpu":
         device = popart.DeviceManager().createCpuDevice()
-    elif testDeviceType == "Sim":
+    elif testDeviceType in SIM_TYPES:
         if opts is None:
             opts = {}
+
         opts["numIPUs"] = numIpus
         opts["tilesPerIPU"] = tilesPerIPU
+        opts["ipuVersion"] = device_to_ipu_name(testDeviceType)
         device = popart.DeviceManager().createSimDevice(opts)
     elif testDeviceType == "Hw":
         dm = popart.DeviceManager()
@@ -85,11 +150,12 @@ def create_test_device(
 
         assert device is not None
 
-    elif testDeviceType == "IpuModel":
+    elif testDeviceType in IPU_MODEL_TYPES:
         if opts is None:
             opts = {}
         opts["numIPUs"] = numIpus
         opts["tilesPerIPU"] = tilesPerIPU
+        opts["ipuVersion"] = device_to_ipu_name(testDeviceType)
 
         device = popart.DeviceManager().createIpuModelDevice(opts)
     else:

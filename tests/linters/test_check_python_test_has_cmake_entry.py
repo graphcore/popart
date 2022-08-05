@@ -188,6 +188,6 @@ def test_check_for_test_entry(monkeypatch: MonkeyPatch) -> None:
     assert check_for_test_entry(lint_path, cmakelists_path) == 1
 
     monkeypatch.setattr(
-        Path, "open", MonkeyPathOpen(f"add_popart_cpp_unit_test({lint_path.stem})\n")
+        Path, "open", MonkeyPathOpen(f"add_unit_test({lint_path.stem})\n")
     )
     assert check_for_test_entry(lint_path, cmakelists_path) == 1

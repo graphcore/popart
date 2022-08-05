@@ -97,12 +97,12 @@ add_library(ir-query-test-util SHARED
 )
 target_include_directories(ir-query-test-util
     PUBLIC
-      ${test_util_include_dir_for_libs}
+    ${test_util_include_dir_for_libs}
 )
+
 target_link_libraries(ir-query-test-util
     PUBLIC popart-internal
 )
-link_boost(ir-query-test-util)
 
 set_target_properties(ir-query-test-util
     PROPERTIES
@@ -124,3 +124,5 @@ set_target_properties(ir-query-test-util
       POSITION_INDEPENDENT_CODE ON
 )
 target_compile_features(ir-query-test-util PUBLIC cxx_std_14)
+
+add_subdirectory(testdevice)

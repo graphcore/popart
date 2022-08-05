@@ -9,13 +9,13 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/ir.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/inputshapeinfo.hpp"

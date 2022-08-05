@@ -9,6 +9,7 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -19,7 +20,6 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/operators.hpp"

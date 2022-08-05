@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -18,7 +19,6 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "filereader.hpp"
 #include "popart/datatype.hpp"

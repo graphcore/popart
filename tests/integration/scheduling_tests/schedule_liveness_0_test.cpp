@@ -7,6 +7,7 @@
 #include <filereader.hpp>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -17,7 +18,6 @@
 #include <popart/op/add.hpp>
 #include <popart/op/scale.hpp>
 #include <popart/sessionoptions.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 
 #include "popart/builder.gen.hpp"

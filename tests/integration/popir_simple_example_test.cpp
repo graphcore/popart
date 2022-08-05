@@ -14,13 +14,13 @@
 #include <snap/Tensor.hpp>
 #include <stdexcept>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <poplar/Target.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/names.hpp"

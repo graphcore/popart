@@ -7,7 +7,7 @@
 #include <poplar/Graph.hpp>
 #include <poplar/Target.hpp>
 
-#include <popart/testdevice.hpp>
+#include <testdevice.hpp>
 
 #include "../../willow/src/popx/rng/rngstatelowering.hpp"
 #include "popart/error.hpp"
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(RngStateTensorSizeAndShapeConsistencyTest) {
   BOOST_CHECK_EQUAL(numIpus, graph.getTarget().getNumIPUs());
 
   const auto deviceInfo =
-      popart::createTestDevice(popart::TestDeviceType::IpuModel,
+      popart::createTestDevice(popart::TestDeviceType::IpuModel21,
                                target.getNumIPUs(),
                                target.getTilesPerIPU());
 

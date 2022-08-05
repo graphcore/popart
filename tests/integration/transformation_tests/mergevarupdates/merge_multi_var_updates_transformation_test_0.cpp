@@ -11,6 +11,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -18,7 +19,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "../../random_util.hpp"
 #include "popart/builder.gen.hpp"

@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/graph.hpp>
@@ -13,7 +14,6 @@
 #include <popart/op/init.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/mergeexchange.hpp>
 #include <popart/transforms/remotesetup.hpp>

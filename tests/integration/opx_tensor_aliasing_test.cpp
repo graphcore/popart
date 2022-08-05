@@ -13,6 +13,7 @@
 #include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <poplar/exceptions.hpp>
 #include <popops/ElementWise.hpp>
@@ -26,7 +27,6 @@
 #include <popart/popx/popopx.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/error.hpp"
 #include "popart/names.hpp"

@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
 #include <poplar/GraphElements.hpp>
@@ -26,7 +27,6 @@
 #include <popart/session.hpp>
 #include <popart/shapeinference.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/attributes.hpp"
 #include "popart/dataflow.hpp"

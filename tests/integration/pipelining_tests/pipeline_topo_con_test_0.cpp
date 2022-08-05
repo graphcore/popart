@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -19,7 +20,6 @@
 #include <popart/pointercomparators.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/error.hpp"

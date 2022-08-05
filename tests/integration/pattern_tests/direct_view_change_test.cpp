@@ -6,6 +6,7 @@
 #include <filereader.hpp>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -15,7 +16,6 @@
 #include <popart/names.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensors.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/util.hpp>
 
 #include "popart/builder.gen.hpp"

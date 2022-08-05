@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -31,7 +32,6 @@
 #include <popart/op/nll.hpp>
 #include <popart/op/sum.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "../random_util.hpp"
 #include "popart/builder.gen.hpp"

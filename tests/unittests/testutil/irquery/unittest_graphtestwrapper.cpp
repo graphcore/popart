@@ -15,10 +15,10 @@
 
 #undef private
 
+#include "testop.hpp"
 #include <algorithm>
 #include <map>
 #include <string>
-#include <testutil/irquery/testop.hpp>
 #include <tuple>
 #include <vector>
 

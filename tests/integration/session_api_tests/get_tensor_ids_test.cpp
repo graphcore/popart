@@ -6,11 +6,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include <testdevice.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/session.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/voiddata.hpp>
 
 struct TmpDir {
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(GetAllTensorIdsTest) {
 
   const popart::TensorId out = builder->getOutputTensorIds()[0];
   auto dataFlow = popart::DataFlow(1, {{out, popart::AnchorReturnType("All")}});
-  auto device   = popart::createTestDevice(popart::TEST_TARGET, 1);
+  auto device   = popart::createTestDevice(TEST_TARGET, 1);
 
   auto session = popart::InferenceSession::createFromOnnxModel(
       builder->getModelProto(), dataFlow, device);

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -16,7 +17,6 @@
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/error.hpp"

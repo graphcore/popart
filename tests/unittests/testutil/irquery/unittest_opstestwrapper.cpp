@@ -15,16 +15,16 @@
 #define private public
 #undef private
 
-#include <testutil/irquery/mock_testfailuretriggerer.hpp>
-#include <testutil/irquery/testop.hpp>
 #include <type_traits>
 #include <vector>
 
+#include "mock_testfailuretriggerer.hpp"
 #include "popart/datatype.hpp"
 #include "popart/graphid.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/tensors.hpp"
 #include "popart/vendored/optional.hpp"
+#include "testop.hpp"
 #include "testutil/irquery/irquery.hpp"
 
 using namespace popart;

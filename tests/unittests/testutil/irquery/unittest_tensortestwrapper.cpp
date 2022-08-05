@@ -12,11 +12,11 @@
 #define private public
 #undef private
 
+#include "testop.hpp"
 #include <algorithm>
 #include <map>
 #include <set>
 #include <string>
-#include <testutil/irquery/testop.hpp>
 #include <vector>
 
 #include "popart/graphid.hpp"

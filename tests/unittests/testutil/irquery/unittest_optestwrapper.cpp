@@ -21,7 +21,7 @@
 #include <testutil/irquery/irquery.hpp> // IWYU pragma: keep
 #undef private
 
-#include <testutil/irquery/testop.hpp>
+#include "testop.hpp"
 
 using namespace popart;
 using namespace popart::irquery;

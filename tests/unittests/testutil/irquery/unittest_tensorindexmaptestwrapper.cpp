@@ -15,9 +15,10 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <testutil/irquery/mock_testfailuretriggerer.hpp>
+
 #include <type_traits>
 
+#include "mock_testfailuretriggerer.hpp"
 #include "popart/graphid.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensors.hpp"

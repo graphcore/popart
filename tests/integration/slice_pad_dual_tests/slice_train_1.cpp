@@ -36,13 +36,13 @@
 #define protected public
 #define private public
 
+#include <testdevice.hpp>
 #include <popart/builder.hpp>
 #include <popart/error.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/irlowering.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/popx/poptensors.hpp"
 
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(SliceTrain1) {
 
   SessionOptions userOptions;
 
-  auto device = createTestDevice(TestDeviceType::IpuModel, 1, 20);
+  auto device = createTestDevice(TestDeviceType::IpuModel21, 1, 20);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,

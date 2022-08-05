@@ -36,6 +36,7 @@ class IArray;
 #pragma clang diagnostic ignored "-Wkeyword-macro"
 #endif
 #define protected public
+#include <testdevice.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/inputshapeinfo.hpp>
@@ -43,7 +44,6 @@ class IArray;
 #include <popart/optimizer.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #undef protected
 

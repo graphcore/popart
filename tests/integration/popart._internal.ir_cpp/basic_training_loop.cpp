@@ -1,6 +1,7 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 #define BOOST_TEST_MODULE Test_AAPI_loop_accumulate
 #include <boost/test/unit_test.hpp>
+#include <testdevice.hpp>
 #include <popart/aliasesmap.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -19,7 +20,6 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/transforms/autodiff.hpp>
 #include <popart/util.hpp>
 // This is needed for ModelProto

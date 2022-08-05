@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/dataflow.hpp>
@@ -18,7 +19,6 @@
 #include <popart/op/scale.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/datatype.hpp"
 #include "popart/graphid.hpp"

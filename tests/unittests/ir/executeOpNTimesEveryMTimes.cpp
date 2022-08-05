@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/dataflow.hpp>
@@ -22,7 +23,6 @@
 #include <popart/op/sinh.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/transforms/automaticlossscaling.hpp>
 
 #include "popart/alias/aliasmodel.hpp"

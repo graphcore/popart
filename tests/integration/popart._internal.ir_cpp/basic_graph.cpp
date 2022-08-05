@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/dataflow.hpp>
@@ -21,7 +22,6 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/bimap.hpp"
 #include "popart/datatype.hpp"

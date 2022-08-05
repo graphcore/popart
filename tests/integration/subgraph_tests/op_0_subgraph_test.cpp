@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <subgraph/wrappedop.hpp>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -29,7 +30,6 @@
 #include <popart/sgd.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/tensornames.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 
 #include "popart/analysis/replicaequal/replicaequalanalysis.hpp"

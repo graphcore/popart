@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -21,7 +22,6 @@
 #include <popart/stepio.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensors.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/util.hpp>
 
 #include "popart/bimap.hpp"

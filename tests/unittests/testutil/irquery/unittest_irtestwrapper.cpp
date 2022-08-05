@@ -12,11 +12,11 @@
 #define private public
 #undef private
 
-#include "testutil/irquery/mock_testfailuretriggerer.hpp"
 #include <functional>
 #include <memory>
 #include <type_traits>
 
+#include "mock_testfailuretriggerer.hpp"
 #include "popart/graphid.hpp"
 #include "popart/vendored/optional.hpp"
 #include "testutil/irquery/irquery.hpp"

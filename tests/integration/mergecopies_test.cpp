@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -15,7 +16,6 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op/ipucopy.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/sessionoptions.hpp"

@@ -9,6 +9,7 @@
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -19,7 +20,6 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/datatype.hpp"

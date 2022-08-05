@@ -18,12 +18,12 @@
 #define private public
 #define protected public
 
+#include <testdevice.hpp>
 #include <popart/adam.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/collectives/replicatedallreduce.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "../test_runner.hpp"
 #include "popart/datatype.hpp"

@@ -12,6 +12,7 @@
 #include <set>
 #include <snap/Tensor.hpp>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <poplar/Tensor.hpp>
@@ -27,7 +28,6 @@
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/ir.hpp"

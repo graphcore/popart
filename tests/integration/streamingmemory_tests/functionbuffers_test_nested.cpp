@@ -10,6 +10,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/graph.hpp>
@@ -23,7 +24,6 @@
 #include <popart/op/matmul.hpp>
 #include <popart/session.hpp>
 #include <popart/stepio.hpp>
-#include <popart/testdevice.hpp>
 #include <popart/topocons.hpp>
 #include <popart/util.hpp>
 #include <popart/vendored/optional.hpp>

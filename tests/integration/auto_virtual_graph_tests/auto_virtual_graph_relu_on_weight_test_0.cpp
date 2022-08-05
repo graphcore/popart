@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -20,7 +21,6 @@
 #include <popart/session.hpp>
 #include <popart/sgd.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "../random_util.hpp"
 #include "popart/builder.gen.hpp"

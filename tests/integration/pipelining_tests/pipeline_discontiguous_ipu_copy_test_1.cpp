@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <popart/builder.hpp>
@@ -16,7 +17,6 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/ir.hpp"

@@ -19,7 +19,7 @@ def mk_session_with_test_device(ir: popxl.Ir) -> popxl.Session:
     test_target = os.environ.get("TEST_TARGET")
     if test_target == "Cpu":
         dev = "cpu"
-    elif test_target == "IpuModel":
+    elif "IpuModel" in test_target:
         dev = "ipu_model"
     elif test_target == "Hw":
         dev = "ipu_hw"

@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <testdevice.hpp>
 #include <vector>
 #include <popart/builder.hpp>
 #include <popart/graph.hpp>
@@ -15,7 +16,6 @@
 #include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/dataflow.hpp"

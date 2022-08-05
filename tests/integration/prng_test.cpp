@@ -14,6 +14,7 @@
 #include <snap/Program.hpp>
 #include <snap/Tensor.hpp>
 #include <string>
+#include <testdevice.hpp>
 #include <utility>
 #include <vector>
 #include <poplar/Graph.hpp>
@@ -31,7 +32,6 @@
 #include <popart/sgd.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorinfo.hpp>
-#include <popart/testdevice.hpp>
 
 #include "popart/builder.gen.hpp"
 #include "popart/datatype.hpp"
