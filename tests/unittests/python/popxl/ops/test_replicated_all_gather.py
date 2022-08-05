@@ -7,7 +7,7 @@ import popart._internal.ir as _ir
 from utils import contains_op_of_type
 
 
-class TestReplicatedReduceScatter:
+class TestReplicatedAllGather:
     def test_fn(self):
         ir = popxl.Ir()
         opts = ir._pb_ir.getSessionOptions()
