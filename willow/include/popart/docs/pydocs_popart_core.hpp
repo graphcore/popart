@@ -15213,11 +15213,6 @@ static const char *__doc_popart_TensorData_resetData_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_TensorData_resetData_2 = R"doc()doc";
 
-static const char *__doc_popart_TensorData_resetDataInExecutablex = R"doc()doc";
-
-static const char *__singlelinedoc_popart_TensorData_resetDataInExecutablex =
-    R"doc()doc";
-
 static const char *__doc_popart_TensorData_resetDataWithNonMatchingSize =
     R"doc()doc";
 

@@ -491,8 +491,9 @@ void serializePopartExecutable(std::ostream &out,
         // For Onnx-Ir models, we don't store the tensorData
         // for the variable tensors with initializers since
         // they will be loaded from the onnx file.
-        // For Ir models, and others, the tensor data is always serialized
-        bool serializeTensorData = true;
+        // For Ir models, and others, the tensor data is never serialised
+        // as we can use the TensorData in the provided Ir.
+        bool serializeTensorData = false;
         if (ir.hasOnnxModel()) {
           bool isInitializer =
               popart::onnxutil::isInitializer(ir.getModel(), id);

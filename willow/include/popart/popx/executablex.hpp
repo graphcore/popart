@@ -57,6 +57,8 @@ private:
                             gcl::CollectiveBalancedHostRearrangement>>
       cbrHostRearrangements;
 
+  bool useIrTensors() const;
+
 public:
   Executablex(IrLowering &ir_lowering_);
   Executablex(IrLowering &ir_lowering_,

@@ -261,28 +261,6 @@ void Devicex::popxlWeightsToTensorData() {
 
   // Copy from d2hWeightBuffers into the tensors of the weights.
   d2hWeightBuffersToTensors(tensors);
-
-  // There is a duplicate state created when loading serialised executables.
-  // Copies of the same tensors exist in both `executable_.tensors` and
-  // in the IR instance returned by `ir()`. The code below ensures that
-  // these states are in sync.
-  if (executable_.isDeserialized()) {
-    std::vector<Tensor *> tensorsIr;
-    for (const auto &t : tensors) {
-      if (ir().containsTensor(t->id)) {
-        try {
-          tensorsIr.push_back(ir().getTensor(t->id));
-        } catch (popart::error &err) {
-          throw error("[popxlWeightsToTensorData] Weight tensor with id {} has "
-                      "no corresponding tensor in IR. {}",
-                      t->id,
-                      err.what());
-        }
-      }
-    }
-
-    d2hWeightBuffersToTensors(tensorsIr);
-  }
 }
 
 bool Devicex::popxlAreHostWeightsInSync() {

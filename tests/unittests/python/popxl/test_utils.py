@@ -1,10 +1,10 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-
 import pytest
-from popxl.utils import to_numpy
-import popxl
-import torch
 import numpy as np
+import torch
+import popxl
+from popxl.utils import to_numpy, downcast_np_dtypes
+from popxl.dtypes import _NP_TO_POPXL, _PT_TO_POPXL
 
 
 # fmt: off
@@ -32,9 +32,42 @@ import numpy as np
     [False, None, True, np.dtype('bool')], # Bool input
 ])
 def test_to_numpy(x, dtype, downcast, expected_type):
-
     out = to_numpy(x, dtype, downcast)
     assert isinstance(out, np.ndarray)
     assert expected_type == out.dtype
 
 # fmt: on
+
+
+@pytest.mark.parametrize("copy", (True, False))
+@pytest.mark.parametrize(
+    ("src", "dtype"),
+    (
+        *map(lambda d: ("pt", d), _PT_TO_POPXL.keys()),
+        *map(lambda d: ("np", d), _NP_TO_POPXL.keys()),
+    ),
+)
+def test_to_numpy_copy(src, dtype, copy):
+    if src == "pt":
+        t = torch.ones((2, 2), dtype=dtype)
+    elif src == "np":
+        t = np.ones((2, 2), dtype=dtype)
+    else:
+        v = dtype(1)
+        t = [[v, v], [v, v]]
+
+    result = to_numpy(t, copy=copy)
+    if src == "pt":
+        t_np = t.detach().numpy()
+    elif src == "np":
+        t_np = t
+    else:
+        t_np = np.asarray(t)
+    should_alias = not copy and not (t_np.dtype in downcast_np_dtypes.keys())
+    assert np.shares_memory(t_np, result) == should_alias
+
+
+@pytest.mark.parametrize(("dtype", "result_dtype"), downcast_np_dtypes.items())
+def test_to_numpy_downcast(dtype, result_dtype):
+    t = np.ones((2, 2), dtype=dtype)
+    assert to_numpy(t).dtype == result_dtype

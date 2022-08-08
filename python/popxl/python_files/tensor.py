@@ -863,7 +863,8 @@ def variable(
             "See popxl user guide for more details."
         )
 
-    np_data = to_numpy(data, dtype, downcast)
+    # `addVarInit` will copy the data so it's not required here
+    np_data = to_numpy(data, dtype, downcast, copy=False)
     popxl_dt = dtypes.dtype.as_dtype(np_data)
 
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
@@ -1240,7 +1241,8 @@ def constant(
     g = gcg()
     pb_g = g._pb_graph
 
-    np_data = to_numpy(data, dtype, downcast)
+    # `addConstInit` will copy the data so it's not required here
+    np_data = to_numpy(data, dtype, downcast, copy=False)
     popxl_dt = dtypes.dtype.as_dtype(np_data)
     info = _ir.TensorInfo(popxl_dt._pb_dtype, np_data.shape)
     pb_id = g._create_tensor_id(name)

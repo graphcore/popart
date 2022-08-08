@@ -47,24 +47,24 @@ def to_numpy(
         copy (bool):
             If true the objects data is guaranteed to be copied.
     """
-
-    if dtype:
-        np_dtype = dtype.as_numpy() if dtype is not None else None
-
-        if np_dtype in downcast_np_dtypes and downcast and dtype is None:
-            np_dtype = downcast_np_dtypes[np_dtype]
-    else:
-        np_dtype = None
-
     if torch_imported and isinstance(x, torch.Tensor):
         x = x.detach().numpy()
-        if dtype:
-            x = x.astype(np_dtype)
-    else:
-        x = np.array(x, dtype=np_dtype)
 
-    if x.dtype in downcast_np_dtypes and downcast and dtype is None:
-        x = x.astype(downcast_np_dtypes[x.dtype])
+    if dtype:
+        np_dtype = dtype.as_numpy()
+    else:
+        np_dtype = np.obj2sctype(x)
+
+    # Attempt to downcast before constructing the array
+    if not dtype and np_dtype in downcast_np_dtypes and downcast:
+        np_dtype = downcast_np_dtypes[np_dtype]
+
+    x = np.asarray(x, dtype=np_dtype, order="C")
+
+    # Sometimes it is not possible to infer the result type before constructing the array
+    # so check again here to ensure 64-bit values are not returned when downcast=True
+    if not dtype and x.dtype in downcast_np_dtypes and downcast:
+        x = np.array(x, dtype=downcast_np_dtypes[x.dtype], order="C")
     elif copy:
         x = x.copy()
 

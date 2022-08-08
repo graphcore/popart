@@ -1,6 +1,5 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <algorithm>
-#include <boost/filesystem.hpp>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -10,7 +9,6 @@
 #include <utility>
 #include <vector>
 #include <popart/error.hpp>
-#include <popart/session.hpp>
 #include <popart/stepio.hpp>
 #include <popart/tensordata.hpp>
 
@@ -75,37 +73,6 @@ void TensorData::resetDataWithReplicaGrouping(const TensorInfo &info,
   }
   data_.resize(deviceSize);
   std::memcpy(data_.data(), from, deviceSize);
-}
-
-void TensorData::resetDataInExecutablex(Tensor &tensorIr,
-                                        Session &ses,
-                                        const void *from) {
-
-  auto &weightTensors = ses.getExecutable().getWeightTensors();
-
-  TensorId tensorIrId = tensorIr.id;
-  for (auto *tensorExe : weightTensors) {
-    if (tensorExe->id == tensorIrId) {
-      if (!tensorExe->hasTensorData()) {
-        throw error(
-            "[TensorData] Executable weight tensor {} does not have data.",
-            tensorIrId);
-      }
-
-      if (tensorExe->info != tensorIr.info) {
-        throw error("[TensorData] Info of executable weight tensor {} is not "
-                    "compatible with info of data source tensor {}.",
-                    tensorExe->id,
-                    tensorIrId);
-      }
-
-      auto numGroups = tensorIr.getVariableSettings().getGroupCount(
-          ses.getIr().getSessionOptions().getGlobalReplicationFactor());
-
-      tensorExe->tensorData()->resetDataWithReplicaGrouping(
-          tensorExe->info, from, numGroups);
-    }
-  }
 }
 
 void TensorData::resetDataWithNonMatchingSize(const TensorInfo &info,

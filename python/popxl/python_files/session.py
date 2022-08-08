@@ -216,9 +216,6 @@ class Session:
             ValueError: If not attached to device before calling this function.
         """
         self._assert_attached_before_runtime()
-        # NOTE: Copies from device, to internal buffers, to Ir TensorData
-        #       buffers. After this call, `get_tensor_data` can immediately
-        #       return the Ir tensors' TensorData buffers.
         # NOTE: Internally detects if host weights out-of-sync and marks them as
         #       in-sync.
         self._pb_session.copyDeviceWeightsToHost()

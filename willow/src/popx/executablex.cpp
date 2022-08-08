@@ -135,8 +135,18 @@ IrLowering &Executablex::lowering() { return ir_lowering; }
 
 const popart::Ir &Executablex::ir() const { return ir_lowering.ir(); }
 
+bool Executablex::useIrTensors() const {
+  // If the model has not been deserialised then the Tensor objects
+  // exist in the Ir and should be used.
+
+  // If the Ir does not have an ONNX model but has been deserialised then
+  // it MUST only have come from a cache hit with fully constructed Ir
+  // so we should use the Tensors objects from the Ir.
+  return !deserialized || !ir().hasOnnxModel();
+}
+
 bool Executablex::containsTensor(const TensorId &id) const {
-  if (!deserialized) {
+  if (useIrTensors()) {
     return ir().containsTensor(id);
   }
 
@@ -156,7 +166,7 @@ bool Executablex::shouldSerialize() {
 }
 
 Tensor *Executablex::getTensor(const TensorId &id) {
-  if (!deserialized) {
+  if (useIrTensors()) {
     return ir().getTensor(id);
   }
 
@@ -171,7 +181,7 @@ Tensor *Executablex::getTensor(const TensorId &id) {
 }
 
 const Tensor *Executablex::getTensor(const TensorId &id) const {
-  if (!deserialized) {
+  if (useIrTensors()) {
     return ir().getTensor(id);
   }
 
@@ -186,7 +196,7 @@ const Tensor *Executablex::getTensor(const TensorId &id) const {
 }
 
 std::set<TensorId> Executablex::getAllTensorIds() {
-  if (!deserialized) {
+  if (useIrTensors()) {
     return ir().getAllTensorIds();
   }
 
@@ -201,7 +211,7 @@ std::set<TensorId> Executablex::getAllTensorIds() {
 }
 
 std::vector<TensorId> Executablex::getTensorIds(TensorType type) {
-  if (!deserialized) {
+  if (useIrTensors()) {
     return ir().getTensorIds(type);
   }
 

@@ -243,8 +243,6 @@ void bindTensor(py::module &m) {
                     ses.getIr()
                         .getSessionOptions()
                         .getGlobalReplicationFactor()));
-            self.tensorData()->resetDataInExecutablex(
-                self, ses, static_cast<void *>(npArray.request().ptr));
           })
       .def("setTensorLocationInfo",
            [](Tensor &self, TensorLocation &tLocation, int a, int b) {
