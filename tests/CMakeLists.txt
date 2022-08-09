@@ -20,9 +20,7 @@ find_package(trompeloeil 35 REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH "${GCCS_CMAKE_DIR}")
 include(AddUnitTest)
-# TODO use the GCCS one:
-# include(AddPythonUnitTest)
-include(AddPythonUnitTest.cmake)
+include(AddPythonUnitTest)
 
 set(DEFAULT_TEST_VARIANTS "Cpu" CACHE STRING
   "The device variants to run tests on when no variants are set explicitly")
@@ -114,6 +112,7 @@ function(add_popart_py_unit_test name)
     ALLOW_SKIP ${ARGS_ALLOW_SKIP}
     MATCHEXPR ${ARGS_MATCHEXPR}
     NUM_WORKERS ${ARGS_NUM_WORKERS}
+    PYTHON3_PATH ${Python3_EXECUTABLE}
   )
 endfunction()
 
