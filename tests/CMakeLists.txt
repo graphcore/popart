@@ -102,6 +102,9 @@ function(add_popart_py_unit_test name)
     list(APPEND test_env "POPART_TEST_NAME=${name}")
   endif()
 
+  # Prepend the directory to the test name.
+  set(name "${dir}/${name}")
+
   add_python_unit_test(${name} ${filename}
     VARIANTS ${ARGS_VARIANTS}
     LABELS ${ARGS_LABELS}
