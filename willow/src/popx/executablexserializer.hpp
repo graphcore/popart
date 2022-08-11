@@ -4,9 +4,6 @@
 
 #include <iostream>
 #include <memory>
-
-#include <popef/Reader.hpp>
-
 #include <popart/capnp/Ir.capnp.h>
 #include <popart/commgroup.hpp>
 #include <popart/tensor.hpp>
@@ -73,22 +70,23 @@ toPopartVariableRetrievalMode(popart::cap::VariableRetrievalMode mode);
  * Serialise a tensor to capnp.
  * \param tensor The PopART tensor to serialise.
  * \param tensorBuilder The builder object to serialise to.
+ * \param serializeTensorData A flag as to whether to serialise tensor data.
  */
 void serializeTensor(const popart::Tensor *tensor,
-                     popart::cap::Tensor::Builder &tensorBuilder);
+                     popart::cap::Tensor::Builder &tensorBuilder,
+                     bool serializeTensorData = true);
 
 /**
  * Deserialise a tensor from capnp.
  * \param ir The PopART IR to construct the tensor in.
  * \param capnpTensor The serialised capnp tensor.
- * \param tensorReader A pointer to an object which allows
- *                     getting serialized tensor data.
+ * \param deserializeData A flag as to whether to deserialise tensor data.
  * \return A unique pointer to the constructed tensor.
  */
 std::unique_ptr<popart::Tensor>
 deserializeTensor(popart::Ir &ir,
                   const popart::cap::Tensor::Reader &capnpTensor,
-                  const popef::TensorReader *tensorReader);
+                  bool deserializeData = true);
 
 /**
  * Serialise executable.
@@ -103,15 +101,12 @@ void serializePopartExecutable(std::ostream &out,
  * \param in The stream to serialise from.
  * \param ir The IR to construct the executable with.
  * \param lowering The IR lowering object to construct the executable with.
- * \param tensorDataVec Vector of readable popef tensor data blobs. They contain
- *                      the serialized data for popart tensors.
  * \return A unique pointer to the constructed executable.
  */
-std::unique_ptr<popart::popx::Executablex> deserializePopartExecutable(
-    std::istream &in,
-    popart::Ir &ir,
-    popart::popx::IrLowering &lowering,
-    const std::vector<popef::TensorReader> &tensorDataVec);
+std::unique_ptr<popart::popx::Executablex>
+deserializePopartExecutable(std::istream &in,
+                            popart::Ir &ir,
+                            popart::popx::IrLowering &lowering);
 
 } // namespace serialization
 } // namespace popx

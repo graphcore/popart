@@ -6,9 +6,6 @@
 #include <iostream>
 #include <memory>
 
-#include <popef/Types.hpp>
-#include <popef/Writer.hpp>
-
 namespace poplar {
 // Forward declaration.
 class Executable;
@@ -18,9 +15,6 @@ namespace popart {
 
 // Forward declaration.
 class Ir;
-class Tensor;
-class TensorInfo;
-enum class DataType;
 
 namespace popx {
 
@@ -33,47 +27,6 @@ namespace serialization {
 
 // Forward declaration.
 class ReaderImpl;
-
-/**
- * The function casts \c popart::DataType to \c popef::DataType.
- *
- * \param type Tensor data type.
- * \return The created \c popef::DataType object.
- */
-popef::DataType toPopefDataType(popart::DataType type);
-
-/**
- * The function creates tensor info based on information contained
- * in passed arguments.
- *
- * \param dt The tensor data type.
- * \param shape The tensor shape.
- * \return The created \c popef::TensorInfo object.
- */
-popef::TensorInfo createTensorInfo(const popef::DataType dt,
-                                   const std::vector<int64_t> &shape);
-
-/**
- * The function casts \c popart::TensorInfo to \c popef::TensorInfo.
- *
- * \param info Object that contains information about tensor.
- * \return The created \c popef::TensorInfo  object.
- */
-popef::TensorInfo createTensorInfo(const popart::TensorInfo &info);
-
-/**
- * The function serializes the content of the tensor to the popef
- * file (specified by the \c popef::Writer object) as a tensor data
- * blob. Such blob contains tensor name, its shape, and data type
- * with binary data.
- *
- * \param tensor Popart tensor.
- * \param tensorInfo Object that contains information about the tensor.
- * \param writer Write popef tensor data blob to a given stream.
- */
-void serializePopefTensor(const popart::Tensor &tensor,
-                          const popef::TensorInfo &tensorInfo,
-                          popef::Writer &writer);
 
 /**
  * The function prepares popef file which can be used to run a model

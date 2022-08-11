@@ -1,7 +1,6 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 
 #include <cstdint>
-#include <numeric>
 #include <ostream>
 #include <vector>
 #include <popart/commgroup.hpp>
@@ -261,16 +260,17 @@ VariableSettings::groups(unsigned replicaCount) const {
   std::vector<std::vector<std::int64_t>> groups;
   std::vector<std::int64_t> group;
   if (sharedVariableDomain.type == CommGroupType::All) {
-    group.resize(replicaCount);
-    std::iota(group.begin(), group.end(), 0);
+    for (auto i = 0; i < replicaCount; i++) {
+      group.push_back(i);
+    }
     groups.push_back(group);
     return groups;
   }
   if (sharedVariableDomain.type == CommGroupType::None) {
-    static constexpr unsigned group_size = 1;
-    groups.reserve(replicaCount);
     for (auto i = 0; i < replicaCount; i++) {
-      groups.push_back(std::vector<std::int64_t>(group_size, i));
+      group = std::vector<std::int64_t>();
+      group.push_back(i);
+      groups.push_back(group);
     }
     return groups;
   }

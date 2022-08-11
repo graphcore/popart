@@ -74,36 +74,6 @@ namespace popart {
 namespace popx {
 namespace serialization {
 
-namespace {
-
-/**
- * The function finds tensor data blob from vector of blobs that
- * matches passed tensor id.
- *
- * \param tensorDataVec Vector of readable popef tensor data blobs.
- *                      They contain the serialized data for popart
- *                      tensors.
- * \param tensorId Tensor name that the function looks for in the
- *                 tensor readers.
- * \return Pointer to the tensor reader if tensor id matches with some
- *         tensor reader, nullptr otherwise.
- */
-const popef::TensorReader *
-getTensorReader(const std::vector<popef::TensorReader> &tensorDataVec,
-                const char *tensorId) {
-  auto tensorDataIt =
-      std::find_if(tensorDataVec.cbegin(),
-                   tensorDataVec.cend(),
-                   [&tensorId](const popef::TensorReader &tensor) {
-                     return tensor.info.name() == tensorId;
-                   });
-  const popef::TensorReader *tensorReader =
-      tensorDataIt != tensorDataVec.cend() ? &(*tensorDataIt) : nullptr;
-  return tensorReader;
-}
-
-} // namespace
-
 popart::cap::TensorType toCapnpTensorType(popart::TensorType type) {
   switch (type) {
   case popart::TensorType::ActGrad:
@@ -300,7 +270,8 @@ toPopartVariableRetrievalMode(popart::cap::VariableRetrievalMode mode) {
 }
 
 void serializeTensor(const popart::Tensor *tensor,
-                     popart::cap::Tensor::Builder &tensorBuilder) {
+                     popart::cap::Tensor::Builder &tensorBuilder,
+                     bool serializeTensorData) {
   tensorBuilder.setId(tensor->id);
   tensorBuilder.setTensorType(toCapnpTensorType(tensor->tensorType()));
   auto tensorInfoBuilder   = tensorBuilder.initTensorInfo();
@@ -327,6 +298,13 @@ void serializeTensor(const popart::Tensor *tensor,
   remoteBufferInfoBuilder.setId(remoteBufferInfo.first);
   remoteBufferInfoBuilder.setIndex(remoteBufferInfo.second);
 
+  if (serializeTensorData) {
+    const auto ptr =
+        reinterpret_cast<const kj::byte *>(tensor->tensorData()->data());
+    auto reader = capnp::Data::Reader(ptr, tensor->tensorData()->size());
+    tensorBuilder.setTensorData(reader);
+  }
+
   const auto &variableSettings = tensor->getVariableSettings();
   auto variableSettingsBuilder = tensorBuilder.initVariableSettings();
   variableSettingsBuilder.setRetrievalMode(
@@ -344,7 +322,7 @@ void serializeTensor(const popart::Tensor *tensor,
 std::unique_ptr<popart::Tensor>
 deserializeTensor(popart::Ir &ir,
                   const popart::cap::Tensor::Reader &capnpTensor,
-                  const popef::TensorReader *tensorReader) {
+                  bool deserializeData) {
   auto gid = popart::GraphId("");
   popart::Graph dummyGraph(ir, gid);
   std::string id        = capnpTensor.getId();
@@ -379,28 +357,26 @@ deserializeTensor(popart::Ir &ir,
       capnpTensorLocationInfo.getRemoteBufferInfo().getId(),
       capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
 
-  // For Onnx-Ir Models, the tensor data of weights is stored in the
-  // ONNX models so we don't have to deserialize tensor data from popef
-  // tensor data blob. For non-Onnx-Ir Models and every other kind of Variable,
-  // we have to.
-  if (ir.hasOnnxModel() && popartTensorType == popart::TensorType::Variable &&
-      popart::onnxutil::isInitializer(ir.getModel(), id)) {
+  if (deserializeData) {
+    // For Onnx-Ir Models, the tensor data of weights is only stored in the
+    // ONNX models. For non-Onnx-Ir Models and every other kind of Variable,
+    // it is stored in the capnpTensor.
+    if (ir.hasOnnxModel() && popartTensorType == popart::TensorType::Variable &&
+        popart::onnxutil::isInitializer(ir.getModel(), id)) {
 
-    const auto &tensorProto =
-        popart::onnxutil::getTensorProto(ir.getModel(), id);
-    auto constData = popart::onnxutil::getConstData(tensorProto);
-    if (constData.data == nullptr) {
-      throw error("Data for Tensor {} is null", id);
+      const auto &tensorProto =
+          popart::onnxutil::getTensorProto(ir.getModel(), id);
+      auto constData = popart::onnxutil::getConstData(tensorProto);
+      if (constData.data == nullptr) {
+        throw error("Data for Tensor {} is null", id);
+      }
+
+      tensor->setTensorData(constData.info, constData.data);
+    } else if (capnpTensor.hasTensorData()) {
+      auto tensorDataReader = capnpTensor.getTensorData();
+      const void *src       = tensorDataReader.begin();
+      tensor->setTensorData(src, tensorDataReader.size());
     }
-
-    tensor->setTensorData(constData.info, constData.data);
-  } else if (tensorReader) {
-    const size_t bufferSize = tensorReader->info.tensorInfo().sizeInBytes();
-    std::vector<char> tensorBuffer(bufferSize);
-    std::unique_ptr<std::istream> tensorStream(
-        tensorReader->getStandaloneDataStream());
-    tensorStream->read(tensorBuffer.data(), bufferSize);
-    tensor->setTensorData(tensorBuffer.data(), bufferSize);
   }
 
   return tensor;
@@ -511,7 +487,21 @@ void serializePopartExecutable(std::ostream &out,
       Tensor *tensor = ir.getTensor(id);
       if (!tensor->hasProducer()) {
         auto tensorBuilder = tensors[i];
-        serializeTensor(tensor, tensorBuilder);
+
+        // For Onnx-Ir models, we don't store the tensorData
+        // for the variable tensors with initializers since
+        // they will be loaded from the onnx file.
+        // For Ir models, and others, the tensor data is never serialised
+        // as we can use the TensorData in the provided Ir.
+        bool serializeTensorData = false;
+        if (ir.hasOnnxModel()) {
+          bool isInitializer =
+              popart::onnxutil::isInitializer(ir.getModel(), id);
+          serializeTensorData =
+              !isInitializer || tensor->isOptimizerStateTensor();
+        }
+
+        serializeTensor(tensor, tensorBuilder, serializeTensorData);
         ++i;
       }
     }
@@ -519,7 +509,7 @@ void serializePopartExecutable(std::ostream &out,
     for (auto &id : anchorTensors) {
       Tensor *tensor     = ir.getTensor(id);
       auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
+      serializeTensor(tensor, tensorBuilder, false);
       ++i;
     }
 
@@ -531,14 +521,14 @@ void serializePopartExecutable(std::ostream &out,
 
     for (auto *tensor : ir.dataStreamTensors()) {
       auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
+      serializeTensor(tensor, tensorBuilder, false);
       ++i;
     }
 
     if (ir.getRequiresRandomSeed()) {
       const Tensor *seedTensor = executable.getSeedTensor();
       auto tensorBuilder       = tensors[i];
-      serializeTensor(seedTensor, tensorBuilder);
+      serializeTensor(seedTensor, tensorBuilder, true);
       ++i;
     }
   }
@@ -601,11 +591,10 @@ void serializePopartExecutable(std::ostream &out,
   capnp::writeMessage(sos, message);
 }
 
-std::unique_ptr<popart::popx::Executablex> deserializePopartExecutable(
-    std::istream &in,
-    popart::Ir &ir,
-    popart::popx::IrLowering &lowering,
-    const std::vector<popef::TensorReader> &tensorDataVec) {
+std::unique_ptr<popart::popx::Executablex>
+deserializePopartExecutable(std::istream &in,
+                            popart::Ir &ir,
+                            popart::popx::IrLowering &lowering) {
   kj::std::StdInputStream sis(in);
 
   capnp::ReaderOptions opts;
@@ -682,9 +671,7 @@ std::unique_ptr<popart::popx::Executablex> deserializePopartExecutable(
     deserializedTensors.reserve(tensors.size());
 
     for (const auto capnpTensor : tensors) {
-      const popef::TensorReader *tensorDataReader =
-          getTensorReader(tensorDataVec, capnpTensor.getId().cStr());
-      auto tensor = deserializeTensor(ir, capnpTensor, tensorDataReader);
+      auto tensor                     = deserializeTensor(ir, capnpTensor);
       deserializedTensors[tensor->id] = std::move(tensor);
     }
   }

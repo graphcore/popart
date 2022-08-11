@@ -1207,6 +1207,7 @@ BOOST_AUTO_TEST_CASE(session_run_on_ipu_from_offlineipu_serialized_exe) {
   std::string initialDeviceArchString;
 
   {
+
     auto initialDevice =
         devManager.tryAcquireDeviceById(devices.at(0)->getId(),
                                         SyncPattern::Full,
