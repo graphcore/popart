@@ -118,6 +118,7 @@ file(GLOB transforms_sources src/transforms/*cpp src/transforms/autodiff/*cpp)
 file(GLOB subgraph_sources src/subgraph/*cpp)
 file(GLOB onnxpasses_sources src/onnxpasses/*cpp)
 file(GLOB nodepatterns_sources src/onnxpasses/nodepatterns/*cpp)
+file(GLOB util_sources src/util/*cpp)
 
 set(patterns_tgutil_sources
   src/patterns/tiedgatherutils/tgutils.cpp
@@ -148,6 +149,7 @@ set(sources
   ${subgraph_sources}
   ${onnxpasses_sources}
   ${nodepatterns_sources}
+  ${util_sources}
 )
 
 # concatenate poplar backend sources to the list of files to compile

@@ -119,4 +119,5 @@ add_unit_test(unittest_complement unittest_complement.cpp)
 add_subdirectory("compoundscalarhelper")
 
 add_subdirectory("python")
+add_subdirectory("util")
 add_subdirectory("willow")
