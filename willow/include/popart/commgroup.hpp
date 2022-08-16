@@ -6,6 +6,8 @@
 
 namespace popart {
 
+class ReplicaGrouping;
+
 /// PopART equivalent of GCL CommGroupType. Each of these enumeration constants
 /// have a corresponding GCL CommGroupType value.
 enum class CommGroupType {
@@ -73,6 +75,22 @@ public:
    */
   CommGroup(CommGroupType type, unsigned groupSize)
       : type(type), replicaGroupSize(groupSize) {}
+
+  /**
+   * Construct CommGroup from a ReplicaGrouping.
+   *
+   * \param grouping The replica grouping.
+   */
+  explicit CommGroup(const ReplicaGrouping &grouping);
+
+  /**
+   * Convert this CommGroup to a ReplicaGrouping.
+   *
+   * \param numReplicas The number of replicas to pass to create the replica
+   *   grouping with.
+   * \return The replica grouping.
+   */
+  ReplicaGrouping toReplicaGrouping(unsigned numReplicas) const;
 
   bool operator==(const CommGroup &other) const;
   bool operator!=(const CommGroup &other) const;
