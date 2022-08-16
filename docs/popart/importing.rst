@@ -16,7 +16,7 @@ Some metadata must be supplied to construct the ``Session`` class. These are des
 In the following example of importing a graph for inference, the `torchvision package <https://pytorch.org/vision/stable/index.html>`__ is used
 to create a pre-trained `AlexNet graph <https://pytorch.org/hub/pytorch_vision_alexnet/>`__ , with a 4 x 3 x 244 x 244 input. The graph
 has an ONNX output called ``output``, and the ``DataFlow`` object
-(:py:class:`Python <~popart-python-api:popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`)
+(:py:class:`Python <popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`)
 contains an entry to fetch that anchor tensor.
 
 .. literalinclude:: files/importing_graphs.py
@@ -81,7 +81,7 @@ An example of creating a ``Session`` object from an ONNX model is shown below.
 
 
 In this example, when the ``TrainingSession`` object is created, a
-negative log likelihood (NLL) loss node (:py:func:`Python <~popart-python-api:popart.AiGraphcoreOpset1.nllloss>`, :cpp:func:`C++ <~popart-cpp-api:popart::AiGraphcoreOpset1::nllloss>`) will be added to the end of the graph,
+negative log likelihood (NLL) loss node (:py:func:`Python <popart.AiGraphcoreOpset1.nllloss>`, :cpp:func:`C++ <popart::AiGraphcoreOpset1::nllloss>`) will be added to the end of the graph,
 and a ``ConstSGD`` optimiser will be used to optimise the parameters in the
 network.
 
@@ -92,8 +92,8 @@ Session control options
 
 The optional ``userOptions`` parameter passes options to the session that
 control specific features of the PopART session. The available PopART options
-are listed in :ref:`popart-cpp-api:session options` in the PopART C++ API
-reference document.
+are listed in :numref:`session options` in the PopART C++ API
+reference.
 
 The ``userOptions`` parameter also controls  the underlying Poplar functions:
 

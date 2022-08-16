@@ -1,6 +1,9 @@
 Glossary
 ========
 
+This chapter defines some of the specialised terminology that is used in rest of the document.
+There is a more complete list in :doc:`glossary:index`.
+
 .. glossary::
   :sorted:
 

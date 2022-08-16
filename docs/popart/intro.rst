@@ -30,4 +30,4 @@ IPU-specific annotations on ONNX operations allow the provider of the graph to
 control IPU-specific features, such as mapping an algorithm across multiple
 IPUs.
 
-PopART has both a :doc:`C++ API <popart-cpp-api:index>` and a :doc:`Python API <popart-python-api:index>`. Most of the examples in this document use the Python API.
+PopART has both a :ref:`C++ API <popart_cpp_api_reference>` and a :ref:`Python API <popart_python_api_reference>`. Most of the examples in this document use the Python API.
