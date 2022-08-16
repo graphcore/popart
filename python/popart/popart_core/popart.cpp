@@ -2316,6 +2316,14 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("args"),
             py::arg("debugContext") = std::string(),
             DOC(popart, AiGraphcoreOpset1, copyvarupdate));
+    cls.def("batchnormalization",
+            &AiGraphcoreOpset1::batchnormalization,
+            py::arg("args"),
+            py::arg("num_outputs"),
+            py::arg("epsilon")      = 1e-05f,
+            py::arg("momentum")     = 0.9f,
+            py::arg("debugContext") = std::string(),
+            DOC(popart, AiGraphcoreOpset1, batchnormalization));
     cls.def("groupnormalization",
             &AiGraphcoreOpset1::groupnormalization,
             py::arg("args"),

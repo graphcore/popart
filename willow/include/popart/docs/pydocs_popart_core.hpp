@@ -104,27 +104,34 @@ static const char *
 
 static const char *
     __doc_popart_AccumulateOuterFragmentSettings_AccumulateOuterFragmentSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for AccumulateOuterFragmentSettings.
+
+Args:
+ schedule_: Indicate how to schedule the accumulate outer fragment.
+        This setting is experimental and may change. Default:
+        AccumulateOuterFragmentSchedule::Serial
+ excludedVirtualGraphs_: Indicate to explicitly avoid parallelising
+        the virtual graph IDs. This setting is experimental and may change.)doc";
 
 static const char *
     __singlelinedoc_popart_AccumulateOuterFragmentSettings_AccumulateOuterFragmentSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for AccumulateOuterFragmentSettings. Args: schedule_: Indicate how to schedule the accumulate outer fragment. This setting is experimental and may change. Default: AccumulateOuterFragmentSchedule::Serial excludedVirtualGraphs_: Indicate to explicitly avoid parallelising the virtual graph IDs. This setting is experimental and may change.)doc";
 
 static const char
     *__doc_popart_AccumulateOuterFragmentSettings_excludedVirtualGraphs =
-        R"doc(A setting to explicitly tell PopART to avoid to try and parallelise the
-given virtual graph ids. This setting is experimental and may change.)doc";
+        R"doc(Indicate to explicitly avoid parallelising the virtual graph IDs.
+\note This setting is experimental and may change.)doc";
 
 static const char *
     __singlelinedoc_popart_AccumulateOuterFragmentSettings_excludedVirtualGraphs =
-        R"doc(A setting to explicitly tell PopART to avoid to try and parallelise the given virtual graph ids. This setting is experimental and may change.)doc";
+        R"doc(Indicate to explicitly avoid parallelising the virtual graph IDs. \note This setting is experimental and may change.)doc";
 
 static const char *__doc_popart_AccumulateOuterFragmentSettings_schedule =
-    R"doc(Tell PopART how you would like to schedule the accumulate outer fragment.
-This setting is experimental and may change.)doc";
+    R"doc(Indicate how to schedule the accumulate outer fragment.
+\note This setting is experimental and may change.)doc";
 
 static const char *__singlelinedoc_popart_AccumulateOuterFragmentSettings_schedule =
-    R"doc(Tell PopART how you would like to schedule the accumulate outer fragment. This setting is experimental and may change.)doc";
+    R"doc(Indicate how to schedule the accumulate outer fragment. \note This setting is experimental and may change.)doc";
 
 static const char *__doc_popart_Adam =
     R"doc(AdamW, Lamb and AdaMax optimizer implementation.
@@ -724,6 +731,27 @@ Returns:
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_atan2 =
     R"doc(Add an ``atan2`:code:` operation to the model. Returns the element-wise angle theta as a tensor. For :math:` -\pi < \theta \le \pi `, such that for two input tensors :math:`x` and :math:`y` and given :math:` r \ne 0 `, then :math:` x = r \cos\theta `, and :math:` y = r \sin\theta `, element-wise. In the case of :math:` x > 0 ` , :math:` \theta = arctan(y/x)` . Args: args: A vector of input tensor ids: [`y:code:`, `x`]. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
+
+static const char *__doc_popart_AiGraphcoreOpset1_batchnormalization =
+    R"doc(Add a batch normalization operation to the model. This version uses N-1
+as the population size for calculating running variance (like PyTorch).
+Whereas, the Onnx version uses N.
+
+https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
+
+
+Args:
+ args: List of input tensor ids
+ num_outputs: The number of output tensor ids
+ epsilon: The 'epsilon' attribute
+ momentum: The 'momentum' attribute
+ name: Optional identifier for the operation
+
+Returns:
+ A list of normalized output tensors)doc";
+
+static const char *__singlelinedoc_popart_AiGraphcoreOpset1_batchnormalization =
+    R"doc(Add a batch normalization operation to the model. This version uses N-1 as the population size for calculating running variance (like PyTorch). Whereas, the Onnx version uses N. https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization Args: args: List of input tensor ids num_outputs: The number of output tensor ids epsilon: The 'epsilon' attribute momentum: The 'momentum' attribute name: Optional identifier for the operation Returns: A list of normalized output tensors)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwiseGenericOp =
     R"doc()doc";
@@ -1611,18 +1639,19 @@ static const char *__singlelinedoc_popart_AiGraphcoreOpset1_scaledadd =
 static const char *__doc_popart_AiGraphcoreOpset1_scatterreduce =
     R"doc(Add a scatterreduce operation to the model.
 
-Reduces all the values from the source tensor:code:` `src`:code:` at the indices
-specified along the given axis by `index:code:`. Generally, the `src:code:` and `index:code:`
-tensors are required to have the same shape. However, for two-dimensional
-inputs they can be different if the following requirements are met: `src:code:`
-is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0.
-The result in such cases is the same as if the index tensor was broadcasted
-to [N, M].
+Reduces all the values from the source tensor :code:`src` at the indices
+specified along the given axis by :code:`index`. In some frameworks this is also
+known as a split-apply-combine operation as well as a reduce or aggregate
+by key.  In this analogy the :code:`src` input is the data we are splitting and
+the :code:`indices` define the groups for the reduction operation.
 
+In pseudocode the operator can be expressed as:
 ```
  for i in range(axis_size):
      output[i] = reduce(src[index == i])
 ``:code:`
+where the looping over output indices is implicitly handled by poplar.
+
 
 Args:
  args: A vector of tensor ids as [`src:code:`, `index:code:`].
@@ -1636,7 +1665,7 @@ Returns:
  The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_scatterreduce =
-    R"doc(Add a scatterreduce operation to the model. Reduces all the values from the source tensor:code:` `src`:code:` at the indices specified along the given axis by `index:code:`. Generally, the `src:code:` and `index:code:` tensors are required to have the same shape. However, for two-dimensional inputs they can be different if the following requirements are met: `src:code:` is of shape [N, M], `index` is of shape [N, 1] and the reduction axis is 0. The result in such cases is the same as if the index tensor was broadcasted to [N, M]. ``` for i in range(axis_size): output[i] = reduce(src[index == i]) ``:code:` Args: args: A vector of tensor ids as [`src:code:`, `index:code:`]. axis_size: The size of the reduced axis. axis: The axis to reduce along. Default = -1. reduction: The type of reduction to apply. Default = `ScatterReduction::Sum`. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
+    R"doc(Add a scatterreduce operation to the model. Reduces all the values from the source tensor :code:`src` at the indices specified along the given axis by :code:`index`. In some frameworks this is also known as a split-apply-combine operation as well as a reduce or aggregate by key.  In this analogy the :code:`src` input is the data we are splitting and the :code:`indices` define the groups for the reduction operation. In pseudocode the operator can be expressed as: ``` for i in range(axis_size): output[i] = reduce(src[index == i]) ``:code:` where the looping over output indices is implicitly handled by poplar. Args: args: A vector of tensor ids as [`src:code:`, `index:code:`]. axis_size: The size of the reduced axis. axis: The axis to reduce along. Default = -1. reduction: The type of reduction to apply. Default = `ScatterReduction::Sum`. debugContext: Optional debug information. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_sequenceslice =
     R"doc( Slice a 2D tensor based on offsets.
@@ -2005,55 +2034,62 @@ static const char *__singlelinedoc_popart_AnchorReturnType_tileSet_2 =
     R"doc()doc";
 
 static const char *__doc_popart_AutodiffSettings =
-    R"doc(Settings for the Autodiff transform.)doc";
+    R"doc(The settings for the Autodiff transform.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffSettings =
-    R"doc(Settings for the Autodiff transform.)doc";
+    R"doc(The settings for the Autodiff transform.)doc";
 
-static const char *__doc_popart_AutodiffSettings_AutodiffSettings = R"doc()doc";
+static const char *__doc_popart_AutodiffSettings_AutodiffSettings =
+    R"doc(Default constructor for the AutodiffSettings struct.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffSettings_AutodiffSettings =
-    R"doc()doc";
+    R"doc(Default constructor for the AutodiffSettings struct.)doc";
 
 static const char *__doc_popart_AutodiffSettings_AutodiffSettings_2 =
-    R"doc()doc";
+    R"doc(Constructor for the AutodiffSettings struct.
+
+Args:
+ stitchStrategy_: The strategy to ensure a backward graph's inputs are
+        either inputs of the forward graph, outputs of the forward graph or
+        gradients of outputs of the forward graph. Default:
+        AutodiffStitchStrategy::RecomputeAllNonInputs.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffSettings_AutodiffSettings_2 =
-    R"doc()doc";
+    R"doc(Constructor for the AutodiffSettings struct. Args: stitchStrategy_: The strategy to ensure a backward graph's inputs are either inputs of the forward graph, outputs of the forward graph or gradients of outputs of the forward graph. Default: AutodiffStitchStrategy::RecomputeAllNonInputs.)doc";
 
 static const char *__doc_popart_AutodiffSettings_stitchStrategy =
     R"doc(The strategy PopART should use to ensure that all graph inputs of a
-backwards graph are available as either inputs or outputs of the forward
+backward graph are available as either inputs or outputs of the forward
 graph or gradients of outputs of the forward graph.
 
-NOTE: This is an experimental option and may change.)doc";
+\note This is an experimental option and may change.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffSettings_stitchStrategy =
-    R"doc(The strategy PopART should use to ensure that all graph inputs of a backwards graph are available as either inputs or outputs of the forward graph or gradients of outputs of the forward graph. NOTE: This is an experimental option and may change.)doc";
+    R"doc(The strategy PopART should use to ensure that all graph inputs of a backward graph are available as either inputs or outputs of the forward graph or gradients of outputs of the forward graph. \note This is an experimental option and may change.)doc";
 
 static const char *__doc_popart_AutodiffStitchStrategy =
-    R"doc(Type representing a strategy to ensure a backwards graph's inputs are
+    R"doc(Enum type representing a strategy to ensure a backward graph's inputs are
 either inputs of the forward graph, outputs of the forward graph or
 gradients of outputs of the forward graph. Strategies may expose tensors
 that would otherwise have been internal to the forward graph as outputs of
-said forward graph.)doc";
+this forward graph.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffStitchStrategy =
-    R"doc(Type representing a strategy to ensure a backwards graph's inputs are either inputs of the forward graph, outputs of the forward graph or gradients of outputs of the forward graph. Strategies may expose tensors that would otherwise have been internal to the forward graph as outputs of said forward graph.)doc";
+    R"doc(Enum type representing a strategy to ensure a backward graph's inputs are either inputs of the forward graph, outputs of the forward graph or gradients of outputs of the forward graph. Strategies may expose tensors that would otherwise have been internal to the forward graph as outputs of this forward graph.)doc";
 
 static const char *__doc_popart_AutodiffStitchStrategy_AddFwdOutputs =
     R"doc(For backward graph inputs associated with non-gradient forward graph
 tensors that are neither inputs or outputs in the forward graph, add them
 as outputs to the forward graph.
 
-NOTE: This strategy is not guaranteed to work for all circumstances. In
+\note This strategy is not guaranteed to work for all circumstances. In
 particular, it is unable to deal with subgraphs of IfOp. Using this
-setting may therefore result in subsequent exceptions in the autodiff
-transform and it is therefore inadvisable to use this as an :code:`Autodiff`
+setting may therefore result in subsequent exceptions in the Autodiff
+transform and it is therefore inadvisable to use this as an Autodiff
 default.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffStitchStrategy_AddFwdOutputs =
-    R"doc(For backward graph inputs associated with non-gradient forward graph tensors that are neither inputs or outputs in the forward graph, add them as outputs to the forward graph. NOTE: This strategy is not guaranteed to work for all circumstances. In particular, it is unable to deal with subgraphs of IfOp. Using this setting may therefore result in subsequent exceptions in the autodiff transform and it is therefore inadvisable to use this as an :code:`Autodiff` default.)doc";
+    R"doc(For backward graph inputs associated with non-gradient forward graph tensors that are neither inputs or outputs in the forward graph, add them as outputs to the forward graph. \note This strategy is not guaranteed to work for all circumstances. In particular, it is unable to deal with subgraphs of IfOp. Using this setting may therefore result in subsequent exceptions in the Autodiff transform and it is therefore inadvisable to use this as an Autodiff default.)doc";
 
 static const char *__doc_popart_AutodiffStitchStrategy_N =
     R"doc(Number of ``AutodiffStitchStrategy`` values.)doc";
@@ -2077,68 +2113,85 @@ static const char *__singlelinedoc_popart_AutodiffStitchStrategy_RecomputeMinima
     R"doc(Recompute any backward graph inputs associated with non-gradient forward graph tensors that are neither inputs nor outputs in the forward graph.)doc";
 
 static const char *__doc_popart_AutodiffStitchStrategy_SafeAddFwdOutputs =
-    R"doc(Like :code:`AddFwdOutputs` except that those backward graph inputs that can't be
-stitched with :code:`AddFwdOutputs` (that is, by adding outputs to the forward
-graph) are stitched using the :code:`RecomputeMinimal` strategy instead. This
-means that this is a safe strategy to use as an :code:`Autodiff` default.)doc";
+    R"doc(Like AutodiffStitchStrategy::AddFwdOutputs except that those backward graph
+inputs that can't be stitched with AutodiffStitchStrategy::AddFwdOutputs
+(that is, by adding outputs to the forward graph) are stitched using the
+AutodiffStitchStrategy::RecomputeMinimal strategy instead. This
+means that this is a safe strategy to use as an Autodiff default.)doc";
 
 static const char *__singlelinedoc_popart_AutodiffStitchStrategy_SafeAddFwdOutputs =
-    R"doc(Like :code:`AddFwdOutputs` except that those backward graph inputs that can't be stitched with :code:`AddFwdOutputs` (that is, by adding outputs to the forward graph) are stitched using the :code:`RecomputeMinimal` strategy instead. This means that this is a safe strategy to use as an :code:`Autodiff` default.)doc";
+    R"doc(Like AutodiffStitchStrategy::AddFwdOutputs except that those backward graph inputs that can't be stitched with AutodiffStitchStrategy::AddFwdOutputs (that is, by adding outputs to the forward graph) are stitched using the AutodiffStitchStrategy::RecomputeMinimal strategy instead. This means that this is a safe strategy to use as an Autodiff default.)doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings =
     R"doc(A structure containing user configuration for automatic loss scaling
 settings.
 
-**Note:** Automatic loss scaling is currently experimental and under
-active development. We recommend that the user sets the loss scale
-manually.)doc";
+\note Automatic loss scaling is currently experimental and under
+active development. Recommendation: Set the loss scale manually.)doc";
 
 static const char *__singlelinedoc_popart_AutomaticLossScalingSettings =
-    R"doc(A structure containing user configuration for automatic loss scaling settings. **Note:** Automatic loss scaling is currently experimental and under active development. We recommend that the user sets the loss scale manually.)doc";
+    R"doc(A structure containing user configuration for automatic loss scaling settings. \note Automatic loss scaling is currently experimental and under active development. Recommendation: Set the loss scale manually.)doc";
 
 static const char
     *__doc_popart_AutomaticLossScalingSettings_AutomaticLossScalingSettings =
-        R"doc()doc";
+        R"doc(Default constructor for AutomaticLossScalingSettings.)doc";
 
 static const char *
     __singlelinedoc_popart_AutomaticLossScalingSettings_AutomaticLossScalingSettings =
-        R"doc()doc";
+        R"doc(Default constructor for AutomaticLossScalingSettings.)doc";
 
 static const char
     *__doc_popart_AutomaticLossScalingSettings_AutomaticLossScalingSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for AutomaticLossScalingSettings.
+
+Args:
+ enabled_: Indicate whether to keep track (:code:`true`) or not (:code:`false`) of
+        the distribution of gradient tensor elements over the floating point
+        range. Default: :code:`false`.
+ toTrackTensors_: An optional list of model tensor names, for which
+        gradient statistics will be collected. If not set, the gradients of
+        all tensors produced by default operations (matmul, conv) will
+        be used.
+ binEdgeLocation_: The location of the bin edge as a proportion of the
+        absolute numerical range of the tracked gradient tensor elements, in
+        the range [0, 1]. 0 represents the smallest representable value,
+        and 1 the maximum. This is the single bin edge of the histogram
+        that is an input to the loss scale updater algorithm. Default:
+        0.125.
+ thresholdUpperCountProportion_: The proportion of the elements
+        in the upper bin above which the loss scale is increased, and below
+        which the loss scale is decreased. Should be in the range [0, 1].
+        Default: 1e-7.
+ updatePeriod_: Indicate how often the loss scale update factor should
+        be updated with respect to optimizer steps. Default: 1
+ gradientTensorTrackingMethod_: The method for selecting gradient
+        tensors whose statistics are to be tracked. Default:
+        GradientTensorTrackingMethod::AllNonViewChangingGradientTensors.)doc";
 
 static const char *
     __singlelinedoc_popart_AutomaticLossScalingSettings_AutomaticLossScalingSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for AutomaticLossScalingSettings. Args: enabled_: Indicate whether to keep track (:code:`true`) or not (:code:`false`) of the distribution of gradient tensor elements over the floating point range. Default: :code:`false`. toTrackTensors_: An optional list of model tensor names, for which gradient statistics will be collected. If not set, the gradients of all tensors produced by default operations (matmul, conv) will be used. binEdgeLocation_: The location of the bin edge as a proportion of the absolute numerical range of the tracked gradient tensor elements, in the range [0, 1]. 0 represents the smallest representable value, and 1 the maximum. This is the single bin edge of the histogram that is an input to the loss scale updater algorithm. Default: 0.125. thresholdUpperCountProportion_: The proportion of the elements in the upper bin above which the loss scale is increased, and below which the loss scale is decreased. Should be in the range [0, 1]. Default: 1e-7. updatePeriod_: Indicate how often the loss scale update factor should be updated with respect to optimizer steps. Default: 1 gradientTensorTrackingMethod_: The method for selecting gradient tensors whose statistics are to be tracked. Default: GradientTensorTrackingMethod::AllNonViewChangingGradientTensors.)doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings_binEdgeLocation =
-    R"doc(The location of the bin edge as a proportion of the absolute numerical
-range of the tracked gradient tensor elements, in the range [0, 1]. :code:`0`
-represents the smallest representable value, and :code:`1` the maximum. This is
-the single bin edge of the histogram that is an input to the loss scale
-updater algorithm.)doc";
+    R"doc()doc";
 
 static const char
     *__singlelinedoc_popart_AutomaticLossScalingSettings_binEdgeLocation =
-        R"doc(The location of the bin edge as a proportion of the absolute numerical range of the tracked gradient tensor elements, in the range [0, 1]. :code:`0` represents the smallest representable value, and :code:`1` the maximum. This is the single bin edge of the histogram that is an input to the loss scale updater algorithm.)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings_enabled =
-    R"doc(If true, keep track of the distribution of gradient tensor elements over
-the floating point range. Adjust the value loss scaling tensor
-accordingly, with the aim of preventing underflow or overflow.)doc";
+    R"doc()doc";
 
 static const char *__singlelinedoc_popart_AutomaticLossScalingSettings_enabled =
-    R"doc(If true, keep track of the distribution of gradient tensor elements over the floating point range. Adjust the value loss scaling tensor accordingly, with the aim of preventing underflow or overflow.)doc";
+    R"doc()doc";
 
 static const char
     *__doc_popart_AutomaticLossScalingSettings_gradientTensorTrackingMethod =
-        R"doc(The method for selecting gradient tensors whose statistics are to be
-tracked.)doc";
+        R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_AutomaticLossScalingSettings_gradientTensorTrackingMethod =
-        R"doc(The method for selecting gradient tensors whose statistics are to be tracked.)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings_hash = R"doc()doc";
 
@@ -2147,37 +2200,33 @@ static const char *__singlelinedoc_popart_AutomaticLossScalingSettings_hash =
 
 static const char
     *__doc_popart_AutomaticLossScalingSettings_thresholdUpperCountProportion =
-        R"doc(The proportion of the elements in the upper bin above which the loss scale
-is increased, and below which the loss scale is decreased. Should be in
-the range [0, 1].)doc";
+        R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_AutomaticLossScalingSettings_thresholdUpperCountProportion =
-        R"doc(The proportion of the elements in the upper bin above which the loss scale is increased, and below which the loss scale is decreased. Should be in the range [0, 1].)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings_toTrackTensors =
-    R"doc(An optional list of model tensor names, for which gradient statistics
-will be collected. If unset, the gradients of all tensors produced
-by a default operations (matmul, conv) will be used.)doc";
+    R"doc()doc";
 
 static const char
     *__singlelinedoc_popart_AutomaticLossScalingSettings_toTrackTensors =
-        R"doc(An optional list of model tensor names, for which gradient statistics will be collected. If unset, the gradients of all tensors produced by a default operations (matmul, conv) will be used.)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_AutomaticLossScalingSettings_updatePeriod =
-    R"doc(How often loss scale update factor should be updated with respect to
-optimizer steps.)doc";
+    R"doc()doc";
 
-static const char *__singlelinedoc_popart_AutomaticLossScalingSettings_updatePeriod =
-    R"doc(How often loss scale update factor should be updated with respect to optimizer steps.)doc";
+static const char
+    *__singlelinedoc_popart_AutomaticLossScalingSettings_updatePeriod =
+        R"doc()doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule =
     R"doc(Enum type that describes how to change the batch serialisation subgraph
-schedule before outlining. **NOTE:** This setting is experimental and may
-change.)doc";
+schedule before outlining.
+\note This setting is experimental and may change.)doc";
 
 static const char *__singlelinedoc_popart_BatchSerializationBatchSchedule =
-    R"doc(Enum type that describes how to change the batch serialisation subgraph schedule before outlining. **NOTE:** This setting is experimental and may change.)doc";
+    R"doc(Enum type that describes how to change the batch serialisation subgraph schedule before outlining. \note This setting is experimental and may change.)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_Isomorphic =
     R"doc(Encourage all ops within batch subgraphs to be scheduled identically and
@@ -2195,20 +2244,20 @@ static const char *__singlelinedoc_popart_BatchSerializationBatchSchedule_N =
 
 static const char
     *__doc_popart_BatchSerializationBatchSchedule_OverlapOnCompute =
-        R"doc(Attempt to put the RemoteLoad for batch N+1 right before
+        R"doc(Attempt to put the remote load op for batch N+1 right before
 the compute phase of batch N.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationBatchSchedule_OverlapOnCompute =
-        R"doc(Attempt to put the RemoteLoad for batch N+1 right before the compute phase of batch N.)doc";
+        R"doc(Attempt to put the remote load op for batch N+1 right before the compute phase of batch N.)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_OverlapOnIo =
-    R"doc(Attempt to put the RemoteLoad for batch N+1 right after the
+    R"doc(Attempt to put the remote load op for batch N+1 right after the
 compute phase of batch N.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationBatchSchedule_OverlapOnIo =
-        R"doc(Attempt to put the RemoteLoad for batch N+1 right after the compute phase of batch N.)doc";
+        R"doc(Attempt to put the remote load op for batch N+1 right after the compute phase of batch N.)doc";
 
 static const char *__doc_popart_BatchSerializationBatchSchedule_Scheduler =
     R"doc(Don't encourage any particular scheduling for ops within batch subgraphs
@@ -2220,16 +2269,16 @@ static const char *__singlelinedoc_popart_BatchSerializationBatchSchedule_Schedu
 
 static const char *__doc_popart_BatchSerializationMethod =
     R"doc(Enum type that describes how to apply the batch serialization.
-**NOTE:** This setting is experimental and may change.)doc";
+\note This setting is experimental and may change.)doc";
 
 static const char *__singlelinedoc_popart_BatchSerializationMethod =
-    R"doc(Enum type that describes how to apply the batch serialization. **NOTE:** This setting is experimental and may change.)doc";
+    R"doc(Enum type that describes how to apply the batch serialization. \note This setting is experimental and may change.)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_Loop =
-    R"doc(Loop over the batch dimension)doc";
+    R"doc(Loop over the batch dimension.)doc";
 
 static const char *__singlelinedoc_popart_BatchSerializationMethod_Loop =
-    R"doc(Loop over the batch dimension)doc";
+    R"doc(Loop over the batch dimension.)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_N =
     R"doc(The number of ``BatchSerializationMethod`` values.)doc";
@@ -2238,18 +2287,18 @@ static const char *__singlelinedoc_popart_BatchSerializationMethod_N =
     R"doc(The number of ``BatchSerializationMethod`` values.)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_UnrollDynamic =
-    R"doc(Unroll the batch with dynamic slicing)doc";
+    R"doc(Unroll the batch with dynamic slicing.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationMethod_UnrollDynamic =
-        R"doc(Unroll the batch with dynamic slicing)doc";
+        R"doc(Unroll the batch with dynamic slicing.)doc";
 
 static const char *__doc_popart_BatchSerializationMethod_UnrollStatic =
-    R"doc(Unroll the batch with static slicing)doc";
+    R"doc(Unroll the batch with static slicing.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationMethod_UnrollStatic =
-        R"doc(Unroll the batch with static slicing)doc";
+        R"doc(Unroll the batch with static slicing.)doc";
 
 static const char *__doc_popart_BatchSerializationSettings =
     R"doc(A structure containing batch serialization settings.)doc";
@@ -2259,19 +2308,39 @@ static const char *__singlelinedoc_popart_BatchSerializationSettings =
 
 static const char
     *__doc_popart_BatchSerializationSettings_BatchSerializationSettings =
-        R"doc()doc";
+        R"doc(Default constructor for BatchSerializationSettings.)doc";
 
 static const char *
     __singlelinedoc_popart_BatchSerializationSettings_BatchSerializationSettings =
-        R"doc()doc";
+        R"doc(Default constructor for BatchSerializationSettings.)doc";
 
 static const char
     *__doc_popart_BatchSerializationSettings_BatchSerializationSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for BatchSerializationSettings.
+
+
+Args:
+ factor_: The number of compute batches to split operations into.
+        Default: 0.
+ concatOnVirtualGraphChange_: Indicate to break batch serialization
+        chains (:code:`true`) when the virtual graph changes (by concatenating the
+        compute batches to the local batch). Default: :code:`true`.
+ concatOnExecutionPhaseChange_: Indicate to break batch serialization
+        chains (:code:`true`) when the execution phase changes (by concatenating
+        the compute batches to the local batch). Default: :code:`true`.
+ concatOnPipelineStageChange_: Indicate to break batch serialization
+        chains (:code:`true`) when the pipeline stage changes (by concatenating
+        the compute batches to the local batch). Default: :code:`true`.
+ transformContext_: An experimental value to control when batch
+        serialization is applied. Default: ::Fwd.
+ method_: An experimental value to control how batch serialization is
+        applied. Default: BatchSerializationMethod::UnrollDynamic.
+ batchSchedule_: An experimental value that changes how operations are
+        scheduled. Default: BatchSerializationBatchSchedule::Isomorphic.)doc";
 
 static const char *
     __singlelinedoc_popart_BatchSerializationSettings_BatchSerializationSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for BatchSerializationSettings. Args: factor_: The number of compute batches to split operations into. Default: 0. concatOnVirtualGraphChange_: Indicate to break batch serialization chains (:code:`true`) when the virtual graph changes (by concatenating the compute batches to the local batch). Default: :code:`true`. concatOnExecutionPhaseChange_: Indicate to break batch serialization chains (:code:`true`) when the execution phase changes (by concatenating the compute batches to the local batch). Default: :code:`true`. concatOnPipelineStageChange_: Indicate to break batch serialization chains (:code:`true`) when the pipeline stage changes (by concatenating the compute batches to the local batch). Default: :code:`true`. transformContext_: An experimental value to control when batch serialization is applied. Default: ::Fwd. method_: An experimental value to control how batch serialization is applied. Default: BatchSerializationMethod::UnrollDynamic. batchSchedule_: An experimental value that changes how operations are scheduled. Default: BatchSerializationBatchSchedule::Isomorphic.)doc";
 
 static const char *__doc_popart_BatchSerializationSettings_batchSchedule =
     R"doc(Experimental value that changes how operations are scheduled.)doc";
@@ -2327,25 +2396,25 @@ static const char
         R"doc(Experimental value to control when batch serialization is applied.)doc";
 
 static const char *__doc_popart_BatchSerializationTransformContext =
-    R"doc(Enum type that describes when to apply the batch serialization.
-**NOTE:** This setting is experimental and may change.)doc";
+    R"doc(Enum type that describes when to apply batch serialization.
+\note This setting is experimental and may change.)doc";
 
 static const char *__singlelinedoc_popart_BatchSerializationTransformContext =
-    R"doc(Enum type that describes when to apply the batch serialization. **NOTE:** This setting is experimental and may change.)doc";
+    R"doc(Enum type that describes when to apply batch serialization. \note This setting is experimental and may change.)doc";
 
 static const char *__doc_popart_BatchSerializationTransformContext_Bwd =
-    R"doc(Apply after growing the backward pass)doc";
+    R"doc(Apply batch serialiation after growing the backward pass.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationTransformContext_Bwd =
-        R"doc(Apply after growing the backward pass)doc";
+        R"doc(Apply batch serialiation after growing the backward pass.)doc";
 
 static const char *__doc_popart_BatchSerializationTransformContext_Fwd =
-    R"doc(Apply before growing the backward pass)doc";
+    R"doc(Apply batch serialiation before growing the backward pass.)doc";
 
 static const char
     *__singlelinedoc_popart_BatchSerializationTransformContext_Fwd =
-        R"doc(Apply before growing the backward pass)doc";
+        R"doc(Apply batch serialiation before growing the backward pass.)doc";
 
 static const char *__doc_popart_BatchSerializationTransformContext_N =
     R"doc(The number of ``BatchSerializationTransformContext`` values.)doc";
@@ -3923,6 +3992,14 @@ static const char
     *__singlelinedoc_popart_CollectivesBaseOp_getCollectiveLinkedIndex =
         R"doc()doc";
 
+static const char *__doc_popart_CollectivesBaseOp_getCommSize =
+    R"doc(Number of replicas the collective communicates across.
+This will be used to create a CollectiveBalanceReorder
+in lowering to improve the tile mapping when using RTS.)doc";
+
+static const char *__singlelinedoc_popart_CollectivesBaseOp_getCommSize =
+    R"doc(Number of replicas the collective communicates across. This will be used to create a CollectiveBalanceReorder in lowering to improve the tile mapping when using RTS.)doc";
+
 static const char
     *__doc_popart_CollectivesBaseOp_getCorrespondingLinkedIndexTensor =
         R"doc()doc";
@@ -4861,6 +4938,19 @@ static const char
     *__singlelinedoc_popart_DeviceManager_createOfflineIpuFromDeviceInfo =
         R"doc(Create a simulated :code:`OfflineIpu` device from the description of another device. Args: deviceInfo: The device to create a :code:`OfflineIpu` version of. Returns: An :code:`OfflineIpu` device.)doc";
 
+static const char *__doc_popart_DeviceManager_createOfflineIpuFromSystemString =
+    R"doc(Create a simulated :code:`OfflineIpu` device from the name of a system.
+
+
+Args:
+ system: The device to create a :code:`OfflineIpu` version of.
+ numIpus: The number of IPUs. Providing 0 corresponds to all IPUs in
+system \return An :code:`OfflineIpu` device.)doc";
+
+static const char
+    *__singlelinedoc_popart_DeviceManager_createOfflineIpuFromSystemString =
+        R"doc(Create a simulated :code:`OfflineIpu` device from the name of a system. Args: system: The device to create a :code:`OfflineIpu` version of. numIpus: The number of IPUs. Providing 0 corresponds to all IPUs in system \return An :code:`OfflineIpu` device.)doc";
+
 static const char *__doc_popart_DeviceManager_createSimDevice = R"doc()doc";
 
 static const char *__singlelinedoc_popart_DeviceManager_createSimDevice =
@@ -5027,6 +5117,13 @@ static const char *__doc_popart_DeviceProvider_createOfflineIpuFromDeviceInfo =
 
 static const char
     *__singlelinedoc_popart_DeviceProvider_createOfflineIpuFromDeviceInfo =
+        R"doc()doc";
+
+static const char
+    *__doc_popart_DeviceProvider_createOfflineIpuFromSystemString = R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_DeviceProvider_createOfflineIpuFromSystemString =
         R"doc()doc";
 
 static const char *__doc_popart_DeviceProvider_enumerate =
@@ -5674,17 +5771,17 @@ static const char *__doc_popart_ExecutionPhaseSchedule =
     R"doc(Enum type to specify the order of processing optimizer operations for
 different weights of the same execution phase.
 
-The steps for phased execution consists of:
+The steps for phased execution are:
 
-- Copy to IO tiles if necessary (1)
-- Run collective operations if necessary (2)
-- Load optimizer state (3)
-- Update optimizer state (4)
-- Apply optimizer (5)
-- Store updated tensor if necessary (6))doc";
+-# Copy to IO tiles if necessary.
+-# Run collective operations if necessary.
+-# Load optimizer state.
+-# Update optimizer state.
+-# Apply optimizer.
+-# Store updated tensor if necessary.)doc";
 
 static const char *__singlelinedoc_popart_ExecutionPhaseSchedule =
-    R"doc(Enum type to specify the order of processing optimizer operations for different weights of the same execution phase. The steps for phased execution consists of: - Copy to IO tiles if necessary (1) - Run collective operations if necessary (2) - Load optimizer state (3) - Update optimizer state (4) - Apply optimizer (5) - Store updated tensor if necessary (6))doc";
+    R"doc(Enum type to specify the order of processing optimizer operations for different weights of the same execution phase. The steps for phased execution are: -# Copy to IO tiles if necessary. -# Run collective operations if necessary. -# Load optimizer state. -# Update optimizer state. -# Apply optimizer. -# Store updated tensor if necessary.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSchedule_Batch =
     R"doc(Process above steps for all weights together, in a way that maximises
@@ -5723,18 +5820,41 @@ static const char *__singlelinedoc_popart_ExecutionPhaseSettings =
     R"doc(A structure containing ExecutionPhase settings.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_ExecutionPhaseSettings =
-    R"doc()doc";
+    R"doc(Default constructor for ExecutionPhaseSettings.)doc";
 
 static const char
     *__singlelinedoc_popart_ExecutionPhaseSettings_ExecutionPhaseSettings =
-        R"doc()doc";
+        R"doc(Default constructor for ExecutionPhaseSettings.)doc";
 
 static const char
-    *__doc_popart_ExecutionPhaseSettings_ExecutionPhaseSettings_2 = R"doc()doc";
+    *__doc_popart_ExecutionPhaseSettings_ExecutionPhaseSettings_2 =
+        R"doc(Constructor for ExecutionPhaseSettings.
+
+
+Args:
+ phases_: The number of execution phases for the whole model.
+      Default=0.
+ stages_: The number of overlapping stages:
+      * 1: Parallel streaming memory, default for 1 IPU per replica.
+      * 2: PingPong between 2 IPUs, default for 2 or more IPUs per replica
+           (Default).
+ weightIOSchedule_: The execution phase IO schedule for weight
+      tensors. Default: ExecutionPhaseIOSchedule::Preload.
+ activationIOSchedule_: The execution phase IO schedule
+      for activation and gradient tensors. Default:
+      ExecutionPhaseIOSchedule::Preload.
+ optimizerStateIOSchedule_: An experimental value to control
+      when batch serialization is applied. Default:
+      ExecutionPhaseIOSchedule::OnDemand.
+ accumulatorIOSchedule_: An experimental value to control how
+      batch serialization is applied. Default:
+      ExecutionPhaseIOSchedule::Preload.
+ schedule_: An experimental value that changes how operations are
+      scheduled. Default: ExecutionPhaseSchedule::Interleaving.)doc";
 
 static const char
     *__singlelinedoc_popart_ExecutionPhaseSettings_ExecutionPhaseSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor for ExecutionPhaseSettings. Args: phases_: The number of execution phases for the whole model. Default=0. stages_: The number of overlapping stages: * 1: Parallel streaming memory, default for 1 IPU per replica. * 2: PingPong between 2 IPUs, default for 2 or more IPUs per replica (Default). weightIOSchedule_: The execution phase IO schedule for weight tensors. Default: ExecutionPhaseIOSchedule::Preload. activationIOSchedule_: The execution phase IO schedule for activation and gradient tensors. Default: ExecutionPhaseIOSchedule::Preload. optimizerStateIOSchedule_: An experimental value to control when batch serialization is applied. Default: ExecutionPhaseIOSchedule::OnDemand. accumulatorIOSchedule_: An experimental value to control how batch serialization is applied. Default: ExecutionPhaseIOSchedule::Preload. schedule_: An experimental value that changes how operations are scheduled. Default: ExecutionPhaseSchedule::Interleaving.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_accumulatorIOSchedule =
     R"doc()doc";
@@ -5758,10 +5878,10 @@ static const char
         R"doc()doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_phases =
-    R"doc(Number of ExecutionPhases for the whole model)doc";
+    R"doc(Number of ExecutionPhases for the whole model.)doc";
 
 static const char *__singlelinedoc_popart_ExecutionPhaseSettings_phases =
-    R"doc(Number of ExecutionPhases for the whole model)doc";
+    R"doc(Number of ExecutionPhases for the whole model.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_schedule = R"doc()doc";
 
@@ -5770,11 +5890,11 @@ static const char *__singlelinedoc_popart_ExecutionPhaseSettings_schedule =
 
 static const char *__doc_popart_ExecutionPhaseSettings_stages =
     R"doc(Number of overlapping stages
-1: Parallel streaming memory, default for 1 IPU / replica
-2: PingPong between 2 IPUs, default for >= 2 IPUs / replica)doc";
+ * 1: Parallel streaming memory, default for 1 IPU per replica.
+ * 2: PingPong between 2 IPUs, default for 2 or more IPUs per replica.)doc";
 
 static const char *__singlelinedoc_popart_ExecutionPhaseSettings_stages =
-    R"doc(Number of overlapping stages 1: Parallel streaming memory, default for 1 IPU / replica 2: PingPong between 2 IPUs, default for >= 2 IPUs / replica)doc";
+    R"doc(Number of overlapping stages * 1: Parallel streaming memory, default for 1 IPU per replica. * 2: PingPong between 2 IPUs, default for 2 or more IPUs per replica.)doc";
 
 static const char *__doc_popart_ExecutionPhaseSettings_weightIOSchedule =
     R"doc(The execution phase IO schedule for weight tensors.)doc";
@@ -5862,10 +5982,10 @@ static const char *__singlelinedoc_popart_GradOpInType_Out =
 
 static const char *__doc_popart_GradientTensorTrackingMethod =
     R"doc(Enum type to specify the method for selecting gradient tensors whose
-statistics are to be tracked for the AutomaticLossScaling transform.)doc";
+statistics are to be tracked for the AutomaticLossScale transform.)doc";
 
 static const char *__singlelinedoc_popart_GradientTensorTrackingMethod =
-    R"doc(Enum type to specify the method for selecting gradient tensors whose statistics are to be tracked for the AutomaticLossScaling transform.)doc";
+    R"doc(Enum type to specify the method for selecting gradient tensors whose statistics are to be tracked for the AutomaticLossScale transform.)doc";
 
 static const char *
     __doc_popart_GradientTensorTrackingMethod_AllNonViewChangingGradientTensors =
@@ -7948,33 +8068,33 @@ static const char *__singlelinedoc_popart_MeanReductionStrategy_N =
 
 static const char *__doc_popart_MeanReductionStrategy_Post =
     R"doc(Keep the accumulation factor as the running sum,
-and divide by :math:`k` once at the end of the accumulation.
-This strategy will generally be faster than Running,
+and divide once by :math:`k` at the end of the accumulation.
+This strategy will generally be faster than MeanReductionStrategy::Running,
 but is prone to overflow (especially when using :code:`fp16`).)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy_Post =
-    R"doc(Keep the accumulation factor as the running sum, and divide by :math:`k` once at the end of the accumulation. This strategy will generally be faster than Running, but is prone to overflow (especially when using :code:`fp16`).)doc";
+    R"doc(Keep the accumulation factor as the running sum, and divide once by :math:`k` at the end of the accumulation. This strategy will generally be faster than MeanReductionStrategy::Running, but is prone to overflow (especially when using :code:`fp16`).)doc";
 
 static const char *__doc_popart_MeanReductionStrategy_Running =
     R"doc(Keep the reduction buffer as the mean of the tensors accumulated so far.
-If we have just processed :math:`t_1, ..., t_f`,
+If :math:`t_1, ..., t_f` has just been processed,
 the current accumulator :math:`s` is the mean of these values, and
 the next accumulator update is
-:math:`s = (f/(f+1)) * s + (1/(f+1)) * t_{f+1}` to keep :math:`s` a running
-mean.
+:math:`s = \frac{f}{f+1} * s + \frac{1}{f+1} * t_{f+1}` to keep :math:`s` a
+running mean.
 
 This strategy guarantees :math:`s \le \max(a_1, ..., a_k)` throughout the
 accumulation, therefore it will not overflow, but it is generally slower
-than Post.)doc";
+than MeanReductionStrategy::Post.)doc";
 
 static const char *__singlelinedoc_popart_MeanReductionStrategy_Running =
-    R"doc(Keep the reduction buffer as the mean of the tensors accumulated so far. If we have just processed :math:`t_1, ..., t_f`, the current accumulator :math:`s` is the mean of these values, and the next accumulator update is :math:`s = (f/(f+1)) * s + (1/(f+1)) * t_{f+1}` to keep :math:`s` a running mean. This strategy guarantees :math:`s \le \max(a_1, ..., a_k)` throughout the accumulation, therefore it will not overflow, but it is generally slower than Post.)doc";
+    R"doc(Keep the reduction buffer as the mean of the tensors accumulated so far. If :math:`t_1, ..., t_f` has just been processed, the current accumulator :math:`s` is the mean of these values, and the next accumulator update is :math:`s = \frac{f}{f+1} * s + \frac{1}{f+1} * t_{f+1}` to keep :math:`s` a running mean. This strategy guarantees :math:`s \le \max(a_1, ..., a_k)` throughout the accumulation, therefore it will not overflow, but it is generally slower than MeanReductionStrategy::Post.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType =
-    R"doc(Enum type used to specify which :code:`VarUpdateOp` ops to merge.)doc";
+    R"doc(Enum type used to specify which VarUpdateOp ops to merge.)doc";
 
 static const char *__singlelinedoc_popart_MergeVarUpdateType =
-    R"doc(Enum type used to specify which :code:`VarUpdateOp` ops to merge.)doc";
+    R"doc(Enum type used to specify which VarUpdateOp ops to merge.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_All =
     R"doc(Merge all VarUpdateOp ops into as few groups as possible.
@@ -7993,16 +8113,16 @@ static const char *__singlelinedoc_popart_MergeVarUpdateType_AutoLoose =
 
 static const char *__doc_popart_MergeVarUpdateType_AutoTight =
     R"doc(Merge into groups, so that VarUpdateOp ops process tensors of
-exactly :code:`mergeVarUpdateMemThreshold` in size.)doc";
+exactly ``SessionOptions::mergeVarUpdateMemThreshold`` in size.)doc";
 
 static const char *__singlelinedoc_popart_MergeVarUpdateType_AutoTight =
-    R"doc(Merge into groups, so that VarUpdateOp ops process tensors of exactly :code:`mergeVarUpdateMemThreshold` in size.)doc";
+    R"doc(Merge into groups, so that VarUpdateOp ops process tensors of exactly ``SessionOptions::mergeVarUpdateMemThreshold`` in size.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_N =
-    R"doc(The number of ``MergeVarUpdateTypes`` values.)doc";
+    R"doc(The number of ``MergeVarUpdateType`` values.)doc";
 
 static const char *__singlelinedoc_popart_MergeVarUpdateType_N =
-    R"doc(The number of ``MergeVarUpdateTypes`` values.)doc";
+    R"doc(The number of ``MergeVarUpdateType`` values.)doc";
 
 static const char *__doc_popart_MergeVarUpdateType_None =
     R"doc(Do not merge VarUpdateOp ops.)doc";
@@ -12604,11 +12724,11 @@ static const char *
     __singlelinedoc_popart_PreAliasPatternManager_tryGetTypeIndex = R"doc()doc";
 
 static const char *__doc_popart_RecomputationType =
-    R"doc(Enum type to specify which ops to recompute in the backwards pass when doing
+    R"doc(Enum type to specify which ops to recompute in the backward pass when doing
 auto-recomputation.)doc";
 
 static const char *__singlelinedoc_popart_RecomputationType =
-    R"doc(Enum type to specify which ops to recompute in the backwards pass when doing auto-recomputation.)doc";
+    R"doc(Enum type to specify which ops to recompute in the backward pass when doing auto-recomputation.)doc";
 
 static const char *__doc_popart_RecomputationType_N =
     R"doc(The number of ``RecomputationTypes`` values.)doc";
@@ -12617,10 +12737,10 @@ static const char *__singlelinedoc_popart_RecomputationType_N =
     R"doc(The number of ``RecomputationTypes`` values.)doc";
 
 static const char *__doc_popart_RecomputationType_None =
-    R"doc(No ops are recomputed.)doc";
+    R"doc(No ops are recomputed (Default).)doc";
 
 static const char *__singlelinedoc_popart_RecomputationType_None =
-    R"doc(No ops are recomputed.)doc";
+    R"doc(No ops are recomputed (Default).)doc";
 
 static const char *__doc_popart_RecomputationType_NormOnly =
     R"doc(Only Norm ops (+ non-linearities, if following) are recomputed.)doc";
@@ -12641,10 +12761,11 @@ static const char *__singlelinedoc_popart_RecomputationType_RecomputeAll =
     R"doc(Recompute all ops.)doc";
 
 static const char *__doc_popart_RecomputationType_Standard =
-    R"doc(Algorithm to pick checkpoints to try and minimise max liveness.)doc";
+    R"doc(Recompute using algorithm that picks checkpoints to try and minimise max
+liveness.)doc";
 
 static const char *__singlelinedoc_popart_RecomputationType_Standard =
-    R"doc(Algorithm to pick checkpoints to try and minimise max liveness.)doc";
+    R"doc(Recompute using algorithm that picks checkpoints to try and minimise max liveness.)doc";
 
 static const char *__doc_popart_RecomputeType =
     R"doc(Define the type of recomputation.)doc";
@@ -12763,18 +12884,28 @@ static const char *__singlelinedoc_popart_ReplicaEqualAnalysisProxy =
     R"doc()doc";
 
 static const char *__doc_popart_ReplicatedCollectivesSettings =
-    R"doc(A structure containing settings for replicated collective operations)doc";
+    R"doc(A structure containing settings for replicated collective operations.)doc";
 
 static const char *__singlelinedoc_popart_ReplicatedCollectivesSettings =
-    R"doc(A structure containing settings for replicated collective operations)doc";
+    R"doc(A structure containing settings for replicated collective operations.)doc";
 
 static const char
     *__doc_popart_ReplicatedCollectivesSettings_ReplicatedCollectivesSettings =
-        R"doc()doc";
+        R"doc(Constructor for the ReplicatedCollectivesSettings struct.
+
+Args:
+ prepareScheduleForMergingCollectives: Insert constraints into the
+       schedule such that collectives which can be merged occur one right
+       after the other. :code:`true` to insert constraints, :code:`false` otherwise.
+       Default: :code:`false`.
+ mergeAllReduceCollectives: Identify allreduce operations which can be
+       scheduled at the same time, and perform them as one larger operation
+       to better utilize the bandwidth between replicas. :code:`true` to identify
+       operations, :code:`false` otherwise. Default: :code:`false`.)doc";
 
 static const char *
     __singlelinedoc_popart_ReplicatedCollectivesSettings_ReplicatedCollectivesSettings =
-        R"doc()doc";
+        R"doc(Constructor for the ReplicatedCollectivesSettings struct. Args: prepareScheduleForMergingCollectives: Insert constraints into the schedule such that collectives which can be merged occur one right after the other. :code:`true` to insert constraints, :code:`false` otherwise. Default: :code:`false`. mergeAllReduceCollectives: Identify allreduce operations which can be scheduled at the same time, and perform them as one larger operation to better utilize the bandwidth between replicas. :code:`true` to identify operations, :code:`false` otherwise. Default: :code:`false`.)doc";
 
 static const char *__doc_popart_ReplicatedCollectivesSettings_hash =
     R"doc()doc";
@@ -12784,22 +12915,19 @@ static const char *__singlelinedoc_popart_ReplicatedCollectivesSettings_hash =
 
 static const char
     *__doc_popart_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
-        R"doc(Identifies allreduce operations which can be scheduled
-at the same time, and performs them as one larger operation
-so as to better utilize the bandwidth between replicas)doc";
+        R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
-        R"doc(Identifies allreduce operations which can be scheduled at the same time, and performs them as one larger operation so as to better utilize the bandwidth between replicas)doc";
+        R"doc()doc";
 
 static const char *
     __doc_popart_ReplicatedCollectivesSettings_prepareScheduleForMergingCollectives =
-        R"doc(Insert constraints into the schedule such that collectives
-which can be merged occur one right after the other)doc";
+        R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_ReplicatedCollectivesSettings_prepareScheduleForMergingCollectives =
-        R"doc(Insert constraints into the schedule such that collectives which can be merged occur one right after the other)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_ReplicatedStreamMode = R"doc()doc";
 
@@ -13357,11 +13485,11 @@ static const char *__singlelinedoc_popart_SessionOptions_3 =
     R"doc(A structure containing user configuration options for the Session class.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles =
-    R"doc(A wrapper class for the ``numIOTiles`` option that permits any int value and
-has an 'unassigned' state.)doc";
+    R"doc(A wrapper class for the SessionOptions::numIOTiles option that permits any
+int value and has an 'unassigned' state.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_NumIOTiles =
-    R"doc(A wrapper class for the ``numIOTiles`` option that permits any int value and has an 'unassigned' state.)doc";
+    R"doc(A wrapper class for the SessionOptions::numIOTiles option that permits any int value and has an 'unassigned' state.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_NumIOTiles =
     R"doc(Constructor.)doc";
@@ -13370,11 +13498,13 @@ static const char *__singlelinedoc_popart_SessionOptions_NumIOTiles_NumIOTiles =
     R"doc(Constructor.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_NumIOTiles_2 =
-    R"doc(Constructor.)doc";
+    R"doc(Constructor.
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_NumIOTiles_NumIOTiles_2 =
-        R"doc(Constructor.)doc";
+Args:
+ numIOTiles: The number of IPU tiles dedicated to IO.)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_NumIOTiles_NumIOTiles_2 =
+    R"doc(Constructor. Args: numIOTiles: The number of IPU tiles dedicated to IO.)doc";
 
 static const char *__doc_popart_SessionOptions_NumIOTiles_operator_assign =
     R"doc(Assign value using int.)doc";
@@ -13409,10 +13539,11 @@ static const char *__doc_popart_SessionOptions_NumIOTiles_value = R"doc()doc";
 static const char *__singlelinedoc_popart_SessionOptions_NumIOTiles_value =
     R"doc()doc";
 
-static const char *__doc_popart_SessionOptions_SessionOptions = R"doc()doc";
+static const char *__doc_popart_SessionOptions_SessionOptions =
+    R"doc(Constructor for SessionOptions.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_SessionOptions =
-    R"doc()doc";
+    R"doc(Constructor for SessionOptions.)doc";
 
 static const char *__doc_popart_SessionOptions_accumulateOuterFragmentSettings =
     R"doc(Configuration setting for operations in the accumulate outer fragment.)doc";
@@ -13424,11 +13555,11 @@ static const char
 static const char
     *__doc_popart_SessionOptions_accumulationAndReplicationReductionType =
         R"doc(Specify how gradients are reduced when using gradient accumulation
-and graph replication.)doc";
+and graph replication. Default: ReductionType::Sum.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_accumulationAndReplicationReductionType =
-        R"doc(Specify how gradients are reduced when using gradient accumulation and graph replication.)doc";
+        R"doc(Specify how gradients are reduced when using gradient accumulation and graph replication. Default: ReductionType::Sum.)doc";
 
 static const char *__doc_popart_SessionOptions_accumulationFactor =
     R"doc(Specify the number of micro-batches to accumulate before applying the
@@ -13460,18 +13591,19 @@ static const char *__singlelinedoc_popart_SessionOptions_aliasZeroCopy =
     R"doc(Enable zero-copy for subgraphs.)doc";
 
 static const char *__doc_popart_SessionOptions_autoRecomputation =
-    R"doc(Enable recomputation of operations in the graph in the backwards pass to
-reduce model size at the cost of computation cycles.)doc";
+    R"doc(Enable recomputation of operations in the graph in the backward pass.
+This will reduce model size at the cost of computation cycles.
+
+Default: RecomputationType::None (no recomputation).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_autoRecomputation =
-    R"doc(Enable recomputation of operations in the graph in the backwards pass to reduce model size at the cost of computation cycles.)doc";
+    R"doc(Enable recomputation of operations in the graph in the backward pass. This will reduce model size at the cost of computation cycles. Default: RecomputationType::None (no recomputation).)doc";
 
 static const char *__doc_popart_SessionOptions_autoRecomputationEnabled =
-    R"doc(Returns true if auto-recomputation is enabled.)doc";
+    R"doc(Returns :code:`true` if auto-recomputation is enabled, :code:`false` otherwise.)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_autoRecomputationEnabled =
-        R"doc(Returns true if auto-recomputation is enabled.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_autoRecomputationEnabled =
+    R"doc(Returns :code:`true` if auto-recomputation is enabled, :code:`false` otherwise.)doc";
 
 static const char *__doc_popart_SessionOptions_autodiffSettings =
     R"doc(Configuration settings for the autodiff transform.)doc";
@@ -13483,13 +13615,12 @@ static const char *__doc_popart_SessionOptions_automaticLossScalingSettings =
     R"doc(Settings to enable and configure the automatic loss scaling behaviour when
 training.
 
-**Note:** Automatic loss scaling is currently experimental and under
-active development. We recommend that the user sets the loss scale
-manually.)doc";
+\note Automatic loss scaling is currently experimental and under
+active development. Recommendation: Set the loss scale manually.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_automaticLossScalingSettings =
-        R"doc(Settings to enable and configure the automatic loss scaling behaviour when training. **Note:** Automatic loss scaling is currently experimental and under active development. We recommend that the user sets the loss scale manually.)doc";
+        R"doc(Settings to enable and configure the automatic loss scaling behaviour when training. \note Automatic loss scaling is currently experimental and under active development. Recommendation: Set the loss scale manually.)doc";
 
 static const char *__doc_popart_SessionOptions_batchSerializationSettings =
     R"doc(Configuration setting for batch serialization.)doc";
@@ -13499,17 +13630,18 @@ static const char
         R"doc(Configuration setting for batch serialization.)doc";
 
 static const char *__doc_popart_SessionOptions_bufferingDepthMap =
-    R"doc(This mapping can be used to set stream-specific buffering depths. This
-buffering depth could be envisaged as being the size of a circular buffer
-that feeds data to and from Poplar. A buffering depth greater than 1 may
-improve the performance due to increased parallelisation but comes at the
-cost of increasing the memory footprint. Streams for tensors that have no
-entry in this map will default to 1 (if a tensor is rearranged on host) or
-``defaultBufferingDepth`` (if a tensor is not rearranged on host). Specifying
-a tensor that gets rearranged on host in this map will throw an error.)doc";
+    R"doc(This mapping can be used to set stream-specific buffering depths.
+The buffering depth could be thought of as being the size of a circular
+buffer that feeds data to and from Poplar. A buffering depth greater than
+1 may improve the performance due to increased parallelisation but comes
+at the cost of increasing the memory footprint. Streams for tensors that
+have no entry in this map will default to 1 (if a tensor is rearranged on
+host) or defaultBufferingDepth (if a tensor is not rearranged on host).
+Specifying a tensor that gets rearranged on host in this map will throw an
+error.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_bufferingDepthMap =
-    R"doc(This mapping can be used to set stream-specific buffering depths. This buffering depth could be envisaged as being the size of a circular buffer that feeds data to and from Poplar. A buffering depth greater than 1 may improve the performance due to increased parallelisation but comes at the cost of increasing the memory footprint. Streams for tensors that have no entry in this map will default to 1 (if a tensor is rearranged on host) or ``defaultBufferingDepth`` (if a tensor is not rearranged on host). Specifying a tensor that gets rearranged on host in this map will throw an error.)doc";
+    R"doc(This mapping can be used to set stream-specific buffering depths. The buffering depth could be thought of as being the size of a circular buffer that feeds data to and from Poplar. A buffering depth greater than 1 may improve the performance due to increased parallelisation but comes at the cost of increasing the memory footprint. Streams for tensors that have no entry in this map will default to 1 (if a tensor is rearranged on host) or defaultBufferingDepth (if a tensor is not rearranged on host). Specifying a tensor that gets rearranged on host in this map will throw an error.)doc";
 
 static const char *__doc_popart_SessionOptions_cachePath =
     R"doc(Folder to save the ``poplar::Executable`` to.)doc";
@@ -13518,47 +13650,53 @@ static const char *__singlelinedoc_popart_SessionOptions_cachePath =
     R"doc(Folder to save the ``poplar::Executable`` to.)doc";
 
 static const char *__doc_popart_SessionOptions_compilationProgressLogger =
-    R"doc(Callback function used to to indicate
-PopART compilation progress. The function is
-passed two integers. The first is the progress
-value and the second is the maximum value for
-the progress.
+    R"doc(Callback function used to indicate PopART compilation progress.
 
-The function should not block. All calls
-to the callback function will be made from the main thread so
-blocking in the callback will block compilation from progressing.
+The function should not block. All calls to the callback function will be
+made from the main thread so blocking in the callback will block
+compilation from progressing.
 
-If this logger is not set then compilation progress will be
-printed on the info channel.)doc";
+If this logger is not set then compilation progress will be printed on the
+info channel.
+
+
+Args:
+ int: The progress value.
+ int: The maximum value for the progress.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_compilationProgressLogger =
-    R"doc(Callback function used to to indicate PopART compilation progress. The function is passed two integers. The first is the progress value and the second is the maximum value for the progress. The function should not block. All calls to the callback function will be made from the main thread so blocking in the callback will block compilation from progressing. If this logger is not set then compilation progress will be printed on the info channel.)doc";
+    R"doc(Callback function used to indicate PopART compilation progress. The function should not block. All calls to the callback function will be made from the main thread so blocking in the callback will block compilation from progressing. If this logger is not set then compilation progress will be printed on the info channel. Args: int: The progress value. int: The maximum value for the progress.)doc";
 
 static const char *__doc_popart_SessionOptions_compilationProgressTotal =
-    R"doc(Total progress ticks until compilation complete)doc";
+    R"doc(Total progress ticks until compilation complete.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_compilationProgressTotal =
-        R"doc(Total progress ticks until compilation complete)doc";
+        R"doc(Total progress ticks until compilation complete.)doc";
 
 static const char *__doc_popart_SessionOptions_compileEngine =
-    R"doc(If false, the backend will build the Poplar graph but not compile it
+    R"doc(Setting to only build the Poplar graph but not compile not.
+
+If :code:`false`, the backend will build the Poplar graph but not compile it
 into an Engine.  In this case, no execution can be performed,
 and nothing can be transferred to the device. API calls which retrieve
 information from the graph building stage, such as tile mapping
 introspection, can still be used.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_compileEngine =
-    R"doc(If false, the backend will build the Poplar graph but not compile it into an Engine.  In this case, no execution can be performed, and nothing can be transferred to the device. API calls which retrieve information from the graph building stage, such as tile mapping introspection, can still be used.)doc";
+    R"doc(Setting to only build the Poplar graph but not compile not. If :code:`false`, the backend will build the Poplar graph but not compile it into an Engine.  In this case, no execution can be performed, and nothing can be transferred to the device. API calls which retrieve information from the graph building stage, such as tile mapping introspection, can still be used.)doc";
 
 static const char *__doc_popart_SessionOptions_constantWeights =
-    R"doc(An optimization for an inference session to have constant weights, true by
-default. Set this option to false if you are going to want to change the
-weights with a call to Session::resetHostWeights after the session has
-been prepared. This option has no effect on a training session)doc";
+    R"doc(Specify an optimization for an inference session to have constant weights.
+
+Set this option to :code:`false` in order to change the
+weights with a call to Session::resetHostWeights() after the session has
+been prepared. This option has no effect on a training session.
+
+Default: :code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_constantWeights =
-    R"doc(An optimization for an inference session to have constant weights, true by default. Set this option to false if you are going to want to change the weights with a call to Session::resetHostWeights after the session has been prepared. This option has no effect on a training session)doc";
+    R"doc(Specify an optimization for an inference session to have constant weights. Set this option to :code:`false` in order to change the weights with a call to Session::resetHostWeights() after the session has been prepared. This option has no effect on a training session. Default: :code:`true`.)doc";
 
 static const char *__doc_popart_SessionOptions_convolutionOptions =
     R"doc(Poplar convolution options.)doc";
@@ -13568,52 +13706,58 @@ static const char *__singlelinedoc_popart_SessionOptions_convolutionOptions =
 
 static const char
     *__doc_popart_SessionOptions_createImplicitPipeliningFwdOnlyProgram =
-        R"doc(\deprecated Create a custom program containing the forward pipeline only)doc";
+        R"doc(\deprecated Create a custom program containing the forward pipeline only.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_createImplicitPipeliningFwdOnlyProgram =
-        R"doc(\deprecated Create a custom program containing the forward pipeline only)doc";
+        R"doc(\deprecated Create a custom program containing the forward pipeline only.)doc";
 
 static const char *__doc_popart_SessionOptions_customCodeletCompileFlags =
     R"doc(Compile flags for the custom codelets. For example :code:`-g` to generate debug
-info.)doc";
+info. See the Poplar documentation for poplar::Engine for more information.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_customCodeletCompileFlags =
-    R"doc(Compile flags for the custom codelets. For example :code:`-g` to generate debug info.)doc";
+    R"doc(Compile flags for the custom codelets. For example :code:`-g` to generate debug info. See the Poplar documentation for poplar::Engine for more information.)doc";
 
 static const char *__doc_popart_SessionOptions_customCodelets =
-    R"doc(List of codelets (with filetype) to be added to the Poplar graph. See the
-Poplar documentation for more information.)doc";
+    R"doc(List of codelet files (with file extension) to be added to the Poplar
+graph. See the Poplar documentation for poplar::Graph for more information.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_customCodelets =
-    R"doc(List of codelets (with filetype) to be added to the Poplar graph. See the Poplar documentation for more information.)doc";
+    R"doc(List of codelet files (with file extension) to be added to the Poplar graph. See the Poplar documentation for poplar::Graph for more information.)doc";
 
 static const char *__doc_popart_SessionOptions_decomposeGradSum =
-    R"doc(Replaces single sums of partial gradients with a tree of additions.
+    R"doc(Enable replacement of single sums of partial gradients with a tree of
+additions.
 This can reduce max liveness at the cost of extra cycles. A typical
 use case for this would be if a large weight tensor is used as an
-input to many operations.)doc";
+input to many operations.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_decomposeGradSum =
-    R"doc(Replaces single sums of partial gradients with a tree of additions. This can reduce max liveness at the cost of extra cycles. A typical use case for this would be if a large weight tensor is used as an input to many operations.)doc";
+    R"doc(Enable replacement of single sums of partial gradients with a tree of additions. This can reduce max liveness at the cost of extra cycles. A typical use case for this would be if a large weight tensor is used as an input to many operations. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_defaultBufferingDepth =
-    R"doc(This is the default buffering depth value used for streams that are not
-re-arranged on the host. For tensors that are rearranged on host buffering
+    R"doc(Specify the default buffering depth value used for streams that are not
+re-arranged on the host.
+For tensors that are rearranged on the host, a buffering
 depth of 1 will always be used. This default value can be overridden via
-``bufferingDepthMap``.)doc";
+bufferingDepthMap.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_defaultBufferingDepth =
-    R"doc(This is the default buffering depth value used for streams that are not re-arranged on the host. For tensors that are rearranged on host buffering depth of 1 will always be used. This default value can be overridden via ``bufferingDepthMap``.)doc";
+    R"doc(Specify the default buffering depth value used for streams that are not re-arranged on the host. For tensors that are rearranged on the host, a buffering depth of 1 will always be used. This default value can be overridden via bufferingDepthMap.)doc";
 
 static const char *__doc_popart_SessionOptions_defaultPrefetchBufferingDepth =
-    R"doc(\deprecated This session option name has been deprecated and will be
+    R"doc($.. deprecated::
+
+This session option name has been deprecated and will be
 removed in a future release. Please use the alias defaultBufferingDepth
 instead.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_defaultPrefetchBufferingDepth =
-        R"doc(\deprecated This session option name has been deprecated and will be removed in a future release. Please use the alias defaultBufferingDepth instead.)doc";
+        R"doc($.. deprecated:: This session option name has been deprecated and will be removed in a future release. Please use the alias defaultBufferingDepth instead.)doc";
 
 static const char *__doc_popart_SessionOptions_delayVarUpdates =
     R"doc(Options to delay variable updates as much as possible.)doc";
@@ -13621,173 +13765,213 @@ static const char *__doc_popart_SessionOptions_delayVarUpdates =
 static const char *__singlelinedoc_popart_SessionOptions_delayVarUpdates =
     R"doc(Options to delay variable updates as much as possible.)doc";
 
-static const char *__doc_popart_SessionOptions_developerSettings = R"doc()doc";
+static const char *__doc_popart_SessionOptions_developerSettings =
+    R"doc(Settings for developers to configure testing and benchmarking.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_developerSettings =
-    R"doc()doc";
+    R"doc(Settings for developers to configure testing and benchmarking.)doc";
 
 static const char
     *__doc_popart_SessionOptions_disableGradAccumulationTensorStreams =
-        R"doc(If true, the weight gradient tensors are not saved off the device
-when ``devicex.weightsFromHost()`` is called. Note: this option is
-overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``.
-Note that weight gradient tensors that are also optimiser tensors will
-only be disabled if both disableGradAccumulationTensorStreams and
-disableOptimizerStateTensorStreams are true.)doc";
+        R"doc(Disable saving of weight gradient tensors off the device.
+
+If :code:`true`, the weight gradient tensors are not saved off the device
+when ``devicex.weightsFromHost()`` is called.
+\note This option is
+overridden if ``syntheticDataMode`` is not SyntheticDataMode::Off.
+
+\note Weight gradient tensors that are also optimiser tensors will
+only be disabled if both ``disableGradAccumulationTensorStreams`` and
+``disableOptimizerStateTensorStreams`:code:` are `true`.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_disableGradAccumulationTensorStreams =
-        R"doc(If true, the weight gradient tensors are not saved off the device when ``devicex.weightsFromHost()`` is called. Note: this option is overridden if ``syntheticDataMode`` is not ``SyntheticDataMode::Off``. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
+        R"doc(Disable saving of weight gradient tensors off the device. If :code:`true`, the weight gradient tensors are not saved off the device when ``devicex.weightsFromHost()`` is called. \note This option is overridden if ``syntheticDataMode`` is not SyntheticDataMode::Off. \note Weight gradient tensors that are also optimiser tensors will only be disabled if both ``disableGradAccumulationTensorStreams`` and ``disableOptimizerStateTensorStreams`:code:` are `true`.)doc";
 
-static const char *__doc_popart_SessionOptions_disableOptimizerStateTensorStreams =
-    R"doc(If true, streaming of optimizer tensors is disabled. This setting can be
-used to conserve memory if you are not interested in checkpointing
-optimizer state. Note that weight gradient tensors that are also optimiser
-tensors will only be disabled if both disableGradAccumulationTensorStreams
-and disableOptimizerStateTensorStreams are true.)doc";
+static const char
+    *__doc_popart_SessionOptions_disableOptimizerStateTensorStreams =
+        R"doc(Disable streaming of optimizer tensors.
+
+If :code:`true`, streaming of optimizer tensors is disabled. This setting can be
+used to conserve memory if you are not interested in checkpointing the
+optimizer state.
+\note Weight gradient tensors that are also optimiser tensors will only be
+disabled if both ``disableGradAccumulationTensorStreams`` and
+``disableOptimizerStateTensorStreams`:code:` are `true`.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_disableOptimizerStateTensorStreams =
-        R"doc(If true, streaming of optimizer tensors is disabled. This setting can be used to conserve memory if you are not interested in checkpointing optimizer state. Note that weight gradient tensors that are also optimiser tensors will only be disabled if both disableGradAccumulationTensorStreams and disableOptimizerStateTensorStreams are true.)doc";
+        R"doc(Disable streaming of optimizer tensors. If :code:`true`, streaming of optimizer tensors is disabled. This setting can be used to conserve memory if you are not interested in checkpointing the optimizer state. \note Weight gradient tensors that are also optimiser tensors will only be disabled if both ``disableGradAccumulationTensorStreams`` and ``disableOptimizerStateTensorStreams`:code:` are `true`.)doc";
 
 static const char *__doc_popart_SessionOptions_dotChecks =
-    R"doc(When to write :code:`.dot` files during Ir construction.)doc";
+    R"doc(When to write :code:`.dot` files during IR construction.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_dotChecks =
-    R"doc(When to write :code:`.dot` files during Ir construction.)doc";
+    R"doc(When to write :code:`.dot` files during IR construction.)doc";
 
 static const char *__doc_popart_SessionOptions_dotOpNames =
-    R"doc(Include the Op name in the :code:`.dot` file (the Op type is always exported).)doc";
+    R"doc(Enable inclusion of the op name in the :code:`.dot` file (the op type is always
+exported).
+Enabled when :code:`true`. Default: :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_dotOpNames =
-    R"doc(Include the Op name in the :code:`.dot` file (the Op type is always exported).)doc";
+    R"doc(Enable inclusion of the op name in the :code:`.dot` file (the op type is always exported). Enabled when :code:`true`. Default: :code:`false`.)doc";
 
 static const char *__doc_popart_SessionOptions_enableDistributedReplicatedGraphs =
     R"doc(Enable training with Poplar replicated graphs across multiple PopART
-instances.)doc";
+instances.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_enableDistributedReplicatedGraphs =
-        R"doc(Enable training with Poplar replicated graphs across multiple PopART instances.)doc";
+        R"doc(Enable training with Poplar replicated graphs across multiple PopART instances. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableEngineCaching =
     R"doc(Enable Poplar executable caching.
-You can set the file save location with the ``cachePath``. The file will be
-in the `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`_ format. This means that it can be used to run inference using
-the `Triton
-Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ because Graphcore provides a backend to it. See the
-`Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`_ for more information.)doc";
+The file is saved to the location defined with ``cachePath.`:code:`
+The file will be in
+the `PopEF <https://docs.graphcore.ai/projects/popef/>`_ format.
+This means that it can be used to run inference using the `Triton
+Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ because Graphcore provides a backend to it. See the `Poplar
+Triton Backend user guide <https://docs.graphcore.ai/projects/poplar-triton-backend/>`_ for more information.
+
+Default: `false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableEngineCaching =
-    R"doc(Enable Poplar executable caching. You can set the file save location with the ``cachePath``. The file will be in the `popef <https://docs.graphcore.ai/projects/popef/en/latest/index.html>`_ format. This means that it can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ because Graphcore provides a backend to it. See the `Poplar Triton Backend <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/index.html>`_ for more information.)doc";
+    R"doc(Enable Poplar executable caching. The file is saved to the location defined with ``cachePath.`:code:` The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/>`_ format. This means that it can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ because Graphcore provides a backend to it. See the `Poplar Triton Backend user guide <https://docs.graphcore.ai/projects/poplar-triton-backend/>`_ for more information. Default: `false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableExplicitIR =
-    R"doc(Enable the explicit representations in the IR (code paths))doc";
+    R"doc(Enable explicit representations in the IR (code paths).
+Enabled if :code:`true`, otherwise not.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableExplicitIR =
-    R"doc(Enable the explicit representations in the IR (code paths))doc";
+    R"doc(Enable explicit representations in the IR (code paths). Enabled if :code:`true`, otherwise not.)doc";
 
 static const char *__doc_popart_SessionOptions_enableExplicitMainLoops =
-    R"doc(Enables explicit main loop transformation, and disables implicit training
-loops. This will become deprecated and enabled by default.)doc";
+    R"doc(Enable explicit main loop transformation, and disable implicit training
+loops.
+
+\note This will be deprecated and enabled by default.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableExplicitMainLoops =
-    R"doc(Enables explicit main loop transformation, and disables implicit training loops. This will become deprecated and enabled by default.)doc";
+    R"doc(Enable explicit main loop transformation, and disable implicit training loops. \note This will be deprecated and enabled by default.)doc";
 
 static const char *__doc_popart_SessionOptions_enableFloatingPointChecks =
-    R"doc(Throw an exception when floating point errors occur.)doc";
+    R"doc(Enable that exceptions are thrown when floating point errors occur.
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_enableFloatingPointChecks =
-        R"doc(Throw an exception when floating point errors occur.)doc";
+Default: :code:`false` (not enabled).)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_enableFloatingPointChecks =
+    R"doc(Enable that exceptions are thrown when floating point errors occur. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableFullyConnectedPass =
-    R"doc(Enable the global ``fullyConnectedPass`` option for matmuls.)doc";
+    R"doc(Enable the global :code:`fullyConnectedPass` option for matmuls.
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_enableFullyConnectedPass =
-        R"doc(Enable the global ``fullyConnectedPass`` option for matmuls.)doc";
+See Also:
+ poplin::matMul(poplar::Graph, poplar::Tensor, poplar::Tensor,
+poplar::program::Sequence, poplar::Type, poplar::DebugContext,
+poplar::OptionFlags, matmul::PlanningCache).)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_enableFullyConnectedPass =
+    R"doc(Enable the global :code:`fullyConnectedPass` option for matmuls. See Also: poplin::matMul(poplar::Graph, poplar::Tensor, poplar::Tensor, poplar::program::Sequence, poplar::Type, poplar::DebugContext, poplar::OptionFlags, matmul::PlanningCache).)doc";
 
 static const char *__doc_popart_SessionOptions_enableGradientAccumulation =
-    R"doc(Enable gradient accumulation.)doc";
+    R"doc(Enable gradient accumulation. Default: :code:`false` (not enabled).)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_enableGradientAccumulation =
-        R"doc(Enable gradient accumulation.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_enableGradientAccumulation =
+    R"doc(Enable gradient accumulation. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableInplaceAmbiguityChecking =
-    R"doc(When :code:`true`, create an ``aliasModel`` for each graph and run the poprithms
-ambiguity checker on it. This throws an error if the graph has a potential
-inplacing ambiguity and will prompt the user to check the inplacing.
+    R"doc(Enable creation of an ``AliasModel`` object for each graph and run
+the Poprithms ambiguity checker on it.
+This throws an error if the graph has a potential inplacing ambiguity.
 
 See ``poprithms::memory::inplace::Graph::AmbiguityStatus`:code:` for more info on
 what constitutes an ambiguity.
 
+If set to `true`, ``AliasModel`:code:` object is created for each graph and the
+the Poprithms ambiguity checker is run on it.
 No ambiguity checking is performed if this option is set to `false`
 (default). However inplace fallbacks will occur if necessary.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_enableInplaceAmbiguityChecking =
-        R"doc(When :code:`true`, create an ``aliasModel`` for each graph and run the poprithms ambiguity checker on it. This throws an error if the graph has a potential inplacing ambiguity and will prompt the user to check the inplacing. See ``poprithms::memory::inplace::Graph::AmbiguityStatus`:code:` for more info on what constitutes an ambiguity. No ambiguity checking is performed if this option is set to `false` (default). However inplace fallbacks will occur if necessary.)doc";
+        R"doc(Enable creation of an ``AliasModel`` object for each graph and run the Poprithms ambiguity checker on it. This throws an error if the graph has a potential inplacing ambiguity. See ``poprithms::memory::inplace::Graph::AmbiguityStatus`:code:` for more info on what constitutes an ambiguity. If set to `true`, ``AliasModel`:code:` object is created for each graph and the the Poprithms ambiguity checker is run on it. No ambiguity checking is performed if this option is set to `false` (default). However inplace fallbacks will occur if necessary.)doc";
 
 static const char *__doc_popart_SessionOptions_enableLoadAndOffloadRNGState =
-    R"doc(Allows to load/offload device RNG state from host.)doc";
+    R"doc(Enable load and offload of device RNG state from host.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_enableLoadAndOffloadRNGState =
-        R"doc(Allows to load/offload device RNG state from host.)doc";
+        R"doc(Enable load and offload of device RNG state from host. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableMergeExchange =
-    R"doc(Enables merging remote and host IO operations to facilitate IO overlap)doc";
+    R"doc(Enable merging remote and host IO operations to facilitate IO overlap.
+:code:`true` to enable, otherwise :code:`false`.
+
+Default=:code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableMergeExchange =
-    R"doc(Enables merging remote and host IO operations to facilitate IO overlap)doc";
+    R"doc(Enable merging remote and host IO operations to facilitate IO overlap. :code:`true` to enable, otherwise :code:`false`. Default=:code:`true`.)doc";
 
 static const char *__doc_popart_SessionOptions_enableNonStableSoftmax =
-    R"doc(By default, we use the stable softmax Poplar function. The input tensor
-to softmax, *x*, is preprocessed by subtracting max(*x*) from each element
-before computing the exponentials, ensuring numerical stability. If you
-are sure the inputs to your softmax operations are small enough to not
-cause overflow when computing the exponential, you can enable the
-non-stable version instead, to increase the speed.)doc";
+    R"doc(Enable the non-stable softmax Poplar function.
+
+By default, the stable softmax Poplar function is used. The input tensor
+to softmax, :math:`x`, is preprocessed by subtracting :math:`max(x)` from each
+element
+before computing the exponentials, ensuring numerical stability. If the
+inputs to the softmax operations are small enough to not
+cause overflow when computing the exponential, then the non-stable version
+can be enabled instead, to increase the speed.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableNonStableSoftmax =
-    R"doc(By default, we use the stable softmax Poplar function. The input tensor to softmax, *x*, is preprocessed by subtracting max(*x*) from each element before computing the exponentials, ensuring numerical stability. If you are sure the inputs to your softmax operations are small enough to not cause overflow when computing the exponential, you can enable the non-stable version instead, to increase the speed.)doc";
+    R"doc(Enable the non-stable softmax Poplar function. By default, the stable softmax Poplar function is used. The input tensor to softmax, :math:`x`, is preprocessed by subtracting :math:`max(x)` from each element before computing the exponentials, ensuring numerical stability. If the inputs to the softmax operations are small enough to not cause overflow when computing the exponential, then the non-stable version can be enabled instead, to increase the speed. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableOutlining =
-    R"doc(Identify and extract repeated parts of computational graph into subgraphs.)doc";
+    R"doc(Enable outlining.
+This identifies and extracts repeated parts of computational graph into
+subgraphs.
+Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableOutlining =
-    R"doc(Identify and extract repeated parts of computational graph into subgraphs.)doc";
+    R"doc(Enable outlining. This identifies and extracts repeated parts of computational graph into subgraphs. Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__doc_popart_SessionOptions_enableOutliningCopyCostPruning =
-    R"doc(When :code:`true` the cost of copying of cached sections should be included
-in the outlining cost model.)doc";
+    R"doc(Enable inclusion of the cost of copying of cached sections should be
+in the outlining cost model.
+Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_enableOutliningCopyCostPruning =
-        R"doc(When :code:`true` the cost of copying of cached sections should be included in the outlining cost model.)doc";
+        R"doc(Enable inclusion of the cost of copying of cached sections should be in the outlining cost model. Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__doc_popart_SessionOptions_enablePipelining =
-    R"doc(Enable pipelining of virtual graphs)doc";
+    R"doc(Enable pipelining of virtual graphs. Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enablePipelining =
-    R"doc(Enable pipelining of virtual graphs)doc";
+    R"doc(Enable pipelining of virtual graphs. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enablePrefetchDatastreams =
-    R"doc(By default, we will use prefetching for input data streams. Poplar will
-speculatively read data for a stream before is is required to allow the
-'preparation' of the data to occur in parallel with compute.)doc";
+    R"doc(Enable prefetching for input data streams.
+
+Poplar will speculatively read data for a stream before it is required in
+order to allow the 'preparation' of the data to occur in parallel with
+compute. Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enablePrefetchDatastreams =
-    R"doc(By default, we will use prefetching for input data streams. Poplar will speculatively read data for a stream before is is required to allow the 'preparation' of the data to occur in parallel with compute.)doc";
+    R"doc(Enable prefetching for input data streams. Poplar will speculatively read data for a stream before it is required in order to allow the 'preparation' of the data to occur in parallel with compute. Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__doc_popart_SessionOptions_enableReplicatedGraphs =
-    R"doc(Enable replication of graphs.)doc";
+    R"doc(Enable replication of graphs. Default: :code:`false` (not enabled).)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_enableReplicatedGraphs =
-        R"doc(Enable replication of graphs.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_enableReplicatedGraphs =
+    R"doc(Enable replication of graphs. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableRngStateManagement =
     R"doc()doc";
@@ -13804,37 +13988,44 @@ static const char
         R"doc(Enable/disable the serializing of matmuls.)doc";
 
 static const char *__doc_popart_SessionOptions_enableStableNorm =
-    R"doc(If true, computes the mean first and subtracts the activations
+    R"doc(If :code:`true`, computes the mean first and subtracts the activations
 from it before computing the variance. The implementation with
-this flag set to true is slower than when set to false.
+this flag set to :code:`true` is slower than when set to :code:`false`.
 The stable version requires the first order moment to be
 estimated and applied to the sample set before the second
 order central moment is calculated.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableStableNorm =
-    R"doc(If true, computes the mean first and subtracts the activations from it before computing the variance. The implementation with this flag set to true is slower than when set to false. The stable version requires the first order moment to be estimated and applied to the sample set before the second order central moment is calculated.)doc";
+    R"doc(If :code:`true`, computes the mean first and subtracts the activations from it before computing the variance. The implementation with this flag set to :code:`true` is slower than when set to :code:`false`. The stable version requires the first order moment to be estimated and applied to the sample set before the second order central moment is calculated.)doc";
 
 static const char *__doc_popart_SessionOptions_enableStochasticRounding =
-    R"doc(Enable stochastic rounding. PopART will set the Poplar engine option
-"target.deterministicWorkers" to "true" if this option is set and to
-"false" if it is not set. You can override this behaviour by adding a
-value for "target.deterministicWorkers" to SessionOptions::engineOptions.)doc";
+    R"doc(Enable stochastic rounding.
+
+PopART will set the Poplar engine option
+:code:`target.deterministicWorkers` to :code:`true` if this option is set and to
+:code:`false` if it is not set. Adding a value for "target.deterministicWorkers"
+to SessionOptions::engineOptions overrides this behaviour.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_enableStochasticRounding =
-    R"doc(Enable stochastic rounding. PopART will set the Poplar engine option "target.deterministicWorkers" to "true" if this option is set and to "false" if it is not set. You can override this behaviour by adding a value for "target.deterministicWorkers" to SessionOptions::engineOptions.)doc";
+    R"doc(Enable stochastic rounding. PopART will set the Poplar engine option :code:`target.deterministicWorkers` to :code:`true` if this option is set and to :code:`false` if it is not set. Adding a value for "target.deterministicWorkers" to SessionOptions::engineOptions overrides this behaviour. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_enableSupportedDataTypeCasting =
-    R"doc(If enabled, casts any tensor of unsupported data types to supported data
-types when lowering to Poplar
-Currently, this implies casting:
-INT64 -> INT32
-UINT64 -> UINT32
-The cast will error for incompatible data types and over/underflows, and
-inform on narrowing casts)doc";
+    R"doc(Enable casting to supported data types.
+If enabled (:code:`true`), casts any tensor of unsupported data types to
+supported data types when lowering to Poplar. Currently, this implies
+casting:
+   - INT64 -> INT32
+   - UINT64 -> UINT32
+The cast will throw an error for incompatible data types and
+over/underflows, and will warn about narrowing casts.
+
+Default: :code:`true` (enabled).)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_enableSupportedDataTypeCasting =
-        R"doc(If enabled, casts any tensor of unsupported data types to supported data types when lowering to Poplar Currently, this implies casting: INT64 -> INT32 UINT64 -> UINT32 The cast will error for incompatible data types and over/underflows, and inform on narrowing casts)doc";
+        R"doc(Enable casting to supported data types. If enabled (:code:`true`), casts any tensor of unsupported data types to supported data types when lowering to Poplar. Currently, this implies casting: - INT64 -> INT32 - UINT64 -> UINT32 The cast will throw an error for incompatible data types and over/underflows, and will warn about narrowing casts. Default: :code:`true` (enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_engineOptions =
     R"doc(Poplar engine options.)doc";
@@ -13843,15 +14034,18 @@ static const char *__singlelinedoc_popart_SessionOptions_engineOptions =
     R"doc(Poplar engine options.)doc";
 
 static const char *__doc_popart_SessionOptions_ensureFp32LossScaleTensor =
-    R"doc(Only compatible with models that have an fp16 loss scale tensor. When
-:code:`true` the loss scale tensor will be an fp32 tensor, and will be combined
+    R"doc(Ensure that the loss scale tensor is fp32 and that this is combined
 with fp16 activations as late as possible to produce the first fp16
-activation gradients. This allows the user to choose a loss scale value
+activation gradients. This makes it possible to choose a loss scale value
 greater than max(fp16). This is also recommended when automatic loss
-scaling is enabled.)doc";
+scaling is enabled.
+Only compatible with models that have an fp16 loss scale tensor.
+:code:`true` ensures that the loss scale tensor is fp32.
+
+Default: :code:`false`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_ensureFp32LossScaleTensor =
-    R"doc(Only compatible with models that have an fp16 loss scale tensor. When :code:`true` the loss scale tensor will be an fp32 tensor, and will be combined with fp16 activations as late as possible to produce the first fp16 activation gradients. This allows the user to choose a loss scale value greater than max(fp16). This is also recommended when automatic loss scaling is enabled.)doc";
+    R"doc(Ensure that the loss scale tensor is fp32 and that this is combined with fp16 activations as late as possible to produce the first fp16 activation gradients. This makes it possible to choose a loss scale value greater than max(fp16). This is also recommended when automatic loss scaling is enabled. Only compatible with models that have an fp16 loss scale tensor. :code:`true` ensures that the loss scale tensor is fp32. Default: :code:`false`.)doc";
 
 static const char *__doc_popart_SessionOptions_executionPhaseSettings =
     R"doc(Configuration settings for execution phases.)doc";
@@ -13861,59 +14055,69 @@ static const char
         R"doc(Configuration settings for execution phases.)doc";
 
 static const char *__doc_popart_SessionOptions_explicitPipeliningEnabled =
-    R"doc()doc";
+    R"doc(Enable explicit pipelining.
+Determined from values for :code:`enablePipelining`, :code:`useHostCopyOpsfault` and
+:code:`enableExplicitMainLoops`.)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_explicitPipeliningEnabled =
-        R"doc()doc";
+static const char *__singlelinedoc_popart_SessionOptions_explicitPipeliningEnabled =
+    R"doc(Enable explicit pipelining. Determined from values for :code:`enablePipelining`, :code:`useHostCopyOpsfault` and :code:`enableExplicitMainLoops`.)doc";
 
 static const char *__doc_popart_SessionOptions_explicitRecomputation =
-    R"doc(Enable explicit recomputation.)doc";
+    R"doc(Enable explicit recomputation.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_explicitRecomputation =
-    R"doc(Enable explicit recomputation.)doc";
+    R"doc(Enable explicit recomputation. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_exportPoplarComputationGraph =
-    R"doc(Export Poplar computation graph.)doc";
+    R"doc(Enable export of Poplar computational graph.
+Enabled when :code:`true`. Default: :code:`false`.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_exportPoplarComputationGraph =
-        R"doc(Export Poplar computation graph.)doc";
+        R"doc(Enable export of Poplar computational graph. Enabled when :code:`true`. Default: :code:`false`.)doc";
 
 static const char *__doc_popart_SessionOptions_exportPoplarVertexGraph =
-    R"doc(Export Poplar vertex graph.)doc";
+    R"doc(Enable export of Poplar vertex graph.
+Enabled when :code:`true`. Default: :code:`false`.)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_exportPoplarVertexGraph =
-        R"doc(Export Poplar vertex graph.)doc";
+static const char *__singlelinedoc_popart_SessionOptions_exportPoplarVertexGraph =
+    R"doc(Enable export of Poplar vertex graph. Enabled when :code:`true`. Default: :code:`false`.)doc";
 
 static const char *__doc_popart_SessionOptions_finalDotOp =
-    R"doc(See ``firstDotOp``.)doc";
+    R"doc(See firstDotOp.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_finalDotOp =
-    R"doc(See ``firstDotOp``.)doc";
+    R"doc(See firstDotOp.)doc";
 
 static const char *__doc_popart_SessionOptions_firstDotOp =
-    R"doc(The ops to write to the :code:`.dot` file will be a continuous interval
+    R"doc(The ops written to the :code:`.dot` file will be a part
 of the schedule, controlled by firstDotOp and finalDotOp. In particular,
-it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp)).)doc";
+it will be [max(0, firstDotOp), min(N ops in IR, finalDotOp)).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_firstDotOp =
-    R"doc(The ops to write to the :code:`.dot` file will be a continuous interval of the schedule, controlled by firstDotOp and finalDotOp. In particular, it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp)).)doc";
+    R"doc(The ops written to the :code:`.dot` file will be a part of the schedule, controlled by firstDotOp and finalDotOp. In particular, it will be [max(0, firstDotOp), min(N ops in IR, finalDotOp)).)doc";
 
 static const char *__doc_popart_SessionOptions_gclOptions =
-    R"doc(GCL options)doc";
+    R"doc(GCL options.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_gclOptions =
-    R"doc(GCL options)doc";
+    R"doc(GCL options.)doc";
 
 static const char *__doc_popart_SessionOptions_getAccumulationFactor =
-    R"doc(Helper method to check the accumulation factor settings for consistency
-if gradient accumulation is not enabled and the factor is set to >1.
-Returns the accumulation factor otherwise.)doc";
+    R"doc(Get the gradient accumulation factor.
+
+Throws an error if gradient accumulation is not enabled
+(:code:`enableGradientAccumulation` is :code:`false`) and the factor
+(:code:`accumulationFactor`) is set to >1.
+
+
+Returns:
+ The accumulation factor.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_getAccumulationFactor =
-    R"doc(Helper method to check the accumulation factor settings for consistency if gradient accumulation is not enabled and the factor is set to >1. Returns the accumulation factor otherwise.)doc";
+    R"doc(Get the gradient accumulation factor. Throws an error if gradient accumulation is not enabled (:code:`enableGradientAccumulation` is :code:`false`) and the factor (:code:`accumulationFactor`) is set to >1. Returns: The accumulation factor.)doc";
 
 static const char *__doc_popart_SessionOptions_getBufferingDepth = R"doc()doc";
 
@@ -13921,16 +14125,20 @@ static const char *__singlelinedoc_popart_SessionOptions_getBufferingDepth =
     R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_getGlobalReplicationFactor =
-    R"doc(Helper method to handle the different replication options.
-If enableDistributedReplicatedGraphs is true
-  return globalReplicationFactor
-if enableReplicatedGraphs
-  return replicatedGraphCount
-otherwise
-  return 1)doc";
+    R"doc(Get the global replication factor.
+
+
+
+Returns:
+ s
+ - If :code:`enableDistributedReplicatedGraphs` is :code:`true`, then return
+ :code:`globalReplicationFactor`.
+ - If :code:`enableReplicatedGraphs` is :code:`true`, then return
+ :code:`replicatedGraphCount`.
+ - otherwise return 1.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_getGlobalReplicationFactor =
-    R"doc(Helper method to handle the different replication options. If enableDistributedReplicatedGraphs is true return globalReplicationFactor if enableReplicatedGraphs return replicatedGraphCount otherwise return 1)doc";
+    R"doc(Get the global replication factor. Returns: s - If :code:`enableDistributedReplicatedGraphs` is :code:`true`, then return :code:`globalReplicationFactor`. - If :code:`enableReplicatedGraphs` is :code:`true`, then return :code:`replicatedGraphCount`. - otherwise return 1.)doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicaOffset =
     R"doc(The first replica index that this PopART instance is running.)doc";
@@ -13939,30 +14147,37 @@ static const char *__singlelinedoc_popart_SessionOptions_globalReplicaOffset =
     R"doc(The first replica index that this PopART instance is running.)doc";
 
 static const char *__doc_popart_SessionOptions_globalReplicationFactor =
-    R"doc(The total number of replicas in a multi instance replicated graph training
+    R"doc(The total number of replicas in a multi-instance, replicated-graph training
 session (this should be left as the default value (1) if distributed
 replicated graphs are disabled). This value includes local replication.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_globalReplicationFactor =
-    R"doc(The total number of replicas in a multi instance replicated graph training session (this should be left as the default value (1) if distributed replicated graphs are disabled). This value includes local replication.)doc";
+    R"doc(The total number of replicas in a multi-instance, replicated-graph training session (this should be left as the default value (1) if distributed replicated graphs are disabled). This value includes local replication.)doc";
 
 static const char *__doc_popart_SessionOptions_groupHostSync =
-    R"doc(Allows to group the streams from host at the beginning and the streams
-to host at the end, this trades off sum-liveness efficiency for cycle
-efficiency.)doc";
+    R"doc(Specify to group the streams from the host to the device at the beginning
+of the schedule, and the streams from the device to the host at the end of
+the schedule. This trades off memory usage for speed.
+
+When :code:`true`, tensors will stay live for longer.
+\note This setting has no effect when useHostCopyOps is enabled (:code:`true`).
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_groupHostSync =
-    R"doc(Allows to group the streams from host at the beginning and the streams to host at the end, this trades off sum-liveness efficiency for cycle efficiency.)doc";
+    R"doc(Specify to group the streams from the host to the device at the beginning of the schedule, and the streams from the device to the host at the end of the schedule. This trades off memory usage for speed. When :code:`true`, tensors will stay live for longer. \note This setting has no effect when useHostCopyOps is enabled (:code:`true`). Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_groupNormStridedChannelGrouping =
-    R"doc(Group norms have a fast math mode /which changes the implementation to run
-faster on IPU but as a consequence/ is incompatable with other
-implementations (i.e running trained weights on host). We default to
-correct and slightly slower but a user can opt into fast but incorrect.)doc";
+    R"doc(Enable fast math mode for group norms.
+
+Group norms have a fast math mode which changes the implementation to run
+faster on IPU but as a consequence is incompatable with other
+implementations (so for running trained weights on host).
+The default (:code:`false`) is to use the correct, but slightly slower mode.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_groupNormStridedChannelGrouping =
-        R"doc(Group norms have a fast math mode /which changes the implementation to run faster on IPU but as a consequence/ is incompatable with other implementations (i.e running trained weights on host). We default to correct and slightly slower but a user can opt into fast but incorrect.)doc";
+        R"doc(Enable fast math mode for group norms. Group norms have a fast math mode which changes the implementation to run faster on IPU but as a consequence is incompatable with other implementations (so for running trained weights on host). The default (:code:`false`) is to use the correct, but slightly slower mode.)doc";
 
 static const char *__doc_popart_SessionOptions_hardwareInstrumentations =
     R"doc()doc";
@@ -13972,27 +14187,33 @@ static const char
         R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_implicitPipeliningEnabled =
-    R"doc()doc";
+    R"doc(Enable implicit pipelining.
+Determined from values for :code:`enablePipelining`, :code:`useHostCopyOpsfault` and
+:code:`enableExplicitMainLoops`.)doc";
 
-static const char
-    *__singlelinedoc_popart_SessionOptions_implicitPipeliningEnabled =
-        R"doc()doc";
+static const char *__singlelinedoc_popart_SessionOptions_implicitPipeliningEnabled =
+    R"doc(Enable implicit pipelining. Determined from values for :code:`enablePipelining`, :code:`useHostCopyOpsfault` and :code:`enableExplicitMainLoops`.)doc";
 
 static const char *__doc_popart_SessionOptions_instrumentWithHardwareCycleCounter =
-    R"doc(Add instrumentation to your program to count the number of device cycles
-(of a single tile, on a single IPU) that your main program takes to
+    R"doc(Add instrumentation to the program to count the number of device cycles
+(of a single tile, on a single IPU) that the main program takes to
 execute. Expect this to have a small detrimental impact on performance.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_instrumentWithHardwareCycleCounter =
-        R"doc(Add instrumentation to your program to count the number of device cycles (of a single tile, on a single IPU) that your main program takes to execute. Expect this to have a small detrimental impact on performance.)doc";
+        R"doc(Add instrumentation to the program to count the number of device cycles (of a single tile, on a single IPU) that the main program takes to execute. Expect this to have a small detrimental impact on performance.)doc";
 
 static const char *__doc_popart_SessionOptions_kahnTieBreaker =
-    R"doc(The initial scheduling is done with Kahn's algorithm. When several Ops are
-free to be scheduled, this controls which method is used.)doc";
+    R"doc(Specify which method is used to control how ops are scheduled.
+
+The initial scheduling is done with Kahn's algorithm. When several ops are
+free to be scheduled, this controls which method is used.
+
+Options are described in the [Poprithms KahnTieBreaker
+enum](https://github.com/graphcore/poprithms/blob/sdk-release-2.4/poprithms/poprithms/include/poprithms/schedule/shift/kahndecider.hpp).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_kahnTieBreaker =
-    R"doc(The initial scheduling is done with Kahn's algorithm. When several Ops are free to be scheduled, this controls which method is used.)doc";
+    R"doc(Specify which method is used to control how ops are scheduled. The initial scheduling is done with Kahn's algorithm. When several ops are free to be scheduled, this controls which method is used. Options are described in the [Poprithms KahnTieBreaker enum](https://github.com/graphcore/poprithms/blob/sdk-release-2.4/poprithms/poprithms/include/poprithms/schedule/shift/kahndecider.hpp).)doc";
 
 static const char *__doc_popart_SessionOptions_logDir =
     R"doc(A directory for log traces to be written into.)doc";
@@ -14001,21 +14222,25 @@ static const char *__singlelinedoc_popart_SessionOptions_logDir =
     R"doc(A directory for log traces to be written into.)doc";
 
 static const char *__doc_popart_SessionOptions_looseThresholdAtPeak =
-    R"doc(The ``MergeVarUpdateType::AutoLoose`` VarUpdateOp merging algorithm has an
-absolute threshold defined by:
+    R"doc( Specify the threshold at peak used in the calculation of the absolute
+ threshold in the MergeVarUpdateType::AutoLoose VarUpdateOp merging
+ algorithm.
 
-``min(``#mergeVarUpdateMemThreshold, ``liveAtPeak`` - ``liveCurrently`` +
-``looseThresholdAtPeak``)
+  ```
+  min(mergeVarUpdateMemThreshold, liveAtPeak - liveCurrently +
+ looseThresholdAtPeak)
+```
+ where:
+  * ``liveAtPeak`` is an estimate of the maximum live memory of the
+    computation; and
+  * ``liveCurrently`` is an estimate of the live memory where the
+    threshold is being used to determine whether to schedule or postpone a
+    VarUpdateOp.
 
-where:
- * ``liveAtPeak`` is an estimate of the maximum live memory of the
-   computation; and
- * ``liveCurrently`` is an estimate of the live memory where the
-   threshold is being used to determine whether to schedule or postpone a
-   VarUpdateOp.)doc";
+ Default: 80000.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_looseThresholdAtPeak =
-    R"doc(The ``MergeVarUpdateType::AutoLoose`` VarUpdateOp merging algorithm has an absolute threshold defined by: ``min(``#mergeVarUpdateMemThreshold, ``liveAtPeak`` - ``liveCurrently`` + ``looseThresholdAtPeak``) where: * ``liveAtPeak`` is an estimate of the maximum live memory of the computation; and * ``liveCurrently`` is an estimate of the live memory where the threshold is being used to determine whether to schedule or postpone a VarUpdateOp.)doc";
+    R"doc(Specify the threshold at peak used in the calculation of the absolute threshold in the MergeVarUpdateType::AutoLoose VarUpdateOp merging algorithm. ``` min(mergeVarUpdateMemThreshold, liveAtPeak - liveCurrently + looseThresholdAtPeak) ``` where: * ``liveAtPeak`` is an estimate of the maximum live memory of the computation; and * ``liveCurrently`` is an estimate of the live memory where the threshold is being used to determine whether to schedule or postpone a VarUpdateOp. Default: 80000.)doc";
 
 static const char *__doc_popart_SessionOptions_lstmOptions =
     R"doc(Poplar LSTM options.)doc";
@@ -14023,34 +14248,43 @@ static const char *__doc_popart_SessionOptions_lstmOptions =
 static const char *__singlelinedoc_popart_SessionOptions_lstmOptions =
     R"doc(Poplar LSTM options.)doc";
 
-static const char *__doc_popart_SessionOptions_matmulOptions = R"doc()doc";
+static const char *__doc_popart_SessionOptions_matmulOptions =
+    R"doc(Poplar matmul options.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_matmulOptions =
-    R"doc()doc";
+    R"doc(Poplar matmul options.)doc";
 
 static const char *
     __doc_popart_SessionOptions_meanAccumulationAndReplicationReductionStrategy =
         R"doc(Specify when to divide by a mean reduction factor when
-accumulationAndReplicationReductionType is set to ReductionType::Mean.)doc";
+accumulationAndReplicationReductionType is set to ReductionType::Mean.
+
+Default: MeanReductionStrategy::Post.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_meanAccumulationAndReplicationReductionStrategy =
-        R"doc(Specify when to divide by a mean reduction factor when accumulationAndReplicationReductionType is set to ReductionType::Mean.)doc";
+        R"doc(Specify when to divide by a mean reduction factor when accumulationAndReplicationReductionType is set to ReductionType::Mean. Default: MeanReductionStrategy::Post.)doc";
 
 static const char *__doc_popart_SessionOptions_mergeVarUpdate =
     R"doc(Enable merging of VarUpdates into groups of VarUpdates, by flattening
-and concatenating variable tensors and updating tensors.)doc";
+and concatenating variable tensors and updating tensors.
+
+Default: MergeVarUpdateType::None (no merging).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_mergeVarUpdate =
-    R"doc(Enable merging of VarUpdates into groups of VarUpdates, by flattening and concatenating variable tensors and updating tensors.)doc";
+    R"doc(Enable merging of VarUpdates into groups of VarUpdates, by flattening and concatenating variable tensors and updating tensors. Default: MergeVarUpdateType::None (no merging).)doc";
 
 static const char *__doc_popart_SessionOptions_mergeVarUpdateMemThreshold =
-    R"doc(The ``MergeVarUpdateType::AutoLoose`` and ``MergeVarUpdateType::AutoTight``
+    R"doc(Specify the memory threshold for VarUpdateOp merging algorithms.
+
+The MergeVarUpdateType::AutoLoose and MergeVarUpdateType::AutoTight
 VarUpdateOp merging algorithms have a threshold on the total memory of
-variable tensors to merge for updating. Defined as total memory in bytes.)doc";
+variable tensors to merge for updating. Defined as total memory in bytes.
+
+Default: 1000000.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_mergeVarUpdateMemThreshold =
-    R"doc(The ``MergeVarUpdateType::AutoLoose`` and ``MergeVarUpdateType::AutoTight`` VarUpdateOp merging algorithms have a threshold on the total memory of variable tensors to merge for updating. Defined as total memory in bytes.)doc";
+    R"doc(Specify the memory threshold for VarUpdateOp merging algorithms. The MergeVarUpdateType::AutoLoose and MergeVarUpdateType::AutoTight VarUpdateOp merging algorithms have a threshold on the total memory of variable tensors to merge for updating. Defined as total memory in bytes. Default: 1000000.)doc";
 
 static const char *__doc_popart_SessionOptions_numIOTiles =
     R"doc(Number of IPU tiles dedicated to IO.)doc";
@@ -14067,41 +14301,51 @@ static const char *
         R"doc(Tensor location for optimizer state tensors.)doc";
 
 static const char *__doc_popart_SessionOptions_opxAliasChecking =
-    R"doc(Run Opx checks to verify IR tensor aliasing information
-corresponds to lowered Poplar tensor aliasing.)doc";
+    R"doc(Enable running Opx checks to verify that IR tensor aliasing information
+corresponds to the lowered Poplar tensor aliasing.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_opxAliasChecking =
-    R"doc(Run Opx checks to verify IR tensor aliasing information corresponds to lowered Poplar tensor aliasing.)doc";
+    R"doc(Enable running Opx checks to verify that IR tensor aliasing information corresponds to the lowered Poplar tensor aliasing. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_opxModifyChecking =
-    R"doc(Run Opx checks to verify IR tensor modification information
-corresponds to lowered Poplar tensor modifications.)doc";
+    R"doc(Enable running Opx checks to verify that IR tensor modification information
+corresponds to the lowered Poplar tensor modifications.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_opxModifyChecking =
-    R"doc(Run Opx checks to verify IR tensor modification information corresponds to lowered Poplar tensor modifications.)doc";
+    R"doc(Enable running Opx checks to verify that IR tensor modification information corresponds to the lowered Poplar tensor modifications. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_outlineSequenceBreakCost =
-    R"doc(The penalty applied to outlining potential sub-graphs if the sub-graph
-to be created breaks up a sequence of operations that are more efficient
-(for example for overlapping compute and exchange) when outlined together.
-Default value is set to ~10 * Op::getHighSubgraphValue().)doc";
+    R"doc(Specify the penalty applied to outlining potential sub-graphs if the
+sub-graph to be created breaks up a sequence of operations that are more
+efficient (for example for overlapping compute and exchange) when outlined
+together.
+
+Default: 10000.0f.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_outlineSequenceBreakCost =
-    R"doc(The penalty applied to outlining potential sub-graphs if the sub-graph to be created breaks up a sequence of operations that are more efficient (for example for overlapping compute and exchange) when outlined together. Default value is set to ~10 * Op::getHighSubgraphValue().)doc";
+    R"doc(Specify the penalty applied to outlining potential sub-graphs if the sub-graph to be created breaks up a sequence of operations that are more efficient (for example for overlapping compute and exchange) when outlined together. Default: 10000.0f.)doc";
 
 static const char *__doc_popart_SessionOptions_outlineThreshold =
-    R"doc(The incremental value that a sub-graph requires, relative to its nested
-sub-graphs (if any), to be eligible for outlining. A high threshold
-results in fewer sub-graphs being outlined, a negative value results in
-all being outlined. The gross value of a sub-graph is the sum of its
-constituent Ops' Op::getSubgraphValue() values. To disable outlining, it
-is better to set enableOutlining to false than to set this value to
-infinity. The default value of 1.0f results in all high value operations
-such as convolution being cached, but standalone low Value operations such
-as Relu will not be.)doc";
+    R"doc(Specify the incremental value that a sub-graph requires, relative to its
+nested sub-graphs (if any), to be eligible for outlining.
+
+A high threshold
+results in fewer sub-graphs being outlined, a negative value results in all
+being outlined. The gross value of a sub-graph is the sum of its
+constituent ops' Op::getSubgraphValue() values. To disable outlining, it is
+better to set enableOutlining to false than to set this value to infinity.
+The default value of 1.0f results in all high value operations such as
+convolution being cached, but standalone low value operations such as ReLU
+will not be.
+
+Default: 1.0f.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_outlineThreshold =
-    R"doc(The incremental value that a sub-graph requires, relative to its nested sub-graphs (if any), to be eligible for outlining. A high threshold results in fewer sub-graphs being outlined, a negative value results in all being outlined. The gross value of a sub-graph is the sum of its constituent Ops' Op::getSubgraphValue() values. To disable outlining, it is better to set enableOutlining to false than to set this value to infinity. The default value of 1.0f results in all high value operations such as convolution being cached, but standalone low Value operations such as Relu will not be.)doc";
+    R"doc(Specify the incremental value that a sub-graph requires, relative to its nested sub-graphs (if any), to be eligible for outlining. A high threshold results in fewer sub-graphs being outlined, a negative value results in all being outlined. The gross value of a sub-graph is the sum of its constituent ops' Op::getSubgraphValue() values. To disable outlining, it is better to set enableOutlining to false than to set this value to infinity. The default value of 1.0f results in all high value operations such as convolution being cached, but standalone low value operations such as ReLU will not be. Default: 1.0f.)doc";
 
 static const char *__doc_popart_SessionOptions_partialsTypeMatMuls =
     R"doc(Set the partials type globally for matmuls. Can be overridden individually
@@ -14112,51 +14356,59 @@ static const char *__singlelinedoc_popart_SessionOptions_partialsTypeMatMuls =
     R"doc(Set the partials type globally for matmuls. Can be overridden individually with Builder.setPartialsType(). Valid values are :code:`"float"` and :code:`"half"`. By default, this is not set, so no global partials type is imposed.)doc";
 
 static const char *__doc_popart_SessionOptions_prefetchBufferingDepthMap =
-    R"doc(\deprecated This session option name has been deprecated and will be
+    R"doc($.. deprecated::
+
+This session option name has been deprecated and will be
 removed in a future release. Please use the alias bufferingDepthMap
 instead.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_prefetchBufferingDepthMap =
-    R"doc(\deprecated This session option name has been deprecated and will be removed in a future release. Please use the alias bufferingDepthMap instead.)doc";
+    R"doc($.. deprecated:: This session option name has been deprecated and will be removed in a future release. Please use the alias bufferingDepthMap instead.)doc";
 
 static const char *__doc_popart_SessionOptions_rearrangeAnchorsOnHost =
-    R"doc(Before anchor tensors are streamed from device to host, they are not
+    R"doc(Enable rearrangement (in memory) of anchor tensors to be done on the host.
+
+Before anchor tensors are streamed from device to host, they are not
 necessarily arranged in memory as required when they are to be copied
 from host stream to host. This can be done on the device or on the host.
-Done on host by default to save memory, but often at the expense of
-cycles, especially for larger anchor tensors.)doc";
+
+Default: :code:`true` (Rearrangement done on host to save memory, but often at
+the expense of cycles, especially for larger anchor tensors.).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_rearrangeAnchorsOnHost =
-    R"doc(Before anchor tensors are streamed from device to host, they are not necessarily arranged in memory as required when they are to be copied from host stream to host. This can be done on the device or on the host. Done on host by default to save memory, but often at the expense of cycles, especially for larger anchor tensors.)doc";
+    R"doc(Enable rearrangement (in memory) of anchor tensors to be done on the host. Before anchor tensors are streamed from device to host, they are not necessarily arranged in memory as required when they are to be copied from host stream to host. This can be done on the device or on the host. Default: :code:`true` (Rearrangement done on host to save memory, but often at the expense of cycles, especially for larger anchor tensors.).)doc";
 
 static const char *__doc_popart_SessionOptions_rearrangeStreamsOnHost =
-    R"doc(Before stream tensors are streamed from host to device, they are not
+    R"doc(Enable rearrangement (in memory) of stream tensors to be done on the host.
+Before stream tensors are streamed from host to device, they are not
 necessarily arranged in memory as required when they are to be copied
 from host stream to device. This can be done on the device or on the host.
-Done on device by default.)doc";
+
+Default: :code:`false` (Rearrangement done on device).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_rearrangeStreamsOnHost =
-    R"doc(Before stream tensors are streamed from host to device, they are not necessarily arranged in memory as required when they are to be copied from host stream to device. This can be done on the device or on the host. Done on device by default.)doc";
+    R"doc(Enable rearrangement (in memory) of stream tensors to be done on the host. Before stream tensors are streamed from host to device, they are not necessarily arranged in memory as required when they are to be copied from host stream to device. This can be done on the device or on the host. Default: :code:`false` (Rearrangement done on device).)doc";
 
 static const char *__doc_popart_SessionOptions_replicatedCollectivesSettings =
-    R"doc(Control the behavior of different collective operations)doc";
+    R"doc(Control the behavior of different collective operations.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_replicatedCollectivesSettings =
-        R"doc(Control the behavior of different collective operations)doc";
+        R"doc(Control the behavior of different collective operations.)doc";
 
 static const char *__doc_popart_SessionOptions_replicatedGraphCount =
-    R"doc(If enableReplicatedGraphs is true, ``replicatedGraphCount`` will set the
-number of model replications. For example, if your model uses 1 IPU, a
-``replicatedGraphCount`` of 2 will use 2 IPUs. If your model is
+    R"doc(Specify the number of model replications.
+If ``enableReplicatedGraphs`:code:` is `true`, ``replicatedGraphCount`` will set
+the number of model replications. For example, if the model uses 1 IPU, a
+``replicatedGraphCount`` of 2 will use 2 IPUs. If the model is
 pipelined across 4 IPUs, a ``replicatedGraphCount`` of 4 will use 16 IPUs
-total. Therefore, the number of IPUs you request must be a multiple of
+in total. Therefore, the number of IPUs requested must be a multiple of
 ``replicatedGraphCount.`` If the training is done across multiple instances
-then the ``replicatedGraphCount`` is the number of replicas for this
-instance.)doc";
+of the program then the ``replicatedGraphCount`` is the number of replicas
+for this instance.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_replicatedGraphCount =
-    R"doc(If enableReplicatedGraphs is true, ``replicatedGraphCount`` will set the number of model replications. For example, if your model uses 1 IPU, a ``replicatedGraphCount`` of 2 will use 2 IPUs. If your model is pipelined across 4 IPUs, a ``replicatedGraphCount`` of 4 will use 16 IPUs total. Therefore, the number of IPUs you request must be a multiple of ``replicatedGraphCount.`` If the training is done across multiple instances then the ``replicatedGraphCount`` is the number of replicas for this instance.)doc";
+    R"doc(Specify the number of model replications. If ``enableReplicatedGraphs`:code:` is `true`, ``replicatedGraphCount`` will set the number of model replications. For example, if the model uses 1 IPU, a ``replicatedGraphCount`` of 2 will use 2 IPUs. If the model is pipelined across 4 IPUs, a ``replicatedGraphCount`` of 4 will use 16 IPUs in total. Therefore, the number of IPUs requested must be a multiple of ``replicatedGraphCount.`` If the training is done across multiple instances of the program then the ``replicatedGraphCount`` is the number of replicas for this instance.)doc";
 
 static const char *__doc_popart_SessionOptions_reportOptions =
     R"doc(Poplar reporting options.)doc";
@@ -14166,39 +14418,34 @@ static const char *__singlelinedoc_popart_SessionOptions_reportOptions =
 
 static const char
     *__doc_popart_SessionOptions_scheduleNonWeightUpdateGradientConsumersEarly =
-        R"doc(When ``shouldDelayVarUpdates`` is true, the other ops in the proximity of the
-delayed var updates may inherit the -inf schedule priority used to delay
-the var updates. This is undesirable for some ops that consume gradients,
-as we would like to consume (and thus be able to recycle the memory of)
-those gradients as soon as possible. Two examples are HistogramOps when
-doing automatic loss scaling, and the AccumulateOps that accumulate
-the gradients when doing gradient accumulation.
-
-If true, if ``shouldDelayVarUpdates`` is true, this option will cause the
-schedule priority of the above described ops to be re-overriden to +inf.)doc";
+        R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_scheduleNonWeightUpdateGradientConsumersEarly =
-        R"doc(When ``shouldDelayVarUpdates`` is true, the other ops in the proximity of the delayed var updates may inherit the -inf schedule priority used to delay the var updates. This is undesirable for some ops that consume gradients, as we would like to consume (and thus be able to recycle the memory of) those gradients as soon as possible. Two examples are HistogramOps when doing automatic loss scaling, and the AccumulateOps that accumulate the gradients when doing gradient accumulation. If true, if ``shouldDelayVarUpdates`` is true, this option will cause the schedule priority of the above described ops to be re-overriden to +inf.)doc";
+        R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_separateCallOpPdfs =
-    R"doc(When generating PDFs of IR graphs, create separate PDFs for each subgraph.)doc";
+    R"doc(Enable creation of separate PDFs for each subgraph when generating PDFs of
+IR graphs.
+Enabled when :code:`true`. Default: :code:`true`.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_separateCallOpPdfs =
-    R"doc(When generating PDFs of IR graphs, create separate PDFs for each subgraph.)doc";
+    R"doc(Enable creation of separate PDFs for each subgraph when generating PDFs of IR graphs. Enabled when :code:`true`. Default: :code:`true`.)doc";
 
-static const char *__doc_popart_SessionOptions_serializedPoprithmsShiftGraphsDir =
-    R"doc(PopART uses Poprithms for scheduling PopART graphs. The Poprithms graphs
-created for scheduling can be optionally serialised (written to file). The
-string below specified the directory to serialize Poprithms graphs to. If
-it is empty, then the graphs will not be serialised. The names of
-serialization files will be :code:`poprithms_shift_graph_i.json` for the lowest
-non-existing values of :code:`i`. The directory must already exist, PopART will
-not create it.)doc";
+static const char
+    *__doc_popart_SessionOptions_serializedPoprithmsShiftGraphsDir =
+        R"doc(The directory to serialize Poprithms graphs to.
+
+PopART uses Poprithms for scheduling PopART graphs. The Poprithms graphs
+created for scheduling can be optionally serialised (written to file). If
+:code:`serializedPoprithmsShiftGraphsDir` is empty, then the graphs will not be
+serialised. The names of serialization files will be
+:code:`poprithms_shift_graph_i.json` for the lowest non-existing values of :code:`i`.
+The directory must already exist, PopART will not create it.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_serializedPoprithmsShiftGraphsDir =
-        R"doc(PopART uses Poprithms for scheduling PopART graphs. The Poprithms graphs created for scheduling can be optionally serialised (written to file). The string below specified the directory to serialize Poprithms graphs to. If it is empty, then the graphs will not be serialised. The names of serialization files will be :code:`poprithms_shift_graph_i.json` for the lowest non-existing values of :code:`i`. The directory must already exist, PopART will not create it.)doc";
+        R"doc(The directory to serialize Poprithms graphs to. PopART uses Poprithms for scheduling PopART graphs. The Poprithms graphs created for scheduling can be optionally serialised (written to file). If :code:`serializedPoprithmsShiftGraphsDir` is empty, then the graphs will not be serialised. The names of serialization files will be :code:`poprithms_shift_graph_i.json` for the lowest non-existing values of :code:`i`. The directory must already exist, PopART will not create it.)doc";
 
 static const char *__doc_popart_SessionOptions_shouldDelayVarUpdates =
     R"doc()doc";
@@ -14207,25 +14454,35 @@ static const char *__singlelinedoc_popart_SessionOptions_shouldDelayVarUpdates =
     R"doc()doc";
 
 static const char *__doc_popart_SessionOptions_strictOpVersions =
-    R"doc(Strict op version checks will throw an error if the exact version of an op
-required for the models opset is not supported. Turning this check off
+    R"doc(Enable strict op version checks.
+
+Strict op version checks will throw an error if the exact version of an op
+required for the model opset is not supported. Turning this check off
 will cause PopART to fall back to the latest implementation of the op that
-is supported. Warning, turning off these checks may cause undefined
-behaviour.)doc";
+is supported.
+$.. warning::
+
+Turning off these checks may cause undefined behaviour.
+
+Default: :code:`true` (enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_strictOpVersions =
-    R"doc(Strict op version checks will throw an error if the exact version of an op required for the models opset is not supported. Turning this check off will cause PopART to fall back to the latest implementation of the op that is supported. Warning, turning off these checks may cause undefined behaviour.)doc";
+    R"doc(Enable strict op version checks. Strict op version checks will throw an error if the exact version of an op required for the model opset is not supported. Turning this check off will cause PopART to fall back to the latest implementation of the op that is supported. $.. warning:: Turning off these checks may cause undefined behaviour. Default: :code:`true` (enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_subgraphCopyingStrategy =
-    R"doc(This setting determines how copies for inputs and outputs for subgraphs
-are lowered. By setting this value to JustInTime you may save memory at
-the cost of fragmenting subgraphs into multiple Poplar functions. This
-may be particularly useful when a number of weight updates are outlined
-in one subgraph, as it may prevent multiple weight tensors from being
-live at the same time inside the subgraph.)doc";
+    R"doc(Specify how copies for inputs and outputs for subgraphs
+are lowered.
+
+Setting this value to SubgraphCopyingStrategy::JustInTime may save
+memory at the cost of fragmenting subgraphs into multiple Poplar functions.
+This may be particularly useful when a number of weight updates are
+outlined in one subgraph, as it may prevent multiple weight tensors from
+being live at the same time inside the subgraph.
+
+Default: SubgraphCopyingStrategy::OnEnterAndExit.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_subgraphCopyingStrategy =
-    R"doc(This setting determines how copies for inputs and outputs for subgraphs are lowered. By setting this value to JustInTime you may save memory at the cost of fragmenting subgraphs into multiple Poplar functions. This may be particularly useful when a number of weight updates are outlined in one subgraph, as it may prevent multiple weight tensors from being live at the same time inside the subgraph.)doc";
+    R"doc(Specify how copies for inputs and outputs for subgraphs are lowered. Setting this value to SubgraphCopyingStrategy::JustInTime may save memory at the cost of fragmenting subgraphs into multiple Poplar functions. This may be particularly useful when a number of weight updates are outlined in one subgraph, as it may prevent multiple weight tensors from being live at the same time inside the subgraph. Default: SubgraphCopyingStrategy::OnEnterAndExit.)doc";
 
 static const char *__doc_popart_SessionOptions_swapLimitScheduler =
     R"doc(The maximum number of improving steps allowed by the scheduling algorithm
@@ -14235,53 +14492,62 @@ static const char *__singlelinedoc_popart_SessionOptions_swapLimitScheduler =
     R"doc(The maximum number of improving steps allowed by the scheduling algorithm before a solution must be returned.)doc";
 
 static const char *__doc_popart_SessionOptions_syntheticDataMode =
-    R"doc(This options specifies whether to use real or synthetic data to initialize
-input tensors. Anything but the ``SyntheticDataMode::Off`` value disables
-streaming to/from host.)doc";
+    R"doc(Specify whether to use real or synthetic data to initialize
+input tensors.
+Streaming to/from the host is only enabled for SyntheticDataMode::Off which
+indicates that real data is being used.
+
+Default: SyntheticDataMode::Off.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_syntheticDataMode =
-    R"doc(This options specifies whether to use real or synthetic data to initialize input tensors. Anything but the ``SyntheticDataMode::Off`` value disables streaming to/from host.)doc";
+    R"doc(Specify whether to use real or synthetic data to initialize input tensors. Streaming to/from the host is only enabled for SyntheticDataMode::Off which indicates that real data is being used. Default: SyntheticDataMode::Off.)doc";
 
 static const char *__doc_popart_SessionOptions_tensorLocationSettingsOverride =
-    R"doc(Override tensor location for specific tensors by setting a TensorLocation
-for specific TensorId values.)doc";
+    R"doc(Override tensor location for specific tensors by setting tensor locations
+for specific tensor ID values.)doc";
 
 static const char
     *__singlelinedoc_popart_SessionOptions_tensorLocationSettingsOverride =
-        R"doc(Override tensor location for specific tensors by setting a TensorLocation for specific TensorId values.)doc";
+        R"doc(Override tensor location for specific tensors by setting tensor locations for specific tensor ID values.)doc";
 
 static const char *__doc_popart_SessionOptions_timeLimitScheduler =
-    R"doc(The maximum allowed time that can be spent searching for a good graph
-schedule before a solution must be returned.)doc";
+    R"doc(The maximum allowed time (in seconds) that can be spent searching for a
+good graph schedule before a solution must be returned.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_timeLimitScheduler =
-    R"doc(The maximum allowed time that can be spent searching for a good graph schedule before a solution must be returned.)doc";
+    R"doc(The maximum allowed time (in seconds) that can be spent searching for a good graph schedule before a solution must be returned.)doc";
 
 static const char
     *__doc_popart_SessionOptions_transitiveClosureOptimizationThreshold =
-        R"doc(The transitive closure optimization pass can significantly accelerate the
-scheduler. It does not in general affect the final schedule returned. It
+        R"doc(Specify the transitive closure optimization threshold.
+
+The transitive closure optimization pass can significantly accelerate the
+scheduler. It does not, in general, affect the final schedule returned. It
 is run between initialization with Kahn's algorithms and the shifting
 swaps. The transitive closure optimization pass is O(nOps^2) and so should
-not be used for extremely large Graphs. If a Graph is above the following
+not be used for extremely large graphs. If a graph is above this
 threshold, the transitive closure optimization pass is not run.)doc";
 
 static const char *
     __singlelinedoc_popart_SessionOptions_transitiveClosureOptimizationThreshold =
-        R"doc(The transitive closure optimization pass can significantly accelerate the scheduler. It does not in general affect the final schedule returned. It is run between initialization with Kahn's algorithms and the shifting swaps. The transitive closure optimization pass is O(nOps^2) and so should not be used for extremely large Graphs. If a Graph is above the following threshold, the transitive closure optimization pass is not run.)doc";
+        R"doc(Specify the transitive closure optimization threshold. The transitive closure optimization pass can significantly accelerate the scheduler. It does not, in general, affect the final schedule returned. It is run between initialization with Kahn's algorithms and the shifting swaps. The transitive closure optimization pass is O(nOps^2) and so should not be used for extremely large graphs. If a graph is above this threshold, the transitive closure optimization pass is not run.)doc";
 
 static const char *__doc_popart_SessionOptions_useHostCopyOps =
-    R"doc(Uses IR graph operations for data and anchor streams)doc";
+    R"doc(Enable use of IR graph operations for data and anchor streams.
+
+Default: :code:`false` (not enabled).)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_useHostCopyOps =
-    R"doc(Uses IR graph operations for data and anchor streams)doc";
+    R"doc(Enable use of IR graph operations for data and anchor streams. Default: :code:`false` (not enabled).)doc";
 
 static const char *__doc_popart_SessionOptions_virtualGraphMode =
-    R"doc(This option allows you to place ops on virtual graphs to achieve model
-parallelism - either manually using model annotations, or automatically.)doc";
+    R"doc(Specify how to place ops on virtual graphs to achieve model
+parallelism, either manually using model annotations, or automatically.
+
+Default: VirtualGraphMode::Off.)doc";
 
 static const char *__singlelinedoc_popart_SessionOptions_virtualGraphMode =
-    R"doc(This option allows you to place ops on virtual graphs to achieve model parallelism - either manually using model annotations, or automatically.)doc";
+    R"doc(Specify how to place ops on virtual graphs to achieve model parallelism, either manually using model annotations, or automatically. Default: VirtualGraphMode::Off.)doc";
 
 static const char *__doc_popart_SessionOptions_weightTensorLocationSettings =
     R"doc(Tensor location for weight tensors.)doc";
@@ -15033,18 +15299,19 @@ static const char *__singlelinedoc_popart_StepIOSplitter = R"doc()doc";
 
 static const char *__doc_popart_SubgraphCopyingStrategy =
     R"doc(Enum type that describes how copies for inputs and outputs for subgraphs
-are lowered. Currently this only affects subgraphs associated with CallOps.)doc";
+are lowered. Currently this only affects subgraphs associated with CallOp
+ops.)doc";
 
 static const char *__singlelinedoc_popart_SubgraphCopyingStrategy =
-    R"doc(Enum type that describes how copies for inputs and outputs for subgraphs are lowered. Currently this only affects subgraphs associated with CallOps.)doc";
+    R"doc(Enum type that describes how copies for inputs and outputs for subgraphs are lowered. Currently this only affects subgraphs associated with CallOp ops.)doc";
 
 static const char *__doc_popart_SubgraphCopyingStrategy_JustInTime =
     R"doc(Copy inputs just before they are consumed and copy outputs as soon as
-they are produced. With this strategy subgraphs may be lowered into
+they are produced. With this strategy, subgraphs may be lowered into
 multiple Poplar functions.)doc";
 
 static const char *__singlelinedoc_popart_SubgraphCopyingStrategy_JustInTime =
-    R"doc(Copy inputs just before they are consumed and copy outputs as soon as they are produced. With this strategy subgraphs may be lowered into multiple Poplar functions.)doc";
+    R"doc(Copy inputs just before they are consumed and copy outputs as soon as they are produced. With this strategy, subgraphs may be lowered into multiple Poplar functions.)doc";
 
 static const char *__doc_popart_SubgraphCopyingStrategy_N =
     R"doc(The number of ``SubgraphCopyingStrategy`` values.)doc";
@@ -15054,11 +15321,11 @@ static const char *__singlelinedoc_popart_SubgraphCopyingStrategy_N =
 
 static const char *__doc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
     R"doc(Copy all inputs before the start of the subgraph, copy all outputs after
-all ops in the subgraph. With this strategy subgraphs will always map
+all ops in the subgraph. With this strategy, subgraphs will always map
 to a single Poplar function.)doc";
 
 static const char *__singlelinedoc_popart_SubgraphCopyingStrategy_OnEnterAndExit =
-    R"doc(Copy all inputs before the start of the subgraph, copy all outputs after all ops in the subgraph. With this strategy subgraphs will always map to a single Poplar function.)doc";
+    R"doc(Copy all inputs before the start of the subgraph, copy all outputs after all ops in the subgraph. With this strategy, subgraphs will always map to a single Poplar function.)doc";
 
 static const char *__doc_popart_SyncPattern =
     R"doc(Controls synchronisation in multi-IPU systems.)doc";
@@ -15108,10 +15375,10 @@ static const char *__singlelinedoc_popart_SyntheticDataMode_Off =
     R"doc(Use real data.)doc";
 
 static const char *__doc_popart_SyntheticDataMode_RandomNormal =
-    R"doc(Input tensors are initialised with distribution ~N(0,1).)doc";
+    R"doc(Input tensors are initialised with a random normal distribution ~N(0,1).)doc";
 
 static const char *__singlelinedoc_popart_SyntheticDataMode_RandomNormal =
-    R"doc(Input tensors are initialised with distribution ~N(0,1).)doc";
+    R"doc(Input tensors are initialised with a random normal distribution ~N(0,1).)doc";
 
 static const char *__doc_popart_SyntheticDataMode_Zeros =
     R"doc(Input tensors are initialised to all zeros.)doc";
@@ -15218,6 +15485,13 @@ static const char *__doc_popart_TensorData_resetDataWithNonMatchingSize =
 
 static const char
     *__singlelinedoc_popart_TensorData_resetDataWithNonMatchingSize =
+        R"doc()doc";
+
+static const char *__doc_popart_TensorData_resetDataWithReplicaGrouping =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_TensorData_resetDataWithReplicaGrouping =
         R"doc()doc";
 
 static const char *__doc_popart_TensorData_setIsSyncedWithIPU =
@@ -15330,25 +15604,41 @@ static const char *__singlelinedoc_popart_TensorLocationSettings =
     R"doc(A structure containing user configuration for cache/offloading settings.)doc";
 
 static const char *__doc_popart_TensorLocationSettings_TensorLocationSettings =
-    R"doc()doc";
+    R"doc(Constructor.)doc";
 
 static const char
     *__singlelinedoc_popart_TensorLocationSettings_TensorLocationSettings =
-        R"doc()doc";
+        R"doc(Constructor.)doc";
 
 static const char
-    *__doc_popart_TensorLocationSettings_TensorLocationSettings_2 = R"doc()doc";
+    *__doc_popart_TensorLocationSettings_TensorLocationSettings_2 =
+        R"doc(Constructor.
+
+Args:
+ location_: The tensor location information.
+ minElementsForOffChip_: The minimum number of elements below which
+        offloading won't be considered.
+ minElementsForReplicatedTensorSharding_: The minimum number of
+        elements necessary for replicated tensor sharding.)doc";
 
 static const char
     *__singlelinedoc_popart_TensorLocationSettings_TensorLocationSettings_2 =
-        R"doc()doc";
+        R"doc(Constructor. Args: location_: The tensor location information. minElementsForOffChip_: The minimum number of elements below which offloading won't be considered. minElementsForReplicatedTensorSharding_: The minimum number of elements necessary for replicated tensor sharding.)doc";
 
 static const char
-    *__doc_popart_TensorLocationSettings_TensorLocationSettings_3 = R"doc()doc";
+    *__doc_popart_TensorLocationSettings_TensorLocationSettings_3 =
+        R"doc(Constructor.
+
+Args:
+ storage_: The tensor storage information.
+ minElementsForOffChip_: The minimum number of elements below which
+        offloading won't be considered.
+ minElementsForReplicatedTensorSharding_: The minimum number of
+        elements necessary for replicated tensor sharding.)doc";
 
 static const char
     *__singlelinedoc_popart_TensorLocationSettings_TensorLocationSettings_3 =
-        R"doc()doc";
+        R"doc(Constructor. Args: storage_: The tensor storage information. minElementsForOffChip_: The minimum number of elements below which offloading won't be considered. minElementsForReplicatedTensorSharding_: The minimum number of elements necessary for replicated tensor sharding.)doc";
 
 static const char *__doc_popart_TensorLocationSettings_location =
     R"doc(The default tensor location for this tensor type.)doc";
@@ -15357,20 +15647,20 @@ static const char *__singlelinedoc_popart_TensorLocationSettings_location =
     R"doc(The default tensor location for this tensor type.)doc";
 
 static const char *__doc_popart_TensorLocationSettings_minElementsForOffChip =
-    R"doc(A minimum number of elements below which offloading won't be considered.)doc";
+    R"doc(The minimum number of elements below which offloading won't be considered.)doc";
 
 static const char
     *__singlelinedoc_popart_TensorLocationSettings_minElementsForOffChip =
-        R"doc(A minimum number of elements below which offloading won't be considered.)doc";
+        R"doc(The minimum number of elements below which offloading won't be considered.)doc";
 
 static const char *
     __doc_popart_TensorLocationSettings_minElementsForReplicatedTensorSharding =
-        R"doc(A minimum number of elements below which replicated tensor sharding (RTS)
+        R"doc(A minimum number of elements below which replicated tensor sharding
 won't be considered.)doc";
 
 static const char *
     __singlelinedoc_popart_TensorLocationSettings_minElementsForReplicatedTensorSharding =
-        R"doc(A minimum number of elements below which replicated tensor sharding (RTS) won't be considered.)doc";
+        R"doc(A minimum number of elements below which replicated tensor sharding won't be considered.)doc";
 
 static const char *__doc_popart_TensorLocation_TensorLocation =
     R"doc(Equivalent to calling
@@ -16524,10 +16814,10 @@ static const char *__singlelinedoc_popart_VirtualGraphMode =
     R"doc(Enum type used to specify a virtual graph mode.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_Auto =
-    R"doc(Use :code:`autoVirtualGraph` transform.)doc";
+    R"doc(Use the AutoVirtualGraph transform.)doc";
 
 static const char *__singlelinedoc_popart_VirtualGraphMode_Auto =
-    R"doc(Use :code:`autoVirtualGraph` transform.)doc";
+    R"doc(Use the AutoVirtualGraph transform.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_ExecutionPhases =
     R"doc(Virtual graphs are tied to execution phases.)doc";
@@ -16536,16 +16826,16 @@ static const char *__singlelinedoc_popart_VirtualGraphMode_ExecutionPhases =
     R"doc(Virtual graphs are tied to execution phases.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_Manual =
-    R"doc(User must set the :code:`virtualGraph` attribute on all ops.)doc";
+    R"doc(User must set the popart::Op::virtualGraph attribute on all ops.)doc";
 
 static const char *__singlelinedoc_popart_VirtualGraphMode_Manual =
-    R"doc(User must set the :code:`virtualGraph` attribute on all ops.)doc";
+    R"doc(User must set the popart::Op::virtualGraph attribute on all ops.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_N =
-    R"doc(The number of ``VirtualGraphModes`` values.)doc";
+    R"doc(The number of ``VirtualGraphMode`` values.)doc";
 
 static const char *__singlelinedoc_popart_VirtualGraphMode_N =
-    R"doc(The number of ``VirtualGraphModes`` values.)doc";
+    R"doc(The number of ``VirtualGraphMode`` values.)doc";
 
 static const char *__doc_popart_VirtualGraphMode_Off =
     R"doc(Virtual graphs are not enabled.)doc";
@@ -17326,17 +17616,23 @@ static const char *__doc_popart_operator_lshift_22 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_22 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_23 = R"doc()doc";
+static const char *__doc_popart_operator_lshift_23 =
+    R"doc(Stream the value for VirtualGraphMode.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_23 = R"doc()doc";
+static const char *__singlelinedoc_popart_operator_lshift_23 =
+    R"doc(Stream the value for VirtualGraphMode.)doc";
 
-static const char *__doc_popart_operator_lshift_24 = R"doc()doc";
+static const char *__doc_popart_operator_lshift_24 =
+    R"doc(Stream the value for RecomputationType.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_24 = R"doc()doc";
+static const char *__singlelinedoc_popart_operator_lshift_24 =
+    R"doc(Stream the value for RecomputationType.)doc";
 
-static const char *__doc_popart_operator_lshift_25 = R"doc()doc";
+static const char *__doc_popart_operator_lshift_25 =
+    R"doc(Stream the value for TensorLocationSettings.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_25 = R"doc()doc";
+static const char *__singlelinedoc_popart_operator_lshift_25 =
+    R"doc(Stream the value for TensorLocationSettings.)doc";
 
 static const char *__doc_popart_operator_lshift_26 = R"doc()doc";
 
@@ -17627,6 +17923,12 @@ static const char *__doc_popart_popx_Devicex_d2hWeightBuffersToTensorData =
 static const char
     *__singlelinedoc_popart_popx_Devicex_d2hWeightBuffersToTensorData =
         R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_d2hWeightBuffersToTensors =
+    R"doc()doc";
+
+static const char *
+    __singlelinedoc_popart_popx_Devicex_d2hWeightBuffersToTensors = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_deinitializeH2dWeightBuffers =
     R"doc(Clears h2dWeightBuffers, effectively erasing all the
@@ -18282,6 +18584,11 @@ static const char *__doc_popart_reservedLoopIteratorPrefix = R"doc()doc";
 static const char *__singlelinedoc_popart_reservedLoopIteratorPrefix =
     R"doc()doc";
 
+static const char *__doc_popart_reservedLossScaleUpdateFactorId = R"doc()doc";
+
+static const char *__singlelinedoc_popart_reservedLossScaleUpdateFactorId =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedLossScalingPrefix = R"doc()doc";
 
 static const char *__singlelinedoc_popart_reservedLossScalingPrefix =
@@ -18543,17 +18850,23 @@ Returns:
 static const char *__singlelinedoc_popart_syncPatternToString =
     R"doc(Convert a valid SyncPattern enum value to a string. Throws an error if the input does not correspond to a valid SyncPattern value. Args: pattern: The input SyncPattern enum value to be converted to a string. Returns: The string version of a valid SyncPattern enum value.)doc";
 
-static const char *__doc_popart_toString = R"doc()doc";
+static const char *__doc_popart_toString =
+    R"doc(Return a string value for VirtualGraphMode.)doc";
 
-static const char *__singlelinedoc_popart_toString = R"doc()doc";
+static const char *__singlelinedoc_popart_toString =
+    R"doc(Return a string value for VirtualGraphMode.)doc";
 
-static const char *__doc_popart_toString_2 = R"doc()doc";
+static const char *__doc_popart_toString_2 =
+    R"doc(Return a string value for RecomputationType.)doc";
 
-static const char *__singlelinedoc_popart_toString_2 = R"doc()doc";
+static const char *__singlelinedoc_popart_toString_2 =
+    R"doc(Return a string value for RecomputationType.)doc";
 
-static const char *__doc_popart_toString_3 = R"doc()doc";
+static const char *__doc_popart_toString_3 =
+    R"doc(Return a string value for TensorLocationSettings.)doc";
 
-static const char *__singlelinedoc_popart_toString_3 = R"doc()doc";
+static const char *__singlelinedoc_popart_toString_3 =
+    R"doc(Return a string value for TensorLocationSettings.)doc";
 
 static const char *__doc_popart_toString_4 = R"doc()doc";
 

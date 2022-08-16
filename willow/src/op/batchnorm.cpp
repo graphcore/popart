@@ -30,9 +30,10 @@ BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
                          float _epsilon,
                          float _momentum,
                          int64_t _spatial,
+                         bool _unbiased_variance,
                          const Op::Settings &settings_)
     : Op(_opid, settings_), epsilon(_epsilon), momentum(_momentum),
-      spatial(_spatial) {
+      spatial(_spatial), unbiased_variance(_unbiased_variance) {
 
   // TODO : T6322 Use the is_training attribute of Version 6
 }
@@ -105,6 +106,7 @@ void BatchNormOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("epsilon", epsilon);
   os.appendAttribute("momentum", momentum);
   os.appendAttribute("spatial", spatial);
+  os.appendAttribute("unbiased_variance", unbiased_variance);
 }
 
 void BatchNormOp::validateInput(const TensorInfo &inputInfo,
@@ -230,7 +232,44 @@ static OpCreator<BatchNormOp> batchNormOpCreator(
           info.attributes.getAttribute<Attributes::Int>("spatial", 1);
 
       return std::unique_ptr<Op>(new BatchNormOp(
-          info.opid, epsilon, momentum, spatial, info.settings));
+          info.opid, epsilon, momentum, spatial, false, info.settings));
+    },
+    true);
+
+} // namespace
+
+namespace {
+
+static OpDefinition GCbatchNormOpDef(
+    {OpDefinition::Inputs({
+         {"X", T},
+         {"scale", T},
+         {"B", T},
+         {"mean", T},
+         {"var", T},
+     }),
+     OpDefinition::Outputs({{"Y", T},
+                            {"mean", T},
+                            {"var", T},
+                            {"saved_mean", T},
+                            {"saved_var", T}}),
+     OpDefinition::Attributes({{"epsilon", {"*"}}, {"momentum", {"*"}}})});
+
+static OpCreator<BatchNormOp> GCbatchNormOpCreator(
+    OpDefinitions({
+        {Onnx::CustomOperators::BatchNormalization_1, GCbatchNormOpDef},
+    }),
+    [](const OpCreatorInfo &info) {
+      // default epsilon is 10**(-5)
+      float epsilon =
+          info.attributes.getAttribute<Attributes::Float>("epsilon", 1e-5f);
+      float momentum =
+          info.attributes.getAttribute<Attributes::Float>("momentum", 0.9f);
+      int64_t spatial =
+          info.attributes.getAttribute<Attributes::Int>("spatial", 1);
+
+      return std::unique_ptr<Op>(new BatchNormOp(
+          info.opid, epsilon, momentum, spatial, true, info.settings));
     },
     true);
 

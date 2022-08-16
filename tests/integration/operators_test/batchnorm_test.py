@@ -1281,3 +1281,56 @@ def test_batchnorm_shapeinference():
         # This tests the shape inference has run
         for a, b in zip([o_y, o_mean, o_var, o_smean, o_svar], shapes):
             assert anchors[a].shape == b
+
+
+def test_batchnorm_train_fp32var_torch_version(op_tester):
+    """Test using the torch version of the operator (Uses N-1 for estimated var)"""
+    # create test data
+    d1 = np.random.rand(1, 3, 2).astype(np.float32) * 100
+    scale = np.random.rand(3).astype(np.float32)
+    b = np.random.rand(3).astype(np.float32)
+    mean = np.zeros(3).astype(np.float32)
+    var = np.ones(3).astype(np.float32)
+    epsilon = 1e-05
+
+    # We verify that the estimated variance is unbiased (ie. it uses the sample size N-1 like Pytorch)
+    # By setting momentum = 0 in Popart, we can get running_var = current_var (= estimated variance)
+    # Formula: running_var = input_var * momentum + current_var * (1 - momentum)
+    # https://github.com/onnx/onnx/blob/main/docs/Operators.md#BatchNormalization
+    popart_momentum = 0
+    # Pytorch uses the following update
+    # Formula: running_var[t] = (1 - momentum) * running_var[t-1] + momentum * V[t]
+    # where V[t] is the current estimated variance
+    # https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
+    # Hence, we set momentum = 1 to get running_var = V[t] in Pytorch.
+    pytorch_momentum = 1
+    # By setting the optional outputs, the batchnormalization computes the running statistics ("training" mode)
+    num_output = 5
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        iScale = builder.addInitializedInputTensor(scale)
+        iB = builder.addInitializedInputTensor(b)
+        iMean = builder.addInitializedInputTensor(mean)
+        iVar = builder.addInitializedInputTensor(var)
+        o_y, _, running_var, _, _ = builder.aiGraphcore.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], num_output, epsilon, popart_momentum
+        )
+        builder.addOutputTensor(running_var)
+        builder.addOutputTensor(o_y)
+        return [o_y, running_var]
+
+    def reference(_):
+        bn_ref = torch.nn.BatchNorm1d(
+            num_features=3, eps=epsilon, momentum=pytorch_momentum
+        )
+        bn_ref.weight = torch.nn.Parameter(torch.tensor(scale))
+        bn_ref.bias = torch.nn.Parameter(torch.tensor(b))
+        y_ref = bn_ref(torch.tensor(d1))
+
+        print(torch.var(torch.tensor(d1), dim=2))
+
+        return [y_ref, bn_ref.running_var]
+
+    op_tester.atol = 1e-05
+    op_tester.run(init_builder, reference, "infer")

@@ -47,7 +47,8 @@ BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
   verifyOp<BatchNormOp>(op,
                         {Onnx::Operators::BatchNormalization_6,
                          Onnx::Operators::BatchNormalization_7,
-                         Onnx::Operators::BatchNormalization_9});
+                         Onnx::Operators::BatchNormalization_9,
+                         Onnx::CustomOperators::BatchNormalization_1});
 }
 
 // Not clear to me if batchNormalise is meant update the mean/var then how can
@@ -174,10 +175,11 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
                           snap::Tensor &b,
                           snap::Tensor &mean,
                           snap::Tensor &var) const {
-  // OK. This is found more by trial and error. It appears that pytorch, is
-  // using an unbiased running variance But the other question is what should we
-  // do for onnx that does not state if the running_variance is biased or
-  // unbiased. The ONNX calculation for running_xxx is different than pyTorch
+  // ONNX specifies that it is using the biased version of running variance
+  // (population size is N). However, Pytorch is using an unbiased running
+  // variance (population size is N-1). Therefore, this has been parameterised
+  // by the `unbiased_variance` attribute in PopART so that PopTorch can
+  // specify the unbiased version.
   GrowSpatialOutput result;
 
   // Using the attribute names as per the onnx spec.
@@ -220,21 +222,18 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
       // batch normalise
       auto y = batchNormalise(prog, x, scale, b, batchMean, invSd);
 
-      // convert updated inverse standard deviation back to variance.
-
-      /*
-      // Left this code in for now which computes the variance used in pytorch
-      {
-        // First we have to convert the invSd to the unbiased version
+      if (op.useUnbiasedVariance()) {
+        // We have to convert the invSd to the unbiased version
         const auto numElements = x.numElements() / x.dim(1);
-        invSd = popops::map(graph().getPoplarGraph(),
-                                  pe::Mul(pe::_1,
-      pe::Sqrt(pe::Divide(pe::Const(numElements -1),pe::Const(numElements)))),
-                                  {invSd},
-                                  prog,
-                                  idStr() + "/unbiasedInvSd");
+        invSd                  = snap::popops::map(
+            graph(),
+            pe::Mul(pe::_1,
+                    pe::Sqrt(pe::Divide(pe::Const(numElements - 1),
+                                        pe::Const(numElements)))),
+            {invSd},
+            prog,
+            debugContext("unbiasedInvSd"));
       }
-      */
 
       // Ensure batch mean is the same type as mean so that running mean can
       // be calculated
@@ -250,7 +249,6 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
       // Then convert the invSd to the variance
       auto batchVar =
           convertInvSdToVar(prog, invSd, epsilon, var.elementType());
-
       // Calculate the running mean
       auto runningMean = snap::popops::map(
           graph(),
@@ -260,7 +258,7 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
           prog,
           debugContext("runningMean"));
 
-      // Calculate the running variance using the unbiased results
+      // Calculate the running variance
       auto runningVar = snap::popops::map(
           graph(),
           pe::Add(pe::Mul(pe::Sub(pe::Const(1), pe::Const(momentum)), pe::_2),
@@ -464,7 +462,8 @@ namespace {
 OpxCreator<BatchNormOpx>
     batchNormOpxCreator({Onnx::Operators::BatchNormalization_6,
                          Onnx::Operators::BatchNormalization_7,
-                         Onnx::Operators::BatchNormalization_9});
+                         Onnx::Operators::BatchNormalization_9,
+                         Onnx::CustomOperators::BatchNormalization_1});
 OpxCreator<BatchNormGradOpx>
     batchNormGradOpxCreator(Onnx::GradOperators::BatchNormalizationGrad);
 } // namespace

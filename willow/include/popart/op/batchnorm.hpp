@@ -22,6 +22,7 @@ public:
               float _epsilon,
               float _momentum,
               int64_t _spatial,
+              bool _unbiased_variance,
               const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const final;
@@ -48,6 +49,7 @@ public:
   float getEpsilon() const { return epsilon; }
   float getMomentum() const { return momentum; }
   int64_t getSpatial() const { return spatial; }
+  bool useUnbiasedVariance() const { return unbiased_variance; }
 
   bool isTraining() const {
     (void)isTest;
@@ -66,6 +68,7 @@ private:
   float epsilon;
   float momentum;
   int64_t spatial;
+  bool unbiased_variance;
 };
 
 class BatchNormGradOp : public Op {

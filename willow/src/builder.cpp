@@ -190,6 +190,32 @@ TensorId AiGraphcoreOpset1::copyvarupdate(const std::vector<TensorId> &args,
   return outputs.at(0);
 }
 
+std::vector<TensorId> AiGraphcoreOpset1::batchnormalization(
+    const std::vector<TensorId> &args,
+    unsigned num_outputs,
+    float epsilon,
+    float momentum,
+    const popart::DebugContext &debugContext) {
+  std::map<std::string, popart::any> attributes;
+  if (epsilon != 1e-05f) {
+    attributes["epsilon"] = epsilon;
+  }
+  if (momentum != 0.9f) {
+    attributes["momentum"] = momentum;
+  }
+  attributes["unbiased_variance"] = 0;
+  BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
+  attributes.insert({sDebugInfoId, di.getId()});
+  auto outputs = impl->op(Onnx::CustomOperators::BatchNormalization_1,
+                          getOpsetVersion(),
+                          args,
+                          num_outputs,
+                          attributes,
+                          {di});
+  di.setOutputs(outputs);
+  return outputs;
+}
+
 std::vector<TensorId>
 AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
                                       int64_t num_groups,

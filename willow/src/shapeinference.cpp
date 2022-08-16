@@ -241,6 +241,10 @@ auto tensorRemapShapeInferenceFun = [](popart::ShapeInferenceContext &ctx) {
 // We register the batchnorm shape inference functions via method (2) to ensure
 // we have internal examples of this second code path.
 static popart::RegisterShapeInferenceFunction
+    batchnormRegister1(popart::Onnx::CustomOperators::BatchNormalization_1,
+                       batchnormShapeInferenceFun);
+
+static popart::RegisterShapeInferenceFunction
     batchnormRegister9(popart::Onnx::Operators::BatchNormalization_9,
                        batchnormShapeInferenceFun);
 

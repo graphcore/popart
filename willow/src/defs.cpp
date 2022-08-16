@@ -704,6 +704,7 @@ void SwishShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+extern size_t dbg_count_check_BatchNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
@@ -742,6 +743,39 @@ extern size_t dbg_count_check_BitwiseXor_AiGraphcore_ver1;
 extern size_t dbg_count_check_BitwiseXnor_AiGraphcore_ver1;
 extern size_t dbg_count_check_CopyVarUpdate_AiGraphcore_ver1;
 extern size_t dbg_count_check_Swish_AiGraphcore_ver1;
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+
+    BatchNormalization,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc("Unbiased batch normalization.")
+        .Input(0, "x", "Input tensor", "T")
+        .Input(1, "scale", "Scale", "T")
+        .Input(2, "b", "Bias", "T")
+        .Input(3, "mean", "Mean", "T")
+        .Input(4, "var", "Variance", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .Output(1, "Mean", "The mean after GroupNormalization operator", "T")
+        .Output(2, "Var", "The variance after GroupNormalization operator", "T")
+        .Output(3,
+                "SavedMean",
+                "The variance after GroupNormalization operator",
+                "T")
+        .Output(4,
+                "SavedVar",
+                "The variance after GroupNormalization operator",
+                "T")
+        .TypeConstraint("T",
+                        {"tensor(float)", "tensor(float16)"},
+                        "Constrain input and output types to float tensors.")
+        .Attr("num_outputs", "The number of groups", AttributeProto::INT, false)
+        .Attr("epsilon", "Epsilon", AttributeProto::FLOAT, 1e-5f)
+        .Attr("momentum", "Momentum", AttributeProto::FLOAT, 0.9f)
+        .Attr("unbiased_variance", "", AttributeProto::INT, false))
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of "
@@ -1870,6 +1904,10 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, BatchNormalization)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

@@ -150,6 +150,7 @@ const static AiGraphcoreOpIdV1 Atan2_1("Atan2", 2, 1);
 const static AiGraphcoreOpIdV1 Atan2Inplace("Atan2Inplace");
 const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
 const static AiGraphcoreOpIdV1 AutoLossScaleProxy("AutoLossScaleProxy", 1, 1);
+const static AiGraphcoreOpIdV1 BatchNormalization_1("BatchNormalization", 5, 5);
 const static AiGraphcoreOpIdV1 Call_1("Call");
 const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");
 const static AiGraphcoreOpIdV1 ClipInplace("ClipInplace");
@@ -313,6 +314,8 @@ namespace OpSet1 {
 const static OperatorIdentifier Atan2 = CustomOperators::Atan2_1;
 const static OperatorIdentifier AutoLossScaleProxy =
     CustomOperators::AutoLossScaleProxy;
+const static OperatorIdentifier BatchNormalization =
+    CustomOperators::BatchNormalization_1;
 const static OperatorIdentifier BitwiseAnd    = CustomOperators::BitwiseAnd;
 const static OperatorIdentifier BitwiseNot    = CustomOperators::BitwiseNot;
 const static OperatorIdentifier BitwiseOr     = CustomOperators::BitwiseOr;
