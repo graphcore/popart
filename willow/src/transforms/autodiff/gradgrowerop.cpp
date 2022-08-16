@@ -57,7 +57,7 @@ GradGrowerOp::growGradOps(Graph &bwdGraph,
     Op *gradOp    = upop.get();
     OpId gradOpId = bwdGraph.moveIntoGraph(std::move(upop));
 
-    // Reset priority, since fwd priority should not influence bwd priority
+    // Reset priority, since fwd priority should not influence bwd priority.
     //
     // TODO: Uncomment this. This prevented explicit priorities on certain
     // gradient ops being set which was necessary as a short term fix for

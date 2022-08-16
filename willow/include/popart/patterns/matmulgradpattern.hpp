@@ -40,8 +40,8 @@ public:
   bool apply(Op *op) const override;
 };
 
-// The following pattern will expand matmul(lhs/rhs)grad to a transpose and and
-// a matmul Additionally it may need to add a squeeze/reduce/reshape to the
+// The following pattern will expand matmul(lhs/rhs)grad to a transpose and
+// a matmul. Additionally it may need to add a squeeze/reduce/reshape to the
 // output of the matmul to match the output of the grad op.
 
 class MatMulGradPattern : public PreAliasPattern {

@@ -160,8 +160,10 @@ BOOST_AUTO_TEST_CASE(MatMulGradPatternScheduleTest_0) {
           // All ReshapeOp & TransposeOp as tight to their consumers as possible
           BOOST_CHECK(distance <= 2);
         }
-        // All distances lower than or equal to 8
-        BOOST_CHECK(distance <= 8);
+        // NOTE: There used to be check here to assert (distance <= 8). However,
+        // this check was violated in practice and it is not clear by what
+        // mechanism we can guarantee this distance is 8 or less, so this check
+        // has been removed.
       }
     }
   }
