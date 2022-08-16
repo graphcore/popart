@@ -266,6 +266,7 @@ SGD2Decompose::nesterovGradUpdate(Graph &graph,
         Onnx::AiOnnx::OpSet6::Mul,
         Op::Settings(
             graph, combo->name() + "_nesterov_0", combo->settings.debugInfoId));
+    transferBaseProperties(combo, mulOp);
     mulOp->connectInTensor(MulOp::getArg0InIndex(),
                            combo->inId(SGD2ComboOp::getDpsf1InIndex()));
     mulOp->connectInTensor(MulOp::getArg1InIndex(),

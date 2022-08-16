@@ -368,6 +368,7 @@ bool SGD1Decompose::apply(Op *op) const {
                                 Op::Settings(graph,
                                              combo->name() + "_nesterov_0",
                                              combo->settings.debugInfoId));
+      transferBaseProperties(combo, mulOp);
       mulOp->connectInTensor(MulOp::getArg0InIndex(),
                              combo->inId(SGD1ComboOp::getDpsf1InIndex()));
       mulOp->connectInTensor(MulOp::getArg1InIndex(),
