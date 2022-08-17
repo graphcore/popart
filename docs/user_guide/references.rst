@@ -8,6 +8,8 @@ Documentation
 
 * The :doc:`ipu-programmers-guide:index` provides an introduction to the IPU architecture, programming model and tools available.
 
+* The :doc:`popart-python-api:index` and :doc:`popart-cpp-api:index` for details of the PopART API.
+
 * The :doc:`popxl:index` for details of how to use PopXL to give you more flexibility and control over describing and executing your models.
 
 * `Technical notes <https://docs.graphcore.ai/en/latest/software.html#popart>`_ covering a range of topics for optimising models for the IPU.

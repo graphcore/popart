@@ -220,8 +220,12 @@ set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
 
 set(SUPPORTED_POPART_OPS_GEN_FILE_NAME popart_supported_ops_gen-${VERSION}-${SNAPSHOT}.rst)
 set(SUPPORTED_POPXL_OPS_GEN_FILE_NAME popxl_supported_ops_gen-${VERSION}-${SNAPSHOT}.rst)
-set(POPART_USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
-set(POPART_USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
+set(USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
+set(USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
+set(PYTHON_API_PDF_NAME popart-python-api-${VERSION}-${SNAPSHOT}.pdf)
+set(PYTHON_API_HTML_NAME popart-python-api-html-${VERSION}-${SNAPSHOT}.zip)
+set(CPP_API_PDF_NAME popart-cpp-api-${VERSION}-${SNAPSHOT}.pdf)
+set(CPP_API_HTML_NAME popart-cpp-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
 set(POPXL_USER_GUIDE_PDF_NAME popxl-user-guide-${VERSION}-${SNAPSHOT}.pdf)
 set(POPXL_USER_GUIDE_HTML_NAME popxl-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
@@ -239,8 +243,12 @@ add_custom_target(package_and_move
   COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${SUPPORTED_POPART_OPS_GEN_FILE_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${SUPPORTED_POPXL_OPS_GEN_FILE_NAME} ${POPART_PKG_DIR}"
-  COMMAND bash -c "mv ${POPART_USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
-  COMMAND bash -c "mv ${POPART_USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${POPART_PKG_DIR}"
+  COMMAND bash -c "mv ${CPP_API_PDF_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${POPXL_USER_GUIDE_PDF_NAME} ${POPART_PKG_DIR}"
   COMMAND bash -c "mv ${POPXL_USER_GUIDE_HTML_NAME} ${POPART_PKG_DIR}"
   )
@@ -269,11 +277,27 @@ if(BUILD_DOCS)
                              "    type: rst\n")
 
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
-                             "    file: ${POPART_USER_GUIDE_PDF_NAME}\n"
+                             "    file: ${USER_GUIDE_PDF_NAME}\n"
                              "    type: pdf\n")
 
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
-                             "    file: ${POPART_USER_GUIDE_HTML_NAME}\n"
+                             "    file: ${USER_GUIDE_HTML_NAME}\n"
+                             "    type: html_zip\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime Python API (PDF)\n"
+                             "    file: ${PYTHON_API_PDF_NAME}\n"
+                             "    type: pdf\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime Python API (HTML)\n"
+                             "    file: ${PYTHON_API_HTML_NAME}\n"
+                             "    type: html_zip\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime C++ API (PDF)\n"
+                             "    file: ${CPP_API_PDF_NAME}\n"
+                             "    type: pdf\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime C++ API (HTML)\n"
+                             "    file: ${CPP_API_HTML_NAME}\n"
                              "    type: html_zip\n")
 
   string(APPEND PKG_ELEMENTS "  - name: PopXL user guide (PDF)\n"
