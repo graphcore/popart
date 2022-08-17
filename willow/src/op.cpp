@@ -50,6 +50,7 @@
 #include "popart/patterns/pattern.hpp"
 #include "popart/patterns/patterns.hpp"
 #include "popart/pointercomparators.hpp"
+#include "popart/replicagrouping.hpp"
 #include "popart/scope.hpp"
 #include "popart/subgraph/subgraphnames.hpp"
 #include "popart/tensordebuginfo.hpp"
@@ -1448,6 +1449,12 @@ ReplicatedTensorShardingIndices Op::getReplicatedTensorShardingIndices() const {
 void Op::configureForReplicatedTensorSharding(
     ReplicatedTensorShardingIndices indices,
     CommGroup shardingDomain) {
+  setup();
+}
+
+void Op::configureForReplicatedTensorSharding(
+    ReplicatedTensorShardingIndices indices,
+    const ReplicaGrouping &grouping) {
   setup();
 }
 

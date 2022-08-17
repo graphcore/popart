@@ -20,10 +20,12 @@
 #include "popart/logging.hpp"
 #include "popart/names.hpp"
 #include "popart/op.hpp"
+#include "popart/replicagrouping.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/tensorlocation.hpp"
+#include "popart/util/expressionchecking.hpp"
 
 namespace popart {
 struct OperatorIdentifier;
@@ -31,15 +33,21 @@ struct OperatorIdentifier;
 CollectivesBaseOp::CollectivesBaseOp(const OperatorIdentifier &_opid,
                                      CommGroup group,
                                      const Op::Settings &settings_)
-    : Op(_opid, settings_), group(group) {}
+    : Op(_opid, settings_),
+      grouping_(group.toReplicaGrouping(
+          getIr().getSessionOptions().getGlobalReplicationFactor())) {}
+
+CollectivesBaseOp::CollectivesBaseOp(const OperatorIdentifier &_opid,
+                                     const ReplicaGrouping &grouping,
+                                     const Op::Settings &settings_)
+    : Op(_opid, settings_), grouping_(grouping) {}
 
 void CollectivesBaseOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   Op::appendOutlineAttributes(os);
-  os.appendAttribute(
-      sCollectiveCommGroup,
-      std::vector<int64_t>{
-          static_cast<std::underlying_type_t<CommGroupType>>(group.type),
-          group.replicaGroupSize});
+  os.appendAttribute(sCollectiveReplicaGrouping,
+                     std::vector<int64_t>{getReplicaGrouping().getNumReplicas(),
+                                          getReplicaGrouping().getStride(),
+                                          getReplicaGrouping().getGroupSize()});
 }
 
 bool CollectivesBaseOp::hasCorrespondingLinkedIndexTensor(Tensor *t) {
@@ -75,20 +83,16 @@ bool CollectivesBaseOp::isCollectiveLinkedIndexTensor(Tensor *t) const {
   return false;
 }
 
+void CollectivesBaseOp::setReplicaGrouping(const ReplicaGrouping &grouping) {
+  grouping_ = grouping;
+}
+
+const ReplicaGrouping &CollectivesBaseOp::getReplicaGrouping() const {
+  return grouping_;
+}
+
 int64_t CollectivesBaseOp::getCommSize() const {
-  auto shardingDomain = getGCLCommGroup();
-  auto replicationFactor =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  if (shardingDomain.replicaGroupSize > 0) {
-    if (shardingDomain.type == CommGroupType::Consecutive ||
-        shardingDomain.type == CommGroupType::Orthogonal) {
-      return shardingDomain.replicaGroupSize;
-    }
-  }
-  if (shardingDomain.type == CommGroupType::None) {
-    return 1;
-  }
-  return replicationFactor;
+  return grouping_.getGroupSize();
 }
 
 MultiCollectiveBaseOp::MultiCollectiveBaseOp(
@@ -99,6 +103,18 @@ MultiCollectiveBaseOp::MultiCollectiveBaseOp(
     std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet_,
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
     : CollectivesBaseOp(_opid, group, settings_),
+      outInfoFromBaseOps(outInfoFromBaseOps_),
+      inputVirtualGraphIdAndTileSet(inputVirtualGraphIdAndTileSet_),
+      outputVirtualGraphIdAndTileSet(outputVirtualGraphIdAndTileSet_) {}
+
+MultiCollectiveBaseOp::MultiCollectiveBaseOp(
+    const OperatorIdentifier &_opid,
+    const ReplicaGrouping &grouping,
+    const Op::Settings &settings_,
+    const std::vector<TensorInfo> &outInfoFromBaseOps_,
+    const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet_,
+    const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet_)
+    : CollectivesBaseOp(_opid, grouping, settings_),
       outInfoFromBaseOps(outInfoFromBaseOps_),
       inputVirtualGraphIdAndTileSet(inputVirtualGraphIdAndTileSet_),
       outputVirtualGraphIdAndTileSet(outputVirtualGraphIdAndTileSet_) {}
@@ -234,10 +250,39 @@ CommGroup extractCommGroupFromVector(const std::vector<int64_t> &vec) {
   return CommGroup(type, groupSize);
 }
 
+ReplicaGrouping
+extractReplicaGroupingFromVector(const std::vector<int64_t> &vec) {
+  POPART_CHECK_EQ(vec.size(), 3);
+  return ReplicaGrouping(vec[0], vec[1], vec[2]);
+}
+
 CommGroup extractCommGroupFromAttrs(const Attributes &attrs) {
   const std::vector<int64_t> commGroupInfo =
       attrs.getAttribute<Attributes::Ints>(sCollectiveCommGroup, {});
   return extractCommGroupFromVector(commGroupInfo);
+}
+
+ReplicaGrouping extractReplicaGroupingFromAttrs(const Attributes &attrs,
+                                                unsigned replicationFactor) {
+  const bool hasCommGroupAttribute = attrs.hasAttribute(sCollectiveCommGroup);
+  const bool hasReplicaGroupingAttribute =
+      attrs.hasAttribute(sCollectiveReplicaGrouping);
+
+  POPART_CHECK(!(hasCommGroupAttribute & hasReplicaGroupingAttribute))
+      << "Setting both attributes '" << sCollectiveCommGroup << "' and '"
+      << sCollectiveReplicaGrouping << "' is not allowed.";
+
+  if (hasCommGroupAttribute) {
+    return extractCommGroupFromAttrs(attrs).toReplicaGrouping(
+        replicationFactor);
+  }
+
+  auto vec =
+      attrs.getAttribute<Attributes::Ints>(sCollectiveReplicaGrouping, {});
+  if (vec.empty()) {
+    vec = {replicationFactor, 1, replicationFactor};
+  }
+  return extractReplicaGroupingFromVector(vec);
 }
 
 CommGroup getComplementCommGroup(const Ir &ir, CommGroup group) {

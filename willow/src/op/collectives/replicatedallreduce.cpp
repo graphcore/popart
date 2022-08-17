@@ -32,8 +32,18 @@ ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
     : CollectivesBaseOp(_opid, group_, settings_), op(op_) {}
 
 ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                                             CollectiveOperator op_,
+                                             const ReplicaGrouping &grouping,
                                              const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, CommGroup{}, settings_),
+    : CollectivesBaseOp(_opid, grouping, settings_), op(op_) {}
+
+ReplicatedAllReduceOp::ReplicatedAllReduceOp(const OperatorIdentifier &_opid,
+                                             const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid,
+                        ReplicaGrouping(settings_.getIr()
+                                            .getSessionOptions()
+                                            .getGlobalReplicationFactor()),
+                        settings_),
       op(CollectiveOperator::Add) {}
 
 std::unique_ptr<Op> ReplicatedAllReduceOp::clone() const {
@@ -76,15 +86,10 @@ ReplicatedAllReduceOp::fwdPropagateIsReplicaEqual(
   // of replicas instead instead of having only tracking if a tensor is
   // replica-equal for all replicas or not.
 
-  const auto groupType = getGCLCommGroup().type;
-  const auto groupSize = getGCLCommGroup().replicaGroupSize;
-  const auto maxGroupSize =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  const auto isLocal = (op == CollectiveOperator::Local);
-  const auto isReductionOverAllReplicas =
-      (groupType == CommGroupType::All) ||
-      (groupType == CommGroupType::Consecutive && groupSize == maxGroupSize) ||
-      (groupType == CommGroupType::Orthogonal && groupSize == maxGroupSize);
+  const auto numReplicas                = getReplicaGrouping().getNumReplicas();
+  const auto groupSize                  = getReplicaGrouping().getGroupSize();
+  const auto isLocal                    = (op == CollectiveOperator::Local);
+  const auto isReductionOverAllReplicas = numReplicas == groupSize;
 
   // For all reduction methods except Local, the output should be identical
   // across replicas within a group. So outputs are equal across all replicas
@@ -107,6 +112,13 @@ ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
 
 ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     const OperatorIdentifier &_opid,
+    CollectiveOperator op_,
+    const ReplicaGrouping &grouping,
+    const Op::Settings &settings_)
+    : ReplicatedAllReduceOp(_opid, op_, grouping, settings_) {}
+
+ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
+    const OperatorIdentifier &_opid,
     const Op::Settings &settings_)
     : ReplicatedAllReduceOp(_opid, settings_) {}
 
@@ -115,7 +127,7 @@ ReplicatedAllReduceInplaceOp::ReplicatedAllReduceInplaceOp(
     : ReplicatedAllReduceInplaceOp(
           Onnx::CustomOperators::ReplicatedAllReduceInplace,
           rop.getCollectiveOp(),
-          rop.getGCLCommGroup(),
+          rop.getReplicaGrouping(),
           rop.getSettings()) {}
 
 view::Regions ReplicatedAllReduceInplaceOp::modifies(InIndex index) const {
@@ -160,7 +172,7 @@ static OpDefinition ReplicatedAllReduceOpDef(
     {OpDefinition::Inputs({{"X", T}}),
      OpDefinition::Outputs({{"Y", T}}),
      OpDefinition::Attributes({{sCollectiveOperator, {"*"}},
-                               {sCollectiveCommGroup, {"*"}}})});
+                               {sCollectiveReplicaGrouping, {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduce,
@@ -169,10 +181,14 @@ static OpCreator<ReplicatedAllReduceOp> ReplicatedAllReduceOpCreator(
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
-      CommGroup group = extractCommGroupFromAttrs(info.attributes);
+      const auto grouping =
+          extractReplicaGroupingFromAttrs(info.attributes,
+                                          info.settings.getIr()
+                                              .getSessionOptions()
+                                              .getGlobalReplicationFactor());
 
       return std::unique_ptr<ReplicatedAllReduceOp>(
-          new ReplicatedAllReduceOp(info.opid, op, group, info.settings));
+          new ReplicatedAllReduceOp(info.opid, op, grouping, info.settings));
     },
     true);
 
@@ -180,14 +196,18 @@ static OpDefinition ReplicatedAllReduceInplaceOpDef(
     {OpDefinition::Inputs({{"X", T}}),
      OpDefinition::Outputs({{"Y", T}}),
      OpDefinition::Attributes({{sCollectiveOperator, {"*"}},
-                               {sCollectiveCommGroup, {"*"}}})});
+                               {sCollectiveReplicaGrouping, {"*"}}})});
 
 static OpCreator<ReplicatedAllReduceInplaceOp>
     ReplicatedAllReduceInplaceOpCreator(
         OpDefinitions({{Onnx::CustomOperators::ReplicatedAllReduceInplace,
                         ReplicatedAllReduceInplaceOpDef}}),
         [](const OpCreatorInfo &info) {
-          CommGroup group       = extractCommGroupFromAttrs(info.attributes);
+          const auto grouping = extractReplicaGroupingFromAttrs(
+              info.attributes,
+              info.settings.getIr()
+                  .getSessionOptions()
+                  .getGlobalReplicationFactor());
           CollectiveOperator op = static_cast<CollectiveOperator>(
               info.attributes.getAttribute<Attributes::Int>(
                   sCollectiveOperator,
@@ -195,7 +215,7 @@ static OpCreator<ReplicatedAllReduceInplaceOp>
 
           return std::unique_ptr<ReplicatedAllReduceInplaceOp>(
               new ReplicatedAllReduceInplaceOp(
-                  info.opid, op, group, info.settings));
+                  info.opid, op, grouping, info.settings));
         },
         true);
 

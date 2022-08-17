@@ -263,8 +263,12 @@ static constexpr const char *gradientLoadStreamPrefix  = "gradientLoad__";
 static constexpr const char *weightLoadStreamPrefix    = "weightLoad__";
 
 static constexpr const char *onnxDebugIdInputMetaDataKey = "__debug_id/input/";
-static constexpr const char *sCollectiveOperator  = "__collectiveOperator";
-static constexpr const char *sCollectiveCommGroup = "__collectiveCommGroup";
+static constexpr const char *sCollectiveOperator = "__collectiveOperator";
+// TODO(T67766): Delete.
+[[deprecated]] static constexpr const char *sCollectiveCommGroup =
+    "__collectiveCommGroup";
+static constexpr const char *sCollectiveReplicaGrouping =
+    "__collectiveReplicaGrouping";
 static constexpr const char *sReplicatedTensorSharding =
     "__replicatedTensorSharding";
 static constexpr const char *sReplicationFactor = "__replicationFactor";

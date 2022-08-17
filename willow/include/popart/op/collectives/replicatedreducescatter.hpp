@@ -12,20 +12,33 @@
 namespace popart {
 class AliasModel;
 class CommGroup;
+class ReplicaGrouping;
 class OpSerialiserBase;
 class ReplicaEqualAnalysisProxy;
 struct OperatorIdentifier;
 
 class ReplicatedReduceScatterOp : public CollectivesBaseOp {
 public:
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedReduceScatterOp(
+      const OperatorIdentifier &,
+      CollectiveOperator op,
+      CommGroup group,
+      bool configureOutputForReplicatedTensorSharding,
+      const Op::Settings &);
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedReduceScatterOp(const OperatorIdentifier &,
+                                           CollectiveOperator op,
+                                           CommGroup group,
+                                           const Op::Settings &);
   ReplicatedReduceScatterOp(const OperatorIdentifier &,
                             CollectiveOperator op,
-                            CommGroup group,
+                            const ReplicaGrouping &grouping,
                             bool configureOutputForReplicatedTensorSharding,
                             const Op::Settings &);
   ReplicatedReduceScatterOp(const OperatorIdentifier &,
                             CollectiveOperator op,
-                            CommGroup group,
+                            const ReplicaGrouping &grouping,
                             const Op::Settings &);
   ReplicatedReduceScatterOp(const OperatorIdentifier &, const Op::Settings &);
 

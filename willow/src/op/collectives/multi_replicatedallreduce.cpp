@@ -16,6 +16,7 @@
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/region.hpp"
+#include "popart/replicagrouping.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
@@ -35,6 +36,22 @@ MultiReplicatedAllReduceOp::MultiReplicatedAllReduceOp(
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
     : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedAllReduce,
                             group_,
+                            settings_,
+                            outInfoFromBaseOps_,
+                            inputVirtualGraphIdAndTileSet_,
+                            outputVirtualGraphIdAndTileSet_),
+      op(op_), modifiesIndexInplace(modifiesIndexInplace_) {}
+
+MultiReplicatedAllReduceOp::MultiReplicatedAllReduceOp(
+    CollectiveOperator op_,
+    const ReplicaGrouping &grouping,
+    const Op::Settings &settings_,
+    const std::vector<bool> &modifiesIndexInplace_,
+    const std::vector<TensorInfo> &outInfoFromBaseOps_,
+    const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet_,
+    const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet_)
+    : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedAllReduce,
+                            grouping,
                             settings_,
                             outInfoFromBaseOps_,
                             inputVirtualGraphIdAndTileSet_,
@@ -106,15 +123,10 @@ MultiReplicatedAllReduceOp::fwdPropagateIsReplicaEqual(
   // of replicas instead instead of having only tracking if a tensor is
   // replica-equal for all replicas or not.
 
-  const auto groupType = getGCLCommGroup().type;
-  const auto groupSize = getGCLCommGroup().replicaGroupSize;
-  const auto maxGroupSize =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  const auto isLocal = (op == CollectiveOperator::Local);
-  const auto isReductionOverAllReplicas =
-      (groupType == CommGroupType::All) ||
-      (groupType == CommGroupType::Consecutive && groupSize == maxGroupSize) ||
-      (groupType == CommGroupType::Orthogonal && groupSize == maxGroupSize);
+  const auto numReplicas                = getReplicaGrouping().getNumReplicas();
+  const auto groupSize                  = getReplicaGrouping().getGroupSize();
+  const auto isLocal                    = (op == CollectiveOperator::Local);
+  const auto isReductionOverAllReplicas = numReplicas == groupSize;
 
   // For all reduction methods except Local, the output should be identical
   // across replicas within a group. So outputs are equal across all replicas

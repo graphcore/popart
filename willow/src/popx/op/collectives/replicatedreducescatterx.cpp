@@ -112,7 +112,7 @@ void ReplicatedReduceScatterOpx::grow(snap::program::Sequence &prog) const {
       toReduceScatter.flatten().getPoplarTensor(),
       getPoplarCollectiveOperator(rrsOp.getCollectiveOp()),
       prog.getPoplarSequence(),
-      toGCLCommGroup(rrsOp.getGCLCommGroup()),
+      toGclCommGroup(rrsOp.getReplicaGrouping()),
       debugContext("replicatedReduceScatter"),
       reduceScatterOptions);
 

@@ -35,6 +35,18 @@ ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
     : CollectivesBaseOp(_opid, group_, settings_),
       gatheredOutInfo(gatheredOutInfo_) {}
 
+ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
+                                             const ReplicaGrouping &grouping,
+                                             const Op::Settings &settings_)
+    : CollectivesBaseOp(_opid, grouping, settings_) {}
+
+ReplicatedAllGatherOp::ReplicatedAllGatherOp(const OperatorIdentifier &_opid,
+                                             const ReplicaGrouping &grouping,
+                                             const Op::Settings &settings_,
+                                             const TensorInfo &gatheredOutInfo_)
+    : CollectivesBaseOp(_opid, grouping, settings_),
+      gatheredOutInfo(gatheredOutInfo_) {}
+
 std::unique_ptr<Op> ReplicatedAllGatherOp::clone() const {
   return std::make_unique<ReplicatedAllGatherOp>(*this);
 }
@@ -72,10 +84,13 @@ static OpCreator<ReplicatedAllGatherOp> ReplicatedAllGatherOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedAllGather,
                     ReplicatedAllGatherOpDef}}),
     [](const OpCreatorInfo &info) {
-      return std::unique_ptr<ReplicatedAllGatherOp>(
-          new ReplicatedAllGatherOp(info.opid,
-                                    extractCommGroupFromAttrs(info.attributes),
-                                    info.settings));
+      return std::unique_ptr<ReplicatedAllGatherOp>(new ReplicatedAllGatherOp(
+          info.opid,
+          extractReplicaGroupingFromAttrs(info.attributes,
+                                          info.settings.getIr()
+                                              .getSessionOptions()
+                                              .getGlobalReplicationFactor()),
+          info.settings));
     },
     true);
 
@@ -101,14 +116,9 @@ ReplicatedAllGatherOp::fwdPropagateIsReplicaEqual(
   // of replicas instead instead of having only tracking if a tensor is
   // replica-equal for all replicas or not.
 
-  const auto groupType = getGCLCommGroup().type;
-  const auto groupSize = getGCLCommGroup().replicaGroupSize;
-  const auto maxGroupSize =
-      getIr().getSessionOptions().getGlobalReplicationFactor();
-  const auto isReductionOverAllReplicas =
-      (groupType == CommGroupType::All) ||
-      (groupType == CommGroupType::Consecutive && groupSize == maxGroupSize) ||
-      (groupType == CommGroupType::Orthogonal && groupSize == maxGroupSize);
+  const auto numReplicas                = getReplicaGrouping().getNumReplicas();
+  const auto groupSize                  = getReplicaGrouping().getGroupSize();
+  const auto isReductionOverAllReplicas = numReplicas == groupSize;
 
   // The output should be identical across replicas within a group. So outputs
   // are equal across all replicas only if the grouping includes all replicas.

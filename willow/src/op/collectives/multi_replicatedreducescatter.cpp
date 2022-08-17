@@ -16,6 +16,7 @@
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/region.hpp"
+#include "popart/replicagrouping.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
@@ -33,6 +34,22 @@ MultiReplicatedReduceScatterOp::MultiReplicatedReduceScatterOp(
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
     : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedReduceScatter,
                             group_,
+                            settings_,
+                            outInfoFromBaseOps_,
+                            inputVirtualGraphIdAndTileSet_,
+                            outputVirtualGraphIdAndTileSet_),
+      op(op_), rearrangeForCollective(rearrangeForCollective_) {}
+
+MultiReplicatedReduceScatterOp::MultiReplicatedReduceScatterOp(
+    CollectiveOperator op_,
+    const ReplicaGrouping &grouping,
+    const Op::Settings &settings_,
+    const std::vector<TensorInfo> &outInfoFromBaseOps_,
+    const std::vector<bool> &rearrangeForCollective_,
+    const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet_,
+    const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet_)
+    : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedReduceScatter,
+                            grouping,
                             settings_,
                             outInfoFromBaseOps_,
                             inputVirtualGraphIdAndTileSet_,

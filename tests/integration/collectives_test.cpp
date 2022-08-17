@@ -625,12 +625,6 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
                      {A_id},
                      1,
                      {{sCollectiveCommGroup, std::vector<int64_t>{0, 2}}})[0];
-  TensorId B2_id =
-      bder->customOp(Onnx::CustomOperators::ReplicatedAllReduce,
-                     1,
-                     {A_id},
-                     1,
-                     {{sCollectiveCommGroup, std::vector<int64_t>{1, 42}}})[0];
 
   bder->addOutputTensor(B_id);
 
@@ -676,7 +670,6 @@ BOOST_AUTO_TEST_CASE(ReplicatedAllGatherTest_CommGroup_All) {
     const popart::ReplicatedAllGatherOp *allGather =
         findFirstOp<popart::ReplicatedAllGatherOp>(session);
     BOOST_TEST(allGather->getGCLCommGroup().type == popart::CommGroupType::All);
-    BOOST_TEST(allGather->getGCLCommGroup().replicaGroupSize == 2);
   }
 }
 
