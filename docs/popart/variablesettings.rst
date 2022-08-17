@@ -157,7 +157,7 @@ for :py:func:`inference <popart.InferenceSession.readWeights>`.
 
 :numref:`var_settings_example_popart_io` shows an example of creating buffers for replicas.
 
-.. literalinclude:: ../user_guide/files/replication_popart.py
+.. literalinclude:: files/replication_popart.py
     :language: python
     :emphasize-lines: 37-41
     :caption: Creating buffers for replicas.

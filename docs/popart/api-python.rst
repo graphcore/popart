@@ -1,5 +1,13 @@
+.. _popart_python_api_reference:
+
 PopART Python API
 =================
+
+This chapter describes the PopART Python API. Many classes are wrappers around
+the equivalent C++ class, for example ``popart.builder.Builder`` wraps the C++
+``Builder`` class (renamed ``BuilderCore`` in Python).
+There are more detailed descriptions of some functions in :numref:`popart_cpp_api_reference`.
+
 
 Sessions
 --------
@@ -59,8 +67,7 @@ Data input and output
 
 .. note:: The base class for data input and output in PopART is
     :cpp:class:`popart::IStepIO`. The way in which this class is used is
-    detailed in the :doc:`popart-cpp-api:index` in the
-    :ref:`popart-cpp-api:data input and output (istepio)` section.
+    detailed in :numref:`data input and output (istepio)`.
 
 .. autoclass:: popart.PyStepIO
     :special-members: __init__

@@ -144,20 +144,21 @@ if (BUILD_DOCS)
   get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/shared SHARED_SOURCE_FILES)
 
   set(USER_GUIDE_SOURCE_FILES "")
-  get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/user_guide USER_GUIDE_SOURCE_FILES)
+  get_doc_files(${CMAKE_CURRENT_SOURCE_DIR}/popart USER_GUIDE_SOURCE_FILES)
 
   # Log the document sources.
   message("USER_GUIDE_SOURCE_FILES: ${USER_GUIDE_SOURCE_FILES}")
 
   add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/user_guide
-    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/user_guide
-    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_BINARY_DIR}/user_guide
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/popart
+    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popart ${CMAKE_CURRENT_BINARY_DIR}/popart
+    COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/shared ${CMAKE_CURRENT_BINARY_DIR}/popart
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/user_guide"
+    COMMENT "Copying user-guide sources to ${CMAKE_CURRENT_BINARY_DIR}/popart"
     DEPENDS ${SUPPORTED_POPART_OPS_GEN}
             ${USER_GUIDE_SOURCE_FILES}
             ${SHARED_SOURCE_FILES}
+            Doxyfile
   )
 
   set(POPXL_SOURCE_FILES "")
@@ -184,7 +185,7 @@ if (BUILD_DOCS)
   list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include/popx)
 
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
-  configure_file(api_cpp/Doxyfile.in Doxyfile @ONLY)
+  configure_file(popart/Doxyfile.in Doxyfile @ONLY)
 
   # Run doxygen.
   add_custom_command(
@@ -236,30 +237,14 @@ if (BUILD_DOCS)
       VERBATIM)
   endfunction()
 
-  build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/user_guide" "popart_user_guide" "PopART User Guide" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_cpp" "popart_api_cpp" "PopART C++ API" "${DOCS_VERSION}")
-  build_popart_doc("${CMAKE_CURRENT_SOURCE_DIR}/api_python" "popart_api_python" "PopART Python API" "${DOCS_VERSION}")
+  build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/popart" "popart_user_guide" "PopART User Guide" "${DOCS_VERSION}")
   build_popart_doc("${CMAKE_CURRENT_BINARY_DIR}/popxl" "popxl_user_guide" "PopXL User Guide and API" "${DOCS_VERSION}")
 
   add_custom_target(ug_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${POPART_USER_GUIDE_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
     VERBATIM
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
-  )
-
-  add_custom_target(python_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
-    VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
-  )
-
-  add_custom_target(cpp_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
-    VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
   )
 
   add_custom_target(ir_zip ALL
@@ -282,13 +267,9 @@ if (BUILD_DOCS)
   )
 
   add_custom_target(pdf_copy ALL
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf ${PROJECT_BINARY_DIR}/${CPP_API_PDF_NAME}
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf ${PROJECT_BINARY_DIR}/${PYTHON_API_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${POPART_USER_GUIDE_PDF_NAME}
     COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf ${PROJECT_BINARY_DIR}/${POPXL_USER_GUIDE_PDF_NAME}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
-            ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
-            ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
             ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf
   )
 
@@ -297,8 +278,6 @@ if (BUILD_DOCS)
 
   install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
-    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
-    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
     ${CMAKE_CURRENT_BINARY_DIR}/latex/popxl_user_guide.pdf
     DESTINATION docs/pdf
     COMPONENT popart-docs)
@@ -307,11 +286,11 @@ else()
   install(FILES)
 endif()
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/user_guide/files
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/user_guide)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/popart/files
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/popart)
 
 set(PYTEST_BASETEMP ${CMAKE_CURRENT_BINARY_DIR}/pytest_tmp)
 file(MAKE_DIRECTORY ${PYTEST_BASETEMP})
 
 add_subdirectory(popxl)
-add_subdirectory(user_guide)
+add_subdirectory(popart)

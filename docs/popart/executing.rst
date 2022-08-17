@@ -88,7 +88,7 @@ This section describes how to set input and output data buffers for both C++ and
         3. The number of local replicas.
         4. The gradient accumulation factor.
 
-      The :doc:`popart-cpp-api:index` contains more information about inputs (:cpp:class:`~popart::IStepIO` class) and outputs (:cpp:class:`~popart::DataFlow` class).
+      :numref:`popart_cpp_api_reference` contains more information about inputs (:cpp:class:`~popart::IStepIO` class) and outputs (:cpp:class:`~popart::DataFlow` class).
 
 .. _retrieving_results:
 

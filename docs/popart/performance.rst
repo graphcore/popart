@@ -63,7 +63,7 @@ When training, weight updates are coordinated between replicas to ensure
 replicas benefit from each other's weight updates. A reduction is
 applied on the weight updates across replicas according to the
 ``ReductionType`` (:py:class:`Python <popart.ReductionType>`,
-:cpp:class:`C++ <popart::ReductionType>`) specified by the ``accumulationAndReplicationReductionType``
+:cpp:enum:`C++ <popart::ReductionType>`) specified by the ``accumulationAndReplicationReductionType``
 session option (:py:attr:`Python <popart.SessionOptions.accumulationAndReplicationReductionType>`,
 :cpp:var:`C++ <popart::SessionOptions::accumulationAndReplicationReductionType>`). The reductions involve some communication between replicas. This
 communication is managed by PopART.

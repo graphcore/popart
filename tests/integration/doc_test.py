@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 PYTHON_EXAMPLE_PATH = (
-    Path(__file__).parent.parent.parent / "docs/user_guide/files"
+    Path(__file__).parent.parent.parent / "docs/popart/files"
 ).resolve()
 assert PYTHON_EXAMPLE_PATH.exists()
 

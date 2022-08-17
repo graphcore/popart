@@ -445,7 +445,7 @@ case, a generic constructor of the ``Opx`` is always used and has the form:
 
 .. code-block:: cpp
 
-  ``Opx(Op *op, Devicex *devicex)``
+  Opx(Op *op, Devicex *devicex)
 
 For example:
 

@@ -33,7 +33,7 @@ described in the following sections and in :numref:`popart_executing`.
   # Create the session from the graph, data feed and device information
   session = popart.InferenceSession(proto, dataFlow, device)
 
-The ``DataFlow`` object (:py:class:`Python <~popart-python-api:popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`) is described in more detail in :numref:`popart_executing`.
+The ``DataFlow`` object (:py:class:`Python <popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`) is described in more detail in :numref:`popart_executing`.
 
 Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,4 +126,4 @@ specific IPU:
       o = builder.aiOnnx.add([o1, o2])
 
 Alternatively, for automatic placement of nodes on available IPUs, set the
-session option ``virtualGraphMode`` to ``popart.VirtualGraphMode.Auto``. For more information, on ``virtualGraphMode``: :py:func:`Python <popart.SessionOptions.virtualGraphMode>`, :cpp:func:`C++ <popart::SessionOptions::virtualGraphMode>`.
+session option ``virtualGraphMode`` to ``popart.VirtualGraphMode.Auto``. For more information, on ``virtualGraphMode``: :py:meth:`Python <popart.SessionOptions.virtualGraphMode>`, :cpp:member:`C++ <popart::SessionOptions::virtualGraphMode>`.

@@ -16,6 +16,9 @@ PopART User Guide
     env_vars
     overlap_io
     tensor_locations
+    api-python
+    api-cpp
     glossary
     references
+    genindex
     legal

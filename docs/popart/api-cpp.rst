@@ -1,5 +1,9 @@
+.. _popart_cpp_api_reference:
+
 PopART C++ API
 ==============
+
+This chapter describes the PopART C++ API.
 
 Sessions
 --------
