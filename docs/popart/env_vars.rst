@@ -6,103 +6,77 @@ Environment variables
 There are several environment variables which you can use to control the
 behaviour of PopART.
 
-Logging
--------
-
-PopART can output information about its activity as described in :any:`popart_logging`.
-You can control the default level of logging information using environment variables.
-
-POPART_LOG_LEVEL
-~~~~~~~~~~~~~~~~~
-
-This controls the amount of information written to the log output for all modules. Finer control
-can be achieved using :any:`POPART_LOG_CONFIG`.
-
-
-POPART_LOG_DEST
-~~~~~~~~~~~~~~~~
-
-This variable defines the output for the logging information. The value can be "stdout", "stderr" or a file name.
-
-The default, if not defined, is "stderr".
-
-.. _POPART_LOG_CONFIG:
-
-POPART_LOG_CONFIG
-~~~~~~~~~~~~~~~~~
-
-If set, this variable defines the name of a configuration file which specifies the logging level for each module.
-This is a JSON format file with pairs of module:level strings.
-For example, a file called ``conf.py`` can be specified by setting the environment variable:
-
-.. code-block:: console
-
-  export POPART_LOG_CONFIG=conf.py
-
-To set the logging level of the devicex and session modules, ``conf.py`` would contain:
-
-.. code-block:: json
-
-  {
-    "devicex":"INFO",
-    "session":"WARN"
-  }
-
-These values override the value specified in POPART_LOG_LEVEL.
+.. include:: env_vars_logging.rst
 
 
 Generating DOT files
 ---------------------
 
+PopART can output a graphical representation of the graph, in DOT format.
+
 POPART_DOT_CHECKS
 ~~~~~~~~~~~~~~~~~~
 
-PopART can output a graphical representation of the graph, in DOT format.
-This variable controls what DOT files which will be created.
-For a DOT file to be created the variable must either match the ``check``
-variable of a ``dotCheckpoint`` call in the code, or ``POPART_DOT_CHECKS``
-must be set to ALL.
-In the latter case a DOT file will be created for all ``dotCheckpoint``s in
-the code.
-
-The following ``check`` values are already present when preparing the IR with the traditional API:
-
-- FWD0
-- FWD1
-- BWD0
-- PREALIAS
-- FINAL
-
-If using the PopXL API, only FINAL will be present.
-However, the user can add a ``dot_checkpoint`` using any ``check`` name anywhere during the creation of the model.
-The following example shows how the user can add checkpoints after ops:
-
-.. code-block:: python
-
-  c = ops.add(a, b)
-  ir.dot_checkpoint("ADD1")
-  d = ops.mul(a, c)
-  ir.dot_checkpoint("MULTIPLY")
-
-The ``POPART_DOT_CHECKS`` may be combined using ":" as a separator.
-The example below shows how to set ``POPART_DOT_CHECKS`` to export
-DOT graphs for the FWD0 and FINAL stages.
+PopART can export DOT files of your graphs at different points. By default, no DOT files are created, but you can use the ``POPART_DOT_CHECKS`` environment variable to control what DOT files to create. ``POPART_DOT_CHECKS`` is set using predefined checkpoint names. For example to create a DOT file of all checkpoints, you would set:
 
 .. code-block:: console
 
-  export POPART_DOT_CHECKS=FWD0:FINAL
+  export POPART_DOT_CHECKS=ALL
+
+The predefined checkpoint names are:
+
+- ``FWD0``: Initial IR immediately after lowering from ONNX to the IR.
+- ``FWD1``: After the pre-alias patterns have been applied to ``FWD0``.
+- ``BWD0``: After growing the backward pass (including the optimiser step). Note this happens before optimiser decomposition, so the optimiser will appear as a single special op rather than the many ops that implement it.
+- ``PREALIAS``: After pre-alias transforms have been applied to ``BWD0``.
+- ``MAINLOOPS``: After the ``MainLoops`` transform has been applied. This transform adds explicit loop ops to the IR for device iterations (batches per step) and gradient accumulation.
+- ``FINAL``: The final IR after preparation.
+- The following checkpoint names only apply if you are using *explicit* pipelining (Note: The default is implicit pipelining). Explicit pipelining happens between ``MAINLOOPS`` and ``FINAL``:
+
+  - ``EXPLICITPIPELINEBEFOREOUTLINE``: Before the outline stage of the transform.
+  - ``EXPLICITPIPELINEAFTEROUTLINE``: After the outline stage of the transform.
+  - ``EXPLICITPIPELINEAFTERDECOMPOSE``: After the decompose stage of the transform.
+- ``ALL``: All checkpoints are selected.
+
+Multiple checkpoint names can be passed, and should be separated using ":". For example to create a DOT file for the ``FWD0`` and ``PREALIAS`` checkpoints:
+
+.. code-block:: console
+
+  export POPART_DOT_CHECKS=FWD0:PREALIAS
 
 The values in ``POPART_DOT_CHECKS`` will be combined with any values
 that are defined in the session options.
 
+Caching of compiled executables
+-------------------------------
+
+It can take a long time to compile a large graph into an executable for the IPU. You can enable caching of compiled executables to avoid re-compiling the same graph every time it is run.
+
+To enable the cache, set the environment variable ``POPART_CACHE_DIR`` to the path where the compiled executables for the PopART graph will be stored. For example:
+
+.. code-block:: console
+
+  $ export POPART_CACHE_DIR="/tmp/cachedir"
+
+An executable binary file with the extension ``.popef`` will be saved for each Poplar graph required to execute the PopART program.
+
+The cache does not *manage* the files within the directory. It is your responsibility to delete out-of-date files. No index is kept of the files, so they can be deleted without risk.
 
 
-Inspecting the Ir
+
+Inspecting the IR
 -----------------
+
+You can also set an environment variable to inspect the IR.
 
 POPART_IR_DUMP
 ~~~~~~~~~~~~~~
 
-If set, this variable defines the name of a file where the serialised ir will be written.
-The ir will be written either at the end of the ir preparation phase, or when an exception
-is thrown during the ir preparation phase.
+If set, ``POPART_IR_DUMP`` defines the name of a file where the serialised IR will be written. For example, to write the serialised IR to the file ``ir_dump.log``, set:
+
+.. code-block:: console
+
+  export POPART_IR_DUMP=ir_dump.log
+
+The IR will be written either at the end of the IR preparation phase, or when an exception is thrown during the IR preparation phase.
+
