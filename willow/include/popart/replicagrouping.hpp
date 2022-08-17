@@ -24,6 +24,8 @@ private:
 public:
   ReplicaGrouping(unsigned numReplicas, unsigned stride, unsigned groupSize);
 
+  ReplicaGrouping(unsigned numReplicas);
+
   /**
    * Get the number of replicas.
    *

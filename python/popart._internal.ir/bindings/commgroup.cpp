@@ -6,6 +6,7 @@
 #include <pybind11/stl.h> // IWYU pragma: keep
 #include <popart/commgroup.hpp>
 #include <popart/docs/pydocs_popart_core.hpp>
+#include <popart/replicagrouping.hpp>
 
 namespace py = pybind11;
 
@@ -31,6 +32,10 @@ void bindCommGroup(py::module &m) {
       .def(py::init<CommGroupType, unsigned>(),
            py::arg("type"),
            py::arg("replicaGroupSize"))
+      .def(py::init<ReplicaGrouping>(), py::arg("grouping"))
+      .def("toReplicaGrouping",
+           &CommGroup::toReplicaGrouping,
+           py::arg("numReplicas"))
       .def_readwrite("type", &CommGroup::type, DOC(popart, CommGroup, type))
       .def_readwrite("replicaGroupSize",
                      &CommGroup::replicaGroupSize,

@@ -37,6 +37,7 @@
 #include "bindings/opidentifier.hpp"
 #include "bindings/region.hpp"
 #include "bindings/remotebufferinfo.hpp"
+#include "bindings/replicagrouping.hpp"
 #include "bindings/scope.hpp"
 #include "bindings/tensor.hpp"
 #include "bindings/tensordata.hpp"
@@ -72,6 +73,7 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindGraphId(m);
   bindIr(m);
   bindOp(m);
+  bindReplicaGrouping(m);
   bindScope(m);
   bindTensor(m);
   bindTensorData(m);

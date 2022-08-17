@@ -1,4 +1,5 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+add_popart_py_unit_test(test_commgroup)
 add_popart_py_unit_test(test_debugcontext)
 add_popart_py_unit_test(test_graph)
 add_popart_py_unit_test(test_graphid)
@@ -11,4 +12,5 @@ add_popart_py_unit_test(test_tensorinfo)
 add_popart_py_unit_test(test_op)
 add_popart_py_unit_test(test_ops)
 add_popart_py_unit_test(test_patterns)
+add_popart_py_unit_test(test_replicagrouping)
 add_popart_py_unit_test(test_transforms)

@@ -216,6 +216,7 @@ add_popart_python_module(
   bindings/op/gather.cpp
   # End ops
   bindings/scope.cpp
+  bindings/replicagrouping.cpp
   bindings/tensor.cpp
   bindings/tensordata.cpp
   bindings/tensorinfo.cpp

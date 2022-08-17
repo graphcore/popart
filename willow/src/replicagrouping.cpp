@@ -33,6 +33,9 @@ ReplicaGrouping::ReplicaGrouping(unsigned numReplicas,
   }
 }
 
+ReplicaGrouping::ReplicaGrouping(unsigned numReplicas)
+    : ReplicaGrouping(numReplicas, 1, numReplicas) {}
+
 unsigned ReplicaGrouping::getNumReplicas() const { return numReplicas_; }
 
 unsigned ReplicaGrouping::getStride() const { return stride_; }
