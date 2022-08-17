@@ -9,8 +9,13 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+
+#include <popef/Reader.hpp>
+#include <popef/Writer.hpp>
+
 #include <popx/executablexserializer.hpp>
 #include <popart/ir.hpp>
+#include <popart/popx/popefserializer.hpp>
 #include <popart/tensor.hpp>
 
 #include "popart/capnp/Ir.capnp.h"
@@ -28,6 +33,50 @@ class Graph;
 
 using namespace popart;
 using namespace popart::popx::serialization;
+
+void writeDataToStream(std::shared_ptr<std::stringstream> ss_ptr,
+                       popart::Tensor &tensor) {
+  popef::Writer writer(*ss_ptr);
+  std::shared_ptr<popef::BlobWriter> opaque =
+      writer.createOpaqueBlob("tensor", "null");
+  ::capnp::MallocMessageBuilder msgBuilder;
+
+  // Popart metadata for tensor is written to opaque blob.
+  auto tensorBuilder = msgBuilder.initRoot<cap::Tensor>();
+  serializeTensor(&tensor, tensorBuilder);
+  kj::std::StdOutputStream sos(opaque->stream);
+  capnp::writeMessage(sos, msgBuilder);
+  opaque->close();
+
+  // Binary tensor data is written to tensor data blob.
+  if (tensor.hasTensorData()) {
+    popef::TensorInfo ti = createTensorInfo(tensor.info);
+    serializePopefTensor(tensor, ti, writer);
+  }
+
+  writer.close();
+}
+
+std::unique_ptr<popart::Tensor>
+readDataFromStream(std::shared_ptr<std::stringstream> ss_ptr, popart::Ir &ir) {
+  popef::Reader reader;
+  reader.parseStream(ss_ptr);
+  // Check if opaque is present in the popef stream.
+  BOOST_REQUIRE_EQUAL(reader.opaqueBlobs().size(), 1);
+  popef::OpaqueReader opaque = reader.opaqueBlobs()[0];
+  kj::std::StdInputStream sis(opaque.data);
+  capnp::ReaderOptions opts;
+  capnp::InputStreamMessageReader msg(sis, opts);
+  auto tensorReader = msg.getRoot<cap::Tensor>();
+
+  const popef::TensorReader *tensorData = nullptr;
+  if (reader.tensors().size() == 1) {
+    // Get tensor data blob reader if it is present.
+    tensorData = &reader.tensors()[0];
+  }
+
+  return deserializeTensor(ir, tensorReader, tensorData);
+}
 
 BOOST_AUTO_TEST_CASE(serialiseAndDeserialiseTensorType) {
 
@@ -125,27 +174,15 @@ BOOST_AUTO_TEST_CASE(serialiseAndDeserialiseTensor) {
     Tensor orgTensor(id, varSet, graph);
     orgTensor.info = info;
 
-    if (data) {
+    if (data.has_value()) {
       // Set data if we have any.
       orgTensor.setTensorData(reinterpret_cast<void *>(data->data()),
                               data->size());
     }
 
-    // Serialise via capnp to stringstream.
-    std::stringstream ss;
-    ::capnp::MallocMessageBuilder msgBuilder;
-    auto tensorBuilder = msgBuilder.initRoot<cap::Tensor>();
-    serializeTensor(&orgTensor, tensorBuilder, orgTensor.hasTensorData());
-    kj::std::StdOutputStream sos(ss);
-    capnp::writeMessage(sos, msgBuilder);
-
-    // Deserialise from stringstream.
-    kj::std::StdInputStream sis(ss);
-    capnp::ReaderOptions opts;
-    capnp::InputStreamMessageReader msg(sis, opts);
-    auto tensorReader = msg.getRoot<cap::Tensor>();
-    auto resTensor =
-        deserializeTensor(ir, tensorReader, orgTensor.hasTensorData());
+    auto ss_ptr = std::make_shared<std::stringstream>();
+    writeDataToStream(ss_ptr, orgTensor);
+    auto resTensor = readDataFromStream(ss_ptr, ir);
 
     // Check TensorId.
     BOOST_REQUIRE_EQUAL(orgTensor.id, resTensor->id);

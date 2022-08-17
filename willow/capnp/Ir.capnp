@@ -90,8 +90,7 @@ struct Tensor {
   tensorType @1 :TensorType;
   tensorInfo @2 :TensorInfo;
   tensorLocationInfo @3: TensorLocationInfo;
-  tensorData @4 :Data;
-  variableSettings @5: VariableSettings;
+  variableSettings @4: VariableSettings;
 }
 
 enum SyntheticDataMode{
