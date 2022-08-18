@@ -43,9 +43,6 @@ add_popart_py_unit_test(test_view_simplify_pattern VARIANTS IpuModel2)
 
 add_popart_py_unit_test(test_foldmatmulpattern)
 
-# TODO(T36508): Re-enable.
-# add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel2)
-
 add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel2 MATCHEXPR test_replace_with_identity)
 add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel2 MATCHEXPR test_replace_with_reshape)
 add_popart_py_unit_test(test_transpose_to_identity_or_reshape VARIANTS IpuModel2 MATCHEXPR test_fail_due_to_non_trivial_reshape)
