@@ -177,7 +177,9 @@ class TestRemoteBuffer:
         for assume_fail in assume_fails:
             with pytest.raises(ValueError) as e_info:
                 assume_fail.validate_tensor_matches_buffer(t)
-            assert e_info.value.args[0].startswith("Tensor does not match buffer.")
+            assert e_info.value.args[0].startswith(
+                f"Tensor {t.id} does not match buffer."
+            )
 
     def test_two_irs(self, input: Tuple[Tuple[int, ...], dtype, int]) -> None:
         """Test that the buffers of two IRs act independently.

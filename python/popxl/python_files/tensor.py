@@ -1007,9 +1007,12 @@ def remote_replica_sharded_variable(
         Variable: The remote sharded variable.
     """
 
-    opts = gcg().ir._pb_ir.getSessionOptions()
-    if not opts.enableReplicatedGraphs:
-        raise ValueError("Replication has not been enabled on the current IR")
+    rf = gcg().ir.replication_factor
+    if rf <= 1:
+        raise ValueError(
+            f"The IR's global replication factor is {rf}. It must "
+            "be greater than 1 to create a replica sharded variable."
+        )
 
     # Set the meta_shape for the RemoteBuffer, this will be required later in ops.remote_load
     np_dtype = dtype.as_numpy() if dtype is not None else None
@@ -1054,16 +1057,32 @@ def replica_sharded_buffer(
     shape: Tuple[int, ...],
     dtype: dtypes.dtype,
     replica_grouping: Optional[ReplicaGrouping] = None,
-    shard_grouping: Optional[ReplicaGrouping] = None,
+    shard_over: Optional[int] = None,
     entries: int = 1,
 ):
     """Create a RemoteBuffer for use with replicated tensor sharded variables.
+
+    The tensor_shape and meta_shape properties of the returned RemoteBuffer will
+    be a flattened one-dimensional shape. This is because the data of sharded
+    tensors in PopXL reside in CBR-rearranged form. This means the original
+    ordering of the data you provide is not preserved inside the RemoteBuffer,
+    and so the original axes are meaningless.
 
     Args:
         shape (Tuple[int, ...]): Shape of the variable tensor (including any replica grouping dimensions).
         dtype (dtypes.dtype): Dtype of the variable tensor.
         replica_grouping (Optional[ReplicaGrouping], optional): ReplicaGrouping of the variable tensor. Defaults to All replicas.
-        shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
+        shard_over (Optional[int], optional):
+            The number of replicas in each replica group to shard over. Defaults
+            to all replicas in the group. Note, when there are multiple
+            instances, this group can span instances.
+            If the replica grouping size is 4, and shard_over is 4, the value of
+            the variable for each group is sharded over all 4 replicas in that
+            group.
+            If the replica grouping size is 4, and shard_over is 2, the value of
+            each group will be sharded once over group members 0 and 1, and
+            once over group members 2 and 3.
+            The replica grouping size must be divisible by shard_over.
         entries (int): Number of entries in the RemoteBuffer.
 
     Raises:
@@ -1077,46 +1096,54 @@ def replica_sharded_buffer(
     """
     from popxl.remote_buffer import remote_buffer
 
-    shards = gcg().ir.replication_factor
+    replica_group_size = (
+        replica_grouping.group_size
+        if replica_grouping is not None
+        else gcg().ir.replication_factor
+    )
 
-    if shard_grouping:
-        if replica_grouping:
-            if shard_grouping.stride != replica_grouping.stride:
-                raise ValueError(
-                    "shard_grouping.stride must equal the replica_grouping.stride"
-                )
-            if shard_grouping.group_size > replica_grouping.group_size:
-                raise ValueError(
-                    "shard_grouping.group_size must be <= the replica_grouping.group_size"
-                )
-        else:
-            if shard_grouping.stride > 1:
-                raise ValueError(
-                    "shard_grouping.stride must be 1 with the default replica_grouping"
-                )
-            if shard_grouping.group_size > shards:
-                raise ValueError(
-                    "shard_grouping.group_size must be <= the replication_factor"
-                )
+    # Default shard_group_size to the replica group size
+    shard_over = shard_over if shard_over is not None else replica_group_size
 
-    data_size: int = np.prod(shape)
-    if replica_grouping:
-        data_size = data_size // replica_grouping.num_groups
-        shards = replica_grouping.group_size
-    if shard_grouping:
-        shards = shard_grouping.group_size
+    if shard_over > replica_group_size:
+        raise ValueError(
+            f"The sharding group size ({shard_over}) must be less than "
+            f"or equal to the replica group size ({replica_group_size}). Note "
+            "that if no replica grouping was passed, the replica group size "
+            "defaults to the IR's global replication factor; and if no "
+            "sharding group size was passed, it defaults to the replica group "
+            "size."
+        )
+    if replica_group_size % shard_over != 0:
+        raise ValueError(
+            f"The replica group size ({replica_group_size}) must be divisible "
+            f"by the sharding group size ({shard_over}). Note that if no"
+            "replica grouping was passed, the replica group size defaults to "
+            "the IR's global replication factor; and if no sharding group size "
+            "was passed, it defaults to the replica group size."
+        )
 
-    # ceiling division
-    shard_size = -(data_size // -shards)
-    shard_shape = (shard_size,)
+    def integer_ceil_div(a: int, b: int) -> int:
+        return -(a // -b)
 
-    buffer = remote_buffer(shard_shape, dtype, entries)
+    # If replica_grouping, the outermost dim of the actual tensor shape is 1, as
+    # dim 0 is the number of groups.
+    outer_shape_dim = (
+        1 if replica_grouping is not None and replica_grouping.num_groups > 1 else 0
+    )
+    tensor_shape = shape[outer_shape_dim:]
 
-    # set the meta_shape
-    if replica_grouping and replica_grouping.num_groups > 1:
-        buffer.meta_shape = shape[1:]
-    else:
-        buffer.meta_shape = shape
+    # We construct the RemoteBuffer using the sharded shape. The shape passed to
+    # RemoteBuffer must have a flattened shape. Therefore, the shape we pass is
+    # a singleton dimension of nelms/shard_group_size.
+    nelms = np.prod(tensor_shape)
+    sharded_shape = (integer_ceil_div(nelms, shard_over),)
+
+    buffer = remote_buffer(sharded_shape, dtype, entries)
+
+    # Set the meta_shape. This is the unsharded tensor shape (so not including
+    # the groups dimension, if it exists).
+    buffer.meta_shape = tensor_shape
 
     return buffer
 
@@ -1127,7 +1154,7 @@ def replica_sharded_variable(
     name: Optional[str] = None,
     downcast: bool = True,
     replica_grouping: Optional[ReplicaGrouping] = None,
-    shard_grouping: Optional[ReplicaGrouping] = None,
+    shard_over: Optional[int] = None,
     retrieval_mode: Optional[
         Literal["one_per_group", "all_replicas"]
     ] = "one_per_group",
@@ -1157,7 +1184,17 @@ def replica_sharded_variable(
             with a shared value and by default, when retrieving values from
             replicas, only one value is returned per group. By default all
             replicas are in one group.
-        shard_grouping (Optional[ReplicaGrouping], optional): Replicas to shard over. Defaults to All replicas in replica_grouping.
+        shard_over (Optional[int], optional):
+            The number of replicas in each replica group to shard over. Defaults
+            to all replicas in the group. Note, when there are multiple
+            instances, this group can span instances.
+            If the replica grouping size is 4, and shard_over is 4, the value of
+            the variable for each group is sharded over all 4 replicas in that
+            group.
+            If the replica grouping size is 4, and shard_over is 2, the value of
+            each group will be sharded once over group members 0 and 1, and
+            once over group members 2 and 3.
+            The replica grouping size must be divisible by shard_over.
         retrieval_mode (Optional[Literal["one_per_group", "all_replicas"]]):
             One of:
 
@@ -1178,9 +1215,7 @@ def replica_sharded_variable(
     import popxl.ops as ops
 
     _dtype = dtype or dtypes.dtype.as_dtype(dtype)
-    buffer = replica_sharded_buffer(
-        data.shape, _dtype, replica_grouping, shard_grouping
-    )
+    buffer = replica_sharded_buffer(data.shape, _dtype, replica_grouping, shard_over)
 
     # Create a remote RTS variable
     var = remote_replica_sharded_variable(

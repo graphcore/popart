@@ -86,7 +86,7 @@ class RemoteBuffer:
         tensor_dtype = t.dtype._pb_dtype
         if (tensor_shape != existing_shape) or (tensor_dtype != existing_dtype):
             raise ValueError(
-                f"Tensor does not match buffer.\n"
+                f"Tensor {t.id} does not match buffer.\n"
                 f"Existing remote buffer has "
                 f"shape={existing_shape} and "
                 f"dtype={existing_dtype}.\n"

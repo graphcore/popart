@@ -26,11 +26,11 @@ def test_rts_sharding_factor():
 
         # TODO: Test with replica_grouping with stride > 1
         w_v, w_shard = popxl.replica_sharded_variable(
-            input_w, popxl.float32, "w", shard_grouping=w_rts_grouping
+            input_w, popxl.float32, "w", shard_over=w_rts_grouping.group_size
         )
 
         m_buffer = popxl.replica_sharded_buffer(
-            input_m.shape, popxl.float32, shard_grouping=m_rts_grouping
+            input_m.shape, popxl.float32, shard_over=m_rts_grouping.group_size
         )
         m_v = popxl.remote_replica_sharded_variable(input_m, m_buffer)
 
@@ -63,29 +63,38 @@ def test_rts_sharding_factor():
 def test_invalid_sharding_factor():
     ir = popxl.Ir(replication=8)
     with ir.main_graph:
+        # shard_over higher than ir.replication_factor
         with pytest.raises(ValueError):
-            _ = popxl.replica_sharded_buffer(
-                (4, 4), popxl.float32, shard_grouping=ir.replica_grouping(group_size=16)
-            )
-        with pytest.raises(ValueError):
-            _ = popxl.replica_sharded_buffer(
-                (4, 4), popxl.float32, shard_grouping=ir.replica_grouping(stride=2)
-            )
+            _ = popxl.replica_sharded_buffer((4, 4), popxl.float32, shard_over=16)
+        # shard_over higher than replica_grouping.group_size
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
                 (4, 4),
                 popxl.float32,
                 replica_grouping=ir.replica_grouping(group_size=4),
-                shard_grouping=ir.replica_grouping(group_size=8),
+                shard_over=8,
             )
+        # replica_grouping.group_size not divisible by shard_over
         with pytest.raises(ValueError):
             _ = popxl.replica_sharded_buffer(
                 (4, 4),
                 popxl.float32,
-                replica_grouping=ir.replica_grouping(stride=4),
-                shard_grouping=ir.replica_grouping(stride=2),
+                replica_grouping=ir.replica_grouping(group_size=4),
+                shard_over=3,
             )
 
 
-if __name__ == "__main__":
-    test_invalid_sharding_factor()
+def test_sharding_valid_when_global_replication_but_no_local_replication():
+    global_rf = 8
+
+    ir = popxl.Ir()
+
+    # Emulate what state PopDist would set
+    opts = ir._pb_ir.getSessionOptions()
+    opts.enableDistributedReplicatedGraphs = True
+    opts.globalReplicaOffset = 0
+    opts.globalReplicationFactor = global_rf
+
+    # Should not throw.
+    with ir.main_graph:
+        _ = popxl.replica_sharded_buffer((4, 4), popxl.float32, shard_over=global_rf)
