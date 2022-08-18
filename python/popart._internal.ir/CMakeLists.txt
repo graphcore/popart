@@ -201,6 +201,7 @@ add_popart_python_module(
   bindings/op/pool.cpp
   bindings/op/printtensor.cpp
   bindings/op/argminmax.cpp
+  bindings/op/printtensor.cpp
   bindings/op/resize.cpp
   bindings/op/matmul.cpp
   bindings/op/if.cpp

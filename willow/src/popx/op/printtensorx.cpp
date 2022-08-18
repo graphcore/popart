@@ -1,6 +1,7 @@
 // Copyright (c) 2019 Graphcore Ltd. All rights reserved.
 #include <snap/Program.hpp>
 #include <string>
+#include <poplar/PrintTensor.hpp>
 #include <poplar/StringRef.hpp>
 #include <popart/op/printtensor.hpp>
 #include <popart/popx/op/printtensorx.hpp>
@@ -17,15 +18,30 @@ namespace popart {
 namespace popx {
 class Devicex;
 
+const poplar::PrintTensorFmt toPoplarPrintTensorFmt(const PrintTensorFmt &fmt) {
+  return poplar::PrintTensorFmt(
+      fmt.summariseThreshold,
+      fmt.edgeItems,
+      fmt.maxLineWidth,
+      fmt.digits,
+      static_cast<poplar::PrintTensorFmt::FloatFormat>(
+          static_cast<int>(fmt.floatFormat)),
+      fmt.separator,
+      fmt.openBracket,
+      fmt.closeBracket);
+}
+
 PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : PopOpx(op, devicex) {
   verifyOp<PrintTensorOp>(op, Onnx::CustomOperators::PrintTensor_1);
 }
 
 void PrintTensorOpx::grow(snap::program::Sequence &prog) const {
-  auto input = getInTensor(PrintTensorOp::getInIndex());
+  const auto &op = getOp<PrintTensorOp>();
+  auto input     = getInTensor(PrintTensorOp::getInIndex());
 
-  if (getOp<PrintTensorOp>().shouldPrint()) {
-    auto printProg = snap::program::PrintTensor(getTitle(), input);
+  if (op.shouldPrint()) {
+    auto printProg = snap::program::PrintTensor(
+        getTitle(), input, toPoplarPrintTensorFmt(op.getFmt()));
     prog.add(printProg);
   }
 

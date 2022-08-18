@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <popart/op/elementwise.hpp>
+#include <popart/printtensorfmt.hpp>
 
 #include "popart/op.hpp"
 
@@ -22,6 +23,13 @@ public:
                 const std::string &title,
                 const Op::Settings &);
 
+  PrintTensorOp(const OperatorIdentifier &,
+                bool printSelf,
+                bool printGradient,
+                const std::string &title,
+                const PrintTensorFmt &fmt,
+                const Op::Settings &);
+
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -33,11 +41,13 @@ public:
   bool shouldPrint() const { return printSelf; }
   const std::string &getTitle() const { return title; }
   void setTitle(std::string title_) { title = std::move(title_); }
+  const PrintTensorFmt &getFmt() const { return fmt; }
 
 private:
   bool printSelf;
   bool printGradient;
   std::string title;
+  const PrintTensorFmt fmt{};
 };
 
 } // namespace popart

@@ -262,12 +262,43 @@ public:
    *      printed.
    * \param debugContext Optional debug information.
    * \param title An optional title to print.
+   * \param summariseThreshold (default 1000) If the number of elements of the
+   * tensor exceeds this threshold the output will be summarised. Only the edge
+   * elements will be displayed with an ellipsis indicating skipped elements.
+   * A value of 0 will disable summarisation.
+   * \param edgeItems (default 3) number of edge elements to include at the
+   * beginning and end when summarisation is enabled
+   * \param maxLineWidth (default 75) lines longer than this limit will be split
+   * across multiple lines. A value of 0 will disable line splitting.
+   * \param digits (default 8) number of digits to display. For integers this
+   * limit can be exceeded if any number is large enough. For floating points
+   * this does not include the exponent. The number of digits is used in
+   * conjunction analysis of the tensor to determine the width of each element
+   * to align all elements when printed. A value of 0 disables this analysis
+   * and each elements will be printed in an unaligned format.
+   * \param floatFormat (default 0=Auto) determines the floating point format to
+   * use. 0=auto, 1=fixed, 2=scientific 3=none. Automatic mode determines the
+   * appropriate format based on the data. If `digits==0` this option is
+   * disregarded and the floatFormat is set to `none`.
+   * \param separator (default space) character used to delininate values.
+   * \param openBracket (default square bracket) character used to open a
+   * tensor.
+   * \param closeBracket (default square bracket) character used to close a
+   * tensor.
    * \return The tensor id of the result tensor.
    */
   TensorId printtensor(const std::vector<TensorId> &args,
                        int64_t print_gradient           = 1,
                        const DebugContext &debugContext = {},
-                       const std::string &title         = {});
+                       const std::string &title         = {},
+                       const int summariseThreshold     = 1000,
+                       const int edgeItems              = 3,
+                       const int maxLineWidth           = 75,
+                       const int digits                 = 8,
+                       const int floatFormat            = 0,
+                       const char separator             = ' ',
+                       const char openBracket           = '[',
+                       const char closeBracket          = ']');
 
   /**
    * Add a no-op operation to the model.

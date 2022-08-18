@@ -7,6 +7,7 @@
 #include <popart/op/printtensor.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/printtensorfmt.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 
@@ -27,6 +28,15 @@ PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
                              const Op::Settings &settings_)
     : ElementWiseUnaryOp(opid_, settings_), printSelf(printSelf_),
       printGradient(printGradient_), title(title_) {}
+
+PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
+                             bool printSelf_,
+                             bool printGradient_,
+                             const std::string &title_,
+                             const PrintTensorFmt &fmt,
+                             const Op::Settings &settings_)
+    : ElementWiseUnaryOp(opid_, settings_), printSelf(printSelf_),
+      printGradient(printGradient_), title(title_), fmt(fmt) {}
 
 std::unique_ptr<Op> PrintTensorOp::clone() const {
   return std::make_unique<PrintTensorOp>(*this);
@@ -51,6 +61,7 @@ std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
                                       printGradient,
                                       printGradient,
                                       newTitle,
+                                      fmt,
                                       getSettings()));
   return upops;
 }
@@ -96,9 +107,35 @@ static OpCreator<PrintTensorOp> printtensorOpCreator(
                                "print_gradient", true) != 0;
       std::string title =
           info.attributes.getAttribute<Attributes::String>("title", "");
+      unsigned summariseThreshold = static_cast<unsigned>(
+          info.attributes.getAttribute<Attributes::Int>("summariseThreshold"));
+      unsigned edgeItems = static_cast<unsigned>(
+          info.attributes.getAttribute<Attributes::Int>("edgeItems"));
+      unsigned maxLineWidth = static_cast<unsigned>(
+          info.attributes.getAttribute<Attributes::Int>("maxLineWidth"));
+      unsigned digits = static_cast<unsigned>(
+          info.attributes.getAttribute<Attributes::Int>("digits"));
+      PrintTensorFmt::FloatFormat floatFormat =
+          static_cast<PrintTensorFmt::FloatFormat>(
+              info.attributes.getAttribute<Attributes::Int>("floatFormat"));
+      char separator = static_cast<char>(
+          info.attributes.getAttribute<Attributes::Int>("separator"));
+      char openBracket = static_cast<char>(
+          info.attributes.getAttribute<Attributes::Int>("openBracket"));
+      char closeBracket = static_cast<char>(
+          info.attributes.getAttribute<Attributes::Int>("closeBracket"));
+
+      const PrintTensorFmt fmt{summariseThreshold,
+                               edgeItems,
+                               maxLineWidth,
+                               digits,
+                               floatFormat,
+                               separator,
+                               openBracket,
+                               closeBracket};
 
       return std::unique_ptr<Op>(new PrintTensorOp(
-          info.opid, true, printGradient, title, info.settings));
+          info.opid, true, printGradient, title, fmt, info.settings));
     },
     true);
 } // namespace

@@ -31,6 +31,7 @@
 #include <popart/op/printtensor.hpp>
 #include <popart/op/resize.hpp>
 #include <popart/op/roialign.hpp> // IWYU pragma: keep
+#include <popart/printtensorfmt.hpp>
 
 #include "bindings/basicoptionals.hpp"
 #include "bindings/op/argminmax.hpp"
@@ -450,14 +451,16 @@ void bindManualCreateOpFunctionToGraphClass(py::class_<Graph> g) {
          bool printSelf_,
          bool printGradient_,
          const std::string &title_,
+         const PrintTensorFmt &fmt_,
          const Op::Settings &settings_) {
         return self.createOp<PrintTensorOp>(
-            opid, printSelf_, printGradient_, title_, settings_);
+            opid, printSelf_, printGradient_, title_, fmt_, settings_);
       },
       py::arg("opid"),
       py::arg("printSelf"),
       py::arg("printGradient"),
       py::arg("title"),
+      py::arg("fmt"),
       py::arg("settings"),
       py::return_value_policy::reference);
 
@@ -1001,9 +1004,10 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
          bool printSelf_,
          bool printGradient_,
          const std::string &title_,
+         const PrintTensorFmt &fmt_,
          const Op::Settings &settings_) {
         return self.createConnectedOp<PrintTensorOp>(
-            in, out, opid, printSelf_, printGradient_, title_, settings_);
+            in, out, opid, printSelf_, printGradient_, title_, fmt_, settings_);
       },
       py::arg("in"),
       py::arg("out"),
@@ -1011,6 +1015,7 @@ void bindManualCreateConnectedOpFunctionToGraphClass(py::class_<Graph> g) {
       py::arg("printSelf"),
       py::arg("printGradient"),
       py::arg("title"),
+      py::arg("fmt"),
       py::arg("settings"),
       py::return_value_policy::reference);
 

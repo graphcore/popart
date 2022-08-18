@@ -441,9 +441,26 @@ TensorId AiGraphcoreOpset1::subsample(const std::vector<TensorId> &args,
 TensorId AiGraphcoreOpset1::printtensor(const std::vector<TensorId> &args,
                                         int64_t print_gradient,
                                         const DebugContext &debugContext,
-                                        const std::string &title) {
+                                        const std::string &title,
+                                        const int summariseThreshold,
+                                        const int edgeItems,
+                                        const int maxLineWidth,
+                                        const int digits,
+                                        const int floatFormat,
+                                        const char separator,
+                                        const char openBracket,
+                                        const char closeBracket) {
   std::map<std::string, popart::any> attributes = {
-      {"print_gradient", print_gradient}, {"title", title}};
+      {"print_gradient", print_gradient},
+      {"title", title},
+      {"summariseThreshold", summariseThreshold},
+      {"edgeItems", edgeItems},
+      {"maxLineWidth", maxLineWidth},
+      {"digits", digits},
+      {"floatFormat", floatFormat},
+      {"separator", static_cast<int>(separator)},
+      {"openBracket", static_cast<int>(openBracket)},
+      {"closeBracket", static_cast<int>(closeBracket)}};
 
   BuilderDebugInfo di(debugContext, __POPART_FUNCTION_NAME__, args, attributes);
   attributes.insert({sDebugInfoId, di.getId()});

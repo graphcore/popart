@@ -8,7 +8,7 @@ import re
 def test_basic(capfd):
     builder = popart.Builder()
 
-    shape = popart.TensorInfo("FLOAT", [3])
+    shape = popart.TensorInfo("INT32", [3])
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
 
@@ -38,8 +38,8 @@ def test_basic(capfd):
         anchors = session.initAnchorArrays()
 
         inputs = {
-            i1: np.array([1.0, 2.0, 3.0], dtype=np.float32),
-            i2: np.array([4.0, 5.0, 6.0], dtype=np.float32),
+            i1: np.array([1, 2, 3], dtype=np.int32),
+            i2: np.array([4, 5, 6], dtype=np.int32),
         }
         stepio = popart.PyStepIO(inputs, anchors)
 
@@ -56,20 +56,20 @@ def test_basic(capfd):
     # pattern to match a1 or a2
     a1_or_a2 = f"(?:{a1_pattern}|{a2_pattern})"
     # pattern to match tensor values
-    value_pattern = r"{\d+,\d+,\d+}"
+    value_pattern = r"\[\s*\d+\s*\d+\s*\d+\]"
     pat = f"{a1_or_a2}: {value_pattern}"
     matches = re.findall(pat, output)
 
     assert len(matches) == 2
-    assert matches[0] == "Add:0: {5,7,9}"
-    assert matches[1] == "Add:0/1: {6,9,12}"
+    assert matches[0] == "Add:0: [5 7 9]"
+    assert matches[1] == "Add:0/1: [ 6  9 12]"
 
 
 def test_basic_dangling(capfd):
     """test when the print op output is not consumed by another op"""
     builder = popart.Builder()
 
-    shape = popart.TensorInfo("FLOAT", [3])
+    shape = popart.TensorInfo("INT32", [3])
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
 
@@ -99,8 +99,8 @@ def test_basic_dangling(capfd):
         anchors = session.initAnchorArrays()
 
         inputs = {
-            i1: np.array([1.0, 2.0, 3.0], dtype=np.float32),
-            i2: np.array([4.0, 5.0, 6.0], dtype=np.float32),
+            i1: np.array([1, 2, 3], dtype=np.int32),
+            i2: np.array([4, 5, 6], dtype=np.int32),
         }
         stepio = popart.PyStepIO(inputs, anchors)
 
@@ -117,13 +117,13 @@ def test_basic_dangling(capfd):
     # pattern to match a1 or a2
     a1_or_a2 = f"(?:{a1_pattern}|{a2_pattern})"
     # pattern to match tensor values
-    value_pattern = r"{\d+,\d+,\d+}"
+    value_pattern = r"\[\s*\d+\s*\d+\s*\d+\]"
     pat = f"{a1_or_a2}: {value_pattern}"
     matches = re.findall(pat, output)
 
     assert len(matches) == 2
-    assert matches[0] == "Add:0: {5,7,9}"
-    assert matches[1] == "Add:0/1: {6,9,12}"
+    assert matches[0] == "Add:0: [5 7 9]"
+    assert matches[1] == "Add:0/1: [ 6  9 12]"
 
 
 def test_train(capfd):
@@ -184,30 +184,21 @@ def test_train(capfd):
     captured = capfd.readouterr()
     output = captured.err
 
-    # Remove ESC characters
-    output = re.sub(chr(27), "", output)
+    # Remove whitespace
+    output = re.sub(r"\s", "", output)
 
-    # Remove termcolor sequences
-    output = re.sub(r"\[\d\dm", "", output)
-
-    # Remove popart log lines
-    output = re.sub(r"\[\d\d\d\d-\d\d-\d\d .*?\n", "", output)
-
-    # remove all whitespace
-    output = re.sub(r"\s+", "", output)
-
-    pattern = "name:{{{{float,float},{float,float}}}}"
+    pattern = r"name:\[{4}floatfloat\]\s*\[floatfloat\]{4}"
     pattern = re.sub("name", r"[\\w:]+", pattern)
-    pattern = re.sub("float", r"\\d(?:\\.\\d+)?", pattern)
+    pattern = re.sub("float", r"[\\d\.]+", pattern)
 
     matches = re.findall(pattern, output)
 
     d__i2 = popart.reservedGradientPrefix() + i2
 
     assert len(matches) == 3
-    assert matches[0] == i2 + ":{{{{1,2},{1,2}}}}"
-    assert matches[1] == c1 + ":{{{{2,2},{6,4}}}}"
-    assert matches[2] == d__i2 + ":{{{{0.4,0.3},{0.2,0.1}}}}"
+    assert matches[0] == i2 + ":[[[[1.00000002.0000000][1.00000002.0000000]]]]"
+    assert matches[1] == c1 + ":[[[[2.00000002.0000000][6.00000004.0000000]]]]"
+    assert matches[2] == d__i2 + ":[[[[0.40000000.3000000][0.20000000.1000000]]]]"
 
 
 def test_custom_title(capfd):
@@ -268,26 +259,17 @@ def test_custom_title(capfd):
     captured = capfd.readouterr()
     output = captured.err
 
-    # Remove ESC characters
-    output = re.sub(chr(27), "", output)
+    # Remove whitespace
+    output = re.sub(r"\s", "", output)
 
-    # Remove termcolor sequences
-    output = re.sub(r"\[\d\dm", "", output)
-
-    # Remove popart log lines
-    output = re.sub(r"\[\d\d\d\d-\d\d-\d\d .*?\n", "", output)
-
-    # remove all whitespace
-    output = re.sub(r"\s+", "", output)
-
-    pattern = "name:{{{{float,float},{float,float}}}}"
+    pattern = r"name:\[{4}floatfloat\]\s*\[floatfloat\]{4}"
     pattern = re.sub("name", r"[\\w:]+", pattern)
-    pattern = re.sub("float", r"\\d(?:\\.\\d+)?", pattern)
+    pattern = re.sub("float", r"[\\d\.]+", pattern)
 
     matches = re.findall(pattern, output)
 
     assert len(matches) == 4
-    assert matches[0] == "foo:{{{{1,2},{1,2}}}}"
-    assert matches[1] == "bar:{{{{2,2},{6,4}}}}"
-    assert matches[2] == "bar_gradient:{{{{0.1,0.1},{0.1,0.1}}}}"
-    assert matches[3] == "foo_gradient:{{{{0.4,0.3},{0.2,0.1}}}}"
+    assert matches[0] == "foo:[[[[1.00000002.0000000][1.00000002.0000000]]]]"
+    assert matches[1] == "bar:[[[[2.00000002.0000000][6.00000004.0000000]]]]"
+    assert matches[2] == "bar_gradient:[[[[0.10000000.1000000][0.10000000.1000000]]]]"
+    assert matches[3] == "foo_gradient:[[[[0.40000000.3000000][0.20000000.1000000]]]]"

@@ -15,8 +15,18 @@ namespace op {
  * Add bindings for the PrintTensor op.
  **/
 void bindPrintTensor(py::module &m);
-
 } // namespace op
+
+/**
+ * Add bindings for `poplar::PrintTensorFmt` class to pybind module.
+ **/
+void bindPrintTensorFmt(py::module &m);
+
+/**
+ * Add bindings for `poplar::bindFloatFormat` class to pybind module.
+ **/
+void bindFloatFormat(py::module &m);
+
 } // namespace ir
 } // namespace _internal
 } // namespace popart

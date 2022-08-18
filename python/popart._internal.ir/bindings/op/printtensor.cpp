@@ -10,6 +10,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h> // IWYU pragma: keep
 #include <popart/op/printtensor.hpp>
+#include <popart/printtensorfmt.hpp>
 
 #include "popart/names.hpp"
 #include "popart/op.hpp"
@@ -37,16 +38,41 @@ void bindPrintTensor(py::module &m) {
                     bool,
                     bool,
                     const std::string &,
+                    const PrintTensorFmt &,
                     const Op::Settings &>(),
            py::arg("opid"),
            py::arg("printSelf"),
            py::arg("printGradient"),
            py::arg("title"),
+           py::arg("fmt"),
            py::arg("settings"))
       .def("getTitle", &PrintTensorOp::getTitle)
       .def("setTitle", &PrintTensorOp::setTitle);
 }
 } // namespace op
+
+void bindPrintTensorFmt(py::module &m) {
+  py::class_<PrintTensorFmt>(m, "PrintTensorFmt")
+      .def(py::init<>())
+      .def(py::init<unsigned,
+                    unsigned,
+                    unsigned,
+                    unsigned,
+                    PrintTensorFmt::FloatFormat,
+                    char,
+                    char,
+                    char>());
+}
+
+void bindFloatFormat(py::module &m) {
+  py::enum_<PrintTensorFmt::FloatFormat>(m, "FloatFormat")
+      .value("Auto", PrintTensorFmt::FloatFormat::Auto)
+      .value("Fixed", PrintTensorFmt::FloatFormat::Fixed)
+      .value("Scientific", PrintTensorFmt::FloatFormat::Scientific)
+      .value("None_", PrintTensorFmt::FloatFormat::None)
+      .export_values();
+}
+
 } // namespace ir
 } // namespace _internal
 } // namespace popart

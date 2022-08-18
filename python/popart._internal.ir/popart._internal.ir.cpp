@@ -45,6 +45,7 @@
 #include "bindings/tensors.hpp"
 #include "bindings/topocons.hpp"
 #include "bindings/util.hpp"
+#include "popart/operators.hpp"
 // transforms
 #include "bindings/transforms/autodiff.hpp"
 #include "bindings/transforms/decomposesum.hpp"
@@ -85,6 +86,8 @@ PYBIND11_MODULE(popart_internal_ir, m) {
   bindCommGroup(m);
   bindUtil(m);
   bindTopoCons(m);
+  bindPrintTensorFmt(m);
+  bindFloatFormat(m);
   // Ops
   {
     op::_bindAll(m);

@@ -29,7 +29,8 @@ def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
     else:
         d0 = builder.addInputTensor(popart.TensorInfo("FLOAT", d_shape))
         in_name = d0
-    p = builder.aiGraphcore.printtensor([d0])
+    # Print tensor without summarisation and line breaking
+    p = builder.aiGraphcore.printtensor([d0], 1, "print", "t", 0, 3, 0)
 
     opts = popart.SessionOptions()
     opts.syntheticDataMode = syntheticDataMode
@@ -49,8 +50,8 @@ def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
 
 
 def numpy_array_from_printtensor_string(string):
-    stringData = string.partition("{")[2].partition("}")[0]
-    data = np.fromstring(stringData, dtype=float, sep=",")
+    stringData = string.partition("[")[2].partition("]")[0]
+    data = np.fromstring(stringData, dtype=float, sep=" ")
     print(data)
     return data
 
