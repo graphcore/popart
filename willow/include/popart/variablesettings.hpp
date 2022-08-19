@@ -5,11 +5,16 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <memory>
 #include <vector>
 #include <popart/commgroup.hpp>
 #include <popart/names.hpp>
+#include <popart/replicagrouping.hpp>
+#include <popart/util/expressionchecking.hpp>
 
 namespace popart {
+
+class VariableSettingsDomain;
 
 /**
  * Enum type that describes how to retrieve variables from
@@ -49,13 +54,20 @@ class VariableSettings {
 private:
   /**
    * How this Variable is grouped across graph replication.
+   *
+   * A smart pointer is used, so that a forward-declaration of
+   * `popart::VariableSettingsDomain` can be used. The smart pointer is shared,
+   * so that `popart::VariableSettings` can be copied using the default copy
+   * constructor.
    */
-  CommGroup sharedVariableDomain = CommGroup(CommGroupType::All, 0);
+  std::shared_ptr<VariableSettingsDomain> domain_;
 
   /**
    * Dictates how Variable retrieval is conducted.
    */
   VariableRetrievalMode retrievalMode = VariableRetrievalMode::OnePerGroup;
+
+  const ReplicaGrouping &getReplicaGrouping() const;
 
 public:
   /**
@@ -67,9 +79,14 @@ public:
   /**
    * \return the CommGroup sharedVariableDomain of this VariableSettings.
    */
-  const CommGroup getSharedVariableDomain() const {
-    return sharedVariableDomain;
-  }
+  const CommGroup getSharedVariableDomain() const;
+
+  /**
+   * \param numReplicas The number of replicas in the IR this is used in.
+   * \return the ReplicaGrouping domain of this VariableSettings.
+   */
+  ReplicaGrouping getReplicaGrouping(unsigned numReplicas) const;
+
   /**
    * \return the VariableRetrievalMode retrievalMode of this VariableSettings.
    */
@@ -96,6 +113,15 @@ public:
    */
   VariableSettings(CommGroup sharedVariableDomain_,
                    VariableRetrievalMode retrievalMode_);
+
+  explicit VariableSettings(unsigned numReplicas);
+
+  VariableSettings(unsigned numReplicas, VariableRetrievalMode retrievalMode);
+
+  explicit VariableSettings(const ReplicaGrouping &grouping);
+
+  VariableSettings(const ReplicaGrouping &grouping,
+                   VariableRetrievalMode retrievalMode);
 
   /**
    * Calculate the number of replicas that will
@@ -181,7 +207,7 @@ public:
    * \param other VariableSettings to compare these settings to.
    * \return      True if all internal elements are the same
    */
-  bool operator==(VariableSettings other);
+  bool operator==(const VariableSettings &other) const;
 
   /**
    * Compare two variable-settings
@@ -189,7 +215,7 @@ public:
    * \return      False if all internal elements are the same
    *
    */
-  bool operator!=(VariableSettings other);
+  bool operator!=(const VariableSettings &other) const;
 };
 
 /**
