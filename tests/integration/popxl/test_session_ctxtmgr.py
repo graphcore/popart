@@ -81,8 +81,19 @@ def test_reentry():
         assert not session.is_attached
 
 
-def test_session_ctxtmgr_attach_detach():
-    ir = popxl.Ir()
+@pytest.mark.parametrize("use_popdist", [True, False])
+def test_session_ctxtmgr_attach_detach(use_popdist: bool):
+    def is_hw_test() -> bool:
+        import os
+
+        return os.environ.get("TEST_TARGET") == "Hw"
+
+    if use_popdist and not is_hw_test():
+        pytest.skip("Can only test with popdist on Hw")
+
+    # PopDist environment has not been setup, so it will default to behaving in
+    # a simple no-replcation no-multi-instancing manner.
+    ir = popxl.Ir(replication="popdist" if use_popdist else 1)
 
     with ir.main_graph:
         w = popxl.variable(1)
