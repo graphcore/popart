@@ -17,7 +17,7 @@ In the following example of importing a graph for inference, the `torchvision pa
 to create a pre-trained `AlexNet graph <https://pytorch.org/hub/pytorch_vision_alexnet/>`__ , with a 4 x 3 x 244 x 244 input. The graph
 has an ONNX output called ``output``, and the ``DataFlow`` object
 (:py:class:`Python <popart.DataFlow>`, :cpp:class:`C++ <popart::DataFlow>`)
-contains an entry to fetch that anchor tensor.
+contains an entry to fetch that :term:`anchor tensor`.
 
 .. literalinclude:: files/importing_graphs.py
   :language: python

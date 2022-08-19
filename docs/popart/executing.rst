@@ -74,7 +74,7 @@ This section describes how to set input and output data buffers for both C++ and
       :cpp:class:`~popart::IStepIO` objects. Each call to :cpp:func:`Session.run() <popart::Session::run>` takes such an
       :cpp:class:`~popart::IStepIO` object. For every input tensor, the :cpp:class:`~popart::IStepIO` object
       contains a number of buffers that the session can read input data from,
-      and for every anchor tensor, it contains a number of buffers to write
+      and for every :term:`anchor tensor`, it contains a number of buffers to write
       output data to. Anchor tensors are described in detail in
       :numref:`retrieving_results`.
 
@@ -86,7 +86,7 @@ This section describes how to set input and output data buffers for both C++ and
         2. The :cpp:class:`~popart::DataFlow` configuration (:numref:`retrieving_results`) as
            passed to the constructor of the :cpp:class:`~popart::Session` object.
         3. The number of local replicas.
-        4. The gradient accumulation factor.
+        4. The gradient :term:`accumulation factor`.
 
       :numref:`popart_cpp_api_reference` contains more information about inputs (:cpp:class:`~popart::IStepIO` class) and outputs (:cpp:class:`~popart::DataFlow` class).
 

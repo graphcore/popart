@@ -29,9 +29,9 @@ The predefined checkpoint names are:
 - ``FWD1``: After the pre-alias patterns have been applied to ``FWD0``.
 - ``BWD0``: After growing the backward pass (including the optimiser step). Note this happens before optimiser decomposition, so the optimiser will appear as a single special op rather than the many ops that implement it.
 - ``PREALIAS``: After pre-alias transforms have been applied to ``BWD0``.
-- ``MAINLOOPS``: After the ``MainLoops`` transform has been applied. This transform adds explicit loop ops to the IR for device iterations (batches per step) and gradient accumulation.
+- ``MAINLOOPS``: After the ``MainLoops`` transform has been applied. This transform adds explicit loop ops to the IR for device iterations (:term:`batches per step`) and gradient accumulation.
 - ``FINAL``: The final IR after preparation.
-- The following checkpoint names only apply if you are using *explicit* pipelining (Note: The default is implicit pipelining). Explicit pipelining happens between ``MAINLOOPS`` and ``FINAL``:
+- The following checkpoint names only apply if you are using *explicit* :term:`pipelining` (Note: The default is implicit pipelining). Explicit pipelining happens between ``MAINLOOPS`` and ``FINAL``:
 
   - ``EXPLICITPIPELINEBEFOREOUTLINE``: Before the outline stage of the transform.
   - ``EXPLICITPIPELINEAFTEROUTLINE``: After the outline stage of the transform.

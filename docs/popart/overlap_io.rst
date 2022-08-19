@@ -23,7 +23,7 @@ The number of IO tiles is set with the :py:attr:`~popart.SessionOptions.numIOTil
   opts = popart.SessionOptions()
   opts.numIOTiles = 128
 
-IO tiles can only be used when virtual graphs are enabled. Virtual graph modes enable assignment of tensors and operations to a subset of IPUs. Within each IPU, they enable assignment of tensors to a subset of tiles (such as compute and IO tiles).
+IO tiles can only be used when :term:`virtual graph` \s are enabled. Virtual graph modes enable assignment of tensors and operations to a subset of IPUs. Within each IPU, they enable assignment of tensors to a subset of tiles (such as compute and IO tiles).
 
 The virtual graph mode is set with the :py:attr:`~popart.SessionOptions.virtualGraphMode` ``SessionOption``. The supported virtual graph modes are defined by :py:attr:`~popart.VirtualGraphMode`:
 

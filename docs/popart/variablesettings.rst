@@ -122,7 +122,7 @@ and the size of each group. Possible values for ``CommGroupType`` are:
 Instantiating variables with VariableSettings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The number of replicas, the *replication factor*, is needed to create variables with :py:class:`popart.VariableSettings`
+The number of replicas, the :term:`replication factor`, is needed to create variables with :py:class:`popart.VariableSettings`
 because the number of communication groups requiring initialization, and thus
 the size of the instantiating buffer, depends on the replication factor.
 

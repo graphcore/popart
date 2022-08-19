@@ -9,7 +9,7 @@ This chapter describes techniques for optimising the performance of your model. 
 Pipelined execution
 -------------------
 
-Pipelining is a feature for optimising utilization of a multi-IPU system by
+:term:`Pipelining` is a feature for optimising utilization of a multi-IPU system by
 parallelizing the execution of model partitions, with each partition operating
 on a separate mini-batch of data. We refer to these partitions here as pipeline
 stages. Refer to the section on :ref:`ipu-programmers-guide:model parallelism and pipelining` in the :doc:`ipu-programmers-guide:index` for a more detailed description of pipelining.
@@ -105,7 +105,7 @@ a model twice, pass the following session options to your session:
 Note that if one replica of your model uses, say, 3 IPUs then with a
 ``replicatedGraphCount`` of 2 you will need 6 IPUs to run both replicas.
 Also, you will need to provide twice the volume of input data. The data returned
-for each anchor will include a local replication dimension for
+for each :term:`anchor tensor` will include a local replication dimension for
 all values of ``AnchorReturnType``.
 
 More details on the expected shapes of input and output data (for a given set of
@@ -129,7 +129,7 @@ replications (*including* any local replications). Finally, set
 ``globalReplicaOffset`` (:py:attr:`Python <popart.SessionOptions.globalReplicaOffset>`,
 :cpp:var:`C++ <popart::SessionOptions::globalReplicaOffset>`) to a different offset for each PopART
 process involved, using offsets starting from 0 and incremented by the local
-replication factor for each process.
+:term:`replication factor` for each process.
 For example, if the local replication factor is 2 and we want to replicate this
 over four PopART processes then we need to configure a global replication
 factor of 8. We then expect the ``globalReplicaOffset`` in the PopART
