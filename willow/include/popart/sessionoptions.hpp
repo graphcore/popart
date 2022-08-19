@@ -900,10 +900,10 @@ struct SessionOptions {
    * threshold in the MergeVarUpdateType::AutoLoose VarUpdateOp merging
    * algorithm.
    *
-   *  ```
+   *  ```{.py}
    *  min(mergeVarUpdateMemThreshold, liveAtPeak - liveCurrently +
    * looseThresholdAtPeak)
-   *```
+   * ```
    * where:
    *  * \c liveAtPeak is an estimate of the maximum live memory of the
    *    computation; and

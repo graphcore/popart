@@ -441,7 +441,7 @@ public:
   /// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
-  /// ```
+  /// ```{.cpp}
   /// Adaptive({{"defaultLearningRate", {0.02, False}},
   //           {"defaultAlpha", {0.99, True}}},
   ///          AdaptiveMode::RMSProp,

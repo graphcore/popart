@@ -1072,7 +1072,7 @@ public:
    * the `indices` define the groups for the reduction operation.
    *
    * In pseudocode the operator can be expressed as:
-   * ```
+   * ```{.py}
    *  for i in range(axis_size):
    *      output[i] = reduce(src[index == i])
    * ```

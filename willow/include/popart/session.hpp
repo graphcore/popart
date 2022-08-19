@@ -84,7 +84,7 @@ public:
    * combined random state for a session, do the following:
    *
    * C++:
-   * ```
+   * ```{.cpp}
    * // Store random state (session s0).
    * auto seed = s0.getRandomSeed();
    * auto rngState = s0.getRNGState();
@@ -95,13 +95,13 @@ public:
    * ```
    *
    * Python:
-   * ```
+   * ```{.py}
    * # Store random state (session s0).
    * seed = s0.getRandomSeed()
    * rngState = s0.getRNGState()
    *
    * # Restore random state (session s1).
-   * s1.setRandomSeed(seed)   // <-- affects RNG state, order important
+   * s1.setRandomSeed(seed)   # <-- affects RNG state, order important
    * s1.setRNGState(rngState)
    * ```
    *

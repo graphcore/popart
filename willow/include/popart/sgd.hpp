@@ -802,7 +802,7 @@ public:
   /// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
-  /// ```
+  /// ```{.cpp}
   /// SGD({{"defaultLearningRate", {0.02, false}},
   ///     {"defaultMomentum", {0.6, true}}});
   /// ```

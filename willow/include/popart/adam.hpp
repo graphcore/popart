@@ -480,7 +480,7 @@ public:
   //// \param debugContext Optional debug context.
   ///
   /// **EXAMPLE**:
-  /// ```
+  /// ```{.cpp}
   /// Adam({{"defaultLearningRate", {0.02, False}},
   ///       {"defaultBeta1", {0.9, True}},
   ///       {"defaultBeta2":{0.999, True}}},
