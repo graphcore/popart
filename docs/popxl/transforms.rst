@@ -108,6 +108,8 @@ the first inputs of the gradient graph. :numref:`code-autodiff-example` shows ho
   :end-before: Op end
   :name: code-autodiff-example
   :caption: Example of calculating gradients with ``autodiff``
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 

@@ -32,13 +32,15 @@ stays the same. We can achieve this when preparing the dataset by simply keeping
         opts.test_batch_size * opts.replication_factor,
         opts.batch_size * opts.replication_factor)
 
-We also need to change the data passed to each session to match the required dimension of its inputs in ``train``.
-(:numref:`sec_session_inputs`)
+We also need to change the data passed to each session to match the required dimension of its inputs in ``train``
+(:numref:`sec_session_inputs`):
 
 .. literalinclude:: files/mnist_rts.py
   :language: python
   :start-after: train_session_inputs begin
   :end-before: train_session_inputs end
+  :linenos:
+  :lineno-match:
 
 After making similar changes of data shape for the test session, replication is also supported in the testing of
 the trained model. You can check whether the replication works by running:
@@ -79,6 +81,8 @@ The ``Trainable`` for ``W0``, ``trainable_w0``, is created as shown in the code 
   :language: python
   :start-after: rts_W0 begin
   :end-before: rts_W0 end
+  :linenos:
+  :lineno-match:
 
 The ``Trainable`` for ``W1``, ``trainable_w1``, is created as shown in the code below:
 
@@ -86,6 +90,8 @@ The ``Trainable`` for ``W1``, ``trainable_w1``, is created as shown in the code 
   :language: python
   :start-after: rts_W1 begin
   :end-before: rts_W1 end
+  :linenos:
+  :lineno-match:
 
 Notice that when we get the gradient for an input RTS variable tensor, the tensor is the (non-sharded) "full"
 tensor which has been gathered from the shards by using :py:func:`~popxl.ops.collectives.replicated_all_gather()`.
@@ -108,3 +114,5 @@ When you update a variable tensor, and if a remote buffer is used, you also need
   :language: python
   :start-after: update begin
   :end-before: update end
+  :linenos:
+  :lineno-match:

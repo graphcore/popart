@@ -57,7 +57,7 @@ Python bindings
 
 It is necessary to define Python bindings for your custom operation's C++
 code, so that the custom operations can be used in Python. We use the
-:ref:`Pybind11 <https://github.com/pybind/pybind11>` library to create these
+`Pybind11 <https://github.com/pybind/pybind11>`__ library to create these
 bindings, using an experimental template function
 ``makeParameterizedOpBindings`` as follows:
 
@@ -67,6 +67,8 @@ bindings, using an experimental template function
     :caption: Creating a Python binding of LeakyReluOp using Pybind11
     :start-after: pybind begin
     :end-before: pybind end
+    :linenos:
+    :lineno-match:
 
 .. only:: html
 
@@ -96,6 +98,8 @@ Leaky ReLU to the IR, similar to the other ops in PopXL:
     :name: leaky_relu_popxl
     :caption: PopXL Python wrapper for Leaky ReLU
     :start-after: leaky_relu begin
+    :linenos:
+    :lineno-match:
 
 .. only:: html
 
@@ -103,12 +107,12 @@ Leaky ReLU to the IR, similar to the other ops in PopXL:
 
 Note that in :numref:`leaky_relu_popxl`, the module name
 ``leaky_relu_op_impl`` is based on the name of the
-:ref:`Pybind11 <https://github.com/pybind/pybind11>` module in
+`Pybind11 <https://github.com/pybind/pybind11>`__ module in
 :numref:`sec_custom_op_python_bindings`.
 
 .. include:: custom_ops_cppimport.rst
 
-.. _sec_custom_op_using
+.. _sec_custom_op_using:
 
 Using your custom operation
 ---------------------------
@@ -125,6 +129,8 @@ you can use this function much like you can built-in PopXL operations:
     :emphasize-lines: 8, 35
     :start-after: run_leaky_relu begin
     :end-before: run_leaky_relu end
+    :linenos:
+    :lineno-match:
 
 
 .. only:: html

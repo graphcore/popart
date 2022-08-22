@@ -34,6 +34,8 @@ directly calling the Python function ``increment_fn()``.
   :caption: Example to create and call graphs
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -53,6 +55,8 @@ for different input tensors, ``w1`` and ``w2``, which have different shapes.
   :caption: Example of creating multiple graphs with same function
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -93,6 +97,8 @@ for this input as well. You can use it to instantiate the weights of layers inte
   :end-before: Op end
   :name: multi_call_graph_input_example
   :caption: Example of a graph being called multiple times with different inputs
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -123,6 +129,8 @@ of the variable tensor ``x`` is changed to 2.
   :caption: Example of ``call_with_info`` op
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -178,6 +186,8 @@ are copied to the inputs for the second iteration.
   :caption: Example of ``repeat`` op to increment a tensor by a fixed value
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -195,6 +205,8 @@ method.
   :caption: Example of ``repeat`` op using ``inputs_dict``
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -243,10 +255,12 @@ A minimal example follows:
 
 .. literalinclude:: files/code_loading.py
   :language: python
-  :name: code_loading
+  :name: code_loading_minimal
   :caption: Minimal example of code loading in PopXL
   :start-after: BEGIN_BASIC
   :end-before: END_BASIC
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -326,10 +340,12 @@ demonstrates this:
 
 .. literalinclude:: files/code_loading.py
   :language: python
-  :name: code_loading
+  :name: code_loading_multiple
   :caption: Code loading example with multiple loads and calls
   :start-after: BEGIN_COMPLEX
   :end-before: END_COMPLEX
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -432,10 +448,12 @@ uses ``remote_code_load`` to load another graph:
 
 .. literalinclude:: files/code_loading_nested.py
   :language: python
-  :name: code_loading
+  :name: code_loading_nested
   :caption: Example of nested code loading
   :start-after: BEGIN_BASIC
   :end-before: END_BASIC
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -453,10 +471,12 @@ can be reused for creating many graphs:
 
 .. literalinclude:: files/code_loading_nested.py
   :language: python
-  :name: code_loading
+  :name: code_loading_nested_2
   :caption: More complex example of nested code loading
   :start-after: BEGIN_NOT_DYN
   :end-before: END_NOT_DYN
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 

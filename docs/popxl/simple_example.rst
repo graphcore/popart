@@ -17,9 +17,11 @@ The IR in PopXL is represented by the class :py:class:`~popxl.Ir`.
 
 .. literalinclude:: files/simple_addition.py
   :language: python
-  :lines: 8-9,11-27
+  :lines: 8-27
   :name: simple_example
   :caption: Simple example using PopXL
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 

@@ -365,7 +365,7 @@ def train(train_session, training_data, opts, input_streams, loss_stream) -> Non
     for epoch in range(1, opts.epochs + 1):
         print("Epoch {0}/{1}".format(epoch, opts.epochs))
         bar = tqdm(training_data, total=nb_batches)
-        # train_session_inputs begain
+        # train_session_inputs begin
         for data, labels in bar:
             if opts.replication_factor > 1:
                 data = data.reshape((opts.replication_factor, opts.batch_size, 28, 28))

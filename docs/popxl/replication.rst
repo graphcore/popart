@@ -108,6 +108,8 @@ Code examples
     :lines: 1-29
     :caption: Example of setting up different variables.
     :name: var_settings_example
+    :linenos:
+    :lineno-match:
 
 Retrieval Modes
 ---------------
@@ -123,3 +125,5 @@ a group should be identical. However, if you wish to return all replicas within 
     :lines: 31-46
     :caption: Example of setting up variables with all_replicas retrieval mode.
     :name: var_settings_example_2
+    :linenos:
+    :lineno-match:

@@ -16,6 +16,8 @@ First, you need to import all the required libraries.
   :language: python
   :start-after: import begin
   :end-before: import end
+  :linenos:
+  :lineno-match:
 
 Prepare dataset
 ---------------
@@ -25,6 +27,8 @@ You can get the MNIST training and validation dataset using `torch.utils.data.Da
   :language: python
   :start-after: dataset begin
   :end-before: dataset end
+  :linenos:
+  :lineno-match:
 
 Create IR for training
 ----------------------
@@ -36,6 +40,8 @@ order as they are added by using context manager :py:func:~popxl.in_sequence`.
   :language: python
   :start-after: create ir begin
   :end-before: create ir end
+  :linenos:
+  :lineno-match:
 
 The initial operation is to load input images and labels to ``x`` and ``labels``, respectively
 from host-to-device streams ``img_stream`` and ``label_stream``.
@@ -44,6 +50,8 @@ from host-to-device streams ``img_stream`` and ``label_stream``.
   :language: python
   :start-after: h2d begin
   :end-before: h2d end
+  :linenos:
+  :lineno-match:
 
 After the data is loaded from host, you can build the network, calculate the loss and gradients,
 and finally update the weights. This process is shown in :numref:`fig_popxl_mnist` and will be
@@ -62,6 +70,8 @@ To monitor the training process, you can also stream the loss from the IPU devic
   :language: python
   :start-after: out begin
   :end-before: out end
+  :linenos:
+  :lineno-match:
 
 
 Create network
@@ -75,6 +85,8 @@ subgraph to do the linear computation.
   :language: python
   :start-after: linear begin
   :end-before: linear end
+  :linenos:
+  :lineno-match:
 
 In the diagram :numref:`fig_popxl_mnist`, you can see two graphs created from the two linear
 layers by using :py:func:`popxl.Ir.create_graph` and called by using :py:func:`popxl.call_with_info`.
@@ -87,6 +99,8 @@ infos are all returned for the next step. This forward graph of the network is c
   :language: python
   :start-after: network begin
   :end-before: network end
+  :linenos:
+  :lineno-match:
 
 .. _sec_grad_example_mnist:
 
@@ -102,6 +116,8 @@ and update the weights and bias in ``update_weights_bias``.
     :language: python
     :start-after: loss begin
     :end-before: loss end
+    :linenos:
+    :lineno-match:
 
 * Construct the graph to calculate the gradients for each layer, ``bwd_graph_info_0`` and ``bwd_graph_info_1``
   by using :py:func:~popxl.transforms.autodiff` (:numref:`sec_autodiff`) transformation on its forward pass graph.
@@ -122,6 +138,8 @@ and update the weights and bias in ``update_weights_bias``.
     :language: python
     :start-after: grad_1 begin
     :end-before: grad_1 end
+    :linenos:
+    :lineno-match:
 
   For the first layer, we can obtain the required gradients in a similar way. Here we will show you an alternative
   approach. We define the list of tensors that require gradients ``grads_required=[linears[0].W, linears[0].b]``
@@ -133,6 +151,8 @@ and update the weights and bias in ``update_weights_bias``.
     :language: python
     :start-after: grad_0 begin
     :end-before: grad_0 end
+    :linenos:
+    :lineno-match:
 
 * Update the weights and bias tensors with SGD by using :py:func:`~popxl.ops.scaled_add_()`.
 
@@ -140,6 +160,8 @@ and update the weights and bias in ``update_weights_bias``.
     :language: python
     :start-after: update begin
     :end-before: update end
+    :linenos:
+    :lineno-match:
 
 Run the IR to train the model
 -----------------------------
@@ -150,6 +172,8 @@ number of epochs. Each session is initiated by one IR as shown in the following 
   :language: python
   :start-after: session begin
   :end-before: session end
+  :linenos:
+  :lineno-match:
 
 The session is run for ``nb_batches`` times for each epoch. Each ``train_session`` run consumes a batch of input images
 and labels, and produces their loss values to the host.
@@ -158,6 +182,8 @@ and labels, and produces their loss values to the host.
   :language: python
   :start-after: train begin
   :end-before: train end
+  :linenos:
+  :lineno-match:
 
 After the training session finishes running, the trained tensor values, in a mapping from tensors to their values ``trained_weights_data_dict``,
 are obtained by using ``train_session.get_tensors_data``.
@@ -172,3 +198,5 @@ For testing the trained tensors, you need to create an IR for testing, ``test_ir
   :language: python
   :start-after: test begin
   :end-before: test end
+  :linenos:
+  :lineno-match:

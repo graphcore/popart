@@ -20,6 +20,7 @@ PopXL User Guide and API (experimental)
     replication
     application_example
     application_example_rts
+    env_vars
     api
     genindex
     legal

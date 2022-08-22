@@ -26,6 +26,8 @@ For instance, in the example :numref:`tensor_addition_code`, ``a`` is a variable
   :caption: Example of tensor addition
   :start-after: Op begin
   :end-before: Op end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 

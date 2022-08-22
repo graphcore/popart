@@ -62,6 +62,8 @@ from the remote buffer to the IPU variable ``loaded_x``. The value of
   :caption: Example to use remote buffer and remote variable
   :start-after: remote_var begin
   :end-before: remote_var end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -171,6 +173,8 @@ example you can see the remote store and load operations are hidden.
          :caption: Example to use remote RTS variable tensor
          :start-after: remote_var begin
          :end-before: remote_var end
+         :linenos:
+         :lineno-match:
 
       .. only:: html
 
@@ -183,6 +187,8 @@ example you can see the remote store and load operations are hidden.
          :caption: Example to use RTS variable tensor
          :start-after: remote_var begin
          :end-before: remote_var end
+         :linenos:
+         :lineno-match:
 
       .. only:: html
 

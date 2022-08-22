@@ -13,6 +13,8 @@ as follows:
   :caption: Example of Session construction
   :start-after: Session begin
   :end-before: Session end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -36,11 +38,12 @@ specified is invalid.
 Running a session
 -----------------
 
-At this point, the ``Ir`` is compiled, but we must perform some more steps
-before executing it on device:
+At this point, the IR is compiled, but we must perform some more steps
+before executing it on the device:
+
   * Attach to the device
-  * Initialise the weight tensors on device (from the values stored on host when building the ``Ir``)
-  * Connect the :py:class:`popxl.HostToDeviceStream`s (i.e. the inputs of your model) to buffers of the appropriate size, shape and dtype
+  * Initialise the weight tensors on the device (from the values stored on the host when building the IR)
+  * Connect the :py:class:`popxl.HostToDeviceStream` streams (that is, the inputs of your model) to buffers of the appropriate size, shape and dtype
 
 :py:class:`popxl.Session` should be used as a context manager to achieve the first two steps; it will attach to the device and load the weights from host onto device.
 Then, to execute the ``Ir`` on given input data, call :py:func:`popxl.Session.run` inside the context, passing a ``Mapping`` from :py:class:`popxl.HostToDeviceStream` to the relevant input data buffers.
@@ -53,6 +56,9 @@ Finally, on exiting the context, the weights will be loaded from device back ont
   :caption: Example of running with :py:func:`popxl.Session.run`
   :start-after: SessionRun begin
   :end-before: SessionRun end
+  :linenos:
+  :lineno-match:
+
 Once you have constructed your session, you can run your model with the relevant inputs to return your outputs. You can do this in two ways:
 
 1. :py:func:`outputs = session.run(inputs, device_desc) <popxl.Session.run>`.
@@ -92,6 +98,8 @@ Alternatively, you can create the output buffers yourself and pass them to :py:f
     :caption: Example of running with :py:func:`popxl.Session.run_with_outputs`
     :start-after: SessionRun2 begin
     :end-before: SessionRun2 end
+    :linenos:
+    :lineno-match:
 
 Finally, there is also :py:func:`popxl.Session.create_host_outputs` that will create the ``Mapping`` for you, with each stream mapped to an empty :py:class:`np.ndarray`.
 This is the method used internally in :py:func:`popxl.Session.run` and provides a shortcut to constructing the output arrays required for :py:func:`popxl.Session.run_with_outputs`.
@@ -114,6 +122,8 @@ progress on your model by storing and reloading the variable tensors.
   :caption: Example of getting and setting tensor data
   :start-after: TensorData begin
   :end-before: TensorData end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -158,6 +168,8 @@ The above points are demonstrated in the following example:
   :caption: Demonstration of exactly when host-device transfers occur during tensor reading and writing.
   :start-after: TensorData begin
   :end-before: TensorData end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -181,6 +193,8 @@ The following code demonstrates the semantics:
   :caption: Demonstration of semantics of nested ``Session`` contexts
   :start-after: Session begin
   :end-before: Session end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
@@ -265,6 +279,8 @@ find that the data will be consumed out of order.
   :caption: Example of num_host_transfers with a repeat op.
   :start-after: SessionRun3 begin
   :end-before: SessionRun3 end
+  :linenos:
+  :lineno-match:
 
 .. only:: html
 
