@@ -4,7 +4,7 @@ import popart._internal.ir as _ir
 from popxl import ReplicaGrouping
 from popxl.context import get_current_context
 from popxl.tensor import Tensor
-from .collectives import CommGroup, to_collective_op, CollectiveOps
+from .collectives import to_collective_op, CollectiveOps
 from popxl.ops.utils import check_in_graph
 
 
@@ -30,10 +30,7 @@ def replicated_all_reduce(
 
     check_in_graph(g, t=t)
 
-    if group is None:
-        comm_group = CommGroup()
-    else:
-        comm_group = group._to_comm_group()
+    group = g.ir.replica_grouping() if group is None else group
 
     settings = ctx._get_op_settings("replicated_all_reduce")
     opid = _ir.OperatorIdentifier(
@@ -45,7 +42,7 @@ def replicated_all_reduce(
         {0: g._create_tensor_id(t.name + "_all_reduce")},
         opid,
         op,
-        comm_group,
+        group._pb_replica_grouping,
         settings,
     )
 
@@ -75,10 +72,7 @@ def replicated_all_reduce_(
 
     check_in_graph(g, t=t)
 
-    if group is None:
-        comm_group = CommGroup()
-    else:
-        comm_group = group._to_comm_group()
+    group = g.ir.replica_grouping() if group is None else group
 
     settings = ctx._get_op_settings("replicated_all_reduce_inplace")
     opid = _ir.OperatorIdentifier(
@@ -90,7 +84,7 @@ def replicated_all_reduce_(
         {0: g._create_tensor_id(t.name + "_all_reduce")},
         opid,
         op,
-        comm_group,
+        group._pb_replica_grouping,
         settings,
     )
 
