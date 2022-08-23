@@ -976,7 +976,8 @@ PYBIND11_MODULE(popart_core, m) {
     }
   }
   {
-    py::class_<TensorLocation> cls(m, "TensorLocation");
+    py::class_<TensorLocation> cls(
+        m, "TensorLocation", DOC(popart, TensorLocation));
     cls.def(py::init<>());
     cls.def(py::init<TensorStorage>(), py::arg("storage"));
     cls.def(py::init<TensorStorage, ReplicatedTensorSharding>(),
@@ -1426,7 +1427,8 @@ PYBIND11_MODULE(popart_core, m) {
         [](const SessionOptions &s) -> int { return s.numIOTiles; },
         [](SessionOptions &s, int numIOTiles) -> void {
           s.numIOTiles = numIOTiles;
-        });
+        },
+        DOC(popart, SessionOptions, numIOTiles));
     cls.def_readwrite("explicitRecomputation",
                       &SessionOptions::explicitRecomputation,
                       DOC(popart, SessionOptions, explicitRecomputation));
@@ -1470,7 +1472,9 @@ PYBIND11_MODULE(popart_core, m) {
               "Please use the alias bufferingDepthMap instead.");
           s.bufferingDepthMap = prefetchBufferingDepthMap;
         });
-    cls.def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode);
+    cls.def_readwrite("virtualGraphMode",
+                      &SessionOptions::virtualGraphMode,
+                      DOC(popart, SessionOptions, virtualGraphMode));
     cls.def_readwrite("enableReplicatedGraphs",
                       &SessionOptions::enableReplicatedGraphs,
                       DOC(popart, SessionOptions, enableReplicatedGraphs));
@@ -1627,7 +1631,9 @@ PYBIND11_MODULE(popart_core, m) {
                       &SessionOptions::automaticLossScalingSettings);
     cls.def_readwrite("replicatedCollectivesSettings",
                       &SessionOptions::replicatedCollectivesSettings);
-    cls.def_readwrite("useHostCopyOps", &SessionOptions::useHostCopyOps);
+    cls.def_readwrite("useHostCopyOps",
+                      &SessionOptions::useHostCopyOps,
+                      DOC(popart, SessionOptions, useHostCopyOps));
     cls.def_readwrite(
         "enableSupportedDataTypeCasting",
         &SessionOptions::enableSupportedDataTypeCasting,
@@ -1813,7 +1819,8 @@ PYBIND11_MODULE(popart_core, m) {
              SINGLE_LINE_DOC(popart, MergeVarUpdateType, AutoLoose));
   }
   {
-    py::enum_<VirtualGraphMode> en(m, "VirtualGraphMode");
+    py::enum_<VirtualGraphMode> en(
+        m, "VirtualGraphMode", DOC(popart, VirtualGraphMode));
     en.value("Off",
              VirtualGraphMode::Off,
              SINGLE_LINE_DOC(popart, VirtualGraphMode, Off));

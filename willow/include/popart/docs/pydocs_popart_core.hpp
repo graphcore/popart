@@ -735,8 +735,9 @@ static const char *__singlelinedoc_popart_AiGraphcoreOpset1_atan2 =
 static const char *__doc_popart_AiGraphcoreOpset1_batchnormalization =
     R"doc(Add a batch normalization operation to the model. This version uses N-1
 as the population size for calculating running variance (like PyTorch).
-Whereas, the Onnx version uses N.
+https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
 
+Whereas, the Onnx version uses N.
 https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
 
 
@@ -751,7 +752,7 @@ Returns:
  A list of normalized output tensors)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_batchnormalization =
-    R"doc(Add a batch normalization operation to the model. This version uses N-1 as the population size for calculating running variance (like PyTorch). Whereas, the Onnx version uses N. https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization Args: args: List of input tensor ids num_outputs: The number of output tensor ids epsilon: The 'epsilon' attribute momentum: The 'momentum' attribute name: Optional identifier for the operation Returns: A list of normalized output tensors)doc";
+    R"doc(Add a batch normalization operation to the model. This version uses N-1 as the population size for calculating running variance (like PyTorch). https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html Whereas, the Onnx version uses N. https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization Args: args: List of input tensor ids num_outputs: The number of output tensor ids epsilon: The 'epsilon' attribute momentum: The 'momentum' attribute name: Optional identifier for the operation Returns: A list of normalized output tensors)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_bitwiseGenericOp =
     R"doc()doc";
@@ -1427,12 +1428,35 @@ Args:
       printed.
  debugContext: Optional debug information.
  title: An optional title to print.
+ summariseThreshold: (default 1000) If the number of elements of the
+ edgeItems: (default 3) number of edge elements to include at the
+ maxLineWidth: (default 75) lines longer than this limit will be split
+ digits: (default 8) number of digits to display. For integers this
+ floatFormat: (default 0=Auto) determines the floating point format to
+ separator: (default space) character used to delininate values.
+ openBracket: (default square bracket) character used to open a
+ closeBracket: (default square bracket) character used to close a
+tensor exceeds this threshold the output will be summarised. Only the edge
+elements will be displayed with an ellipsis indicating skipped elements.
+A value of 0 will disable summarisation.
+beginning and end when summarisation is enabled
+across multiple lines. A value of 0 will disable line splitting.
+limit can be exceeded if any number is large enough. For floating points
+this does not include the exponent. The number of digits is used in
+conjunction analysis of the tensor to determine the width of each element
+to align all elements when printed. A value of 0 disables this analysis
+and each elements will be printed in an unaligned format.
+use. 0=auto, 1=fixed, 2=scientific 3=none. Automatic mode determines the
+appropriate format based on the data. If :code:`digits==0` this option is
+disregarded and the floatFormat is set to :code:`none`.
+tensor.
+tensor.
 
 Returns:
  The tensor id of the result tensor.)doc";
 
 static const char *__singlelinedoc_popart_AiGraphcoreOpset1_printtensor =
-    R"doc(Add a print tensor operation to the model. This is a Poplar extension. Args: args: A vector of tensor ids to print. print_gradient: Indicates whether the gradient tensor(s) associated with the input tensor(s) are also printed. If 1, the gradient tensor(s) are also printed, otherwise the gradient tensor(s) are not printed. debugContext: Optional debug information. title: An optional title to print. Returns: The tensor id of the result tensor.)doc";
+    R"doc(Add a print tensor operation to the model. This is a Poplar extension. Args: args: A vector of tensor ids to print. print_gradient: Indicates whether the gradient tensor(s) associated with the input tensor(s) are also printed. If 1, the gradient tensor(s) are also printed, otherwise the gradient tensor(s) are not printed. debugContext: Optional debug information. title: An optional title to print. summariseThreshold: (default 1000) If the number of elements of the edgeItems: (default 3) number of edge elements to include at the maxLineWidth: (default 75) lines longer than this limit will be split digits: (default 8) number of digits to display. For integers this floatFormat: (default 0=Auto) determines the floating point format to separator: (default space) character used to delininate values. openBracket: (default square bracket) character used to open a closeBracket: (default square bracket) character used to close a tensor exceeds this threshold the output will be summarised. Only the edge elements will be displayed with an ellipsis indicating skipped elements. A value of 0 will disable summarisation. beginning and end when summarisation is enabled across multiple lines. A value of 0 will disable line splitting. limit can be exceeded if any number is large enough. For floating points this does not include the exponent. The number of digits is used in conjunction analysis of the tensor to determine the width of each element to align all elements when printed. A value of 0 disables this analysis and each elements will be printed in an unaligned format. use. 0=auto, 1=fixed, 2=scientific 3=none. Automatic mode determines the appropriate format based on the data. If :code:`digits==0` this option is disregarded and the floatFormat is set to :code:`none`. tensor. tensor. Returns: The tensor id of the result tensor.)doc";
 
 static const char *__doc_popart_AiGraphcoreOpset1_reducemedian =
     R"doc(Add reducemedian operation to the model.
@@ -3974,6 +3998,12 @@ static const char *__doc_popart_CollectivesBaseOp_CollectivesBaseOp =
 static const char *__singlelinedoc_popart_CollectivesBaseOp_CollectivesBaseOp =
     R"doc()doc";
 
+static const char *__doc_popart_CollectivesBaseOp_CollectivesBaseOp_2 =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_CollectivesBaseOp_CollectivesBaseOp_2 = R"doc()doc";
+
 static const char *__doc_popart_CollectivesBaseOp_appendOutlineAttributes =
     R"doc()doc";
 
@@ -4039,9 +4069,16 @@ static const char *__doc_popart_CollectivesBaseOp_getOutIndex = R"doc()doc";
 static const char *__singlelinedoc_popart_CollectivesBaseOp_getOutIndex =
     R"doc()doc";
 
-static const char *__doc_popart_CollectivesBaseOp_group = R"doc()doc";
+static const char *__doc_popart_CollectivesBaseOp_getReplicaGrouping =
+    R"doc()doc";
 
-static const char *__singlelinedoc_popart_CollectivesBaseOp_group = R"doc()doc";
+static const char *__singlelinedoc_popart_CollectivesBaseOp_getReplicaGrouping =
+    R"doc()doc";
+
+static const char *__doc_popart_CollectivesBaseOp_grouping = R"doc()doc";
+
+static const char *__singlelinedoc_popart_CollectivesBaseOp_grouping =
+    R"doc()doc";
 
 static const char
     *__doc_popart_CollectivesBaseOp_hasCorrespondingLinkedIndexTensor =
@@ -4096,6 +4133,12 @@ static const char *__doc_popart_CollectivesBaseOp_setGCLCommGroup = R"doc()doc";
 static const char *__singlelinedoc_popart_CollectivesBaseOp_setGCLCommGroup =
     R"doc()doc";
 
+static const char *__doc_popart_CollectivesBaseOp_setReplicaGrouping =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_CollectivesBaseOp_setReplicaGrouping =
+    R"doc()doc";
+
 static const char *__doc_popart_CommGroup =
     R"doc(Class to specify sub-groups of replicas.
 
@@ -4115,10 +4158,10 @@ Examples of derived sub-groups:
 - Using GW-links only:
 
   .. code-block:: python
-    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__singlelinedoc_popart_CommGroup =
-    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__doc_popart_CommGroup_2 =
     R"doc(Class to specify sub-groups of replicas.
@@ -4139,10 +4182,10 @@ Examples of derived sub-groups:
 - Using GW-links only:
 
   .. code-block:: python
-    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__singlelinedoc_popart_CommGroup_2 =
-    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__doc_popart_CommGroup_3 =
     R"doc(Class to specify sub-groups of replicas.
@@ -4163,10 +4206,10 @@ Examples of derived sub-groups:
 - Using GW-links only:
 
   .. code-block:: python
-    type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__singlelinedoc_popart_CommGroup_3 =
-    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == 64/replica-size)doc";
+    R"doc(Class to specify sub-groups of replicas. Examples of derived sub-groups: - IPU-link domain sub-rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size/N where N is power of two and replicaGroupSize > 1. - Complete IPU-link domain / full rack: .. code-block:: python type == Consecutive && replicaGroupSize == 64/replica-size - Using GW-links only: .. code-block:: python type == Orthogonal && replicaGroupSize == numberOfIpuLinkDomains)doc";
 
 static const char *__doc_popart_CommGroupType =
     R"doc(PopART equivalent of GCL CommGroupType. Each of these enumeration constants
@@ -4229,6 +4272,16 @@ Args:
 static const char *__singlelinedoc_popart_CommGroup_CommGroup_2 =
     R"doc(Construct CommGroup Args: groupType: replica group type groupSize: replica group size)doc";
 
+static const char *__doc_popart_CommGroup_CommGroup_3 =
+    R"doc(Construct CommGroup from a ReplicaGrouping.
+
+
+Args:
+ grouping: The replica grouping.)doc";
+
+static const char *__singlelinedoc_popart_CommGroup_CommGroup_3 =
+    R"doc(Construct CommGroup from a ReplicaGrouping. Args: grouping: The replica grouping.)doc";
+
 static const char *__doc_popart_CommGroup_operator_eq = R"doc()doc";
 
 static const char *__singlelinedoc_popart_CommGroup_operator_eq = R"doc()doc";
@@ -4242,6 +4295,20 @@ static const char *__doc_popart_CommGroup_replicaGroupSize =
 
 static const char *__singlelinedoc_popart_CommGroup_replicaGroupSize =
     R"doc(Replica group size.)doc";
+
+static const char *__doc_popart_CommGroup_toReplicaGrouping =
+    R"doc(Convert this CommGroup to a ReplicaGrouping.
+
+
+Args:
+ numReplicas: The number of replicas to pass to create the replica
+   grouping with.
+
+Returns:
+ The replica grouping.)doc";
+
+static const char *__singlelinedoc_popart_CommGroup_toReplicaGrouping =
+    R"doc(Convert this CommGroup to a ReplicaGrouping. Args: numReplicas: The number of replicas to pass to create the replica grouping with. Returns: The replica grouping.)doc";
 
 static const char *__doc_popart_CommGroup_type = R"doc(Replica group type.)doc";
 
@@ -8130,16 +8197,54 @@ static const char *__doc_popart_MergeVarUpdateType_None =
 static const char *__singlelinedoc_popart_MergeVarUpdateType_None =
     R"doc(Do not merge VarUpdateOp ops.)doc";
 
-static const char *__doc_popart_MultiCollectiveBaseOp = R"doc()doc";
+static const char *__doc_popart_MultiCollectiveBaseOp =
+    R"doc(The base class for multi-collective which perform all-gather, all-reduce
+reduce-scatter operations on lists of tensors by first merging them into
+a larger tensor. This improves bandwidth utilization and decreases the
+number of syncs needed.)doc";
 
-static const char *__singlelinedoc_popart_MultiCollectiveBaseOp = R"doc()doc";
+static const char *__singlelinedoc_popart_MultiCollectiveBaseOp =
+    R"doc(The base class for multi-collective which perform all-gather, all-reduce reduce-scatter operations on lists of tensors by first merging them into a larger tensor. This improves bandwidth utilization and decreases the number of syncs needed.)doc";
 
 static const char *__doc_popart_MultiCollectiveBaseOp_MultiCollectiveBaseOp =
-    R"doc()doc";
+    R"doc(Constructor for the MultiReplicatedBaseOp
+
+
+Args:
+ operatorIdentifier: the identifier for the constructed op
+ commGroup: all of the inputs will be reduced scattered across
+ settings: the settings of the op are shared across all inputs
+ outInfoFromBaseOps: the output information for each tensor,
+ inputVirtualGraphIdAndTileSet: each input tensor has it's own
+ outputVIrtualGraphIdAnTileSet: each output tensor has it's own
+the same communications group
+usually inherited from a ReplicatedReduceScatterOp for that tensor
+associated virtual graph
+associated virtual graph)doc";
 
 static const char
     *__singlelinedoc_popart_MultiCollectiveBaseOp_MultiCollectiveBaseOp =
-        R"doc()doc";
+        R"doc(Constructor for the MultiReplicatedBaseOp Args: operatorIdentifier: the identifier for the constructed op commGroup: all of the inputs will be reduced scattered across settings: the settings of the op are shared across all inputs outInfoFromBaseOps: the output information for each tensor, inputVirtualGraphIdAndTileSet: each input tensor has it's own outputVIrtualGraphIdAnTileSet: each output tensor has it's own the same communications group usually inherited from a ReplicatedReduceScatterOp for that tensor associated virtual graph associated virtual graph)doc";
+
+static const char *__doc_popart_MultiCollectiveBaseOp_MultiCollectiveBaseOp_2 =
+    R"doc(Constructor for the MultiReplicatedBaseOp
+
+
+Args:
+ operatorIdentifier: the identifier for the constructed op
+ grouping: all of the inputs will be reduced scattered across
+ settings: the settings of the op are shared across all inputs
+ outInfoFromBaseOps: the output information for each tensor,
+ inputVirtualGraphIdAndTileSet: each input tensor has it's own
+ outputVIrtualGraphIdAnTileSet: each output tensor has it's own
+the same communications group
+usually inherited from a ReplicatedReduceScatterOp for that tensor
+associated virtual graph
+associated virtual graph)doc";
+
+static const char
+    *__singlelinedoc_popart_MultiCollectiveBaseOp_MultiCollectiveBaseOp_2 =
+        R"doc(Constructor for the MultiReplicatedBaseOp Args: operatorIdentifier: the identifier for the constructed op grouping: all of the inputs will be reduced scattered across settings: the settings of the op are shared across all inputs outInfoFromBaseOps: the output information for each tensor, inputVirtualGraphIdAndTileSet: each input tensor has it's own outputVIrtualGraphIdAnTileSet: each output tensor has it's own the same communications group usually inherited from a ReplicatedReduceScatterOp for that tensor associated virtual graph associated virtual graph)doc";
 
 static const char *__doc_popart_MultiCollectiveBaseOp_clone = R"doc()doc";
 
@@ -8156,11 +8261,17 @@ static const char *
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_getIntrospectionInVirtualGraphId =
-        R"doc()doc";
+        R"doc(Get virtual graph ID and tile set associated with an input index.
+
+Args:
+ InIndex: The input index.
+
+Returns:
+ The virtual graph ID and tile set at the input index.)doc";
 
 static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_getIntrospectionInVirtualGraphId =
-        R"doc()doc";
+        R"doc(Get virtual graph ID and tile set associated with an input index. Args: InIndex: The input index. Returns: The virtual graph ID and tile set at the input index.)doc";
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_getIntrospectionInVirtualGraphId_2 =
@@ -8172,11 +8283,17 @@ static const char *
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_getIntrospectionOutVirtualGraphId =
-        R"doc()doc";
+        R"doc(Get virtual graph ID and tile set associated with an output index.
+
+Args:
+ OutIndex: The output index.
+
+Returns:
+ The virtual graph ID and tile set at the output index.)doc";
 
 static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_getIntrospectionOutVirtualGraphId =
-        R"doc()doc";
+        R"doc(Get virtual graph ID and tile set associated with an output index. Args: OutIndex: The output index. Returns: The virtual graph ID and tile set at the output index.)doc";
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_getIntrospectionOutVirtualGraphId_2 =
@@ -8186,12 +8303,11 @@ static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_getIntrospectionOutVirtualGraphId_2 =
         R"doc()doc";
 
-static const char *__doc_popart_MultiCollectiveBaseOp_getModifiesIndexInplace =
+static const char *__doc_popart_MultiCollectiveBaseOp_growAliasModel =
     R"doc()doc";
 
-static const char
-    *__singlelinedoc_popart_MultiCollectiveBaseOp_getModifiesIndexInplace =
-        R"doc()doc";
+static const char *__singlelinedoc_popart_MultiCollectiveBaseOp_growAliasModel =
+    R"doc()doc";
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_hasCorrespondingLinkedIndexTensor =
@@ -8203,11 +8319,11 @@ static const char *
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_inputVirtualGraphIdAndTileSet =
-        R"doc()doc";
+        R"doc(Each input tensor has it's own associated virtual graph)doc";
 
 static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_inputVirtualGraphIdAndTileSet =
-        R"doc()doc";
+        R"doc(Each input tensor has it's own associated virtual graph)doc";
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_isCollectiveLinkedIndexTensor =
@@ -8225,27 +8341,20 @@ static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_isCollectiveLinkedIndexTensor_2 =
         R"doc()doc";
 
-static const char *__doc_popart_MultiCollectiveBaseOp_modifiesIndexInplace =
-    R"doc()doc";
-
-static const char
-    *__singlelinedoc_popart_MultiCollectiveBaseOp_modifiesIndexInplace =
-        R"doc()doc";
-
 static const char *__doc_popart_MultiCollectiveBaseOp_outInfoFromBaseOps =
-    R"doc()doc";
+    R"doc(The output information for each tensor, usually inherited from
+a ReplicatedReduceScatterOp for that tensor. Used to setup the op.)doc";
 
-static const char
-    *__singlelinedoc_popart_MultiCollectiveBaseOp_outInfoFromBaseOps =
-        R"doc()doc";
+static const char *__singlelinedoc_popart_MultiCollectiveBaseOp_outInfoFromBaseOps =
+    R"doc(The output information for each tensor, usually inherited from a ReplicatedReduceScatterOp for that tensor. Used to setup the op.)doc";
 
 static const char
     *__doc_popart_MultiCollectiveBaseOp_outputVirtualGraphIdAndTileSet =
-        R"doc()doc";
+        R"doc(Each output tensor has it's own associated virtual graph)doc";
 
 static const char *
     __singlelinedoc_popart_MultiCollectiveBaseOp_outputVirtualGraphIdAndTileSet =
-        R"doc()doc";
+        R"doc(Each output tensor has it's own associated virtual graph)doc";
 
 static const char *__doc_popart_MultiCollectiveBaseOp_setup = R"doc()doc";
 
@@ -8909,16 +9018,29 @@ static const char *__doc_popart_Op_Settings_Settings_3 =
 
 
 Args:
+ graph_: The graph the op belongs to.
+ name_: The name of the op.
+ scope_: The scope of the op.
+ parentId_: The ID of the debug info.)doc";
+
+static const char *__singlelinedoc_popart_Op_Settings_Settings_3 =
+    R"doc(Constructor for the Settings structure. Args: graph_: The graph the op belongs to. name_: The name of the op. scope_: The scope of the op. parentId_: The ID of the debug info.)doc";
+
+static const char *__doc_popart_Op_Settings_Settings_4 =
+    R"doc(Constructor for the Settings structure.
+
+
+Args:
  graph_: The main graph.
  name_: The name of the op.
  parentId_: The ID of the debug info.)doc";
 
-static const char *__singlelinedoc_popart_Op_Settings_Settings_3 =
+static const char *__singlelinedoc_popart_Op_Settings_Settings_4 =
     R"doc(Constructor for the Settings structure. Args: graph_: The main graph. name_: The name of the op. parentId_: The ID of the debug info.)doc";
 
-static const char *__doc_popart_Op_Settings_Settings_4 = R"doc()doc";
+static const char *__doc_popart_Op_Settings_Settings_5 = R"doc()doc";
 
-static const char *__singlelinedoc_popart_Op_Settings_Settings_4 = R"doc()doc";
+static const char *__singlelinedoc_popart_Op_Settings_Settings_5 = R"doc()doc";
 
 static const char *__doc_popart_Op_Settings_batchSerializedPhase = R"doc()doc";
 
@@ -9214,6 +9336,18 @@ Args:
 
 static const char *__singlelinedoc_popart_Op_configureForReplicatedTensorSharding =
     R"doc(Configure the op for replicated tensor sharding at specific indices. Args: indices: The indices at which to configure the op for replicated tensor sharding. shardingDomain: The type and size of the replica group specified by a CommGroup object.)doc";
+
+static const char *__doc_popart_Op_configureForReplicatedTensorSharding_2 =
+    R"doc(Configure the op for replicated tensor sharding at specific indices.
+
+Args:
+ indices: The indices at which to configure the op for replicated
+      tensor sharding.
+ grouping: The stride and size of the replica group specified by a
+      ReplicaGrouping object.)doc";
+
+static const char *__singlelinedoc_popart_Op_configureForReplicatedTensorSharding_2 =
+    R"doc(Configure the op for replicated tensor sharding at specific indices. Args: indices: The indices at which to configure the op for replicated tensor sharding. grouping: The stride and size of the replica group specified by a ReplicaGrouping object.)doc";
 
 static const char *__doc_popart_Op_configureShardedOp =
     R"doc(Configure a sharded op.
@@ -12883,6 +13017,14 @@ static const char *__doc_popart_ReplicaEqualAnalysisProxy = R"doc()doc";
 static const char *__singlelinedoc_popart_ReplicaEqualAnalysisProxy =
     R"doc()doc";
 
+static const char *__doc_popart_ReplicaGrouping = R"doc()doc";
+
+static const char *__singlelinedoc_popart_ReplicaGrouping = R"doc()doc";
+
+static const char *__doc_popart_ReplicaGrouping_2 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_ReplicaGrouping_2 = R"doc()doc";
+
 static const char *__doc_popart_ReplicatedCollectivesSettings =
     R"doc(A structure containing settings for replicated collective operations.)doc";
 
@@ -12914,12 +13056,32 @@ static const char *__singlelinedoc_popart_ReplicatedCollectivesSettings_hash =
     R"doc()doc";
 
 static const char
+    *__doc_popart_ReplicatedCollectivesSettings_mergeAllGatherCollectives =
+        R"doc(Identifies allgather operations which can be scheduled
+at the same time, and performs them as one larger operation
+so as to better utilize the bandwidth between replicas)doc";
+
+static const char *
+    __singlelinedoc_popart_ReplicatedCollectivesSettings_mergeAllGatherCollectives =
+        R"doc(Identifies allgather operations which can be scheduled at the same time, and performs them as one larger operation so as to better utilize the bandwidth between replicas)doc";
+
+static const char
     *__doc_popart_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
         R"doc()doc";
 
 static const char *
     __singlelinedoc_popart_ReplicatedCollectivesSettings_mergeAllReduceCollectives =
         R"doc()doc";
+
+static const char
+    *__doc_popart_ReplicatedCollectivesSettings_mergeReduceScatterCollectives =
+        R"doc(Identifies reduce scatter operations which can be scheduled
+at the same time, and performs them as one larger operation
+so as to better utilize the bandwidth between replicas)doc";
+
+static const char *
+    __singlelinedoc_popart_ReplicatedCollectivesSettings_mergeReduceScatterCollectives =
+        R"doc(Identifies reduce scatter operations which can be scheduled at the same time, and performs them as one larger operation so as to better utilize the bandwidth between replicas)doc";
 
 static const char *
     __doc_popart_ReplicatedCollectivesSettings_prepareScheduleForMergingCollectives =
@@ -12991,6 +13153,7 @@ The SGD optimizer has the following **hyper parameters**:
  * *dampening* (:math:`\text{dm}`)
  * *velocity scaling* (:math:`\text{vs}`)
  * *loss scaling* (:math:`\text{ls}`)
+ * *nesterov*
  * *clip norm settings*
 
 The values of these parameters can be shared between all weights but some
@@ -13015,6 +13178,14 @@ When the optimizer needs to update a weight, :math:`w`, using a gradient,
 Following the update of the optimizer state the optimizer uses said
 state to update the weight:
 
+if nesterov is True:
+.. math::
+   g' := g + \text{wd} * w + \text{mm} * v' \text{ \ . }
+
+.. math::
+   w' := w - \text{lr} * g' \text{ \ . }
+
+else:
 .. math::
    w' := w - \text{lr} * v' \text{ \ . }
 
@@ -13043,7 +13214,7 @@ See the SGD notes in optimizer.hpp for a more detailed and comprehensive
 derivation of the SGD optimizer step in PopART.)doc";
 
 static const char *__singlelinedoc_popart_SGD =
-    R"doc(Stochastic Gradient Descent (SGD) optimizer. Akin to any optimizer implementation, this class is responsible for updating each weight tensor (:math:`w`) in the model using the gradient (:math:`g`) of the loss function with respect to the weight as calculated during the backwards pass. The SGD optimizer has the following **state** for each weight: * *velocity* (:math:`v`) The SGD optimizer has the following **hyper parameters**: * *learning rate* (:math:`\text{lr}`) * *momentum* (:math:`\text{mm}`) * *weight decay* (:math:`\text{wd}`) * *dampening* (:math:`\text{dm}`) * *velocity scaling* (:math:`\text{vs}`) * *loss scaling* (:math:`\text{ls}`) * *clip norm settings* The values of these parameters can be shared between all weights but some can be overridden with weight-specific values (see SGD::insertSpecific). Hyper parameters are captured using OptimizerValue objects and therefore can be either a constant value or a non-constant value that can be adjusted by the user. In the following we will describe how this optimizer updates a weight using a gradient. In the context of this description the gradient is is the value of the gradient *after* any gradient accumulation has been performed and *after* the application of a loss scaling factor to the gradient has been corrected for. When the optimizer needs to update a weight, :math:`w`, using a gradient, :math:`g`, it first updates the optimizer state as follows: .. math:: v' := v * \text{mm} + (1 - \text{dm}) * (g + \text{wd} * w) \text{ \ . } Following the update of the optimizer state the optimizer uses said state to update the weight: .. math:: w' := w - \text{lr} * v' \text{ \ . } In addition to the above, the *velocity scaling* hyper parameter is a scaling factor that can provide improved numerical stability by ensuring the values stored in the optimizer state, :math:`v`, are scaled by this value. When using this parameter PopART will automatically deal with the artificially scaled velocity value during the weight update and other hyper parameters do not need to be adjusted). In addition, the *loss scaling* hyper parameter is similar in nature to the velocity scaling parameter. It is a scaling value that is applied to the loss gradient at the start of the the backwards pass and, at the end of the backwards pass, this scaling is reversed by multiplying the gradients for each weight with the inverse of the loss scaling value prior to updating the optimizer state. Using loss scaling can also improve numerical stability in some cases. Finally, it is possible to add clip norm settings for this optimizer. These clip norms compute the L2 norm for a group of weights and adds a scalar term to the weight update that effectively divides it by the norm (or a constant value that is provided as part of the clip norm, which ever is greater). See the SGD notes in optimizer.hpp for a more detailed and comprehensive derivation of the SGD optimizer step in PopART.)doc";
+    R"doc(Stochastic Gradient Descent (SGD) optimizer. Akin to any optimizer implementation, this class is responsible for updating each weight tensor (:math:`w`) in the model using the gradient (:math:`g`) of the loss function with respect to the weight as calculated during the backwards pass. The SGD optimizer has the following **state** for each weight: * *velocity* (:math:`v`) The SGD optimizer has the following **hyper parameters**: * *learning rate* (:math:`\text{lr}`) * *momentum* (:math:`\text{mm}`) * *weight decay* (:math:`\text{wd}`) * *dampening* (:math:`\text{dm}`) * *velocity scaling* (:math:`\text{vs}`) * *loss scaling* (:math:`\text{ls}`) * *nesterov* * *clip norm settings* The values of these parameters can be shared between all weights but some can be overridden with weight-specific values (see SGD::insertSpecific). Hyper parameters are captured using OptimizerValue objects and therefore can be either a constant value or a non-constant value that can be adjusted by the user. In the following we will describe how this optimizer updates a weight using a gradient. In the context of this description the gradient is is the value of the gradient *after* any gradient accumulation has been performed and *after* the application of a loss scaling factor to the gradient has been corrected for. When the optimizer needs to update a weight, :math:`w`, using a gradient, :math:`g`, it first updates the optimizer state as follows: .. math:: v' := v * \text{mm} + (1 - \text{dm}) * (g + \text{wd} * w) \text{ \ . } Following the update of the optimizer state the optimizer uses said state to update the weight: if nesterov is True: .. math:: g' := g + \text{wd} * w + \text{mm} * v' \text{ \ . } .. math:: w' := w - \text{lr} * g' \text{ \ . } else: .. math:: w' := w - \text{lr} * v' \text{ \ . } In addition to the above, the *velocity scaling* hyper parameter is a scaling factor that can provide improved numerical stability by ensuring the values stored in the optimizer state, :math:`v`, are scaled by this value. When using this parameter PopART will automatically deal with the artificially scaled velocity value during the weight update and other hyper parameters do not need to be adjusted). In addition, the *loss scaling* hyper parameter is similar in nature to the velocity scaling parameter. It is a scaling value that is applied to the loss gradient at the start of the the backwards pass and, at the end of the backwards pass, this scaling is reversed by multiplying the gradients for each weight with the inverse of the loss scaling value prior to updating the optimizer state. Using loss scaling can also improve numerical stability in some cases. Finally, it is possible to add clip norm settings for this optimizer. These clip norms compute the L2 norm for a group of weights and adds a scalar term to the weight update that effectively divides it by the norm (or a constant value that is provided as part of the clip norm, which ever is greater). See the SGD notes in optimizer.hpp for a more detailed and comprehensive derivation of the SGD optimizer step in PopART.)doc";
 
 static const char *__doc_popart_SGDAccumulatorAndMomentum =
     R"doc(Strategy for implementing SGD with momentum and/or gradient accumulation.)doc";
@@ -13081,6 +13252,7 @@ Args:
      weights for which no weight-specific hyper parameter have been
      inserted.
  lossScaling: The loss scaling value to use.
+ nesterov: Option to enable Nesterov momentum. Defaults to false.
  clipNormSettings: A vector of ClipNormSettings (this can be used
      to set maximum values for weights).
  sgdAccMm: The implementation strategy to use when gradient
@@ -13104,15 +13276,57 @@ Args:
  debugContext: Optional debug context.)doc";
 
 static const char *__singlelinedoc_popart_SGD_SGD =
-    R"doc(Constructor. Args: defaultLearningRate: The learning rate value to use for weights for which no weight-specific hyper parameter have been inserted. defaultWeightDecay: The weight decay value  to use for weights for which no weight-specific hyper parameter have been inserted. defaultMomentum: The momentum value to use for weights for which no weight-specific hyper parameter have been inserted. defaultDampening: The dampening value to use for weights for which no weight-specific hyper parameter have been inserted. defaultVelocityScaling: The velocity scaling value to use for weights for which no weight-specific hyper parameter have been inserted. lossScaling: The loss scaling value to use. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights). sgdAccMm: The implementation strategy to use when gradient accumulation and/or momentum are used, otherwise ignored. \sa SGDAccumulatorAndMomentum. Defaults to SGDAccumulatorAndMomentum::Combined. accumType: The DataType of the accum tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. accl1Type: The DataType of the accl1 tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. debugContext: Optional debug context.)doc";
+    R"doc(Constructor. Args: defaultLearningRate: The learning rate value to use for weights for which no weight-specific hyper parameter have been inserted. defaultWeightDecay: The weight decay value  to use for weights for which no weight-specific hyper parameter have been inserted. defaultMomentum: The momentum value to use for weights for which no weight-specific hyper parameter have been inserted. defaultDampening: The dampening value to use for weights for which no weight-specific hyper parameter have been inserted. defaultVelocityScaling: The velocity scaling value to use for weights for which no weight-specific hyper parameter have been inserted. lossScaling: The loss scaling value to use. nesterov: Option to enable Nesterov momentum. Defaults to false. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights). sgdAccMm: The implementation strategy to use when gradient accumulation and/or momentum are used, otherwise ignored. \sa SGDAccumulatorAndMomentum. Defaults to SGDAccumulatorAndMomentum::Combined. accumType: The DataType of the accum tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. accl1Type: The DataType of the accl1 tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. debugContext: Optional debug context.)doc";
 
 static const char *__doc_popart_SGD_SGD_2 =
     R"doc(Constructor.
 
 Args:
+ defaultLearningRate: The learning rate value to use for weights
+     for which no weight-specific hyper parameter have been inserted.
+ defaultWeightDecay: The weight decay value  to use for weights
+     for which no weight-specific hyper parameter have been inserted.
+ defaultMomentum: The momentum value to use for weights
+     for which no weight-specific hyper parameter have been inserted.
+ defaultDampening: The dampening value to use for weights
+     for which no weight-specific hyper parameter have been inserted.
+ defaultVelocityScaling: The velocity scaling value to use for
+     weights for which no weight-specific hyper parameter have been
+     inserted.
+ lossScaling: The loss scaling value to use.
+ clipNormSettings: A vector of ClipNormSettings (this can be used
+     to set maximum values for weights).
+ sgdAccMm: The implementation strategy to use when gradient
+     accumulation and/or momentum are used, otherwise ignored. \sa
+     SGDAccumulatorAndMomentum. Defaults to
+     SGDAccumulatorAndMomentum::Combined.
+ accumType: The DataType of the accum tensor, when gradient
+     accumulation is used and sgdAccMm =
+     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+     UNDEFINED, the same type as the weights will be used. If accumType is
+     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+     upcasted before being passed to the op that updates accl1.
+ accl1Type: The DataType of the accl1 tensor, when gradient
+     accumulation is used and sgdAccMm =
+     SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT,
+     FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If
+     UNDEFINED, the same type as the weights will be used. If accumType is
+     FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be
+     upcasted before being passed to the op that updates accl1.
+ debugContext: Optional debug context.)doc";
+
+static const char *__singlelinedoc_popart_SGD_SGD_2 =
+    R"doc(Constructor. Args: defaultLearningRate: The learning rate value to use for weights for which no weight-specific hyper parameter have been inserted. defaultWeightDecay: The weight decay value  to use for weights for which no weight-specific hyper parameter have been inserted. defaultMomentum: The momentum value to use for weights for which no weight-specific hyper parameter have been inserted. defaultDampening: The dampening value to use for weights for which no weight-specific hyper parameter have been inserted. defaultVelocityScaling: The velocity scaling value to use for weights for which no weight-specific hyper parameter have been inserted. lossScaling: The loss scaling value to use. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights). sgdAccMm: The implementation strategy to use when gradient accumulation and/or momentum are used, otherwise ignored. \sa SGDAccumulatorAndMomentum. Defaults to SGDAccumulatorAndMomentum::Combined. accumType: The DataType of the accum tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. accl1Type: The DataType of the accl1 tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. debugContext: Optional debug context.)doc";
+
+static const char *__doc_popart_SGD_SGD_3 =
+    R"doc(Constructor.
+
+Args:
  params: A parameter map where the keys are one or more of
      :code:`"defaultLearningRate"`, :code:`"defaultWeightDecay"`, :code:`"defaultMomentum"`,
-     :code:`"defaultDampening"`, :code:`"defaultVelocityScaling"` or :code:`"lossScaling"`.
+     :code:`"defaultDampening"`, :code:`"defaultVelocityScaling"`, :code:`"lossScaling"`
+     or `"nesterov".
      The map's values are pairs of floats and booleans representing
      OptimizerValue constructor arguments. The map does not have to
      specify each hyper parameter because default values will be used where
@@ -13148,25 +13362,25 @@ This will create an SGD Optimizer which has a constant momentum of 0.6 and
 a changeable learning rate initially of 0.02. All OptimizerValues not
 present in the map will take values from the `getUnset`* functions.)doc";
 
-static const char *__singlelinedoc_popart_SGD_SGD_2 =
-    R"doc(Constructor. Args: params: A parameter map where the keys are one or more of :code:`"defaultLearningRate"`, :code:`"defaultWeightDecay"`, :code:`"defaultMomentum"`, :code:`"defaultDampening"`, :code:`"defaultVelocityScaling"` or :code:`"lossScaling"`. The map's values are pairs of floats and booleans representing OptimizerValue constructor arguments. The map does not have to specify each hyper parameter because default values will be used where parameters are missing. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights). sgdAccMm: The implementation strategy to use when gradient accumulation and/or momentum are used, otherwise ignored. \sa SGDAccumulatorAndMomentum. Defaults to SGDAccumulatorAndMomentum::Combined. accumType: The DataType of the accum tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. accl1Type: The DataType of the accl1 tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. debugContext: Optional debug context. **EXAMPLE**: ``` SGD({{"defaultLearningRate", {0.02, false}}, {"defaultMomentum", {0.6, true}}}); ``:code:` This will create an SGD Optimizer which has a constant momentum of 0.6 and a changeable learning rate initially of 0.02. All OptimizerValues not present in the map will take values from the `getUnset`* functions.)doc";
+static const char *__singlelinedoc_popart_SGD_SGD_3 =
+    R"doc(Constructor. Args: params: A parameter map where the keys are one or more of :code:`"defaultLearningRate"`, :code:`"defaultWeightDecay"`, :code:`"defaultMomentum"`, :code:`"defaultDampening"`, :code:`"defaultVelocityScaling"`, :code:`"lossScaling"` or `"nesterov". The map's values are pairs of floats and booleans representing OptimizerValue constructor arguments. The map does not have to specify each hyper parameter because default values will be used where parameters are missing. clipNormSettings: A vector of ClipNormSettings (this can be used to set maximum values for weights). sgdAccMm: The implementation strategy to use when gradient accumulation and/or momentum are used, otherwise ignored. \sa SGDAccumulatorAndMomentum. Defaults to SGDAccumulatorAndMomentum::Combined. accumType: The DataType of the accum tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. accl1Type: The DataType of the accl1 tensor, when gradient accumulation is used and sgdAccMm = SGDAccumulatorAndMomentum::Separate, otherwise ignored. Only FLOAT, FLOAT16 and UNDEFINED are supported. Defaults to UNDEFINED. If UNDEFINED, the same type as the weights will be used. If accumType is FLOAT16 and accl1Type is FLOAT, this parameter causes accum to be upcasted before being passed to the op that updates accl1. debugContext: Optional debug context. **EXAMPLE**: ``` SGD({{"defaultLearningRate", {0.02, false}}, {"defaultMomentum", {0.6, true}}}); ``:code:` This will create an SGD Optimizer which has a constant momentum of 0.6 and a changeable learning rate initially of 0.02. All OptimizerValues not present in the map will take values from the `getUnset`* functions.)doc";
 
-static const char *__doc_popart_SGD_SGD_3 =
+static const char *__doc_popart_SGD_SGD_4 =
     R"doc(Default constructor
 Creates SGD with default scalars (equivalent to getUnset<scalar>()
 methods), and other default parameters of main constructor.)doc";
 
-static const char *__singlelinedoc_popart_SGD_SGD_3 =
+static const char *__singlelinedoc_popart_SGD_SGD_4 =
     R"doc(Default constructor Creates SGD with default scalars (equivalent to getUnset<scalar>() methods), and other default parameters of main constructor.)doc";
 
-static const char *__doc_popart_SGD_SGD_4 = R"doc(Copy constructor)doc";
+static const char *__doc_popart_SGD_SGD_5 = R"doc(Copy constructor)doc";
 
-static const char *__singlelinedoc_popart_SGD_SGD_4 =
+static const char *__singlelinedoc_popart_SGD_SGD_5 =
     R"doc(Copy constructor)doc";
 
-static const char *__doc_popart_SGD_SGD_5 = R"doc()doc";
+static const char *__doc_popart_SGD_SGD_6 = R"doc()doc";
 
-static const char *__singlelinedoc_popart_SGD_SGD_5 = R"doc()doc";
+static const char *__singlelinedoc_popart_SGD_SGD_6 = R"doc()doc";
 
 static const char *__doc_popart_SGD_clone = R"doc()doc";
 
@@ -13229,6 +13443,10 @@ static const char *__doc_popart_SGD_dpsf2helper = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_dpsf2helper = R"doc()doc";
 
+static const char *__doc_popart_SGD_enableNesterov = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_enableNesterov = R"doc()doc";
+
 static const char *__doc_popart_SGD_fromDefaultMap = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_fromDefaultMap = R"doc()doc";
@@ -13289,6 +13507,12 @@ static const char *__doc_popart_SGD_getUnsetMomentum =
 static const char *__singlelinedoc_popart_SGD_getUnsetMomentum =
     R"doc(Default momentum value.)doc";
 
+static const char *__doc_popart_SGD_getUnsetNesterov =
+    R"doc(Default nesterov.)doc";
+
+static const char *__singlelinedoc_popart_SGD_getUnsetNesterov =
+    R"doc(Default nesterov.)doc";
+
 static const char *__doc_popart_SGD_getUnsetVelocityScaling =
     R"doc(Default velocity scaling value.)doc";
 
@@ -13331,10 +13555,11 @@ Args:
  dampening: The dampening value to use for this specific
      weight.
  velocityScaling: The velocity scaling value to use for this
-     specific weight.)doc";
+     specific weight.
+ nesterov: Option to enable Nesterov momentum. Defaults to false.)doc";
 
 static const char *__singlelinedoc_popart_SGD_insertSpecific =
-    R"doc(Insert a weight-specific set of hyper parameters. Args: weight: The TensorId of the weight. learningRate: The learning rate value to use for this specific weight. weightDecay: The weight decay value to use for this specific weight. momentum: The momentum value to use for this specific weight. dampening: The dampening value to use for this specific weight. velocityScaling: The velocity scaling value to use for this specific weight.)doc";
+    R"doc(Insert a weight-specific set of hyper parameters. Args: weight: The TensorId of the weight. learningRate: The learning rate value to use for this specific weight. weightDecay: The weight decay value to use for this specific weight. momentum: The momentum value to use for this specific weight. dampening: The dampening value to use for this specific weight. velocityScaling: The velocity scaling value to use for this specific weight. nesterov: Option to enable Nesterov momentum. Defaults to false.)doc";
 
 static const char *__doc_popart_SGD_insertSpecific_2 =
     R"doc(Insert a weight-specific set of hyper parameters.
@@ -13359,6 +13584,10 @@ static const char *__doc_popart_SGD_lrs = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_lrs = R"doc()doc";
 
+static const char *__doc_popart_SGD_mmHelper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_mmHelper = R"doc()doc";
+
 static const char *__doc_popart_SGD_mms = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_mms = R"doc()doc";
@@ -13366,6 +13595,30 @@ static const char *__singlelinedoc_popart_SGD_mms = R"doc()doc";
 static const char *__doc_popart_SGD_momentums = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_momentums = R"doc()doc";
+
+static const char *__doc_popart_SGD_ndsf1helper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_ndsf1helper = R"doc()doc";
+
+static const char *__doc_popart_SGD_ndsf2helper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_ndsf2helper = R"doc()doc";
+
+static const char *__doc_popart_SGD_nesterov = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_nesterov = R"doc()doc";
+
+static const char *__doc_popart_SGD_ngsf1helper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_ngsf1helper = R"doc()doc";
+
+static const char *__doc_popart_SGD_ngsf2helper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_ngsf2helper = R"doc()doc";
+
+static const char *__doc_popart_SGD_nts = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_nts = R"doc()doc";
 
 static const char *__doc_popart_SGD_resetTensorData = R"doc()doc";
 
@@ -13435,6 +13688,10 @@ static const char *__doc_popart_SGD_vss = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_vss = R"doc()doc";
 
+static const char *__doc_popart_SGD_wdHelper = R"doc()doc";
+
+static const char *__singlelinedoc_popart_SGD_wdHelper = R"doc()doc";
+
 static const char *__doc_popart_SGD_wds = R"doc()doc";
 
 static const char *__singlelinedoc_popart_SGD_wds = R"doc()doc";
@@ -13465,10 +13722,6 @@ graphs on IPU hardware.)doc";
 
 static const char *__singlelinedoc_popart_Session =
     R"doc(Session is a runtime instance that provides an interface for executing ONNX graphs on IPU hardware.)doc";
-
-static const char *__doc_popart_Session_2 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Session_2 = R"doc()doc";
 
 static const char *__doc_popart_SessionOptions = R"doc()doc";
 
@@ -14770,12 +15023,6 @@ static const char *__doc_popart_Session_getExecutable =
 static const char *__singlelinedoc_popart_Session_getExecutable =
     R"doc(Get the executable associated with the Session.)doc";
 
-static const char *__doc_popart_Session_getExecutable_2 =
-    R"doc(Get the executable associated with the Session.)doc";
-
-static const char *__singlelinedoc_popart_Session_getExecutable_2 =
-    R"doc(Get the executable associated with the Session.)doc";
-
 static const char *__doc_popart_Session_getInfo =
     R"doc(Get the tensor information for a tensor.
 
@@ -14852,7 +15099,7 @@ static const char *__singlelinedoc_popart_Session_getSerializedGraph =
     R"doc(Retrieve the serialized graph from the ``poplar::Engine.`` A JSON format report is produced. This method may only be called after prepareDevice() has been called. Returns: A string containing the serialized graph.)doc";
 
 static const char *__doc_popart_Session_getSummaryReport =
-    R"doc(Retrieve the summary report from the ``poplar::Engine.`:code:`
+    R"doc(Retrieve the summary from from the ``poplar::Engine.`:code:`
 
 The options which were passed to the Session constructor will influence
 the information in the report.
@@ -14869,7 +15116,7 @@ Returns:
  A string containing the report.)doc";
 
 static const char *__singlelinedoc_popart_Session_getSummaryReport =
-    R"doc(Retrieve the summary report from the ``poplar::Engine.`:code:` The options which were passed to the Session constructor will influence the information in the report. This method may only be called after prepareDevice() has been called. Args: resetProfile: If `true:code:`, resets the execution profile. Default = `true`. Returns: A string containing the report.)doc";
+    R"doc(Retrieve the summary from from the ``poplar::Engine.`:code:` The options which were passed to the Session constructor will influence the information in the report. This method may only be called after prepareDevice() has been called. Args: resetProfile: If `true:code:`, resets the execution profile. Default = `true`. Returns: A string containing the report.)doc";
 
 static const char *__doc_popart_Session_hasInfo =
     R"doc(Check whether a tensor has information.
@@ -15421,10 +15668,6 @@ static const char *__singlelinedoc_popart_Tensor_8 = R"doc()doc";
 static const char *__doc_popart_Tensor_9 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensor_9 = R"doc()doc";
-
-static const char *__doc_popart_Tensor_10 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_Tensor_10 = R"doc()doc";
 
 static const char *__doc_popart_TensorData = R"doc()doc";
 
@@ -16167,6 +16410,11 @@ static const char *__doc_popart_Tensor_modifiedRegionsByOps_2 = R"doc()doc";
 static const char *__singlelinedoc_popart_Tensor_modifiedRegionsByOps_2 =
     R"doc()doc";
 
+static const char *__doc_popart_Tensor_preparedVGraphIdAndTileSet = R"doc()doc";
+
+static const char *__singlelinedoc_popart_Tensor_preparedVGraphIdAndTileSet =
+    R"doc()doc";
+
 static const char *__doc_popart_Tensor_producer = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensor_producer = R"doc()doc";
@@ -16191,6 +16439,12 @@ static const char *__doc_popart_Tensor_setCopyFromTensor = R"doc()doc";
 
 static const char *__singlelinedoc_popart_Tensor_setCopyFromTensor =
     R"doc()doc";
+
+static const char *__doc_popart_Tensor_setPreparedVGraphIdAndTileSet =
+    R"doc(Set the preparedVGraphIdAndTileSet)doc";
+
+static const char *__singlelinedoc_popart_Tensor_setPreparedVGraphIdAndTileSet =
+    R"doc(Set the preparedVGraphIdAndTileSet)doc";
 
 static const char *__doc_popart_Tensor_setProducer = R"doc()doc";
 
@@ -16602,6 +16856,10 @@ multiple graphs.)doc";
 static const char *__singlelinedoc_popart_VariableSettings =
     R"doc(A class to dictate behaviour of variables and reductions of such across multiple graphs.)doc";
 
+static const char *__doc_popart_VariableSettingsDomain = R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettingsDomain = R"doc()doc";
+
 static const char *__doc_popart_VariableSettings_VariableSettings =
     R"doc( "Default" constructor, defaults CommGroup to [All, 0] and retrievalMode to
 OnePerGroup.)doc";
@@ -16626,6 +16884,52 @@ static const char *__doc_popart_VariableSettings_VariableSettings_4 =
 
 static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_4 =
     R"doc(Entirely custom VariableSettings.)doc";
+
+static const char *__doc_popart_VariableSettings_VariableSettings_5 =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_5 =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableSettings_VariableSettings_6 =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_6 =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableSettings_VariableSettings_7 =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_7 =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableSettings_VariableSettings_8 =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_VariableSettings_8 =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableSettings_domain =
+    R"doc(How this Variable is grouped across graph replication.
+
+A smart pointer is used, so that a forward-declaration of
+:code:`popart::VariableSettingsDomain` can be used. The smart pointer is shared,
+so that :code:`popart::VariableSettings` can be copied using the default copy
+constructor.)doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_domain =
+    R"doc(How this Variable is grouped across graph replication. A smart pointer is used, so that a forward-declaration of :code:`popart::VariableSettingsDomain` can be used. The smart pointer is shared, so that :code:`popart::VariableSettings` can be copied using the default copy constructor.)doc";
+
+static const char *__doc_popart_VariableSettings_getGroupCount =
+    R"doc(Args:
+ replicaCount: The replicationFactor of the graph.
+
+Returns:
+ The number of groups given the replicaFactor and the
+ VariableSettings.)doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_getGroupCount =
+    R"doc(Args: replicaCount: The replicationFactor of the graph. Returns: The number of groups given the replicaFactor and the VariableSettings.)doc";
 
 static const char *__doc_popart_VariableSettings_getGroupRepresentative =
     R"doc(Get the default *first* member of a group
@@ -16653,6 +16957,22 @@ Returns:
 static const char *__singlelinedoc_popart_VariableSettings_getRealGroupSize =
     R"doc(Because CommGroup's don't have a defined group-size if the type is All or None, this function will return a group-size that is _always_ accurate, based on replicas. Args: replicaCount: The replication factor Returns: The actual number of replicas in a group)doc";
 
+static const char *__doc_popart_VariableSettings_getReplicaGrouping =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_getReplicaGrouping =
+    R"doc()doc";
+
+static const char *__doc_popart_VariableSettings_getReplicaGrouping_2 =
+    R"doc(Args:
+ numReplicas: The number of replicas in the IR this is used in.
+
+Returns:
+ the ReplicaGrouping domain of this VariableSettings.)doc";
+
+static const char *__singlelinedoc_popart_VariableSettings_getReplicaGrouping_2 =
+    R"doc(Args: numReplicas: The number of replicas in the IR this is used in. Returns: the ReplicaGrouping domain of this VariableSettings.)doc";
+
 static const char *__doc_popart_VariableSettings_getRetrievalMode =
     R"doc(Returns:
  the VariableRetrievalMode retrievalMode of this VariableSettings.)doc";
@@ -16667,16 +16987,15 @@ static const char *__doc_popart_VariableSettings_getSharedVariableDomain =
 static const char *__singlelinedoc_popart_VariableSettings_getSharedVariableDomain =
     R"doc(Returns: the CommGroup sharedVariableDomain of this VariableSettings.)doc";
 
-static const char *__doc_popart_VariableSettings_groupCount =
+static const char *__doc_popart_VariableSettings_getStride =
     R"doc(Args:
  replicaCount: The replicationFactor of the graph.
 
 Returns:
- The number of groups given the replicaFactor and the
- VariableSettings.)doc";
+ The stride between each member of a group.)doc";
 
-static const char *__singlelinedoc_popart_VariableSettings_groupCount =
-    R"doc(Args: replicaCount: The replicationFactor of the graph. Returns: The number of groups given the replicaFactor and the VariableSettings.)doc";
+static const char *__singlelinedoc_popart_VariableSettings_getStride =
+    R"doc(Args: replicaCount: The replicationFactor of the graph. Returns: The stride between each member of a group.)doc";
 
 static const char *__doc_popart_VariableSettings_groups =
     R"doc(This function returns a set of vectors where each vector contains all
@@ -16775,13 +17094,6 @@ Returns:
 
 static const char *__singlelinedoc_popart_VariableSettings_shapeOnReplica =
     R"doc(The shape Onnx reads holds an extra outer dimension in certain cases, where the outer dimension represents the number of returning replica variables. This function takes an Onnx full-shape and removes the outer dimension safely (ie. checks if the outer dimension matches an expected outer dimension). A quick-function to avoid duplicate code. Args: full_shape:   The shape as presented by Onnx. replicaCount: The local replication factor, used to calculate the return factor. name:         The TensorId of the function, used to give good error feedback. Returns: The shape of the data on the replica.)doc";
-
-static const char *__doc_popart_VariableSettings_sharedVariableDomain =
-    R"doc(How this Variable is grouped across graph replication.)doc";
-
-static const char
-    *__singlelinedoc_popart_VariableSettings_sharedVariableDomain =
-        R"doc(How this Variable is grouped across graph replication.)doc";
 
 static const char *__doc_popart_VariableSettings_verify =
     R"doc(Runs test to see if the VariableSettings are invalid, and throws an error
@@ -17041,6 +17353,35 @@ Returns:
 
 static const char *__singlelinedoc_popart_extractCommGroupFromVector =
     R"doc(Extracts CommGroup from vector of two integers. If the vector is empty, then the function returns a default constructed CommGroup. Args: vec: Vector of two integers corresponding to the CommGroupType and replicaGroupSize. Returns: CommGroup that is extracted from the input vector.)doc";
+
+static const char *__doc_popart_extractReplicaGroupingFromAttrs =
+    R"doc(Extracts ReplicaGrouping from op's attributes. If the attribute isn't
+set, then the function returns a default constructed ReplicaGrouping.
+
+
+Args:
+ attrs: Op's attributes.
+
+Returns:
+ ReplicaGrouping that is extracted from attributes.)doc";
+
+static const char *__singlelinedoc_popart_extractReplicaGroupingFromAttrs =
+    R"doc(Extracts ReplicaGrouping from op's attributes. If the attribute isn't set, then the function returns a default constructed ReplicaGrouping. Args: attrs: Op's attributes. Returns: ReplicaGrouping that is extracted from attributes.)doc";
+
+static const char *__doc_popart_extractReplicaGroupingFromVector =
+    R"doc(Extracts ReplicaGrouping from vector of three integers. If the vector is
+empty, then the function returns a default constructed ReplicaGrouping.
+
+
+Args:
+ vec: Vector of three integers corresponding to the number of replicas,
+   stride, and group size.
+
+Returns:
+ ReplicaGrouping that is extracted from the input vector.)doc";
+
+static const char *__singlelinedoc_popart_extractReplicaGroupingFromVector =
+    R"doc(Extracts ReplicaGrouping from vector of three integers. If the vector is empty, then the function returns a default constructed ReplicaGrouping. Args: vec: Vector of three integers corresponding to the number of replicas, stride, and group size. Returns: ReplicaGrouping that is extracted from the input vector.)doc";
 
 static const char *__doc_popart_fwdIdToBwdGradId =
     R"doc(Given the id of a tensor \p fwdId in a graph ``fwdGraph,`` and its corresponding
@@ -17634,11 +17975,17 @@ static const char *__doc_popart_operator_lshift_25 =
 static const char *__singlelinedoc_popart_operator_lshift_25 =
     R"doc(Stream the value for TensorLocationSettings.)doc";
 
-static const char *__doc_popart_operator_lshift_26 = R"doc()doc";
+static const char *__doc_popart_operator_lshift_26 =
+    R"doc(Stream the value for AccumulateOuterFragmentSchedule.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_26 = R"doc()doc";
+static const char *__singlelinedoc_popart_operator_lshift_26 =
+    R"doc(Stream the value for AccumulateOuterFragmentSchedule.)doc";
 
-static const char *__doc_popart_operator_lshift_27 =
+static const char *__doc_popart_operator_lshift_27 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_27 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_28 =
     R"doc(Write a representation of an SGDAccumulatorAndMomentum to an output stream.
 
 
@@ -17649,12 +17996,8 @@ Args:
 Returns:
  The same output stream for chaining.)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_27 =
+static const char *__singlelinedoc_popart_operator_lshift_28 =
     R"doc(Write a representation of an SGDAccumulatorAndMomentum to an output stream. Args: os: Output stream. sgdAccMm: SGDAccumulatorAndMomentum reference. Returns: The same output stream for chaining.)doc";
-
-static const char *__doc_popart_operator_lshift_28 = R"doc()doc";
-
-static const char *__singlelinedoc_popart_operator_lshift_28 = R"doc()doc";
 
 static const char *__doc_popart_operator_lshift_29 = R"doc()doc";
 
@@ -17684,7 +18027,11 @@ static const char *__doc_popart_operator_lshift_35 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_operator_lshift_35 = R"doc()doc";
 
-static const char *__doc_popart_operator_lshift_36 =
+static const char *__doc_popart_operator_lshift_36 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_operator_lshift_36 = R"doc()doc";
+
+static const char *__doc_popart_operator_lshift_37 =
     R"doc(Args:
  os: Stream to append VariableRetrievalMode vrm to.
  vrm: VariableRetrievalMode to add to the stream.
@@ -17692,10 +18039,10 @@ static const char *__doc_popart_operator_lshift_36 =
 Returns:
  Input stream with vrm appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_36 =
+static const char *__singlelinedoc_popart_operator_lshift_37 =
     R"doc(Args: os: Stream to append VariableRetrievalMode vrm to. vrm: VariableRetrievalMode to add to the stream. Returns: Input stream with vrm appended to the end of it)doc";
 
-static const char *__doc_popart_operator_lshift_37 =
+static const char *__doc_popart_operator_lshift_38 =
     R"doc(Args:
  os: Stream to append VariableSettings vrm to.
  vs: VariableSettings to add to the stream.
@@ -17703,7 +18050,7 @@ static const char *__doc_popart_operator_lshift_37 =
 Returns:
  Input stream with vs appended to the end of it)doc";
 
-static const char *__singlelinedoc_popart_operator_lshift_37 =
+static const char *__singlelinedoc_popart_operator_lshift_38 =
     R"doc(Args: os: Stream to append VariableSettings vrm to. vs: VariableSettings to add to the stream. Returns: Input stream with vs appended to the end of it)doc";
 
 static const char *__doc_popart_optimizer_replacement_error = R"doc()doc";
@@ -17718,6 +18065,10 @@ static const char *__singlelinedoc_popart_popx_Devicex = R"doc()doc";
 static const char *__doc_popart_popx_Devicex_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_2 = R"doc()doc";
+
+static const char *__doc_popart_popx_DevicexInfo = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_DevicexInfo = R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_Datastream = R"doc()doc";
 
@@ -17946,11 +18297,6 @@ static const char *__doc_popart_popx_Devicex_doProfileChecks = R"doc()doc";
 static const char *__singlelinedoc_popart_popx_Devicex_doProfileChecks =
     R"doc()doc";
 
-static const char *__doc_popart_popx_Devicex_engineIsLoaded = R"doc()doc";
-
-static const char *__singlelinedoc_popart_popx_Devicex_engineIsLoaded =
-    R"doc()doc";
-
 static const char *__doc_popart_popx_Devicex_executable = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_executable = R"doc()doc";
@@ -17969,6 +18315,11 @@ static const char *__singlelinedoc_popart_popx_Devicex_getDeviceInfo =
 static const char *__doc_popart_popx_Devicex_getDeviceInfo_2 = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_getDeviceInfo_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_getDevicexInfoUnsafe = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_getDevicexInfoUnsafe =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_getEfficientlyCreatedInputTensors =
@@ -18488,6 +18839,47 @@ static const char *__doc_popart_reservedDefaultMaxWeightNormPrefix =
 static const char *__singlelinedoc_popart_reservedDefaultMaxWeightNormPrefix =
     R"doc()doc";
 
+static const char
+    *__doc_popart_reservedDefaultNesterovDampeningScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedDefaultNesterovDampeningScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char
+    *__doc_popart_reservedDefaultNesterovDampeningScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedDefaultNesterovDampeningScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedDefaultNesterovGradScaleFactor1Prefix =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedDefaultNesterovGradScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedDefaultNesterovGradScaleFactor2Prefix =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedDefaultNesterovGradScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedDefaultSGDMomentumPrefix = R"doc()doc";
+
+static const char *__singlelinedoc_popart_reservedDefaultSGDMomentumPrefix =
+    R"doc()doc";
+
+static const char *__doc_popart_reservedDefaultSGDWeightDecayPrefix =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_reservedDefaultSGDWeightDecayPrefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedDefaultScaledLearningRate0Prefix =
     R"doc()doc";
 
@@ -18732,6 +19124,47 @@ static const char *__doc_popart_reservedSpecificMaxWeightNormPrefix =
 static const char *__singlelinedoc_popart_reservedSpecificMaxWeightNormPrefix =
     R"doc()doc";
 
+static const char
+    *__doc_popart_reservedSpecificNesterovDampeningScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char *
+    __singlelinedoc_popart_reservedSpecificNesterovDampeningScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char
+    *__doc_popart_reservedSpecificNesterovDampeningScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char *
+    __singlelinedoc_popart_reservedSpecificNesterovDampeningScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedSpecificNesterovGradScaleFactor1Prefix =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedSpecificNesterovGradScaleFactor1Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedSpecificNesterovGradScaleFactor2Prefix =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_reservedSpecificNesterovGradScaleFactor2Prefix =
+        R"doc()doc";
+
+static const char *__doc_popart_reservedSpecificSGDMomentumPrefix = R"doc()doc";
+
+static const char *__singlelinedoc_popart_reservedSpecificSGDMomentumPrefix =
+    R"doc()doc";
+
+static const char *__doc_popart_reservedSpecificSGDWeightDecayPrefix =
+    R"doc()doc";
+
+static const char *__singlelinedoc_popart_reservedSpecificSGDWeightDecayPrefix =
+    R"doc()doc";
+
 static const char *__doc_popart_reservedSpecificScaledLearningRate0Prefix =
     R"doc()doc";
 
@@ -18868,9 +19301,15 @@ static const char *__doc_popart_toString_3 =
 static const char *__singlelinedoc_popart_toString_3 =
     R"doc(Return a string value for TensorLocationSettings.)doc";
 
-static const char *__doc_popart_toString_4 = R"doc()doc";
+static const char *__doc_popart_toString_4 =
+    R"doc(Return a string value for AccumulateOuterFragmentSchedule.)doc";
 
-static const char *__singlelinedoc_popart_toString_4 = R"doc()doc";
+static const char *__singlelinedoc_popart_toString_4 =
+    R"doc(Return a string value for AccumulateOuterFragmentSchedule.)doc";
+
+static const char *__doc_popart_toString_5 = R"doc()doc";
+
+static const char *__singlelinedoc_popart_toString_5 = R"doc()doc";
 
 static const char *__doc_popart_uncategorizedReservedPrefixes =
     R"doc(Returns a vector containing all uncategorized prefixes
