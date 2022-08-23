@@ -58,7 +58,19 @@ void OptimizerDecompose::addStateTensor(Graph &graph,
         varset.getGroupCount(ir.getSessionOptions().replicatedGraphCount);
 
     std::vector<T> d(nelms_base * nelms_repl, static_cast<T>(initValue));
-    graph.getTensors().addVarInit(tensorId, info, d.data(), varset);
+
+    // When there is non nontrivial number (1) of groups prepend the
+    // groups number into shape of this state tensor.
+    if (nelms_repl > 1) {
+      Shape tensorShape = info.shape();
+      Shape fullShape   = {nelms_repl};
+      fullShape.insert(fullShape.end(), tensorShape.begin(), tensorShape.end());
+      TensorInfo infoState;
+      infoState.set(info.dataType(), fullShape);
+      graph.getTensors().addVarInit(tensorId, infoState, d.data(), varset);
+    } else {
+      graph.getTensors().addVarInit(tensorId, info, d.data(), varset);
+    }
   }
 }
 

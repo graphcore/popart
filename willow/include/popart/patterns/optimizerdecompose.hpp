@@ -27,6 +27,9 @@ protected:
                             const VariableSettings &varset,
                             float initValue = 0.0) const;
 
+  /// If the variable we are implementing the optimiser step for
+  /// has a replica grouping, the info we pass here
+  /// is the replica shape, not the host shape (so without the groups dim).
   template <typename T>
   void addStateTensor(Graph &graph,
                       const TensorId &tensorId,
