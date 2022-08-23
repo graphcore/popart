@@ -11,7 +11,6 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/topocons.hpp>
 
-#include "popart/ir.hpp"
 #include "popart/op.hpp"
 #include "popart/op/varupdate.hpp"
 #include "popart/optimizervalue.hpp"
@@ -51,12 +50,7 @@ bool SGD0Decompose::apply(Op *op) const {
   TensorId accumId = reservedAccumPrefix() + weightId;
   if (combo->withGradAccum) {
     addStateTensor(
-        graph,
-        accumId,
-        weightShape,
-        combo->accumType,
-        VariableSettings(
-            graph.getIr().getSessionOptions().getGlobalReplicationFactor()));
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   TensorId gradIntoAccumId  = weightGradId;

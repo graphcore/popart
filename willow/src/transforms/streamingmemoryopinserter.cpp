@@ -2310,13 +2310,12 @@ void StreamingMemoryOpInserter::verifyPlacementConsistency(const Op *op) const {
 
 TensorLocation
 StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
-  auto &ir                     = graph.getIr();
-  auto &sessionOptions         = ir.getSessionOptions();
-  auto globalReplicationFactor = sessionOptions.getGlobalReplicationFactor();
-  auto id                      = tensor->id;
-  auto type                    = tensor->tensorType();
-  auto producerOp              = tensor->getProducerUnsafe();
-  auto isActivation            = type == TensorType::ActGrad;
+  auto &ir             = graph.getIr();
+  auto &sessionOptions = ir.getSessionOptions();
+  auto id              = tensor->id;
+  auto type            = tensor->tensorType();
+  auto producerOp      = tensor->getProducerUnsafe();
+  auto isActivation    = type == TensorType::ActGrad;
   auto isOptimizerState =
       type == TensorType::Variable && tensor->isOptimizerStateTensor();
   auto isAccumulator =
@@ -2456,10 +2455,10 @@ StreamingMemoryOpInserter::determineTensorLocation(Tensor *tensor) const {
           (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
         }
         // If the sharding domain is None sharding can not occur.
-        if (tensor->getVariableSettings().getRealGroupSize(
-                globalReplicationFactor) == 1) {
+        if (tensor->getVariableSettings().getSharedVariableDomain().type ==
+            CommGroupType::None) {
           logging::transform::debug("[StreamingMemory] Sharding on tensor {} "
-                                    "disabled due to replica group size of 1.",
+                                    "disabled due to CommGroupType (None)",
                                     id);
           (*result).replicatedTensorSharding = ReplicatedTensorSharding::Off;
         }

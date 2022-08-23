@@ -149,9 +149,7 @@ bool SGD1Decompose::apply(Op *op) const {
                        nesterovAcclGradId,
                        weight->info.shape(),
                        DataType::FLOAT,
-                       VariableSettings(graph.getIr()
-                                            .getSessionOptions()
-                                            .getGlobalReplicationFactor()));
+                       VariableSettings());
       }
     } else if (weightGrad->info.dataType() == DataType::FLOAT16) {
       addAcclInTensor<float16_t>(
@@ -161,9 +159,7 @@ bool SGD1Decompose::apply(Op *op) const {
                        nesterovAcclGradId,
                        weight->info.shape(),
                        DataType::FLOAT16,
-                       VariableSettings(graph.getIr()
-                                            .getSessionOptions()
-                                            .getGlobalReplicationFactor()));
+                       VariableSettings());
       }
     } else {
       throw error("Unsupported type in gradient accumulation transformation, "

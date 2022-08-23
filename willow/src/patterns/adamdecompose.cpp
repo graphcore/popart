@@ -227,12 +227,7 @@ bool AdamDecompose::apply(Op *op) const {
   // Accumulator
   if (combo->withGradAccum) {
     addStateTensor(
-        graph,
-        accumId,
-        weightShape,
-        combo->accumType,
-        VariableSettings(
-            graph.getIr().getSessionOptions().getGlobalReplicationFactor()));
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   // 1st momentum (accl1)

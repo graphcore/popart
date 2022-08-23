@@ -78,12 +78,7 @@ bool AdaptiveDecompose::apply(Op *op) const {
   // Accumulator
   if (combo->withGradAccum) {
     addStateTensor(
-        graph,
-        accumId,
-        weightShape,
-        combo->accumType,
-        VariableSettings(
-            graph.getIr().getSessionOptions().getGlobalReplicationFactor()));
+        graph, accumId, weightShape, combo->accumType, VariableSettings());
   }
 
   if (combo->rmspropTFVariant) {
