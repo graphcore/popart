@@ -23,7 +23,6 @@
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/op/reduce.hpp"
 #include "popart/operators.hpp"
-#include "popart/replicagrouping.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/vendored/optional.hpp"
 
@@ -56,15 +55,6 @@ ReduceSumSquareOp::getReplicatedTensorShardingIndices() const {
 void ReduceSumSquareOp::configureForReplicatedTensorSharding(
     ReplicatedTensorShardingIndices indices,
     CommGroup shardingDomain) {
-  configureForReplicatedTensorSharding(
-      std::move(indices),
-      shardingDomain.toReplicaGrouping(
-          getIr().getSessionOptions().getGlobalReplicationFactor()));
-}
-
-void ReduceSumSquareOp::configureForReplicatedTensorSharding(
-    ReplicatedTensorShardingIndices indices,
-    const ReplicaGrouping &grouping) {
   if (indices == getReplicatedTensorShardingIndices()) {
     auto out = outTensor(ReduceSumSquareOp::getOutIndex());
 
@@ -86,7 +76,7 @@ void ReduceSumSquareOp::configureForReplicatedTensorSharding(
       auto reduceOp = getGraph().createOp<ReplicatedAllReduceInplaceOp>(
           Onnx::CustomOperators::ReplicatedAllReduceInplace,
           CollectiveOperator::Add,
-          grouping,
+          shardingDomain,
           settings);
 
       reduceOp->connectInTensor(ReplicatedAllReduceInplaceOp::getInIndex(),

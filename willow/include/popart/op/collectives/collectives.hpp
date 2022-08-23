@@ -11,9 +11,7 @@
 #include <popart/op.hpp>
 
 #include "popart/attributes.hpp"
-#include "popart/ir.hpp"
 #include "popart/names.hpp"
-#include "popart/replicagrouping.hpp"
 #include "popart/tensorinfo.hpp"
 #include "popart/tensorlocation.hpp"
 
@@ -40,12 +38,8 @@ std::ostream &operator<<(std::ostream &os, const CollectiveOperator &op);
 
 class CollectivesBaseOp : public Op {
 public:
-  // TODO(T67766): Delete.
-  [[deprecated]] CollectivesBaseOp(const OperatorIdentifier &_opid,
-                                   CommGroup group,
-                                   const Op::Settings &settings_);
   CollectivesBaseOp(const OperatorIdentifier &_opid,
-                    const ReplicaGrouping &grouping,
+                    CommGroup group,
                     const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override = 0;
 
@@ -76,19 +70,8 @@ public:
   virtual bool isCollectiveLinkedIndexTensor(InIndex in) const;
   virtual bool isCollectiveLinkedIndexTensor(Tensor *t) const;
 
-  // TODO(T67766): Delete.
-  [[deprecated]] void setGCLCommGroup(CommGroup group) {
-    grouping_ = group.toReplicaGrouping(
-        getIr().getSessionOptions().getGlobalReplicationFactor());
-  }
-  // TODO(T67766): Delete.
-  [[deprecated]] CommGroup getGCLCommGroup() const {
-    return CommGroup(grouping_);
-  }
-
-  void setReplicaGrouping(const ReplicaGrouping &grouping);
-
-  const ReplicaGrouping &getReplicaGrouping() const;
+  void setGCLCommGroup(CommGroup group_) { group = group_; }
+  CommGroup getGCLCommGroup() const { return group; }
 
   /**
    * Number of replicas the collective communicates across.
@@ -114,7 +97,7 @@ public:
   }
 
 private:
-  ReplicaGrouping grouping_;
+  CommGroup group;
 };
 /**
  *The base class for multi-collective which perform all-gather, all-reduce
@@ -138,35 +121,13 @@ public:
    * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
    * associated virtual graph
    */
-  // TODO(T67766): Delete.
-  [[deprecated]] MultiCollectiveBaseOp(
+  MultiCollectiveBaseOp(
       const OperatorIdentifier &operatorIdentifier,
       CommGroup commGroup,
       const Op::Settings &settings,
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
-  /**
-   * Constructor for the MultiReplicatedBaseOp
-   *
-   * \param operatorIdentifier the identifier for the constructed op
-   * \param grouping all of the inputs will be reduced scattered across
-   * the same communications group
-   * \param settings the settings of the op are shared across all inputs
-   * \param outInfoFromBaseOps the output information for each tensor,
-   * usually inherited from a ReplicatedReduceScatterOp for that tensor
-   * \param inputVirtualGraphIdAndTileSet each input tensor has it's own
-   * associated virtual graph
-   * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
-   * associated virtual graph
-   */
-  MultiCollectiveBaseOp(
-      const OperatorIdentifier &operatorIdentifier,
-      const ReplicaGrouping &grouping,
-      const Op::Settings &settings,
-      const std::vector<TensorInfo> &outInfoFromBaseOps,
-      const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet,
-      const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet);
   std::unique_ptr<Op> clone() const override = 0;
   void setup() override;
   /**
@@ -216,18 +177,7 @@ private:
  * \param attrs Op's attributes.
  * \return \ref CommGroup that is extracted from attributes.
  */
-// TODO(T67766): Delete.
-[[deprecated]] CommGroup extractCommGroupFromAttrs(const Attributes &attrs);
-
-/**
- * Extracts \ref ReplicaGrouping from op's attributes. If the attribute isn't
- * set, then the function returns a default constructed \ref ReplicaGrouping.
- *
- * \param attrs Op's attributes.
- * \return \ref ReplicaGrouping that is extracted from attributes.
- */
-ReplicaGrouping extractReplicaGroupingFromAttrs(const Attributes &attrs,
-                                                unsigned replicationFactor);
+CommGroup extractCommGroupFromAttrs(const Attributes &attrs);
 
 /**
  * Extracts \ref CommGroup from vector of two integers. If the vector is empty,
@@ -237,27 +187,13 @@ ReplicaGrouping extractReplicaGroupingFromAttrs(const Attributes &attrs,
  * replicaGroupSize.
  * \return \ref CommGroup that is extracted from the input vector.
  */
-// TODO(T67766): Delete.
-[[deprecated]] CommGroup
-extractCommGroupFromVector(const std::vector<int64_t> &vec);
-
-/**
- * Extracts \ref ReplicaGrouping from vector of three integers. If the vector is
- * empty, then the function returns a default constructed \ref ReplicaGrouping.
- *
- * \param vec Vector of three integers corresponding to the number of replicas,
- *   stride, and group size.
- * \return \ref ReplicaGrouping that is extracted from the input vector.
- */
-ReplicaGrouping
-extractReplicaGroupingFromVector(const std::vector<int64_t> &vec);
+CommGroup extractCommGroupFromVector(const std::vector<int64_t> &vec);
 
 /**
  * Calculates the complementary group such that the two CommGroups together
  * span all replicas
  */
-// TODO(T67766): Delete.
-[[deprecated]] CommGroup getComplementCommGroup(const Ir &ir, CommGroup group);
+CommGroup getComplementCommGroup(const Ir &ir, CommGroup group);
 
 /**
  * Calculates the complementary group such that the input group and the
@@ -270,10 +206,9 @@ extractReplicaGroupingFromVector(const std::vector<int64_t> &vec);
  * \param superSet The set to find the complement within.
  * \return         commGroup complement of group within superSet.
  */
-// TODO(T67766): Delete.
-[[deprecated]] CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
-                                                            CommGroup group,
-                                                            CommGroup superSet);
+CommGroup getComplementCommGroupWithSuperSet(const Ir &ir,
+                                             CommGroup group,
+                                             CommGroup superSet);
 
 } // namespace popart
 

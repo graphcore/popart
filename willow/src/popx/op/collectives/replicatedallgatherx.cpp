@@ -53,7 +53,7 @@ void ReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
       graph().getPoplarGraph(),
       getInTensor(ReplicatedAllGatherOp::getInIndex()).getPoplarTensor(),
       prog.getPoplarSequence(),
-      toGclCommGroup(op.getReplicaGrouping()),
+      toGCLCommGroup(op.getGCLCommGroup()),
       debugContext("replicatedAllGather"),
       allGatherOptions);
   if (getOp<ReplicatedAllGatherOp>()

@@ -13,7 +13,6 @@
 
 namespace popart {
 class CommGroup;
-class ReplicaGrouping;
 struct OperatorIdentifier;
 
 class ReduceSumSquareOp : public ReduceOp {
@@ -28,14 +27,9 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const final;
 
-  // TODO(T67766): Delete.
-  [[deprecated]] void
-  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       CommGroup shardingDomain) final;
-
   void
   configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       const ReplicaGrouping &grouping) final;
+                                       CommGroup shardingDomain) final;
 };
 
 class ReduceSumSquareGradOp : public ReduceGradOp {

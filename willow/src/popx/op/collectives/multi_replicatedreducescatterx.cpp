@@ -216,7 +216,7 @@ void MultiReplicatedReduceScatterOpx::grow(
       destinationTensor,
       getPoplarCollectiveOperator(myOp.getCollectiveOp()),
       prog.getPoplarSequence(),
-      toGclCommGroup(myOp.getReplicaGrouping()),
+      toGCLCommGroup(myOp.getGCLCommGroup()),
       "MultiReplicatedReduceScatter",
       dv_p->lowering().gclOptions);
 }

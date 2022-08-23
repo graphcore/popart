@@ -16,7 +16,6 @@
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
 #include "popart/region.hpp"
-#include "popart/replicagrouping.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorindex.hpp"
 #include "popart/tensorinfo.hpp"
@@ -33,21 +32,6 @@ MultiReplicatedAllGatherOp::MultiReplicatedAllGatherOp(
     std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet_)
     : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedAllGather,
                             group_,
-                            settings_,
-                            outInfoFromBaseOps_,
-                            inputVirtualGraphIdAndTileSet_,
-                            outputVirtualGraphIdAndTileSet_),
-      undoRearrangeForCollective(undoRearrangeForCollective_) {}
-
-MultiReplicatedAllGatherOp::MultiReplicatedAllGatherOp(
-    const ReplicaGrouping &grouping,
-    const Op::Settings &settings_,
-    const std::vector<TensorInfo> &outInfoFromBaseOps_,
-    const std::vector<bool> &undoRearrangeForCollective_,
-    const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet_,
-    const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet_)
-    : MultiCollectiveBaseOp(Onnx::CustomOperators::MultiReplicatedAllGather,
-                            grouping,
                             settings_,
                             outInfoFromBaseOps_,
                             inputVirtualGraphIdAndTileSet_,

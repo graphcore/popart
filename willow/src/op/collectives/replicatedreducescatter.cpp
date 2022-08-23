@@ -18,7 +18,6 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/op/collectives/collectives.hpp"
-#include "popart/replicagrouping.hpp"
 #include "popart/sessionoptions.hpp"
 #include "popart/tensorinfo.hpp"
 
@@ -39,16 +38,6 @@ ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
     CollectiveOperator op_,
-    const ReplicaGrouping &grouping,
-    bool configureOutputForReplicatedTensorSharding_,
-    const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, grouping, settings_), op(op_),
-      configureOutputForReplicatedTensorSharding(
-          configureOutputForReplicatedTensorSharding_) {}
-
-ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
-    const OperatorIdentifier &_opid,
-    CollectiveOperator op_,
     CommGroup group_,
     const Op::Settings &settings_)
     : CollectivesBaseOp(_opid, group_, settings_), op(op_),
@@ -56,20 +45,8 @@ ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
 
 ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
     const OperatorIdentifier &_opid,
-    CollectiveOperator op_,
-    const ReplicaGrouping &grouping,
     const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid, grouping, settings_), op(op_),
-      configureOutputForReplicatedTensorSharding(false) {}
-
-ReplicatedReduceScatterOp::ReplicatedReduceScatterOp(
-    const OperatorIdentifier &_opid,
-    const Op::Settings &settings_)
-    : CollectivesBaseOp(_opid,
-                        ReplicaGrouping(settings_.getIr()
-                                            .getSessionOptions()
-                                            .getGlobalReplicationFactor()),
-                        settings_),
+    : CollectivesBaseOp(_opid, CommGroup{}, settings_),
       op(CollectiveOperator::Add),
       configureOutputForReplicatedTensorSharding(false) {}
 
@@ -128,9 +105,13 @@ ReplicatedReduceScatterOp::fwdPropagateIsReplicaEqual(
   // of replicas instead instead of having only tracking if a tensor is
   // replica-equal for all replicas or not.
 
-  const auto groupSize                 = getReplicaGrouping().getGroupSize();
-  const auto isLocal                   = (op == CollectiveOperator::Local);
-  const auto isReductionOverOneReplica = groupSize == 1;
+  const auto groupType = getGCLCommGroup().type;
+  const auto groupSize = getGCLCommGroup().replicaGroupSize;
+  const auto isLocal   = (op == CollectiveOperator::Local);
+  const auto isReductionOverOneReplica =
+      (groupType == CommGroupType::None) ||
+      (groupType == CommGroupType::Consecutive && groupSize == 1) ||
+      (groupType == CommGroupType::Orthogonal && groupSize == 1);
 
   // If a local reduction or a scatter over multiple replicas, the output is
   // definitely non-equal.
@@ -152,17 +133,13 @@ static OpDefinition ReplicatedReduceScatterOpDef(
     {OpDefinition::Inputs({{"X", T}}),
      OpDefinition::Outputs({{"Y", T}}),
      OpDefinition::Attributes({{sCollectiveOperator, {"*"}},
-                               {sCollectiveReplicaGrouping, {"*"}}})});
+                               {sCollectiveCommGroup, {"*"}}})});
 
 static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
     OpDefinitions({{Onnx::CustomOperators::ReplicatedReduceScatter,
                     ReplicatedReduceScatterOpDef}}),
     [](const OpCreatorInfo &info) {
-      const auto grouping =
-          extractReplicaGroupingFromAttrs(info.attributes,
-                                          info.settings.getIr()
-                                              .getSessionOptions()
-                                              .getGlobalReplicationFactor());
+      CommGroup group       = extractCommGroupFromAttrs(info.attributes);
       CollectiveOperator op = static_cast<CollectiveOperator>(
           info.attributes.getAttribute<Attributes::Int>(
               sCollectiveOperator, static_cast<int>(CollectiveOperator::Add)));
@@ -170,11 +147,8 @@ static OpCreator<ReplicatedReduceScatterOp> ReplicatedReduceScatterOpCreator(
           static_cast<bool>(info.attributes.getAttribute<Attributes::Int>(
               sReplicatedTensorSharding, 0));
       return std::unique_ptr<ReplicatedReduceScatterOp>(
-          new ReplicatedReduceScatterOp(info.opid,
-                                        op,
-                                        grouping,
-                                        replicatedTensorSharding,
-                                        info.settings));
+          new ReplicatedReduceScatterOp(
+              info.opid, op, group, replicatedTensorSharding, info.settings));
     },
     true);
 

@@ -47,13 +47,13 @@ void ReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
       prog.getPoplarSequence(),
-      toGclCommGroup(rarOp.getReplicaGrouping()),
+      toGCLCommGroup(rarOp.getGCLCommGroup()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
 
-  logging::transform::trace("[ReplicatedAllReduceOpx::grow] replica grouping: "
-                            "{}, input shape: {}, output shape: {}",
-                            rarOp.getReplicaGrouping(),
+  logging::transform::trace("[ReplicatedAllReduceOpx::grow] comm group: {}, "
+                            "input shape: {}, output shape: {}",
+                            rarOp.getGCLCommGroup(),
                             toReduce.shape(),
                             output.shape());
 
@@ -99,15 +99,15 @@ void ReplicatedAllReduceInplaceOpx::grow(snap::program::Sequence &prog) const {
       toReduce,
       getPoplarCollectiveOperator(rarOp.getCollectiveOp()),
       prog.getPoplarSequence(),
-      toGclCommGroup(rarOp.getReplicaGrouping()),
+      toGCLCommGroup(rarOp.getGCLCommGroup()),
       debugContext("replicatedAllReduce"),
       allReduceOptions);
 
   auto outputShape = toReduce.shape();
 
-  logging::transform::trace("[ReplicatedAllReduceOpx::grow] replica grouping: "
-                            "{}, input shape: {}, output shape: {}",
-                            rarOp.getReplicaGrouping(),
+  logging::transform::trace("[ReplicatedAllReduceOpx::grow] comm group: {}, "
+                            "input shape: {}, output shape: {}",
+                            rarOp.getGCLCommGroup(),
                             inputShape,
                             outputShape);
 

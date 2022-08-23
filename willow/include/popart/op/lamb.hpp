@@ -9,7 +9,6 @@
 
 namespace popart {
 class CommGroup;
-class ReplicaGrouping;
 
 class LambSquareOp : public Op {
 public:
@@ -31,14 +30,9 @@ public:
 
   // Lamb + replicated tensor sharding:
   // Distributed L2 norm of the weight and updater tensor
-  // TODO(T67766): Delete.
-  [[deprecated]] void
-  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       CommGroup shardingDomain) final;
-
   void
   configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       const ReplicaGrouping &grouping) final;
+                                       CommGroup shardingDomain) final;
 };
 
 } // namespace popart

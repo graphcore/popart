@@ -36,7 +36,6 @@ namespace popart {
 
 class AliasModel;
 class CommGroup;
-class ReplicaGrouping;
 class Graph;
 class Ir;
 class Pattern;
@@ -1770,21 +1769,9 @@ public:
    * \param shardingDomain The type and size of the replica group specified by a
    *      CommGroup object.
    */
-  // TODO(T67766): Delete.
-  [[deprecated]] virtual void
-  configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       CommGroup shardingDomain);
-
-  /**
-   * Configure the op for replicated tensor sharding at specific indices.
-   * \param indices The indices at which to configure the op for replicated
-   *      tensor sharding.
-   * \param grouping The stride and size of the replica group specified by a
-   *      ReplicaGrouping object.
-   */
   virtual void
   configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
-                                       const ReplicaGrouping &grouping);
+                                       CommGroup shardingDomain);
 
   // T41400 is to remove all other versions of `transferBaseProperties` and
   // replace with this.

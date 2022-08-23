@@ -29,7 +29,6 @@
 #include "popart/names.hpp"
 #include "popart/op.hpp"
 #include "popart/popx/popopx.hpp"
-#include "popart/replicagrouping.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/tensorindex.hpp"
 
@@ -277,10 +276,27 @@ MultiCollectiveBaseOpx::getOutGrowPartId(Tensor *outTensor) const {
   return getOp<Op>().output->indices(outTensor).at(0);
 }
 
-gcl::CommGroup toGclCommGroup(const popart::ReplicaGrouping &grouping) {
-  return {gcl::CommGroupType::CONSECUTIVE,
-          grouping.getGroupSize(),
-          grouping.getStride()};
+gcl::CommGroup toGCLCommGroup(const popart::CommGroup &group) {
+  gcl::CommGroupType type;
+  auto size = group.replicaGroupSize;
+  switch (group.type) {
+  case popart::CommGroupType::All:
+    type = gcl::CommGroupType::ALL;
+    break;
+  case popart::CommGroupType::Consecutive:
+    type = gcl::CommGroupType::CONSECUTIVE;
+    break;
+  case popart::CommGroupType::Orthogonal:
+    type = gcl::CommGroupType::ORTHOGONAL;
+    break;
+  case popart::CommGroupType::None:
+    type = gcl::CommGroupType::CONSECUTIVE;
+    size = 1;
+    break;
+  default:
+    throw error("Cannot convert unknown CommGroup type");
+  }
+  return {type, size};
 }
 
 } // namespace popx

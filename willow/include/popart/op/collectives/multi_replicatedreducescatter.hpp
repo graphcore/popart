@@ -1,6 +1,6 @@
 // Copyright (c) 2022 Graphcore Ltd. All rights reserved.
-#ifndef POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_MULTI_REPLICATEDREDUCESCATTER_HPP_
-#define POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_MULTI_REPLICATEDREDUCESCATTER_HPP_
+#ifndef GUARD_NEURALNET_MULTIREPLICATEDREDUCESCATTER_HPP
+#define GUARD_NEURALNET_MULTIREPLICATEDREDUCESCATTER_HPP
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -12,7 +12,6 @@
 namespace popart {
 class AliasModel;
 class CommGroup;
-class ReplicaGrouping;
 class Op;
 class Tensor;
 class TensorInfo;
@@ -43,8 +42,7 @@ public:
    * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
    * associated virtual graph
    */
-  // TODO(T67766): Delete.
-  [[deprecated]] MultiReplicatedReduceScatterOp(
+  MultiReplicatedReduceScatterOp(
       CollectiveOperator collectiveOperator,
       CommGroup commGroup,
       const Settings &settings,
@@ -52,30 +50,6 @@ public:
       std::vector<bool> rearrangeForCollective,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
-
-  /**
-   * Constructor for the MultiReplicatedReduceScatterOp
-   *
-   * \param collectiveOperator the collective operator is the same
-   * for all input tensors
-   * \param grouping all of the inputs will be reduced scattered across
-   * the same communications group
-   * \param settings the settings of the op are shared across all inputs
-   * \param outInfoFromBaseOps the output information for each tensor,
-   * usually inherited from a ReplicatedReduceScatterOp for that tensor
-   * \param inputVirtualGraphIdAndTileSet each input tensor has it's own
-   * associated virtual graph
-   * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
-   * associated virtual graph
-   */
-  MultiReplicatedReduceScatterOp(
-      CollectiveOperator collectiveOperator,
-      const ReplicaGrouping &grouping,
-      const Settings &settings,
-      const std::vector<TensorInfo> &outInfoFromBaseOps,
-      const std::vector<bool> &rearrangeForCollective,
-      const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet,
-      const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet);
 
   std::unique_ptr<Op> clone() const override;
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
@@ -108,4 +82,4 @@ private:
 };
 } // namespace popart
 
-#endif // POPART_WILLOW_INCLUDE_POPART_OP_COLLECTIVES_MULTI_REPLICATEDREDUCESCATTER_HPP_
+#endif
