@@ -18,6 +18,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
+
 // The layers:
 #include <algorithm>
 #include <cstddef>
@@ -26,6 +27,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <regex>
 #include <set>
 #include <sstream>
 #include <string>
@@ -503,7 +505,40 @@ void Op::appendOutlineAttributes(OpSerialiserBase &os) const {
   std::string recomputeString =
       settings.recomputeType == RecomputeType::Recompute ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
-  os.appendAttribute(sVirtualGraphAttribute, getOptionalVGraphId());
+
+  // This env var and corresponding code was implemented to support the PopLiner
+  // guided partitioning tool. PopLiner requires an OOM graph profile for a
+  // large model that was compiled on a single IPU. Compiling for 1 IPU allows
+  // the outliner to be overly aggressive - which is counterproductive for
+  // PopLiner as it gives an unrealistic representation of how the model would
+  // be compiled on multiple IPUs. This env var allows the user to indicate
+  // which operations are likely to be on separate virtual graphs based on their
+  // name - meaning the outlined outcome is more representative of the final
+  // compilation.
+  // Generally, we want to indicate that all operations with the same layer name
+  // (found by searching the operation name for the provided regular expression)
+  // are on the same virtual graph - and each virtual graph contains only
+  // operations with the same layer name.
+  const auto layerRegex = getPopartEnvVar("POPLINER_OUTLINER_REGEX");
+  if (layerRegex) {
+    const std::regex base_regex(*layerRegex);
+    std::smatch base_match;
+    std::int64_t layer = 0; // Non-matches assigned to 1st virtual graph
+    if (std::regex_search(settings.name, base_match, base_regex) &&
+        base_match.size() == 2) {
+      std::ssub_match base_sub_match = base_match[1];
+      std::string base               = base_sub_match.str();
+      layer                          = std::stoul(base);
+      logging::op::warn(
+          "Outliner considering op '{}' on subgraph #{}", settings.name, layer);
+    } else {
+      logging::op::warn("Outliner considering op '{}' on default subgraph.",
+                        settings.name);
+    }
+    os.appendAttribute(sVirtualGraphAttribute, layer);
+  } else {
+    os.appendAttribute(sVirtualGraphAttribute, getOptionalVGraphId());
+  }
   os.appendAttribute("tileSet", static_cast<int64_t>(settings.tileSet));
   for (auto attribute : settings.extraOutlineAttributes) {
     os.appendAttribute(attribute.first,

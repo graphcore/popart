@@ -80,3 +80,36 @@ If set, ``POPART_IR_DUMP`` defines the name of a file where the serialised IR wi
 
 The IR will be written either at the end of the IR preparation phase, or when an exception is thrown during the IR preparation phase.
 
+Manipulating outliner behaviour for PopLiner
+--------------------------------------------
+
+.. note::
+  It is assumed that everything in this section will only be used in conjunction
+  with PopLiner - the guided partitioning tool.
+
+POPART_POPLINER_OUTLINER_REGEX
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Used to help reproduce multi-IPU outlining when compiling for a single IPU. This
+is helpful for use with PopLiner - the guided partitioning tool. When set, the
+value will be used as a regular expression for extracting the layer from the
+operation name. The layer must be numerical and must be within parenthesis in
+the regular expression for the capture group. The following value is recommended
+for this environment variable:
+
+.. code-block:: console
+
+  export POPART_POPLINER_OUTLINER_REGEX="(?:^|\/)(?:[L|l]ayer|blocks|encoder)[\/_\.]?(\d+)"
+
+When set, you should see warning-level log messages to indicate which layer
+names are found, allowing you to check that you regular expression works as
+intended.
+
+Please remember to unset this environment variable when you no longer wish to
+generate a profile for PopLiner.
+
+.. note::
+
+  If you see an error message about remote buffers mapping to multiple
+  virtual graphs when using this environment variable, you may need to set the
+  encoder start IPU to 0.
