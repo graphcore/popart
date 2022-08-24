@@ -4,9 +4,7 @@ Custom operators
 ================
 
 This section explains how to implement a custom operator (op) in PopART. Code
-from the `Leaky ReLU custom op example
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example>`_
-in the Graphcore GitHub repository will be used to illustrate the concepts.
+from the :tutorials-repo:`Leaky ReLU custom op example <feature_examples/popart/custom_operators/leaky_relu_example>` in the Graphcore GitHub repository will be used to illustrate the concepts.
 
 Overview
 --------
@@ -90,16 +88,14 @@ dynamically linked into a Python program at runtime, as shown below:
 
   ctypes.cdll.LoadLibrary(so_path)
 
-You can see how this is done in the `LeakyReLU example
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L63>`_.
+You can see how this is done in the :tutorials-repo:`LeakyReLU example <feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py#L63>`.
 
 .. _sec_implement_custom_op:
 
 Implementing a custom op
 ------------------------
 
-Some of the examples in the `GitHub repository
-<https://github.com/graphcore/tutorials/tree/master/feature_examples/popart/custom_operators>`__
+Some of the examples in the :tutorials-repo:`GitHub repository <feature_examples/popart/custom_operators>`
 have a single C++ file that defines all of the classes for a custom op. Although
 this can make it easier to see everything in one place, it can be more difficult
 to follow. So, in this section the main elements of the ``LeakyRelu`` example
@@ -373,8 +369,7 @@ PopART or by a reference to the op in an ONNX file.
 
 :cpp:class:`~popart::OperatorIdentifier` is a structure with the components ``domain``, ``opName`` and ``opVersion``.
 
-For the ``LeakyRelu`` example, from `leaky_relu_custom_op.cpp
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>`__ we have:
+For the ``LeakyRelu`` example, from :tutorials-repo:`leaky_relu_custom_op.cpp <feature_examples/popart/custom_operators/leaky_relu_example/leaky_relu_custom_op.cpp#L13>` we have:
 
 .. code-block:: cpp
 
@@ -606,8 +601,7 @@ In your application, the compiled library can be loaded from Python using the ``
   import ctypes
   ctypes.cdll.LoadLibrary(so_path) # path to compiled shared library
 
-The op can be referenced, using the values in the ``OpIdentifier`` object, in a Python program using the ``builder``. For example, from `run_leaky_relu.py
-<https://github.com/graphcore/tutorials/tree/sdk-release-2.6/feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`_:
+The op can be referenced, using the values in the ``OpIdentifier`` object, in a Python program using the ``builder``. For example, from :tutorials-repo:`run_leaky_relu.py <feature_examples/popart/custom_operators/leaky_relu_example/run_leaky_relu.py>`:
 
 .. code-block:: python
 
