@@ -208,19 +208,14 @@ class ReplicaGrouping:
         Returns:
             VariableSettings: The PopART equivalent of ReplicaGroupings.
         """
-        comm_group = self._to_comm_group()
         if retrieval_mode is None or retrieval_mode == "one_per_group":
             var_ret_mode = VariableRetrievalMode.OnePerGroup
         elif retrieval_mode == "all_replicas":
             var_ret_mode = VariableRetrievalMode.AllReplicas
         else:
             raise ValueError(f"Invalid retrieval_mode: {retrieval_mode}")
-        variable_settings = VariableSettings(comm_group, var_ret_mode)
-        variable_settings.verify()
-        return variable_settings
 
-    def _to_comm_group(self) -> _ir.CommGroup:
         try:
-            return _ir.CommGroup(self._pb_replica_grouping)
+            return VariableSettings(self._pb_replica_grouping, var_ret_mode)
         except popart_exception as e:
             raise ValueError(e)
