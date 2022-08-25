@@ -23,7 +23,7 @@ def replicated_all_gather(t: Tensor, group: Optional[ReplicaGrouping] = None) ->
     pb_g = g._pb_graph
 
     check_in_graph(g, t=t)
-    group = group or g.ir.replica_grouping()
+    group = g.ir.replica_grouping() if group is None else group
     new_shape = t.meta_shape if t.meta_shape else (group.group_size, *t.shape)
 
     settings = ctx._get_op_settings("replicated_all_gathered")
@@ -36,7 +36,7 @@ def replicated_all_gather(t: Tensor, group: Optional[ReplicaGrouping] = None) ->
         {0: t.id},
         {0: g._create_tensor_id(t.name + "_all_gathered")},
         opid,
-        group._to_comm_group(),
+        group._pb_replica_grouping,
         settings,
         out_info,
     )
