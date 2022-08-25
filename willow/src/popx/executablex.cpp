@@ -244,14 +244,8 @@ void Executablex::resetWeights(
     const bool ignoreWeightsInModelWithoutCorrespondingIrWeight) {
   auto &onnxGraph = modelProto.graph();
 
-  auto replicationFactor = 0;
-
-  for (auto &m : modelProto.metadata_props()) {
-    if (m.key() == sReplicationFactor) {
-      replicationFactor = static_cast<size_t>(std::stoi(m.value()));
-      break;
-    }
-  }
+  auto replicationFactor =
+      ir().getSessionOptions().getGlobalReplicationFactor();
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();

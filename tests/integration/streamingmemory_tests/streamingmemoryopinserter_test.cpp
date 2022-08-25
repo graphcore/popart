@@ -67,6 +67,11 @@ BOOST_AUTO_TEST_CASE(StreamingMemoryOpInserter_determineTensorLocation) {
   Ir ir;
   Graph graph = {ir, GraphId::root()};
 
+  SessionOptions options;
+  options.enableReplicatedGraphs = true;
+  options.replicatedGraphCount   = 2;
+  ir.setUserOptions(options);
+
   //   weight0    opt0
   //     |         |
   //     +--AddOp0-+

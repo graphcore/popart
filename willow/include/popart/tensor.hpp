@@ -360,7 +360,7 @@ public:
 
 private:
   VariableUpdateType variableUpdateType;
-  VariableSettings variableSettings = VariableSettings();
+  VariableSettings variableSettings;
 
   // If the type is copy, this will identity where to copy from
   TensorId copyFromTensor;
