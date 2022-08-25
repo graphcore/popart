@@ -110,7 +110,7 @@ void MultiReplicatedAllGatherOpx::grow(snap::program::Sequence &prog) const {
       toGatherTensor,
       destinationTensor,
       prog.getPoplarSequence(),
-      toGCLCommGroup(myOp.getGCLCommGroup()),
+      toGclCommGroup(myOp.getReplicaGrouping()),
       "MultiReplicatedAllGather",
       dv_p->lowering().gclOptions);
 }

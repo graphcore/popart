@@ -17,6 +17,7 @@
 
 namespace popart {
 class CommGroup;
+class ReplicaGrouping;
 class Op;
 class Tensor;
 
@@ -233,12 +234,12 @@ public:
 };
 
 /**
- * Converts give \ref CommGroup to GCL's CommGroup type.
+ * Converts given \ref ReplicaGrouping to GCL's CommGroup type.
 
- * \param input PopART \ref CommGroup.
+ * \param grouping PopART \ref ReplicaGrouping.
  * \return GCL CommGroup.
  */
-gcl::CommGroup toGCLCommGroup(const popart::CommGroup &input);
+gcl::CommGroup toGclCommGroup(const popart::ReplicaGrouping &grouping);
 
 } // namespace popx
 } // namespace popart

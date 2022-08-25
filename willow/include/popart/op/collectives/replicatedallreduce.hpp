@@ -14,6 +14,7 @@
 namespace popart {
 class AliasModel;
 class CommGroup;
+class ReplicaGrouping;
 class OpSerialiserBase;
 class ReplicaEqualAnalysisProxy;
 class Tensor;
@@ -21,9 +22,14 @@ struct OperatorIdentifier;
 
 class ReplicatedAllReduceOp : public CollectivesBaseOp {
 public:
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedAllReduceOp(const OperatorIdentifier &,
+                                       CollectiveOperator op,
+                                       CommGroup group,
+                                       const Op::Settings &);
   ReplicatedAllReduceOp(const OperatorIdentifier &,
                         CollectiveOperator op,
-                        CommGroup group,
+                        const ReplicaGrouping &grouping,
                         const Op::Settings &);
   ReplicatedAllReduceOp(const OperatorIdentifier &, const Op::Settings &);
 
@@ -59,9 +65,14 @@ protected:
 
 class ReplicatedAllReduceInplaceOp : public ReplicatedAllReduceOp {
 public:
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
+                                              CollectiveOperator op_,
+                                              CommGroup group,
+                                              const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                CollectiveOperator op_,
-                               CommGroup group,
+                               const ReplicaGrouping &grouping,
                                const Op::Settings &settings_);
   ReplicatedAllReduceInplaceOp(const OperatorIdentifier &_opid,
                                const Op::Settings &settings_);

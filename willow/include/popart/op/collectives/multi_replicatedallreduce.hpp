@@ -12,6 +12,7 @@
 namespace popart {
 class AliasModel;
 class CommGroup;
+class ReplicaGrouping;
 class Op;
 class Tensor;
 class TensorInfo;
@@ -45,7 +46,8 @@ public:
    * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
    * associated virtual graph
    */
-  MultiReplicatedAllReduceOp(
+  // TODO(T67766): Delete.
+  [[deprecated]] MultiReplicatedAllReduceOp(
       CollectiveOperator collectiveOperator,
       CommGroup commGroup,
       const Settings &settings,
@@ -53,6 +55,32 @@ public:
       std::vector<TensorInfo> outInfoFromBaseOps,
       std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet,
       std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet);
+
+  /**
+   * Constructor for the MultiReplicatedAllReduceOp
+   *
+   * \param collectiveOperator the collective operator is the same
+   * for all input tensors
+   * \param grouping all of the inputs will be reduced across the same
+   * communications group
+   * \param settings the settings of the op are shared across all inputs
+   * \param modifiesIndexInplace for each of the inputs, specify whether
+   * it should be modified in place
+   * \param outInfoFromBaseOps  the output information for each tensor,
+   * usually inherited from a ReplicatedAllReduceOp for that tensor
+   * \param inputVirtualGraphIdAndTileSet each input tensor has it's own
+   * associated virtual graph
+   * \param outputVIrtualGraphIdAnTileSet each output tensor has it's own
+   * associated virtual graph
+   */
+  MultiReplicatedAllReduceOp(
+      CollectiveOperator collectiveOperator,
+      const ReplicaGrouping &grouping,
+      const Settings &settings,
+      const std::vector<bool> &modifiesIndexInplace,
+      const std::vector<TensorInfo> &outInfoFromBaseOps,
+      const std::vector<VGraphIdAndTileSet> &inputVirtualGraphIdAndTileSet,
+      const std::vector<VGraphIdAndTileSet> &outputVirtualGraphIdAndTileSet);
 
   std::unique_ptr<Op> clone() const override;
   float getSubgraphValue() const final { return getLowSubgraphValue(); }

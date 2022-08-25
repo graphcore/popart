@@ -41,6 +41,15 @@ LambSquareOp::getReplicatedTensorShardingIndices() const {
 void LambSquareOp::configureForReplicatedTensorSharding(
     ReplicatedTensorShardingIndices indices,
     CommGroup shardingDomain) {
+  configureForReplicatedTensorSharding(
+      std::move(indices),
+      shardingDomain.toReplicaGrouping(
+          getIr().getSessionOptions().getGlobalReplicationFactor()));
+}
+
+void LambSquareOp::configureForReplicatedTensorSharding(
+    ReplicatedTensorShardingIndices indices,
+    const ReplicaGrouping &grouping) {
   if (indices == getReplicatedTensorShardingIndices()) {
     Tensor *out = output->tensor(LambSquareOp::getOutIndex());
 
@@ -63,7 +72,7 @@ void LambSquareOp::configureForReplicatedTensorSharding(
       auto reduceOpUp = std::make_unique<ReplicatedAllReduceInplaceOp>(
           Onnx::CustomOperators::ReplicatedAllReduceInplace,
           CollectiveOperator::Add,
-          shardingDomain,
+          grouping,
           settings);
       auto reduceOp = reduceOpUp.get();
       getGraph().moveIntoGraph(std::move(reduceOpUp));

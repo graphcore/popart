@@ -13,18 +13,28 @@
 namespace popart {
 class AliasModel;
 class CommGroup;
+class ReplicaGrouping;
 class ReplicaEqualAnalysisProxy;
 struct OperatorIdentifier;
 
 class ReplicatedAllGatherOp : public CollectivesBaseOp {
 public:
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedAllGatherOp(const OperatorIdentifier &,
+                                       CommGroup group,
+                                       const Op::Settings &);
+  // TODO(T67766): Delete.
+  [[deprecated]] ReplicatedAllGatherOp(const OperatorIdentifier &,
+                                       CommGroup group,
+                                       const Op::Settings &,
+                                       TensorInfo outInfo);
   ReplicatedAllGatherOp(const OperatorIdentifier &,
-                        CommGroup group,
+                        const ReplicaGrouping &grouping,
                         const Op::Settings &);
   ReplicatedAllGatherOp(const OperatorIdentifier &,
-                        CommGroup group,
+                        const ReplicaGrouping &grouping,
                         const Op::Settings &,
-                        TensorInfo outInfo);
+                        const TensorInfo &outInfo);
 
   std::unique_ptr<Op> clone() const final;
   void setup() final;

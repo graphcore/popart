@@ -126,7 +126,7 @@ void MultiReplicatedAllReduceOpx::grow(snap::program::Sequence &prog) const {
       data,
       getPoplarCollectiveOperator(op.getCollectiveOp()),
       prog.getPoplarSequence(),
-      toGCLCommGroup(op.getGCLCommGroup()),
+      toGclCommGroup(op.getReplicaGrouping()),
       "MultiAllReduce",
       dv_p->lowering().gclOptions);
 }
