@@ -2173,7 +2173,11 @@ void Ir::registerInputTensors() {
       DebugNameAndId dnid(debugid);
       DebugContext onnxDc(dnid);
       OnnxVariableDebugInfo onnxDi(onnxDc, initializer);
-      VariableSettings vs(CommGroup(type, size), retrievalMode);
+      const unsigned replicationFactor =
+          getSessionOptions().getGlobalReplicationFactor();
+      VariableSettings vs(
+          CommGroup(type, size).toReplicaGrouping(replicationFactor),
+          retrievalMode);
 
       // If inference mode add initializers as constants if option enabled
       bool inference_constants =

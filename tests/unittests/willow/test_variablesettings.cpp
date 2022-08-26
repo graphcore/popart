@@ -89,7 +89,9 @@ BOOST_DATA_TEST_CASE(testGetReplicaGrouping,
   BOOST_CHECK_EQUAL(settings.getReplicaGrouping(8), expectedGrouping);
 }
 
-BOOST_AUTO_TEST_CASE(testGetReplicaGroupingInvalid) {
+// TODO(T62390): Enable this test.
+BOOST_AUTO_TEST_CASE(testGetReplicaGroupingInvalid,
+                     *boost::unit_test::disabled()) {
   const popart::VariableSettings settings{8};
 
   BOOST_CHECK_THROW(settings.getReplicaGrouping(4), popart::error);

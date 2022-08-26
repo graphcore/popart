@@ -1106,7 +1106,7 @@ void Devicex::loadEngineAndConnectStreams() {
           logging::devicex::debug("   {}", tensor->str());
 
           auto replicationFactor =
-              ir().getSessionOptions().replicatedGraphCount;
+              ir().getSessionOptions().getGlobalReplicationFactor();
           auto groupCount =
               tensor->getVariableSettings().getGroupCount(replicationFactor);
 

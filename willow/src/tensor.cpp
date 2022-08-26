@@ -867,7 +867,12 @@ Tensor::Tensor(TensorId n,
                TensorType t,
                Graph &g,
                const DebugContext &debugContext)
-    : Tensor(n, t, VariableSettings(), g, debugContext) {}
+    : Tensor(n,
+             t,
+             VariableSettings(
+                 g.getIr().getSessionOptions().getGlobalReplicationFactor()),
+             g,
+             debugContext) {}
 
 Tensor::Tensor(TensorId n,
                VariableSettings vs,
