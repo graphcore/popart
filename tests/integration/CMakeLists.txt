@@ -43,7 +43,6 @@ add_unit_test(opsetcheck_test opset_check_test.cpp)
 add_unit_test(preplan_convolutions_test preplan_convolutions_test.cpp VARIANTS "IpuModel2")
 add_unit_test(preplan_matmuls_test preplan_matmuls_test.cpp VARIANTS "IpuModel2")
 add_unit_test(rng_mapping_test rng_mapping_test.cpp)
-add_unit_test(popir_simple_example_test popir_simple_example_test.cpp VARIANTS "Hw")
 
 # add_popart_py_unit_test(test_util) Utility
 # add_popart_py_unit_test(test_session) Utility
