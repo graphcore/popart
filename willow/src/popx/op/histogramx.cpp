@@ -23,11 +23,12 @@ void HistogramOpx::grow(snap::program::Sequence &prog) const {
   auto &op    = getOp<HistogramOp>();
   auto levels = op.getLevels();
 
-  auto levelsT = graph().addLinearlyMappedConstant(
-      getInTensor(op.getInIndex()).elementType(),
-      {levels.size()},
-      poplar::ArrayRef<float>(levels),
-      debugContext("levels"));
+  auto levelsT = graph().addConstant(getInTensor(op.getInIndex()).elementType(),
+                                     {levels.size()},
+                                     poplar::ArrayRef<float>(levels),
+                                     debugContext("levels"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             levelsT.getPoplarTensor());
 
   auto out = popops::histogram(
       graph().getPoplarGraph(),

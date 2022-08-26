@@ -31,11 +31,12 @@ snap::Tensor getIotaTensor(snap::Graph &graph,
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);
 
-  auto singleRowIota =
-      graph.addLinearlyMappedConstant(poplar::INT,
-                                      {sortSize},
-                                      poplar::ArrayRef<int>(iotaVals),
-                                      {dnai, "constant"});
+  auto singleRowIota = graph.addConstant(poplar::INT,
+                                         {sortSize},
+                                         poplar::ArrayRef<int>(iotaVals),
+                                         {dnai, "constant"});
+  poputil::mapTensorLinearly(graph.getPoplarGraph(),
+                             singleRowIota.getPoplarTensor());
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"
   auto indices = graph.clone(poplar::INT, input, {dnai, "clone"});
