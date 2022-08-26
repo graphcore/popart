@@ -214,25 +214,14 @@ void Tensors::addConstInit(const TensorId &name,
 void Tensors::addVarInit(const TensorId &name,
                          const ONNX_NAMESPACE::TensorProto *pt,
                          const DebugContext &debugContext) {
-  addVarInit(
-      name,
-      pt,
-      VariableSettings(
-          graph.getIr().getSessionOptions().getGlobalReplicationFactor()),
-      debugContext);
+  addVarInit(name, pt, VariableSettings(), debugContext);
 }
 
 void Tensors::addVarInit(const TensorId &name,
                          const TensorInfo &info,
                          const void *src,
                          const DebugContext &debugContext) {
-  addVarInit(
-      name,
-      info,
-      src,
-      VariableSettings(
-          graph.getIr().getSessionOptions().getGlobalReplicationFactor()),
-      debugContext);
+  addVarInit(name, info, src, VariableSettings(), debugContext);
 }
 
 void Tensors::addVarInit(const TensorId &name,
@@ -298,12 +287,7 @@ void Tensors::addInit(const TensorId &name,
                       const ONNX_NAMESPACE::TensorProto *pt,
                       TensorType tt,
                       const DebugInfo &di) {
-  addInit(name,
-          pt,
-          tt,
-          VariableSettings(
-              graph.getIr().getSessionOptions().getGlobalReplicationFactor()),
-          di);
+  addInit(name, pt, tt, VariableSettings(), di);
 }
 
 void Tensors::addInit(const TensorId &name,
