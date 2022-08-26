@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <popops/Sort.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/op/basesort.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/basesortx.hpp>
@@ -74,7 +75,8 @@ BaseSortOpx::createInputTensor(InIndex inIndex,
     std::swap(shape[axis], shape.back());
 
     // Create a new variable of the modified shape
-    auto t = graph().addLinearlyMappedVariable(popType(info), shape, dnai);
+    auto t = graph().addVariable(popType(info), shape, dnai);
+    poputil::mapTensorLinearly(graph().getPoplarGraph(), t.getPoplarTensor());
 
     // DimShuffle back to the desired shape
     std::vector<unsigned> permutation(t.rank());

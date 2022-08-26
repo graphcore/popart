@@ -14,6 +14,7 @@
 #include <poplar/Type.hpp>
 #include <popops/Expr.hpp>
 #include <popops/Zero.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/graph.hpp>
 #include <popart/op/loop.hpp>
 #include <popart/popx/devicex.hpp>
@@ -398,16 +399,19 @@ void LoopOpx::grow(snap::program::Sequence &prog) const {
 
   // 3: Create a poplar only iterator variable i, set it to 0
   snap::Tensor iteratorTensor;
-  iteratorTensor = graph().addLinearlyMappedVariable(
-      poplar::INT, {}, debugContext("iterator"));
+  iteratorTensor =
+      graph().addVariable(poplar::INT, {}, debugContext("iterator"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             iteratorTensor.getPoplarTensor());
   popops::zero(graph().getPoplarGraph(),
                iteratorTensor.getPoplarTensor(),
                prog.getPoplarSequence(),
                debugContext("iterator_0"));
 
   // 4: Create a poplar only boolean variable exit, set it to false
-  auto exitTensor =
-      graph().addLinearlyMappedVariable(poplar::BOOL, {}, debugContext("exit"));
+  auto exitTensor = graph().addVariable(poplar::BOOL, {}, debugContext("exit"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             exitTensor.getPoplarTensor());
   prog.add(
       snap::program::Copy(fconst, exitTensor, {}, debugContext("exit_false")));
 

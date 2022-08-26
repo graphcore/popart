@@ -15,6 +15,7 @@
 #include <poplar/Type.hpp>
 #include <popops/ElementWise.hpp>
 #include <poprand/RandomGen.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popx/rng/rngstatelowering.hpp>
 #include <popart/op/getrandomseed.hpp>
 #include <popart/popx/pritask.hpp>
@@ -150,11 +151,13 @@ snap::Tensor RngStateLowering::createRNGStateTensor(snap::Graph &graph,
   // Create tensor with specific mapping to avoid exchanges.
   unsigned minElementsPerTile =
       target.getNumWorkerContexts() * rngStateSizePerWorker;
-  return graph.addLinearlyMappedVariable(poplar::UNSIGNED_INT,
-                                         rngStateTensorShape,
-                                         minElementsPerTile,
-                                         minElementsPerTile,
-                                         {name});
+  auto result =
+      graph.addVariable(poplar::UNSIGNED_INT, rngStateTensorShape, {name});
+  poputil::mapTensorLinearly(graph.getPoplarGraph(),
+                             result.getPoplarTensor(),
+                             minElementsPerTile,
+                             minElementsPerTile);
+  return result;
 }
 
 void RngStateLowering::lowerSetHwSeeds(

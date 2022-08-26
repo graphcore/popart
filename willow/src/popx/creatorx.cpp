@@ -17,6 +17,7 @@
 #include <vector>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Tensor.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/popx/creatorx.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/tensor.hpp>
@@ -283,9 +284,10 @@ InputCreatorCandidate::unwindOnPath(const OpxInAndOutIndex &opxOnPath,
 
   auto inInfo = opxOnPath.opx->getOp<Op>().inInfo(opxOnPath.inIndex);
 
-  auto &graph = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
-  auto fullTensor =
-      graph.addLinearlyMappedVariable(popType(inInfo), inInfo.shape_szt(), "");
+  auto &graph     = opxOnPath.opx->srcVirtualGraph(opxOnPath.inIndex);
+  auto fullTensor = graph.addVariable(popType(inInfo), inInfo.shape_szt(), "");
+  poputil::mapTensorLinearly(graph.getPoplarGraph(),
+                             fullTensor.getPoplarTensor());
 
   logging::devicex::trace("[creatorx] Tensor shape before compose: {}",
                           inTensor.shape());

@@ -21,6 +21,7 @@
 #include <popops/Fill.hpp>
 #include <popops/Pad.hpp>
 #include <popops/Zero.hpp>
+#include <poputil/TileMapping.hpp>
 
 #include <popops/Reduce.hpp>
 #include <poputil/TileMapping.hpp>
@@ -673,8 +674,10 @@ snap::Tensor ResizeGradOpx::reduceDimension(snap::program::Sequence &prog,
   std::vector<size_t> resultShape = input.shape();
   resultShape.at(dimension)       = outShape.at(dimension);
   auto size                       = input.getPoplarTensor().dim(dimension);
-  auto result                     = graph().addLinearlyMappedVariable(
+  auto result                     = graph().addVariable(
       input.elementType(), resultShape, debugContext("reduceDimResult"));
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             result.getPoplarTensor());
   popops::fill(graph().getPoplarGraph(),
                result.getPoplarTensor(),
                prog.getPoplarSequence(),
@@ -704,8 +707,10 @@ snap::Tensor ResizeGradOpx::padDimension(snap::program::Sequence &prog,
                                          int64_t newSize,
                                          float scale) const {
   auto slices        = split(input, dimension);
-  auto paddingTensor = graph().addLinearlyMappedVariable(
+  auto paddingTensor = graph().addVariable(
       input.elementType(), slices.at(0).shape(), debugContext());
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             paddingTensor.getPoplarTensor());
   popops::zero(graph().getPoplarGraph(),
                paddingTensor.getPoplarTensor(),
                prog.getPoplarSequence(),

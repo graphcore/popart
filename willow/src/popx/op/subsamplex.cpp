@@ -5,6 +5,7 @@
 #include <snap/Tensor.hpp>
 #include <vector>
 #include <poplar/Graph.hpp>
+#include <poputil/TileMapping.hpp>
 #include <popart/op/subsample.hpp>
 #include <popart/popx/op/subsamplex.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -85,8 +86,10 @@ void SubsampleGradOpx::grow(snap::program::Sequence &prog) const {
   }
 
   // Copy the zero-view tensor into a new tensor and remap
-  auto outTensor = graph().addLinearlyMappedVariable(
-      output.elementType(), output.shape(), debugContext());
+  auto outTensor =
+      graph().addVariable(output.elementType(), output.shape(), debugContext());
+  poputil::mapTensorLinearly(graph().getPoplarGraph(),
+                             outTensor.getPoplarTensor());
   prog.add(snap::program::Copy(output, outTensor, false, debugContext()));
 
   // Create a subsample view of the output

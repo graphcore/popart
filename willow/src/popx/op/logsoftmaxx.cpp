@@ -18,6 +18,7 @@
 #include <popops/ExprOp.hpp>
 #include <popops/OperationDef.hpp>
 #include <popops/Reduce.hpp>
+#include <poputil/TileMapping.hpp>
 #include <poputil/VarStructure.hpp>
 #include <popart/error.hpp>
 #include <popart/op/logsoftmax.hpp>
@@ -60,8 +61,9 @@ snap::Tensor cloneAndGroupImpl(ClonerT &default_cloner,
                       g.getTarget().getNumWorkerContexts();
 
     // Create the tensor.
-    outTensor = g.addLinearlyMappedVariable(
-        t.elementType(), t.shape(), 0, grain_size, d);
+    outTensor = g.addVariable(t.elementType(), t.shape(), d);
+    poputil::mapTensorLinearly(
+        g.getPoplarGraph(), outTensor.getPoplarTensor(), 0, grain_size);
 
     // Copy the values to it.
     p.add(snap::program::Copy(t,
