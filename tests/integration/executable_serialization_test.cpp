@@ -182,11 +182,12 @@ void compareExecutables(const popx::Executablex &exe1,
   auto it2 = cbhrsExe2.begin();
   for (auto it1 = cbhrsExe1.begin(); it1 != cbhrsExe1.end(); ++it1) {
     BOOST_CHECK(it1->first == it2->first);
-    BOOST_CHECK(it1->second.replicationFactor == it2->second.replicationFactor);
-    BOOST_CHECK(it1->second.totalElementsPerReplica ==
-                it2->second.totalElementsPerReplica);
-    BOOST_CHECK(it1->second.gatheredToRefSlices ==
-                it2->second.gatheredToRefSlices);
+    BOOST_CHECK(it1->second.getReplicationFactor() ==
+                it2->second.getReplicationFactor());
+    BOOST_CHECK(it1->second.getTotalElementsPerReplica() ==
+                it2->second.getTotalElementsPerReplica());
+    BOOST_CHECK(it1->second.getGatheredToRefSlices() ==
+                it2->second.getGatheredToRefSlices());
     ++it2;
   }
 }
