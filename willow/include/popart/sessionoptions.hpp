@@ -213,7 +213,7 @@ struct ReplicatedCollectivesSettings {
    */
   bool mergeAllReduceCollectives = false;
 
-  /// Identifies reduce scatter operations which can be scheduled
+  /// Identifies reduce-scatter operations which can be scheduled
   /// at the same time, and performs them as one larger operation
   /// so as to better utilize the bandwidth between replicas
   bool mergeReduceScatterCollectives = false;
@@ -1117,7 +1117,7 @@ struct SessionOptions {
 
   /**
    * Enable Poplar executable caching.
-   * The file is saved to the location defined with \c cachePath.
+   * The file is saved to the location defined with <tt>cachePath</tt>.
    * The file will be in
    * the <a href="https://docs.graphcore.ai/projects/popef/"> PopEF</a> format.
    * This means that it can be used to run inference using the <a
@@ -1129,6 +1129,19 @@ struct SessionOptions {
    * Default: `false` (not enabled).
    */
   bool enableEngineCaching = false;
+
+  /**
+   * Enable variable caching.
+   *
+   * This means that the caching process will save variables as additional <a
+   * href="https://docs.graphcore.ai/projects/popef/">PopEF</a> blobs to the
+   * file location defined with <tt>cachePath</tt>. If PopART will require data
+   * for variables (during cache reading process), they will be automatically
+   * read from the cache file.
+   *
+   * Default: `true` (enabled).
+   */
+  bool enableVariablesCaching = true;
 
   /// Folder to save the \c poplar::Executable to.
   std::string cachePath = "session_cache";

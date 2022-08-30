@@ -560,10 +560,10 @@ std::ostream &operator<<(std::ostream &os,
 /**
  * Stochastic Gradient Descent (%SGD) optimizer.
  *
- * Akin to any optimizer implementation, this class is responsible for updating
- * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
- * the loss function with respect to the weight as calculated during the
- * backwards pass.
+ * Like any to any optimizer implementation, this class is responsible for
+ * updating each weight tensor (\f$w\f$) in the model using the gradient
+ * (\f$g\f$) of the loss function with respect to the weight as calculated
+ * during the backwards pass.
  *
  * The %SGD optimizer has the following **state** for each weight:
  *

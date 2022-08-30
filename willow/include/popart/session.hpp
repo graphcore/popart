@@ -198,6 +198,74 @@ public:
   void saveExecutableToStream(std::ostream &out);
 
   /**
+   * Save a compiled graph with additional data to a file.
+   *
+   * PopART is able to save its state after the model compilation is complete,
+   * so that it can be restored at a later time. To make this possible,
+   * it is necessary to save such elements as:
+   *   - a serialised Poplar executable,
+   *   - its associated metadata,
+   *   - tensor data blobs if model parameters have not been frozen
+   *     (refer to the \c SessionOptions::constantWeights for more
+   *     information),
+   *   - a PopART-specific opaque blob to store information only
+   *     relevant to PopART. This is needed to restore PopART state.
+   *
+   * The file will be in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/">PopEF</a>
+   * format. This means that the file can be used to restore the state of the
+   * PopART program without recompiling the graph, or run inference using the <a
+   * href="https://developer.nvidia.com/nvidia-triton-inference-server"> Triton
+   * Inference Server</a> with the Graphcore Triton backend. See the <a
+   * href="https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/">
+   * Poplar Triton Backend User Guide</a> for more information. If you want to
+   * analyze file structure saved by the function please refer to the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis">
+   * PopEF dump tool</a>.
+   *
+   * \pre prepareDevice() must have been called.
+   *
+   * \param path The name of the file or directory where the compiled
+   *      executable, metadata and variables will be saved. If you specified a
+   *      path to the directory, the function will write the data to the file:
+   *      "<path>/executable.popef". If the file exists, the function will
+   *      overwrite the old data with the new ones.
+   * \param savePopartMetadata If you do not need the option to restore the
+   *      PopART state later, you can set the flag to false to reduce disk space
+   *      taken up by the file.
+   * \param saveVariables If you don't need to save variables (tensors) state,
+   *      you can set the flag to false if you want to save them later or in a
+   *      different location. The function will save data consistent with the
+   *      variables contained within the model.
+   */
+  void saveExecutable(const std::string &path,
+                      bool savePopartMetadata = true,
+                      bool saveVariables      = true);
+
+  /**
+   * Save all variables to a file.
+   *
+   * The function will save data consistent with the variables contained
+   * within the model.
+   *
+   * The file will be in the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/">PopEF</a>
+   * format. If you want to analyze tensors saved by the function refer
+   * to the <a
+   * href="https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis">
+   * PopEF dump tool</a>.
+   *
+   * \pre prepareDevice() must have been called.
+   *
+   * \param path The name of the file or directory where the compiled
+   *      variables will be saved. If you specified a path to the directory,
+   *      the function will write the data to the file:
+   *      "<path>/variables.popef". If the file exists, the function will
+   *      overwrite the old data with the new ones.
+   */
+  void saveVariables(const std::string &path);
+
+  /**
    * Check for potential inplacing ambiguities.
    *
    * This method creates an \c AliasModel object for each graph and runs the
@@ -398,22 +466,22 @@ public:
   std::set<TensorId> getAllTensorIds() const;
 
   /**
-   * Retrieve the summary from from the \c poplar::Engine.
+   * Retrieve the summary report from from the <tt>poplar::Engine</tt>.
    *
    * The options which were passed to the Session constructor will influence
    * the information in the report.
    *
    * This method may only be called after prepareDevice() has been called.
    *
-   * \param resetProfile If `true`, resets the execution profile. Default =
-   *      `true`.
+   * \param resetProfile If <tt>true</tt>, resets the execution profile. Default
+   * = <tt>true</tt>.
    *
    * \return A string containing the report.
    */
   std::string getSummaryReport(bool resetProfile = true) const;
 
   /**
-   * Retrieve the serialized graph from the \c poplar::Engine.
+   * Retrieve the serialized graph from the <tt>poplar::Engine</tt>.
    *
    * A JSON format report is produced.
    *

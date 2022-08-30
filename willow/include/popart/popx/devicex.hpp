@@ -112,6 +112,11 @@ private:
   // host stream -> tensors
   void d2hWeightBuffersToTensors(const std::vector<Tensor *> &tensors);
 
+  // Create file needed by serialization process. If the path points
+  // existing directory, the function will create file "<path>/defaultFilename".
+  std::string prepareFileToSerialization(const std::string &path,
+                                         const std::string &defaultFilename);
+
 public:
   /// Copy data from the device, to the host buffers, to the
   /// `tensor.tensorData()` buffers. Will not run a WeightsToHost program if
@@ -212,13 +217,17 @@ public:
   void loadEngineAndConnectStreams();
 
   // Serialize the Poplar executable stored inside the device's engine.
-  void serializeExecutable(std::ostream &out);
-  void serializeExecutable(const std::string &path);
+  void serializeExecutable(std::ostream &out,
+                           bool serializePopartMetadata,
+                           bool serializeTensorData);
+  void serializeExecutable(const std::string &path,
+                           bool serializePopartMetadata,
+                           bool serializeTensorData);
+  // Serialize the tensor data stored inside the executablex's tensors.
+  void serializeTensorData(const std::string &path);
 
 private:
-  friend void
-  serialization::serializeEngineExecutable(std::ostream &out,
-                                           const popart::popx::Devicex &device);
+  friend class serialization::WriterImpl;
 
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
 
@@ -299,7 +308,6 @@ private:
   // Q: Consider replacing the d2h weight buffer with a data stream as
   // done for inputs
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
-  std::map<TensorId, std::vector<char>> chBuffers;
 
   // map of buffers for streaming to IPU.
   std::map<TensorId, std::vector<char>> h2dWeightBuffers;

@@ -240,6 +240,7 @@ MAKE_LOG_TEMPLATE(crit, Critical)
   }
 
 // The definition of the logging modules
+MAKE_MODULE_TEMPLATE(popart)
 MAKE_MODULE_TEMPLATE(session)
 MAKE_MODULE_TEMPLATE(ir)
 MAKE_MODULE_TEMPLATE(devicex)

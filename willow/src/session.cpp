@@ -65,7 +65,7 @@ HashesMap getCacheEntries(const std::string &cachePath) {
       auto ifs =
           std::make_shared<std::ifstream>(filePath, std::ifstream::binary);
       try {
-        popart::popx::serialization::Reader reader(ifs);
+        popart::popx::serialization::Reader reader({ifs});
         if (reader.containsExecutable() && reader.containsPoplarExecutable()) {
           auto hash = reader.readExecutableHash();
           cacheEntries.emplace(hash, entry.path().string());
@@ -228,7 +228,7 @@ void Session::loadExecutableFromStream(std::shared_ptr<std::istream> in) {
   bool skipGraphCompilation = true;
   lowering_.reset(new popx::IrLowering(*ir, deviceInfo_, skipGraphCompilation));
 
-  popx::serialization::Reader reader(in);
+  popx::serialization::Reader reader({in});
   lowering_->loadPoplarExecutable(reader);
   executable_ = reader.deserializeExecutable(*ir, *lowering_);
 
@@ -393,15 +393,40 @@ void Session::saveExecutableToFile(const std::string &filename) {
 
   assertDeviceCanCompileOffline();
   assertExecutableLoaded();
-  device_->serializeExecutable(filename);
+
+  static constexpr bool serializePopartMetadata = true;
+  static constexpr bool serializeTensorData     = true;
+  device_->serializeExecutable(
+      filename, serializePopartMetadata, serializeTensorData);
 }
 
 void Session::saveExecutableToStream(std::ostream &out) {
   POPART_TRACEPOINT();
   assertDeviceCanCompileOffline();
   assertExecutableLoaded();
-  device_->serializeExecutable(out);
+
+  static constexpr bool serializePopartMetadata = true;
+  static constexpr bool serializeTensorData     = true;
+  device_->serializeExecutable(
+      out, serializePopartMetadata, serializeTensorData);
 }
+
+void Session::saveExecutable(const std::string &path,
+                             bool savePopartMetadata,
+                             bool saveVariables) {
+  POPART_TRACEPOINT();
+  assertDeviceCanCompileOffline();
+  assertExecutableLoaded();
+  device_->serializeExecutable(path, savePopartMetadata, saveVariables);
+}
+
+void Session::saveVariables(const std::string &path) {
+  POPART_TRACEPOINT();
+  assertDeviceCanCompileOffline();
+  assertExecutableLoaded();
+  device_->serializeTensorData(path);
+}
+
 void Session::checkInplacingAmbiguity() const {
   for (auto g : ir->getAllGraphs()) {
     AliasModel aliasModel;

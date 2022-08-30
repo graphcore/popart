@@ -117,7 +117,7 @@ private:
   ReplicaGrouping grouping_;
 };
 /**
- *The base class for multi-collective which perform all-gather, all-reduce
+ *The base class for a multi-collective which performs all-gather, all-reduce
  *reduce-scatter operations on lists of tensors by first merging them into
  *a larger tensor. This improves bandwidth utilization and decreases the
  *number of syncs needed.
@@ -196,15 +196,15 @@ public:
 private:
   /**
    * The output information for each tensor, usually inherited from
-   * a ReplicatedReduceScatterOp for that tensor. Used to setup the op.
+   * a ReplicatedReduceScatterOp for that tensor. Used to set up the op.
    */
   std::vector<TensorInfo> outInfoFromBaseOps;
   /**
-   * Each input tensor has it's own associated virtual graph
+   * Each input tensor has its own associated virtual graph
    */
   std::vector<VGraphIdAndTileSet> inputVirtualGraphIdAndTileSet;
   /**
-   * Each output tensor has it's own associated virtual graph
+   * Each output tensor has its own associated virtual graph
    */
   std::vector<VGraphIdAndTileSet> outputVirtualGraphIdAndTileSet;
 };

@@ -219,10 +219,10 @@ enum class AdaptiveMode {
 /**
  * AdaDelta, RMSProp and AdaGrad optimizer implementation.
  *
- * Akin to any optimizer implementation, this class is responsible for updating
- * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
- * the loss function with respect to the weight as calculated during the
- * backwards pass.
+ * Like any to any optimizer implementation, this class is responsible for
+ * updating each weight tensor (\f$w\f$) in the model using the gradient
+ * (\f$g\f$) of the loss function with respect to the weight as calculated
+ * during the backwards pass.
  *
  * The optimizer has the following **state** for each weight:
  *

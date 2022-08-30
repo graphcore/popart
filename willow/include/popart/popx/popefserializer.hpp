@@ -2,12 +2,9 @@
 #ifndef POPART_WILLOW_INCLUDE_POPART_POPX_POPEFSERIALIZER_HPP_
 #define POPART_WILLOW_INCLUDE_POPART_POPX_POPEFSERIALIZER_HPP_
 
-#include <cstddef>
 #include <iostream>
 #include <memory>
-
-#include <popef/Types.hpp>
-#include <popef/Writer.hpp>
+#include <vector>
 
 namespace poplar {
 // Forward declaration.
@@ -18,9 +15,6 @@ namespace popart {
 
 // Forward declaration.
 class Ir;
-class Tensor;
-class TensorInfo;
-enum class DataType;
 
 namespace popx {
 
@@ -33,76 +27,89 @@ namespace serialization {
 
 // Forward declaration.
 class ReaderImpl;
+class WriterImpl;
 
 /**
- * The function casts \c popart::DataType to \c popef::DataType.
+ * Save a compiled graph with additional data to a stream.
  *
- * \param type Tensor data type.
- * \return The created \c popef::DataType object.
- */
-popef::DataType toPopefDataType(popart::DataType type);
-
-/**
- * The function creates tensor info based on information contained
- * in passed arguments.
+ * PopART is able to save its state after the model compilation is complete,
+ * so that it can be restored at a later time. To make this possible,
+ * it is necessary to save such elements as:
+ *   - a serialised Poplar executable,
+ *   - its associated metadata,
+ *   - tensor data blobs if model parameters have not been frozen
+ *     (refer to the \c SessionOptions::constantWeights for more
+ *     information),
+ *   - a PopART-specific opaque blob to store information only
+ *     relevant to PopART. This is needed to restore PopART state.
  *
- * \param dt The tensor data type.
- * \param shape The tensor shape.
- * \return The created \c popef::TensorInfo object.
+ * All of these is possible using Writer class. The class will write <a
+ * href="https://docs.graphcore.ai/projects/popef/en/latest/">PopEF</a>
+ * blobs with data mentioned above to the stream provided in the constructor.
+ * This can be used to restore PopART state or run a model using the
+ * Model runtime or serving services supported by Graphcore.
  */
-popef::TensorInfo createTensorInfo(const popef::DataType dt,
-                                   const std::vector<int64_t> &shape);
+class Writer {
+public:
+  /**
+   * Constructs Writer class object.
+   *
+   * \param out Destination stream to which data will be serialized.
+   * \param device All the data that is needed to serialize PopART state.
+   */
+  Writer(std::ostream &out, const popart::popx::Devicex &device);
+
+  /**
+   * Move constructor.
+   */
+  Writer(Writer &&reader);
+
+  /**
+   * Default destructor.
+   */
+  ~Writer();
+
+  /**
+   * Serializes the Poplar engine executable and metadata
+   * needed to run it outside the PopART environment.
+   */
+  void serializePoplarExecutable();
+
+  /**
+   * Serializes the PopART opaque blob. These are the data
+   * needed to restore the PopART state.
+   */
+  void serializePopartMetadata();
+
+  /**
+   * Serializes the data for the following group of tensors:
+   *   - weights,
+   *   - optimizers,
+   *   - random seed,
+   *   - RNG state tensors.
+   */
+  void serializeTensorData();
+
+private:
+  std::unique_ptr<WriterImpl> _impl;
+};
 
 /**
- * The function casts \c popart::TensorInfo to \c popef::TensorInfo.
+ * \brief A class which facilitates deserialization process.
  *
- * \param info Object that contains information about tensor.
- * \return The created \c popef::TensorInfo  object.
- */
-popef::TensorInfo createTensorInfo(const popart::TensorInfo &info);
-
-/**
- * The function serializes the content of the tensor to the popef
- * file (specified by the \c popef::Writer object) as a tensor data
- * blob. Such blob contains tensor name, its shape, and data type
- * with binary data.
- *
- * \param tensor Popart tensor.
- * \param tensorInfo Object that contains information about the tensor.
- * \param writer Write popef tensor data blob to a given stream.
- */
-void serializePopefTensor(const popart::Tensor &tensor,
-                          const popef::TensorInfo &tensorInfo,
-                          popef::Writer &writer);
-
-/**
- * The function prepares popef file which can be used to run a model
- * using model_runtime or serving services supported by Graphcore.
- * In detail: It serializes both the poplar engine's executable,
- * popart executable, the hash to the given ostream, non-user input
- * tensors and prepares popef metadata.
- *
- * \param out Destination stream to which data will be serialized.
- * \param device Devicex class has all data that are needed to
- *               execute proper serialization process.
- */
-void serializeEngineExecutable(std::ostream &out,
-                               const popart::popx::Devicex &device);
-
-/**
- * \class Reader
- * \brief Reader is a class which facilitates deserialization process.
- * The most important advantage is the execution reading popef
- * file process once.
+ * It allows reading serialized streams allowing restoring PopART state.
+ * For more information on what components are deserialized please refer
+ * to \c Writer class.
  */
 class Reader {
 public:
   /**
    * Constructs Reader class object.
    *
-   * \param in Source stream from which a popef file will be read.
+   * \param in Vector of source streams from which a PopEF file
+   *           will be read.
    */
-  Reader(std::shared_ptr<std::istream> in);
+  Reader(const std::vector<std::shared_ptr<std::istream>> &in_vec);
 
   /**
    * Move constructor.
@@ -131,26 +138,27 @@ public:
   bool containsExecutable() const;
 
   /**
-   * \return True if the stream contains a Popef metadata.
+   * \return True if the stream contains a PopEF metadata.
    */
   bool containsPopefMetadata();
 
   /**
-   * Deserializes poplar executable from executable blob which
-   * is part of a popef file.
+   * Deserializes Poplar executable from an executable blob which
+   * is part of a PopEF file.
    *
    * \return Poplar executable.
    */
   poplar::Executable deserializePoplarExecutable() const;
 
   /**
-   * Load a popart executable from a popef file.
+   * Load a PopART executable from a PopEF file.
    *
-   * \param ir Object of \c popart::Ir class to which some of the
-   *         deserialized data will be write.
-   * \param lowering Object of \c popart::popx::IrLowering class to which
-   *        some of the deserialized data will be write.
-   * \return Popart executable.
+   * \param ir Object which some of the deserialized data will
+   *        be written to.
+   * \param lowering Object  which some of the deserialized
+   *        data will be written to.
+   *
+   * \return PopART executable.
    */
   std::unique_ptr<popart::popx::Executablex>
   deserializeExecutable(popart::Ir &ir,

@@ -14,8 +14,8 @@
 #include <popef/Writer.hpp>
 
 #include <popx/executablexserializer.hpp>
+#include <popx/popefserializerimpl.hpp>
 #include <popart/ir.hpp>
-#include <popart/popx/popefserializer.hpp>
 #include <popart/tensor.hpp>
 
 #include "popart/capnp/Ir.capnp.h"
@@ -51,7 +51,7 @@ void writeDataToStream(std::shared_ptr<std::stringstream> ss_ptr,
   // Binary tensor data is written to tensor data blob.
   if (tensor.hasTensorData()) {
     popef::TensorInfo ti = createTensorInfo(tensor.info);
-    serializePopefTensor(tensor, ti, writer);
+    WriterImpl::serializePopefTensor(tensor, ti, writer);
   }
 
   writer.close();

@@ -1524,6 +1524,9 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def_readwrite("enableEngineCaching",
                       &SessionOptions::enableEngineCaching,
                       DOC(popart, SessionOptions, enableEngineCaching));
+    cls.def_readwrite("enableVariablesCaching",
+                      &SessionOptions::enableVariablesCaching,
+                      DOC(popart, SessionOptions, enableVariablesCaching));
     cls.def_readwrite("enableFloatingPointChecks",
                       &SessionOptions::enableFloatingPointChecks,
                       DOC(popart, SessionOptions, enableFloatingPointChecks));
@@ -1955,6 +1958,16 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::arg("filename"),
         py::arg("err").none());
+    cls.def("saveExecutable",
+            &InferenceSession::saveExecutable,
+            py::arg("path"),
+            py::arg("savePopartMetadata") = true,
+            py::arg("saveVariables")      = true,
+            DOC(popart, Session, saveExecutable));
+    cls.def("saveVariables",
+            &InferenceSession::saveVariables,
+            py::arg("path"),
+            DOC(popart, Session, saveVariables));
     cls.def(
         "loadExecutable",
         [](InferenceSession &session, const std::string &filename) {
@@ -2143,13 +2156,16 @@ PYBIND11_MODULE(popart_core, m) {
         },
         py::arg("filename"),
         py::arg("err").none());
-    cls.def(
-        "loadExecutable",
-        [](InferenceSession &session, const std::string &filename) {
-          session.loadExecutableFromFile(filename);
-        },
-        py::arg("filename"),
-        DOC(popart, Session, loadExecutableFromFile));
+    cls.def("saveExecutable",
+            &TrainingSession::saveExecutable,
+            py::arg("path"),
+            py::arg("savePopartMetadata") = true,
+            py::arg("saveVariables")      = true,
+            DOC(popart, Session, saveExecutable));
+    cls.def("saveVariables",
+            &TrainingSession::saveVariables,
+            py::arg("path"),
+            DOC(popart, Session, saveVariables));
     cls.def(
         "loadExecutable",
         [](TrainingSession &session, const std::string &filename) {

@@ -14280,6 +14280,20 @@ static const char
     *__singlelinedoc_popart_SessionOptions_enableSupportedDataTypeCasting =
         R"doc(Enable casting to supported data types. If enabled (:code:`true`), casts any tensor of unsupported data types to supported data types when lowering to Poplar. Currently, this implies casting: - INT64 -> INT32 - UINT64 -> UINT32 The cast will throw an error for incompatible data types and over/underflows, and will warn about narrowing casts. Default: :code:`true` (enabled).)doc";
 
+static const char *__doc_popart_SessionOptions_enableVariablesCaching =
+    R"doc(Enable variable caching.
+
+This means that the caching process will save variables as additional `PopEF
+<https://docs.graphcore.ai/projects/popef/>`_ blobs to the file location
+defined with ``cachePath``. If PopART will require data for variables
+(during cache reading process), they will be automatically read from
+the cache file.
+
+Default: `true` (enabled).)doc";
+
+static const char *__singlelinedoc_popart_SessionOptions_enableVariablesCaching =
+    R"doc(Enable variable caching. This means that the caching process will save variables as additional `PopEF <https://docs.graphcore.ai/projects/popef/>`_ blobs to the file location defined with ``cachePath``. If PopART will require data for variables (during cache reading process), they will be automatically read from the cache file. Default: `true` (enabled).)doc";
+
 static const char *__doc_popart_SessionOptions_engineOptions =
     R"doc(Poplar engine options.)doc";
 
@@ -15301,6 +15315,50 @@ static const char *__doc_popart_Session_runCalled =
 static const char *__singlelinedoc_popart_Session_runCalled =
     R"doc(Check if run() has been called.)doc";
 
+static const char *__doc_popart_Session_saveExecutable =
+    R"doc(Save a compiled graph with additional data to a file.
+
+PopART is able to save its state after the model compilation is complete,
+so that it can be restored at a later time. To make this possible,
+it is necessary to save such elements as:
+  - a serialised Poplar executable,
+  - its associated metadata,
+  - tensor data blobs if model parameters have not been frozen
+    (refer to the ``SessionOptions::constantWeights`` for more
+    information),
+  - a PopART-specific opaque blob to store information only
+    relevant to PopART. This is needed to restore PopART state.
+
+The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_
+format. This means that the file can be used to restore the state of the
+PopART program without recompiling the graph, or run inference using the `Triton
+Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_
+with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide
+<https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more
+information. If you want to analyze file structure saved by the function please
+refer to the `PopEF dump tool
+<https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis>`_.
+
+\pre prepareDevice() must have been called.
+
+
+Args:
+ path: The name of the file or directory where the compiled
+       executable, metadata and variables will be saved. If you specified a
+       path to the directory, the function will write the data to the file:
+       "<path>/executable.popef". If the file exists, the function will
+       overwrite the old data with the new ones.
+ savePopartMetadata: If you do not need the option to restore the
+       PopART state later, you can set the flag to false to reduce disk space
+       taken up by the file.
+ saveVariables: If you don't need to save variables (tensors) state,
+       you can set the flag to false if you want to save them later or in a
+       different location. The function will save data consistent with the
+       variables contained within the model.)doc";
+
+static const char *__singlelinedoc_popart_Session_saveExecutable =
+    R"doc(Save a compiled graph with additional data to a file. PopART is able to save its state after the model compilation is complete, so that it can be restored at a later time. To make this possible, it is necessary to save such elements as: - a serialised Poplar executable, - its associated metadata, - tensor data blobs if model parameters have not been frozen (refer to the ``SessionOptions::constantWeights`` for more information), - a PopART-specific opaque blob to store information only relevant to PopART. This is needed to restore PopART state. The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to restore the state of the PopART program without recompiling the graph, or run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. If you want to analyze file structure saved by the function please refer to the `PopEF dump tool <https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis>`_. \pre prepareDevice() must have been called. Args: path: The name of the file or directory where the compiled executable, metadata and variables will be saved. If you specified a path to the directory, the function will write the data to the file: "<path>/executable.popef". If the file exists, the function will overwrite the old data with the new ones. savePopartMetadata: If you do not need the option to restore the PopART state later, you can set the flag to false to reduce disk space taken up by the file. saveVariables: If you don't need to save variables (tensors) state, you can set the flag to false if you want to save them later or in a different location. The function will save data consistent with the variables contained within the model.)doc";
+
 static const char *__doc_popart_Session_saveExecutableToFile =
     R"doc(Save a compiled graph to a file.
 
@@ -15337,6 +15395,29 @@ Args:
 
 static const char *__singlelinedoc_popart_Session_saveExecutableToStream =
     R"doc(Save a compiled graph to a stream. The data will be streamed in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. This means that the file can be used to run inference using the `Triton Inference Server <https://developer.nvidia.com/nvidia-triton-inference-server>`_ with the Graphcore Triton backend. See the `Poplar Triton Backend User Guide <https://docs.graphcore.ai/projects/poplar-triton-backend/en/latest/>`_ for more information. \pre prepareDevice() must have been called. Args: out: The stream where the compiled executable and metadata will be written to.)doc";
+
+static const char *__doc_popart_Session_saveVariables =
+    R"doc(Save all variables to a file.
+
+The function will save data consistent with the variables contained
+within the model.
+
+The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_
+format. If you want to analyze tensors saved by the function please refer
+to the `PopEF dump tool <https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis>`_.
+
+\pre prepareDevice() must have been called.
+
+
+Args:
+ path: The name of the file or directory where the compiled
+       variables will be saved. If you specified a path to the
+       directory, the function will write the data to the file:
+       "<path>/variables.popef". If the file exists, the function
+       will overwrite the old data with the new ones.)doc";
+
+static const char *__singlelinedoc_popart_Session_saveVariables =
+    R"doc(Save all variables to a file. The function will save data consistent with the variables contained within the model. The file will be in the `PopEF <https://docs.graphcore.ai/projects/popef/en/latest/>`_ format. If you want to analyze tensors saved by the function please refer to the `PopEF dump tool <https://docs.graphcore.ai/projects/popef/en/latest/popef_file_format.html#popef-file-analysis>`_. \pre prepareDevice() must have been called. Args: path: The name of the file or directory where the compiled variables will be saved. If you specified a path to the directory, the function will write the data to the file: "<path>/variables.popef". If the file exists, the function will overwrite the old data with the new ones.)doc";
 
 static const char *__doc_popart_Session_serializeIr =
     R"doc(Serizalise the IR graph to a string.
@@ -18207,10 +18288,6 @@ static const char *__doc_popart_popx_Devicex_anchorsHostToHostStreams =
 static const char
     *__singlelinedoc_popart_popx_Devicex_anchorsHostToHostStreams = R"doc()doc";
 
-static const char *__doc_popart_popx_Devicex_chBuffers = R"doc()doc";
-
-static const char *__singlelinedoc_popart_popx_Devicex_chBuffers = R"doc()doc";
-
 static const char *__doc_popart_popx_Devicex_connectHostFunction = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_connectHostFunction =
@@ -18522,6 +18599,13 @@ static const char *__doc_popart_popx_Devicex_prepare = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_prepare = R"doc()doc";
 
+static const char *__doc_popart_popx_Devicex_prepareFileToSerialization =
+    R"doc()doc";
+
+static const char
+    *__singlelinedoc_popart_popx_Devicex_prepareFileToSerialization =
+        R"doc()doc";
+
 static const char *__doc_popart_popx_Devicex_prepareHasBeenCalled = R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_prepareHasBeenCalled =
@@ -18582,6 +18666,11 @@ static const char *__doc_popart_popx_Devicex_serializeExecutable_2 =
     R"doc()doc";
 
 static const char *__singlelinedoc_popart_popx_Devicex_serializeExecutable_2 =
+    R"doc()doc";
+
+static const char *__doc_popart_popx_Devicex_serializeTensorData = R"doc()doc";
+
+static const char *__singlelinedoc_popart_popx_Devicex_serializeTensorData =
     R"doc()doc";
 
 static const char *__doc_popart_popx_Devicex_setDeviceInfo = R"doc()doc";

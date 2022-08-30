@@ -112,10 +112,14 @@ public:
   /**
    * Add a batch normalization operation to the model. This version uses N-1
    * as the population size for calculating running variance (like PyTorch).
-   * https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html
+   * <a
+   * href="https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm1d.html">PyTorch
+   * BatchNorm1d</a>
    *
    * Whereas, the Onnx version uses N.
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
+   * <a
+   * href="https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization">ONNX
+   * version</a>
    *
    * \param args List of input tensor ids
    * \param num_outputs The number of output tensor ids

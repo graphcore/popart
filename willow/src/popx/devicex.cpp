@@ -833,6 +833,10 @@ void Devicex::run(IStepIO &stepio, std::string debugName) {
   pEngine->enableExecutionProfiling();
   run(PopPrograms::ProgramIndex::Program, debugName);
 
+  if (ir().canTrain()) {
+    popxlMarkHostWeightsOutOfSync();
+  }
+
   ++nCallsToRun;
 }
 
@@ -1377,6 +1381,7 @@ void Devicex::reconnectInputStreams() {
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
+  const auto &sessionOptions = ir().getSessionOptions();
 
   const auto lifetimeTimer =
       ir().timePartitionLogger().scopedStopwatch("Preparing devicex");
@@ -1390,8 +1395,7 @@ void Devicex::prepare() {
                                      "Breakdown of compile time so far:\n") +
                          ir().timePartitionLoggerStr());
 
-  if (ir().getSessionOptions().compileEngine) {
-
+  if (sessionOptions.compileEngine) {
     const auto engineCreationTimer =
         ir().timePartitionLogger().scopedStopwatch("Engine creation");
 
@@ -1399,8 +1403,8 @@ void Devicex::prepare() {
       // Construct ProfileCacher in case cached executables is to be
       // profiled
       std::string cachedExecutablePathStr =
-          executable_.getCachePath(ir().getSessionOptions().cachePath);
-      auto profileCacher = ProfileCacher(ir().getSessionOptions(),
+          executable_.getCachePath(sessionOptions.cachePath);
+      auto profileCacher = ProfileCacher(sessionOptions,
                                          cachedExecutablePathStr,
                                          lowering().getPoplarGraphDebugName());
 
@@ -1414,8 +1418,11 @@ void Devicex::prepare() {
           new poplar::Engine(std::move(executable), lowering().engineOptions));
 
       if (!executable_.isDeserialized() && executable_.shouldSerialize()) {
-        const std::string cachePath = ir().getSessionOptions().cachePath;
-        serializeExecutable(executable_.getCachePath(cachePath));
+        static constexpr bool serializePopartMetadata = true;
+        const std::string cachePath = sessionOptions.cachePath;
+        serializeExecutable(executable_.getCachePath(cachePath),
+                            serializePopartMetadata,
+                            sessionOptions.enableVariablesCaching);
       }
 
       logging::devicex::info(
@@ -1501,9 +1508,9 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return lowering().getEfficientlyCreatedInputTensors();
 }
 
-void Devicex::serializeExecutable(const std::string &path) {
-  POPART_TRACEPOINT();
-  // If target directory does not exist, create it
+std::string
+Devicex::prepareFileToSerialization(const std::string &path,
+                                    const std::string &defaultFilename) {
   auto target = boost::filesystem::path(path);
   if (target.has_parent_path()) {
     auto targetDir = target.parent_path();
@@ -1518,29 +1525,65 @@ void Devicex::serializeExecutable(const std::string &path) {
   }
 
   // Check that the filename is not a directory
-  std::string filename = path;
+  std::string filePath = path;
   if (boost::filesystem::is_directory(target)) {
-    filename = logging::format("{}/executable.popef", filename);
+    filePath = logging::format("{}/{}", path, defaultFilename);
     logging::devicex::warn(
         "{} is a directory, saving serialized Executablex to {}",
         target.string(),
-        filename);
+        filePath);
   } else {
-    logging::devicex::info("Saving serialized Executablex to {}", filename);
+    logging::devicex::info("Saving serialized Executablex to {}", filePath);
   }
 
   // Check that one can open the file
-  std::ofstream out(filename, std::ofstream::binary);
+  std::ofstream out(filePath, std::ofstream::binary);
   if (!out.is_open()) {
-    throw error("Unable to open file '{}'", filename);
+    throw error("Unable to open file '{}'", filePath);
   }
 
-  serializeExecutable(out);
+  return filePath;
 }
 
-void Devicex::serializeExecutable(std::ostream &out) {
+void Devicex::serializeExecutable(std::ostream &out,
+                                  bool serializePopartMetadata,
+                                  bool serializeTensorData) {
   POPART_TRACEPOINT();
-  popx::serialization::serializeEngineExecutable(out, *this);
+  serialization::Writer writer(out, *this);
+  writer.serializePoplarExecutable();
+  if (serializePopartMetadata) {
+    writer.serializePopartMetadata();
+  }
+  if (serializeTensorData) {
+    if (!popxlAreHostWeightsInSync()) {
+      popxlWeightsToTensorData();
+    }
+    writer.serializeTensorData();
+  }
+}
+
+void Devicex::serializeExecutable(const std::string &path,
+                                  bool serializePopartMetadata,
+                                  bool serializeTensorData) {
+  std::string filePath = prepareFileToSerialization(path, "executable.popef");
+  std::ofstream out(filePath, std::ofstream::binary);
+  serializeExecutable(out, serializePopartMetadata, serializeTensorData);
+  out.flush();
+  out.close();
+}
+
+void Devicex::serializeTensorData(const std::string &path) {
+  std::string filePath = prepareFileToSerialization(path, "variables.popef");
+  std::ofstream out(filePath, std::ofstream::binary);
+  {
+    serialization::Writer writer(out, *this);
+    if (!popxlAreHostWeightsInSync()) {
+      popxlWeightsToTensorData();
+    }
+    writer.serializeTensorData();
+  }
+  out.flush();
+  out.close();
 }
 
 void Devicex::connectStream(const std::string &streamHandle,

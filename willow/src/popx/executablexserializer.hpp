@@ -103,7 +103,7 @@ void serializePopartExecutable(std::ostream &out,
  * \param in The stream to serialise from.
  * \param ir The IR to construct the executable with.
  * \param lowering The IR lowering object to construct the executable with.
- * \param tensorDataVec Vector of readable popef tensor data blobs. They contain
+ * \param tensorDataVec Vector of readable PopEF tensor data blobs. They contain
  *                      the serialized data for popart tensors.
  * \return A unique pointer to the constructed executable.
  */

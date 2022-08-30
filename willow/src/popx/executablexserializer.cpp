@@ -80,7 +80,7 @@ namespace {
  * The function finds tensor data blob from vector of blobs that
  * matches passed tensor id.
  *
- * \param tensorDataVec Vector of readable popef tensor data blobs.
+ * \param tensorDataVec Vector of readable PopEF tensor data blobs.
  *                      They contain the serialized data for popart
  *                      tensors.
  * \param tensorId Tensor name that the function looks for in the
@@ -380,7 +380,7 @@ deserializeTensor(popart::Ir &ir,
       capnpTensorLocationInfo.getRemoteBufferInfo().getIndex());
 
   // For Onnx-Ir Models, the tensor data of weights is stored in the
-  // ONNX models so we don't have to deserialize tensor data from popef
+  // ONNX models so we don't have to deserialize tensor data from PopEF
   // tensor data blob. For non-Onnx-Ir Models and every other kind of Variable,
   // we have to.
   if (ir.hasOnnxModel() && popartTensorType == popart::TensorType::Variable &&

@@ -193,10 +193,10 @@ enum class AdamMode {
 /**
  * AdamW, Lamb and AdaMax optimizer implementation.
  *
- * Akin to any optimizer implementation, this class is responsible for updating
- * each weight tensor (\f$w\f$) in the model using the gradient (\f$g\f$) of
- * the loss function with respect to the weight as calculated during the
- * backwards pass.
+ * Like any to any optimizer implementation, this class is responsible for
+ * updating each weight tensor (\f$w\f$) in the model using the gradient
+ * (\f$g\f$) of the loss function with respect to the weight as calculated
+ * during the backwards pass.
  *
  * The optimizer has the following **state** for each weight:
  *
@@ -347,15 +347,15 @@ public:
 
   /// Constructor.
   /// \param defaultLearningRate The learning rate value to use for weights
-  ///     for which no weight-specific hyper parameter have been inserted.
+  ///     for which no weight-specific hyper parameters have been inserted.
   /// \param defaultWeightDecay The weight decay value to use for weights
-  ///     for which no weight-specific hyper parameter have been inserted.
+  ///     for which no weight-specific hyper parameters have been inserted.
   /// \param defaultBeta1 The beta1 value to use for weights
-  ///     for which no weight-specific hyper parameter have been inserted.
+  ///     for which no weight-specific hyper parameters have been inserted.
   /// \param defaultBeta2 The beta2 value value to use for weights
-  ///     for which no weight-specific hyper parameter have been inserted.
+  ///     for which no weight-specific hyper parameters have been inserted.
   /// \param defaultEps The epsilon value to use for
-  ///     weights for which no weight-specific hyper parameter have been
+  ///     weights for which no weight-specific hyper parameters have been
   ///     inserted.
   /// \param lossScaling The loss scaling value to use.
   /// \param maxWeightNorm The maxWeightNorm value to use.

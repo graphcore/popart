@@ -12,12 +12,12 @@
 #include <popef/Types.hpp>
 #include <popef/Writer.hpp>
 
+#include "popart/datatype.hpp"
+#include "popart/ir.hpp"
+#include "popart/tensor.hpp"
 #include "popart/tensordata.hpp"
-#include <popart/datatype.hpp>
-#include <popart/ir.hpp>
-#include <popart/popx/popefserializer.hpp>
-#include <popart/tensor.hpp>
-#include <popart/tensorinfo.hpp>
+#include "popart/tensorinfo.hpp"
+#include "popx/popefserializerimpl.hpp"
 
 using namespace popart::popx::serialization;
 
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(serializeAndDeserializePopefTensor) {
     auto ss_ptr = std::make_shared<std::stringstream>();
 
     popef::Writer writer(*ss_ptr);
-    serializePopefTensor(tensor, ti, writer);
+    WriterImpl::serializePopefTensor(tensor, ti, writer);
     writer.close();
 
     popef::Reader reader;
