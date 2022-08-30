@@ -5,8 +5,7 @@ from popxl import dtypes
 
 
 def test_random_seed_setup():
-    replicas = 4
-    ir = popxl.Ir(replicas)
+    ir = popxl.Ir()
     main = ir.main_graph
     with main:
         seed_h2d = popxl.h2d_stream(shape=(2,), dtype=dtypes.uint32, name="seed_stream")
@@ -19,6 +18,8 @@ def test_random_seed_setup():
         y_d2h = popxl.d2h_stream(y.shape, y.dtype, name="y_stream")
         ops.host_store(y_d2h, y)
 
+    replicas = 4
+    ir.replication_factor = replicas
     parent_seed = 1984
     seed_tensors = popxl.create_seeds(parent_seed, replicas=replicas)
 

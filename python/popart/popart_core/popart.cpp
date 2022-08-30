@@ -3244,9 +3244,6 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<CommGroup, VariableRetrievalMode>(),
             py::arg("sharedVariableDomain_"),
             py::arg("retrievalMode_"));
-    cls.def(py::init<ReplicaGrouping, VariableRetrievalMode>(),
-            py::arg("grouping"),
-            py::arg("mode"));
     cls.def("numReplicasReturningVariable",
             &VariableSettings::numReplicasReturningVariable);
     cls.def("getGroupCount", &VariableSettings::getGroupCount);
