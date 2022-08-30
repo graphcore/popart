@@ -218,8 +218,7 @@ ReplicaGrouping
 VariableSettings::getReplicaGrouping(unsigned numReplicas) const {
   if (domain_->grouping_) {
     const auto &grouping = getReplicaGrouping();
-    // TODO(T62390): Uncomment.
-    // POPART_CHECK_EQ(grouping.getNumReplicas(), numReplicas);
+    POPART_CHECK_EQ(grouping.getNumReplicas(), numReplicas);
     return grouping;
   }
   return domain_->commGroup_.value().toReplicaGrouping(numReplicas);
