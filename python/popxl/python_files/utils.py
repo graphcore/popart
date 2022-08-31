@@ -176,7 +176,9 @@ def _to_device_info(
         if use_popdist:
             import popdist.popart
 
-            return popdist.popart.getDevice()
+            return popdist.popart.getDevice(
+                connectionType=popart.DeviceConnectionType.OnDemand
+            )
 
         dm = popart.DeviceManager()
         devices = dm.enumerateDevices(numIpus=num_ipus)
