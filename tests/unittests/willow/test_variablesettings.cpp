@@ -38,18 +38,11 @@ BOOST_TEST_DONT_PRINT_LOG_VALUE(TestConstructorWithReplicaGroupingData)
 
 std::vector<TestConstructorWithReplicaGroupingData>
     testConstructorWithReplicaGroupingData{
-        {popart::VariableSettings(8),
+        {popart::VariableSettings(1, 8),
          popart::ReplicaGrouping(8),
          popart::VariableRetrievalMode::OnePerGroup},
-        {popart::VariableSettings(popart::ReplicaGrouping(8)),
-         popart::ReplicaGrouping(8),
-         popart::VariableRetrievalMode::OnePerGroup},
-        {popart::VariableSettings(8,
-                                  popart::VariableRetrievalMode::AllReplicas),
-         popart::ReplicaGrouping(8),
-         popart::VariableRetrievalMode::AllReplicas},
-
-        {popart::VariableSettings(popart::ReplicaGrouping(8),
+        {popart::VariableSettings(1,
+                                  8,
                                   popart::VariableRetrievalMode::AllReplicas),
          popart::ReplicaGrouping(8),
          popart::VariableRetrievalMode::AllReplicas},
@@ -76,7 +69,7 @@ struct TestGetReplicaGroupingData {
 BOOST_TEST_DONT_PRINT_LOG_VALUE(TestGetReplicaGroupingData)
 
 std::vector<TestGetReplicaGroupingData> testGetReplicaGroupingData{
-    {popart::VariableSettings(8), popart::ReplicaGrouping(8)},
+    {popart::VariableSettings(1, 8), popart::ReplicaGrouping(8)},
     {popart::VariableSettings(popart::CommGroup()), popart::ReplicaGrouping(8)},
 };
 
@@ -89,8 +82,10 @@ BOOST_DATA_TEST_CASE(testGetReplicaGrouping,
   BOOST_CHECK_EQUAL(settings.getReplicaGrouping(8), expectedGrouping);
 }
 
-BOOST_AUTO_TEST_CASE(testGetReplicaGroupingInvalid) {
-  const popart::VariableSettings settings{8};
+// TODO(T62390): Enable this test.
+BOOST_AUTO_TEST_CASE(testGetReplicaGroupingInvalid,
+                     *boost::unit_test::disabled()) {
+  const popart::VariableSettings settings{1, 8};
 
   BOOST_CHECK_THROW(settings.getReplicaGrouping(4), popart::error);
 }
@@ -102,7 +97,6 @@ struct TestGetSharedVariableDomainData {
 BOOST_TEST_DONT_PRINT_LOG_VALUE(TestGetSharedVariableDomainData)
 
 std::vector<TestGetSharedVariableDomainData> testGetSharedVariableDomainData{
-    {popart::VariableSettings(8), popart::CommGroup()},
     {popart::VariableSettings(popart::CommGroup()), popart::CommGroup()},
 };
 
@@ -117,10 +111,9 @@ BOOST_DATA_TEST_CASE(
 }
 
 BOOST_AUTO_TEST_CASE(testGetSharedVariableDomainInvaid) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 2, 2)};
-  const char *expectedMessage =
-      "The 'ReplicaGrouping(numReplicas=8, stride=2, groupSize=2)' cannot be "
-      "converted to a `popart::CommGroup`.";
+  const popart::VariableSettings settings{1, 8};
+  const char *expectedMessage = "The variable settings were not initialised "
+                                "using a `popart::CommGroup` instance.";
 
   BOOST_CHECK_EXCEPTION(settings.getSharedVariableDomain(),
                         popart::error,
@@ -146,32 +139,31 @@ BOOST_DATA_TEST_CASE(
     testData) {
   const auto &mode     = testData.mode;
   const auto &expected = testData.expected;
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 4, 2),
-                                          mode};
+  const popart::VariableSettings settings{4, 2, mode};
 
   BOOST_CHECK_EQUAL(settings.numReplicasReturningVariable(8), expected);
 }
 
 BOOST_AUTO_TEST_CASE(testGetGroupCount) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 4, 2)};
+  const popart::VariableSettings settings{4, 2};
 
   BOOST_CHECK_EQUAL(settings.getGroupCount(8), 4);
 }
 
 BOOST_AUTO_TEST_CASE(testGetStride) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 4, 2)};
+  const popart::VariableSettings settings{4, 2};
 
   BOOST_CHECK_EQUAL(settings.getStride(8), 4);
 }
 
 BOOST_AUTO_TEST_CASE(testGetRealGroupSize) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 4, 2)};
+  const popart::VariableSettings settings{4, 2};
 
   BOOST_CHECK_EQUAL(settings.getRealGroupSize(8), 2);
 }
 
 BOOST_AUTO_TEST_CASE(testGetGroupRepresentative) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 2, 2)};
+  const popart::VariableSettings settings{2, 2};
 
   BOOST_CHECK_EQUAL(settings.getGroupRepresentative(2), 4);
 }
@@ -197,7 +189,8 @@ BOOST_DATA_TEST_CASE(testShapeOnReplica,
   const auto &grouping      = testData.grouping;
   const auto &shape         = testData.shape;
   const auto &expectedShape = testData.expectedShape;
-  const popart::VariableSettings settings{grouping};
+  const popart::VariableSettings settings{grouping.getStride(),
+                                          grouping.getGroupSize()};
 
   BOOST_CHECK_EQUAL(
       settings.shapeOnReplica(shape, grouping.getNumReplicas(), ""),
@@ -227,7 +220,8 @@ BOOST_DATA_TEST_CASE(
   const auto &grouping        = testData.grouping;
   const auto &shape           = testData.shape;
   const auto &expectedMessage = testData.expectedMessage;
-  const popart::VariableSettings settings{grouping};
+  const popart::VariableSettings settings{grouping.getStride(),
+                                          grouping.getGroupSize()};
 
   BOOST_CHECK_EXCEPTION(
       settings.shapeOnReplica(shape, grouping.getNumReplicas(), "foo"),
@@ -256,14 +250,15 @@ BOOST_DATA_TEST_CASE(testShapeOnHost,
   const auto &grouping      = testData.grouping;
   const auto &shape         = testData.shape;
   const auto &expectedShape = testData.expectedShape;
-  const popart::VariableSettings settings{grouping};
+  const popart::VariableSettings settings{grouping.getStride(),
+                                          grouping.getGroupSize()};
 
   BOOST_CHECK_EQUAL(settings.shapeOnHost(shape, grouping.getNumReplicas()),
                     expectedShape);
 }
 
 BOOST_AUTO_TEST_CASE(testGroups) {
-  const popart::VariableSettings settings{popart::ReplicaGrouping(8, 2, 2)};
+  const popart::VariableSettings settings{2, 2};
   const std::vector<std::vector<std::int64_t>> expectedGroups = {
       {0, 2}, {1, 3}, {4, 6}, {5, 7}};
 
@@ -279,15 +274,15 @@ BOOST_TEST_DONT_PRINT_LOG_VALUE(TestEqualityOperatorData)
 
 const std::vector<TestEqualityOperatorData> testEqualityOperatorData{
     {popart::CommGroup(), popart::CommGroup(), true},
-    {popart::CommGroup(), popart::VariableSettings(8), false},
+    {popart::CommGroup(), popart::VariableSettings(1, 8), false},
     {popart::VariableSettings(popart::CommGroup(),
                               popart::VariableRetrievalMode::OnePerGroup),
      popart::VariableSettings(popart::CommGroup(),
                               popart::VariableRetrievalMode::AllReplicas),
      false},
-    {popart::VariableSettings(8), popart::VariableSettings(8), true},
-    {popart::VariableSettings(8, popart::VariableRetrievalMode::OnePerGroup),
-     popart::VariableSettings(8, popart::VariableRetrievalMode::AllReplicas),
+    {popart::VariableSettings(1, 8), popart::VariableSettings(1, 8), true},
+    {popart::VariableSettings(1, 8, popart::VariableRetrievalMode::OnePerGroup),
+     popart::VariableSettings(1, 8, popart::VariableRetrievalMode::AllReplicas),
      false},
 
 };

@@ -53,21 +53,34 @@ enum class VariableRetrievalMode {
 class VariableSettings {
 private:
   /**
-   * How this Variable is grouped across graph replication.
-   *
-   * A smart pointer is used, so that a forward-declaration of
-   * `popart::VariableSettingsDomain` can be used. The smart pointer is shared,
-   * so that `popart::VariableSettings` can be copied using the default copy
-   * constructor.
+   * Depending on which constructor was used, the `popart::VariableSettings`
+   * will either store information for constructing a `popart::CommGroup` or a
+   * `popart::ReplicaGrouping`. This flag is used to indicate this.
    */
-  std::shared_ptr<VariableSettingsDomain> domain_;
+  bool useCommGroup;
+
+  /**
+   * When `popart::VariableSettings::useCommGroup` is false, the value in this
+   * member has no meaning.
+   */
+  CommGroupType commGroupType;
+
+  /**
+   * When `popart::VariableSettings::useCommGroup` is true, the value in this
+   * member has no meaning.
+   */
+  unsigned stride;
+
+  /**
+   * The group size used when constructing a `popart::CommGroup` or a
+   * `popart::ReplicaGrouping` in this class' methods.
+   */
+  unsigned groupSize;
 
   /**
    * Dictates how Variable retrieval is conducted.
    */
   VariableRetrievalMode retrievalMode = VariableRetrievalMode::OnePerGroup;
-
-  const ReplicaGrouping &getReplicaGrouping() const;
 
 public:
   /**
@@ -114,13 +127,10 @@ public:
   VariableSettings(CommGroup sharedVariableDomain_,
                    VariableRetrievalMode retrievalMode_);
 
-  explicit VariableSettings(unsigned numReplicas);
+  VariableSettings(unsigned stride, unsigned groupSize);
 
-  VariableSettings(unsigned numReplicas, VariableRetrievalMode retrievalMode);
-
-  explicit VariableSettings(const ReplicaGrouping &grouping);
-
-  VariableSettings(const ReplicaGrouping &grouping,
+  VariableSettings(unsigned stride,
+                   unsigned groupSize,
                    VariableRetrievalMode retrievalMode);
 
   /**
