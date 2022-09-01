@@ -13,6 +13,7 @@
 #include <pybind11/attr.h>
 #include <pybind11/buffer_info.h>
 #include <pybind11/cast.h>
+#include <pybind11/detail/common.h>
 #include <pybind11/functional.h> // IWYU pragma: keep
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -3268,6 +3269,10 @@ PYBIND11_MODULE(popart_core, m) {
     cls.def(py::init<CommGroup, VariableRetrievalMode>(),
             py::arg("sharedVariableDomain_"),
             py::arg("retrievalMode_"));
+    cls.def(py::init<unsigned, unsigned, VariableRetrievalMode>(),
+            py::arg("stride"),
+            py::arg("groupSize"),
+            py::arg("mode"));
     cls.def("numReplicasReturningVariable",
             &VariableSettings::numReplicasReturningVariable);
     cls.def("getGroupCount", &VariableSettings::getGroupCount);
@@ -3277,6 +3282,12 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("group"));
     cls.def("getSharedVariableDomain",
             &VariableSettings::getSharedVariableDomain);
+    cls.def("getReplicaGrouping", &VariableSettings::getReplicaGrouping);
+    cls.def("isUsingCommGroup", &VariableSettings::isUsingCommGroup);
+    cls.def("getCommGroupType", &VariableSettings::getCommGroupType);
+    cls.def("getStride",
+            py::overload_cast<>(&VariableSettings::getStride, py::const_));
+    cls.def("getGroupSize", &VariableSettings::getGroupSize);
     cls.def("getRetrievalMode", &VariableSettings::getRetrievalMode);
     cls.def("shapeOnReplica", &VariableSettings::shapeOnReplica);
     cls.def("shapeOnHost", &VariableSettings::shapeOnHost);

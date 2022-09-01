@@ -64,6 +64,7 @@
 #include "popart/capnp/Executablex.capnp.h"
 #include "popart/capnp/Ir.capnp.h"
 #include "popart/capnp/IrLowering.capnp.h"
+#include "popart/commgroup.hpp"
 #include "popart/error.hpp"
 #include "popart/graphid.hpp"
 #include "popart/logging.hpp"
@@ -333,16 +334,13 @@ void serializeTensor(const popart::Tensor *tensor,
 
   const auto &variableSettings = tensor->getVariableSettings();
   auto variableSettingsBuilder = tensorBuilder.initVariableSettings();
+  variableSettingsBuilder.setUseCommGroup(variableSettings.isUsingCommGroup());
+  variableSettingsBuilder.setCommGroupType(
+      toCapnpCommGroupType(variableSettings.getCommGroupType()));
+  variableSettingsBuilder.setStride(variableSettings.getStride());
+  variableSettingsBuilder.setGroupSize(variableSettings.getGroupSize());
   variableSettingsBuilder.setRetrievalMode(
       toCapnpVariableRetrievalMode(variableSettings.getRetrievalMode()));
-
-  const auto &sharedVariableDomain = variableSettings.getSharedVariableDomain();
-  auto sharedVariableDomainBuilder =
-      variableSettingsBuilder.initSharedVariableDomain();
-  sharedVariableDomainBuilder.setType(
-      toCapnpCommGroupType(sharedVariableDomain.type));
-  sharedVariableDomainBuilder.setReplicaGroupSize(
-      sharedVariableDomain.replicaGroupSize);
 }
 
 std::unique_ptr<popart::Tensor>
@@ -355,12 +353,17 @@ deserializeTensor(popart::Ir &ir,
   auto popartTensorType = toPopartTensorType(capnpTensor.getTensorType());
 
   auto capnpVariableSettings = capnpTensor.getVariableSettings();
-  auto capnpSharedVariableDomain =
-      capnpVariableSettings.getSharedVariableDomain();
-  VariableSettings varSettings(
-      CommGroup(toPopartCommGroupType(capnpSharedVariableDomain.getType()),
-                capnpSharedVariableDomain.getReplicaGroupSize()),
-      toPopartVariableRetrievalMode(capnpVariableSettings.getRetrievalMode()));
+  auto useCommGroup          = capnpVariableSettings.getUseCommGroup();
+  auto commGroupType =
+      toPopartCommGroupType(capnpVariableSettings.getCommGroupType());
+  auto stride    = capnpVariableSettings.getStride();
+  auto groupSize = capnpVariableSettings.getGroupSize();
+  auto retrievalMode =
+      toPopartVariableRetrievalMode(capnpVariableSettings.getRetrievalMode());
+  VariableSettings varSettings =
+      useCommGroup
+          ? VariableSettings(CommGroup(commGroupType, groupSize), retrievalMode)
+          : VariableSettings(stride, groupSize, retrievalMode);
 
   auto tensor = std::make_unique<popart::Tensor>(
       id, popartTensorType, varSettings, dummyGraph);

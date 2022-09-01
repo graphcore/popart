@@ -101,6 +101,29 @@ public:
   ReplicaGrouping getReplicaGrouping(unsigned numReplicas) const;
 
   /**
+   * \return whether the VariableSettings were initialised using a CommGroup or
+   *         a stride.
+   */
+  bool isUsingCommGroup() const;
+
+  /**
+   * \return the CommGroupType. The value of this is invalid if
+   *         VariableSettings::isUsingCommGroup returns false.
+   */
+  CommGroupType getCommGroupType() const;
+
+  /**
+   * \return the stride. The value of this is invalid if
+   *         VariableSettings::isUsingCommGroup returns true.
+   */
+  unsigned getStride() const;
+
+  /**
+   * \return the replica group size.
+   */
+  unsigned getGroupSize() const;
+
+  /**
    * \return the VariableRetrievalMode retrievalMode of this VariableSettings.
    */
   VariableRetrievalMode getRetrievalMode() const { return retrievalMode; }

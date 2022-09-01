@@ -81,8 +81,11 @@ enum VariableRetrievalMode {
 }
 
 struct VariableSettings {
-  sharedVariableDomain @0: CommGroup;
-  retrievalMode @1: VariableRetrievalMode;
+  useCommGroup @0: Bool;
+  commGroupType @1: CommGroupType;
+  stride @2: Int32;
+  groupSize @3: Int32;
+  retrievalMode @4: VariableRetrievalMode;
 }
 
 struct Tensor {

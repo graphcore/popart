@@ -64,8 +64,6 @@ stride_and_size_examples = [
     # ---------------------
     {
         "replicas": 2,
-        "commType": popart.CommGroupType.All,
-        "commSize": 0,
         # ->
         "inputs": {
             "stride": 1,
@@ -75,8 +73,6 @@ stride_and_size_examples = [
     # ---------------------
     {
         "replicas": 4,
-        "commType": popart.CommGroupType.Orthogonal,
-        "commSize": 2,
         # ->
         "inputs": {
             "stride": 2,
@@ -86,8 +82,6 @@ stride_and_size_examples = [
     # ----------------------
     {
         "replicas": 4,
-        "commType": popart.CommGroupType.Consecutive,
-        "commSize": 2,
         # ->
         "inputs": {
             "stride": 1,
@@ -97,8 +91,6 @@ stride_and_size_examples = [
     # ----------------------
     {
         "replicas": 16,
-        "commType": popart.CommGroupType.Orthogonal,
-        "commSize": 8,
         # ->
         "inputs": {
             "stride": 2,
@@ -108,8 +100,6 @@ stride_and_size_examples = [
     # ---------------------- Note: VariableSettings for TMP_4 on a pod256
     {
         "replicas": 256,
-        "commType": popart.CommGroupType.Orthogonal,
-        "commSize": 4,
         # ->
         "inputs": {
             "stride": 64,
@@ -119,8 +109,6 @@ stride_and_size_examples = [
     # -------------------------- Default values
     {
         "replicas": 256,
-        "commType": popart.CommGroupType.All,
-        "commSize": 0,
         # ->
         "inputs": {},
     },
@@ -139,20 +127,16 @@ input_shape = [O_DIM, CHANNELS, DATA_LEN, DATA_LEN]
 class TestVariableReplicaGrouping:
     """Testing ReplicaGrouping vs. expected VariableSettings"""
 
-    def _verify_settings(
-        self, settings: Dict[str, Any], replica_grouping: ReplicaGrouping
-    ):
+    def _verify_settings(self, replica_grouping: ReplicaGrouping):
         """Verify the settings against the provided variable.
 
         Args:
-            settings (Dict[str, Any]): The expected settings.
             replica_grouping: The grouping to test.
         """
-        variable_comm_group = (
-            replica_grouping._to_variable_settings().getSharedVariableDomain()
-        )
-        assert variable_comm_group.type == settings["commType"]
-        assert variable_comm_group.replicaGroupSize == settings["commSize"]
+        variable_settings = replica_grouping._to_variable_settings()
+        assert variable_settings.isUsingCommGroup() is False
+        assert variable_settings.getStride() == replica_grouping.stride
+        assert variable_settings.getGroupSize() == replica_grouping.group_size
 
     def _get_weights_array(
         self, shape: List[int], replica_grouping: Optional[ReplicaGrouping] = None
@@ -236,7 +220,7 @@ class TestVariableReplicaGrouping:
 
         with main:
             replica_grouping = ir.replica_grouping(**settings["inputs"])
-            self._verify_settings(settings, replica_grouping)
+            self._verify_settings(replica_grouping)
 
     def test__from_variable_settings(
         self,
@@ -256,18 +240,20 @@ class TestVariableReplicaGrouping:
         ir.replication_factor = settings["replicas"]
         main = ir.main_graph
 
+        stride = settings["inputs"].get("stride", 1)
+        group_size = settings["inputs"].get(
+            "group_size", settings["replicas"] // stride
+        )
         if retrieval_mode == "one_per_group":
             rm = popart.VariableRetrievalMode.OnePerGroup
         else:
             rm = popart.VariableRetrievalMode.AllReplicas
 
-        vs = popart.VariableSettings(
-            popart.CommGroup(settings["commType"], settings["commSize"]), rm
-        )
+        vs = popart.VariableSettings(stride, group_size, rm)
 
         with main:
             replica_grouping = popxl.ReplicaGrouping._from_variable_settings(ir, vs)
-            self._verify_settings(settings, replica_grouping)
+            self._verify_settings(replica_grouping)
 
     def test_variable_settings_normal_variable(
         self,

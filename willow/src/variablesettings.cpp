@@ -207,6 +207,16 @@ VariableSettings::getReplicaGrouping(unsigned numReplicas) const {
   return {numReplicas, stride, groupSize};
 }
 
+bool VariableSettings::isUsingCommGroup() const { return useCommGroup; }
+
+CommGroupType VariableSettings::getCommGroupType() const {
+  return commGroupType;
+}
+
+unsigned VariableSettings::getStride() const { return stride; }
+
+unsigned VariableSettings::getGroupSize() const { return groupSize; }
+
 unsigned
 VariableSettings::numReplicasReturningVariable(unsigned replicaCount) const {
   if (!useCommGroup) {
@@ -521,7 +531,15 @@ bool VariableSettings::operator!=(const VariableSettings &other) const {
 }
 
 std::ostream &operator<<(std::ostream &os, const VariableSettings &vs) {
-  return os << "VariableSettings: [" << vs.getSharedVariableDomain() << ", "
-            << vs.getRetrievalMode() << "]";
+  os << "VariableSettings(";
+  if (vs.isUsingCommGroup()) {
+    os << "commGroupType=" << vs.getCommGroupType() << ", ";
+  } else {
+    os << "stide=" << vs.getStride() << ", ";
+  }
+  os << "groupSize=" << vs.getGroupSize() << ", ";
+  os << "retrievalMode=" << vs.getRetrievalMode() << ")";
+  return os;
 }
+
 } // namespace popart
