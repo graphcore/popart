@@ -256,6 +256,8 @@ enum class SyntheticDataMode {
   Zeros,
   /// Input tensors are initialised with a random normal distribution ~N(0,1).
   RandomNormal,
+  /// Input tensors are initialised with a uniform distribution.
+  RandomUniform,
   /// The number of \c SyntheticDataMode values.
   N
 };

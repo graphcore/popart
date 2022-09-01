@@ -1849,6 +1849,9 @@ PYBIND11_MODULE(popart_core, m) {
     en.value("RandomNormal",
              SyntheticDataMode::RandomNormal,
              SINGLE_LINE_DOC(popart, SyntheticDataMode, RandomNormal));
+    en.value("RandomUniform",
+             SyntheticDataMode::RandomUniform,
+             SINGLE_LINE_DOC(popart, SyntheticDataMode, RandomUniform));
   }
   {
     py::enum_<IrSerializationFormat> en(m, "IrSerializationFormat");

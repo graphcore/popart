@@ -2,6 +2,7 @@
 // Copyright (c) 2018 Graphcore Ltd. All rights reserved.
 #include <boost/container_hash/hash.hpp>
 #include <boost/random/normal_distribution.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <builder_impl.hpp>
 #include <graphfromlosstolossupdater.hpp>
 #include <onnxutil.hpp>
@@ -2008,6 +2009,77 @@ void checkForDimParams(const TensorId &id, const ONNX_NAMESPACE::TypeProto &t) {
   }
 }
 
+template <typename T, typename U = T>
+static void generateUniformIntDist(std::vector<char> &data, int64_t nelms) {
+  constexpr T int_min = std::numeric_limits<T>::lowest();
+  constexpr T int_max = std::numeric_limits<T>::max();
+
+  std::mt19937 generator;
+  boost::random::uniform_int_distribution<U> uniformDistribution(int_min,
+                                                                 int_max);
+  while (nelms--) {
+    const T val = uniformDistribution(generator);
+    std::vector<char> converted_data;
+    converted_data.resize(sizeof(T));
+    *reinterpret_cast<T *>(converted_data.data()) = val;
+    data.insert(data.end(), converted_data.begin(), converted_data.end());
+  }
+}
+
+static void generateSyntheticUniformData(std::vector<char> &data,
+                                         const popart::TensorInfo &info) {
+  const DataType dtype = info.dataType();
+  auto nelms           = info.nelms();
+
+  switch (dtype) {
+  case DataType::FLOAT16:
+  case DataType::FLOAT: {
+    float min, max;
+    if (dtype == DataType::FLOAT16) {
+      max = 65504.0f;
+      min = -max;
+    } else {
+      min = std::numeric_limits<float>::lowest();
+      max = std::numeric_limits<float>::max();
+    }
+    std::mt19937 generator;
+    boost::random::uniform_real_distribution<float> uniformDistribution(min,
+                                                                        max);
+
+    while (nelms--) {
+      const auto val           = uniformDistribution(generator);
+      const auto convertedData = convertFloatToDataType(dtype, val);
+      data.insert(data.end(), convertedData.begin(), convertedData.end());
+    }
+    break;
+  }
+  case DataType::INT32:
+    generateUniformIntDist<int32_t>(data, nelms);
+    break;
+  case DataType::INT16:
+    generateUniformIntDist<int16_t>(data, nelms);
+    break;
+  case DataType::INT8:
+    generateUniformIntDist<int8_t>(data, nelms);
+    break;
+  case DataType::UINT32:
+    generateUniformIntDist<uint32_t>(data, nelms);
+    break;
+  case DataType::UINT16:
+    generateUniformIntDist<uint16_t>(data, nelms);
+    break;
+  case DataType::UINT8:
+    generateUniformIntDist<uint8_t>(data, nelms);
+    break;
+  case DataType::BOOL:
+    generateUniformIntDist<bool, int>(data, nelms);
+    break;
+  default:
+    throw error("Can't generate synthetic data for DataType {}",
+                getDataTypeInfoMap().at(dtype).name());
+  }
+}
+
 } // namespace
 
 void Ir::registerInputTensors() {
@@ -2296,12 +2368,16 @@ void Ir::registerInputTensors() {
       if (useSyntheticData()) {
         Tensor *synStreamTensor = getTensor(id);
         const auto &info        = synStreamTensor->info;
+        const auto dtype        = info.dataType();
+        auto nelems             = info.nelms();
         std::vector<char> data;
-        std::vector<float> vals(info.nelms(), 0.0);
 
         switch (syntheticDataMode()) {
         case SyntheticDataMode::Zeros: {
-          // Already initialized to zeros - do nothing
+          while (nelems--) {
+            const auto convertedData = convertFloatToDataType(dtype, 0.0f);
+            data.insert(data.end(), convertedData.begin(), convertedData.end());
+          }
           break;
         }
         case SyntheticDataMode::RandomNormal: {
@@ -2310,21 +2386,23 @@ void Ir::registerInputTensors() {
           std::mt19937 generator;
           boost::random::normal_distribution<float> normalDistribution(0.0,
                                                                        1.0);
-          for (auto &val : vals) {
-            val = normalDistribution(generator);
+
+          while (nelems--) {
+            const auto val           = normalDistribution(generator);
+            const auto convertedData = convertFloatToDataType(dtype, val);
+            data.insert(data.end(), convertedData.begin(), convertedData.end());
           }
           break;
         }
+        case SyntheticDataMode::RandomUniform:
+          generateSyntheticUniformData(data, info);
+          break;
         case SyntheticDataMode::Off:
         case SyntheticDataMode::N:
         default:
           throw error("Cannot set tensor data for current SyntheticDataMode");
         }
 
-        for (float val : vals) {
-          auto convertedData = convertFloatToDataType(info.dataType(), val);
-          data.insert(data.end(), convertedData.begin(), convertedData.end());
-        }
         synStreamTensor->setTensorData(info, data.data());
       }
     }

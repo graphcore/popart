@@ -16,6 +16,7 @@ np.random.seed(0)
 _DataType = namedtuple("_DataType", ["builder_type", "np_type"])
 _INT8 = _DataType("INT8", np.int8)
 _UINT8 = _DataType("UINT8", np.uint8)
+_BOOL = _DataType("BOOL", np.bool)
 
 
 def run_pt_session(syntheticDataMode, inputType=None, d_shape=[100]):
@@ -57,7 +58,7 @@ def numpy_array_from_printtensor_string(string):
 
 
 @tu.requires_ipu
-@pytest.mark.parametrize("inputType", [_INT8, _UINT8, None])
+@pytest.mark.parametrize("inputType", [_INT8, _UINT8, _BOOL, None])
 def test_verify_synthetic_inputs(capfd, inputType):
     """
     For each synthetic data mode:
@@ -79,30 +80,49 @@ def test_verify_synthetic_inputs(capfd, inputType):
     zeroData = numpy_array_from_printtensor_string(err0)
     assert np.all(zeroData == 0)
 
-    ## B) Expect input is random normal, T~N(0,1)
-    if inputType == _UINT8:
-        # Casting normal data to unsigned results in non-normal data.
-        return
+    ## B) Verify mean and stddev of input data
+    if inputType is None:
+        randomMode = popart.SyntheticDataMode.RandomNormal
+    else:
+        randomMode = popart.SyntheticDataMode.RandomUniform
 
-    run_pt_session(
-        popart.SyntheticDataMode.RandomNormal, inputType=inputType, d_shape=d_shape
-    )
+    run_pt_session(randomMode, inputType=inputType, d_shape=d_shape)
     _, err1 = capfd.readouterr()
     rnData = numpy_array_from_printtensor_string(err1)
 
     assert not np.all(rnData == 0)
-    assert np.isclose(np.mean(rnData), 0, atol=0.02)
-    assert np.isclose(np.std(rnData), 1, atol=0.1)
+    if inputType is _BOOL:
+        # Uniform distribution.
+        assert np.isclose(np.mean(rnData), 0.5, atol=0.05)
+        assert np.isclose(np.std(rnData), 0.5, atol=0.05)
+    elif inputType is _INT8:
+        # Uniform distribution.
+        assert np.isclose(np.mean(rnData), 0, atol=0.5)
+        stddev = np.sqrt(255 * 255 / 12)
+        assert np.isclose(np.std(rnData), stddev, atol=0.5)
+    elif inputType is _UINT8:
+        # Uniform distribution.
+        assert np.isclose(np.mean(rnData), 255 / 2, atol=0.5)
+        stddev = np.sqrt(255 * 255 / 12)
+        assert np.isclose(np.std(rnData), stddev, atol=0.5)
+    else:
+        # Normal distribution.
+        assert np.isclose(np.mean(rnData), 0, atol=0.02)
+        assert np.isclose(np.std(rnData), 1, atol=0.1)
 
 
-def test_supported_input_type_float16():
+@pytest.mark.parametrize(
+    "randomMode",
+    [popart.SyntheticDataMode.RandomNormal, popart.SyntheticDataMode.RandomUniform],
+)
+def test_supported_input_types(randomMode):
     def run_with_input_of_type(dtype):
         builder = popart.Builder()
         in0 = builder.addInputTensor(popart.TensorInfo(dtype, [2]))
         out = builder.aiOnnx.sqrt([in0])
 
         opts = popart.SessionOptions()
-        opts.syntheticDataMode = popart.SyntheticDataMode.RandomNormal
+        opts.syntheticDataMode = randomMode
         _ = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             userOptions=opts,
@@ -114,3 +134,4 @@ def test_supported_input_type_float16():
     run_with_input_of_type("FLOAT")
     run_with_input_of_type("INT32")
     run_with_input_of_type("UINT32")
+    run_with_input_of_type("BOOL")

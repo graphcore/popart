@@ -15708,6 +15708,12 @@ static const char *__doc_popart_SyntheticDataMode_RandomNormal =
 static const char *__singlelinedoc_popart_SyntheticDataMode_RandomNormal =
     R"doc(Input tensors are initialised with a random normal distribution ~N(0,1).)doc";
 
+static const char *__doc_popart_SyntheticDataMode_RandomUniform =
+    R"doc(Input tensors are initialised with a uniform distribution.)doc";
+
+static const char *__singlelinedoc_popart_SyntheticDataMode_RandomUniform =
+    R"doc(Input tensors are initialised with a uniform distribution.)doc";
+
 static const char *__doc_popart_SyntheticDataMode_Zeros =
     R"doc(Input tensors are initialised to all zeros.)doc";
 
