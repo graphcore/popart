@@ -145,7 +145,7 @@ used to configure the per-instance replication settings automatically:
 
 For more information about PopRun and PopDist, refer to the :doc:`poprun-user-guide:index`, which includes details about the installation of Horovod if you are using the MPI communication protocol.
 
-When using distributed instances across two or more :term:`glossary:Pod`\s, the
+When using distributed instances across two or more :term:`glossary:Pods <Pod>`, the
 GW-Link transfer speeds (for both the IPU Mk1 and Mk2 architectures) are slower
 than the IPU-Link speed within the :term:`glossary:Pod`. It is therefore
 beneficial to load replica sharded tensors from Streaming Memory and
@@ -159,7 +159,7 @@ with the same replicated tensor sharding domain.
 
 .. note:: The term
 
-The recommended configuration for sharding optimizer states with multiple :term:`glossary:Pod`\s is:
+The recommended configuration for sharding optimizer states with multiple :term:`glossary:Pods <Pod>` is:
 
 .. code-block:: python
 

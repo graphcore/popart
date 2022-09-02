@@ -66,7 +66,7 @@ This chapter defines some of the specialised terminology that is used in the Pop
 
   Pipeline cycle
     - The time step with which micro-batches move through the pipeline.
-    - All :term:`Pipeline stage` \s are executed once within one Pipeline cycle, in parallel (except for some serialisation if multiple Pipeline stages are mapped to a single IPU).
+    - All :term:`Pipeline stages <Pipeline stage>` are executed once within one Pipeline cycle, in parallel (except for some serialisation if multiple Pipeline stages are mapped to a single IPU).
 
   Pipeline phase
     The three phases a pipeline consists of:
@@ -82,4 +82,4 @@ This chapter defines some of the specialised terminology that is used in the Pop
     - Pipeline stages cannot span IPU boundaries.
 
   Anchor tensor
-    An anchor tensor is a tensor that the user wants returned after a call to :cpp:meth:`popart::Session::run()`. Each call to ``Session::run()`` results in :code:`batchesPerStep x accumulationFactor x replicationFactor` of anchor tensors being computed.
+    An anchor tensor is a tensor that the user wants returned after a call to :cpp:func:`popart::Session::run()`. Each call to ``Session::run()`` results in :code:`batchesPerStep x accumulationFactor x replicationFactor` of anchor tensors being computed.
