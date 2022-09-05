@@ -130,9 +130,8 @@ repos:
                 --suppressions-list=scripts/lint/linters/cppcheck-suppressions-list.txt
             ]
           - id: cpplint
-            # This check clashes with clang-format
             args: [
-                '--filter=-,-build/header_guard'
+                '--filter=-,+build/header_guard'
             ]
             exclude: |
                 (?x)^(

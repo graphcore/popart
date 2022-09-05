@@ -2270,10 +2270,6 @@ PYBIND11_MODULE(popart_core, m) {
             py::arg("ignoreWeightsInModelWithoutCorrespondingHostWeight") =
                 false,
             DOC(popart, Session, resetHostWeights));
-    cls.def("broadcastWeights",
-            &TrainingSession::broadcastWeights,
-            py::arg("rootRank") = 0,
-            DOC(popart, Session, broadcastWeights));
     // Special test method to write serialise ir for analysis
     cls.def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
     // Accessor for internal objects

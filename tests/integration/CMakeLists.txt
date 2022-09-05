@@ -76,7 +76,6 @@ add_popart_py_unit_test(decompose_gradient_summation_test VARIANTS IpuModel2)
 # IPU available on the machine it is run on.
 add_popart_py_unit_test(device_test VARIANTS Hw PROPERTIES RUN_SERIAL TRUE)
 add_popart_py_unit_test(dim_param_test)
-add_popart_py_unit_test(distributed_test VARIANTS IpuModel2)
 # TODO T45747 Requires 2xPOD16
 #add_popart_py_unit_test(distributed_replicated_graph_test VARIANTS Hw)
 add_popart_py_unit_test(doc_test)
