@@ -19,7 +19,13 @@ class TensorInfo;
 
 namespace popx {
 
-enum class SlicePlanUsedFor { Slice, Update, UpdateAdd, UpdateMax };
+enum class SlicePlanUsedFor {
+  Slice,
+  Update,
+  UpdateAdd,
+  UpdateMax,
+  CombinedSliceUpdate
+};
 
 poplar::OptionFlags
 createSlicePlanOptions(SlicePlanUsedFor usedFor,

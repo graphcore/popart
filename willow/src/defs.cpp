@@ -536,6 +536,12 @@ void InitShapeInference(InferenceContext &ctx) {
 void ScatterReduceShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
 
+  if (ctx.getNumInputs() == 3) {
+    // The optional initial_values argument is supplied as the third input
+    propagateShapeFromInputToOutput(ctx, 2, 0);
+    return;
+  }
+
   // The output shape is same as the data source tensor.
   // Except in the scatter axis is equal to the axis_size
   auto axis     = getIntAttribute(ctx, "axis");
@@ -1537,6 +1543,10 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
                 "specified indices along the given axis.")
         .Input(0, "data", "Input tensor", "T")
         .Input(1, "indices", "Indices defining the scatter operation", "T")
+        .Input(2,
+               "initial_values",
+               "Optional values used to initialise the output tensor",
+               "T")
         .Output(0, "output", "Output tensor", "T")
         .TypeConstraint(
             "T",

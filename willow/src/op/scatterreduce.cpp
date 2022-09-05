@@ -34,6 +34,9 @@ std::string ScatterReduceOp::reductionToString(ScatterReduction reduction) {
   if (reduction == ScatterReduction::Min) {
     return "min";
   }
+  if (reduction == ScatterReduction::None) {
+    return "none";
+  }
 
   throw internal_error("Unknown ScatterReduction");
 }
@@ -49,6 +52,9 @@ ScatterReduceOp::reductionFromString(const std::string &reduction) {
   }
   if (lower_arg == "min") {
     return ScatterReduction::Min;
+  }
+  if (lower_arg == "none") {
+    return ScatterReduction::None;
   }
 
   throw internal_error("Unknown ScatterReduction");
@@ -94,6 +100,12 @@ void ScatterReduceOp::setup() {
   }
 
   checkIndexBroadcasted();
+
+  if (hasInput(initialValuesInIndex())) {
+    outInfo(outIndex()) = inInfo(initialValuesInIndex());
+    backward_shape      = dataInfo.shape();
+    return;
+  }
 
   // Output has the same data type as the input and has the same size as the
   // input, except in the axis where the scatter reduction is applied.
@@ -183,10 +195,11 @@ void ScatterReduceOp::checkIndexBroadcasted() {
 
 ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
     : Op(Onnx::CustomGradOperators::ScatterReduceGradOp, op.getSettings()),
-      mapper(), backward_shape(op.getBackwardShape()), axis(op.getAxis()),
-      reduction(op.getReduction()),
+      mapper(), grad_out_info(), backward_shape(op.getBackwardShape()),
+      axis(op.getAxis()), reduction(op.getReduction()),
       available_memory_proportion(op.getAvailableMemoryProportion()),
-      index_broadcasted(op.indexBroadcasted()) {
+      index_broadcasted(op.indexBroadcasted()),
+      has_initial_values(op.hasInput(op.initialValuesInIndex())) {
 
   // The GradInOutMapper depends on the reduction used.
   mapper.emplace_back(
@@ -201,6 +214,25 @@ ScatterReduceGradOp::ScatterReduceGradOp(const ScatterReduceOp &op)
         dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
     mapper.emplace_back(
         fwdOutInIndex(), ScatterReduceOp::outIndex(), GradOpInType::Out);
+
+    if (hasInitialValues()) {
+      mapper.emplace_back(initialValuesInIndex(),
+                          ScatterReduceOp::initialValuesInIndex(),
+                          GradOpInType::In);
+    }
+  }
+
+  // none reduction needs the data source to apply a scatter of zeros
+  if (reduction == ScatterReduction::None) {
+    mapper.emplace_back(
+        dataInIndex(), ScatterReduceOp::dataInIndex(), GradOpInType::In);
+  }
+
+  grad_out_info.emplace(gradDataOutIndex(), ScatterReduceOp::dataInIndex());
+
+  if (hasInitialValues()) {
+    grad_out_info.emplace(gradInitialValuesOutIndex(),
+                          ScatterReduceOp::initialValuesInIndex());
   }
 }
 
@@ -208,16 +240,14 @@ std::unique_ptr<Op> ScatterReduceGradOp::clone() const {
   return std::make_unique<ScatterReduceGradOp>(*this);
 }
 
-const std::map<int, int> &ScatterReduceGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {
-      {gradOutIndex(), ScatterReduceOp::dataInIndex()}};
-
-  return outInfo;
-}
-
 void ScatterReduceGradOp::setup() {
-  const auto type         = inInfo(gradInIndex()).dataType();
-  outInfo(gradOutIndex()) = TensorInfo(type, backward_shape);
+  const auto gradInInfo = inInfo(gradInIndex());
+  outInfo(gradDataOutIndex()) =
+      TensorInfo(gradInInfo.dataType(), backward_shape);
+
+  if (hasInitialValues()) {
+    outInfo(gradInitialValuesOutIndex()) = gradInInfo;
+  }
 }
 
 void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
@@ -228,10 +258,10 @@ void ScatterReduceGradOp::appendOutlineAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("available_memory_proportion",
                      available_memory_proportion);
   os.appendAttribute("index_broadcasted", index_broadcasted);
+  os.appendAttribute("has_initial_values", has_initial_values);
 }
 
 namespace {
-
 static OpDefinition::DataTypes T = {DataType::UINT8,
                                     DataType::UINT16,
                                     DataType::UINT32,
@@ -257,6 +287,7 @@ static OpDefinition
     scatterReduceOpDef({OpDefinition::Inputs({
                             {"data", T},
                             {"indices", Tind},
+                            {"initial_values", T}, // optional
                         }),
                         OpDefinition::Outputs({{"output", T}}),
                         OpDefinition::Attributes({{"axis", {"*"}},

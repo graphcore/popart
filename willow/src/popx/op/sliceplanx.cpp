@@ -37,6 +37,7 @@ createSlicePlanOptions(SlicePlanUsedFor usedFor,
   case SlicePlanUsedFor::Slice:
     opts.set("usedForSlice", "true");
     opts.set("usedForUpdate", "false");
+    opts.set("operationForUpdate", "none");
     break;
 
   case SlicePlanUsedFor::Update:
@@ -55,6 +56,12 @@ createSlicePlanOptions(SlicePlanUsedFor usedFor,
     opts.set("usedForSlice", "false");
     opts.set("usedForUpdate", "true");
     opts.set("operationForUpdate", "max");
+    break;
+
+  case SlicePlanUsedFor::CombinedSliceUpdate:
+    opts.set("usedForSlice", "true");
+    opts.set("usedForUpdate", "true");
+    opts.set("operationForUpdate", "none");
     break;
 
   default:

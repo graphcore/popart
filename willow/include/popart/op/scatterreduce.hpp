@@ -16,7 +16,7 @@ namespace popart {
 class OpSerialiserBase;
 struct OperatorIdentifier;
 
-enum class ScatterReduction { Sum = 0, Max, Min };
+enum class ScatterReduction { Sum = 0, Max, Min, None };
 
 class ScatterReduceOp : public Op {
 public:
@@ -40,6 +40,7 @@ public:
 
   static InIndex dataInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
+  static InIndex initialValuesInIndex() { return 2; }
   static OutIndex outIndex() { return 0; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
@@ -80,7 +81,9 @@ public:
     return mapper;
   }
 
-  const std::map<int, int> &gradOutToNonGradIn() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final {
+    return grad_out_info;
+  }
   void setup() final;
 
   int64_t getAxis() const { return axis; }
@@ -91,7 +94,10 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex dataInIndex() { return 2; }
   static InIndex fwdOutInIndex() { return 3; }
-  static OutIndex gradOutIndex() { return 0; }
+  static InIndex initialValuesInIndex() { return 4; }
+
+  static OutIndex gradDataOutIndex() { return 0; }
+  static OutIndex gradInitialValuesOutIndex() { return 1; }
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
@@ -103,13 +109,17 @@ public:
 
   bool indexBroadcasted() const { return index_broadcasted; }
 
+  bool hasInitialValues() const { return has_initial_values; }
+
 private:
   std::vector<GradInOutMapper> mapper;
+  std::map<int, int> grad_out_info;
   Shape backward_shape;
   int64_t axis;
   ScatterReduction reduction;
   nonstd::optional<float> available_memory_proportion;
   bool index_broadcasted;
+  bool has_initial_values;
 };
 
 } // namespace popart

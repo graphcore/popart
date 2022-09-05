@@ -1082,7 +1082,11 @@ public:
    * ```
    * where the looping over output indices is implicitly handled by poplar.
    *
-   * \param args A vector of tensor ids as [`src`, `index`].
+   * \param args A vector of tensor ids as [`src`, `index`, `initial_values`].
+   *      `initial_values` is optional and if omitted the output will be
+   *      initialised based on the selected reduction type. For example, a
+   *      tensor of zeros is used to initialise the output tensor for
+   *      `ScatterReduction::Sum`.
    * \param axis_size The size of the reduced axis.
    * \param axis The axis to reduce along. Default = -1.
    * \param reduction The type of reduction to apply. Default =

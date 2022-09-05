@@ -47,7 +47,10 @@ class Devicex;
 class ReductionStrategy {
 public:
   virtual poplar::OptionFlags
-  createSlicePlanOptions(const ScatterReduceOp &op) const = 0;
+  createForwardPlanOptions(const ScatterReduceOp &op) const = 0;
+
+  virtual poplar::OptionFlags
+  createBackwardPlanOptions(const ScatterReduceGradOp &op) const = 0;
 
   virtual void initReductionOutput(const PopOpx &opx,
                                    const snap::Tensor &out,
@@ -140,21 +143,21 @@ public:
     indices = indices.reinterpret(poplar::UNSIGNED_INT);
   }
 
-  snap::Tensor backward(const ScatterReduceGradOp &op,
-                        const PopOpx &opx,
-                        snap::Tensor &gradIn,
-                        snap::Tensor &indices,
-                        size_t axis,
-                        snap::program::Sequence &prog,
-                        const popops::SlicePlan &plan) const {
+  std::vector<snap::Tensor> backward(const ScatterReduceGradOp &op,
+                                     const PopOpx &opx,
+                                     snap::Tensor &gradIn,
+                                     snap::Tensor &indices,
+                                     size_t axis,
+                                     snap::program::Sequence &prog,
+                                     const popops::SlicePlan &plan) const {
     if (op.indexBroadcasted()) {
       prepMultiSliceBroadcastedTensors(opx, gradIn, indices, axis, prog);
     } else {
       prepMultiSliceTensors(gradIn, indices, axis);
     }
 
-    // Delegate to concrete subclasses the evaluation of the gradient.
-    return calcGradient(opx, gradIn, indices, axis, prog, plan);
+    // Delegate to concrete subclasses the evaluation of the gradient(s).
+    return calcGradient(op, opx, gradIn, indices, axis, prog, plan);
   }
 
   void prepMultiSliceBroadcastedTensors(const PopOpx &opx,
@@ -198,12 +201,14 @@ public:
     indices = indices.reinterpret(poplar::UNSIGNED_INT);
   }
 
-  virtual snap::Tensor calcGradient(const PopOpx &opx,
-                                    const snap::Tensor &gradIn,
-                                    const snap::Tensor &indices,
-                                    size_t axis,
-                                    snap::program::Sequence &prog,
-                                    const popops::SlicePlan &plan) const = 0;
+  virtual std::vector<snap::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const PopOpx &opx,
+               const snap::Tensor &gradIn,
+               const snap::Tensor &indices,
+               size_t axis,
+               snap::program::Sequence &prog,
+               const popops::SlicePlan &plan) const = 0;
 
   virtual ~ReductionStrategy() {}
 };
@@ -211,10 +216,15 @@ public:
 class SumReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createSlicePlanOptions(const ScatterReduceOp &op) const final {
-    return popart::popx::createSlicePlanOptions(
-        popart::popx::SlicePlanUsedFor::UpdateAdd,
-        op.getAvailableMemoryProportion());
+  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+    return createSlicePlanOptions(SlicePlanUsedFor::UpdateAdd,
+                                  op.getAvailableMemoryProportion());
+  }
+
+  poplar::OptionFlags
+  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+    return createSlicePlanOptions(SlicePlanUsedFor::Slice,
+                                  op.getAvailableMemoryProportion());
   }
 
   void initReductionOutput(const PopOpx &opx,
@@ -249,12 +259,14 @@ public:
                            opx.debugContext("scatterSum"));
   }
 
-  snap::Tensor calcGradient(const PopOpx &opx,
-                            const snap::Tensor &gradIn,
-                            const snap::Tensor &indices,
-                            size_t axis,
-                            snap::program::Sequence &prog,
-                            const popops::SlicePlan &plan) const final {
+  std::vector<snap::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const PopOpx &opx,
+               const snap::Tensor &gradIn,
+               const snap::Tensor &indices,
+               size_t axis,
+               snap::program::Sequence &prog,
+               const popops::SlicePlan &plan) const final {
     auto result = popops::multiSlice(opx.graph().getPoplarGraph(),
                                      gradIn.getPoplarTensor(),
                                      indices.getPoplarTensor(),
@@ -265,21 +277,168 @@ public:
                                      poplar::OptionFlags(),
                                      opx.getDebugNameAndId("scatterSumGrad"));
 
-    auto gradOut     = snap::Tensor{result, opx.graph()};
-    auto gradOutInfo = opx.outInfo(ScatterReduceGradOp::gradOutIndex());
-    return alignToAxis(gradOut, gradOutInfo.shape(), axis);
+    auto gradData = snap::Tensor{result, opx.graph()};
+    auto outInfo  = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    gradData      = alignToAxis(gradData, outInfo.shape(), axis);
+
+    if (op.hasInitialValues()) {
+      auto gradInitials = opx.cloneNcopy(
+          prog, opx.getInTensor(ScatterReduceGradOp::gradInIndex()));
+      return {gradData, gradInitials};
+    }
+
+    return {gradData};
+  }
+};
+
+class NoneReductionStrategy : public ReductionStrategy {
+public:
+  poplar::OptionFlags
+  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+    return createSlicePlanOptions(SlicePlanUsedFor::Update,
+                                  op.getAvailableMemoryProportion());
+  }
+
+  poplar::OptionFlags
+  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+    if (op.hasInitialValues()) {
+      // none-reduction with initial values needs both a scatter and a gather
+      // for each gradient output.
+      return createSlicePlanOptions(SlicePlanUsedFor::CombinedSliceUpdate,
+                                    op.getAvailableMemoryProportion());
+    }
+
+    return createSlicePlanOptions(SlicePlanUsedFor::Slice,
+                                  op.getAvailableMemoryProportion());
+  }
+
+  void initReductionOutput(const PopOpx &opx,
+                           const snap::Tensor &out,
+                           snap::program::Sequence &prog) const final {
+    popops::zero(opx.graph().getPoplarGraph(),
+                 out.getPoplarTensor(),
+                 prog.getPoplarSequence(),
+                 opx.debugContext("zero"));
+  }
+
+  void applyReduction(const PopOpx &opx,
+                      const snap::Tensor &target,
+                      const snap::Tensor &update,
+                      const snap::Tensor &indices,
+                      snap::program::Sequence &prog,
+                      const popops::SlicePlan &plan) const final {
+    popops::multiUpdate(opx.graph().getPoplarGraph(),
+                        target.getPoplarTensor(),
+                        update.getPoplarTensor(),
+                        indices.getPoplarTensor(),
+                        {0},
+                        {1},
+                        prog.getPoplarSequence(),
+                        plan,
+                        poplar::OptionFlags(),
+                        opx.debugContext("scatter"));
+  }
+
+  std::vector<snap::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const PopOpx &opx,
+               const snap::Tensor &gradIn,
+               const snap::Tensor &indices,
+               size_t axis,
+               snap::program::Sequence &prog,
+               const popops::SlicePlan &plan) const final {
+    auto result = popops::multiSlice(opx.graph().getPoplarGraph(),
+                                     gradIn.getPoplarTensor(),
+                                     indices.getPoplarTensor(),
+                                     {0},
+                                     {1},
+                                     prog.getPoplarSequence(),
+                                     plan,
+                                     poplar::OptionFlags(),
+                                     opx.getDebugNameAndId("scatterNoneGrad"));
+
+    auto gradData        = snap::Tensor{result, opx.graph()};
+    auto gradDataOutInfo = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    gradData             = alignToAxis(gradData, gradDataOutInfo.shape(), axis);
+
+    if (!op.hasInitialValues()) {
+      return {gradData};
+    }
+
+    // Scatter of zeros into the gradIn
+    auto dataInfo    = opx.inInfo(ScatterReduceGradOp::dataInIndex());
+    auto indicesInfo = opx.inInfo(ScatterReduceGradOp::indicesInIndex());
+
+    auto numSlices  = static_cast<size_t>(dataInfo.nelms());
+    auto outputSize = 1UL;
+
+    if (!op.indexBroadcasted()) {
+      numSlices  = dataInfo.shape_szt().at(axis);
+      outputSize = dataInfo.nelms() / numSlices;
+    }
+
+    auto numLookups = static_cast<size_t>(indicesInfo.nelms());
+
+    auto zeros =
+        popops::createSliceTensor(opx.graph().getPoplarGraph(),
+                                  gradIn.elementType(),
+                                  {numSlices, outputSize},
+                                  {0},
+                                  {1},
+                                  numLookups,
+                                  plan,
+                                  poplar::OptionFlags(),
+                                  opx.getDebugNameAndId("zerosUpdate"));
+
+    popops::fill(opx.graph().getPoplarGraph(),
+                 zeros,
+                 prog.getPoplarSequence(),
+                 0.0f,
+                 opx.debugContext("zerosUpdateFill"));
+
+    auto t =
+        popops::createSliceableTensor(opx.graph().getPoplarGraph(),
+                                      gradIn.elementType(),
+                                      {gradIn.dim(0), gradIn.dim(1)},
+                                      {0},
+                                      {1},
+                                      plan,
+                                      poplar::OptionFlags(),
+                                      opx.getDebugNameAndId("zerosUpdate"));
+
+    auto gradInitials = snap::Tensor{t, opx.graph()};
+    prog.add(snap::program::Copy(
+        gradIn, gradInitials, false, opx.debugContext("copyToScatter")));
+
+    popops::multiUpdate(opx.graph().getPoplarGraph(),
+                        gradInitials.getPoplarTensor(),
+                        zeros,
+                        indices.getPoplarTensor(),
+                        {0},
+                        {1},
+                        prog.getPoplarSequence(),
+                        plan,
+                        poplar::OptionFlags(),
+                        opx.getDebugNameAndId("scatterInitialValuesGrad"));
+
+    auto info = opx.outInfo(ScatterReduceGradOp::gradInitialValuesOutIndex());
+    gradInitials = alignToAxis(gradInitials, info.shape(), axis);
+    return {gradData, gradInitials};
   }
 };
 
 class MaxReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createSlicePlanOptions(const ScatterReduceOp &op) const final {
-    auto options = popart::popx::createSlicePlanOptions(
-        popart::popx::SlicePlanUsedFor::UpdateMax,
-        op.getAvailableMemoryProportion());
+  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+    return createSlicePlanOptions(SlicePlanUsedFor::UpdateMax,
+                                  op.getAvailableMemoryProportion());
+  }
 
-    return options;
+  poplar::OptionFlags
+  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+    return createSlicePlanOptions(SlicePlanUsedFor::Slice,
+                                  op.getAvailableMemoryProportion());
   }
 
   void initReductionOutput(const PopOpx &opx,
@@ -370,17 +529,21 @@ public:
                            poplar::OptionFlags(),
                            opx.debugContext("scatter_max"));
 
-    // TODO(T65173): make this an operator option since it can be unnecessary.
-    // Replace any non-updated values with zero
-    maskedFillOutput(opx, target, update, indices, prog, plan);
+    if (!opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+      // TODO(T65173): make this an operator option since it can be unnecessary.
+      // Replace any non-updated values with zero
+      maskedFillOutput(opx, target, update, indices, prog, plan);
+    }
   }
 
-  snap::Tensor calcGradient(const PopOpx &opx,
-                            const snap::Tensor &gradIn,
-                            const snap::Tensor &indices,
-                            size_t axis,
-                            snap::program::Sequence &prog,
-                            const popops::SlicePlan &plan) const final {
+  std::vector<snap::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const PopOpx &opx,
+               const snap::Tensor &gradIn,
+               const snap::Tensor &indices,
+               size_t axis,
+               snap::program::Sequence &prog,
+               const popops::SlicePlan &plan) const final {
 
     auto &graph = opx.graph().getPoplarGraph();
     auto result = popops::multiSlice(graph,
@@ -393,13 +556,13 @@ public:
                                      poplar::OptionFlags(),
                                      opx.getDebugNameAndId("gatherGradIn"));
 
-    auto gradOut     = snap::Tensor{result, opx.graph()};
-    auto gradOutInfo = opx.outInfo(ScatterReduceGradOp::gradOutIndex());
-    gradOut          = alignToAxis(gradOut, gradOutInfo.shape(), axis);
+    auto gradData     = snap::Tensor{result, opx.graph()};
+    auto gradDataInfo = opx.outInfo(ScatterReduceGradOp::gradDataOutIndex());
+    gradData          = alignToAxis(gradData, gradDataInfo.shape(), axis);
 
     auto fwdOut = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
 
-    if (opx.getOp<ScatterReduceGradOp>().indexBroadcasted()) {
+    if (op.indexBroadcasted()) {
       fwdOut = fwdOut.dimRoll(axis);
       fwdOut = fwdOut.flatten();
       fwdOut = fwdOut.expand({1});
@@ -419,20 +582,37 @@ public:
                                          opx.getDebugNameAndId("gatherFwdOut"));
 
     auto outputs = snap::Tensor{fwdOutputs, opx.graph()};
-    outputs      = alignToAxis(outputs, gradOutInfo.shape(), axis);
+    outputs      = alignToAxis(outputs, gradDataInfo.shape(), axis);
 
-    // gradOut * (data == outputs)
+    // gradDataOut * (data == outputs)
     const auto &data = opx.getInTensor(ScatterReduceGradOp::dataInIndex());
-    auto dtype       = gradOut.elementType();
+    auto dtype       = gradData.elementType();
     auto expr = pe::Mul(pe::_1, pe::Cast(pe::Equal(pe::_2, pe::_3), dtype));
 
     snap::popops::mapInPlace(opx.graph(),
                              expr,
-                             {gradOut, data, outputs},
+                             {gradData, data, outputs},
                              prog,
                              opx.getDebugNameAndId("gradOutMulOutputMask"));
 
-    return gradOut;
+    if (!op.hasInitialValues()) {
+      return {gradData};
+    }
+
+    // gradIn * (fwdOut == initialValues)
+    auto grad = opx.getInTensor(ScatterReduceGradOp::gradInIndex());
+    auto fwd  = opx.getInTensor(ScatterReduceGradOp::fwdOutInIndex());
+    auto initialValues =
+        opx.getInTensor(ScatterReduceGradOp::initialValuesInIndex());
+
+    auto gradInitials =
+        snap::popops::map(opx.graph(),
+                          expr,
+                          {grad, fwd, initialValues},
+                          prog,
+                          opx.getDebugNameAndId("gradInMulInitialValuesMask"));
+
+    return {gradData, gradInitials};
   }
 };
 
@@ -441,8 +621,13 @@ public:
 class MinReductionStrategy : public ReductionStrategy {
 public:
   poplar::OptionFlags
-  createSlicePlanOptions(const ScatterReduceOp &op) const final {
-    return max_strategy.createSlicePlanOptions(op);
+  createForwardPlanOptions(const ScatterReduceOp &op) const final {
+    return max_strategy.createForwardPlanOptions(op);
+  }
+
+  poplar::OptionFlags
+  createBackwardPlanOptions(const ScatterReduceGradOp &op) const final {
+    return max_strategy.createBackwardPlanOptions(op);
   }
 
   void initReductionOutput(const PopOpx &opx,
@@ -457,7 +642,15 @@ public:
                       const snap::Tensor &indices,
                       snap::program::Sequence &prog,
                       const popops::SlicePlan &plan) const final {
-    auto &graph    = opx.graph().getPoplarGraph();
+    auto &graph = opx.graph().getPoplarGraph();
+
+    if (opx.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+      popops::negInPlace(graph,
+                         target.getPoplarTensor(),
+                         prog.getPoplarSequence(),
+                         "negTarget");
+    }
+
     auto negUpdate = popops::neg(
         graph, update.getPoplarTensor(), prog.getPoplarSequence(), "negUpdate");
 
@@ -468,13 +661,16 @@ public:
         graph, target.getPoplarTensor(), prog.getPoplarSequence(), "negTarget");
   }
 
-  snap::Tensor calcGradient(const PopOpx &opx,
-                            const snap::Tensor &gradIn,
-                            const snap::Tensor &indices,
-                            size_t axis,
-                            snap::program::Sequence &prog,
-                            const popops::SlicePlan &plan) const final {
-    return max_strategy.calcGradient(opx, gradIn, indices, axis, prog, plan);
+  std::vector<snap::Tensor>
+  calcGradient(const ScatterReduceGradOp &op,
+               const PopOpx &opx,
+               const snap::Tensor &gradIn,
+               const snap::Tensor &indices,
+               size_t axis,
+               snap::program::Sequence &prog,
+               const popops::SlicePlan &plan) const final {
+    return max_strategy.calcGradient(
+        op, opx, gradIn, indices, axis, prog, plan);
   }
 
 private:
@@ -492,6 +688,9 @@ createStrategy(const ScatterReduction &reduction) {
   if (reduction == ScatterReduction::Min) {
     return std::make_unique<MinReductionStrategy>();
   }
+  if (reduction == ScatterReduction::None) {
+    return std::make_unique<NoneReductionStrategy>();
+  }
 
   throw popart::internal_error("Unsupported reduction strategy!");
 }
@@ -502,7 +701,7 @@ ScatterReduceOpx::ScatterReduceOpx(Op *op, Devicex *devicex)
 
   auto &srop   = getOp<ScatterReduceOp>();
   strategy     = createStrategy(srop.getReduction());
-  auto options = strategy->createSlicePlanOptions(srop);
+  auto options = strategy->createForwardPlanOptions(srop);
 
   axis = static_cast<size_t>(srop.getAxis());
   nonstd::optional<size_t> plan_axis =
@@ -529,7 +728,14 @@ void ScatterReduceOpx::grow(snap::program::Sequence &prog) const {
                                       axis,
                                       srop.indexBroadcasted(),
                                       getDebugNameAndId("scatterreduceOutput"));
-  strategy->initReductionOutput(*this, out, prog);
+
+  if (srop.hasInput(ScatterReduceOp::initialValuesInIndex())) {
+    const auto &t = getInTensor(ScatterReduceOp::initialValuesInIndex());
+    prog.add(snap::program::Copy(
+        t, out, false, debugContext("copyToScatterReduce")));
+  } else {
+    strategy->initReductionOutput(*this, out, prog);
+  }
   strategy->forward(srop, *this, out, data, indices, axis, prog, plan);
   setOutTensor(ScatterReduceOp::outIndex(), out);
 }
@@ -575,12 +781,9 @@ ScatterReduceGradOpx::ScatterReduceGradOpx(Op *op, Devicex *devicex)
   verifyOp<ScatterReduceGradOp>(
       op, {Onnx::CustomGradOperators::ScatterReduceGradOp});
 
-  auto &srop = getOp<ScatterReduceGradOp>();
-  strategy   = createStrategy(srop.getReduction());
-
-  // Gradient always requires evaluting a gather regardless of the reduction
-  auto options = createSlicePlanOptions(SlicePlanUsedFor::Slice,
-                                        srop.getAvailableMemoryProportion());
+  auto &srop   = getOp<ScatterReduceGradOp>();
+  strategy     = createStrategy(srop.getReduction());
+  auto options = strategy->createBackwardPlanOptions(srop);
 
   axis = static_cast<size_t>(srop.getAxis());
   nonstd::optional<size_t> plan_axis =
@@ -603,7 +806,16 @@ void ScatterReduceGradOpx::grow(snap::program::Sequence &prog) const {
   auto gradOut =
       strategy->backward(srop, *this, gradIn, indices, axis, prog, plan);
 
-  setOutTensor(ScatterReduceGradOp::gradOutIndex(), gradOut);
+  if (gradOut.size() != srop.outTensorCount()) {
+    throw error("ScatterReduceGradOpx must calculate at least one gradient "
+                " tensor and no more than two.");
+  }
+
+  setOutTensor(ScatterReduceGradOp::gradDataOutIndex(), gradOut[0]);
+
+  if (srop.hasInitialValues()) {
+    setOutTensor(ScatterReduceGradOp::gradInitialValuesOutIndex(), gradOut[1]);
+  }
 }
 
 snap::Tensor ScatterReduceGradOpx::createInputTensor(

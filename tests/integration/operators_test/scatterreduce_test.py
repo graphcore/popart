@@ -20,6 +20,7 @@ reduction_map = {
     "sum": popart_core.ScatterReduction.Sum,
     "max": popart_core.ScatterReduction.Max,
     "min": popart_core.ScatterReduction.Min,
+    "none": popart_core.ScatterReduction.NoReduction,
 }
 
 ################################################################################
@@ -259,34 +260,45 @@ def test_scatterreduce_training(op_tester, reduction):
 
 
 @pytest.mark.parametrize(
-    "axis,broadcast,reduction", product(range(-3, 3), [True, False], reductions)
+    "axis,broadcast,init_values,reduction",
+    product(range(-3, 3), [True, False], [True, False], reductions),
 )
-def test_scatterreduce_axis(op_tester, axis, broadcast, reduction):
+def test_scatterreduce_axis(op_tester, axis, broadcast, init_values, reduction):
     torch.manual_seed(0)
     src = torch.rand(6, 10, 64)
     src.transpose_(0, axis)
     src = src.contiguous()
+
     index = torch.tensor([0, 1, 0, 1, 2, 1]).long()
     index_vec = index
-    axsz = torch.max(index).item() + 1
+    axsz = int(torch.max(index)) + 1
+
+    init_func = torch.rand if init_values else torch.zeros
+    initial_values = init_func(axsz, 10, 64)
+    initial_values.transpose_(0, axis)
+    initial_values = initial_values.contiguous()
 
     if broadcast:
         sz = 3 * [1]
         sz[axis] = -1
         index = index.view(sz).expand_as(src).contiguous()
 
-    def torch_reference(src, out):
+    def torch_reference(src, initials):
         # Note this can be removed once we can move to torch 1.13 or later.
         # As of June 22 2022 the pytorch scatter_reduce method is in beta.
         index = index_vec
         if reduction == "sum":
-            return out.index_add(dim=axis, index=index, source=src)
+            return initials.index_add(dim=axis, index=index, source=src)
 
         aminmax = torch.amin if reduction == "min" else torch.amax
         reducer = lambda x: aminmax(x, dim=0, keepdim=True)
 
         src = torch.transpose(src, 0, axis)
-        out = torch.transpose(out, 0, axis)
+        out = torch.transpose(initials.clone(), 0, axis)
+
+        if init_values:
+            index = torch.cat((torch.arange(0, axsz), index))
+            src = torch.vstack((out, src))
 
         for idx in index.unique():
             out[idx, :, :] = reducer(src[index == idx, :, :])
@@ -296,6 +308,20 @@ def test_scatterreduce_axis(op_tester, axis, broadcast, reduction):
     def init_builder(builder):
         D = builder.addInputTensor(src.numpy())
         I = builder.addInputTensor(index.numpy().astype(np.uint32))
+
+        if init_values:
+            V = builder.addInputTensor(initial_values.numpy())
+            out = builder.aiGraphcore.scatterreduce(
+                [D, I, V], axis=axis, axis_size=axsz, reduction=reduction_map[reduction]
+            )
+            builder.addOutputTensor(out)
+            return [
+                out,
+                popart.reservedGradientPrefix() + D,
+                popart.reservedGradientPrefix() + V,
+                popart.reservedGradientPrefix() + out,
+            ]
+
         out = builder.aiGraphcore.scatterreduce(
             [D, I], axis=axis, axis_size=axsz, reduction=reduction_map[reduction]
         )
@@ -308,11 +334,14 @@ def test_scatterreduce_axis(op_tester, axis, broadcast, reduction):
 
     def reference(ref_data):
         src.requires_grad_()
-        ref = torch.zeros(axsz, 10, 64)
-        ref.transpose_(0, axis)
-        ref = torch_reference(src, ref)
+        initial_values.requires_grad_()
+        ref = torch_reference(src, initial_values)
         d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
         ref.backward(d__o)
+
+        if init_values:
+            return [ref, src.grad, initial_values.grad, d__o]
+
         return [ref, src.grad, d__o]
 
     op_tester.run(init_builder, reference, "train")
@@ -425,3 +454,37 @@ def test_scatterreduce_partial_broadcasting(op_tester):
 
     msg = "Partial broadcasting of indices is not currently supported"
     assert msg in e_info.value.args[0]
+
+
+def test_scatterreduce_none(op_tester):
+    num_updates = 16
+    num_channels = 32
+    axsz = 100
+    src = torch.zeros(num_updates, num_channels)
+    index = torch.arange(0, num_updates)
+    t = torch.ones(axsz, num_channels)
+
+    def init_builder(builder):
+        D = builder.addInputTensor(src.numpy())
+        I = builder.addInputTensor(index.numpy().astype(np.uint32))
+        T = builder.addInputTensor(t.numpy())
+        out = builder.aiGraphcore.scatterreduce(
+            [D, I, T], axis_size=axsz, axis=0, reduction=reduction_map["none"]
+        )
+        builder.addOutputTensor(out)
+        return [
+            out,
+            popart.reservedGradientPrefix() + D,
+            popart.reservedGradientPrefix() + T,
+            popart.reservedGradientPrefix() + out,
+        ]
+
+    def reference(ref_data):
+        src.requires_grad_()
+        t.requires_grad_()
+        t_updated = torch.index_put(t, (index,), src)
+        d__o = torch.tensor(ref_data.getOutputTensorGrad(0))
+        t_updated.backward(d__o)
+        return [t_updated, src.grad, t.grad, d__o]
+
+    op_tester.run(init_builder, reference, "train")
