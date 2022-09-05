@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <gcl/CollectiveBalancedReorder.hpp>
+#include <iterator>
 #include <kj/common.h>
 #include <kj/std/iostream.h>
 #include <map>
@@ -57,6 +58,9 @@
 #include <popart/tensorinfo.hpp>
 #include <popart/vendored/optional.hpp>
 
+#include "boost/range/adaptor/filtered.hpp"
+#include "boost/range/adaptor/transformed.hpp"
+#include "boost/range/algorithm/copy.hpp"
 #include "popart/capnp/Executablex.capnp.h"
 #include "popart/capnp/Ir.capnp.h"
 #include "popart/capnp/IrLowering.capnp.h"
@@ -490,56 +494,32 @@ void serializePopartExecutable(std::ostream &out,
   }
 
   {
-    auto variableTensors   = ir.getTensorIds(TensorType::Variable);
-    auto anchorTensors     = ir.getRootAnchors();
-    auto optimizerTensors  = ir.optimizerTensors();
-    auto dataStreamTensors = ir.dataStreamTensors();
+    auto getTensor     = [&ir](const TensorId &id) { return ir.getTensor(id); };
+    auto hasNoProducer = [](const Tensor *tensor) {
+      return !tensor->hasProducer();
+    };
 
-    size_t numTensorsToSerialize =
-        variableTensors.size() + anchorTensors.size() +
-        optimizerTensors.size() + dataStreamTensors.size();
+    std::vector<const Tensor *> tensorsToSerialize;
 
+    const auto anchorTensorIds   = ir.getRootAnchors();
+    const auto variableTensorIds = ir.getTensorIds(TensorType::Variable);
+
+    boost::copy(anchorTensorIds | boost::adaptors::transformed(getTensor),
+                std::back_inserter(tensorsToSerialize));
+    boost::copy(variableTensorIds | boost::adaptors::transformed(getTensor) |
+                    boost::adaptors::filtered(hasNoProducer),
+                std::back_inserter(tensorsToSerialize));
+    boost::copy(ir.optimizerTensors(), std::back_inserter(tensorsToSerialize));
+    boost::copy(ir.dataStreamTensors(), std::back_inserter(tensorsToSerialize));
     if (ir.getRequiresRandomSeed()) {
-      ++numTensorsToSerialize;
+      tensorsToSerialize.push_back(executable.getSeedTensor());
     }
 
-    auto tensors = executablexBuilder.initTensors(numTensorsToSerialize);
+    auto tensors = executablexBuilder.initTensors(tensorsToSerialize.size());
 
-    size_t i = 0;
-
-    for (auto &id : variableTensors) {
-      Tensor *tensor = ir.getTensor(id);
-      if (!tensor->hasProducer()) {
-        auto tensorBuilder = tensors[i];
-        serializeTensor(tensor, tensorBuilder);
-        ++i;
-      }
-    }
-
-    for (auto &id : anchorTensors) {
-      Tensor *tensor     = ir.getTensor(id);
+    for (std::size_t i = 0; i < tensors.size(); i++) {
       auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
-      ++i;
-    }
-
-    for (auto *tensor : ir.optimizerTensors()) {
-      auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
-      ++i;
-    }
-
-    for (auto *tensor : ir.dataStreamTensors()) {
-      auto tensorBuilder = tensors[i];
-      serializeTensor(tensor, tensorBuilder);
-      ++i;
-    }
-
-    if (ir.getRequiresRandomSeed()) {
-      const Tensor *seedTensor = executable.getSeedTensor();
-      auto tensorBuilder       = tensors[i];
-      serializeTensor(seedTensor, tensorBuilder);
-      ++i;
+      serializeTensor(tensorsToSerialize[i], tensorBuilder);
     }
   }
 
