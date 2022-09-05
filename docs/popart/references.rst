@@ -30,11 +30,11 @@ Tutorials and simple examples
 
   .. note:: You need to checkout the branch of the tutorials repository that corresponds to the version of the Poplar SDK you are using. The links below link to the master branch, which is the same as the latest release branch.
 
-  * `Tutorials for PopART <https://github.com/graphcore/tutorials/tree/master/tutorials/popart>`_.
+  * :tutorials-repo:`Tutorials for PopART <tutorials/popart>`.
 
-  * `Simple applications for PopART <https://github.com/graphcore/tutorials/tree/master/simple_applications/popart>`_.
+  * :tutorials-repo:`Simple applications for PopART <simple_applications/popart>`.
 
-  * `Feature examples for PopART <https://github.com/graphcore/tutorials/tree/master/feature_examples/popart>`_.
+  * :tutorials-repo:`Feature examples for PopART <feature_examples/popart>`.
 
 Application and code examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
