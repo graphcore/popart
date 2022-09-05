@@ -12,6 +12,7 @@
 #include <filereader.hpp>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <onnx/onnx_pb.h>
@@ -35,6 +36,10 @@
 #include <popart/tensordata.hpp>
 #include <popart/version.hpp>
 #include <poparttracepoint.hpp>
+
+#include <popdist/backend.hpp>
+#include <popdist/collectives.hpp>
+#include <popdist/context.hpp>
 
 #include "popart/alias/aliasmodel.hpp"
 #include "popart/dataflow.hpp"
@@ -834,6 +839,28 @@ size_t Session::getEngineCacheHashSeed(const SessionOptions &userOptions,
   boost::hash_combine(hash, engineOptionsCreator.getEngineOptions());
 
   return hash;
+}
+
+void Session::broadcastWeights(int rootRank) {
+  const auto &executable = getExecutable();
+
+  std::vector<std::future<void>> futures;
+
+  for (auto &tensor : executable.getWeightTensors()) {
+    auto future = std::async(std::launch::async, [&tensor, rootRank] {
+      popdist::collectives::parallel::broadcast(
+          tensor->tensorData()->data(),
+          tensor->info.nelms(),
+          popart::popx::popType(tensor->info),
+          tensor->id,
+          rootRank);
+    });
+    futures.emplace_back(std::move(future));
+  }
+
+  for (auto &future : futures) {
+    future.get();
+  }
 }
 
 InferenceSession::~InferenceSession() = default;

@@ -80,6 +80,7 @@ set(POPART_ONLY_DEPS_LIBS
     poprand
     poputil
     poprithms
+    popdist
     libpvti
     pva
     gcl
