@@ -80,6 +80,7 @@ set(POPART_ONLY_DEPS_LIBS
     poprand
     poputil
     poprithms
+    popdist
     libpvti
     pva
     gcl
@@ -357,6 +358,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
 # For the user's convenience, we install our own Findgcl module, as gcl do not
 # provide their own config file.
 install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findgcl.cmake"
+        DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
+)
+install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findpopdist.cmake"
         DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
 )
 

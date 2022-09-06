@@ -15278,6 +15278,15 @@ Args:
 static const char *__singlelinedoc_popart_Session_resetHostWeights =
     R"doc(Reset weights with weights in an ONNX model. Note that the only differences between the ONNX model and the current model must be the weights. No other differences are allowed. This method only updates the weights on the host. weightsFromHost() must be called after this method to update the weights on the device. Args: model: An ONNX model protobuf, or the name of a file containing an ONNX model protobuf. ignoreWeightsInModelWithoutCorrespondingHostWeight: If :code:`true`, do not throw an error if there are initializers in the ONNX model without corresponding initializer tensor(s) in the session's IR.)doc";
 
+static const char *__doc_popart_Session_broadcastWeights =
+    R"doc(Broadcasts the weight from the PopRun instance with index `rootRank` to all other instances.
+
+Args:
+ rootRank: The index of the PopRun instance from which the weights should be broadcasted.)doc";
+
+static const char *__singlelinedoc_popart_Session_broadcastWeights =
+    R"doc(Broadcasts the weight from the PopRun instance with index `rootRank` to all other instances. Args: rootRank: The index of the PopRun instance from which the weights should be broadcasted.)doc";
+
 static const char *__doc_popart_Session_run =
     R"doc(Run one step.
 

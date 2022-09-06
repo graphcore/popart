@@ -14,6 +14,7 @@
       "poplar",
       "poplibs",
       "popir",
+      "popdist",
       "gcl",
       "gccs",
       "sphinx_resources"

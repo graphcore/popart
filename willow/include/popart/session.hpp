@@ -575,6 +575,15 @@ public:
   const popx::Executablex &getExecutable() const { return *executable_; }
 
   /**
+   * @brief Broadcasts the weight from the PopRun instance with index `rootRank`
+   * to all other instances.
+   *
+   * @param rootRank The index of the PopRun instance from which the weights
+   * should be broadcasted.
+   */
+  void broadcastWeights(int rootRank = 0);
+
+  /**
    * Update cacheEntries from engine cache directory
    * and update ir::hashMatched_ with the updated cacheEntries
    *
