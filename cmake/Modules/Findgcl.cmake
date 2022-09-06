@@ -4,7 +4,7 @@ if(gcl_FOUND)
 endif()
 
 find_library(gcl_ct_LIB
-  NAMES gcl_ct
+  NAMES gcl gcl_ct
   HINTS ${POPLAR_INSTALL_DIR}/gcl/lib ${POPLAR_INSTALL_DIR}/lib
   DOC "gcl library to link to"
 )
