@@ -5,6 +5,7 @@ add_popart_py_unit_test(atan2_test)
 add_popart_py_unit_test(atanh_test)
 # add_popart_py_unit_test(auto_pad_test) Disabled, see comment in file.
 add_popart_py_unit_test(batchnorm_test)
+add_popart_py_unit_test(batchnorm_pytorch_fp16_test VARIANTS Hw)
 add_popart_py_unit_test(binaryop_error_test)
 add_popart_py_unit_test(boolean_test)
 add_popart_py_unit_test(call_test)

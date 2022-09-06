@@ -224,15 +224,15 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
 
       if (op.useUnbiasedVariance()) {
         // We have to convert the invSd to the unbiased version
-        const auto numElements = x.numElements() / x.dim(1);
-        invSd                  = snap::popops::map(
-            graph(),
-            pe::Mul(pe::_1,
-                    pe::Sqrt(pe::Divide(pe::Const(numElements - 1),
-                                        pe::Const(numElements)))),
-            {invSd},
-            prog,
-            debugContext("unbiasedInvSd"));
+        const float numElements = x.numElements() / x.dim(1);
+        const float inv_factor  = (numElements - 1) / numElements;
+
+        invSd =
+            snap::popops::map(graph(),
+                              pe::Mul(pe::_1, pe::Sqrt(pe::Const(inv_factor))),
+                              {invSd},
+                              prog,
+                              debugContext("unbiasInvSd"));
       }
 
       // Ensure batch mean is the same type as mean so that running mean can
@@ -246,9 +246,9 @@ BatchNormOpx::growSpatial(snap::program::Sequence &prog,
                                  graph()};
       }
 
-      // Then convert the invSd to the variance
       auto batchVar =
           convertInvSdToVar(prog, invSd, epsilon, var.elementType());
+
       // Calculate the running mean
       auto runningMean = snap::popops::map(
           graph(),
