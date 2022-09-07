@@ -85,6 +85,7 @@ def test_aquire_device_by_id_3():
     assert device0 is not None
     device1 = deviceManager.tryAcquireDeviceById(deviceId)
     assert device1 is None
+    device0.detach()
 
 
 @tu.requires_ipu
@@ -92,6 +93,7 @@ def test_default_connection_type_0():
     deviceManager = popart.DeviceManager()
     device = deviceManager.acquireAvailableDevice(1)
     assert device.connectionType == popart.DeviceConnectionType.Always
+    device.detach()
 
 
 @tu.requires_ipu

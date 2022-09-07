@@ -252,8 +252,7 @@ def test_manual_save_load(tmp_path: Path, capfd: pytest.CaptureFixture) -> None:
             session, lhs, rhs, output = create_inference_session(device=device, bps=bps)
             if filename is not None:
                 session.loadExecutable(filename)
-
-        run_session_and_check_result(session, bps, lhs, rhs, output)
+            run_session_and_check_result(session, bps, lhs, rhs, output)
 
     executable_path = str(tmp_path / "model.popart")
     compile_and_export(2, executable_path)
