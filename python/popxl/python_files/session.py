@@ -75,6 +75,7 @@ class Session:
         # No ir->setIsPrepared, done in createFromIr
         # User sets device iterations and rf on Ir beforehand
         # SessionOptions set in Ir ctor and manually by user, beforehand
+        # No setting up popdist backend if multi-instance, done in InferenceSession.fromIr()
 
         self._ir.removeIsolatedTensors(True)
         self._ir.removeIsolatedGraphs()
