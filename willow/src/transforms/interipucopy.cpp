@@ -86,7 +86,7 @@ public:
 
 namespace {
 
-struct PipelineStageAndVGraphIdLtCmp {
+struct PipelineStageLtAndVGraphIdLtCmp {
   bool operator()(std::pair<PipelineStage, VGraphId> const &a,
                   std::pair<PipelineStage, VGraphId> const &b) const {
     if (a.first != unusedPipelineStage &&
@@ -105,15 +105,15 @@ struct PipelineStageAndVGraphIdLtCmp {
   }
 };
 
-struct PipelineStageAndVGraphIdGtCmp {
+struct PipelineStageLtAndVGraphIdGtCmp {
   bool operator()(std::pair<PipelineStage, VGraphId> const &a,
                   std::pair<PipelineStage, VGraphId> const &b) const {
     if (a.first != unusedPipelineStage &&
-        (a.first > b.first || b.first == unusedPipelineStage)) {
+        (a.first < b.first || b.first == unusedPipelineStage)) {
       return true;
     }
     if (b.first != unusedPipelineStage &&
-        (b.first > a.first || a.first == unusedPipelineStage)) {
+        (b.first < a.first || a.first == unusedPipelineStage)) {
       return false;
     }
     if (a.second > b.second) {
@@ -485,25 +485,25 @@ bool InterIpuCopy::apply(Graph &graph) const {
         consumers.push_back(graph.getOp(id));
       }
 
-      // Sort by smallest valid PipelineStage & VGraphId
+      // Sort by smallest valid PipelineStage & smallest VGraphId
       std::set<std::pair<PipelineStage, VGraphId>,
-               PipelineStageAndVGraphIdLtCmp>
-          sourceIpusLt;
+               PipelineStageLtAndVGraphIdLtCmp>
+          sourceIpusLtLt;
 
-      // Sort by largest valid PipelineStage & VGraphId
+      // Sort by smallest valid PipelineStage & largest VGraphId
       std::set<std::pair<PipelineStage, VGraphId>,
-               PipelineStageAndVGraphIdGtCmp>
-          sourceIpusGt;
+               PipelineStageLtAndVGraphIdGtCmp>
+          sourceIpusLtGt;
 
       for (Op *op : consumers) {
         auto consumerIpu = getInPipelineStageAndVGraphId(
             op, op->input->indices(tensor).front());
-        sourceIpusLt.insert(consumerIpu);
-        sourceIpusGt.insert(consumerIpu);
+        sourceIpusLtLt.insert(consumerIpu);
+        sourceIpusLtGt.insert(consumerIpu);
       }
 
-      // sourceIpu should be the smallest VGraphId
-      auto sourceIpu = *(sourceIpusLt.begin());
+      // sourceIpu should be the smallest PipelineStage / VGraphId
+      auto sourceIpu = *(sourceIpusLtLt.begin());
 
       if (graph.getIr().getSessionOptions().enablePipelining) {
         // We add an additional constraint on the order of IPU copies here:
@@ -513,9 +513,12 @@ bool InterIpuCopy::apply(Graph &graph) const {
         //  All stream tensors scheduled post-loss are to be copied to a
         //  smaller IPU number than that of sourceOp'
         //
+        // Note: the copies should still always go from smallest to largest
+        // PipelineStage
+        //
         if (tensor->scheduledPreLoss != ScheduledPreLoss::Yes) {
           // sourceOp should be op mapped to largest VGraphId
-          sourceIpu = *(sourceIpusGt.begin());
+          sourceIpu = *(sourceIpusLtGt.begin());
         }
       }
 

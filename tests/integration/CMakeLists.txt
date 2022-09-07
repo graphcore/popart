@@ -68,6 +68,7 @@ add_popart_py_unit_test(replica_sharded_with_optimizer VARIANTS IpuModel2)
 add_popart_py_unit_test(convolution_options_test VARIANTS IpuModel2)
 add_popart_py_unit_test(context_scope_test)
 add_popart_py_unit_test(available_memory_proportion_test VARIANTS IpuModel2)
+add_popart_py_unit_test(bert_test VARIANTS IpuModel2)
 add_popart_py_unit_test(cycle_count_test VARIANTS Hw PROPERTIES RUN_SERIAL TRUE)
 add_popart_py_unit_test(conv_dithering_test VARIANTS IpuModel2)
 
