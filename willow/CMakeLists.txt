@@ -360,9 +360,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/popart-config.cmake"
 install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findgcl.cmake"
         DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
 )
-install(FILES "${PROJECT_SOURCE_DIR}/cmake/Modules/Findpopdist.cmake"
-        DESTINATION ${POPART_CMAKE_INSTALL_CONFIGDIR}/Modules
-)
 
 # See T6089: to use python3 where strictly required, and
 # then remove this commented out code:
