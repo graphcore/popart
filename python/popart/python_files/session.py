@@ -162,11 +162,6 @@ class InferenceSession(_InferenceSessionCore):
                 "inference".
         """
 
-        if userOptions.enableDistributedReplicatedGraphs:
-            from . import _popdist_backend_manager
-
-            _popdist_backend_manager.init(print_deprecation=True)
-
         if patterns is None:
             patterns = popart.Patterns()
 
@@ -276,12 +271,6 @@ class InferenceSession(_InferenceSessionCore):
         Returns:
             InferenceSession: An inference session.
         """
-
-        if ir.getSessionOptions().enableDistributedReplicatedGraphs:
-            from . import _popdist_backend_manager
-
-            _popdist_backend_manager.init()
-
         self = super().__new__(cls)
         super(InferenceSession, self).__init__(ir=ir, deviceInfo=deviceInfo, name=name)
 
@@ -336,11 +325,6 @@ class TrainingSession(_TrainingSessionCore):
             name: (Optional) The name of this training session. Default:
                 ``training``
         """
-
-        if userOptions.enableDistributedReplicatedGraphs:
-            from . import _popdist_backend_manager
-
-            _popdist_backend_manager.init(print_deprecation=True)
 
         if patterns is None:
             patterns = popart.Patterns()
