@@ -848,12 +848,11 @@ void Session::broadcastWeights(int rootRank) {
 
   for (auto &tensor : executable.getWeightTensors()) {
     auto future = std::async(std::launch::async, [&tensor, rootRank] {
-      popdist::collectives::parallel::broadcast(
-          tensor->tensorData()->data(),
-          tensor->info.nelms(),
-          popart::popx::popType(tensor->info),
-          tensor->id,
-          rootRank);
+      popdist::collectives::broadcast(tensor->tensorData()->data(),
+                                      tensor->info.nelms(),
+                                      popart::popx::popType(tensor->info),
+                                      rootRank,
+                                      tensor->id);
     });
     futures.emplace_back(std::move(future));
   }
