@@ -278,10 +278,6 @@ MultiCollectiveBaseOpx::getOutGrowPartId(Tensor *outTensor) const {
 }
 
 gcl::CommGroup toGclCommGroup(const popart::ReplicaGrouping &grouping) {
-  // TODO(T68176): Remove the if statement and its body below.
-  if (grouping.getNumGroups() == 1) {
-    return {gcl::CommGroupType::ALL, 0};
-  }
   return {gcl::CommGroupType::CONSECUTIVE,
           grouping.getGroupSize(),
           grouping.getStride()};
