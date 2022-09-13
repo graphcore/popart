@@ -82,14 +82,6 @@ BOOST_DATA_TEST_CASE(testGetReplicaGrouping,
   BOOST_CHECK_EQUAL(settings.getReplicaGrouping(8), expectedGrouping);
 }
 
-// TODO(T62390): Enable this test.
-BOOST_AUTO_TEST_CASE(testGetReplicaGroupingInvalid,
-                     *boost::unit_test::disabled()) {
-  const popart::VariableSettings settings{1, 8};
-
-  BOOST_CHECK_THROW(settings.getReplicaGrouping(4), popart::error);
-}
-
 struct TestGetSharedVariableDomainData {
   const popart::VariableSettings settings;
   const popart::CommGroup expectedCommGroup;
