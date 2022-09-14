@@ -14,8 +14,6 @@
 
 namespace popart {
 
-class VariableSettingsDomain;
-
 /**
  * Enum type that describes how to retrieve variables from
  * the replicas. Each replica is in a group defined by

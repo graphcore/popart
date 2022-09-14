@@ -12,7 +12,6 @@
 
 #include "popart/logging.hpp"
 #include "popart/replicagrouping.hpp"
-#include "variablesettingsdomain.hpp"
 
 namespace popart {
 
