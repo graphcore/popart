@@ -806,9 +806,7 @@ public:
   /**
    * Clone a graph.
    *
-   * .. warning::
-   *
-   *    Does not support cloning of the main graph.
+   * \warning Does not support cloning of the main graph.
    *
    * The OpIds and TensorIds will differ between the original and the cloned
    * graph. Hence a map between the old OpId and cloned OpId will be returned.

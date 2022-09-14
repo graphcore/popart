@@ -68,10 +68,8 @@ public:
   /**
    * Helper function for accessing the subgraph of the inner loop
    *
-   * .. warning::
-   *
-   *    Should only be used after the transform has been applied
-   *    (i.e. after call to apply() has been made).
+   * \warning Should only be used after the transform has been applied, this
+   *      means after call to apply() has been made.
    *
    * The inner loop depends on the values of \c accumulationFactor and
    * \c batchesPerStep.
@@ -83,9 +81,7 @@ public:
    * - The \c accumulationGraph if \c accumulationFactor > 1 and
    *   \c batchesPerStep > 1
    *
-   * .. note::
-   *
-   *    \c innerLoop and \c outerLoop are represented by the differnt graphs
+   * \note \c innerLoop and \c outerLoop are represented by the differnt graphs
    *    only when \c accumulationFactor > 1 and \c batchesPerStep > 1.
    *    In that case the \c outerLoop repeats the \c innerLoop
    *
@@ -98,10 +94,8 @@ public:
   /**
    * Helper function for accessing the subgraph of the outer loop
    *
-   * .. warning::
-   *
-   *    Should only be used after the transform has been applied
-   *    (i.e. after call to apply() has been made).
+   * \warning Should only be used after the transform has been applied, this
+   *     means after call to apply() has been made.
    *
    * The outer loop depends on the values of \c accumulationFactor and
    * \c batchesPerStep.
@@ -112,9 +106,7 @@ public:
    * - The \c stepGraph if \c accumulationFactor = 1 and \c batchesPerStep > 1
    * - The \c stepGraph if \c accumulationFactor > 1 and \c batchesPerStep > 1
    *
-   * .. note::
-   *
-   *    \c innerLoop and \c outerLoop are represented by the differnt graphs
+   * \note \c innerLoop and \c outerLoop are represented by the differnt graphs
    *    only when \c accumulationFactor > 1 and \c batchesPerStep > 1.
    *    In that case the \c outerLoop repeats the \c innerLoop
    *

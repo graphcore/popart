@@ -109,7 +109,7 @@ Data input and output (IStepIO)
 
 .. doxygenclass:: popart::WeightsIO
 
-.. doxygenstruct:: popart::IArrayAccessor
+.. doxygenstruct:: popart::StepIONS::IArrayAccessor
 
 .. code-block:: cpp
 
@@ -118,7 +118,7 @@ Data input and output (IStepIO)
 .. doxygenclass:: popart::StepIOGeneric
   :members:
 
-.. doxygenstruct:: popart::ArrayInfo
+.. doxygenstruct:: popart::StepIOGeneric::ArrayInfo
 
 .. code-block:: cpp
 
