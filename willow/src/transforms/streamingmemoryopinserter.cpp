@@ -1,4 +1,5 @@
 // Copyright (c) 2021 Graphcore Ltd. All rights reserved.
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <iterator>
@@ -1774,11 +1775,13 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(Tensor *tensor) {
   }
 
   // If there are no loads, no stores are required either
-  bool hasLoads = false;
-  for (auto &contextAndConfig : streamingMap) {
-    hasLoads |= contextAndConfig.second.load;
-  }
-  if (!hasLoads) {
+  auto noLoads = std::none_of(streamingMap.cbegin(),
+                              streamingMap.cend(),
+                              [](const auto &contextAndConfig) {
+                                return contextAndConfig.second.load;
+                              });
+
+  if (noLoads) {
     for (auto &contextAndConfig : streamingMap) {
       contextAndConfig.second.store = false;
     }
