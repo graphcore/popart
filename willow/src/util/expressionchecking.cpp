@@ -12,19 +12,24 @@
 namespace popart {
 namespace internal {
 
-FailedCheckThrower::FailedCheckThrower(const std::string prefix,
-                                       const std::string suffix)
+template <typename ErrorType>
+FailedCheckThrower<ErrorType>::FailedCheckThrower(const std::string prefix,
+                                                  const std::string suffix)
     : prefix_(prefix.c_str()), suffix_(suffix.c_str()) {}
 
-FailedCheckThrower::FailedCheckThrower(const char *prefix, const char *suffix)
+template <typename ErrorType>
+FailedCheckThrower<ErrorType>::FailedCheckThrower(const char *prefix,
+                                                  const char *suffix)
     : prefix_(prefix), suffix_(suffix) {}
 
-FailedCheckThrower::~FailedCheckThrower() noexcept(false) {
+template <typename ErrorType>
+FailedCheckThrower<ErrorType>::~FailedCheckThrower() noexcept(false) {
   const auto &message = buildErrorMessage();
-  throw popart::error(message);
+  throw ErrorType(message);
 }
 
-std::string FailedCheckThrower::buildErrorMessage() const {
+template <typename ErrorType>
+std::string FailedCheckThrower<ErrorType>::buildErrorMessage() const {
   const auto extra_message = extra_message_.str();
   std::vector<boost::string_view> message_components;
 
@@ -48,6 +53,9 @@ std::string FailedCheckThrower::buildErrorMessage() const {
 
   return message.str();
 }
+
+template class FailedCheckThrower<popart::error>;
+template class FailedCheckThrower<popart::internal_error>;
 
 } // namespace internal
 } // namespace popart

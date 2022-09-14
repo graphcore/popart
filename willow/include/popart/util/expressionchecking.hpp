@@ -47,7 +47,7 @@ public:
  * `FailedCheckThrower::extra_message_`, and `FailedCheckThrower::suffix_` in
  * that order.
  */
-class FailedCheckThrower {
+template <typename ErrorType> class FailedCheckThrower {
 private:
   std::stringstream extra_message_;
   const std::string prefix_;
@@ -92,9 +92,10 @@ POPART_DEFINE_EVALUATE_BINARY_EXPRESSION_IMPL(CheckNe, !=)
 
 // In debug mode, when a binary expression check fails, the file name and line
 // number of the check are prepended to the message.
-#define POPART_CHECK_BINARY_EXPRESSION(name, op, opposite_op, lhs, rhs)        \
+#define POPART_CHECK_BINARY_EXPRESSION(                                        \
+    name, op, opposite_op, lhs, rhs, error_type)                               \
   if (auto data____ = evaluate##name(lhs, rhs))                                \
-  ::popart::internal::FailedCheckThrower(                                      \
+  ::popart::internal::FailedCheckThrower<error_type>(                          \
       ::popart::logging::format("{}:{} Check {} {} {} has failed.",            \
                                 __FILE__,                                      \
                                 __LINE__,                                      \
@@ -106,40 +107,72 @@ POPART_DEFINE_EVALUATE_BINARY_EXPRESSION_IMPL(CheckNe, !=)
 
 // In debug mode, when a unary expression check fails, the file name and line
 // number of the check are prepended to the message.
-#define POPART_CHECK_UNARY_EXPRESSION(expr)                                    \
+#define POPART_CHECK_UNARY_EXPRESSION(expr, error_type)                        \
   if (!(expr))                                                                 \
-  ::popart::internal::FailedCheckThrower(                                      \
+  ::popart::internal::FailedCheckThrower<error_type>(                          \
       ::popart::logging::format(                                               \
           "{}:{} Check {} has failed.", __FILE__, __LINE__, #expr),            \
       "")
 #else
 
-#define POPART_CHECK_BINARY_EXPRESSION(name, op, opposite_op, lhs, rhs)        \
+#define POPART_CHECK_BINARY_EXPRESSION(                                        \
+    name, op, opposite_op, lhs, rhs, error_type)                               \
   if (auto data____ = evaluate##name(lhs, rhs))                                \
-  ::popart::internal::FailedCheckThrower(                                      \
+  ::popart::internal::FailedCheckThrower<error_type>(                          \
       ::popart::logging::format("Check {} {} {} has failed.", #lhs, op, #rhs), \
       ::popart::logging::format(                                               \
           "[{} {} {}]", data____.getLhs(), opposite_op, data____.getRhs()))
 
-#define POPART_CHECK_UNARY_EXPRESSION(expr)                                    \
+#define POPART_CHECK_UNARY_EXPRESSION(expr, error_type)                        \
   if (!(expr))                                                                 \
-  ::popart::internal::FailedCheckThrower(                                      \
+  ::popart::internal::FailedCheckThrower<error_type>(                          \
       ::popart::logging::format("Check {} has failed.", #expr), "")
 
 #endif // NDEBUG
 
+/**
+ * `POPART_CHECK...`s should be used when verifying expressions which could have
+ * failed because of a user error. A failure of this check will throw a
+ * `popart::error`.
+ */
 #define POPART_CHECK_EQ(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckEq, "==", "!=", lhs, rhs)
+  POPART_CHECK_BINARY_EXPRESSION(CheckEq, "==", "!=", lhs, rhs, ::popart::error)
 #define POPART_CHECK_GE(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckGe, ">=", "<", lhs, rhs)
+  POPART_CHECK_BINARY_EXPRESSION(CheckGe, ">=", "<", lhs, rhs, ::popart::error)
 #define POPART_CHECK_GT(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckGt, ">", "<=", lhs, rhs)
+  POPART_CHECK_BINARY_EXPRESSION(CheckGt, ">", "<=", lhs, rhs, ::popart::error)
 #define POPART_CHECK_LE(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckLe, "<=", ">", lhs, rhs)
+  POPART_CHECK_BINARY_EXPRESSION(CheckLe, "<=", ">", lhs, rhs, ::popart::error)
 #define POPART_CHECK_LT(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckLt, "<", ">=", lhs, rhs)
+  POPART_CHECK_BINARY_EXPRESSION(CheckLt, "<", ">=", lhs, rhs, ::popart::error)
 #define POPART_CHECK_NE(lhs, rhs)                                              \
-  POPART_CHECK_BINARY_EXPRESSION(CheckNe, "!=", "==", lhs, rhs)
-#define POPART_CHECK(expr) POPART_CHECK_UNARY_EXPRESSION(expr)
+  POPART_CHECK_BINARY_EXPRESSION(CheckNe, "!=", "==", lhs, rhs, ::popart::error)
+#define POPART_CHECK(expr) POPART_CHECK_UNARY_EXPRESSION(expr, ::popart::error)
+
+/**
+ * `POPART_ASSERT...`s should be used when verifying expressions which could
+ * have failed because of an internal bug. A failure of this check will throw a
+ * `popart::internal_error`.
+ */
+#define POPART_ASSERT_EQ(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckEq, "==", "!=", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT_GE(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckGe, ">=", "<", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT_GT(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckGt, ">", "<=", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT_LE(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckLe, "<=", ">", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT_LT(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckLt, "<", ">=", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT_NE(lhs, rhs)                                             \
+  POPART_CHECK_BINARY_EXPRESSION(                                              \
+      CheckNe, "!=", "==", lhs, rhs, ::popart::internal_error)
+#define POPART_ASSERT(expr)                                                    \
+  POPART_CHECK_UNARY_EXPRESSION(expr, ::popart::internal_error)
 
 #endif // POPART_WILLOW_INCLUDE_POPART_UTIL_EXPRESSIONCHECKING_HPP_

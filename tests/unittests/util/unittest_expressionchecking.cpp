@@ -137,3 +137,130 @@ BOOST_AUTO_TEST_CASE(test_popart_check_succeeds) {
 
   BOOST_CHECK_NO_THROW(POPART_CHECK(pointer == nullptr));
 }
+
+BOOST_AUTO_TEST_CASE(test_popart_assert_fails) {
+  std::string expected_message;
+  const unsigned zero     = 0;
+  const unsigned one      = 1;
+  const unsigned *pointer = &one;
+
+  auto errorMessageMatches =
+      [&expected_message](popart::internal_error const &error) {
+        return std::string(error.what()) == expected_message;
+      };
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check zero == one has failed. [0 != 1]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_EQ(zero, one), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check zero >= one has failed. [0 < 1]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_GE(zero, one), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check zero > one has failed. [0 <= 1]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_GT(zero, one), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check one <= zero has failed. [1 > 0]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_LE(one, zero), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check one < zero has failed. [1 >= 0]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_LT(one, zero), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check one != one has failed. [1 == 1]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_NE(one, one), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 2, "Check one != one has failed. [1 == 1]");
+  BOOST_CHECK_EXCEPTION(
+      POPART_ASSERT_NE(one, one), popart::internal_error, errorMessageMatches);
+
+  expected_message =
+      makeErrorMessage(__LINE__ + 3, "Check pointer == nullptr has failed.");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT(pointer == nullptr),
+                        popart::internal_error,
+                        errorMessageMatches);
+}
+
+BOOST_AUTO_TEST_CASE(test_popart_assert_fails_with_extra_message) {
+  std::string expected_message;
+  const unsigned zero     = 0;
+  const unsigned one      = 1;
+  const unsigned *pointer = &one;
+
+  auto errorMessageMatches =
+      [&expected_message](popart::internal_error const &error) {
+        return std::string(error.what()) == expected_message;
+      };
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check zero == one has failed. Uh-oh! [0 != 1]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_EQ(zero, one) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check zero >= one has failed. Uh-oh! [0 < 1]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_GE(zero, one) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check zero > one has failed. Uh-oh! [0 <= 1]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_GT(zero, one) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check one <= zero has failed. Uh-oh! [1 > 0]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_LE(one, zero) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check one < zero has failed. Uh-oh! [1 >= 0]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_LT(one, zero) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check one != one has failed. Uh-oh! [1 == 1]");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT_NE(one, one) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+
+  expected_message = makeErrorMessage(
+      __LINE__ + 3, "Check pointer == nullptr has failed. Uh-oh!");
+  BOOST_CHECK_EXCEPTION(POPART_ASSERT(pointer == nullptr) << "Uh-oh!",
+                        popart::internal_error,
+                        errorMessageMatches);
+}
+
+BOOST_AUTO_TEST_CASE(test_popart_assert_succeeds) {
+  const unsigned *pointer = nullptr;
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_EQ(1, 1));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_GE(1, 0));
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_GE(1, 1));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_GT(1, 0));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_LE(0, 1));
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_LE(1, 1));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_LT(0, 1));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT_NE(0, 1));
+
+  BOOST_CHECK_NO_THROW(POPART_ASSERT(pointer == nullptr));
+}
