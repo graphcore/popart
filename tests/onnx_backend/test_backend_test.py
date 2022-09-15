@@ -7,14 +7,11 @@ from __future__ import unicode_literals
 import popart
 
 import unittest
-import onnx.backend.base
-import onnx.backend.test
 
-from onnx.backend.base import Device, DeviceType
 from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 import onnx.shape_inference
 import onnx.version_converter
-from typing import Optional, Text, Any, Tuple, Sequence
+from typing import Optional, Text, Any, Tuple, Sequence, Type, Callable, List, Union
 from onnx import ModelProto, NodeProto
 import numpy  # type: ignore
 
@@ -30,15 +27,12 @@ import numpy  # type: ignore
 # fails when models are mal-formed.
 
 
-class Context:
-    def __init__(self, s, m):
-        self.session = s
-        self.model = m
+class PopArtBackendRep(onnx.backend.base.BackendRep):
+    def __init__(self, session: popart.InferenceSession, model: ModelProto) -> None:
+        self.session = session
+        self.model = model
 
-    def run(self, inputs):
-
-        # print(self.session)
-        # Create buffers to receive results from the execution
+    def run(self, inputs: Any, **kwargs: Any) -> Tuple[Any, ...]:
         anchors = self.session.initAnchorArrays()
 
         inputmap = {}
@@ -95,7 +89,7 @@ class IpuBackend(onnx.backend.base.Backend):
 
         session.prepareDevice()
 
-        context = Context(session, model)
+        context = PopArtBackendRep(session, model)
 
         return context
 
@@ -118,13 +112,32 @@ class IpuBackend(onnx.backend.base.Backend):
 
     @classmethod
     def supports_device(cls, device):  # type: (Text) -> bool
-        d = Device(device)
-        if hasattr(DeviceType, "IPU") and d.type == DeviceType.IPU:
-            return True
-        return False
+        # The `PopArtRunner` class below extends `onnx.backend.test.runner.Runner` to
+        # only add `IPU` device tests.
+        assert device == "IPU"
+        return True
 
 
-backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
+class PopArtRunner(onnx.backend.test.runner.Runner):
+    def __init__(
+        self,
+        backend: Type[onnx.backend.base.Backend],
+        parent_module: Optional[str] = None,
+    ) -> None:
+        super().__init__(backend, parent_module)
+
+    def _add_test(
+        self,
+        category: Text,
+        test_name: Text,
+        test_func: Callable[..., Any],
+        report_item: List[Optional[Union[ModelProto, NodeProto]]],
+    ) -> None:
+        return super()._add_test(category, test_name, test_func, report_item, ("IPU",))
+
+
+backend_test = PopArtRunner(IpuBackend, __name__)
+
 
 # Operations we do not support
 backend_test.exclude("test_compress")
