@@ -32,7 +32,6 @@ FloorOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 FloorOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::FloorInplace, 10}};
 }
 

@@ -34,7 +34,6 @@ std::vector<std::unique_ptr<Op>> ThresholdedReluOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ThresholdedReluOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::ThresholdedReluInplace, 10}};
 }
 

@@ -1656,9 +1656,6 @@ void StreamingMemoryOpInserter::getTensorStreamingConfig(Tensor *tensor) {
   getTensorProducerStreamingConfig(
       tensor, location, tensorConfig.producerOp, streamingMap);
 
-  // TODO T25043: The remaining code in this function is non-trivial and would
-  // benefit from unit testing.
-
   // Set load, store and gather for each relevant streaming context
 
   // We first set load/store, assuming we are loading/storing

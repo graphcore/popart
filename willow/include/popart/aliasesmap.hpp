@@ -14,9 +14,9 @@ class Op;
 /**
  * This class manages a mapping from Graphs to Aliases.
  *
- * NOTE: This is a placeholder class introduced in T40051 and due to be removed
- * again in T39612. Due to the temporary nature of the class it is slightly
- * light on documentation and testing.
+ * TODO T39612 Remove this placeholder class introduced in T40051.
+ * Due to the temporary nature of the class it is slightly light on
+ * documentation and testing.
  **/
 class AliasesMap {
 public:

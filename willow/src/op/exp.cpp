@@ -20,7 +20,6 @@ namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ExpOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::ExpInplace, 10}};
 }
 

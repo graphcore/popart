@@ -167,8 +167,6 @@ void ConstExprOpManager::registerConstOp(const std::string &type) {
   });
 }
 
-// TODO: T17818 Const ops expr should be able to be created from their inplace
-// variants.
 void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprAdd>("Add");
   registerConstOp<ConstExprMul>("Mul");

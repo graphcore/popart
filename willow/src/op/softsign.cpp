@@ -31,7 +31,6 @@ std::vector<std::unique_ptr<Op>> SoftSignOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SoftSignOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SoftSignInplace, 10}};
 }
 

@@ -156,8 +156,7 @@ def test_global_partials():
         _check_for_matmul_partials(session, ["float"], ["half"])
 
 
-# check the summary report to see which conv partials are being used
-# TODO
+# TODO check the summary report to see which conv partials are being used
 @tu.requires_ipu_model
 def _check_for_matmul_partials(sess, includes, excludes):
     sr = sess._session.getSummaryReport()

@@ -367,7 +367,6 @@ SliceOp::inplacePriorityDefault() const {
     return {};
   }
 
-  // see T6768: choosing default priorities
   return {{Onnx::CustomOperators::SliceInplace, 10.0f}};
 }
 

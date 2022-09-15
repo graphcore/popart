@@ -39,7 +39,6 @@ public:
   // note that this is not final, ExpandInplaceOp overrides it
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const override {
-    // see T6768: choosing default priorities
     return {{Onnx::CustomOperators::ExpandInplace, 10.0f}};
   }
 

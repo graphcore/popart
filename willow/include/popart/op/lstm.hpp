@@ -71,7 +71,6 @@ public:
   // also they are set to 0 if not provided by user
   static OutIndex getBiasesPassThroughIndex() { return 8; }
 
-  // T7504
   bool isOutlineable() const override { return false; }
 
   int getInBatchAxis(InIndex) const override;

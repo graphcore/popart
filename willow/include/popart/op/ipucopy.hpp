@@ -50,7 +50,7 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   // T9357: Phased execution needs this set to true.
-  // T13645: Investigate if this can be problematic.
+  // TODO T13645: Investigate if this can be problematic.
   // Should be session option.
   bool isOutlineable() const override;
 

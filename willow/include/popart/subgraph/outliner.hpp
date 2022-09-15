@@ -31,7 +31,7 @@ enum class OutlinerAlgorithm {
   ALGO0,
 
   // Top-down
-  // Get all internal nodes of the suffix tree (construced in O(N) time with
+  // Get all internal nodes of the suffix tree (constructed in O(N) time with
   // Ukkonen's algorithm) and put them in a priority queue. While the queue
   // is not empty: take most valuable Match and if it is {not isomorphic,
   // overlapping, crosses with already accepted} then spawn smaller Matches from

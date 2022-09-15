@@ -75,7 +75,7 @@ private:
   std::map<TensorId, TensorInfo> infos;
   // we will also have a map of actual tensors, these
   // can be used sometimes to compile the Graph (slice
-  // indices for example) (TODO T5252)
+  // indices for example) (TODO T5284)
 };
 
 } // namespace popart

@@ -242,7 +242,6 @@ std::unique_ptr<Op> PadInplaceOp::clone() const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 BasePadOutplaceOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::PadInplace, 1.0}};
 }
 

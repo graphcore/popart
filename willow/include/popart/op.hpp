@@ -313,7 +313,7 @@ public:
     OptionalTensorLocation tensorLocation;
 
     // optional inplace priorities, to take precedence over the default
-    // priorities. A negative priority gurarantees no inplacing
+    // priorities. A negative priority guarantees no inplacing
     // This should really be a map with "OperatorIdentifier" keys, see T6783
     std::vector<std::tuple<std::string, float>> inplacePriorityVeto;
 

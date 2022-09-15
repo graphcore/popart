@@ -19,7 +19,6 @@ class Op;
 namespace popx {
 class Devicex;
 
-// Refactor needed, see T7199
 class MaxOpx : public PopOpx {
 public:
   MaxOpx(Op *, Devicex *);

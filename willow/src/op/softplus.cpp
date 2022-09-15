@@ -31,7 +31,6 @@ std::vector<std::unique_ptr<Op>> SoftPlusOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SoftPlusOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SoftPlusInplace, 10}};
 }
 

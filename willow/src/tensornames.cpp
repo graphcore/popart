@@ -45,7 +45,6 @@ TensorId bwdNonGradIdToFwdId(const Graph &fwdGraph,
 TensorId getGradId(const TensorId &id) { return reservedGradientPrefix() + id; }
 
 TensorId getNonGradId(const TensorId &id) {
-  // TODO : constexpr the size of this string T8265
   return id.substr(std::string(reservedGradientPrefix()).size());
 }
 

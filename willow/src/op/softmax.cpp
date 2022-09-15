@@ -45,7 +45,6 @@ std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SoftmaxOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SoftmaxInplace, 10}};
 }
 

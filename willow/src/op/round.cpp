@@ -32,7 +32,6 @@ RoundOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 RoundOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::RoundInplace, 10}};
 }
 

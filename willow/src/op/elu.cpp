@@ -34,7 +34,6 @@ std::vector<std::unique_ptr<Op>> EluOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 EluOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::EluInplace, 10}};
 }
 

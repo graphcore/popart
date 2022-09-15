@@ -174,7 +174,7 @@ bool DecomposeSum::apply(Graph &graph) const {
 
     // Note: The priorities array was created in order of
     // `sumOp->input->tensors()`, which is deterministic; and `stable_sort`
-    // is determinstic; so the resulting `partialsSumOrder` will be
+    // is deterministic; so the resulting `partialsSumOrder` will be
     // deterministic.
     std::stable_sort(inputMergePriorities.begin(), inputMergePriorities.end());
 
@@ -374,12 +374,12 @@ TensorMergePriority TensorMergePriority::of(Tensor *t,
         previously decomposed grad sum, then the relative ordering of their
         earliest possible schedule indices are unchanged.
 
-  (1) holds because we are only decomposing grad sums contructed in the backward
-  pass due to splits in the network in the forward pass. If we were decomposing
-  any sum op, the current implementation would not be optimal. More information,
-  includng a proof of (1) for grad sums only is given in [comment:proof-1]. Some
-  discussion on generalising this transform to all sums is given in
-  [comment:all-sums]
+  (1) holds because we are only decomposing grad sums constructed in the
+  backward pass due to splits in the network in the forward pass. If we were
+  decomposing any sum op, the current implementation would not be optimal. More
+  information, including a proof of (1) for grad sums only is given in
+  [comment:proof-1]. Some discussion on generalising this transform to all sums
+  is given in [comment:all-sums]
 
   A proof of (2) is given in [comment:proof-2].
 
@@ -428,7 +428,7 @@ TensorMergePriority TensorMergePriority::of(Tensor *t,
   that have been constructed as "grad sums" as part of the backward pass, not
   any arbitrary sum that might have been constructed by the user. See
   `getDecomposableSumOps` for the exact definition of what sum ops are
-  eligble for decomposition.
+  eligible for decomposition.
 
   What is it in the forward pass that causes grad sums to be constructed in the
   backwards pass? The answer is a split-merge:
@@ -450,7 +450,7 @@ TensorMergePriority TensorMergePriority::of(Tensor *t,
   of a decomposed grad sum will never be the input to another grad sum.
 
   In order to have a grad sum going into another grad sum; that is, a nested
-  sum; we must have a nested split-merge in the forwad pass. An example is
+  sum; we must have a nested split-merge in the forward pass. An example is
   given below (showing only the tensors in the network):
 
     t0 -> t1 -> t2 -> t3 ---
@@ -677,7 +677,7 @@ TensorMergePriority TensorMergePriority::of(Tensor *t,
   scheduler. Therefore, we must attempt to minimise sum-liveness ourselves.
 
   Our heuristic is based off the following intuition: whatever tensor was
-  allocated first should be deallocated first, as this minmises the time these
+  allocated first should be deallocated first, as this minimises the time these
   tensors are live, reducing sum-liveness.
 
   How can we know in a transform in what order the scheduler will choose to

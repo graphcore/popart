@@ -9,8 +9,7 @@
 
 namespace popart {
 namespace popx {
-// --- TODO ---
-// THIS WHOLE FILE WILL BE REMOVED ONCE T5614 is done.
+// TODO REMOVE THIS WHOLE FILE POST T5614
 // We need the convolution options which are passed around to implement
 // operand< in order for them to be used as a key for graph caching, however
 // current poplar::OptionFlags does not do that, so we use our own structure

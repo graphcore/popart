@@ -35,7 +35,6 @@ std::vector<std::unique_ptr<Op>> SeluOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SeluOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SeluInplace, 10}};
 }
 

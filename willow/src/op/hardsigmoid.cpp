@@ -35,7 +35,6 @@ std::vector<std::unique_ptr<Op>> HardSigmoidOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 HardSigmoidOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::HardSigmoidInplace, 10}};
 }
 

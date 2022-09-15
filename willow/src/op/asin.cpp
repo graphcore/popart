@@ -17,7 +17,6 @@ namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 AsinOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::AsinInplace, 10}};
 }
 

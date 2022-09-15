@@ -122,8 +122,8 @@ BOOST_AUTO_TEST_CASE(TestLoopAccumulation) {
   //    we want to stream back to host.
   //  - Must anchor the HostStore'd tensor as the poplar streams will be created
   //    for the (remapped) anchor tensors, and HostStorex will use this stream.
-  //  - TODO(T39576): Remove need to set AnchorReturnType. They implictly
-  //    specify how/when to stream a tensor back to host, but we have explictly
+  //  - TODO(T49662): Remove need to set AnchorReturnType. They implicitly
+  //    specify how/when to stream a tensor back to host, but we have explicitly
   //    described how to do this using HostStores. Currently, we set All as this
   //    ensures the tensor is unconditionally streamed when we want it to be,
   //    and because it is the only one actually implemented.

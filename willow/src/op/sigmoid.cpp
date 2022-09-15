@@ -20,7 +20,6 @@ namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SigmoidOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SigmoidInplace, 10}};
 }
 

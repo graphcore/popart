@@ -430,8 +430,6 @@ void LSTMGradOpx::grow(snap::program::Sequence &prog) const {
   auto output_c_grad = getCellStateGrad();
   auto output_h_grad = getHiddenStateGrad();
 
-  // TODO find out what this is for
-  // it's done in tensorflow and enigma
   auto output_grad_copy = cloneNcopy(prog, snap::Tensor{output_grad, graph()});
   snap::popops::addInPlace(graph(),
                            output_grad_copy[output_grad_copy.dim(0) - 1],

@@ -127,7 +127,6 @@ int64_t ConcatOp::getAxis() const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ConcatOp::inplacePriorityDefault() const {
-  // see T6768: choosing default priorities
   return {{Onnx::CustomOperators::ConcatInplace, 10.0f}};
 }
 

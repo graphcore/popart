@@ -57,7 +57,7 @@ void OnnxConstExprUtil::processConstantNode(
   // Constant Operator output and initializer in ONNX models (T6213)
 
   // Check for the `sparse_value` attribute.
-  // `sparse_value` was introduces in opset 11 and is not curently supported.
+  // `sparse_value` was introduces in opset 11 and is not currently supported.
   for (auto &attr : node.attribute()) {
     if (attr.name() == "sparse_value") {
       throw error("The Constant op attribute 'sparse_value' is not supported.");

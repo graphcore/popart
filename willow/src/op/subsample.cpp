@@ -35,8 +35,6 @@ SubsampleOp::mapInplaceProposal(const AliasModel &aliasModel,
   return mapInplaceProposalGate0(aliasModel, id);
 }
 
-// T9392: There is code duplication across the view changing ops
-
 view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex,
                                         OutIndex outIndex) const {
   if (inIndex != 0 || outIndex != 0) {

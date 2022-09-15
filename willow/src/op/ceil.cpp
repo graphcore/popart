@@ -23,7 +23,6 @@ std::unique_ptr<Op> CeilOp::clone() const {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 CeilOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::CeilInplace, 10}};
 }
 

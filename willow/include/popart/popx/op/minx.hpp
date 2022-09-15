@@ -19,7 +19,6 @@ class Op;
 namespace popx {
 class Devicex;
 
-// Refactor needed, see T7199
 class MinOpx : public PopOpx {
 public:
   MinOpx(Op *, Devicex *);

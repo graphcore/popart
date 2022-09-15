@@ -30,7 +30,6 @@ std::vector<std::unique_ptr<Op>> SwishOp::getGradOps() {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SwishOp::inplacePriorityDefault() const {
-  // see T6768: choosing default inplace priorities
   return {{Onnx::CustomOperators::SwishInplace, 10}};
 }
 
@@ -47,8 +46,8 @@ SwishInplaceOp::SwishInplaceOp(const SwishOp &op)
                                 op.getSettings()) {}
 
 SwishInplaceOp::SwishInplaceOp(const Op::Settings &settings)
-    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SwishInplace,
-                                settings) {}
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SwishInplace, settings) {
+}
 
 std::unique_ptr<Op> SwishInplaceOp::clone() const {
   return std::make_unique<SwishInplaceOp>(*this);
