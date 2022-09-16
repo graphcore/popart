@@ -78,6 +78,8 @@ def is_gcd_size(size):
     reason="mpi4py needs to be installed. Test can only be run on a IPU pod",
 )
 def test_distributed_replicated_allreduce():
+    popdist.init()
+
     mpi_params = get_mpi_params()
     _, mpi_rank = mpi_params
 
@@ -159,6 +161,8 @@ def test_distributed_replicated_weight_update():
             "D": D,
         }
         return result
+
+    popdist.init()
 
     mpi_params = get_mpi_params()
     _, mpi_rank = mpi_params
@@ -268,6 +272,8 @@ def test_distributed_hierarchical_replicated_weight_update():
             "D": D,
         }
         return result
+
+    popdist.init()
 
     mpi_params = get_mpi_params()
     _, mpi_rank = mpi_params
@@ -448,6 +454,10 @@ def replicated_tensor_sharding_core():
         )
     if args.optim == "SGD":
         optimizer = popart.ConstSGD(0.01)
+
+    # If multi-instance, init the popdist backend.
+    if opts.enableDistributedReplicatedGraphs:
+        popdist.init()
 
     session = popart.TrainingSession(
         fnModel=proto,

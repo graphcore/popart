@@ -17,6 +17,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <popdist/collectives.hpp>
 #include <poplar/ArrayRef.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/HostFunctionCallback.hpp>
@@ -293,89 +294,122 @@ void Devicex::remoteBufferWeightsToHost() {
                               initId,
                               tensor->tensorType());
       // Collect information
-      auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
-      auto &data            = d2hWeightBuffers[initId];
-      char *data0           = data.data();
-      const auto data0Size  = data.size() * sizeof(data[0]);
-      auto elemSize =
+      const auto remoteBufferInfo =
+          tensor->tensorLocationInfo.getRemoteBufferInfo();
+      auto &data           = d2hWeightBuffers[initId];
+      char *data0          = data.data();
+      const auto data0Size = data.size() * sizeof(data[0]);
+      const auto elemSize =
           static_cast<int64_t>(tensor->info.getDataTypeInfo()->nbytes());
-      unsigned nelms = tensor->info.nelms();
+      const unsigned nelms = tensor->info.nelms();
 
-      // Note: Explicitly using instance replication factor as grouping/rts is
-      // not supported across instances
-      unsigned instanceReplicas = getReplicationFactor();
-      unsigned groups =
-          tensor->getVariableSettings().getGroupCount(instanceReplicas);
-      // Number of replicas in each variable group for the current instance
-      unsigned realGroupSize =
-          tensor->getVariableSettings().getRealGroupSize(instanceReplicas);
-      // The delta between a member of a group and the next replica in the same
-      // group.
-      unsigned groupIncrement =
-          tensor->getVariableSettings().getStride(instanceReplicas);
+      const unsigned instanceReplicas    = getReplicationFactor();
+      const unsigned globalReplicas      = getGlobalReplicationFactor();
+      const unsigned globalReplicaOffset = getGlobalReplicaOffset();
+
+      const auto grouping =
+          tensor->getVariableSettings().getReplicaGrouping(globalReplicas);
+
+      const unsigned numGroups     = grouping.getNumGroups();
+      const unsigned realGroupSize = grouping.getGroupSize();
+
       // Get the number of replicas that return their copy of this variable
-      unsigned returned =
+      const unsigned returned =
           tensor->getVariableSettings().numReplicasReturningVariable(
-              instanceReplicas);
+              globalReplicas);
       // How many instances each group returns.
-      unsigned returnedPerGroup = returned / groups;
+      POPART_ASSERT_EQ(returned % numGroups, 0);
+      const unsigned returnedPerGroup = returned / numGroups;
+
+      const auto retrievalMode =
+          tensor->getVariableSettings().getRetrievalMode();
 
       // Lamba expression that does the reading op automatically
-      auto copyFromRemoteBuffer = [&](char *to, unsigned replica_id) {
+      auto copyFromRemoteBuffer = [&](char *to, unsigned replicaId) {
         pEngine->copyFromRemoteBuffer(
             lowering().getExchangeBundle().getRemoteBufferName(
                 remoteBufferInfo.first),
             to,
             static_cast<int>(remoteBufferInfo.second),
-            replica_id);
+            replicaId);
       };
 
-      // Every group always returns at least one instance
-      // Iterate over groups, manage return of instances.
-      for (unsigned group = 0; group < groups; group++) {
+      if (tensor->tensorLocationInfo.isSharded()) {
+        /*
+        Iterate over each group, create a buffer to copy the cbr-padded shards
+        from the replicas into, then `cbr.undoRearrangeForCollective` that
+        buffer into data0.
 
-        // Defines the group by the first member and the increment between
-        // groups. This is the replica_id of the replica in this group
-        // with the lowest replica_id.
-        unsigned group_main =
-            tensor->getVariableSettings().getGroupRepresentative(group);
+        If multi-instance, when we hit a group member not on this instance,
+        we simply skip the copyFromRemoteBuffer, which leaves the data for that
+        shard at 0. Later, we perform a Sum-AllReduce across instances,
+        resulting in the full data for the group residing on each instance.
 
-        // Sharded v. Simply Remote
-        if (tensor->tensorLocationInfo.isSharded()) {
-          // Replicated weight sharding, each replica holds parts of the weight
+        Note, like in the code for the unsharded case, we could reduce the
+        iteration space by iterating over only the local replicas, instead of
+        all the replicas and skipping if that replica is not on this instance.
+        This is also arguably cleaner.
+        However, rather than making a temporary cbr-padded buffer for only one
+        group at a time, we would have to hold a single large buffer for all
+        groups, copy from each local replica into the relevant index, then do
+        the AllReduce. Though this results in less iterating, it requires
+        `groups` times more memory to be live at once. We choose to go with the
+        more memory-efficient route, as memory is quite likely to be a problem
+        for large models, and iterating over all the replicas is likely barely
+        a noticable overhead.
+       */
+        for (unsigned group = 0; group < numGroups; group++) {
+          // Replicated weight sharding, each replica holds parts of the
+          // weight
           const auto &cbr =
               executable_.getCollectiveBalancedHostRearrangement(tensor->id);
 
-          auto cbr_nelms = cbr.getNumRearrangedTensorElems();
-          auto cbr_size  = cbr.getReplicationFactor();
+          auto cbrNelms = cbr.getNumRearrangedTensorElems();
+          auto cbrSize  = cbr.getReplicationFactor();
+          // Throw internal_error because this should have been checked higher
+          // up the stack.
+          POPART_ASSERT_EQ(realGroupSize % cbrSize, 0);
 
           // Temporary buffer that can hold the padded weight shards
           // from all replicas in this group.
-          std::vector<char> tmp(cbr_nelms * elemSize);
+          std::vector<char> tmp(cbrNelms * elemSize);
 
-          // Iterate over group members, collect the Tensor's shards
-          for (unsigned group_member = 0; group_member < cbr_size;
-               group_member++) {
-            unsigned replica_id = group_main + (group_member * groupIncrement);
-            unsigned addr = group_member * cbr_nelms * elemSize / cbr_size;
-            copyFromRemoteBuffer(&tmp[addr], replica_id);
+          // Iterate over group members, collect the Tensor's shards.
+          // When cbr_size < realGroupSize, we only collect shards from the
+          // first cbr_size members.
+          for (unsigned groupMember = 0; groupMember < cbrSize; groupMember++) {
+            const unsigned globalReplicaId =
+                grouping.getReplicaAt(group, groupMember);
+            const int localReplicaId = globalReplicaId - globalReplicaOffset;
+            if (globalReplicaOffset <= globalReplicaId &&
+                globalReplicaId < globalReplicaOffset + instanceReplicas) {
+              const unsigned shardNelms = cbrNelms / cbrSize;
+              const unsigned addr       = groupMember * shardNelms * elemSize;
+              copyFromRemoteBuffer(&tmp[addr], localReplicaId);
+            }
           }
 
           // Calculate the address in the output buffer we want to write to.
+          // If OnePerGroup, then data0 (the d2hWeightBuffers entry for this
+          // weight) will have one entry per group.
+          // If AllReplicas, then data0 will have one entry per replica. We
+          // copy the data into the firstInGroup's index (then later copy this
+          // to the indices of the other replicas in the group).
           unsigned address;
-          if (returned == groups) {
+          if (returned == numGroups) {
             address = group * nelms * elemSize;
-          } else if (returned == instanceReplicas) {
-            address = group_main * nelms * elemSize;
+          } else if (returned == globalReplicas) {
+            const unsigned firstInGroup = grouping.getReplicaAt(group);
+            address                     = firstInGroup * nelms * elemSize;
           } else {
             throw internal_error(
                 "Attempting to return an unsuported number of "
                 "weight replicas: Returned (r) = {}, Groups (G)"
-                " = {}, Replication Factor (R) = {}. r != G && "
+                " = {}, Global replication Factor (R) = {}. r != G && "
                 "r != R",
                 returned,
-                groups,
-                instanceReplicas);
+                numGroups,
+                globalReplicas);
           }
 
           cbr.undoRearrangeForCollective(&tmp[0],
@@ -387,35 +421,94 @@ void Devicex::remoteBufferWeightsToHost() {
           // Copy the contents of the collection to the space of the other
           // replicas. This means their collection is synthesized and will
           // always be the same.
-          for (unsigned group_member = 1; group_member < returnedPerGroup;
-               group_member++) {
-            unsigned replica_id = group_main + (group_member * groupIncrement);
-            unsigned repl_address = replica_id * nelms * elemSize;
-            unsigned elements     = elemSize * nelms;
-            memcpy(&data0[repl_address], &data0[address], elements);
+          // Note, if returning only OnePerGroup, this loop will never run.
+          for (unsigned groupMember = 1; groupMember < returnedPerGroup;
+               groupMember++) {
+            const unsigned replicaId =
+                grouping.getReplicaAt(group, groupMember);
+            const unsigned replicaAddr = replicaId * nelms * elemSize;
+            const unsigned elements    = elemSize * nelms;
+            memcpy(&data0[replicaAddr], &data0[address], elements);
           }
-        } else {
-          // Seperate Functionality for non-RTS.
 
-          if (tensor->getVariableSettings().getRetrievalMode() ==
-              VariableRetrievalMode::AllReplicas) {
-            // If returning all replica instances, iterate over replicas and
-            // fetch
-            for (unsigned group_member = 0; group_member < returnedPerGroup;
-                 group_member++) {
-              unsigned replica_id =
-                  group_main + (group_member * groupIncrement);
-              unsigned long index =
-                  (replica_id / (realGroupSize / returnedPerGroup)) * nelms *
-                  elemSize;
-              copyFromRemoteBuffer(&data0[index], replica_id);
-            }
-          } else {
-            // If only returning one per group, simply return from the
-            // group-main.
-            auto index = group * (d2hWeightBuffers[initId].size() / groups);
-            copyFromRemoteBuffer(&data0[index], group_main);
+          // If multi-instance, we later do an AllReduce on data0 to reconstruct
+          // the full tensor. Recall, within each entry in data0, there will be
+          // missing data (set to 0) from the shards not on this instance.
+        }
+      } else {
+        switch (retrievalMode) {
+        case VariableRetrievalMode::AllReplicas:
+          for (unsigned localReplicaId = 0; localReplicaId < instanceReplicas;
+               localReplicaId++) {
+            const auto globalReplicaId = localReplicaId + globalReplicaOffset;
+            const unsigned long index  = globalReplicaId * nelms * elemSize;
+            copyFromRemoteBuffer(&data0[index], localReplicaId);
           }
+
+          // We have filled in the indices of data0 covered by the replicas of
+          // this instance. Later, we will AllGather data0 with the other
+          // instances to get the remaining data.
+          break;
+        case VariableRetrievalMode::OnePerGroup:
+          for (unsigned localReplicaId = 0; localReplicaId < instanceReplicas;
+               localReplicaId++) {
+            const auto globalReplicaId = localReplicaId + globalReplicaOffset;
+            const auto group           = grouping.getGroupAt(globalReplicaId);
+
+            // Copy if this replica is the first in its group.
+            if (grouping.getIndexInGroupAt(globalReplicaId) == 0) {
+              const unsigned long index = group * nelms * elemSize;
+              copyFromRemoteBuffer(&data0[index], localReplicaId);
+            }
+            // Else, memory should already be zero-d.
+          }
+
+          // If multi-instance:
+          // For each group, the instances on which the first replica in the
+          // group does not reside will all have 0 in the data0 entry for that
+          // group. The instance on which the first replica in the group does
+          // reside will have the actual value for that group. Thus, we can
+          // collect the value of each group _on all instances_ by doing a sum
+          // AllReduce on data0 across instances. This is more memory-efficient
+          // than doing an AllGather + slice, with the same comms overhead. This
+          // is done later in this function.
+          break;
+        default:
+          throw internal_error("[Devicex::remoteBufferWeightsToHost] "
+                               "Unsupported VariableRetrievalMode with int "
+                               "value {}",
+                               static_cast<int>(retrievalMode));
+        }
+      }
+
+      // The cases are (OnePerGroup, AllReplicas) x (sharded, unsharded).
+      // The above logic throughout the function explains what has happened to
+      // data0 so far in each case, and what is further required here to handle
+      // multiple instances.
+      if (distributedReplicatedGraphsEnabled()) {
+        if (retrievalMode == VariableRetrievalMode::OnePerGroup) {
+          // OnePerGroup, sharded or unsharded
+          // Note in OnePerGroup, data0 has numGroups entries.
+          popdist::collectives::allReduceSum(
+              data0, numGroups * nelms, popType(tensor->info));
+        } else if (tensor->tensorLocationInfo.isSharded()) {
+          // AllReplicas, sharded
+          // Note in AllReplicas, data0 has globalReplicas entries.
+          popdist::collectives::allReduceSum(
+              data0, globalReplicas * nelms, popType(tensor->info));
+
+          // TODO(T69345): AllGather then, per group: Reduce_Local then memcpy
+        } else {
+          // AllReplicas, unsharded
+          // Note in AllReplicas, data0 has globalReplicas entries, and we are
+          // gathering instanceReplicas entries from each instance.
+          popdist::collectives::allGather(nullptr,
+                                          data0,
+                                          instanceReplicas * nelms,
+                                          popType(tensor->info),
+                                          popdist::defaultCommunicatorId(),
+                                          true // inplace
+          );
         }
       }
     }
@@ -485,7 +578,7 @@ void Devicex::d2hWeightBuffersToTensors(const std::vector<Tensor *> &tensors) {
   std::transform(tensors.begin(),
                  tensors.end(),
                  std::inserter(Wdata, Wdata.end()),
-                 [replicas = getReplicationFactor()](Tensor *t) {
+                 [replicas = getGlobalReplicationFactor()](Tensor *t) {
                    MutableVoidData tData;
                    tData.data     = t->tensorData()->data();
                    auto hostShape = t->getVariableSettings().shapeOnHost(
@@ -601,63 +694,64 @@ void Devicex::remoteBufferWeightsFromHost() {
     const auto &initId = tensor->id;
     if (tensor->tensorLocationInfo.isRemote()) {
       logging::devicex::debug("remoteBufferWeightsFromHost: {}", initId);
-      auto remoteBufferInfo = tensor->tensorLocationInfo.getRemoteBufferInfo();
-      char *data0           = static_cast<char *>(tensor->tensorData()->data());
-      const auto data0Size  = tensor->tensorData()->size();
+      const auto remoteBufferInfo =
+          tensor->tensorLocationInfo.getRemoteBufferInfo();
+      char *data0          = static_cast<char *>(tensor->tensorData()->data());
+      const auto data0Size = tensor->tensorData()->size();
 
       // Various values used throughout the function
-      auto elemSize  = tensor->info.getDataTypeInfo()->nbytes();
-      unsigned nelms = tensor->info.nelms();
+      const auto elemSize  = tensor->info.getDataTypeInfo()->nbytes();
+      const unsigned nelms = tensor->info.nelms();
 
-      // Note: Explicitly using instance replication factor as grouping/rts is
-      // not supported across instances
-      unsigned instanceReplicas = getReplicationFactor();
-      unsigned groups =
-          tensor->getVariableSettings().getGroupCount(instanceReplicas);
-      // Number of replicas in each variable group for the current instance
-      unsigned realGroupSize =
-          tensor->getVariableSettings().getRealGroupSize(instanceReplicas);
-      // The delta between a member of a group and the next replica in the same
-      // group.
-      unsigned groupIncrement =
-          tensor->getVariableSettings().getStride(instanceReplicas);
+      const unsigned instanceReplicas    = getReplicationFactor();
+      const unsigned globalReplicas      = getGlobalReplicationFactor();
+      const unsigned globalReplicaOffset = getGlobalReplicaOffset();
+
+      const auto grouping =
+          tensor->getVariableSettings().getReplicaGrouping(globalReplicas);
+
+      const unsigned numGroups     = grouping.getNumGroups();
+      const unsigned realGroupSize = grouping.getGroupSize();
 
       // Lamba expression that does the writing op automatically
-      auto copyToRemoteBuffer = [this, remoteBufferInfo](char *from,
-                                                         unsigned replica_id) {
-        pEngine->copyToRemoteBuffer(
-            from,
-            lowering().getExchangeBundle().getRemoteBufferName(
-                remoteBufferInfo.first),
-            static_cast<int>(remoteBufferInfo.second),
-            replica_id);
-      };
+      const auto copyToRemoteBuffer =
+          [this, remoteBufferInfo](char *from, const unsigned replicaId) {
+            pEngine->copyToRemoteBuffer(
+                from,
+                lowering().getExchangeBundle().getRemoteBufferName(
+                    remoteBufferInfo.first),
+                static_cast<int>(remoteBufferInfo.second),
+                replicaId);
+          };
 
-      // Iterate over groups
-      for (unsigned group = 0; group < groups; group++) {
+      if (tensor->tensorLocationInfo.isSharded()) {
+        // Replicated weight sharding, each replica holds parts of the weight
+        const auto &cbr =
+            executable_.getCollectiveBalancedHostRearrangement(initId);
 
-        // Defines the group by the first member and the increment between
-        // groups. This is the replica_id of the replica in this group
-        // with the lowest replica_id.
-        unsigned group_main =
-            tensor->getVariableSettings().getGroupRepresentative(group);
+        const auto cbrNelms        = cbr.getNumRearrangedTensorElems();
+        const auto shardDomainSize = cbr.getReplicationFactor();
 
-        // Sharded v. Simply Remote
-        if (tensor->tensorLocationInfo.isSharded()) {
-          // Replicated weight sharding, each replica holds parts of the weight
-          const auto &cbr =
-              executable_.getCollectiveBalancedHostRearrangement(initId);
+        // If sharded, iterate over each group; create a temporary buffer for
+        // the cbr-padded value of the group; cbr-rearrange the group data into
+        // into this buffer, then copy the relevant shard into the remote buffer
+        // of each group member. If running with multiple instances, whenever we
+        // hit a replica not on this instance, we skip the copy.
+        //
+        // We could alternatively iterate only over the local replicas, but we
+        // would have to cbr-rearrange the data for that replica's group into
+        // the temporary buffer every single time, or hold buffer(s) containing
+        // the cbr-rearranged data of all groups at once. These are both
+        // prohibitive due to the sizes of these buffers, therefore we choose to
+        // simply iterate over a larger space and skip whenever a replica is not
+        // on this instance.
+        for (unsigned group = 0; group < numGroups; group++) {
 
-          auto cbr_nelms = cbr.getNumRearrangedTensorElems();
-          auto cbr_size  = cbr.getReplicationFactor();
-
-          // Temporary buffer that can hold the padded weight shards
-          // for all replicas
-          std::vector<char> tmp(cbr_nelms * elemSize);
+          std::vector<char> tmp(cbrNelms * elemSize);
 
           // Address in input buffer from which this group fetches their
           // weights.
-          unsigned address = group * nelms * elemSize;
+          const unsigned address = group * nelms * elemSize;
 
           // Rearrange weights into tmp buffer
           cbr.rearrangeForCollective(&data0[address],
@@ -666,28 +760,51 @@ void Devicex::remoteBufferWeightsFromHost() {
                                      tmp.size() * sizeof(tmp[0]),
                                      elemSize);
 
-          // Iterate over group members in group
-          for (unsigned group_member = 0; group_member < realGroupSize;
-               group_member++) {
-            unsigned replica_id = group_main + (group_member * groupIncrement);
-            unsigned cbr_member = group_member % cbr_size;
-            unsigned addr       = cbr_member * cbr_nelms * elemSize / cbr_size;
-            copyToRemoteBuffer(&tmp[addr], replica_id);
+          // For each group member, copy the relevant shard into the remote
+          // buffer.
+          for (unsigned groupMember = 0; groupMember < realGroupSize;
+               groupMember++) {
+            const unsigned globalReplicaId =
+                grouping.getReplicaAt(group, groupMember);
+            // Skip this group member if not on this instance.
+            if (globalReplicaId < globalReplicaOffset ||
+                globalReplicaId >= globalReplicaOffset + instanceReplicas) {
+              continue;
+            }
+
+            const unsigned localReplicaId =
+                globalReplicaId - globalReplicaOffset;
+
+            // View the replicas in the group as their local group indices
+            // 0..realGroupSize. On this space, the sharding replica grouping is
+            // defined. Therefore, we convert from replica_id to group_member,
+            // then using the sharding replica grouping, find the assignment of
+            // group_member to sharding group.
+            //
+            // NOTE: tensor->tensorLocationInfo only holds whether the group is
+            // sharded or not. However, the CBHR that has been calculated for it
+            // does contain the sharding group size at least, but not the
+            // stride. Therefore, we do not currently support any grouping other
+            // than (size=cbr_size, stride=1).
+
+            // We could more generally express the subsets of the group that we
+            // shard over using a grouping, but we only support stride=1.
+            // Therefore, the cbr_member is always this simple modulo:
+            const unsigned shardDomainMember = groupMember % shardDomainSize;
+            const unsigned addr =
+                shardDomainMember * cbrNelms * elemSize / shardDomainSize;
+
+            copyToRemoteBuffer(&tmp[addr], localReplicaId);
           }
-        } else {
-          // Non sharded tensor:
+        }
+      } else {
+        for (unsigned localReplicaId = 0; localReplicaId < instanceReplicas;
+             localReplicaId++) {
+          const auto globalReplicaId = localReplicaId + globalReplicaOffset;
+          const auto group           = grouping.getGroupAt(globalReplicaId);
 
-          // Address in input buffer from which this group broadcasts their
-          // weights.
-          unsigned long index = group * nelms * elemSize;
-
-          // Iterate over groups, copy in the weights.
-          for (unsigned group_member = 0; group_member < realGroupSize;
-               group_member++) {
-            unsigned replica_id = group_main + (group_member * groupIncrement);
-
-            copyToRemoteBuffer(&data0[index], replica_id);
-          }
+          const unsigned long index = group * nelms * elemSize;
+          copyToRemoteBuffer(&data0[index], localReplicaId);
         }
       }
     }
@@ -726,7 +843,8 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
           VariableRetrievalMode::AllReplicas &&
       downsample == DownsampleStream::GroupPrimary) {
     // Down-sample
-    auto groupCount = variableSettings.getGroupCount(getReplicationFactor());
+    auto groupCount =
+        variableSettings.getGroupCount(getGlobalReplicationFactor());
     auto downSampledSize = groupCount * tensor->info.nbytes();
 
     // Create temporary buffer
@@ -1300,7 +1418,7 @@ void Devicex::loadEngineAndConnectStreams() {
         if (tensor->tensorType() == TensorType::Variable) {
           auto ret_factor =
               tensor->getVariableSettings().numReplicasReturningVariable(
-                  getReplicationFactor());
+                  getGlobalReplicationFactor());
           d2hWeightBuffers[initId] = std::vector<char>(n_bytes * ret_factor);
         } else {
           d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
@@ -1702,6 +1820,10 @@ popx::DevicexInfo *Devicex::getDevicexInfoUnsafe() const {
   }
 
   return castedDeviceInfo;
+}
+
+bool Devicex::distributedReplicatedGraphsEnabled() const {
+  return ir().getSessionOptions().enableDistributedReplicatedGraphs;
 }
 
 } // namespace popx

@@ -378,6 +378,8 @@ private:
   // errors if this is not possible. This WILL throw an error if deviceInfo is
   // not set or if it's not pointing to a DevicexInfo object.
   popx::DevicexInfo *getDevicexInfoUnsafe() const;
+
+  bool distributedReplicatedGraphsEnabled() const;
 };
 
 } // namespace popx

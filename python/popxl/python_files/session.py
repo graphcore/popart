@@ -316,8 +316,16 @@ class Session:
             ):
                 # If using all replicas retrieval mode, we must use weightsIo to copy
                 # every replica's weights.
+
+                # The returned weight should be (globalReplicas, tensorShape).
+                # If grouped, we multiply the num_groups dim by group_size.
+                # If ungrouped, we insert a new dim of size globalReplicas.
                 shape = list(tensor.shape_on_host)
-                shape[0] *= tensor.replica_grouping.group_size
+                if tensor.replica_grouping.num_groups > 1:
+                    shape[0] *= tensor.replica_grouping.group_size
+                else:
+                    shape = (self.ir.replication_factor, *shape)
+
                 weights = {}
                 weights[tensor.id] = np.empty(shape, tensor.dtype.as_numpy())
                 weightsIo = popart.PyWeightsIO(weights)
