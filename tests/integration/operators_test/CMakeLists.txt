@@ -3,7 +3,7 @@ add_popart_py_unit_test(abs_sign_test)
 add_popart_py_unit_test(asinh_test)
 add_popart_py_unit_test(atan2_test)
 add_popart_py_unit_test(atanh_test)
-# add_popart_py_unit_test(auto_pad_test) Disabled, see comment in file.
+add_popart_py_unit_test(auto_pad_test PROPERTIES DISABLED TRUE) # TODO Disabled, see comment in file.
 add_popart_py_unit_test(batchnorm_test)
 add_popart_py_unit_test(batchnorm_pytorch_fp16_test VARIANTS Hw)
 add_popart_py_unit_test(binaryop_error_test)
@@ -72,7 +72,6 @@ add_popart_py_unit_test(min_max_test)
 add_popart_py_unit_test(mul_test)
 add_popart_py_unit_test(multiconv_test)
 add_popart_py_unit_test(onehot_test)
-# add_popart_py_unit_test(op_tester) Utility
 add_popart_py_unit_test(operators_test)
 add_popart_py_unit_test(operators_test_2)
 add_popart_py_unit_test(pattern_op_removal_test)

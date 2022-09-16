@@ -208,11 +208,9 @@ def test_phase_overlap(tmpdir):
     )
 
     check_model(interleaving, clustered_io)
-    # Test requires T26754 to pass
     check_model(interleaving, clustered_io_outline)
 
     assert cycles_clustered_io < 0.9 * cycles_interleaving
-    # Test requires T26968 to pass
     assert cycles_clustered_io_outline < 0.9 * cycles_interleaving
 
 
@@ -254,9 +252,7 @@ def test_batch_overlap(tmpdir):
     )
 
     check_model(isomorphic, overlap_on_compute)
-    # Test requires T26754 to pass
     check_model(isomorphic, overlap_on_compute_outline)
 
     assert cycles_overlap_on_compute < 0.9 * cycles_isomorphic
-    # Test requires T26968 to pass
     assert cycles_overlap_on_compute_outline < 0.9 * cycles_isomorphic

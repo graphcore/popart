@@ -25,6 +25,6 @@ add_popart_py_unit_test(streamingmemory_test_2 VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_tensor_location_test VARIANTS "Hw")
 add_popart_py_unit_test(streamingmemory_attention_test VARIANTS "Hw")
 
-# T26754 && T26968
-#add_popart_py_unit_test(streamingmemory_overlap_test VARIANTS "Hw")
+# TODO T26754 && T26968
+add_popart_py_unit_test(streamingmemory_overlap_test VARIANTS "Hw" PROPERTIES DISABLED TRUE)
 add_popart_py_unit_test(host_stream_test VARIANTS "IpuModel2")
