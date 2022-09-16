@@ -144,6 +144,25 @@ static OpCreator<SplitOp> splitOpCreator(
       auto axis  = info.attributes.getAttribute<Attributes::Int>("axis", 0);
       auto split = info.attributes.getAttribute<Attributes::Ints>("split", {});
 
+      if (axis < 0) {
+        auto input = info.getInputTensor(0);
+        auto rank  = input->info.rank();
+        if (abs(axis) > rank) {
+          throw error(
+              "Split op input tensor {}, rank {}, axis {} is out of range",
+              input->str(),
+              rank,
+              axis);
+        }
+
+        logging::trace("Split op input tensor {}, axis {}, rank {}",
+                       input->str(),
+                       axis,
+                       rank);
+        axis = axis + rank;
+        logging::trace(
+            "Split op input tensor {}, converted axis {}", input->str(), axis);
+      }
       return std::make_unique<SplitOp>(info.opid, axis, split, info.settings);
     },
     true);

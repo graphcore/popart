@@ -25,6 +25,27 @@ def test_split_basic(op_tester):
     op_tester.run(init_builder, reference)
 
 
+def test_split_negative_axis(op_tester):
+    data = np.random.rand(4, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i = builder.addInputTensor(data)
+        a, b = builder.aiOnnx.split([i], 2, -1)
+        o = builder.aiOnnx.sum([a, b])
+        builder.addOutputTensor(o)
+
+        assert builder.getTensorShape(a) == [4, 2]
+        assert builder.getTensorShape(b) == [4, 2]
+        return [o]
+
+    def reference(_):  # ref_data is an unused argument
+        xs = np.split(data, 2, -1)
+        out = xs[0] + xs[1]
+        return [out]
+
+    op_tester.run(init_builder, reference)
+
+
 def test_split_custom_lengths(op_tester):
     data = np.random.rand(6).astype(np.float32)
 
