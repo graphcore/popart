@@ -56,6 +56,7 @@ class Ir:
         opts.enableExplicitMainLoops = True
         opts.explicitRecomputation = True
         opts.enableInplaceAmbiguityChecking = True
+        opts.enableVariablesCaching = False
         # TODO(T64572): Remove below.
         opts.engineOptions["debug.retainDebugInformation"] = opts.engineOptions.get(
             "debug.retainDebugInformation", "false"
