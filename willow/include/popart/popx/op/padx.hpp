@@ -76,7 +76,6 @@ private:
   // Padding with a constant needs to layout the constant. Sometimes there is an
   // obvious good choice for this: an example is if this Pad is a SliceGrad,
   // then the padding should have the layout of the original Tensor sliced.
-  // TODO T22334 : generalize the search for propitious layout
   std::pair<bool, snap::Tensor> getPropitiousPadLayout() const;
 
   // Return a Tensor of the same shape as inTensor, which is an alias of

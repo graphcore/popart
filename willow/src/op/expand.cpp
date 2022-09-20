@@ -109,7 +109,6 @@ view::RegMap ExpandOp::bwdRegMap(InIndex inIndex, OutIndex) const {
             }
           }
         }
-        // TODO T8446 : check intersect?
         return view::Regions(1, view::Region(lower, upper));
       };
 }

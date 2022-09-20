@@ -276,7 +276,6 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
 }
 
 TensorId BuilderImpl::getNextInputId(const std::string &debugPrefix) {
-  // Should we check for uniqueness of name? TODO T8278
   std::string name = debugPrefix.empty() ? "input" : debugPrefix;
   return getNextId(name);
 }
@@ -379,7 +378,6 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
 
 TensorId
 BuilderImpl::addUntypedInputTensor(const popart::DebugContext &debugContext) {
-  // TODO : Check T8276
   // In the onnx spec:
   //     message ValueInfoProto {
   //     ...
@@ -402,8 +400,6 @@ BuilderImpl::addUntypedInputTensor(const popart::DebugContext &debugContext) {
 
 void BuilderImpl::addInputTensorFromParentGraph(const TensorId &tensorId) {
 
-  // Should we check for uniqueness of name? TODO T8278
-
   if (!inHigherScope(tensorId)) {
     throw error(
         "Failed to add unrecognised Tensor {} from higher scope, "
@@ -417,7 +413,6 @@ void BuilderImpl::addInputTensorFromParentGraph(const TensorId &tensorId) {
   // set type
   // We need to run type inference to determine the DataType
   // According to the spec the type (input->mutable_type()) is NOT optional
-  // TODO : get the type. T8276
 }
 
 ONNX_NAMESPACE::ValueInfoProto *BuilderImpl::addGraphInput(const TensorId &id) {
@@ -1136,7 +1131,6 @@ std::vector<std::string> BuilderImpl::getAllNodeAttributeNames(
 }
 
 void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
-  // TODO T5564 - merge the models rather than override the existing one.
   model_ = onnxutil::getModelProto(modelProtoOrFilename);
 
   // Check imported model is valid.

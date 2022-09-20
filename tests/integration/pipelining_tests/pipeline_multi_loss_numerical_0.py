@@ -176,7 +176,6 @@ def run_test_multi_loss_pipeline(same_vgraph=True):
     for i in range(batchesPerStep):
         dr1, dr2 = net(torch.from_numpy(inputVals[i]), i)
         loss = torch.sum(lambda1 * torch.abs(dr1) + lambda2 * torch.abs(dr2))
-        # caveat on the SGD see TODO T13098
         if i == 0:
             loss *= 1 - defaultDampening0
         optimizer.zero_grad()

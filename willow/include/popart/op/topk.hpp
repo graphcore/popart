@@ -50,8 +50,6 @@ private:
 // Similar to Scatter, except it has 2 inputs instead of 3.
 // It is basically Scatter, but with the data input changed to
 // a tensor of zeros.
-//
-// TODO: common base class with Scatter T8198
 class TopKGradOp : public Op {
 public:
   TopKGradOp(const TopKOp &);

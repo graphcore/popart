@@ -94,9 +94,6 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
   //                               w  w     w  w     w  w
   //                              [*][*]   [*][*]   [*][*]
   //                            ^        ^        ^        ^
-  // TODO: T7255 check for sub-sequences which are saturated by smaller
-  // sequences, as in the case above. Match "w" should be removed
-
   // 1's are worth slightly more that 0's
   std::map<blip::Type, blip::Value> value_map{{0, 10.0f}, {1, 11.0f}};
 

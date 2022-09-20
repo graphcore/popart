@@ -31,8 +31,6 @@ public:
 
   // See discussion in https://github.com/pybind/pybind11/issues/673 for why
   // this is required
-  // TODO: T41718 Derived op bindings may need to return a `shared_ptr` when
-  // doing the clone operation.
   std::unique_ptr<Op> clone() const override {
     pybind11::gil_scoped_acquire gil;
     pybind11::function overload =

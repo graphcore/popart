@@ -115,8 +115,6 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   if (getMode() == "constant") {
     upops.emplace_back(std::make_unique<PadGradOp>(*this));
   } else {
-    // TODO : T6631 Add support for other grad op when mode is "Reflect" &
-    // "Edge". May define different pad grad op classes for the different modes
     throw error("At this time, PopART does not support PadGradOp when mode is "
                 "not \"constant\".");
   }

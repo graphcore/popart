@@ -102,29 +102,10 @@ void bindTensor(py::module &m) {
            &Tensor::setReplicatedStreamMode,
            py::arg("mode"))
       .def("getVariableSettings", &Tensor::getVariableSettings)
-      // TODO(T42230): Bind and test getPipelineStages.
-      // .def("getPipelineStages", &Tensor::getPipelineStages)
-      // TODO(T42234): Bind and test getProducerUnsafe, getProducer, setProducer
-      // resetProducer, hasProducer.
-      // .def("getProducerUnsafe", &Tensor::getProducerUnsafe)
       .def("hasProducer", &Tensor::hasProducer)
       .def("getProducer",
            &Tensor::getProducer,
            py::return_value_policy::reference)
-      // .def("setProducer", &Tensor::setProducer, py::arg("op"))
-      // .def("resetProducer", &Tensor::resetProducer, py::arg("op"))
-      // TODO(T42233): Bind and test isGraphInput, getGraphInputIndex,
-      // isGraphOutput, getGraphOutputIndex.
-      // .def("isGraphInput", &Tensor::isGraphInput)
-      // .def("getGraphInputIndex", &Tensor::getGraphInputIndex)
-      // .def("isGraphOutput", &Tensor::isGraphOutput)
-      // .def("getGraphOutputIndex", &Tensor::getGraphOutputIndex)
-      // TODO(T42234): Bind and test isLoopInput, isImplicitLoopInput,
-      // isExplicitLoopInput, isLoopTripCounter.
-      // .def("isLoopInput", &Tensor::isLoopInput)
-      // .def("isImplicitLoopInput", &Tensor::isImplicitLoopInput)
-      // .def("isExplicitLoopInput", &Tensor::isExplicitLoopInput)
-      // .def("isLoopTripCounter", &Tensor::isLoopTripCounter)
       .def("isUnmodifiable", &Tensor::isUnmodifiable)
       .def("isCheckpointTensor", &Tensor::isCheckpointTensor)
       .def("isImplicitRecomputeTensor", &Tensor::isImplicitRecomputeTensor)

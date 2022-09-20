@@ -21,8 +21,6 @@
 
 namespace popart {
 
-// TODO : T6250 : Add support for V6 axis & broadcast attributes
-
 AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &_settings)
     : ElementWiseNpBroadcastableBinaryWithGradOp(_opid, _settings) {
   // TODO : Use the attributes in Add-6

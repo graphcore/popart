@@ -165,8 +165,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   SessionOptions userOptions;
   userOptions.virtualGraphMode = VirtualGraphMode::Auto;
 
-  // TODO : extend to pipelining T10204
-  userOptions.enablePipelining = false;
+  userOptions.enablePipelining = true;
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,

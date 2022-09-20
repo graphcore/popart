@@ -16,7 +16,6 @@ options = {"compileIPUCode": True, "numIPUs": 1}
 device = popart.DeviceManager().createCpuDevice()
 # createIpuModelDevice(options)
 
-# TODO: change to not use builder when T6675 is complete
 builder = popart.Builder(model_file)
 graph_transformer = popart.GraphTransformer(builder.getModelProto())
 graph_transformer.convertAllFixedPointInitializersToConstants()

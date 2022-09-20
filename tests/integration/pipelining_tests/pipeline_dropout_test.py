@@ -85,11 +85,7 @@ def test_pipelined_dropout():
                 userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
             userOptions.enablePipelining = do_pipelining
 
-            # Inplacing can differ between pipelining & non-pipelining,
-            # which can cause the random behaviour to change
-            # TODO: T32086
             patterns = popart.Patterns(popart.PatternsLevel.Default)
-            patterns.InPlace = False
 
             session = popart.TrainingSession(
                 fnModel=builder.getModelProto(),
@@ -210,11 +206,7 @@ def test_pipelined_recomputed_dropout():
         userOptions.enablePipelining = True
         userOptions.autoRecomputation = popart.RecomputationType.Pipeline
 
-        # Inplacing can differ between pipelining & non-pipelining,
-        # which can cause the random behaviour to change
-        # TODO: T32086
         patterns = popart.Patterns(popart.PatternsLevel.Default)
-        patterns.InPlace = False
 
         session = popart.TrainingSession(
             fnModel=builder.getModelProto(),

@@ -33,10 +33,7 @@ BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
                          bool _unbiased_variance,
                          const Op::Settings &settings_)
     : Op(_opid, settings_), epsilon(_epsilon), momentum(_momentum),
-      spatial(_spatial), unbiased_variance(_unbiased_variance) {
-
-  // TODO : T6322 Use the is_training attribute of Version 6
-}
+      spatial(_spatial), unbiased_variance(_unbiased_variance) {}
 
 std::unique_ptr<Op> BatchNormOp::clone() const {
   return std::make_unique<BatchNormOp>(*this);

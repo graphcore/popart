@@ -46,8 +46,6 @@ class IArray;
 
 #undef protected
 
-// TODO T12595 : put the implemenations below into a .cpp file
-
 // names of 2 weights used in model
 constexpr const char *w0name = "__w0__";
 constexpr const char *w1name = "__w1__";
@@ -59,7 +57,6 @@ int64_t accumulationFactor = 5;
 
 namespace _detail {
 
-// TODO T10881 : cleaner solution to acquisition of IPU failure
 std::array<float, 2> acquisitionFailure{-99.0f, -99.0f};
 
 } // namespace _detail
@@ -390,8 +387,6 @@ getResults(const popart::SGD &opt0, // initial Optimizer
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
   } else {
 
-    // Suppressing cppcheck knownConditionTrueFalse due to the following TODO
-    // TODO : cleaner acquisition failure solution T10881
     bool errorIfFailToAcquire = false;
 
     auto devices =

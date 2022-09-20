@@ -130,9 +130,6 @@ public:
   /// Are all the weights in sync with the ipu?
   bool popxlAreHostWeightsInSync();
 
-  // TODO T8229 : change these names to disambiguate
-  // the source and destination
-
   // Write weights from (CPU end of) stream, to dst (host -> host)
   void readWeights(const IWeightsIO &dst);
 

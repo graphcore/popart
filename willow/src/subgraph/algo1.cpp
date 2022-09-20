@@ -224,8 +224,6 @@ bool Algo1Base::allIsomorphic(const Match &match) {
   if (match.length > 1) {
 
     // For now, adding tight left and tight right.
-    // TODO (T7779) we can do better than this
-    // (consider noCrossingsWithAccepted)
     Match match_left  = match;
     match_left.length = match.length - 1;
     emplace(match_left);

@@ -118,11 +118,6 @@ BOOST_AUTO_TEST_CASE(TestInitOpAccumulator) {
   session_opts.aliasZeroCopy         = true;
   session_opts.constantWeights       = false;
 
-  // TODO: T17972
-  // AddOpx::getInputCreatorType currently has a constraint such that
-  // it will only unwind if decomposeGradSum or batchSerialization is enabled.
-  session_opts.decomposeGradSum = true;
-
   session_opts.executionPhaseSettings.phases = N * 2;
   session_opts.virtualGraphMode = VirtualGraphMode::ExecutionPhases;
 

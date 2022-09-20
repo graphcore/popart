@@ -254,97 +254,87 @@ def test_batchnorm_train_0(op_tester):
 
 def test_batchnorm_train_1(op_tester):
 
-    # TODO see T7024
-    # returning early as this test requires import onnx
-    # which causes failure on mac/os.
-    # (currently seen on OS/X buildbot)
+    # create test data
+    d1 = np.random.rand(2, 2, 2, 2).astype(np.float32)
+    scale = np.random.rand(2).astype(np.float32)
+    b = np.random.rand(2).astype(np.float32)
+    mean = np.array([5, 5]).astype(np.float32)
+    var = np.array([7, 7]).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
 
-    if platform.system() == "Darwin":
-        print("T7024 : skipping this test on mac/os")
-        return
-    else:
+    # Relax the relative tolerance as small numbers lose precison
+    op_tester.rtol = 1e-04
 
-        # create test data
-        d1 = np.random.rand(2, 2, 2, 2).astype(np.float32)
-        scale = np.random.rand(2).astype(np.float32)
-        b = np.random.rand(2).astype(np.float32)
-        mean = np.array([5, 5]).astype(np.float32)
-        var = np.array([7, 7]).astype(np.float32)
-        epsilon = 1e-05
-        momentum = 0.1
+    initializers = {}
 
-        # Relax the relative tolerance as small numbers lose precison
-        op_tester.rtol = 1e-04
+    def init_builder(builder):
+        nonlocal initializers
 
-        initializers = {}
-
-        def init_builder(builder):
-            nonlocal initializers
-
-            i1 = builder.addInputTensor(d1)
-            iScale = builder.addInputTensor(scale)
-            iB = builder.addInputTensor(b)
-            iMean = builder.addInitializedInputTensor(mean)
-            initializers[iMean] = mean
-            iVar = builder.addInitializedInputTensor(var)
-            initializers[iVar] = var
-            o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
-                [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum
-            )
-
-            builder.addOutputTensor(o_y)
-            builder.addOutputTensor(o_mean)
-            builder.addOutputTensor(o_var)
-
-            return [
-                o_y,
-                popart.reservedGradientPrefix() + i1,
-                popart.reservedGradientPrefix() + o_y,
-            ]
-
-        def reference(ref_data):
-            _input = torch.tensor(d1, requires_grad=False)
-            _weight = torch.tensor(scale, requires_grad=False)
-            _bias = torch.tensor(b, requires_grad=False)
-            _mean = torch.tensor(mean, requires_grad=False)
-            _var = torch.tensor(var, requires_grad=False)
-
-            m = torch.nn.BatchNorm2d(
-                2, eps=epsilon, momentum=momentum, track_running_stats=True
-            )
-            m.state_dict()["weight"].copy_(_weight)
-            m.state_dict()["bias"].copy_(_bias)
-            m.state_dict()["running_mean"].copy_(_mean)
-            m.state_dict()["running_var"].copy_(_var)
-
-            m.train()
-            _y = m(_input)
-
-            _mean = m.state_dict()["running_mean"]
-            _var = m.state_dict()["running_var"]
-
-            d__o = ref_data.getOutputTensorGrad(0)
-            _y.backward(torch.tensor(d__o))
-
-            return [_y, _input.grad, d__o]
-
-        op_tester.setPatterns(
-            ["PreUniRepl", "ReciprocalGradOp"], enableRuntimeAsserts=False
+        i1 = builder.addInputTensor(d1)
+        iScale = builder.addInputTensor(scale)
+        iB = builder.addInputTensor(b)
+        iMean = builder.addInitializedInputTensor(mean)
+        initializers[iMean] = mean
+        iVar = builder.addInitializedInputTensor(var)
+        initializers[iVar] = var
+        o_y, o_mean, o_var, _, _ = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum
         )
-        session = op_tester.run(init_builder, reference, "train")
 
-        onnx_filename = "test_batchnorm_train_1.onnx"
+        builder.addOutputTensor(o_y)
+        builder.addOutputTensor(o_mean)
+        builder.addOutputTensor(o_var)
 
-        session.modelToHost(onnx_filename)
-        onnx_model = onnx.load(onnx_filename)
+        return [
+            o_y,
+            popart.reservedGradientPrefix() + i1,
+            popart.reservedGradientPrefix() + o_y,
+        ]
 
-        # Verify that one of the initializers has been updated
-        for init in onnx_model.graph.initializer:
-            as_numpy = np.array(init.float_data, dtype=np.float32)
-            print(f"Checking {init.name} has been updated")
-            assert not np.allclose(initializers[init.name], as_numpy)
+    def reference(ref_data):
+        _input = torch.tensor(d1, requires_grad=False)
+        _weight = torch.tensor(scale, requires_grad=False)
+        _bias = torch.tensor(b, requires_grad=False)
+        _mean = torch.tensor(mean, requires_grad=False)
+        _var = torch.tensor(var, requires_grad=False)
 
-        os.remove(onnx_filename)
+        m = torch.nn.BatchNorm2d(
+            2, eps=epsilon, momentum=momentum, track_running_stats=True
+        )
+        m.state_dict()["weight"].copy_(_weight)
+        m.state_dict()["bias"].copy_(_bias)
+        m.state_dict()["running_mean"].copy_(_mean)
+        m.state_dict()["running_var"].copy_(_var)
+
+        m.train()
+        _y = m(_input)
+
+        _mean = m.state_dict()["running_mean"]
+        _var = m.state_dict()["running_var"]
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        _y.backward(torch.tensor(d__o))
+
+        return [_y, _input.grad, d__o]
+
+    op_tester.setPatterns(
+        ["PreUniRepl", "ReciprocalGradOp"], enableRuntimeAsserts=False
+    )
+    session = op_tester.run(init_builder, reference, "train")
+
+    onnx_filename = "test_batchnorm_train_1.onnx"
+
+    session.modelToHost(onnx_filename)
+    onnx_model = onnx.load(onnx_filename)
+
+    # Verify that one of the initializers has been updated
+    for init in onnx_model.graph.initializer:
+        as_numpy = np.array(init.float_data, dtype=np.float32)
+        print(f"Checking {init.name} has been updated")
+        assert not np.allclose(initializers[init.name], as_numpy)
+
+    os.remove(onnx_filename)
 
 
 def test_batchnorm_train_2(op_tester):

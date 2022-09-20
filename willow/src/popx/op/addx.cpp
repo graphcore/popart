@@ -63,9 +63,6 @@ AddOpx::AddOpx(Op *op, Devicex *devicex)
 }
 
 InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
-  // TODO: T17972 Allowing add (in particular lhs, rhs inplace adds) leads to
-  // inefficient sub graph copying. Investigate why, then remove the below logic
-  // once fixed.
   if (!(op_p->getIr().getSessionOptions().decomposeGradSum ||
         op_p->getIr().getSessionOptions().batchSerializationSettings.factor >
             0)) {

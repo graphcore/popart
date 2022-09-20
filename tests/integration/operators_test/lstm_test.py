@@ -15,9 +15,6 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
-# TODO: T19540 we had to split this test in 2 pieces to keep compile below 60s.
-# This may have been due to a compile time regression. Investigate.
-
 
 def np_rand(*shape):
     return np.random.rand(*shape).astype(np.float32)

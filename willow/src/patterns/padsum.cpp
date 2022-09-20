@@ -74,7 +74,6 @@ bool PadSumPattern::matches(Op *op) const {
   };
 
   // Do all of the producers pad on the same dimension
-  // TODO (T6771) Support multi-dimension case
   if (!std::all_of(
           inputProducers.begin(), inputProducers.end(), dimensionPredicate)) {
     return false;

@@ -65,8 +65,7 @@ BOOST_AUTO_TEST_CASE(Inplace_parallel0) {
   builder->setInplacePreferences(h0, {{"ReluInplace", 1e8}});
   auto h1 = aiOnnx.sin({in0});
   auto h2 = aiOnnx.cos({in0});
-  // TODO T6707 : ensure that this (and other) tests are still valid
-  // when inplace for Add is implemented, or default priorities change
+
   auto h3  = aiOnnx.add({h0, h1});
   auto out = aiOnnx.add({h2, h3});
   auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);

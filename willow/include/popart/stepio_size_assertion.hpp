@@ -14,9 +14,6 @@
 #include "popart/sessionoptions.hpp"
 #include "popart/tensordebuginfo.hpp"
 
-// TODO(T15449) factorize out templates advance and get from StepIO and PyStepIO
-//
-
 namespace popart {
 namespace iosizecheck {
 

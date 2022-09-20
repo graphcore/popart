@@ -79,7 +79,6 @@ std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
   std::vector<const Tensor *> touched;
   touched.reserve(op->input->n() + 1);
   touched.push_back(op->output->tensor(0));
-  // TODO : it is actually a sub-set of the inputs, only those aliased (T7108)
   for (auto &x : op->input->indicesMap()) {
     touched.push_back(x.first);
   }

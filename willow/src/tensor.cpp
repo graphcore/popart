@@ -986,8 +986,6 @@ bool Tensor::isUnmodifiable() const {
       // - its input, or a tensor it aliases, is restored inplace
       // - and its output, or a tensor that is an alias of it, is consumed
       //   by an ipucopy
-      // TODO T19283: Make less strict once we can determine if any two
-      // tensors are aliases of eachother
       isRestoreInplaceTensor() ||
       // Implicit loop counter tensors must not be modified, because each loop
       // iteration needs access to the unmodified original input.
@@ -1041,8 +1039,6 @@ bool Tensor::idIncludesPrefix(const std::vector<std::string> &prefixes) const {
 }
 
 bool Tensor::isOptimizerTensor() const {
-  // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
-  // do these string comparisons
   return idIncludesPrefix(reservedOptimizerPrefixes());
 }
 

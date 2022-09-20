@@ -264,7 +264,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         weight_decay=defaultWeightDecay0,
     )
 
-    # caveat : alternative work-around for TODO T13098
     for group in optimizer.param_groups:
         for p in group["params"]:
             param_state = optimizer.state[p]

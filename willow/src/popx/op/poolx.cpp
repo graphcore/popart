@@ -153,7 +153,7 @@ public:
                 getInTensor(GRADOP::getPrePooledInIndex()).getPoplarTensor(),
                 getInTensor(GRADOP::getPooledInIndex()).getPoplarTensor(),
                 getInTensor(GRADOP::getGradPooledInIndex()).getPoplarTensor(),
-                false, // useScaledVariant TODO T7295
+                false,
                 prog.getPoplarSequence(),
                 debugContext("poolInputGradient"),
                 dv_p->lowering().pooling_options),

@@ -1497,8 +1497,7 @@ PYBIND11_MODULE(popart_core, m) {
                       DOC(popart, SessionOptions, lstmOptions));
     cls.def_readwrite("_matmulOptions",
                       &SessionOptions::matmulOptions,
-                      // TODO see T42271
-                      "");
+                      DOC(popart, SessionOptions, matmulOptions));
     cls.def_readwrite("_reportOptions",
                       &SessionOptions::reportOptions,
                       DOC(popart, SessionOptions, reportOptions));

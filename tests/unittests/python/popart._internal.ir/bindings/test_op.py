@@ -234,8 +234,6 @@ def test_string_methods(
     )
 
 
-# TODO: T45197 investigate this
-@pytest.mark.skip("Currently failing on CentOS.")
 def test_debug_methods():
     """Test the debug info methods work."""
     op, _, _ = create_dummy_op("ai.onnx", "dummy", 1, 1, 1)
@@ -262,8 +260,6 @@ def test_default_outputs(index: int, id: str):
     assert op.outId(index) == id
     assert op.outInfo(index).shape() == []
     assert op.outShape(index) == []
-    # TODO: T42845 investigate this.
-    # assert op.outInfo(0).dataType() == _ir.DataType.FLOAT # Segfault?
     assert op.outRank(index) == 0
     assert op.outTensorCount() == 1
 

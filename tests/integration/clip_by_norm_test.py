@@ -423,12 +423,6 @@ def test_serialized_matmul(optimizerType):
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
-        # TODO(T14786) investigate why swapping causes some tests to fail
-        opts.swapLimitScheduler = -1
-        # TODO(T14786) investigate why GREEDY causes some tests to fail
-        opts.kahnTieBreaker = "FIFO"
-        # TODO(T14786) investigate why tighter initialization causes some tests to fail
-        opts.transitiveClosureOptimizationThreshold = 0
         # Gradient clipping isn't working for serialized matmuls without gradient accumulation
         opts.enableGradientAccumulation = True
 

@@ -17,8 +17,6 @@
 namespace popart {
 class AliasModel;
 
-// TODO: merge Reshape and Squeeze functionality (T5886)
-
 // This Op is based on the ONNX Operator described at
 // github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
 // but it is slightly different: this Op is static w.r.t. shape

@@ -23,8 +23,6 @@
 namespace popart {
 struct OperatorIdentifier;
 
-// TODO : Support "count_include_pad" T6249
-
 AveragePoolOp::AveragePoolOp(
     const OperatorIdentifier &_opid,
     int64_t _countIncludePad,

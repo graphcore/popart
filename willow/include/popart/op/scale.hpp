@@ -48,7 +48,6 @@ public:
 
   std::unique_ptr<Op> clone() const final;
 
-  // TODO T6801 : don't repeat scale_factor
   float getScaleFactor() const;
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 

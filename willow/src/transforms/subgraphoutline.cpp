@@ -84,9 +84,6 @@ template <typename T> void sortMatches(std::vector<T> &matches) {
   });
 }
 
-// TODO T8888: templatize every function in this namespace so that can be used
-// outside of popart, then put it in the popart/subgraph directory. Then add
-// tests with the Blip class (as other basic outlining functions are).
 namespace localoutline {
 namespace {
 using namespace fwtools::subgraph;

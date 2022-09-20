@@ -275,9 +275,6 @@ def test_output_matches_train(inputType, explicit):
         inputType=inputType,
         explicit=explicit,
     )
-    # TODO, depends on T9630, add a case with grad accumulation. All tensor
-    # outputs should be exactly the same when doing pipelined vs non-pipelined
-    # when grad accumulation is turned on
 
     for (tId1, t1), (tId2, t2) in zip(
         singleIpu_anchors.items(), multiIpu_anchors.items()

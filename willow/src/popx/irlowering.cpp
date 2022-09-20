@@ -845,8 +845,6 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
           }
         };
 
-        // TODO: T13654 Generalize for other subgraphing ops (if, loop).
-        // Create common base class for Loop, If, Call
         auto f_delegate = [&]() {
           auto updatedPath = pathFromInput;
 
@@ -959,8 +957,6 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
               if (!op->isConvertibleTo<SubgraphOp>()) {
                 // subgraphEscape only supports cases where the caller Op
                 // is of type SubgraphOp.
-                // TODO: T13654 Support remaining cases
-                // (24/11/2021 currently only IfOp)
                 return;
               }
 
@@ -970,9 +966,6 @@ IrLowering::getCreatorEndpoints(const Tensor *startTensor,
                 if (graph->id == tensor->getGraph().id) {
                   // This callee is the graph where the current tensor is in
                   // Get delegate output tensor corresponding to subgraph output
-
-                  // TODO: T13654 Generalize for other subgraphing ops (if,
-                  // loop).
 
                   OutIndex opo = subgraphOp->subgraphOutToOpOutIndex(o);
                   if (opo > -1 && opo < subgraphOp->output->n()) {
@@ -2757,8 +2750,6 @@ void IrLowering::prePlanMatMuls() {
     // so we create a dummy graph, and perform these same transformations on
     // dummy input tensors, in order to get the correct input shapes from
     // which to generate the MatMulParams.
-    // TODO: T31134 we could avoid this by moving the reshaping of inputs into
-    // the IR.
     snap::Graph dummyGraph(graph->getTarget());
     for (Op *op : matMulOps) {
       auto matMulOp  = dynamic_cast<MatMulOp *>(op);

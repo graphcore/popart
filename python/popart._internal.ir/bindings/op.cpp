@@ -102,7 +102,6 @@ void bindOp(py::module &m) {
       .def("getOptionalPipelineStage", &Op::getOptionalPipelineStage)
       .def("getInBatchAxis", &Op::getInBatchAxis)
       .def("getOutBatchAxis", &Op::getOutBatchAxis)
-      // TODO: T42791 alias related methods
       // .def("inheritPlacementAttributes", &Op::inheritPlacementAttributes)
       .def("getIr", py::overload_cast<>(&Op::getIr))
       .def("getGraph",
@@ -124,7 +123,6 @@ void bindOp(py::module &m) {
       // .def("append", &Op::append)
       // .def("toJSON", &Op::toJSON)
       .def("memOfOutputs", &Op::memOfOutputs)
-      // TODO: T41718 op specific tests
       .def("optionalInputs", &Op::optionalInputs)
       .def("defaultConnectInTensor", &Op::defaultConnectInTensor)
       .def(
@@ -139,7 +137,6 @@ void bindOp(py::module &m) {
       .def("disconnectAllInputs", &Op::disconnectAllInputs)
       .def("disconnectAllOutputs", &Op::disconnectAllOutputs)
       .def("name", &Op::name)
-      // TODO: T41718 op specific tests
       .def("setup", &Op::setup)
       // See above for why it is PyOp<>::clone_wrapper
       .def("clone", [](PyOp<> &self) { return self.clone_wrapper(); })
@@ -171,21 +168,10 @@ void bindOp(py::module &m) {
              return sharedVec;
            })
       .def("inplacePriorityDefault", &Op::inplacePriorityDefault)
-      // TODO: T41718 op specific tests
       .def("getInplaceVariant",
            [](PyOp<> &self, const OperatorIdentifier &opid) {
              return self.getInplaceVariant_wrapper(opid);
            })
-      // TODO: T42791 alias related methods
-      //  .def("modifies", &Op::modifies)
-      //  .def("uses", &Op::uses)
-      //  .def("aliases", &Op::aliases)
-      //  .def("fwdRegMap", &Op::fwdRegMap)
-      //  .def("bwdRegMap", &Op::bwdRegMap)
-      //  .def("doesAlias", &Op::doesAlias)
-      //  .def("isOutplace", &Op::isOutplace)
-      //  .def("doesAlias", &Op::doesAlias)
-      //  .def("modifies", &Op::modifies)
       .def("modifiesIndex", &Op::modifiesIndex)
       .def("overwritesTensor", &Op::overwritesTensor)
       .def("isInplaceViewChange", &Op::isInplaceViewChange)
@@ -301,19 +287,6 @@ void bindOp(py::module &m) {
       .def("isParentOf", &Op::isParentOf)
       .def("isChildOf", &Op::isChildOf)
       .def("canShard", &Op::canShard)
-      // TODO: T42793 sharding methods
-      //   .def("getShardReductionType", &Op::getShardReductionType)
-      //   .def("getShardRescaleFactor", &Op::getShardRescaleFactor)
-      // .def("shard", py::overload_cast<const ShardingPlan>(&Op::shard))
-      // .def("shard",
-      //      py::overload_cast<const std::map<TensorId, std::vector<TensorId>>
-      //      &>(
-      //          &Op::shard))
-      // .def("configureShardedOp", &Op::configureShardedOp)
-      // .def("getReplicatedTensorShardingIndices",
-      //      &Op::getReplicatedTensorShardingIndices)
-      // .def("configureForReplicatedTensorSharding",
-      //      &Op::configureForReplicatedTensorSharding)
       .def("transferBaseProperties", &Op::transferBaseProperties);
 } // namespace ir
 

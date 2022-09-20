@@ -209,9 +209,6 @@ def test_make_const_init():
     ts.makeConstInit("foo", data)
     assert t.tensorType() == TensorType.Const
 
-    # TODO(T42205): Test that the tensor data matches the numpy array, `data`.
-    # d = t.tensorData();
-
 
 def test_get_ids():
     ir = Ir()

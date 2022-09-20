@@ -1334,7 +1334,6 @@ bool Pipeline::apply(Graph &graph) const {
   checkOpsPipelineStage(graph);
 
   // 2. Currently user-annotated recomputation is not supported with pipelining
-  // (TODO T9575)
   if (ir.getSessionOptions().implicitPipeliningEnabled() &&
       graph.hasUserRecomputeOps()) {
     throw error("When pipelining is enabled, user annotation for recomputation "

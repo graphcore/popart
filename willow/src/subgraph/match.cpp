@@ -46,7 +46,6 @@ std::ostream &operator<<(std::ostream &stream, const Match &match) {
   return stream;
 }
 
-// TODO (T6416) : use that it is sorted to make this algorithm linear
 bool Match::crosses(const Match &rhs) const {
 
   if (length == 1 || rhs.length == 1) {

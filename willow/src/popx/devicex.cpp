@@ -1152,7 +1152,6 @@ void Devicex::setRngStateValue(const std::vector<uint32_t> rngState) {
   }
 }
 
-// TODO consider moving the test in this function into the Ir (T12636)
 unsigned Devicex::getAccumulationFactor() const {
   return lowering().getAccumulationFactor();
 }

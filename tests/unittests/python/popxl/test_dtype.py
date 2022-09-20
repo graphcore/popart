@@ -9,29 +9,11 @@ from popxl.testing import get_all_dtypes, get_all_int_dtypes
 from popxl.dtypes import _PT_TO_POPXL, _NP_TO_POPXL
 
 
-# TODO(T38031): Delete this utility function.
-def _get_torch_version():
-    """Utility function to convert the torch version to a tuple of ints.
-
-    Returns:
-        tuple: The version - a tuple of ints.
-    """
-    v = torch.__version__
-    v = v.split("+")[0]
-    v = v.split(".")
-    v = tuple([int(i) for i in v])
-    return v
-
-
 class Testdtype:
     def test_constructor(self):
         with pytest.raises(TypeError):
             popxl.dtype()
 
-    # TODO(T38031): Unskip this test.
-    @pytest.mark.skipif(
-        _get_torch_version() < (1, 7, 1), reason="Requires torch>=1.7.1."
-    )
     def test_properties(self):
         dtypes = get_all_dtypes()
         uint_dtypes = get_all_int_dtypes(include_signed=False)

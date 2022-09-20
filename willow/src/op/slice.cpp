@@ -362,7 +362,6 @@ std::unique_ptr<Op> SliceInplaceOp::clone() const {
 std::vector<std::tuple<OperatorIdentifier, float>>
 SliceOp::inplacePriorityDefault() const {
 
-  // TODO(T9253)
   if (!getFlips().empty()) {
     return {};
   }
@@ -428,10 +427,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   }
 }
 
-void BaseSliceOp::setup() {
-  outInfo(getOutIndex()) = createOutInfo();
-  // TODO : check that shapes agree T9582
-}
+void BaseSliceOp::setup() { outInfo(getOutIndex()) = createOutInfo(); }
 
 std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
   throw internal_error(

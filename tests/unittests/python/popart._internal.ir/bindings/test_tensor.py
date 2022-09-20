@@ -156,7 +156,6 @@ def test_tensor_has_virtual_graph_id():
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
-    # TODO(T42205): Test that hasVirtualGraphId() returns the expected values.
     t.hasVirtualGraphId()
 
 
@@ -172,7 +171,6 @@ def test_tensor_get_virtual_graph_id():
         assert e_info.value.args[0] == (
             "Invalid call to getVirtualGraphId, Tensor does not have one"
         )
-    # TODO(T42205): Test that getVirtualGraphId() returns the expected values.
 
 
 def test_tensor_get_virtual_graph_id_unsafe():
@@ -182,8 +180,6 @@ def test_tensor_get_virtual_graph_id_unsafe():
     ir = _ir.Ir()
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
-    # TODO(T42205): Test that getVirtualGraphIdUnsafe() returns the expected
-    # values.
     t.getVirtualGraphIdUnsafe()
 
 
@@ -193,8 +189,6 @@ def test_tensor_get_batch_axis():
     g = ir.createGraph("g")
     t = _ir.Tensor("t", _ir.TensorType.ActGrad, g)
     assert t.getBatchAxis() == -1
-    # TODO(T42205): Test that getBatchAxis() returns the expected values when
-    # the tensor has producers/consumers.
 
 
 def test_tensor_get_debug_info():
@@ -219,33 +213,3 @@ def test_replicated_stream_mode_creation():
     """
     popart.ReplicatedStreamMode.Replicate
     popart.ReplicatedStreamMode.Broadcast
-
-
-# TODO(T42205): Write unit test for the following methods and attributes of the
-# Tensor class:
-#   - Tensor.isUnmodifiable()
-#   - Tensor.isCheckpointTensor()
-#   - Tensor.isImplicitRecomputeTensor()
-#   - Tensor.isRestoreInplaceTensor()
-#   - Tensor.idIncludesPrefix()
-#   - Tensor.isOptimizerTensor()
-#   - Tensor.isRemoteArgTensor()
-#   - Tensor.isRandomSeedTensor()
-#   - Tensor.isOptimizerStateTensor()
-#   - Tensor.isAccumulatorTensor()
-#   - Tensor.isHostLoadTensor()
-#   - Tensor.isWeightTensor()
-#   - Tensor.isAnchored()
-#   - Tensor.isRootAnchor()
-#   - Tensor.anyAlias()
-#   - Tensor.associatedOps()
-#   - Tensor.getVirtualGraphIdAndTileSet()
-#   - Tensor.getVirtualGraphIdAndTileSetUnsafe()
-#   - Tensor.consumersAllPreLoss()
-#   - Tensor.isModified()
-#   - Tensor.isAliased()
-#   - Tensor.getDataViaGraphTraversal()
-#   - Tensor.consumers
-#   - Tensor.info
-#   - Tensor.tensorLocationInfo
-#   - Tensor.inputSettings

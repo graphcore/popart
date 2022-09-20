@@ -11,7 +11,6 @@
 namespace popart {
 struct OperatorIdentifier;
 
-// TODO T8611 : make UnaryOp
 class CoshOp : public Op {
 public:
   CoshOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);

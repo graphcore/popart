@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 import popart
 import json
-import platform
 
 # 'import test_util' requires adding to sys.path
 import sys
@@ -16,11 +15,8 @@ import test_util as tu
 def getBaseOptions():
     opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
-    # TODO(T14786) investigate why swapping causes some tests to fail
     opts.swapLimitScheduler = -1
-    # TODO(T14786) investigate why GREEDY causes some tests to fail
     opts.kahnTieBreaker = "FIFO"
-    # TODO(T14786) investigate why tighter initialization causes some tests to fail
     opts.transitiveClosureOptimizationThreshold = 0
     return opts
 
@@ -60,35 +56,29 @@ def gen_shape(shape):
 
 
 def test_matmul_serialization_invalid_mode():
+    lhs_shape = [2, 2]
+    rhs_shape = [2, 4]
 
-    if platform.system() == "Darwin":
-        # MacOS is throwing a RuntimeError not popart_exception
-        print("T11614 : skipping this test on mac/os")
-        pytest.skip("T11614 : skipping this test on mac/os")
-    else:
-        lhs_shape = [2, 2]
-        rhs_shape = [2, 4]
+    builder = popart.Builder()
 
-        builder = popart.Builder()
+    lhs = builder.addInputTensor(popart.TensorInfo("FLOAT", lhs_shape), "lhs")
+    rhs = builder.addInputTensor(popart.TensorInfo("FLOAT", rhs_shape), "rhs")
 
-        lhs = builder.addInputTensor(popart.TensorInfo("FLOAT", lhs_shape), "lhs")
-        rhs = builder.addInputTensor(popart.TensorInfo("FLOAT", rhs_shape), "rhs")
+    o = builder.aiOnnx.matmul([lhs, rhs])
 
-        o = builder.aiOnnx.matmul([lhs, rhs])
+    with pytest.raises(popart.popart_exception) as e_info:
+        try:
+            builder.setSerializeMatMul({o}, "invalid_mode")
+        except popart.popart_exception as e:
+            print("Catch popart_exception ", type(e))
+            raise
+        except Exception as e:
+            print("Unexpected exception from setSerializeMatMul ", type(e))
+            raise
 
-        with pytest.raises(popart.popart_exception) as e_info:
-            try:
-                builder.setSerializeMatMul({o}, "invalid_mode")
-            except popart.popart_exception as e:
-                print("Catch popart_exception ", type(e))
-                raise
-            except Exception as e:
-                print("Unexpected exception from setSerializeMatMul ", type(e))
-                raise
-
-        assert e_info.value.args[0].startswith(
-            "Unsupported mat mul serialization mode 'invalid_mode'. Supported modes are 'input_channels', 'reducing_dim', 'output_channels' or 'none'"
-        )
+    assert e_info.value.args[0].startswith(
+        "Unsupported mat mul serialization mode 'invalid_mode'. Supported modes are 'input_channels', 'reducing_dim', 'output_channels' or 'none'"
+    )
 
 
 def test_matmul_serialization_invalid_factor():
@@ -1389,7 +1379,6 @@ def test_matmul_serialization_training_with_gradient_accumlation():
             inputs = {lhs: lhs_data}
             stepio = popart.PyStepIO(inputs, anchors)
 
-            # TODO (T15448, understand why shapes are incorrect)
             stepio.enableRuntimeAsserts(False)
 
             session.run(stepio)

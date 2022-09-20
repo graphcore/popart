@@ -93,10 +93,8 @@ void prepareIr1(popart::Ir &ir) {
 
   act6 = aiOnnx.mul({act6, input2});
 
-  // TODO : IpuCopyOp copies Tensors from multiple sources (T10373) are required
-  // to handle this extension:
-  //  act6 = aiOnnx.mul({act6, input1});
-  //  act6 = aiOnnx.mul({act6, input3});
+  act6        = aiOnnx.mul({act6, input1});
+  act6        = aiOnnx.mul({act6, input3});
   auto act6l1 = aiGraphcore.l1loss({act6}, 0.1, ReductionType::Mean);
 
   auto act7 = aiOnnx.sin({act6});

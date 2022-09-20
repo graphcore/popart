@@ -33,8 +33,6 @@
 using namespace popart;
 namespace po = boost::program_options;
 
-// TODO: improved visualization (T5144)
-
 class Options {
 public:
   Options(int argc, char **argv);

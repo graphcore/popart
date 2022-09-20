@@ -292,7 +292,6 @@ std::vector<Tensor *> Ir::optimizerStateTensors() const {
 }
 
 void Ir::updateOptimizer(const Optimizer &newOptimizer) {
-  // TODO this will be cleaner when T12589 is done
   auto newOptimizerClone = newOptimizer.clone();
   newOptimizerClone->setFactorsFromOptions(getSessionOptions());
   // Throws if newOptimizerClone is not a valid replacement optimizer.

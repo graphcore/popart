@@ -277,7 +277,6 @@ DeviceManager::acquireDeviceById(int id,
                                  DeviceConnectionType connectionType) {
   auto device = tryAcquireDeviceById(id, pattern, connectionType);
 
-  // Warn if acquiring device is unsuccessful. TODO T46787: error instead.
   if (!device) {
     throw error(
         "Failed to acquire device with id '{}'. Ensure it is available. If you "

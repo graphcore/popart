@@ -223,7 +223,6 @@ void NlllWithSoftmaxGradDirectOpx::grow(snap::program::Sequence &prog) const {
 
   // Now compute the SoftmaxGrad:
 
-  // TODO: T8303
   // -1 at position "label", 0 elsewhere.
   // p - 1 at position "label" label, p elsewhere.
   snap::popops::mapInPlace(graph(),

@@ -3,8 +3,6 @@
 #define POPART_WILLOW_INCLUDE_POPART_NAMES_HPP_
 
 #include <cstddef>
-// TODO T7106 : determine what the cost of including these
-// in every compilation unit is, consider moving to another header
 #include <cstdint>
 #include <functional>
 #include <map>

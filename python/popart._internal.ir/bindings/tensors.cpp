@@ -104,21 +104,12 @@ void bindTensors(py::module_ &m) {
       .def("getAllTensorIds", &Tensors::getAllTensorIds)
       .def("getNoProducerIds", &Tensors::getNoProducerIds)
       .def("append", &Tensors::append)
-      // TODO add test, see T42141, requires VectorAndSet bindings
-      // .def("getConstIds",
-      //      &Tensors::getConstIds,
-      //      py::return_value_policy::reference)
-      // TODO add test, see T42141, requires VectorAndSet bindings for testing
-      // .def("insertConstId", &Tensors::insertConstId)
       .def("removeIsolated",
            &Tensors::removeIsolated,
            py::arg("retainUsedIOTensors") = false,
            py::arg("retainAllIOTensors")  = false,
            py::arg("retainVarTensors")    = false,
-           py::arg("retainConstTensors")  = false)
-      // Not sure we can do this from the python api
-      // TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
-      ;
+           py::arg("retainConstTensors")  = false);
 }
 
 } // namespace ir

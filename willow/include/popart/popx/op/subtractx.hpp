@@ -23,8 +23,6 @@ public:
   void grow(snap::program::Sequence &) const final;
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
 class SubtractArg0GradOpx : public ReduceSumOpx {
 public:
   SubtractArg0GradOpx(Op *, Devicex *);

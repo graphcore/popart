@@ -45,7 +45,6 @@ public:
 
   bool canBeReplacedByIdentity() const override;
 
-  // currently these are conservative TODO T6973
   view::RegMap fwdRegMap(InIndex, OutIndex) const final;
   view::RegMap bwdRegMap(InIndex, OutIndex) const final;
 
