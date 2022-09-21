@@ -3973,16 +3973,11 @@ IrLowering::getReplicatedStreamMode(Tensor *tensor) const {
     // If returned != 1 then streaming will have to handle different
     // replicas more dynamically, and broadcast will not work for the
     // necessary transfers.
-    auto replicas   = ir().getSessionOptions().replicatedGraphCount;
+    auto replicas   = ir().getSessionOptions().getGlobalReplicationFactor();
     auto groupCount = tensor->getVariableSettings().getGroupCount(replicas);
 
     mode = groupCount != 1 ? poplar::ReplicatedStreamMode::REPLICATE
                            : poplar::ReplicatedStreamMode::BROADCAST;
-  } else if (tensor->tensorType() == TensorType::Variable) {
-    // If it is a variable we 'broadcast' the same tensor
-    // to all replicants
-    mode = poplar::ReplicatedStreamMode::BROADCAST;
-
   } else {
     if (ir().getSessionOptions().useHostCopyOps) {
       switch (tensor->getReplicatedStreamMode()) {
