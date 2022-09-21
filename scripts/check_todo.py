@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 location = f"{qualified_filename}:{line}"
 
                 match_todo = re.match(r".*TODO", text)
-                match_task = re.match(r".*[\W]+(T\d+)", text)
+                match_task = re.match(r".*[^a-zA-Z0-9_~]+(T\d+)", text)
 
                 task_id = (
                     match_task.group(1)
