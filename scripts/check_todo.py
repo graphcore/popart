@@ -2,12 +2,12 @@
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
 
 import argparse
+import collections
 import glob
+import json
+import logging
 import os
 import re
-import collections
-import logging
-import json
 import subprocess
 from typing import Dict, Tuple
 
@@ -54,6 +54,7 @@ def arc_call_conduit(command: str, stdin: object) -> Dict[str, object]:
             f"ERROR: Failed to talk to Phabricator: Command {command}, stdin"
             f" {json.dumps(stdin)}, failed: {reply['errorMessage']}"
         )
+
     return reply["response"]
 
 
@@ -74,49 +75,70 @@ def get_task_info(task: str) -> Tuple[str, str, bool]:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--debug", "-d", action="store_true", help="Print debug messages"
+        "-d", "--debug", action="store_true", help="Print debug messages"
     )
 
-    parser.add_argument("path", nargs="?", help="Folder to process")
+    parser.add_argument(
+        "-wf",
+        "--show-wontfix",
+        action="store_true",
+        help="Include 'wontfix' tasks in outputs",
+    )
+
+    parser.add_argument("path", nargs="?", help="Folder to process", default=".")
     args = parser.parse_args()
     logging_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=logging_level)
-    logger.debug("Args: %s", str(args))
-
-    expr = re.compile(r".*TODO.*(T\d+)")
-    expr_loose = re.compile(r".*TODO.*")
+    logger.debug(f"Args: {str(args)}")
+    os.chdir(args.path)
 
     # Find all the TODOs in the code base
     tasks = collections.defaultdict(list)
     total_malformed = 0
-    if args.path:
-        os.chdir(args.path)
 
     for f in glob.glob("./**", recursive=True):
-        if os.path.isdir(f) or os.path.basename(f) in FILES_TO_SKIP:
+        if (
+            os.path.isdir(f)
+            or "__pycache__" in f
+            or os.path.basename(f) in FILES_TO_SKIP
+        ):
             continue
 
         try:
-            for line, txt in enumerate(open(f, "r", encoding="utf-8"), start=1):
-                m = expr.match(txt)
+            qualified_filename = os.path.normpath(os.path.join(args.path, f))
+            for line, text in enumerate(open(f, "r", encoding="utf-8"), start=1):
+                location = f"{qualified_filename}:{line}"
 
-                if m:
-                    location = f"{f}:{line}"
-                    logger.debug("Found %s in %s", m.group(1), location)
-                    tasks[m.group(1)].append(location)
-                elif expr_loose.match(txt):
+                match_todo = re.match(r".*TODO", text)
+                match_task = re.match(r".*[\W]+(T\d+)", text)
+
+                task_id = (
+                    match_task.group(1)
+                    if match_task and len(match_task.group(1)) >= 5
+                    else None
+                )
+
+                if match_todo and task_id:
+                    logger.debug(f"Found {task_id} in {location}")
+                    tasks[task_id].append(location)
+
+                if task_id and not match_todo:
+                    logger.warning(f"Task ID without 'TODO' {location} {text.rstrip()}")
+                    tasks[task_id].append(location)
+
+                if match_todo and not task_id:
                     total_malformed += 1
                     logger.warning(
-                        f"TODO missing task number {f}:{line} {txt.rstrip()}"
+                        f"TODO missing task number {location} {text.rstrip()}"
                     )
 
         except UnicodeDecodeError:
-            logger.debug("Ignoring binary file %s", f)
+            logger.debug(f"Ignoring binary file: {f}")
 
     total_could_remove = 0
     for task, locations in tasks.items():
         title, status, is_closed = get_task_info(task)
-        if is_closed:
+        if is_closed and (status.upper() != "WONTFIX" or args.show_wontfix):
             total_could_remove += len(locations)
             locations_message = "\n\t".join(locations)
             logger.warning(
@@ -124,7 +146,7 @@ if __name__ == "__main__":
                 f" to be removed/updated:\n\t{locations_message}"
             )
         else:
-            logger.debug("%s: is still open: OK", task)
+            logger.debug(f"{task}: is still open: OK")
 
     total_todo = sum([len(locations) for task, locations in tasks.items()])
     logger.info(f"Total TODOs with Task IDs (open & closed) = {total_todo}")
