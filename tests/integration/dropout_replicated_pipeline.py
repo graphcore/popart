@@ -22,7 +22,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
     Test of pipelining with dropout, recomputation, graph replication,
     gradient accumulation
     """
-    # Has dependencies on T12562. T12976, T13098 for full support
 
     seed = 1015
     npr.seed(seed)
@@ -118,11 +117,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
             [skipOut], num_outputs=2, ratio=ratioSkip
         )
 
-        # see T13142: we do this so that the recomputation does not modify the anchors
-        mask0 = builder.aiOnnx.identity([mask0])
-        mask1 = builder.aiOnnx.identity([mask1])
-        maskSkip = builder.aiOnnx.identity([maskSkip])
-
     with builder.virtualGraph(1):
         mm2 = builder.aiOnnx.matmul([dropoutSkip, w2])
         scale2 = builder.aiGraphcore.scale([mm2], scaleFactor)
@@ -135,9 +129,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         l1 = builder.aiGraphcore.l1loss(
             [out], lambda1, reduction=popart.ReductionType.Sum
         )
-
-        # see T13142: we do this so that the recomputation does not modify the anchors
-        mask2 = builder.aiOnnx.identity([mask2])
 
     anchors = {
         mask0: popart.AnchorReturnType("All"),
@@ -152,8 +143,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         assert device
 
         userOptions = popart.SessionOptions()
-        # This requires T12562 to be solved before enabling (TODO)
-        userOptions.enableOutlining = False
         userOptions.enablePipelining = True
         userOptions.enableGradientAccumulation = True
         userOptions.accumulationFactor = accumulationFactor
@@ -167,13 +156,9 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
         # Test "hostRearrangeOnly" switches because of T14035
+        sboValue = "hostRearrangeOnly" if hostRearrangeOnly else "any"
+        userOptions.engineOptions = {"exchange.streamBufferOverlap": sboValue}
         userOptions.enablePrefetchDatastreams = False
-        if hostRearrangeOnly:
-            userOptions.engineOptions = {
-                "exchange.streamBufferOverlap": "hostRearrangeOnly"
-            }
-        else:
-            userOptions.engineOptions = {"exchange.streamBufferOverlap": "any"}
 
         patterns = popart.Patterns()
         patterns.InPlace = True
