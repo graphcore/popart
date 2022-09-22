@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <string>
 
-// Generarted header for this test, which contains all poprithms headers
+// Generated header for this test, which contains all PopART headers
 #include "all_headers.hpp"
 
 // From https://stackoverflow.com/questions/2324658/

@@ -33,21 +33,23 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_10,
   bool wRepl = true;
 
   auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
-  if (!acquisitionFailure(results)) {
-    // int64_t correction = replicationFactor * accumulationFactor;
-    int64_t correction =
-        (wRepl ? replicationFactor : 1) * (wAccl ? accumulationFactor : 1);
 
-    // including factor 2 for accumulation factor and 3 for replication factor
-    auto absdiff0 =
-        getAbsDiff(100 - correction * 6 * learningRate, std::get<0>(results));
-    BOOST_CHECK(absdiff0 < 1e-5f);
-    auto absdiff1 =
-        getAbsDiff(200 - correction * 6 * learningRate, std::get<1>(results));
-    BOOST_CHECK(absdiff1 < 1e-5f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  // correction = replicationFactor * accumulationFactor;
+  int64_t correction =
+      (wRepl ? replicationFactor // cppcheck-suppress knownConditionTrueFalse
+             : 1) *
+      (wAccl ? accumulationFactor // cppcheck-suppress knownConditionTrueFalse
+             : 1);
+
+  // TODO T69575 Simplify the tolerance definition
+  // including factor 2 for accumulation factor and 3 for replication factor
+  auto absdiff0 =
+      getAbsDiff(100 - correction * 6 * learningRate, std::get<0>(results));
+  BOOST_CHECK(absdiff0 < 1e-5f);
+
+  auto absdiff1 =
+      getAbsDiff(200 - correction * 6 * learningRate, std::get<1>(results));
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_10_nesterov,
@@ -74,19 +76,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_10_nesterov,
   bool wRepl = true;
 
   auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
-  if (!acquisitionFailure(results)) {
-    // int64_t correction = replicationFactor * accumulationFactor;
-    int64_t correction =
-        (wRepl ? replicationFactor : 1) * (wAccl ? accumulationFactor : 1);
 
-    // including factor 2 for accumulation factor and 3 for replication factor
-    auto absdiff0 =
-        getAbsDiff(100 - correction * 9 * learningRate, std::get<0>(results));
-    BOOST_CHECK(absdiff0 < 1e-5f);
-    auto absdiff1 =
-        getAbsDiff(200 - correction * 9 * learningRate, std::get<1>(results));
-    BOOST_CHECK(absdiff1 < 1e-5f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  int64_t correction =
+      (wRepl ? replicationFactor // cppcheck-suppress knownConditionTrueFalse
+             : 1) *
+      (wAccl ? accumulationFactor // cppcheck-suppress knownConditionTrueFalse
+             : 1);
+
+  // TODO T69575 Simplify the tolerance definition
+  // including factor 2 for accumulation factor and 3 for replication factor
+  auto absdiff0 =
+      getAbsDiff(100 - correction * 9 * learningRate, std::get<0>(results));
+  BOOST_CHECK(absdiff0 < 1e-5f);
+
+  auto absdiff1 =
+      getAbsDiff(200 - correction * 9 * learningRate, std::get<1>(results));
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }

@@ -24,6 +24,7 @@
 #include "popart/stepio.hpp"
 #include "popart/tensordebuginfo.hpp"
 #include "popart/voiddata.hpp"
+#include <testdevice.hpp>
 
 namespace popart {
 class IArray;
@@ -54,12 +55,6 @@ constexpr const char *w1name = "__w1__";
 // instead of emulating them with the helpers.
 int64_t replicationFactor  = 2;
 int64_t accumulationFactor = 5;
-
-namespace _detail {
-
-std::array<float, 2> acquisitionFailure{-99.0f, -99.0f};
-
-} // namespace _detail
 
 // Pytorch update equations with loss and velocity scaling added. Required when
 // the velocity-scaled v tensor must be modelled.
@@ -277,10 +272,6 @@ struct SGD1TestConfig : public _detail::SGDTestConfig<SGD1TestConfig> {
 
 using SGD1And2TestConfigs = std::tuple<SGD1TestConfig, SGD2TestConfig>;
 
-bool acquisitionFailure(const std::array<float, 2> res) {
-  return res == _detail::acquisitionFailure;
-}
-
 float getAbsDiff(float expected, float observed) {
   float absv = std::abs(expected - observed);
   std::cout << "Expected=" << expected << ", observed=" << observed
@@ -381,35 +372,8 @@ getResults(const popart::SGD &opt0, // initial Optimizer
     userOptions.replicatedGraphCount   = replicationFactor;
   }
 
-  std::shared_ptr<DeviceInfo> device;
-  if (!graphRepl) {
-    device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
-  } else {
-
-    bool errorIfFailToAcquire = false;
-
-    auto devices =
-        popart::DeviceManager::createDeviceManager().enumerateDevices();
-    if (devices.size() == 0) {
-      if (errorIfFailToAcquire) { // cppcheck-suppress knownConditionTrueFalse
-        throw error("Failed to enumerate any devices in get_results.hpp");
-      } else {
-        return _detail::acquisitionFailure;
-      }
-    }
-
-    device = DeviceManager::createDeviceManager().acquireAvailableDevice(
-        replicationFactor);
-
-    if (!device) {
-      if (errorIfFailToAcquire) {
-        throw error("Failed to acquire device in get_results.hpp");
-      } else {
-        return _detail::acquisitionFailure;
-      }
-    }
-  }
+  auto device =
+      createTestDevice(TEST_TARGET, graphRepl ? replicationFactor : 1);
 
   auto session = popart::TrainingSession::createFromOnnxModel(
       proto,

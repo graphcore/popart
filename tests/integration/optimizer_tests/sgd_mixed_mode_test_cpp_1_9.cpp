@@ -131,30 +131,22 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_9,
                                   true);
 
   // test with float16
-  auto results = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
-  if (!acquisitionFailure(results)) {
-    auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
-    auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-    std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
-              << std::endl;
-    BOOST_CHECK(absdiff0 < 1e-1f);
-    BOOST_CHECK(absdiff1 < 1e-1f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  auto results  = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
+  auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
+  auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
+  std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
+            << std::endl;
+  BOOST_CHECK(absdiff0 < 1e-1f);
+  BOOST_CHECK(absdiff1 < 1e-1f);
 
   // test with float32
-  results = getResults<float>(opt0, opt1, opt2, true, true);
-  if (!acquisitionFailure(results)) {
-    auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
-    auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-    std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1
-              << std::endl;
-    BOOST_CHECK(absdiff0 < 1e-4f);
-    BOOST_CHECK(absdiff1 < 1e-4f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  results  = getResults<float>(opt0, opt1, opt2, true, true);
+  absdiff0 = getAbsDiff(w0star, std::get<0>(results));
+  absdiff1 = getAbsDiff(w1star, std::get<1>(results));
+  std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1
+            << std::endl;
+  BOOST_CHECK(absdiff0 < 1e-4f);
+  BOOST_CHECK(absdiff1 < 1e-4f);
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_9_nesterov,
@@ -308,28 +300,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(SgdMixedModeTestCpp1_9_nesterov,
                                   true);
 
   // test with float16
-  auto results = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
-  if (!acquisitionFailure(results)) {
-    auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
-    auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-    std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
-              << std::endl;
-    BOOST_CHECK(absdiff0 < 1e-1f);
-    BOOST_CHECK(absdiff1 < 1e-1f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  auto results  = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
+  auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
+  auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
+  std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
+            << std::endl;
+  BOOST_CHECK(absdiff0 < 1e-1f);
+  BOOST_CHECK(absdiff1 < 1e-1f);
 
   // test with float32
-  results = getResults<float>(opt0, opt1, opt2, true, true);
-  if (!acquisitionFailure(results)) {
-    auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
-    auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-    std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1
-              << std::endl;
-    BOOST_CHECK(absdiff0 < 1e-4f);
-    BOOST_CHECK(absdiff1 < 1e-4f);
-  } else {
-    std::cout << "Failed to acquire device, test not run!";
-  }
+  results  = getResults<float>(opt0, opt1, opt2, true, true);
+  absdiff0 = getAbsDiff(w0star, std::get<0>(results));
+  absdiff1 = getAbsDiff(w1star, std::get<1>(results));
+  std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1
+            << std::endl;
+  BOOST_CHECK(absdiff0 < 1e-4f);
+  BOOST_CHECK(absdiff1 < 1e-4f);
 }
