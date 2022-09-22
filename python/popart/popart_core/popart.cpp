@@ -284,7 +284,18 @@ private:
 class PyWeightsIO : public IWeightsIO {
 public:
   PyWeightsIO(const std::map<TensorId, py::array> &weights_)
-      : weights(weights_) {}
+      : weights(weights_) {
+    for (auto &t : weights) {
+      if (!isContiguous(t.second)) {
+        throw error(
+            "PyWeightsIO is unable to use the provided numpy output array for"
+            " tensor '{}' as it is not c-contiguous. Please use a function"
+            " like `numpy.ascontiguousarray()` to make contiguous before"
+            " passing to PyWeightsIO",
+            t.first);
+      }
+    }
+  }
 
   template <typename T>
   T get(TensorId id,
