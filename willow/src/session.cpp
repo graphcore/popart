@@ -514,6 +514,13 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   if (!device_) {
     throw runtime_error("Must call setDevice before {}", __func__);
   }
+  if (ir->getSessionOptions().constantWeights &&
+      ir->getExecutionMode() == Ir::ExecutionMode::Inference) {
+    throw runtime_error("Cannot call writeWeights when constantWeights is "
+                        "set. Set `constantWeights` to False"
+                        " in the `SessionOption`s when initialising the"
+                        " session to enable this behaviour.");
+  }
 
   device_->writeWeights(weightsIo);
 }

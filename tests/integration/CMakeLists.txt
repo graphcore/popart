@@ -154,6 +154,7 @@ add_popart_py_unit_test(version_test)
 add_popart_py_unit_test(test_all_reduce_op VARIANTS Hw)
 add_popart_py_unit_test(min_max_unwinding_test)
 add_popart_py_unit_test(deprecated_session_options)
+add_popart_py_unit_test(constant_weights_error_test)
 
 # Test to check for boost in popart headers.
 set(POPART_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/willow/include)
