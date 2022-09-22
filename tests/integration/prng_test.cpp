@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE(
   // TODO (T48752): Remove.
   opts._enableRngStateManagement = true;
 
-  // Uncomment when profiling (see T32263).
+  // Uncomment when profiling (see ~T32263~).
   // opts.engineOptions["target.syncReplicasIndependently"] = "true";
 
   auto session = TrainingSession::createFromOnnxModel(

@@ -31,7 +31,7 @@ add_unit_test(final_0_subgraph_test
 add_unit_test(getmatches_0_subgraph_test
    getmatches_0_subgraph_test.cpp)
 
-# a speed test (in development, see T7258)
+# a speed test
 add_unit_test(speed_0_subgraph_test speed_0_subgraph_test.cpp)
 
 # tests at the Op level

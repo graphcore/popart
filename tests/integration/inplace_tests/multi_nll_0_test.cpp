@@ -44,7 +44,7 @@ using namespace popart;
 
 BOOST_AUTO_TEST_CASE(test) {
 
-  // (see T11824, T12152, D16243)
+  // (see ~T11824~, ~T12152~, D16243)
   //
   //
   // Input ---|          |--slice--softmax--nll

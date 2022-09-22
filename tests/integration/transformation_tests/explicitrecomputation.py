@@ -170,7 +170,7 @@ def test_explicit_recomputation_pipelining():
             if (op["type"] == "DynamicUpdate" or op["type"] == "DynamicUpdateInplace")
         ]
 
-        # Due to the number of pipeline stages and only one tensor requring
+        # Due to the number of pipeline stages and only one tensor requiring
         # stashing in pipeline stage 0, we expect one stash
         assert len(stashes) == 1
 
@@ -183,5 +183,5 @@ def test_explicit_recomputation_pipelining():
 
         # Due to the number of operations in the original forward pass,
         # we expect 6 recomputed operations (when outlining is disabled)
-        # This may change with T61001
+        # TODO This may change with T61001
         assert len(recomputed) == 6

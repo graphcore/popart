@@ -140,7 +140,7 @@ def test_get_tensors_data(
         input_val, add_val, init_val
     )
     sess = popxl.Session(ir, "ipu_hw")
-    # This was failing before T62680. copied_output was not input_val + add_val
+    # This was failing before ~T62680~. copied_output was not input_val + add_val
     # but init_val.
     run_and_compare(sess, input_tensor, copied_output, input_val, output_val)
 

@@ -357,7 +357,8 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
         outIndex);
   }
 
-  // Avoid double scoping (could be improved by making TensorId a class T33644)
+  // Avoid double scoping
+  // TODO T33644: Could be improved by making TensorId a class
   if (tenId.find(getScope().str()) == std::string::npos) {
     tenId = (getScope() / tenId).str();
   }

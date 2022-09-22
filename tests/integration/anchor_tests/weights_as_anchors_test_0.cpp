@@ -63,8 +63,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   std::vector<int64_t> stepDataShape{batchesPerStep, batchSize, 1, 1};
 
   // When  weights are anchors (of ReturnType ALL), the the number of weights
-  // that are returned will be batchesPerStep * accumulationFactor (probably,
-  // see T10052)
+  // that are returned will be batchesPerStep * accumulationFactor
   std::vector<int64_t> stepWeightShape{batchesPerStep, 1, 1};
 
   TensorInfo sampleInfo{"FLOAT", sampleShape};
@@ -166,7 +165,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
 
   // Note the size of the buffer we'll write to for weight anchors is
   // independent of batch-size. It is number of micro-batches (= number of
-  // batches) * weight size (see T10052)
+  // batches) * weight size
   std::vector<float> v_w1_out(stepWeightElms, -77.0f);
   popart::NDArrayWrapper<float> w1_wrapper(v_w1_out.data(), stepWeightShape);
 

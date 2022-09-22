@@ -412,8 +412,7 @@ std::map<int, std::unique_ptr<popart::Op>>::iterator Graph::eraseOp(OpId opid) {
   return ops.erase(found);
 }
 
-// T12001
-// Remove AddInplace, VarUpdate should be only modifier
+// TODO T12001: Remove AddInplace, VarUpdate should be only modifier
 void Graph::setVarUpdateConstraints() {
 
   auto scopedStopwatch = getIr().timePartitionLogger().scopedStopwatch(

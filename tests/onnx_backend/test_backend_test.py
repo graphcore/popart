@@ -228,7 +228,7 @@ backend_test.exclude("test_argmin")
 backend_test.exclude("cast_FLOAT_to_STRING_ipu")
 backend_test.exclude("cast_STRING_to_FLOAT_ipu")
 
-# T6601
+# TODO T6601 Num input dilation dims does not match the num of field dims
 backend_test.exclude("averagepool_1d_default")
 backend_test.exclude("averagepool_3d_default")
 backend_test.exclude("AvgPool3d")
@@ -240,27 +240,27 @@ backend_test.exclude("MaxPool3d")
 backend_test.exclude("MaxPool3d_stride")
 backend_test.exclude("MaxPool3d_stride_padding")
 
-# T????
+# TODO T????
 backend_test.exclude("maxpool_2d_ceil")
 backend_test.exclude("maxpool_2d_dilations")
 
-# T6602
+# TODO T6602 count_include_pad is not supported
 backend_test.exclude("averagepool_2d_pads_count_include_pad")
 backend_test.exclude("averagepool_2d_precomputed_pads_count_include_pad")
 
-# T???? Add new ceil param
+# TODO T???? Add new ceil param
 backend_test.exclude("averagepool_2d_ceil")
 
-# T6604
+# TODO T6604 Anchor tensor `values' not in tensors
 backend_test.exclude("constant")
 
-# T6605
+# TODO T6605 Is there a poplar type for INT64
 backend_test.exclude("gather_0")
 backend_test.exclude("gather_1")
 backend_test.exclude("scatter_with_axis")
 backend_test.exclude("scatter_without_axis")
 
-# T6607
+# TODO T6607 Poplar only supports convolutions with 2 spatial dimensions
 backend_test.exclude("Conv1d_dilated")
 backend_test.exclude("Conv1d_groups")
 backend_test.exclude("Conv1d")
@@ -276,18 +276,18 @@ backend_test.exclude("Conv3d_stride")
 backend_test.exclude("Conv3d_stride_padding")
 backend_test.exclude("Conv3d")
 
-# T6608
+# TODO T6608 Tensor 1 of unexpected shape
 backend_test.exclude("Conv2d_groups")
 backend_test.exclude("Conv2d_groups_thnn")
 
-# T9150
+# TODO T9150 test_shape_ failing
 backend_test.exclude("test_shape_ipu")
 backend_test.exclude("test_shape_example_ipu")
 
 # Failures due to static size of poplar graph
 backend_test.exclude("test_tile")
 
-# T9215
+# TODO T9215 Slice does not support streamed inputs
 backend_test.exclude("test_slice")
 
 # Failures that have not been triaged
@@ -318,7 +318,7 @@ backend_test.exclude("test_maxpool_2d_same_upper")
 backend_test.exclude("test_maxpool_3d_default")
 backend_test.exclude("test_maxpool_with_argmax_2d_precomputed_strides")
 
-# T12065
+# TODO T12065 Support negative axes
 backend_test.exclude("test_concat_1d_axis_negative_1")
 backend_test.exclude("test_concat_2d_axis_negative_1")
 backend_test.exclude("test_concat_2d_axis_negative_2")
@@ -341,7 +341,7 @@ backend_test.exclude("test_squeeze_negative_axes")
 backend_test.exclude("test_unsqueeze_negative_axes")
 backend_test.exclude("test_gather_negative_indices")
 
-# T12066
+# TODO T12066 Support reshape dimensions
 backend_test.exclude("test_reshape_negative_extended_dims")
 backend_test.exclude("test_reshape_reordered_all_dims")
 backend_test.exclude("test_reshape_reordered_last_dims")
@@ -352,7 +352,7 @@ backend_test.exclude("test_clip")
 # backend_test.include('test_clip_default_inbounds')
 # backend_test.include('test_clip_inbounds')
 
-# T12067
+# TODO T12067 Support changes to Pad operation
 backend_test.exclude("test_edge_pad")
 backend_test.exclude("test_reflect_pad")
 

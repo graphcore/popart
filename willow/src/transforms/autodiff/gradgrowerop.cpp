@@ -61,7 +61,7 @@ GradGrowerOp::growGradOps(Graph &bwdGraph,
     //
     // TODO T17311: Uncomment this. This prevented explicit priorities on
     // certain gradient ops being set which was necessary as a short term fix
-    // for sharded training regressions seen in T17036. This could be replaced
+    // for sharded training regressions seen in ~T17036~. This could be replaced
     // once explicit priorities are no longer needed for this purpose.
     //
     // gradOp->settings.schedulePriority = 0.0;

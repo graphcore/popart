@@ -41,7 +41,7 @@ class IArray;
 using namespace popart;
 
 /**
- * Test loop correctness with aliasing tensors (regression test: see T54054).
+ * Test loop correctness with aliasing tensors (regression test: see ~T54054~).
  *
  * The loop computes (pseudocode):
  *

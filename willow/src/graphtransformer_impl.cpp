@@ -850,9 +850,8 @@ void GraphTransformerImpl::convertInitializersToConstants(
   graph->mutable_node()->Swap(&new_nodes);
 
   // Now remove the initializers and inputs
-  // TODO unexpectedly large models might benefit from
-  // making this O(n^2) algorithm into the O(n) version
-  // task T6416
+  // TODO T6416: unexpectedly large models might benefit from making this O(n^2)
+  // algorithm into the O(n) version
   for (auto &id : ids) {
     auto *initializers = graph->mutable_initializer();
     for (auto initializer = initializers->begin();

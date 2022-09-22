@@ -12,8 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
-# TODO: Fix with T29800
-@pytest.mark.skip(reason="T29800 required for batch serialized dropouts")
+@pytest.mark.skip(reason="TODO T29800 required for batch serialized dropouts")
 def test_batchserialisation_dropout():
     def model():
         np.random.seed(1984)

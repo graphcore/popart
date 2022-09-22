@@ -23,7 +23,7 @@ def test_groupnorm_0(op_tester):
     scale = np.ones(num_channels).astype(np.float32)
 
     # Only backprop one value per group to avoid the gradient of the summed
-    # loss term being numerially zero
+    # loss term being numerically zero
     one_per_group = np.zeros_like(d1)
 
     assert num_channels % num_groups == 0
@@ -103,7 +103,7 @@ def test_groupnorm_1(op_tester):
     scale = np.ones(num_channels).astype(np.float32)
 
     # Only backprop one value to avoid the gradient of the summed loss
-    # term being numerially zero
+    # term being numerically zero
     assert num_groups == 1
     one_per_group = np.zeros_like(d1)
     num = random.randint(0, num_channels - 1)
@@ -229,7 +229,7 @@ def test_groupnorm_3(op_tester):
     )
 
     # Only backprop  a few (3 out of 4) locations to avoid the gradient of the
-    # summed loss term being numerially zero
+    # summed loss term being numerically zero
     non_zero_places = 3
     a_few_places = np.zeros_like(d1.flatten())
 
@@ -428,7 +428,7 @@ def refGroupNormFwd(
     )
 
 
-# Test stable group norm algorith - this test fails without it.
+# Test stable group norm algorithm - this test fails without it.
 @pytest.mark.skip(
     reason="""Some changes to pytorch's view operator seem
      to have broken this in version 1.6.0"""
@@ -448,7 +448,7 @@ def test_groupnorm_5(op_tester):
     scale = np.ones(num_channels).astype(np.float32)
 
     # Only backprop one value per group to avoid the gradient of the summed
-    # loss term being numerially zero
+    # loss term being numerically zero
     one_per_group = np.zeros_like(d1)
 
     assert num_channels % num_groups == 0

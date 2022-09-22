@@ -263,8 +263,7 @@ def test_full_recompute_pipelining(explicit):
                     bins[op["type"]] = 1
 
             print(bins)
-            # T35025 : Adjusted due to inplace tensors being consumed by
-            # implicit recompute
+
             assert "ReshapeInplace" in bins and bins["ReshapeInplace"] == 39
             assert "SliceInplace" in bins and bins["SliceInplace"] == 9
             assert "TransposeInplace" in bins and bins["TransposeInplace"] == 41

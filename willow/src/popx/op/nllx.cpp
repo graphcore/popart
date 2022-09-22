@@ -171,7 +171,7 @@ void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
   // If the numNonIgnoredSamples is equal to zero, we have ignored all label
   // data, in this case return zero loss. Do this by taking
   // min(numIgnoredSamples, 1) and letting the result be 0 / 1 (where scale = 0
-  // due to the ignored labels). See T36441
+  // due to the ignored labels). See ~T36441~
   auto min_1 = opx.graph().addConstant(
       numNonIgnoredSamples.elementType(), {}, 1, opx.debugContext("const_1"));
   popops::maxInPlace(opx.graph().getPoplarGraph(),

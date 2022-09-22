@@ -129,12 +129,12 @@ def check_ops(
         assert len(hostLoadOps) == 0
 
 
-# Pipelining disabled until explicit pipelining supported (T35924)
+# TODO T69735: Enable pipelining in test
 @tu.requires_ipu_model
 @pytest.mark.parametrize("enable_pipelining", [False])
 def test_basic_host_load_output(enable_pipelining: bool):
     """Run a simple model comparing outputs with buffer stream copies on and off.
-    See T29603 for description of bufferStreamCopiesToDevice
+    See ~T29603~ for description of bufferStreamCopiesToDevice
 
     Args:
         enable_pipelining (bool): Whether to split the model in two and pipeline it.
@@ -192,7 +192,7 @@ def get_model(
         synthetic_data (bool): Use synthetic data (zeros in this case).
         buffer_streams (bool): The test option: whether to create ops
             before the stream in order to schedule data loading as part of
-            graph scheduling. See T29603.
+            graph scheduling. See ~T29603~.
         device (DeviceContext): The device.
 
     Returns:
@@ -418,7 +418,7 @@ def test_host_load_multi_bps():
 
 
 @tu.requires_ipu
-@pytest.mark.skip("TODO Not working with replication yet")
+@pytest.mark.skip("TODO T69724: Not working with replication yet")
 def test_host_load_replicated():
     """Run a replicated model"""
     run_test(

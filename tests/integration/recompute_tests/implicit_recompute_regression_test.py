@@ -12,7 +12,7 @@ import test_util as tu
 
 def test_implicit_recompute_op_scheduled_pre_loss_no():
     """
-    Regression test for T36828. Confirm that compilation completes without an
+    Regression test for ~T36828~. Confirm that compilation completes without an
     exception being thrown.
 
     It is possible that the MulGrad op that produces Gradient___t3 is scheduled

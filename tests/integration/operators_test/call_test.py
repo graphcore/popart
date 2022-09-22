@@ -514,7 +514,7 @@ def test_call_grad_scoped(op_tester):
         # Put in a sub-scope just to mix things up.
         with subgraph_builder.nameScope("example_scope"):
             m = subgraph_builder.aiOnnx.matmul([i0, i1], "mul_inside_subgraph")
-            # Add a constant - testing T15991
+            # Add a constant - testing ~T15991~
             c = subgraph_builder.aiOnnx.constant(c0, "subgraph_const")
             a = subgraph_builder.aiOnnx.add([m, c], "add_inside_subgraph")
             subgraph_builder.addOutputTensor(a)

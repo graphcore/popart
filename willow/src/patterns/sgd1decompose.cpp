@@ -74,7 +74,7 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
   }
   // We add to the initialized velocity a weight decay term (see the equations)
   for (auto i = 0; i < nelms; ++i) {
-    // T12001 investigate why += doesn't work
+    // TODO T12001: Investigate why += doesn't work
     // Recall, this scaling factor is (1-dm)*wd*vs
     d[i] = weightVal0[i] * static_cast<T>(comboOp.initSwd1.val());
   }
@@ -243,10 +243,10 @@ bool SGD1Decompose::apply(Op *op) const {
                                         ? acclIntoReduceId
                                         : acclIntoUpdateId);
 
-  // T12001 better encapsulation
+  // TODO T12001 better encapsulation
   ir.addAdditionalModelProtoTensor(acclIntoAccumulatorId);
 
-  // T12001 confirm that there are no topo cons here rather
+  // TODO T12001 confirm that there are no topo cons here rather
   graph.topoCons->transfer(combo, acclOp);
   acclOp->setup();
 
@@ -284,10 +284,10 @@ bool SGD1Decompose::apply(Op *op) const {
                                           ? nesterovAcclReduceId
                                           : nesterovAcclUpdateId);
 
-    // T12001 better encapsulation
+    // TODO T12001 better encapsulation
     ir.addAdditionalModelProtoTensor(nesterovAcclGradId);
 
-    // T12001 confirm that there are no topo cons here rather
+    // TODO T12001 confirm that there are no topo cons here rather
     graph.topoCons->transfer(combo, acclOp);
     acclOp->setup();
   }

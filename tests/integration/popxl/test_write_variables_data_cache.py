@@ -7,7 +7,7 @@ from popxl import ops
 class TestWriteVariablesData:
     # Test that write_variable_data updates variable data on host and
     # that its weight is updated on device when using POPXL_CACHE_DIR, [A].
-    # This test was failing, see T60847. But was passing when POPXL_CACHE_DIR
+    # This test was failing, see ~T60847~. But was passing when POPXL_CACHE_DIR
     # was not used, [B].
     # The reason was that for [B] weights are populated by IR and we were
     # updating IR when calling write_variable_data.

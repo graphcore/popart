@@ -1196,7 +1196,7 @@ Op *SubgraphOutline::replaceWithEmptyElseBranchIfOp(
 
   setSubgraphOpSettingsFromClusterInstance(ifOp, instance);
 
-  // ToDo T50509 can we add aliasing/inplace as in replaceWithCallOp case?
+  // TODO T50509 can we add aliasing/inplace as in replaceWithCallOp case?
 
   // Disconnect the old op
   for (auto opid : instance.ops) {

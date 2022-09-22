@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip1) {
 
     Shape inShape{H, W};
 
-    // see T15121: exponential slow down in a popx algorithm.
+    // see ~T15121~: exponential slow down in a popx algorithm.
     constexpr bool useInitialReductionToAvoidLayoutSearch{true};
     if (useInitialReductionToAvoidLayoutSearch) {
       int64_t redFactor = 3;

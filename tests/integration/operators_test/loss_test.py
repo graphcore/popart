@@ -674,7 +674,7 @@ def test_nll_input_is_log_probability_training(op_tester):
 
 
 def test_nll_all_ingoreindex(op_tester):
-    """Testing T36441, ignoring all indicies in nll loss. Without the fix,
+    """Testing ~T36441~, ignoring all indices in nll loss. Without the fix,
     popart returns NaNs due to a div/0
     """
     np.random.seed(0)

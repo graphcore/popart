@@ -5,10 +5,12 @@ import numpy as np
 
 
 class TestAutoDiffCast:
-    # This test was failing due to bug in popxl cast.
-    # It was creating output tensor by using tensor id
-    # instead of name. Resulting in autodiff grow grads
-    # error having wrong tensor names. See T62127.
+    """Reproducer for ~T62127~
+    This test was failing due to bug in popxl cast. It was creating output
+    tensor by using tensor id instead of name. Resulting in autodiff grow grads
+    error having wrong tensor names.
+    """
+
     def test_auto_diff_cast(self):
         ir = popxl.Ir()
         main = ir.main_graph

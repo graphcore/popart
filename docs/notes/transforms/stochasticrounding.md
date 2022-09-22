@@ -31,7 +31,7 @@ The stochastic rounding transform is responsible for assigning a
 > the proper behaviour of the stochastic rounding transform once it's been
 > tested.
 >
-> This note should be removed as part of completing T48752.
+> TODO This note should be removed as part of completing T48752.
 
 The stochastic rounding transform does the following:
 
@@ -210,4 +210,4 @@ kind of disagreement on value should only happen for graph inputs.
 > analysis could account for this and would allow management of RNG states
 > accordingly.
 >
-> This note should be removed as part of completing T48510(T51589).
+> TODO This note should be removed as part of completing T51589.

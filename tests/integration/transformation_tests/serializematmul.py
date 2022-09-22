@@ -275,7 +275,7 @@ def test_matmul_serialization_training_1():
                 o: popart.AnchorReturnType("All"),
                 rhs: popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs: popart.AnchorReturnType("All"),
-                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
+                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << TODO T69727
             },
         )
 
@@ -824,7 +824,7 @@ def test_matmul_serialization_training_3():
                 o: popart.AnchorReturnType("All"),
                 rhs: popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs: popart.AnchorReturnType("All"),
-                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
+                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << TODO T69727
             },
         )
 
@@ -1073,7 +1073,7 @@ def test_matmul_serialization_precision():
                 o: popart.AnchorReturnType("All"),
                 rhs: popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs: popart.AnchorReturnType("All"),
-                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
+                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << TODO T69727
             },
         )
 
@@ -1345,7 +1345,7 @@ def test_matmul_serialization_training_with_gradient_accumlation():
                 o: popart.AnchorReturnType("All"),
                 rhs: popart.AnchorReturnType("Final"),
                 popart.reservedGradientPrefix() + lhs: popart.AnchorReturnType("All"),
-                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << T11469
+                # popart.reservedGradientPrefix() + rhs: popart.AnchorReturnType("All"), << TODO T69727
             },
         )
 

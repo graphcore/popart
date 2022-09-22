@@ -63,7 +63,8 @@ bool ViewSimplifyPattern::matches(Op *op) const {
         // if 'a' is Checkpoint operation and 'x' is produced by a Recompute
         // operation then by modifying `b(y) -> b(x)` we will change how the
         // program is executed as getRequiredRecomputeOps in irlowering will not
-        // stop at 'a'. Remove once explicit recompute is standard (T17663).
+        // stop at 'a'.
+        // TODO T17663: Remove once explicit recompute is standard.
         return false;
       }
 

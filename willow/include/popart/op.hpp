@@ -314,7 +314,7 @@ public:
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority guarantees no inplacing
-    // This should really be a map with "OperatorIdentifier" keys, see T6783
+    // TODO T6783: This should really be a map with "OperatorIdentifier" keys
     std::vector<std::tuple<std::string, float>> inplacePriorityVeto;
 
     // A set of patterns which should not be applied to this op.
@@ -1786,7 +1786,7 @@ public:
   configureForReplicatedTensorSharding(ReplicatedTensorShardingIndices indices,
                                        const ReplicaGrouping &grouping);
 
-  // T41400 is to remove all other versions of `transferBaseProperties` and
+  // TODO T41400: Remove all other versions of `transferBaseProperties` and
   // replace with this.
   /**
    * Transfer the base properties from another op to this op.

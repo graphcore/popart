@@ -5,7 +5,7 @@ import numpy as np
 
 def test_postnrepl_overzealous_elimination():
 
-    # Reproducer for T36270, included as regression test. This test doesn't
+    # Reproducer for ~T36270~, included as regression test. This test doesn't
     # actually do any assertions, it just checks that a code path that
     # previously failed does not result in any exceptions.
     #
@@ -56,7 +56,7 @@ def test_postnrepl_overzealous_elimination():
 
 def test_incomplete_grad():
 
-    # Reproducer for T37001, included as regression test. This test doesn't
+    # Reproducer for ~T37001~, included as regression test. This test doesn't
     # actually check any assertions, it just ensure that a code path that
     # previously failed does not result in any exceptions.
     #

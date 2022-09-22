@@ -188,10 +188,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
               {}, // no SessionOptions
               Patterns::create({"PostNRepl"}).enableRuntimeAsserts(false)});
 
+  // TODO T69732: Clean up below
   // Check that the Add Op is has been removed from the IR
   // by ConstExpr folding
-  // TODO: this test will give a false pass if the model is using
-  // a newer opset. Fix when T6274 is complete
+  // TODO: Fix when ~T6274~ is complete. This test will give a false pass if the
+  // model is using a newer opset.
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 0);
 }
 

@@ -231,7 +231,7 @@ private:
 
   snap::Tensor randomSeedTensor;
 
-  // T11630: Combine the inputStreams/outputStreams with the
+  // TODO T11630: Combine the inputStreams/outputStreams with the
   // fromHostStreams/toHostAnchorStreams streams?
 
   //  poplar::Streams for snap::Tensors,

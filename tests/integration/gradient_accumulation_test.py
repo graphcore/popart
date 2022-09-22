@@ -611,8 +611,8 @@ def test_gradient_accumulation_model_proto(tmpdir, explicit_loops):
         weight_tensor = tensor_mapping[rev_map[g_a_name]]
         g_a_tensor = tensor_mapping[g_a_name]
         for d_i, v in enumerate(weight_tensor.float_data):
-            # initialisation as per equations. When velocity scaling != 1 this
-            # will need changing : T12001
+            # initialisation as per equations. When velocity scaling != 1
+            # TODO T12001: This will need changing
             assert g_a_tensor.float_data[d_i] - v * wd < 1e-8
 
 

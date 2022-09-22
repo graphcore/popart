@@ -69,7 +69,7 @@ def test_constants_preserved():
         session_proto = f.read()
     assert proto == session_proto
 
-    # confirm that the output is correct. See T6186, which this tests
+    # confirm that the output is correct. See ~T6186~, which this tests
     assert np.sum(np.abs(anchorArrays[o2] - np.array([[7, 8], [9, 10]]))) < 1e-8
 
 

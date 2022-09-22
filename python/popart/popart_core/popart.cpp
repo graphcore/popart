@@ -770,7 +770,6 @@ PYBIND11_MODULE(popart_core, m) {
         "Sum", ReductionType::Sum, SINGLE_LINE_DOC(popart, ReductionType, Sum));
   }
   {
-    // T42271
     py::enum_<MeanReductionStrategy> en(
         m, "MeanReductionStrategy", DOC(popart, MeanReductionStrategy));
     en.value("Running",

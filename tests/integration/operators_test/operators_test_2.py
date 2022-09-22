@@ -773,7 +773,7 @@ def test_convtranspose_auto_pad_same_upper(op_tester):
         d = builder.addInputTensor(x)
         f = builder.addInputTensor(W)
         o = builder.aiOnnxOpset11.convtranspose([d, f], output_shape=[2, 2])
-        # Work-around to set auto_pad until T38874 is done:
+        # TODO T38874: Remove auto_pad workaround:
         builder.addNodeAttribute("auto_pad", "SAME_UPPER", set([o]))
         builder.addOutputTensor(o)
         return [o]

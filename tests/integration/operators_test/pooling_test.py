@@ -499,7 +499,7 @@ def test_globalmaxpool_grad_2d(op_tester):
     op_tester.run(init_builder, reference, step_type="train")
 
 
-# This will fail at the popart layer T6966
+# Reproducer for ~T6966~
 def test_globalmaxpool_3d(op_tester):
     d1 = np.random.rand(1, 1, 6, 6, 4).astype(np.float32)
 

@@ -391,7 +391,7 @@ def test_distinct_random_behaviour_with_subgraphs():
                 "main_dropout1": main_dropout1,
                 "main_dropout2": main_dropout2,
                 "main_dropout3": main_dropout3,
-                # Grad not checked but needed here because of T36121
+                # TODO Grad not checked but needed here because of T36121
                 "main_dropout0_grad": popart.reservedGradientPrefix() + main_in0,
             },
         )

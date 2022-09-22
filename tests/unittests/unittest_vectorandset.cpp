@@ -8,9 +8,8 @@
 #include <popart/vectorandset.hpp>
 
 BOOST_AUTO_TEST_CASE(test_vectorAndSetTest) {
-  // T45403
-  // As with unittest_utils.cpp it seems like we need to force linking with this
-  // line
+  // TODO T45403 As with unittest_utils.cpp it seems like we need to force
+  // linking with this line:
   popart::logging::debug("");
 
   std::vector<int> v{1, 2, 3};

@@ -80,8 +80,7 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
     auto l1  = builder->aiGraphcoreOpset1().l1loss({out}, 0.1);
 
     builder->setInplacePreferences(x3, {{"ConcatInplace", priorityValue}});
-    // TODO if  these 2 priorities are large (>10.0f), this test fails. See task
-    // T9423
+    // TODO T9423: if  these 2 priorities are large (>10.0f), this test fails.
     builder->setInplacePreferences(o2, {{"ConcatInplace", 9.0f}});
     builder->setInplacePreferences(o1, {{"ReluInplace", 9.5f}});
 

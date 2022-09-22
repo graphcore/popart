@@ -34,7 +34,7 @@ def test_sharding_without_replicas_warning(tmpdir):
 
 @tu.requires_ipu
 def test_inplacing_phased_constraints(tmpdir):
-    # This used to fail, see T23985
+    # This used to fail, see ~T23985~
     run_model(
         tmpdir,
         "phased.onnx",

@@ -108,7 +108,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
         )
         dropout1 = builder.aiGraphcore.scale([dropout1], 2.0)
         skipOut = builder.aiOnnx.add([mm0, dropout1])
-        # See resolved task T13137
+        # See resolved task ~T13137~
         if forceAddOutOfPlace:
             builder.setInplacePreferences(skipOut, {"AddRhsInplace": -1.0})
 
@@ -155,7 +155,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation, hostRearrangeOnly):
             userOptions.replicatedGraphCount = replicationFactor
         userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
 
-        # Test "hostRearrangeOnly" switches because of T14035
+        # Test "hostRearrangeOnly" switches because of ~T14035~
         sboValue = "hostRearrangeOnly" if hostRearrangeOnly else "any"
         userOptions.engineOptions = {"exchange.streamBufferOverlap": sboValue}
         userOptions.enablePrefetchDatastreams = False

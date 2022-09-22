@@ -32,7 +32,8 @@ bool checkErrorMsgRemoveScopes(const popart::error &ex) {
 }
 
 BOOST_AUTO_TEST_CASE(unittest_utils_streamoperator_pair) {
-  // T41277. This test was failing with `libpva.so: undefined symbol: dlsym`.
+  // Reproducer for ~T41277~.
+  // This test was failing with `libpva.so: undefined symbol: dlsym`.
   // Investigation showed that this test was not linking libpopart.so. Adding
   // this logging call does not fix the underlying issue, but does force this
   // test to link against popart, allowing us to continue running the tests.

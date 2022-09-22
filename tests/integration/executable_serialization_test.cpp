@@ -522,10 +522,10 @@ BOOST_AUTO_TEST_CASE(serialize_deserialize) {
   BOOST_CHECK(boost::filesystem::remove_all(testDir));
 }
 
-// T36910 identified that the Accum tensor was getting saved in the executable.
-// This is not needed in the current implementation. This test sets the above
-// but with an Adam optimizer and gradient accumulation to ensure the creation
-// of the Accum___ tensors.
+// ~T36910~ identified that the Accum tensor was getting saved in the
+// executable. This is not needed in the current implementation. This test sets
+// the above but with an Adam optimizer and gradient accumulation to ensure the
+// creation of the Accum___ tensors.
 BOOST_AUTO_TEST_CASE(serialize_deserialize_adam) {
   auto bder       = getBuiltModel();
   auto proto      = bder->getModelProto();

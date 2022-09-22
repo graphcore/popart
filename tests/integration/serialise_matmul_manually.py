@@ -33,7 +33,7 @@ def test_manual_serialization():
     # into a sequence of factor-f smaller matmuls
     # matmul (N,C0/f),(C0/f,C1))
     #
-    # reapeated and accumulated f times, where f is
+    # repeated and accumulated f times, where f is
 
     f = 4
     assert C0 % f == 0
@@ -41,8 +41,10 @@ def test_manual_serialization():
     # Constructing the model
 
     builder = popart.Builder()
-    # NOTE: T22702 For some seeds this test fails.
+
+    # NOTE: ~T22702~ For some seeds this test fails.
     np.random.seed(0)
+
     wVals = np.array(npr.randn(C0, C1), dtype=np.float32)
     W = builder.addInitializedInputTensor(wVals)
     xInfo = popart.TensorInfo("FLOAT", [N, C0])

@@ -636,8 +636,7 @@ StreamingMemoryOpInserter::getReplicatedTensorShardingIndices(Op *op) const {
       !op->isConvertibleTo<CollectivesBaseOp>()) {
     // Encountered an Op that is not part of the optimizer setup, and as
     // such, can't be RTS
-    // TODO: Can be improved/enhanced with replica-equal analysis instead
-    // See T52660
+    // TODO T52660: Can be improved/enhanced with replica-equal analysis instead
     logging::transform::trace("[StreamingMemory] {} cannot be RTS because "
                               "the Op is not an optimizer Op.",
                               op->debugName());
