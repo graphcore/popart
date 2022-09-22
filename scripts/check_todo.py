@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 # Copyright (c) 2022 Graphcore Ltd. All rights reserved.
+"""
+Tool to scan source code for the tag 'TODO' and Phabricator task IDs of the form 'Tnnnn'.
+It then checks the task status by connecting to Phabricator and reports closed
+tasks which are candidates for being removed from the source code.
+
+E.g. There may have been a workaround in the code for a known problem, which can
+now be cleaned up post the task completion.
+"""
 
 import argparse
 import collections
@@ -9,6 +17,7 @@ import logging
 import os
 import re
 import subprocess
+import textwrap
 from typing import Dict, Tuple
 
 logger = logging.getLogger(os.path.basename(__file__))
@@ -73,16 +82,32 @@ def get_task_info(task: str) -> Tuple[str, str, bool]:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=textwrap.dedent(
+            """\
+            additional information:
+              It can be useful to keep references to closed tasks in the source code.
+              E.g. 'Replicator for Tnnnn'. In this case the warning can be silenced by
+              surrounding the task ID with ~ (tildes). E.g. 'Replicator for ~Tnnnn~'.
+
+              By default, warnings are not generated for closed tasks designated as WONTFIX.
+              It is thought that these tasks could be reopened in the future, and it will be
+              useful to keep references to the tasks within our source. To include these
+              tasks in the output, use the --show-wontfix option.
+        """
+        ),
+    )
     parser.add_argument(
-        "-d", "--debug", action="store_true", help="Print debug messages"
+        "-d", "--debug", action="store_true", help="print debug messages"
     )
 
     parser.add_argument(
         "-wf",
         "--show-wontfix",
         action="store_true",
-        help="Include 'wontfix' tasks in outputs",
+        help="include 'wontfix' tasks in outputs",
     )
 
     parser.add_argument("path", nargs="?", help="Folder to process", default=".")
