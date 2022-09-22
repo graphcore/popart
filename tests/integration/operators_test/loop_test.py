@@ -64,8 +64,6 @@ def test_simple_for_loop(op_tester):
         return [output]
 
     op_tester.setPatterns(popart.PatternsLevel.NoPatterns, enableRuntimeAsserts=False)
-    # T23410: This test doesn't work with inplacing enabled.
-    op_tester.inplacing = False
     op_tester.run(get_init_builder("NoInplace"), reference, step_type="infer")
     op_tester.run(get_init_builder("Inplace"), reference, step_type="infer")
     op_tester.run(get_init_builder("Implicit"), reference, step_type="infer")

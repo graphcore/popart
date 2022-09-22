@@ -33,7 +33,7 @@ def test_l1(op_tester):
             (5, 3, 7),
             (9, 7, 2, 12),
             (3, 256, 256),
-            # (2, 1024, 1024) - not working: T9764
+            (2, 1024, 1024),
         ],
     ):
         data = np.random.random_sample(shape).astype(dtype) - 0.5
@@ -66,7 +66,7 @@ def test_l1_training(op_tester):
                 (5, 3, 7),
                 (9, 7, 2, 12),
                 (3, 256, 256),
-                # (2, 1024, 1024) - not working: T9764
+                (2, 1024, 1024),
             ],
         ):
             data = np.random.random_sample(shape).astype(dtype)

@@ -65,7 +65,6 @@ def create_model_pipelined(
     dataFlow = popart.DataFlow(BPS, {sm: art, nll: art})
 
     opts = popart.SessionOptions()
-    opts.enableOutlining = True
     opts.useHostCopyOps = bufferStreams
 
     if pipelining:
@@ -227,8 +226,6 @@ def get_model(
 
     opts = popart.SessionOptions()
     opts.useHostCopyOps = buffer_streams
-    # TODO: Fix outlining
-    opts.enableOutlining = False
 
     ipus = 1
 
@@ -397,7 +394,7 @@ def run_test(
 @tu.requires_ipu_model
 def test_host_load_simple():
     """Run a simple model"""
-    args = dict(
+    run_test(
         batches_per_step=1,
         replication_factor=1,
         batch_size=1,
@@ -405,13 +402,12 @@ def test_host_load_simple():
         data_len=4,
         steps=2,
     )
-    run_test(**args)
 
 
 @tu.requires_ipu_model
 def test_host_load_multi_bps():
     """Run a simple model with bps > 1"""
-    args = dict(
+    run_test(
         batches_per_step=5,
         replication_factor=1,
         batch_size=4,
@@ -419,14 +415,13 @@ def test_host_load_multi_bps():
         data_len=4,
         steps=2,
     )
-    run_test(**args)
 
 
 @tu.requires_ipu
-@pytest.mark.skip("Not working with replication yet")
+@pytest.mark.skip("TODO Not working with replication yet")
 def test_host_load_replicated():
     """Run a replicated model"""
-    args = dict(
+    run_test(
         batches_per_step=7,
         replication_factor=2,
         batch_size=4,
@@ -434,13 +429,12 @@ def test_host_load_replicated():
         data_len=2,
         steps=1,
     )
-    run_test(**args)
 
 
 @tu.requires_ipu_model
 def test_host_load_pipeline():
     """Run with pipelining"""
-    args = dict(
+    run_test(
         batches_per_step=7,
         replication_factor=1,
         batch_size=1,
@@ -448,4 +442,3 @@ def test_host_load_pipeline():
         data_len=3,
         steps=1,
     )
-    run_test(**args)

@@ -1,13 +1,10 @@
 # Copyright (c) 2021 Graphcore Ltd. All rights reserved.
 import numpy as np
-import popart
-import pytest
 import torch
 
+import popart
 
-@pytest.mark.skipif(
-    not hasattr(torch.nn, "SiLU"), reason="Remove after T38031 is resolved"
-)
+
 def test_swish(op_tester):
     data = np.linspace(
         np.finfo(np.float32).min,
@@ -33,9 +30,6 @@ def test_swish(op_tester):
     op_tester.run(init_builder, reference, "infer")
 
 
-@pytest.mark.skipif(
-    not hasattr(torch.nn, "SiLU"), reason="Remove after T38031 is resolved"
-)
 def test_swish_grad(op_tester):
     data = np.linspace(
         np.finfo(np.float32).min,
