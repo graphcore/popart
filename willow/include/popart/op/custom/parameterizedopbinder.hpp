@@ -36,7 +36,8 @@ namespace op {
  * @param op_name Pybind11 op name to use.
  */
 template <typename TParameterizedOp>
-void makeParameterizedOpBindings(pybind11::module m, const char *op_name) {
+py::class_<TParameterizedOp, popart::Op, std::shared_ptr<TParameterizedOp>>
+makeParameterizedOpBindings(pybind11::module m, const char *op_name) {
   namespace py = pybind11;
   // A bit of template trickery to find the params type associated with the op.
   // This is basically getting the function pointer type of the member function
@@ -50,48 +51,49 @@ void makeParameterizedOpBindings(pybind11::module m, const char *op_name) {
   using InMapType  = std::map<popart::InIndex, popart::TensorId>;
   using OutMapType = std::map<popart::OutIndex, popart::TensorId>;
 
-  py::class_<TParameterizedOp, popart::Op, std::shared_ptr<TParameterizedOp>>(
-      m, op_name)
-      .def(py::init<const popart::OperatorIdentifier &,
-                    const TOpParams &,
-                    const popart::Op::Settings &>(),
-           py::arg("opid"),
-           py::arg("params"),
-           py::arg("settings"))
-      .def(py::init<const TOpParams &, const popart::Op::Settings &>(),
-           py::arg("params"),
-           py::arg("settings"))
-      .def_property_readonly("params", &TParameterizedOp::params)
-      .def_static("default_opid", &TParameterizedOp::defaultOperatorId)
-      // Factory methods.
-      .def_static("create_op_in_graph",
-                  py::overload_cast<popart::Graph &,
-                                    const InMapType &,
-                                    const OutMapType &,
-                                    const popart::OperatorIdentifier &,
-                                    const TOpParams &,
-                                    const popart::Op::Settings &>(
-                      &TParameterizedOp::createOpInGraph),
-                  py::arg("graph"),
-                  py::arg("inputs"),
-                  py::arg("outputs"),
-                  py::arg("opid"),
-                  py::arg("params"),
-                  py::arg("settings"),
-                  py::return_value_policy::reference)
-      .def_static("create_op_in_graph",
-                  py::overload_cast<popart::Graph &,
-                                    const InMapType &,
-                                    const OutMapType &,
-                                    const TOpParams &,
-                                    const popart::Op::Settings &>(
-                      &TParameterizedOp::createOpInGraph),
-                  py::arg("graph"),
-                  py::arg("inputs"),
-                  py::arg("outputs"),
-                  py::arg("params"),
-                  py::arg("settings"),
-                  py::return_value_policy::reference);
+  py::class_<TParameterizedOp, popart::Op, std::shared_ptr<TParameterizedOp>>
+      cls(m, op_name);
+  cls.def(py::init<const popart::OperatorIdentifier &,
+                   const TOpParams &,
+                   const popart::Op::Settings &>(),
+          py::arg("opid"),
+          py::arg("params"),
+          py::arg("settings"));
+  cls.def(py::init<const TOpParams &, const popart::Op::Settings &>(),
+          py::arg("params"),
+          py::arg("settings"));
+  cls.def_property_readonly("params", &TParameterizedOp::params);
+  cls.def_static("default_opid", &TParameterizedOp::defaultOperatorId);
+  // Factory methods.
+  cls.def_static("create_op_in_graph",
+                 py::overload_cast<popart::Graph &,
+                                   const InMapType &,
+                                   const OutMapType &,
+                                   const popart::OperatorIdentifier &,
+                                   const TOpParams &,
+                                   const popart::Op::Settings &>(
+                     &TParameterizedOp::createOpInGraph),
+                 py::arg("graph"),
+                 py::arg("inputs"),
+                 py::arg("outputs"),
+                 py::arg("opid"),
+                 py::arg("params"),
+                 py::arg("settings"),
+                 py::return_value_policy::reference);
+  cls.def_static("create_op_in_graph",
+                 py::overload_cast<popart::Graph &,
+                                   const InMapType &,
+                                   const OutMapType &,
+                                   const TOpParams &,
+                                   const popart::Op::Settings &>(
+                     &TParameterizedOp::createOpInGraph),
+                 py::arg("graph"),
+                 py::arg("inputs"),
+                 py::arg("outputs"),
+                 py::arg("params"),
+                 py::arg("settings"),
+                 py::return_value_policy::reference);
+  return cls;
 }
 
 } // namespace op

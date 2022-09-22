@@ -145,7 +145,7 @@ public:
    */
   const TOpParams &params() const { return m_params; }
 
-private:
+protected:
   ParamsType m_params;
 };
 
