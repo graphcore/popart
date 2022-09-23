@@ -189,12 +189,10 @@ public:
   void removeLoopInput(InIndex index);
   void removeLoopOutput(OutIndex index);
 
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
-  virtual std::set<OutIndex> opInToOpOutIndex(InIndex in) const override;
-  virtual std::set<InIndex> opOutToOpInIndex(OutIndex out) const override;
+  std::set<OutIndex> opInToOpOutIndex(InIndex in) const override;
+  std::set<InIndex> opOutToOpInIndex(OutIndex out) const override;
 
 private:
   std::reference_wrapper<Graph> callee;

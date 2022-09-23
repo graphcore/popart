@@ -14,7 +14,7 @@ public:
   static std::size_t id();
 
   MergeCopies() : Transform() {}
-  virtual ~MergeCopies() override {}
+  ~MergeCopies() override {}
 
   virtual bool apply(Graph &graph) const final;
 

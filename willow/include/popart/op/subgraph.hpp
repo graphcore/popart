@@ -80,7 +80,7 @@ public:
   virtual OutIndex opOutToSubgraphOutIndex(OutIndex index) const = 0;
 
   virtual Graph &getCalledGraph() const = 0;
-  virtual std::vector<const Graph *> getCalledGraphs() const override;
+  std::vector<const Graph *> getCalledGraphs() const override;
   virtual void setCalledGraph(Graph &) = 0;
 
   VGraphIdAndTileSet
@@ -102,7 +102,7 @@ public:
                                            OutIndex outIndex) const override;
 
   // Override to avoid getGradOps being called before we're ready.
-  virtual float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;
+  float calcAutoVirtualGraphCost(std::set<int> &inputs_seen) override;
 
   // Pass on to `calledGraphGradOpHelper`
   virtual void setCalledSubgraphGradInfo(

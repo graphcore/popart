@@ -57,9 +57,7 @@ public:
   view::Regions modifies(InIndex) const final;
 
   bool requiredForRecompute = false;
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 };
 
 } // namespace popart

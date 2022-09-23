@@ -50,7 +50,7 @@ public:
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   /**
    * \return true, if and only if (iff) this Op is mathematically equivalent to
@@ -138,7 +138,7 @@ public:
 
   bool canShard() const override { return true; }
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;

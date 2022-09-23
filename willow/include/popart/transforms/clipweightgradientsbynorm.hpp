@@ -17,7 +17,7 @@ public:
   static std::size_t id();
 
   ClipWeightGradientsByNorm() : Transform() {}
-  virtual ~ClipWeightGradientsByNorm() override {}
+  ~ClipWeightGradientsByNorm() override {}
   virtual bool apply(Graph &graph) const final;
   virtual std::size_t getId() const final { return id(); }
   virtual std::string getName() const final {

@@ -14,7 +14,7 @@ public:
   static std::size_t id();
 
   SerializeMatMuls() : Transform() {}
-  virtual ~SerializeMatMuls() override {}
+  ~SerializeMatMuls() override {}
   virtual bool apply(Graph &graph) const final;
 
   virtual std::size_t getId() const final { return id(); }

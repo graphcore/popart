@@ -17,7 +17,7 @@ public:
   static std::size_t id(int);
 
   StreamingMemory(int pass_) : Transform(), pass(pass_) {}
-  virtual ~StreamingMemory() override {}
+  ~StreamingMemory() override {}
 
   virtual bool apply(Graph &graph) const final;
 

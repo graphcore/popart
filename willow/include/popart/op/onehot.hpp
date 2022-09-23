@@ -39,7 +39,7 @@ public:
 
   static OutIndex getOutIndex() { return 0; }
 
-  virtual void connectInTensor(InIndex inIndex, TensorId tenId) override;
+  void connectInTensor(InIndex inIndex, TensorId tenId) override;
 
   int64_t getAxis() const { return axis; }
 

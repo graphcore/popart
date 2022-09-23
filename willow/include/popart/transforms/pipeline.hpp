@@ -190,7 +190,7 @@ public:
   static bool checkIsFullRecompute(Graph &graph);
 
   Pipeline() : Transform() {}
-  virtual ~Pipeline() override {}
+  ~Pipeline() override {}
 
   /**
    * Checks if the pipelining settings are valid and applies either

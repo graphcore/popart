@@ -61,7 +61,7 @@ public:
   AddArg0GradOp(const Op &, const std::vector<int64_t> &axes);
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
   std::unique_ptr<Op> clone() const final;
@@ -75,7 +75,7 @@ public:
   AddArg1GradOp(const Op &, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
 
-  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
   std::unique_ptr<Op> clone() const final;

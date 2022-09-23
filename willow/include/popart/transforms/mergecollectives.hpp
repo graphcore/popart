@@ -47,13 +47,11 @@ public:
 
   MergeCollectivesTransform() : Transform() {}
   ~MergeCollectivesTransform() override {}
-  virtual bool apply(Graph &graph) const override;
+  bool apply(Graph &graph) const override;
   std::vector<Op *> applyToOps(Graph &graph,
                                const std::set<OpId> includeOps) const;
-  virtual std::size_t getId() const override { return id(); }
-  virtual std::string getName() const override {
-    return "MergeCollectivesTransform";
-  }
+  std::size_t getId() const override { return id(); }
+  std::string getName() const override { return "MergeCollectivesTransform"; }
 
   /**
    * Confirm that two collective ops of the same BaseType use the same

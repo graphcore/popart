@@ -101,15 +101,13 @@ public:
   static std::size_t id(int);
 
   BatchSerialize(int pass_) : Transform(), pass(pass_) {}
-  virtual ~BatchSerialize() override {}
+  ~BatchSerialize() override {}
 
-  virtual bool apply(Graph &graph) const override final;
+  bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(pass); }
+  std::size_t getId() const final { return id(pass); }
 
-  virtual std::string getName() const override final {
-    return "BatchSerialize";
-  }
+  std::string getName() const final { return "BatchSerialize"; }
 
 private:
   OpId reshapeForSlice(Graph &graph,

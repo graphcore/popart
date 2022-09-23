@@ -33,7 +33,7 @@ public:
                                   RemoteArgBufferMap &);
 
   RemoteSetup() : Transform() {}
-  virtual ~RemoteSetup() override {}
+  ~RemoteSetup() override {}
 
   virtual bool apply(Graph &graph) const final;
 

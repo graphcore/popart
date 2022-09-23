@@ -40,7 +40,7 @@ public:
   /**
    * Destructor for the Autodiff class.
    **/
-  virtual ~Autodiff() override;
+  ~Autodiff() override;
 
   /**
    * Vector of tensor IDs.
@@ -63,7 +63,7 @@ public:
    * \return An indication of whether the automatic differentiation has been
    *      completed (`true`) or not (`false`).
    */
-  virtual bool apply(Graph &graph) const override;
+  bool apply(Graph &graph) const override;
 
   /**
    * Perform automatic differentiation.
@@ -266,12 +266,12 @@ public:
   /**
    * Get the ID of the autodiff transform.
    */
-  virtual std::size_t getId() const override { return id(); }
+  std::size_t getId() const override { return id(); }
 
   /**
    * Get the name of the autodiff transform.
    */
-  virtual std::string getName() const override { return "Autodiff"; }
+  std::string getName() const override { return "Autodiff"; }
 
 private:
   // Helper class to create stitchers (add a setter if it helps with testing).

@@ -842,9 +842,7 @@ public:
     return grads;
   }
 
-  virtual float getSubgraphValue() const override {
-    return getLowSubgraphValue();
-  }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
 class GraphTestModel6::GTM6GradOp : public Op {
@@ -876,9 +874,7 @@ public:
     return outInfo;
   }
 
-  virtual float getSubgraphValue() const override {
-    return getLowSubgraphValue();
-  }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
 GraphTestModel6::GraphTestModel6() {

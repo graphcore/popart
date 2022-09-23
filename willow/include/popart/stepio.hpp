@@ -162,7 +162,7 @@ public:
 class WeightsIO : public IWeightsIO {
 public:
   /// Destructor for WeightsIO.
-  virtual ~WeightsIO() override = default;
+  ~WeightsIO() override = default;
 
   /**
    * Check if the WeightsIO instance contains the weights for a specific tensor.

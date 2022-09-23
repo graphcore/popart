@@ -214,7 +214,7 @@ public:
   static std::size_t id();
 
   RandomSetup() : Transform() {}
-  virtual ~RandomSetup() override {}
+  ~RandomSetup() override {}
 
   virtual bool apply(Graph &graph) const final;
 

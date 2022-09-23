@@ -25,7 +25,7 @@ public:
   static std::size_t id();
 
   MergeLoops() : Transform() {}
-  virtual ~MergeLoops() override {}
+  ~MergeLoops() override {}
 
   virtual bool apply(Graph &graph) const final;
 

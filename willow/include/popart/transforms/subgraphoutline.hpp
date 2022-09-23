@@ -57,7 +57,7 @@ public:
   static std::size_t id();
 
   SubgraphOutline() : Transform() {}
-  virtual ~SubgraphOutline() override {}
+  ~SubgraphOutline() override {}
 
   virtual bool apply(Graph &graph) const final;
 

@@ -118,8 +118,8 @@ public:
                         const PopOpx *opx_,
                         std::vector<OpxInAndOutIndex> pathFromInput_,
                         int64_t scheduleIndex_);
-  InputCreatorCandidate()                   = default;
-  virtual ~InputCreatorCandidate() override = default;
+  InputCreatorCandidate()           = default;
+  ~InputCreatorCandidate() override = default;
 
   std::pair<snap::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;
@@ -183,7 +183,7 @@ struct UnwindEndpoint {
 class InputMultiCreatorCandidate : public ICreatorCandidate {
 public:
   InputMultiCreatorCandidate();
-  virtual ~InputMultiCreatorCandidate() override = default;
+  ~InputMultiCreatorCandidate() override = default;
 
   std::pair<snap::Tensor, ViewChangers>
   createInput(const poplar::DebugNameAndId &dnai) override;

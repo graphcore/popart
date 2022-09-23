@@ -35,9 +35,7 @@ public:
     return std::make_unique<TestOp>(*this);
   }
 
-  virtual float getSubgraphValue() const override {
-    return getLowSubgraphValue();
-  }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
 } // namespace irquery

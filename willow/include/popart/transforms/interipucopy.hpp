@@ -18,7 +18,7 @@ public:
   static std::size_t id();
 
   InterIpuCopy() : Transform() {}
-  virtual ~InterIpuCopy() override {}
+  ~InterIpuCopy() override {}
 
   virtual bool apply(Graph &graph) const final;
 

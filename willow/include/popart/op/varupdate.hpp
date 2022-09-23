@@ -37,12 +37,12 @@ public:
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;
 
-  virtual bool isOptimizerOp() const override { return true; }
+  bool isOptimizerOp() const override { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 };
 
 class VarUpdateWithUpdaterOp : public VarUpdateOp {

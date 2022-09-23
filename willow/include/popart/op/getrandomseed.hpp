@@ -40,9 +40,7 @@ public:
   view::Regions aliases(InIndex, OutIndex) const final;
   view::Regions modifies(InIndex) const final;
 
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 };
 } // namespace popart
 

@@ -22,7 +22,7 @@ public:
   static std::size_t id();
 
   IoComputeTileCopy() : Transform() {}
-  virtual ~IoComputeTileCopy() override {}
+  ~IoComputeTileCopy() override {}
 
   virtual bool apply(Graph &graph) const final;
 

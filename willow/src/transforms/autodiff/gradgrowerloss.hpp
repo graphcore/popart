@@ -33,7 +33,7 @@ public:
   explicit GradGrowerLoss(AutodiffIrInterface &dep);
   virtual ~GradGrowerLoss() = default;
 
-  virtual Op *growLossGradients() override;
+  Op *growLossGradients() override;
 };
 
 } // namespace popart

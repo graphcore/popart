@@ -31,7 +31,7 @@ public:
   static OutIndex getUpdaterOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
-  virtual bool isOptimizerOp() const override { return true; }
+  bool isOptimizerOp() const override { return true; }
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const final;

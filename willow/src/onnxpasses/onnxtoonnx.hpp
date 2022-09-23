@@ -28,7 +28,7 @@ class Canonnxalizer : public IOnnxToOnnx {
 
 public:
   Canonnxalizer();
-  virtual ~Canonnxalizer() override;
+  ~Canonnxalizer() override;
 
   /**
    * An ONNX to ONNX GraphProto transformation which removes or modifies

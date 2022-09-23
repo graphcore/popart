@@ -44,7 +44,7 @@ public:
 
   std::vector<int64_t> getDimensions() const { return dimensions; }
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
 private:
   std::vector<int64_t> dimensions;

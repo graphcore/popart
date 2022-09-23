@@ -34,7 +34,7 @@ public:
   explicit Mod(std::shared_ptr<PatternTarget> t) : Remainder(std::move(t)) {}
 
 private:
-  bool go(const NodeProto &node) override final;
+  bool go(const NodeProto &node) final;
 };
 
 } // namespace onnxpasses

@@ -19,7 +19,7 @@ class Devicex;
 class FmodOpx : public ElementWiseBinaryOpx {
 public:
   FmodOpx(Op *, Devicex *);
-  void grow(snap::program::Sequence &) const override final;
+  void grow(snap::program::Sequence &) const final;
 };
 
 } // namespace popx

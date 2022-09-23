@@ -55,7 +55,7 @@ public:
   void configureShardedOp(Op *const shardedOp,
                           const Settings *const settings_) const override;
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
 protected:
   // The shape of the data output tensor

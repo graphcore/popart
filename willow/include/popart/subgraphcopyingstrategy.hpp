@@ -150,7 +150,7 @@ public:
   /**
    * Do some initial analysis before use.
    */
-  virtual void apply() override;
+  void apply() override;
 
   /**
    * See SubgraphCopyingStrategy().

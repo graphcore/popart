@@ -76,7 +76,7 @@ public:
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
-  virtual void appendForwardOp(const Op *) override;
+  void appendForwardOp(const Op *) override;
 
 private:
   template <typename T> void appendAttr(const std::string &, const T &);
@@ -95,7 +95,7 @@ public:
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
-  virtual void appendForwardOp(const Op *) override;
+  void appendForwardOp(const Op *) override;
 
 private:
   template <typename T> void appendAttr(const std::string &, const T &);
@@ -127,7 +127,7 @@ public:
   void appendAttribute(const std::string &,
                        const std::map<TensorId, uint64_t>) override;
 
-  virtual void appendForwardOp(const Op *) override;
+  void appendForwardOp(const Op *) override;
 
   std::string str();
 

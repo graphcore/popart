@@ -49,7 +49,7 @@ public:
   // code sizes. Outlining these Ops can reduce the impact of using Adam-based
   // optimizers.
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
-  virtual bool isOptimizerOp() const override { return true; }
+  bool isOptimizerOp() const override { return true; }
 
   view::Regions modifies(InIndex) const final;
 

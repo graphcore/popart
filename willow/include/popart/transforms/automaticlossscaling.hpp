@@ -282,7 +282,7 @@ public:
       AliasModel &aliasMode);
 
   AutomaticLossScale() : Transform() {}
-  virtual ~AutomaticLossScale() override {}
+  ~AutomaticLossScale() override {}
 
   virtual bool apply(Graph &graph) const final;
 

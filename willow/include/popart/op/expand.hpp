@@ -56,7 +56,7 @@ public:
     return input->getIndexShapeMap()[ExpandOp::getInTensorIndex()] == outShape;
   }
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   poprithms::memory::inplace::Proposal
   mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;

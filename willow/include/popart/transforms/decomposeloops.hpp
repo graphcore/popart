@@ -1068,7 +1068,7 @@ public:
   static std::size_t id();
 
   DecomposeLoops() : Transform() {}
-  virtual ~DecomposeLoops() override {}
+  ~DecomposeLoops() override {}
 
   /**
    * Decomposes all \c LoopOps in the \c graph using the standard model

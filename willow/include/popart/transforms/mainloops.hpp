@@ -22,7 +22,7 @@ public:
   static std::size_t id();
 
   MainLoops() : Transform() {}
-  virtual ~MainLoops() override {}
+  ~MainLoops() override {}
 
   virtual bool apply(Graph &graph) const final;
 

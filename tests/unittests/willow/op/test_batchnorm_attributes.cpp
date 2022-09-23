@@ -31,15 +31,15 @@ BOOST_AUTO_TEST_CASE(TestUnbiasedVarianceAttributeIsAdded) {
       OpSerialiserBase::appendAttribute(s, f);
       std::cout << "FLOAT" << std::endl;
     }
-    virtual void appendAttribute(const std::string &,
-                                 nonstd::optional<int64_t>) override {}
-    virtual void appendAttribute(const std::string &,
-                                 nonstd::optional<float>) override {}
-    virtual void appendAttribute(const std::string &,
-                                 nonstd::optional<double>) override {}
-    virtual void appendAttribute(const std::string &,
-                                 const std::map<TensorId, uint64_t>) override {}
-    virtual void appendForwardOp(const Op *) override {}
+    void appendAttribute(const std::string &,
+                         nonstd::optional<int64_t>) override {}
+    void appendAttribute(const std::string &,
+                         nonstd::optional<float>) override {}
+    void appendAttribute(const std::string &,
+                         nonstd::optional<double>) override {}
+    void appendAttribute(const std::string &,
+                         const std::map<TensorId, uint64_t>) override {}
+    void appendForwardOp(const Op *) override {}
 
   private:
     void appendStrAttr(const std::string &s, const std::string &value) final {

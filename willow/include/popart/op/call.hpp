@@ -56,16 +56,10 @@ public:
   OutIndex opOutToSubgraphOutIndex(OutIndex index) const override {
     return index;
   }
-  virtual std::set<OutIndex> opInToOpOutIndex(InIndex in) const override {
-    return {};
-  }
-  virtual std::set<InIndex> opOutToOpInIndex(OutIndex out) const override {
-    return {};
-  }
+  std::set<OutIndex> opInToOpOutIndex(InIndex in) const override { return {}; }
+  std::set<InIndex> opOutToOpInIndex(OutIndex out) const override { return {}; }
 
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
   void connectInTensor(InIndex inIndex, TensorId tenId) override;
 

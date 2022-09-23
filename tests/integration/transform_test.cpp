@@ -26,7 +26,7 @@ public:
   static std::size_t id() { return typeid(TestTransform).hash_code(); }
 
   TestTransform() : Transform() {}
-  virtual ~TestTransform() override {}
+  ~TestTransform() override {}
 
   virtual bool apply(Graph &) const final {
     executedCount++;

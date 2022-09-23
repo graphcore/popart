@@ -39,7 +39,7 @@ public:
                     const poplar::DebugNameAndId &dnai) const override;
 
   // See PopOpx::getInputCreatorType.
-  virtual InputCreatorType getInputCreatorType(InIndex index) const override;
+  InputCreatorType getInputCreatorType(InIndex index) const override;
 
   // See PopOpx::mustExistBeforeCreate.
   std::set<TensorId> mustExistBeforeCreate(InIndex index) const override;

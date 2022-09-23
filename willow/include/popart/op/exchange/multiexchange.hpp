@@ -63,9 +63,7 @@ public:
   getIntrospectionOutVirtualGraphId(OutIndex,
                                     std::set<OpId> &visited) const final;
 
-  virtual void growAliasModel(AliasModel &m) const override {
-    growAliasModelMulti(m);
-  }
+  void growAliasModel(AliasModel &m) const override { growAliasModelMulti(m); }
 
   bool canShard() const final { return false; }
 

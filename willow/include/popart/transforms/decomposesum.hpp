@@ -16,10 +16,10 @@ public:
   static std::size_t id();
 
   DecomposeSum() : Transform() {}
-  virtual ~DecomposeSum() override {}
-  virtual bool apply(Graph &graph) const override;
-  virtual std::size_t getId() const override { return id(); }
-  virtual std::string getName() const override { return "DecomposeSum"; }
+  ~DecomposeSum() override {}
+  bool apply(Graph &graph) const override;
+  std::size_t getId() const override { return id(); }
+  std::string getName() const override { return "DecomposeSum"; }
 
 private:
   // Search graph for SumOps with >2 inputs

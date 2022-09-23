@@ -14,7 +14,7 @@ public:
   static std::size_t id();
 
   InferPipelineStages() : Transform() {}
-  virtual ~InferPipelineStages() override {}
+  ~InferPipelineStages() override {}
 
   virtual bool apply(Graph &graph) const final;
 

@@ -20,10 +20,10 @@ public:
   // would be touched?
   std::vector<const Tensor *> touches(Op *) const override;
 
-  // Removes all inputs of the orginal op, calls makeReplacementOps with the
+  // Removes all inputs of the original op, calls makeReplacementOps with the
   // relevant tensors, creates the ReduceSumOp which takes as an input the
   // tensor returned by makeReplacementOps and deletes original op
-  bool apply(Op *) const override final;
+  bool apply(Op *) const final;
 
 protected:
   // Implements the replacement ops using the original op and specified tensors

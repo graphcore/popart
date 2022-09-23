@@ -21,18 +21,16 @@ public:
   static std::size_t id();
 
   DynamicOpTransform() : Transform() {}
-  virtual ~DynamicOpTransform() override {}
+  ~DynamicOpTransform() override {}
 
-  virtual bool apply(Graph &graph) const override final;
+  bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  std::size_t getId() const final { return id(); }
 
   void transferProperties(Op *from, Op *to) const;
   void inplace(Op *from) const;
 
-  virtual std::string getName() const override final {
-    return "DynamicOpTransform";
-  }
+  std::string getName() const final { return "DynamicOpTransform"; }
 
 private:
   // Turns DynamicUpdateInplaceOps and DynamicAddInplaceOp, used to form

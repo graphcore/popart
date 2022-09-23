@@ -41,7 +41,7 @@ public:
   static std::size_t id();
 
   AutoVirtualGraph() : Transform() {}
-  virtual ~AutoVirtualGraph() override {}
+  ~AutoVirtualGraph() override {}
 
   bool apply(Graph &graph) const final;
 

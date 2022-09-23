@@ -36,7 +36,7 @@ public:
   static std::size_t id();
 
   PreAutomaticLossScale() : Transform() {}
-  virtual ~PreAutomaticLossScale() override {}
+  ~PreAutomaticLossScale() override {}
 
   /**
    * Annotate tensors in the forward graph, so that their gradients can be found

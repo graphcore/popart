@@ -90,7 +90,7 @@ public:
     return getTarget().getTargetArchString();
   }
 
-  virtual bool isAttached() const override { return isAttached_; }
+  bool isAttached() const override { return isAttached_; }
 
   /**
    * Mark devicex as the last one that was loaded.
@@ -128,9 +128,9 @@ public:
                     _device,
                     {}) {}
 
-  virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; }
-  virtual std::string getVersion() const override { return "<unknown-cpu>"; }
+  int getId() const override { return 0; }
+  std::vector<int> getChildIds() const override { return {}; }
+  std::string getVersion() const override { return "<unknown-cpu>"; }
 };
 class DevicexSimInfo : public DevicexInfo {
 public:
@@ -141,9 +141,9 @@ public:
                     _device,
                     {}) {}
 
-  virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; }
-  virtual std::string getVersion() const override { return "<unknown-sim>"; }
+  int getId() const override { return 0; }
+  std::vector<int> getChildIds() const override { return {}; }
+  std::string getVersion() const override { return "<unknown-sim>"; }
 };
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
@@ -157,9 +157,9 @@ public:
                     {}),
         ipuVersion(_ipuVersion) {}
 
-  virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; }
-  virtual std::string getVersion() const override { return ipuVersion; }
+  int getId() const override { return 0; }
+  std::vector<int> getChildIds() const override { return {}; }
+  std::string getVersion() const override { return ipuVersion; }
 
 private:
   std::string ipuVersion;
@@ -174,11 +174,11 @@ public:
       : DevicexInfo(_provider, popart::DeviceType::Ipu, _dct, _device, _flags),
         id(_id) {}
 
-  virtual int getId() const override { return id; }
-  virtual std::vector<int> getChildIds() const override;
-  virtual std::string getVersion() const override;
+  int getId() const override { return id; }
+  std::vector<int> getChildIds() const override;
+  std::string getVersion() const override;
 
-  virtual bool canCompileOffline() const override { return true; }
+  bool canCompileOffline() const override { return true; }
 
 private:
   int id;
@@ -195,23 +195,17 @@ public:
                            _flags),
         target(std::move(_target)) {}
 
-  virtual bool attach() override {
-    throw error("Cannot attach to offline device");
-  }
+  bool attach() override { throw error("Cannot attach to offline device"); }
 
-  virtual void detach() override {
-    throw error("Cannot detach from offline device");
-  }
+  void detach() override { throw error("Cannot detach from offline device"); }
 
-  virtual int getId() const override { return 0; }
-  virtual std::vector<int> getChildIds() const override { return {}; }
-  virtual std::string getVersion() const override { return "<offline-ipu>"; }
+  int getId() const override { return 0; }
+  std::vector<int> getChildIds() const override { return {}; }
+  std::string getVersion() const override { return "<offline-ipu>"; }
 
-  virtual int getNumIpus() const override { return target.getNumIPUs(); }
-  virtual int getTilesPerIPU() const override {
-    return target.getTilesPerIPU();
-  }
-  virtual int getNumWorkerContexts() const override {
+  int getNumIpus() const override { return target.getNumIPUs(); }
+  int getTilesPerIPU() const override { return target.getTilesPerIPU(); }
+  int getNumWorkerContexts() const override {
     return target.getNumWorkerContexts();
   }
 
@@ -219,12 +213,12 @@ public:
     return getTarget().getTargetArchString();
   }
 
-  virtual std::vector<unsigned> getDriverIds() const override { return {0}; }
+  std::vector<unsigned> getDriverIds() const override { return {0}; }
 
-  virtual const poplar::Target &getTarget() const override { return target; }
+  const poplar::Target &getTarget() const override { return target; }
 
-  virtual bool canCompileOffline() const override { return true; }
-  virtual bool isAttached() const override { return false; }
+  bool canCompileOffline() const override { return true; }
+  bool isAttached() const override { return false; }
 
 protected:
   poplar::Target target;

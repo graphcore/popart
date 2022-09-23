@@ -62,7 +62,7 @@ public:
 
   void appendOutlineAttributes(OpSerialiserBase &) const override;
 
-  virtual bool isOptimizerOp() const override { return true; }
+  bool isOptimizerOp() const override { return true; }
 
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
 

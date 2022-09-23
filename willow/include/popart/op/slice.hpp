@@ -40,7 +40,7 @@ public:
   static InIndex getStepsInIndex() { return 4; }
   static OutIndex getOutIndex() { return 0; }
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   void setup() final;
   virtual void connectInTensor(InIndex, TensorId) final;

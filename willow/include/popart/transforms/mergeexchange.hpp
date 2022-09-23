@@ -24,16 +24,16 @@ public:
   static std::size_t id();
 
   MergeExchange() : Transform() {}
-  virtual ~MergeExchange() override {}
+  ~MergeExchange() override {}
 
-  virtual bool apply(Graph &graph) const override;
+  bool apply(Graph &graph) const override;
 
   std::vector<Op *> applyToOps(Graph &graph,
                                const std::set<OpId> include_ops) const;
 
-  virtual std::size_t getId() const override { return id(); }
+  std::size_t getId() const override { return id(); }
 
-  virtual std::string getName() const override { return "MergeExchange"; }
+  std::string getName() const override { return "MergeExchange"; }
 
 private:
   Op *insertMultiExchange(

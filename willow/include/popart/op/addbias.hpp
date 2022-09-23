@@ -45,7 +45,7 @@ public:
   view::RegMap fwdRegMap(InIndex, OutIndex) const override;
   view::RegMap bwdRegMap(InIndex, OutIndex) const override;
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   poprithms::memory::inplace::Proposal
   mapInplaceProposal(const AliasModel &, OperatorIdentifier) const override;

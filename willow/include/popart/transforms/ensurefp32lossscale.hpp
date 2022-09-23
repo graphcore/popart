@@ -83,7 +83,7 @@ public:
   static std::size_t id();
 
   EnsureFp32LossScale() : Transform() {}
-  virtual ~EnsureFp32LossScale() override {}
+  ~EnsureFp32LossScale() override {}
 
   virtual bool apply(Graph &graph) const final;
 

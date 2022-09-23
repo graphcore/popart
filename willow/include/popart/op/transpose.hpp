@@ -50,7 +50,7 @@ public:
 
   int getOutBatchAxis(OutIndex) const override;
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
 private:
   // the new permutation of the tensor axes

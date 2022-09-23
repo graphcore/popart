@@ -144,9 +144,7 @@ BOOST_AUTO_TEST_CASE(
       return std::make_unique<WeirdPrngOp>(*this);
     }
 
-    virtual float getSubgraphValue() const override {
-      return getLowSubgraphValue();
-    }
+    float getSubgraphValue() const override { return getLowSubgraphValue(); }
   };
 
   // ONNX op definition for WeirdPrngOp so we can use it in the ONNX builder.

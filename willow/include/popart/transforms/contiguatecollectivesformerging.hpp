@@ -31,11 +31,11 @@ public:
 
   ContiguateCollectivesTransform() : Transform() {}
   ~ContiguateCollectivesTransform() override {}
-  virtual bool apply(Graph &graph) const override;
+  bool apply(Graph &graph) const override;
   std::vector<Op *> applyToOps(Graph &graph,
                                const std::set<OpId> includeOps) const;
-  virtual std::size_t getId() const override { return id(); }
-  virtual std::string getName() const override {
+  std::size_t getId() const override { return id(); }
+  std::string getName() const override {
     return "ContiguateCollectivesTransform";
   }
 

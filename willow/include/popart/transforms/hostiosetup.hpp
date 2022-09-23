@@ -16,7 +16,7 @@ public:
   static std::size_t id(int);
 
   HostIOSetup(int pass_) : Transform(), pass(pass_) {}
-  virtual ~HostIOSetup() override {}
+  ~HostIOSetup() override {}
 
   virtual bool apply(Graph &graph) const final;
 

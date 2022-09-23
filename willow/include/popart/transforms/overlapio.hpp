@@ -20,7 +20,7 @@ public:
   static std::size_t id();
 
   OverlapIO() : Transform() {}
-  virtual ~OverlapIO() override {}
+  ~OverlapIO() override {}
 
   virtual bool apply(Graph &graph) const final;
 

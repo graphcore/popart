@@ -14,7 +14,7 @@ public:
   static std::size_t id();
 
   StochasticRounding() : Transform() {}
-  virtual ~StochasticRounding() override {}
+  ~StochasticRounding() override {}
 
   virtual bool apply(Graph &graph) const final;
 

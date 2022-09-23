@@ -58,7 +58,7 @@ class MergeAllVarUpdates : public MergeVarUpdates {
 public:
   static std::size_t id();
   MergeAllVarUpdates() : MergeVarUpdates() {}
-  virtual ~MergeAllVarUpdates() override {}
+  ~MergeAllVarUpdates() override {}
   virtual std::size_t getId() const final { return id(); }
   virtual std::string getName() const final { return "MergeAllVarUpdates"; }
 
@@ -79,7 +79,7 @@ class MergeTightThreshold : public MergeAuto {
 public:
   static std::size_t id();
   MergeTightThreshold() : MergeAuto() {}
-  virtual ~MergeTightThreshold() override {}
+  ~MergeTightThreshold() override {}
   virtual std::size_t getId() const final { return id(); }
   virtual std::string getName() const final { return "MergeTightThreshold"; }
 
@@ -95,7 +95,7 @@ class MergeLooseThreshold : public MergeAuto {
 public:
   static std::size_t id();
   MergeLooseThreshold() : MergeAuto() {}
-  virtual ~MergeLooseThreshold() override {}
+  ~MergeLooseThreshold() override {}
   virtual std::size_t getId() const final { return id(); }
   virtual std::string getName() const final { return "MergeLooseThreshold"; }
   int64_t getMemToPlayWithAtPeak(const Graph &) const;

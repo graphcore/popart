@@ -60,9 +60,7 @@ public:
   BaseTestOp(const OperatorIdentifier &opid, const Op::Settings &settings)
       : Op(opid, settings) {}
 
-  virtual float getSubgraphValue() const override {
-    return getLowSubgraphValue();
-  }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
 /**

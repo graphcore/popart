@@ -37,9 +37,7 @@ public:
         calledGraphGradOpHelper{this} {}
 
   // Not relevant for these tests.
-  virtual float getSubgraphValue() const override {
-    return getLowSubgraphValue();
-  }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 
   // Pass on to `calledGraphGradOpHelper`
   virtual void setCalledSubgraphGradInfo(

@@ -40,7 +40,7 @@ public:
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
   void appendOutlineAttributes(OpSerialiserBase &) const override;
   CollectiveOperator getCollectiveOp() const { return op; }
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
   ReplicatedTensorShardingIndices
   getReplicatedTensorShardingIndices() const override;

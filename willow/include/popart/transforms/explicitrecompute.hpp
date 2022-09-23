@@ -231,15 +231,13 @@ public:
   static std::size_t id();
 
   ExplicitRecompute() : Transform() {}
-  virtual ~ExplicitRecompute() override {}
+  ~ExplicitRecompute() override {}
 
-  virtual bool apply(Graph &graph) const override final;
+  bool apply(Graph &graph) const final;
 
-  virtual std::size_t getId() const override final { return id(); }
+  std::size_t getId() const final { return id(); }
 
-  virtual std::string getName() const override final {
-    return "ExplicitRecompute";
-  }
+  std::string getName() const final { return "ExplicitRecompute"; }
 };
 
 } // namespace popart

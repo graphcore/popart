@@ -13,7 +13,7 @@ class Graph;
 class DecomposeGradSum : public DecomposeSum {
 public:
   static std::size_t id();
-  virtual std::size_t getId() const override { return id(); }
+  std::size_t getId() const override { return id(); }
   std::string getName() const override { return "DecomposeGradSum"; }
 
 private:

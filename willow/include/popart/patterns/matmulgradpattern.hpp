@@ -62,44 +62,36 @@ class MatMulLhsGradPattern : public MatMulGradPattern {
 public:
   bool matches(Op *op) const override;
 
-  virtual popart::Tensor *getIn(Op *op) const override {
+  popart::Tensor *getIn(Op *op) const override {
     return op->inTensor(MatMulLhsGradOp::getRhsInIndex());
   }
-  virtual popart::Tensor *getGradIn(Op *op) const override {
+  popart::Tensor *getGradIn(Op *op) const override {
     return op->inTensor(MatMulLhsGradOp::getGradInIndex());
   }
-  virtual popart::Tensor *getGradOut(Op *op) const override {
+  popart::Tensor *getGradOut(Op *op) const override {
     return op->outTensor(MatMulLhsGradOp::getOutIndex());
   }
 
-  virtual InIndex getInIndex() const override {
-    return MatMulOp::getRhsInIndex();
-  }
-  virtual InIndex getGradInIndex() const override {
-    return MatMulOp::getLhsInIndex();
-  }
+  InIndex getInIndex() const override { return MatMulOp::getRhsInIndex(); }
+  InIndex getGradInIndex() const override { return MatMulOp::getLhsInIndex(); }
 };
 
 class MatMulRhsGradPattern : public MatMulGradPattern {
 public:
   bool matches(Op *op) const override;
 
-  virtual popart::Tensor *getIn(Op *op) const override {
+  popart::Tensor *getIn(Op *op) const override {
     return op->inTensor(MatMulRhsGradOp::getLhsInIndex());
   }
-  virtual popart::Tensor *getGradIn(Op *op) const override {
+  popart::Tensor *getGradIn(Op *op) const override {
     return op->inTensor(MatMulRhsGradOp::getGradInIndex());
   }
-  virtual popart::Tensor *getGradOut(Op *op) const override {
+  popart::Tensor *getGradOut(Op *op) const override {
     return op->outTensor(MatMulRhsGradOp::getOutIndex());
   }
 
-  virtual InIndex getInIndex() const override {
-    return MatMulOp::getLhsInIndex();
-  }
-  virtual InIndex getGradInIndex() const override {
-    return MatMulOp::getRhsInIndex();
-  }
+  InIndex getInIndex() const override { return MatMulOp::getLhsInIndex(); }
+  InIndex getGradInIndex() const override { return MatMulOp::getRhsInIndex(); }
 };
 
 } // namespace popart

@@ -81,7 +81,7 @@ public:
   const std::vector<int64_t> &getPads() const { return pads; }
   const std::vector<unsigned> &getFlips() const { return flips; }
 
-  virtual void growAliasModel(AliasModel &) const override;
+  void growAliasModel(AliasModel &) const override;
 
 private:
   // all lower and upper padding values. The first inRank values are the lower
