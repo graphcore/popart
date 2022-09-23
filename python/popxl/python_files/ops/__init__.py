@@ -61,6 +61,7 @@ from .remote_load import remote_load, remote_load_
 from .remote_store import remote_store
 from .scaled_add import scaled_add, scaled_add_
 from .scatter import scatter
+from .scatter_reduce import scatter_reduce
 from .shaped_dropout import shaped_dropout
 from .sin import sin
 from .slice import slice, slice_
@@ -231,6 +232,8 @@ __all__ = [
     "scaled_add_",
     # scatter.py
     "scatter",
+    # scatter_reduce.py
+    "scatter_reduce",
     # shaped_dropout.py
     "shaped_dropout",
     # sin.py

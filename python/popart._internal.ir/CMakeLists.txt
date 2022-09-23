@@ -100,6 +100,7 @@ list(
   ${popart_op_headers_dir}/sin.hpp
   ${popart_op_headers_dir}/swish.hpp
   ${popart_op_headers_dir}/greater.hpp
+  ${popart_op_headers_dir}/scatterreduce.hpp
   )
 # file(GLOB_RECURSE op_headers ${popart_op_headers_dir}/*.hpp)
 
