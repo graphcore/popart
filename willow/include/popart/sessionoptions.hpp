@@ -41,8 +41,11 @@ enum class GradientTensorTrackingMethod {
  * A structure containing user configuration for automatic loss scaling
  * settings.
  *
- * \note Automatic loss scaling is currently experimental and under
- * active development. Recommendation: Set the loss scale manually.
+ * \note Automatic loss scaling is in preview. It is well tested
+ * and enabled in some of our example applications, but may not behave
+ * as expected in all models. Recommendation: if your model with
+ * automatic loss scaling enabled does not converge or triggers a
+ * compilation error, then you will need to set the loss scale manually.
  */
 struct AutomaticLossScalingSettings {
   /// Default constructor for AutomaticLossScalingSettings.
@@ -1521,8 +1524,11 @@ struct SessionOptions {
    * Settings to enable and configure the automatic loss scaling behaviour when
    * training.
    *
-   * \note Automatic loss scaling is currently experimental and under
-   * active development. Recommendation: Set the loss scale manually.
+   * \note Automatic loss scaling is in preview. It is well tested
+   * and enabled in some of our example applications, but may not behave
+   * as expected in all models. Recommendation: if your model with
+   * automatic loss scaling enabled does not converge or triggers a
+   * compilation error, then you will need to set the loss scale manually.
    */
   AutomaticLossScalingSettings automaticLossScalingSettings;
 
