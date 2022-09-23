@@ -46,7 +46,7 @@ enum class DeviceType {
   OfflineIpu,
 
   /**
-   * [For Graphcore intenal use only]
+   * [For Graphcore internal use only]
    * Use a simulator for graph compilation and execution.
    */
   Sim
@@ -252,7 +252,7 @@ public:
 
   /**
    * Log an event for device debugging purposes.
-   * This event will get logged to the file location defined by the evironment
+   * This event will get logged to the file location defined by the environment
    * variable POPART_LOG_DEVICE_ACCESS_IN_TESTS, if it is set.
    * \param event A text description of the event to be written to the log.
    * \param auxKeyVals Optional additional parameters to log.
@@ -530,7 +530,7 @@ public:
   createIpuModelDevice(std::map<std::string, std::string> &options);
 
   /*
-   * [For Graphcore intenal use only]
+   * [For Graphcore internal use only]
    * Create a simulated `Sim` device for testing purposes.
    * The following options are supported:
    *
