@@ -203,7 +203,7 @@ private:
   std::map<OpId, PreparedCopyTensors> pipelineIpuCopySrcDst;
 
   // This keeps track of whether there the accumulateOuterFragment is empty
-  // TODO T12001 a class which encapsulates framgments which has this attribute.
+  // TODO T12001 a class which encapsulates fragments which has this attribute.
   bool outerLoopFragEmpty = true;
 
   // Helper class to determine where to move input/output copies.
@@ -258,6 +258,12 @@ private:
 
   // Map of custom programs that can be run
   std::map<std::string, unsigned> programHandleIndexMap;
+
+  // Unique ptr so that rngstatelowering.hpp can be a private header.
+  std::unique_ptr<RngStateLowering> rngStateLowering;
+
+  // Used for opx creation
+  Devicex *dv_p = nullptr;
 
   void setMetadataFromIr();
 
@@ -394,13 +400,7 @@ public:
   poplar::OptionFlags engineOptions;
   poplar::OptionFlags reportOptions;
 
-  // Unique ptr so that rngstatelowering.hpp can be a private header.
-  std::unique_ptr<RngStateLowering> rngStateLowering;
-
   void setDevicex(Devicex *d) { dv_p = d; }
-  // Used for opx creation
-  Devicex *dv_p = nullptr;
-
   // Return stored input tensors based on how they are allocated
   std::set<TensorId> getLinearlyCreatedInputTensors() const;
   void setLinearlyCreatedInputTensors(const std::set<TensorId> &s) {

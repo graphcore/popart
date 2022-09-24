@@ -390,7 +390,7 @@ IrLowering::IrLowering(const Ir &ir,
       replicatedTensorShardingBundle(_ir), exchangeBundle(_ir),
       prepareGraphHasBeenCalled_(prepareGraphHasBeenCalled),
       tileCounterGraphConstVar(0), tileCounterGraphScalarVar(-1), tensors_(ir),
-      progs_(PopPrograms(this)), rngStateLowering() {
+      progs_(PopPrograms(this)) {
   POPART_TRACEPOINT();
 
   // Set the opxTrace flag based on the environment variable
