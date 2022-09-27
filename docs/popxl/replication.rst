@@ -111,7 +111,34 @@ Code examples
     :linenos:
     :lineno-match:
 
-Retrieval Modes
+:numref:`remote_var_settings_example` shows an example of using a replica
+grouping on a remote variable. The IR has two replicas, and each is its own
+group.
+
+.. literalinclude:: files/remote_variable_replica_grouped.py
+    :language: python
+    :start-after: RemoteVarReplicaGrouped Begin
+    :end-before: RemoteVarReplicaGrouped End
+    :caption: Example of setting up different remote variables.
+    :name: remote_var_settings_example
+    :linenos:
+    :lineno-match:
+
+There are a couple of specfics to note here. Firstly, you need the ``in_sequence``
+context as there is no data-flow dependence between the *inplace* add op and
+``remote_store`` op on the same tensor. Secondly, we manually pass the correct
+per-replica shape to ``popxl.remote_buffer``. This shape does not have the group
+dimension.
+
+.. note::
+  If you consider ``v_h`` to be the data for a single variable, this is akin to
+  sharding the variable over two replicas. Actually, unless you need to
+  AllGather your shards and cannot forgo the CBR optimisation, it is advisable
+  to just use replica groupings as shown to achieve sharding. This is because
+  the API is much less brittle with respect to what you can do without errors or
+  undefined behaviour.
+
+Retrieval modes
 ---------------
 
 By default, only one replica per group is returned. Usually this is sufficient as all replicas within

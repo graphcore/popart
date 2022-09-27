@@ -38,6 +38,11 @@ class TestPythonDocExamples(ExamplesTester):
         filename = "replication.py"
         self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
 
+    def test_documentation_popxl_remote_var_replica_grouped(self):
+        """Test the popxl remote variable in combination with replica groupings"""
+        filename = "remote_variable_replica_grouped.py"
+        self.run_python(filename, file_dir=working_dir, working_dir=working_dir)
+
     def test_documentation_popxl_create_multi_subgraph(self):
         """Test the popxl create multiple subgraph example"""
         filename = "create_multi_graphs_from_same_func.py"
