@@ -150,7 +150,7 @@ void WriterImpl::serializePoplarEngine() {
     static constexpr bool compress = false;
     std::shared_ptr<popef::BlobWriter> popefExe =
         _writer.createExecutable(_programHash, compress);
-    _engine.get()->serializeExecutable(popefExe->stream);
+    _engine->serializeExecutable(popefExe->stream);
   }
 }
 

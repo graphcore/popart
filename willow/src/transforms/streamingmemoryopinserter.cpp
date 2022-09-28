@@ -415,14 +415,13 @@ void StreamingMemoryOpInserter::apply() {
 
   if (isPhasedExecution()) {
     for (const auto &op : graph.getOps()) {
-      if (op.second.get()->hasExecutionPhase() &&
-          op.second.get()->settings.executionContext !=
-              ExecutionContext::Normal) {
+      if (op.second->hasExecutionPhase() &&
+          op.second->settings.executionContext != ExecutionContext::Normal) {
         throw error("[StreamingMemory] Op {} inconsistent execution phase {} "
                     "and execution context {}.",
-                    op.second.get()->debugName(),
-                    op.second.get()->getExecutionPhase(),
-                    op.second.get()->settings.executionContext);
+                    op.second->debugName(),
+                    op.second->getExecutionPhase(),
+                    op.second->settings.executionContext);
       }
     }
     graph.getIr().setExecutionPhasesReady();

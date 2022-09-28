@@ -112,7 +112,7 @@ DeviceManager::enumerateDevices(SyncPattern pattern,
         devices, numIpus, pattern, deviceType, connectionType, tilesPerIPU);
   }
   for (auto d : devices) {
-    logging::debug("Device: {}", d.get()->toString());
+    logging::debug("Device: {}", d->toString());
   }
 
   for (auto device : devices) {

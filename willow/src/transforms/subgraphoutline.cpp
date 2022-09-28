@@ -326,14 +326,14 @@ void insertBoundariesOps(const SessionOptions &opts,
         graph.moveIntoGraph(std::move(boundaryOp));
         if (schedule[i]->getGraph().id == schedule[i + 1]->getGraph().id) {
           // Insert topo cons to pin boundary between ops
-          graph.topoCons.get()->insert(schedule[i], boundary);
-          graph.topoCons.get()->insert(boundary, schedule[i + 1]);
+          graph.topoCons->insert(schedule[i], boundary);
+          graph.topoCons->insert(boundary, schedule[i + 1]);
         } else {
           // Insert topo cons to pin boundary at the end of the graph
           int64_t j = i;
           while (j >= 0 &&
                  schedule[j]->getGraph().id == schedule[i]->getGraph().id) {
-            graph.topoCons.get()->insert(schedule[j], boundary);
+            graph.topoCons->insert(schedule[j], boundary);
             --j;
           }
         }

@@ -162,7 +162,7 @@ void ContiguateCollectivesTransform::processOp(
     // baseOp is in allMatches, so need to prevent creation of A before A type
     // constraint
     if (after->id != before->id) {
-      graph.topoCons.get()->insert(before, after, true);
+      graph.topoCons->insert(before, after, true);
     }
     before = after;
     opsToProcess.erase(after);

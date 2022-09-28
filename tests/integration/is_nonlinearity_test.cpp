@@ -18,25 +18,25 @@ BOOST_AUTO_TEST_CASE(IsNonLinearityTest) {
   // Is 'div' a non-linearity? - No
   std::unique_ptr<Op> div =
       OpManager::createOp(Onnx::Operators::Div_7, ir.getMainGraph());
-  BOOST_CHECK(!div.get()->isElementWiseUnary());
+  BOOST_CHECK(!div->isElementWiseUnary());
 
   // Is 'tanh' a non-linearity? - Yes
   std::unique_ptr<Op> tanh =
       OpManager::createOp(Onnx::Operators::Tanh_6, ir.getMainGraph());
-  BOOST_CHECK(tanh.get()->isElementWiseUnary());
+  BOOST_CHECK(tanh->isElementWiseUnary());
 
   // Is 'softmax' a non-linearity? - Yes
   std::unique_ptr<Op> sfm =
       OpManager::createOp(Onnx::Operators::Softmax_1, ir.getMainGraph());
-  BOOST_CHECK(sfm.get()->isElementWiseUnary());
+  BOOST_CHECK(sfm->isElementWiseUnary());
 
   // Is 'relu' a non-linearity? - Yes
   std::unique_ptr<Op> relu =
       OpManager::createOp(Onnx::Operators::Relu_6, ir.getMainGraph());
-  BOOST_CHECK(relu.get()->isElementWiseUnary());
+  BOOST_CHECK(relu->isElementWiseUnary());
 
   // Is 'sigmoid' a non-linearity? - Yes
   std::unique_ptr<Op> sgm =
       OpManager::createOp(Onnx::Operators::Sigmoid_6, ir.getMainGraph());
-  BOOST_CHECK(sgm.get()->isElementWiseUnary());
+  BOOST_CHECK(sgm->isElementWiseUnary());
 }

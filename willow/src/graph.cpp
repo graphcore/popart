@@ -605,8 +605,7 @@ bool Graph::isSchedulable(const OpsBeforeKey &gCons,
 
 bool Graph::hasUserRecomputeOps() const {
   for (auto &id_op : getOps()) {
-    if (id_op.second.get()->settings.recomputeType ==
-        RecomputeType::Recompute) {
+    if (id_op.second->settings.recomputeType == RecomputeType::Recompute) {
       return true;
     }
   }

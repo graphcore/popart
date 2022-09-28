@@ -19,12 +19,12 @@ BOOST_AUTO_TEST_CASE(IsNormTest) {
   // Is 'add' a norm? - No
   std::unique_ptr<Op> add =
       OpManager::createOp(Onnx::Operators::Add_7, ir.getMainGraph());
-  BOOST_CHECK(!add.get()->isNorm());
+  BOOST_CHECK(!add->isNorm());
 
   // Is 'batchnorm' a norm? - Yes
   std::unique_ptr<Op> bn = OpManager::createOp(
       Onnx::Operators::BatchNormalization_9, ir.getMainGraph());
-  BOOST_CHECK(bn.get()->isNorm());
+  BOOST_CHECK(bn->isNorm());
 
   // Is 'groupnorm' a norm? - Yes
   Node node;
@@ -35,10 +35,10 @@ BOOST_AUTO_TEST_CASE(IsNormTest) {
   Attributes attr(nodeAttr);
   std::unique_ptr<Op> gn = OpManager::createOp(
       Onnx::CustomOperators::GroupNormalization_1, ir.getMainGraph(), "", attr);
-  BOOST_CHECK(gn.get()->isNorm());
+  BOOST_CHECK(gn->isNorm());
 
   // Is 'instancenorm' a norm? - Yes
   std::unique_ptr<Op> in = OpManager::createOp(
       Onnx::Operators::InstanceNormalization_6, ir.getMainGraph());
-  BOOST_CHECK(in.get()->isNorm());
+  BOOST_CHECK(in->isNorm());
 }
