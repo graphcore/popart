@@ -62,8 +62,7 @@ public:
               poplar::Device &_device,
               const poplar::OptionFlags &_flags)
       : popart::DeviceInfo(_provider, _type, _connectionType, _flags),
-        device(std::move(_device)), isAttached_(false),
-        mostRecentlyLoaded(nullptr) {}
+        device(std::move(_device)) {}
 
   virtual ~DevicexInfo();
 
@@ -104,7 +103,6 @@ public:
 
 protected:
   poplar::Device device;
-  bool isAttached_;
 
 private:
   // The most recent Devicex that was loaded onto this DevicexInfo's device.
@@ -116,7 +114,9 @@ private:
   // NOTE: There is no guarantee that this pointer is not dangling. It is
   // possible that the Devicex destructed since this pointer was set. Do not
   // dereference this pointer.
-  Devicex *mostRecentlyLoaded;
+  Devicex *mostRecentlyLoaded = nullptr;
+
+  bool isAttached_ = false;
 };
 
 class DevicexCpuInfo : public DevicexInfo {

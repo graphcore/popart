@@ -347,7 +347,7 @@ std::vector<int> DevicexIpuInfo::getChildIds() const {
 
 std::string DevicexIpuInfo::getVersion() const {
 
-  if (isAttached_) {
+  if (isAttached()) {
     unsigned major, minor, point;
     device.getDriverVersion(major, minor, point);
 
